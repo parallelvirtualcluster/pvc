@@ -66,7 +66,6 @@ node_list = []
 
 @zk.ChildrenWatch('/nodes')
 def updatenodes(new_node_list):
-    global node_list
     node_list = new_node_list
     active_node_list = []
     flushed_node_list = []
