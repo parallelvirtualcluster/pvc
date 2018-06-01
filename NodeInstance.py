@@ -12,7 +12,20 @@ class NodeInstance(threading.Thread):
         self.state = 'stop'
         self.stop_thread = threading.Event()
         self.node_list = node_list
-        self.domainlist = []
+        self.domain_list = []
+
+        # Zookeeper handlers for changed states
+        @zk.DataWatch(self.zkey + '/state')
+        def watch_hypervisor_state(data, stat, event=""):
+            self.state = data.decode('ascii')
+    
+        @zk.DataWatch(self.zkey + '/memfree')
+        def watch_hypervisor_memfree(data, stat, event=""):
+            self.memfree = data.decode('ascii')
+    
+        @zk.DataWatch(self.zkey + '/runningdomains')
+        def watch_hypervisor_runningdomains(data, stat, event=""):
+            self.domain_list = data.decode('ascii').split()
 
     # Get value functions
     def getfreemem(self):
@@ -27,6 +40,9 @@ class NodeInstance(threading.Thread):
     def getstate(self):
         return self.state
 
+    def getdomainlist(self):
+        return self.domain_list
+
     # Update value functions
     def updatenodelist(self, node_list):
         self.node_list = node_list
@@ -37,7 +53,7 @@ class NodeInstance(threading.Thread):
 
     # Flush all VMs on the host
     def flush(self):
-        for domain in self.domainlist:
+        for domain in self.domain_list:
             # Determine the best target hypervisor
             least_mem = (2^64)/8
             least_load = 999.0
@@ -80,12 +96,13 @@ class NodeInstance(threading.Thread):
             try:
                 self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
                 self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
+                self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
             except:
                 if self.stop_thread.is_set():
                     return
 
-            print("%s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
-            print("Active domains: %s" % self.domainlist)
+            print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
+            print("Active domains: %s" % self.domain_list)
             active_node_list = []
             flushed_node_list = []
             inactive_node_list = []

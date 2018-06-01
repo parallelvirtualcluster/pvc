@@ -44,11 +44,13 @@ mynodestring = '/nodes/%s' % myhostname
 
 def cleanup():
     t_node[myhostname].stop()
+    time.sleep(0.2)
     try:
         zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
+        zk.stop()
+        zk.close()
     except:
         pass
-    zk.stop()
 
 atexit.register(cleanup)
 
@@ -61,6 +63,7 @@ else:
     zk.create('%s/cpucount' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
+    zk.create('%s/runningdomains' % mynodestring, ''.encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
