@@ -99,7 +99,11 @@ class NodeInstance(threading.Thread):
                 self.flush()
 
     def setup_remote_node(self):
-        pass
+        while True:
+            for x in range(0,100):
+                time.sleep(0.1)
+                if self.stop_thread.is_set():
+                    return
 
         @zk.DataWatch(self.zkey + '/state')
         def watch_state(data, stat):
