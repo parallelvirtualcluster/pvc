@@ -99,6 +99,8 @@ class NodeInstance(threading.Thread):
                 self.flush()
 
     def setup_remote_node(self):
+        pass
+
         @zk.DataWatch(self.zkey + '/state')
         def watch_state(data, stat):
             self.state = data.decode('ascii')

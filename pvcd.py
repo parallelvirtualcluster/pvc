@@ -82,6 +82,7 @@ def updatenodes(new_node_list):
                 t_node[node].start()
 
         node_state = t_node[node].getstate()
+        print(node_state)
         if node_state == 'start':
             active_node_list.append(t_node[node].getname())
         elif node_state == 'flush':
