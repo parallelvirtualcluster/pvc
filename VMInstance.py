@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, time, uuid, libvirt, kazoo.client
+import os, time, uuid, threading, libvirt, kazoo.client
 
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
@@ -36,17 +36,20 @@ class VMInstance:
         if dom == None:
             print('Failed to create a domain from an XML definition.')
             exit(1)
+        self.thishypervisor.domainlist.append(self.domuuid)
         return dom
    
     # Stop the VM forcibly
     def stop_vm(self):
         print("Forcibly stopping VM %s" % self.domuuid)
         self.dom.destroy()
+        self.thishypervisor.domainlist.remove(self.domuuid)
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
         print("Stopping VM %s" % self.domuuid)
         self.dom.shutdown()
+        self.thishypervisor.domainlist.remove(self.domuuid)
 
     # Migrate the VM to a target host
     def migrate_vm(self):
@@ -61,6 +64,7 @@ class VMInstance:
             print('Could not migrate to the new domain')
             exit(1)
 
+        self.thishypervisor.domainlist.remove(self.domuuid)
         print('Migrated successfully')
         dest_conn.close()
    
@@ -71,6 +75,7 @@ class VMInstance:
                 continue
             else:
                 self.zk.set(self.zkey + '/status', b'start')
+                self.thishypervisor.domainlist.append(self.domuuid)
                 break
     #
     # Main function to manage a VM (taking only self)
@@ -90,23 +95,26 @@ class VMInstance:
         except:
             running = False
 
-        if running != False and self.state == "stop" and self.hypervisor == self.thishypervisor:
+        if running != False and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
 
-        if running != False and self.state == "shutdown" and self.hypervisor == self.thishypervisor:
+        if running != False and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
             self.shutdown_vm()
 
-        elif running == False and self.state == "migrate" and self.hypervisr == self.thishypervisor:
+        elif running == False and self.state == "migrate" and self.hypervisr == self.thishypervisor.name:
             self.receive_migrate()
             
-        elif running != False and self.state == "migrate" and self.hypervisr != self.thishypervisor:
+        elif running != False and self.state == "migrate" and self.hypervisr != self.thishypervisor.name:
             self.migrate_vm()
             
-        elif running == False and self.state == "start" and self.hypervisor == self.thishypervisor:
+        elif running == False and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             # Grab the domain information from Zookeeper
             domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
             domxml = str(domxml.decode('ascii'))
             self.dom = self.start_vm(conn, domxml)
+
+        elif running != False and self.state == "start" and self.hypervisor == self.thishypervisor.name:
+            self.thishypervisor.domainlist.append(self.domuuid)
     
         # The VM should now be running so return the domain and active connection
         conn.close

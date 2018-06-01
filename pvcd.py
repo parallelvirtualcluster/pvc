@@ -28,19 +28,22 @@ except:
 
 def zk_listener(state):
     if state == KazooState.LOST:
-        # Register somewhere that the session was lost
-        pass
+        cleanup()
+        exit(2)
     elif state == KazooState.SUSPENDED:
-        # Handle being disconnected from Zookeeper
-        pass
+        cleanup()
+        exit(2)
     else:
         # Handle being connected/reconnected to Zookeeper
         pass
 
 zk.add_listener(zk_listener)
 
+myhostname = socket.gethostname()
+
 def cleanup():
-    t_node[socket.gethostname()].stop()
+    for node in node_list:
+        t_node[node].stop()
     zk.stop()
 
 atexit.register(cleanup)
@@ -55,16 +58,17 @@ t_node = dict()
 s_domain = dict()
 
 for node in node_list:
-    t_node[node] = NodeInstance.NodeInstance(node, zk);
-    t_node[node].start()
+    t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
+    if t_node[node].name == myhostname:
+        t_node[node].start()
 
 for domain in domain_list:
-    s_domain[domain] = VMInstance.VMInstance(domain, zk, socket.gethostname());
+    s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);
 
 while True:
     # Tick loop
     try:
-        time.sleep(1)
+        time.sleep(0.1)
     except:
         cleanup()
         exit(0)
