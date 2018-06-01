@@ -43,9 +43,11 @@ myhostname = socket.gethostname()
 mynodestring = '/nodes/%s' % myhostname
 
 def cleanup():
-    zk.set('%s/state' % mynodestring, 'stop'.encode('ascii'))
-    for node in node_list:
-        t_node[node].stop()
+    t_node[myhostname].stop()
+    try:
+        zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
+    except:
+        pass
     zk.stop()
 
 atexit.register(cleanup)
@@ -76,9 +78,8 @@ def updatenodes(new_node_list):
             t_node[node].updatenodelist(node_list)
         else:
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
-            if t_node[node].name == myhostname:
+            if node == myhostname:
                 t_node[node].start()
-                time.sleep(1)
 
         node_state = t_node[node].getstate()
         if node_state == 'start':

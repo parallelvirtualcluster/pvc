@@ -77,11 +77,16 @@ class NodeInstance(threading.Thread):
         while True:
             self.memfree = conn.getFreeMemory()
             self.cpuload = os.getloadavg()[0]
-            self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
-            self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
+            try:
+                self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
+                self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
+            except:
+                if self.stop_thread.is_set():
+                    return
+
             print("Free memory: %s | Load: %s" % ( self.memfree, self.cpuload ))
             print("Active domains: %s" % self.domainlist)
-            for x in range(0,50):
+            for x in range(0,100):
                 time.sleep(0.1)
                 if self.stop_thread.is_set():
                     return
