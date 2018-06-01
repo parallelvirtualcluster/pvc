@@ -69,9 +69,6 @@ node_list = []
 @zk.ChildrenWatch('/nodes')
 def updatenodes(new_node_list):
     node_list = new_node_list
-    active_node_list = []
-    flushed_node_list = []
-    inactive_node_list = []
     print('Node list: %s' % node_list)
     for node in node_list:
         if node in t_node:
@@ -81,19 +78,6 @@ def updatenodes(new_node_list):
             if node == myhostname:
                 t_node[node].start()
                 time.sleep(0.5)
-
-        node_state = t_node[node].getstate()
-        print(node_state)
-        if node_state == 'start':
-            active_node_list.append(t_node[node].getname())
-        elif node_state == 'flush':
-            flushed_node_list.append(t_node[node].getname())
-        else:
-            inactive_node_list.append(t_node[node].getname())
-    
-    print('Active nodes: %s' % active_node_list)
-    print('Flushed nodes: %s' % flushed_node_list)
-    print('Inactive nodes: %s' % inactive_node_list)
 
 domain_list = zk.get_children('/domains')
 print('Domain list: %s' % domain_list)

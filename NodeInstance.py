@@ -14,27 +14,6 @@ class NodeInstance(threading.Thread):
         self.node_list = node_list
         self.domainlist = []
 
-        @zk.DataWatch(self.zkey + '/state')
-        def watch_state(data, stat):
-            self.state = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.state))
-
-        @zk.DataWatch(self.zkey + '/cpucount')
-        def watch_cpucount(data, stat):
-            self.cpucount = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.cpucount))
-
-        @zk.DataWatch(self.zkey + '/cpuload')
-        def watch_cpuload(data, stat):
-            self.cpuload = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.cpuload))
-
-        @zk.DataWatch(self.zkey + '/memfree')
-        def watch_memfree(data, stat):
-            self.memfree = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.memfree))
-
-
     # Get value functions
     def getfreemem(self):
         return self.memfree
@@ -105,8 +84,27 @@ class NodeInstance(threading.Thread):
                 if self.stop_thread.is_set():
                     return
 
-            print("Free memory: %s | Load: %s" % ( self.memfree, self.cpuload ))
+            print("%s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
             print("Active domains: %s" % self.domainlist)
+            active_node_list = []
+            flushed_node_list = []
+            inactive_node_list = []
+    
+            for node in self.node_list:
+                #node_state = t_node[node].getstate()
+                state, stat = self.zk.get('/nodes/%s/state' % node)
+                node_state = state.decode('ascii')
+                if node_state == 'start':
+                    active_node_list.append(node)
+                elif node_state == 'flush':
+                    flushed_node_list.append(node)
+                else:
+                    inactive_node_list.append(node)
+            
+            print('Active nodes: %s' % active_node_list)
+            print('Flushed nodes: %s' % flushed_node_list)
+            print('Inactive nodes: %s' % inactive_node_list)
+        
             for x in range(0,100):
                 time.sleep(0.1)
                 if self.stop_thread.is_set():
