@@ -64,11 +64,11 @@ class NodeInstance(threading.Thread):
         if conn == None:
             print('Failed to open connection to %s' % libvirt_name)
             exit(1)
-        
 
         # Gather data about hypervisor
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
+        self.state = 'start'
         self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
         print("Node hostname: %s" % self.name)
