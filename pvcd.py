@@ -48,6 +48,17 @@ def cleanup():
 
 atexit.register(cleanup)
 
+# Check if our node exists in Zookeeper, and create it if not
+mynodestring = '/nodes/%s' % myhostname
+if not zk.exists('%s' + mynodestring):
+    zk.create('%s' % mynodestring, 'hypervisor'.encode('ascii'))
+    zk.create('%s/state' % mynodestring, 'stop'.encode('ascii'))
+    zk.create('%s/cpucount' % mynodestring, '0'.encode('ascii'))
+    zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
+    zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
+
+time.sleep(1)
+
 node_list = zk.get_children('/nodes')
 print(node_list)
 
@@ -61,6 +72,8 @@ for node in node_list:
     t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
     if t_node[node].name == myhostname:
         t_node[node].start()
+
+time.sleep(1)
 
 for domain in domain_list:
     s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);

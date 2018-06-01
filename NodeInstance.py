@@ -40,7 +40,7 @@ class NodeInstance(threading.Thread):
                     least_mem = node_freemem
                     least_host = node.getname()
 
-            self.zk.set('/domains/' + domain + '/state', b'migrate')
+            self.zk.set('/domains/' + domain + '/state', 'flush'.encode('ascii'))
             self.zk.set('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
 
     def run(self):
@@ -60,7 +60,7 @@ class NodeInstance(threading.Thread):
         # Gather data about hypervisor
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
-        self.zk.set(self.zkey + '/state', self.name.encode('ascii'))
+        self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
         print("Node hostname: %s" % self.name)
         print("CPUs: %s" % self.cpucount)
