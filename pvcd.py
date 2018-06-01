@@ -79,6 +79,7 @@ def updatenodes(new_node_list):
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
             if t_node[node].name == myhostname:
                 t_node[node].start()
+                time.sleep(1)
 
         node_state = t_node[node].getstate()
         if node_state == 'start':
