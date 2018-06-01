@@ -14,6 +14,27 @@ class NodeInstance(threading.Thread):
         self.node_list = node_list
         self.domainlist = []
 
+        @zk.DataWatch(self.zkey + '/state')
+        def watch_state(data, stat):
+            self.state = data.decode('ascii')
+            print("Version: %s, data: %s" % (stat.version, self.state))
+
+        @zk.DataWatch(self.zkey + '/cpucount')
+        def watch_cpucount(data, stat):
+            self.cpucount = data.decode('ascii')
+            print("Version: %s, data: %s" % (stat.version, self.cpucount))
+
+        @zk.DataWatch(self.zkey + '/cpuload')
+        def watch_cpuload(data, stat):
+            self.cpuload = data.decode('ascii')
+            print("Version: %s, data: %s" % (stat.version, self.cpuload))
+
+        @zk.DataWatch(self.zkey + '/memfree')
+        def watch_memfree(data, stat):
+            self.memfree = data.decode('ascii')
+            print("Version: %s, data: %s" % (stat.version, self.memfree))
+
+
     # Get value functions
     def getfreemem(self):
         return self.memfree
@@ -56,27 +77,6 @@ class NodeInstance(threading.Thread):
             self.setup_local_node()
         else:
             self.setup_remote_node()
-
-        @zk.DataWatch(self.zkey + '/state')
-        def watch_state(data, stat):
-            self.state = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.state))
-
-        @zk.DataWatch(self.zkey + '/cpucount')
-        def watch_cpucount(data, stat):
-            self.cpucount = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.cpucount))
-
-        @zk.DataWatch(self.zkey + '/cpuload')
-        def watch_cpuload(data, stat):
-            self.cpuload = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.cpuload))
-
-        @zk.DataWatch(self.zkey + '/memfree')
-        def watch_memfree(data, stat):
-            self.memfree = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.memfree))
-
 
     def setup_local_node(self):
         # Connect to libvirt
