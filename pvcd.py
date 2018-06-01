@@ -76,7 +76,9 @@ def updatenodes(new_node_list):
     for node in node_list:
         if node in t_node:
             t_node[node].updatenodelist(node_list)
+            time.sleep(0.1)
         else:
+            print("starting" + node)
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
             t_node[node].start()
             time.sleep(0.1)
