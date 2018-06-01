@@ -9,6 +9,7 @@ class NodeInstance(threading.Thread):
         self.zkey = '/nodes/%s' % name
         self.zk = zk
         self.name = name
+        self.state = 'stop'
         self.stop_thread = threading.Event()
         self.node_list = node_list
         self.domainlist = []
@@ -64,6 +65,7 @@ class NodeInstance(threading.Thread):
             print('Failed to open connection to %s' % libvirt_name)
             exit(1)
         
+
         # Gather data about hypervisor
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
