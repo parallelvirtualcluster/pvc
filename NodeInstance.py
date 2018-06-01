@@ -9,7 +9,7 @@ class NodeInstance(threading.Thread):
         self.zkey = '/nodes/%s' % name
         self.zk = zk
         self.name = name
-        #self.state = 'stop'
+        self.state = 'stop'
         self.stop_thread = threading.Event()
         self.node_list = node_list
         self.domainlist = []
@@ -53,25 +53,9 @@ class NodeInstance(threading.Thread):
 
     def run(self):
         if self.name == socket.gethostname():
-            conn = self.setup_local_node()
-
-        while True:
-            if self.name == socket.gethostname():
-                self.memfree = conn.getFreeMemory()
-                self.cpuload = os.getloadavg()[0]
-                try:
-                    self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
-                    self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
-                except:
-                    if self.stop_thread.is_set():
-                        return
-                print("Free memory: %s | Load: %s" % ( self.memfree, self.cpuload ))
-                print("Active domains: %s" % self.domainlist)
-
-            for x in range(0,100):
-                time.sleep(0.1)
-                if self.stop_thread.is_set():
-                    return
+            self.setup_local_node()
+        else:
+            self.setup_remote_node()
 
         @zk.DataWatch(self.zkey + '/state')
         def watch_state(data, stat):
@@ -111,4 +95,28 @@ class NodeInstance(threading.Thread):
         print("Node hostname: %s" % self.name)
         print("CPUs: %s" % self.cpucount)
 
-        return conn
+        while True:
+            self.memfree = conn.getFreeMemory()
+            self.cpuload = os.getloadavg()[0]
+            try:
+                self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
+                self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
+            except:
+                if self.stop_thread.is_set():
+                    return
+
+            print("Free memory: %s | Load: %s" % ( self.memfree, self.cpuload ))
+            print("Active domains: %s" % self.domainlist)
+            for x in range(0,100):
+                time.sleep(0.1)
+                if self.stop_thread.is_set():
+                    return
+
+    def setup_remote_node(self):
+        while True:
+            for x in range(0,100):
+                time.sleep(0.1)
+                if self.stop_thread.is_set():
+                    return
+
+
