@@ -80,10 +80,10 @@ def updatenodes(new_node_list):
             if t_node[node].name == myhostname:
                 t_node[node].start()
 
-        node_status = t_node[node].getstatus()
-        if node_status == 'start':
+        node_state = t_node[node].getstate()
+        if node_state == 'start':
             active_node_list.append(t_node[node].getname())
-        elif node_status == 'flush':
+        elif node_state == 'flush':
             flushed_node_list.append(t_node[node].getname())
         else:
             inactive_node_list.append(t_node[node].getname())

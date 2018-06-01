@@ -23,6 +23,9 @@ class NodeInstance(threading.Thread):
     def getname():
         return self.name
 
+    def getstate():
+        return self.state
+
     # Update value functions
     def updatenodelist(node_list):
         self.node_list = node_list
