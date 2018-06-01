@@ -75,12 +75,12 @@ def updatenodes(new_node_list):
     for node in node_list:
         if node in t_node:
             t_node[node].updatenodelist(node_list)
-            node_status = t_node[node].getstatus()
         else:
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
             if t_node[node].name == myhostname:
                 t_node[node].start()
 
+        node_status = t_node[node].getstatus()
         if node_status == 'start':
             active_node_list.append(t_node[node].getname())
         elif node_status == 'flush':
