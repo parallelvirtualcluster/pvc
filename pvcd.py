@@ -59,26 +59,25 @@ else:
     zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
 
-time.sleep(1)
-
-def updatenodes():
-    node_list = zk.get_children('/nodes')
-    print(node_list)
-    for node in node_list:
-        if t_node[node] is None:
-            t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
-        else:
-            t_node[node].updatenodelist(node_list)
-
-node_list = zk.get_children('/nodes')
-
-domain_list = zk.get_children('/domains')
-print(domain_list)
-
 t_node = dict()
 s_domain = dict()
+node_list = []
 
-time.sleep(1)
+@zk.ChildrenWatch('/nodes')
+def updatenodes(new_node_list):
+    global node_list
+    node_list = new_node_list
+    print('Node list: %s' % node_list)
+    for node in node_list:
+        if node in t_node:
+            t_node[node].updatenodelist(node_list)
+        else:
+            t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
+            if t_node[node].name == myhostname:
+                t_node[node].start()
+
+domain_list = zk.get_children('/domains')
+print('Domain list: %s' % domain_list)
 
 for domain in domain_list:
     s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);

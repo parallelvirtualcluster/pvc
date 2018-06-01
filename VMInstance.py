@@ -18,16 +18,16 @@ class VMInstance:
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
         def watch_hypervisor(data, stat):
-            self.hypervisor = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.hypervisor))
-            self.manage_vm_state()
+            if self.hypervisor != data.decode('ascii'):
+                self.hypervisor = data.decode('ascii')
+                self.manage_vm_state()
 
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch(self.zkey + '/state')
         def watch_state(data, stat):
-            self.state = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, self.state))
-            self.manage_vm_state()
+            if self.state != data.decode('ascii'):
+                self.state = data.decode('ascii')
+                self.manage_vm_state()
     
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
@@ -77,6 +77,7 @@ class VMInstance:
                 self.zk.set(self.zkey + '/status', b'start')
                 self.thishypervisor.domainlist.append(self.domuuid)
                 break
+
     #
     # Main function to manage a VM (taking only self)
     #
@@ -91,7 +92,10 @@ class VMInstance:
         # Check the current state of the VM
         try:
             self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
-            running = self.dom.state()
+            if self.dom != None:
+                running = self.dom.state()
+            else:
+                running = False
         except:
             running = False
 
