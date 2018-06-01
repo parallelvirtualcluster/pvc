@@ -19,7 +19,7 @@ class VMInstance:
         @zk.DataWatch(self.zkey + '/hypervisor')
         def watch_hypervisor(data, stat):
             self.hypervisor = data.decode('ascii')
-            print("Version: %s, data: %s" % (stat.version, data.decode('ascii')))
+            print("Version: %s, data: %s" % (stat.version, self.hypervisor))
             self.manage_vm_state()
 
         # Watch for changes to the state field in Zookeeper
