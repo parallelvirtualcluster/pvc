@@ -59,19 +59,22 @@ if not zk.exists('%s' + mynodestring):
 
 time.sleep(1)
 
+def updatenodes():
+    node_list = zk.get_children('/nodes')
+    print(node_list)
+    for node in node_list:
+        if t_node[node] is None:
+            t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
+        else:
+            t_node[node].updatenodelist(node_list)
+
 node_list = zk.get_children('/nodes')
-print(node_list)
 
 domain_list = zk.get_children('/domains')
 print(domain_list)
 
 t_node = dict()
 s_domain = dict()
-
-for node in node_list:
-    t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
-    if t_node[node].name == myhostname:
-        t_node[node].start()
 
 time.sleep(1)
 

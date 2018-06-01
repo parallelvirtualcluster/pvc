@@ -23,6 +23,10 @@ class NodeInstance(threading.Thread):
     def getname():
         return self.name
 
+    # Update value functions
+    def updatenodelist(node_list):
+        self.node_list = node_list
+
     # Shutdown the thread
     def stop(self):
         self.stop_thread.set()
@@ -71,6 +75,7 @@ class NodeInstance(threading.Thread):
             self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
             self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
             print("Free memory: %s | Load: %s" % ( self.memfree, self.cpuload ))
+            print("Node list: %s" % self.node_list)
             print("Active domains: %s" % self.domainlist)
             for x in range(0,50):
                 time.sleep(0.1)
