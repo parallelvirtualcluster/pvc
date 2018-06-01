@@ -64,7 +64,7 @@ s_domain = dict()
 node_list = []
 
 @zk.ChildrenWatch('/nodes')
-def updatenodes(new_node_list, stat):
+def updatenodes(new_node_list):
     global node_list
     node_list = new_node_list
     print('Node list: %s' % node_list)
