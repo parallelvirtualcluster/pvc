@@ -40,8 +40,10 @@ def zk_listener(state):
 zk.add_listener(zk_listener)
 
 myhostname = socket.gethostname()
+mynodestring = '/nodes/%s' % myhostname
 
 def cleanup():
+    zk.set('%s/state' % mynodestring, 'stop'.encode('ascii'))
     for node in node_list:
         t_node[node].stop()
     zk.stop()
@@ -49,7 +51,6 @@ def cleanup():
 atexit.register(cleanup)
 
 # Check if our node exists in Zookeeper, and create it if not
-mynodestring = '/nodes/%s' % myhostname
 if zk.exists('%s' % mynodestring):
     print("Node is present in Zookeeper")
 else:
