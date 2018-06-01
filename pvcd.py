@@ -50,7 +50,7 @@ atexit.register(cleanup)
 
 # Check if our node exists in Zookeeper, and create it if not
 mynodestring = '/nodes/%s' % myhostname
-if zk.exists('%s' + mynodestring):
+if zk.exists('%s' % mynodestring):
     print("Node is present in Zookeeper")
 else:
     zk.create('%s' % mynodestring, 'hypervisor'.encode('ascii'))
