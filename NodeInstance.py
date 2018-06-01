@@ -14,20 +14,20 @@ class NodeInstance(threading.Thread):
         self.domainlist = []
 
     # Get value functions
-    def getfreemem():
+    def getfreemem(self):
         return self.memfree
 
-    def getcpuload():
+    def getcpuload(self):
         return self.cpuload
 
-    def getname():
+    def getname(self):
         return self.name
 
-    def getstate():
+    def getstate(self):
         return self.state
 
     # Update value functions
-    def updatenodelist(node_list):
+    def updatenodelist(self, node_list):
         self.node_list = node_list
 
     # Shutdown the thread
