@@ -68,14 +68,29 @@ node_list = []
 def updatenodes(new_node_list):
     global node_list
     node_list = new_node_list
+    active_node_list = []
+    flushed_node_list = []
+    inactive_node_list = []
     print('Node list: %s' % node_list)
     for node in node_list:
         if node in t_node:
             t_node[node].updatenodelist(node_list)
+            node_status = t_node[node].getstatus()
         else:
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
             if t_node[node].name == myhostname:
                 t_node[node].start()
+
+        if node_status == 'start':
+            active_node_list.append(t_node[node].getname())
+        elif node_status == 'flush':
+            flushed_node_list.append(t_node[node].getname())
+        else:
+            inactive_node_list.append(t_node[node].getname())
+    
+    print('Active nodes: %s' % active_node_list)
+    print('Flushed nodes: %s' % flushed_node_list)
+    print('Inactive nodes: %s' % inactive_node_list)
 
 domain_list = zk.get_children('/domains')
 print('Domain list: %s' % domain_list)
