@@ -79,11 +79,13 @@ def updatenodes(new_node_list):
                 t_node[node].start()
                 time.sleep(0.5)
 
-domain_list = zk.get_children('/domains')
-print('Domain list: %s' % domain_list)
-
-for domain in domain_list:
-    s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);
+@zk.ChildrenWatch('/domains')
+def updatedomains(new_domain_list):
+    domain_list = new_domain_list
+    print('Domain list: %s' % domain_list)
+    for domain in domain_list:
+        if not domain in s_domain:
+            s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);
 
 while True:
     # Tick loop
