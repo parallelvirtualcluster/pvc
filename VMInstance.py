@@ -92,7 +92,7 @@ class VMInstance:
         self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
 
         try:
-            dest_conn = libvirt.open('qemu+ssh://%s/system' % self.hypervisor)
+            dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
             if dest_conn == None:
                 raise
         except:
@@ -104,6 +104,7 @@ class VMInstance:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
+            print('Migrated successfully')
         except:
             print('Could not migrate to the new domain; forcing away uncleanly')
             self.stop_vm()
@@ -115,7 +116,6 @@ class VMInstance:
         except ValueError:
             pass
 
-        print('Migrated successfully')
         dest_conn.close()
    
     # Receive the migration from another host (wait until VM is running)
