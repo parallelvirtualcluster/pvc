@@ -40,6 +40,7 @@ class VMInstance:
 
         if dom == None:
             try:
+                sleep(0.5)
                 self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
             except:
                 pass
