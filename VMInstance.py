@@ -39,7 +39,10 @@ class VMInstance:
             print('Failed to create domain %s' % self.domuuid)
 
         if dom == None:
-            self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
+            try:
+                self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
+            except:
+                pass
             return None
 
         if not self.domuuid in self.thishypervisor.domain_list:
