@@ -56,14 +56,20 @@ class VMInstance:
         print("Forcibly stopping VM %s" % self.domuuid)
         self.dom.destroy()
         if self.domuuid in self.thishypervisor.domain_list:
-            self.thishypervisor.domain_list.remove(self.domuuid)
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
         print("Stopping VM %s" % self.domuuid)
         self.dom.shutdown()
         if self.domuuid in self.thishypervisor.domain_list:
-            self.thishypervisor.domain_list.remove(self.domuuid)
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
 
     # Migrate the VM to a target host
     def migrate_vm(self):

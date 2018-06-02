@@ -99,7 +99,7 @@ class NodeInstance(threading.Thread):
             for domain, instance in self.s_domain.items():
                 instance.manage_vm_state()
 
-            # Remove non-running VMs from our list
+            # Remove any non-running VMs from our list
             for domain in self.domain_list:
                 try:
                     buuid = uuid.UUID(domain).bytes
