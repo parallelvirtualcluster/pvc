@@ -152,6 +152,12 @@ class VMInstance:
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
+        # VM is already running and should be
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
+            if not self.domuuid in self.thishypervisor.domain_list:
+                self.thishypervisor.domain_list.append(self.domuuid)
+                self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+    
         # VM should be started
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             # Grab the domain information from Zookeeper
@@ -159,10 +165,5 @@ class VMInstance:
             domxml = str(domxml.decode('ascii'))
             self.start_vm(conn, domxml)
 
-        # VM is already running and should be
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
-            if not self.domuuid in self.thishypervisor.domain_list:
-                self.thishypervisor.domain_list.append(self.domuuid)
-    
         # The VM should now be running so return the domain and active connection
         conn.close
