@@ -97,9 +97,9 @@ class NodeInstance(threading.Thread):
                     dom = conn.getDomainByUUID(domain)
                     state = dom.state()
                     if state != libvirt.VIR_DOMAIN_RUNNING:
-                        domain_list.remove(domain)
+                        self.domain_list.remove(domain)
                 except:
-                    domain_list.remove(domain)
+                    self.domain_list.remove(domain)
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
