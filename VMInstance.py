@@ -13,7 +13,11 @@ class VMInstance:
         # These will all be set later
         self.hypervisor = None
         self.state = None
+        self.instart = False
+        self.instop = False
         self.inshutdown = False
+        self.inmigrate = False
+        self.inreceive = False
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
@@ -52,6 +56,7 @@ class VMInstance:
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
         print(">>> Starting VM %s" % self.domuuid)
+        self.instart = True
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
@@ -62,10 +67,12 @@ class VMInstance:
             self.thishypervisor.domain_list.append(self.domuuid)
 
         self.dom = dom
+        self.instart = False
    
     # Stop the VM forcibly
     def stop_vm(self):
         print(">>> Forcibly stopping VM %s" % self.domuuid)
+        self.instop = True
         self.dom.destroy()
         if self.domuuid in self.thishypervisor.domain_list:
             try:
@@ -74,13 +81,14 @@ class VMInstance:
                 pass
 
         self.dom = None
+        self.instop = False
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
         print(">>> Stopping VM %s" % self.domuuid)
+        self.inshutdown = True
         self.dom.shutdown()
         try:
-            self.inshutdown = True
             tick = 0
             while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and tick < 60:
                 tick += 1
@@ -88,6 +96,7 @@ class VMInstance:
 
             if tick >= 60:
                 self.stop_vm()
+                self.inshutdown = False
                 return
         except:
             pass
@@ -99,9 +108,12 @@ class VMInstance:
                 pass
 
         self.dom = None
+        self.inshutdown = False
 
     # Migrate the VM to a target host
     def migrate_vm(self):
+        print('>>> Migrating %s to %s' % (self.domuuid, self.hypervisor))
+        self.inmigrate = True
         try:
             dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
             if dest_conn == None:
@@ -129,22 +141,26 @@ class VMInstance:
             pass
 
         dest_conn.close()
+        self.inmigrate = False
    
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
+        print('>>> Receiving migration of %s' % self.domuuid)
+        self.inreceive = True
         while True:
-            if self.dom == None or self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
-                try:
-                    time.sleep(0.2)
-                    print("derp")
+            try:
+                if self.dom == None or self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
                     self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
-                except:
-                    pass
-            else:
-                self.zk.set(self.zkey + '/status', 'start'.encode('ascii'))
-                if not self.domuuid in self.thishypervisor.domain_list:
-                    self.thishypervisor.domain_list.append(self.domuuid)
-                break
+                else:
+                    self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+                    if not self.domuuid in self.thishypervisor.domain_list:
+                        self.thishypervisor.domain_list.append(self.domuuid)
+                    break
+            except:
+                pass
+            time.sleep(0.2)
+        print('>>> Migrated successfully' % self.domuuid)
+        self.inreceive = False
 
     #
     # Main function to manage a VM (taking only self)
@@ -167,19 +183,19 @@ class VMInstance:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
         # VM should be stopped
-        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
+        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name and self.instop == False:
             self.stop_vm()
 
         # VM should be shut down
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name and self.inshutdown == False:
             self.shutdown_vm()
 
         # VM should be migrated to this hypervisor
-        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name:
+        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name and self.inreceive == False:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
             self.migrate_vm()
             
         # VM is already running and should be
@@ -188,7 +204,7 @@ class VMInstance:
                 self.thishypervisor.domain_list.append(self.domuuid)
     
         # VM should be started
-        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
+        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name and self.instart == False:
             # Grab the domain information from Zookeeper
             domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
             domxml = str(domxml.decode('ascii'))
