@@ -78,8 +78,11 @@ class VMInstance:
     def shutdown_vm(self):
         print(">>> Stopping VM %s" % self.domuuid)
         self.dom.shutdown()
-        while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
-            time.sleep(0.5)
+        try:
+            while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+                time.sleep(0.5)
+        except:
+            pass
 
         if self.domuuid in self.thishypervisor.domain_list:
             try:
