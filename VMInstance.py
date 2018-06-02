@@ -35,11 +35,13 @@ class VMInstance:
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError:
-            print('Failed to create domain %s' % self.domuuid)
             self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
-            exit(1)
+            print('Failed to create domain %s' % self.domuuid)
+            return None
+
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
+
         return dom
    
     # Stop the VM forcibly
