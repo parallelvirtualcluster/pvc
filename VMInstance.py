@@ -13,6 +13,7 @@ class VMInstance:
         # These will all be set later
         self.hypervisor = None
         self.state = None
+        self.inshutdown = False
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
@@ -79,8 +80,15 @@ class VMInstance:
         print(">>> Stopping VM %s" % self.domuuid)
         self.dom.shutdown()
         try:
-            while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+            self.inshutdown = True
+            tick = 0
+            while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and tick < 60:
+                tick += 1
                 time.sleep(0.5)
+
+            if tick >= 60:
+                self.stop_vm()
+                return
         except:
             pass
 
