@@ -14,6 +14,7 @@ class VMInstance:
         self.hypervisor = None
         self.state = None
         self.dom = None
+        sleep(0.5)
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
@@ -40,7 +41,6 @@ class VMInstance:
 
         if dom == None:
             try:
-                sleep(0.5)
                 self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
             except:
                 pass
