@@ -49,7 +49,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
-        return dom
+        self.dom = dom
    
     # Stop the VM forcibly
     def stop_vm(self):
@@ -60,6 +60,8 @@ class VMInstance:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
+
+        self.dom = None
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
@@ -70,6 +72,8 @@ class VMInstance:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
+
+        self.dom = None
 
     # Migrate the VM to a target host
     def migrate_vm(self):
@@ -102,7 +106,10 @@ class VMInstance:
     def receive_migrate(self):
         while True:
             if self.dom == None or self.dom.state() != libvirt.VIR_DOMAIN_RUNNING:
-                continue
+                try:
+                    self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+                except:
+                    pass
             else:
                 self.zk.set(self.zkey + '/status', b'start')
                 if not self.domuuid in self.thishypervisor.domain_list:
@@ -122,11 +129,10 @@ class VMInstance:
     
         # Check the current state of the VM
         try:
-            self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
             if self.dom != None:
                 running, reason = self.dom.state()
             else:
-                running = libvirt.VIR_DOMAIN_NOSTATE
+                raise
         except:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
@@ -151,7 +157,7 @@ class VMInstance:
             # Grab the domain information from Zookeeper
             domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
             domxml = str(domxml.decode('ascii'))
-            self.dom = self.start_vm(conn, domxml)
+            self.start_vm(conn, domxml)
 
         # VM is already running and should be
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
