@@ -32,9 +32,11 @@ class VMInstance:
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
         print("Starting VM %s" % self.domuuid)
-        dom = conn.createXML(xmlconfig, 0)
-        if dom == None:
-            print('Failed to create a domain from an XML definition.')
+        try:
+            dom = conn.createXML(xmlconfig, 0)
+        except libvirt.libvirtError:
+            print('Failed to create domain %s' % self.domuuid)
+            self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
             exit(1)
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
