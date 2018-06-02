@@ -106,8 +106,9 @@ class VMInstance:
                 raise
         except:
             print('Could not migrate to the new domain; forcing away uncleanly')
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             self.stop_vm()
+            time.sleep(0.5)
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
 
         try:
             self.thishypervisor.domain_list.remove(self.domuuid)
