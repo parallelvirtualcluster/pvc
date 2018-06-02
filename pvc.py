@@ -38,5 +38,5 @@ def migrate_domain(domuuid, target):
     
 
 #define_domain('/var/home/joshua/debian9.xml')
-#migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test1.i.bonilan.net')
-migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test2.i.bonilan.net')
+migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test1.i.bonilan.net')
+#migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test2.i.bonilan.net')

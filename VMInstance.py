@@ -98,7 +98,11 @@ class VMInstance:
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             self.stop_vm()
 
-        self.thishypervisor.domain_list.remove(self.domuuid)
+        try:
+            self.thishypervisor.domain_list.remove(self.domuuid)
+        except ValueError:
+            pass
+
         print('Migrated successfully')
         dest_conn.close()
    
