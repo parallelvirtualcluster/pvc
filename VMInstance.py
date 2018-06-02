@@ -113,10 +113,10 @@ class VMInstance:
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
             self.shutdown_vm()
 
-        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisr == self.thishypervisor.name:
+        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name:
             self.receive_migrate()
             
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisr != self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
