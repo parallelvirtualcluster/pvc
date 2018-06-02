@@ -13,7 +13,19 @@ class VMInstance:
         # These will all be set later
         self.hypervisor = None
         self.state = None
-        self.dom = None
+
+        # Start up a new Libvirt connection
+        libvirt_name = "qemu:///system"
+        conn = libvirt.open(libvirt_name)
+        if conn == None:
+            print('Failed to open local libvirt connection.')
+            exit(1)
+    
+        try:
+            self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+            conn.close()
+        except libvirt.libvirtError:
+            self.dom = None
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
@@ -41,10 +53,9 @@ class VMInstance:
         print("Starting VM %s" % self.domuuid)
         try:
             dom = conn.createXML(xmlconfig, 0)
-        except:
+        except libvirt.libvirtError as e:
             print('Failed to create domain %s' % self.domuuid)
             self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
-            return None
 
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
@@ -160,7 +171,6 @@ class VMInstance:
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
-                self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
     
         # VM should be started
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
@@ -170,4 +180,4 @@ class VMInstance:
             self.start_vm(conn, domxml)
 
         # The VM should now be running so return the domain and active connection
-        conn.close
+        conn.close()
