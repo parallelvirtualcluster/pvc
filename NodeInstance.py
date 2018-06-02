@@ -3,7 +3,7 @@
 import os, socket, time, uuid, threading, libvirt, kazoo.client
 
 class NodeInstance(threading.Thread):
-    def __init__(self, name, node_list, zk):
+    def __init__(self, name, node_list, s_domain, zk):
         super(NodeInstance, self).__init__()
         # Passed-in variables on creation
         self.zkey = '/nodes/%s' % name
@@ -12,6 +12,7 @@ class NodeInstance(threading.Thread):
         self.state = 'stop'
         self.stop_thread = threading.Event()
         self.node_list = node_list
+        self.s_domain = s_domain
         self.domain_list = []
 
         # Zookeeper handlers for changed states
@@ -46,6 +47,9 @@ class NodeInstance(threading.Thread):
     # Update value functions
     def updatenodelist(self, node_list):
         self.node_list = node_list
+
+    def updatedomainlist(self, s_domain):
+        self.s_domain = s_domain
 
     # Shutdown the thread
     def stop(self):
@@ -101,6 +105,10 @@ class NodeInstance(threading.Thread):
                         self.domain_list.remove(domain)
                 except:
                     self.domain_list.remove(domain)
+
+            # Start any VMs which should be running
+            for domain in self.s_domain:
+                print(domain.getdomuuid())
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()

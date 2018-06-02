@@ -28,7 +28,17 @@ class VMInstance:
             if self.state != data.decode('ascii'):
                 self.state = data.decode('ascii')
                 self.manage_vm_state()
-    
+
+    # Get data functions
+    def getdomuuid():
+        return self.domuuid
+
+    def getstate():
+        return self.state
+
+    def getdom():
+        return self.dom
+
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
         print("Starting VM %s" % self.domuuid)
