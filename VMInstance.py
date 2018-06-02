@@ -34,9 +34,11 @@ class VMInstance:
         print("Starting VM %s" % self.domuuid)
         try:
             dom = conn.createXML(xmlconfig, 0)
-        except libvirt.libvirtError:
-            self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
+        except:
             print('Failed to create domain %s' % self.domuuid)
+
+        if dom == None:
+            self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
             return None
 
         if not self.domuuid in self.thishypervisor.domain_list:
