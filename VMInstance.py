@@ -14,7 +14,6 @@ class VMInstance:
         self.hypervisor = None
         self.state = None
         self.dom = None
-        time.sleep(0.5)
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
