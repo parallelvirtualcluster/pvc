@@ -70,7 +70,7 @@ class VMInstance:
         print(self.zkey)
         self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
 
-        dest_conn = libvirt.open('qemu+ssh://%s/system' % target)
+        dest_conn = libvirt.open('qemu+ssh://%s/system' % self.hypervisor)
         if dest_conn == None:
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             print('Failed to open connection to qemu+ssh://%s/system' % target)
