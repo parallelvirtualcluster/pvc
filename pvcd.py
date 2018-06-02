@@ -77,7 +77,7 @@ def updatenodes(new_node_list):
         if node in t_node:
             t_node[node].updatenodelist(node_list)
         else:
-            t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
+            t_node[node] = NodeInstance.NodeInstance(node, node_list, s_domain, zk);
             if node == myhostname:
                 t_node[node].start()
                 time.sleep(0.2)
@@ -89,9 +89,14 @@ def updatedomains(new_domain_list):
     for domain in domain_list:
         if not domain in s_domain:
             s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);
+            for node in node_list:
+                if node in t_node:
+                    t_node[node].updatedomainlist(s_domain)
 
 while True:
     # Tick loop
+    for domain in s_domain:
+        uuid = domain.
     try:
         time.sleep(0.1)
     except:
