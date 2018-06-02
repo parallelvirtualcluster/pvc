@@ -94,8 +94,9 @@ class NodeInstance(threading.Thread):
             # Make sure that the VMs we think we're running actually are
             for domain in self.domain_list:
                 try:
-                    dom = conn.getDomainByUUID(domain)
-                    state = dom.state()
+                    buuid = uuid.UUID(domain).bytes
+                    dom = conn.lookupByUUID(buuid)
+                    state = dom.state()[0]
                     if state != libvirt.VIR_DOMAIN_RUNNING:
                         self.domain_list.remove(domain)
                 except:
