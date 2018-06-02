@@ -80,7 +80,7 @@ def updatenodes(new_node_list):
             t_node[node] = NodeInstance.NodeInstance(node, node_list, zk);
             if node == myhostname:
                 t_node[node].start()
-                time.sleep(0.5)
+                time.sleep(0.2)
 
 @zk.ChildrenWatch('/domains')
 def updatedomains(new_domain_list):
