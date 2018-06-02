@@ -81,8 +81,8 @@ class VMInstance:
             if dest_conn == None:
                 raise
         except:
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             print('Failed to open connection to qemu+ssh://%s/system' % target)
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             return
 
         try:
@@ -90,7 +90,8 @@ class VMInstance:
             if target_dom == None:
                 raise
         except:
-            print('Could not migrate to the new domain')
+            print('Could not migrate to the new domain; forcing away uncleanly')
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             self.stop_vm()
 
         self.thishypervisor.domain_list.remove(self.domuuid)
