@@ -135,6 +135,8 @@ class VMInstance:
         while True:
             if self.dom == None or self.dom.state() != libvirt.VIR_DOMAIN_RUNNING:
                 try:
+                    time.sleep(0.2)
+                    print("derp")
                     self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
                 except:
                     pass
