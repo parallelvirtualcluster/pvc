@@ -41,8 +41,8 @@ class VMInstance:
         if dom == None:
             try:
                 self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
-            except:
-                print("Problem with zookeeper con %s" % self.zk)
+            except Error as e:
+                print("Problem %s with zookeeper con %s" % (e, self.zk))
             return None
 
         if not self.domuuid in self.thishypervisor.domain_list:
