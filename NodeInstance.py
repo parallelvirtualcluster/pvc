@@ -68,8 +68,10 @@ class NodeInstance(threading.Thread):
                     least_mem = node_freemem
                     least_host = node.getname()
 
-            self.zk.set('/domains/' + domain + '/state', 'flush'.encode('ascii'))
-            self.zk.set('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
+            transaction = self.zk.transaction()
+            transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
+            transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
+            transaction.commit()
 
     def run(self):
         if self.name == socket.gethostname():

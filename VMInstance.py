@@ -102,14 +102,12 @@ class VMInstance:
 
     # Migrate the VM to a target host
     def migrate_vm(self):
-        self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
-
         try:
             dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
             if dest_conn == None:
                 raise
         except:
-            print('>>> Failed to open connection to qemu+ssh://%s/system' % self.hypervisor)
+            print('>>> Failed to open connection to qemu+tcp://%s/system' % self.hypervisor)
             self.zk.set(self.zkey + '/hypervisor', self.thishypervisor.name.encode('ascii'))
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             return
@@ -141,7 +139,7 @@ class VMInstance:
                 except:
                     pass
             else:
-                self.zk.set(self.zkey + '/status', b'start')
+                self.zk.set(self.zkey + '/status', 'start'.encode('ascii'))
                 if not self.domuuid in self.thishypervisor.domain_list:
                     self.thishypervisor.domain_list.append(self.domuuid)
                 break
@@ -179,7 +177,7 @@ class VMInstance:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
         # VM is already running and should be

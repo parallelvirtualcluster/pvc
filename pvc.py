@@ -30,7 +30,7 @@ def migrate_domain(domuuid, target):
     zk = kazoo.client.KazooClient(hosts='127.0.0.1:2181')
     zk.start()
     transaction = zk.transaction()
-#    transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
+    transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
     transaction.set_data('/domains/%s/hypervisor' % domuuid, target.encode('ascii'))
     results = transaction.commit()
     zk.stop()
