@@ -70,14 +70,20 @@ class VMInstance:
         print(self.zkey)
         self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
 
-        dest_conn = libvirt.open('qemu+ssh://%s/system' % self.hypervisor)
-        if dest_conn == None:
+        try:
+            dest_conn = libvirt.open('qemu+ssh://%s/system' % self.hypervisor)
+            if dest_conn == None:
+                raise
+        except:
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             print('Failed to open connection to qemu+ssh://%s/system' % target)
             return
 
-        target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
-        if target_dom == None:
+        try:
+            target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+            if target_dom == None:
+                raise
+        except:
             print('Could not migrate to the new domain')
             self.stop_vm()
 
