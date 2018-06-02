@@ -76,7 +76,7 @@ class VMInstance:
         target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
         if target_dom == None:
             print('Could not migrate to the new domain')
-            exit(1)
+            self.stop_vm()
 
         self.thishypervisor.domain_list.remove(self.domuuid)
         print('Migrated successfully')
@@ -118,10 +118,6 @@ class VMInstance:
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
 
-        # VM should not be running on this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
-            self.stop_vm()
-
         # VM should be shut down
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
             self.shutdown_vm()
@@ -131,7 +127,7 @@ class VMInstance:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
         # VM should be started
