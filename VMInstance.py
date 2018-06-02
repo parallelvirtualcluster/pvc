@@ -18,7 +18,7 @@ class VMInstance:
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('Failed to open local libvirt connection.')
+            print('>>> Failed to open local libvirt connection.')
             exit(1)
     
         try:
@@ -50,11 +50,11 @@ class VMInstance:
 
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
-        print("Starting VM %s" % self.domuuid)
+        print(">>> Starting VM %s" % self.domuuid)
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
-            print('Failed to create domain %s' % self.domuuid)
+            print('>>> Failed to create domain %s' % self.domuuid)
             self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
 
         if not self.domuuid in self.thishypervisor.domain_list:
@@ -64,7 +64,7 @@ class VMInstance:
    
     # Stop the VM forcibly
     def stop_vm(self):
-        print("Forcibly stopping VM %s" % self.domuuid)
+        print(">>> Forcibly stopping VM %s" % self.domuuid)
         self.dom.destroy()
         if self.domuuid in self.thishypervisor.domain_list:
             try:
@@ -76,7 +76,7 @@ class VMInstance:
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
-        print("Stopping VM %s" % self.domuuid)
+        print(">>> Stopping VM %s" % self.domuuid)
         self.dom.shutdown()
         while self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
             time.sleep(0.5)
@@ -91,7 +91,6 @@ class VMInstance:
 
     # Migrate the VM to a target host
     def migrate_vm(self):
-        print(self.zkey)
         self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
 
         try:
@@ -99,7 +98,7 @@ class VMInstance:
             if dest_conn == None:
                 raise
         except:
-            print('Failed to open connection to qemu+ssh://%s/system' % target)
+            print('>>> Failed to open connection to qemu+ssh://%s/system' % target)
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             return
 
@@ -107,9 +106,9 @@ class VMInstance:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-            print('Migrated successfully')
+            print('>>> Migrated successfully')
         except:
-            print('Could not migrate to the new domain; forcing away uncleanly')
+            print('>>> Could not migrate to the new domain; forcing away uncleanly')
             self.stop_vm()
             time.sleep(0.5)
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
@@ -143,7 +142,7 @@ class VMInstance:
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('Failed to open local libvirt connection.')
+            print('>>> Failed to open local libvirt connection.')
             exit(1)
     
         # Check the current state of the VM

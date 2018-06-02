@@ -82,7 +82,7 @@ class NodeInstance(threading.Thread):
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('Failed to open connection to %s' % libvirt_name)
+            print('>>> Failed to open connection to %s' % libvirt_name)
             exit(1)
 
         # Gather data about hypervisor
