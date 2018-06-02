@@ -67,11 +67,14 @@ class VMInstance:
 
     # Migrate the VM to a target host
     def migrate_vm(self):
-        self.zk.set(self.zkey + '/status', b'migrate')
+        print(self.zkey)
+        self.zk.set(self.zkey + '/state', 'migrate'.encode('ascii'))
+
         dest_conn = libvirt.open('qemu+ssh://%s/system' % target)
         if dest_conn == None:
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             print('Failed to open connection to qemu+ssh://%s/system' % target)
-            exit(1)
+            return
 
         target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
         if target_dom == None:
