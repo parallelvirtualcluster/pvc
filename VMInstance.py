@@ -144,27 +144,23 @@ class VMInstance:
         self.inmigrate = False
    
     # Receive the migration from another host (wait until VM is running)
-    def receive_migrate(self):
+    def receive_migrate(self, conn):
         print('>>> Receiving migration of %s' % self.domuuid)
         self.inreceive = True
         while True:
             try:
-                if self.dom == None:
-                    self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
-                elif self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
-                    continue
-                else:
-                    break
+                self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
             except:
-                pass
+                time.sleep(0.2)
+                continue
 
-            time.sleep(0.2)
+            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+                break
 
         self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
-
-        print('>>> Migrated successfully' % self.domuuid)
+        print('>>> Migrated successfully')
         self.inreceive = False
 
     #
@@ -197,7 +193,7 @@ class VMInstance:
 
         # VM should be migrated to this hypervisor
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name and self.inreceive == False:
-            self.receive_migrate()
+            self.receive_migrate(conn)
 
         # VM should be migrated away from this hypervisor
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
