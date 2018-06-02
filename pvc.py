@@ -29,4 +29,4 @@ def define_domain(domxmlfile):
     except:
         print('Failed to connect to local Zookeeper instance')
 
-define_domain('/home/joshua/debsw1.xml')
+define_domain('/var/home/joshua/debian9.xml')
