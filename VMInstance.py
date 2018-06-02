@@ -80,6 +80,7 @@ class VMInstance:
             except ValueError:
                 pass
 
+        self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
         self.dom = None
         self.instop = False
     
@@ -107,6 +108,7 @@ class VMInstance:
             except ValueError:
                 pass
 
+        self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
         self.dom = None
         self.inshutdown = False
 
