@@ -109,7 +109,8 @@ class VMInstance:
             if dest_conn == None:
                 raise
         except:
-            print('>>> Failed to open connection to qemu+ssh://%s/system' % target)
+            print('>>> Failed to open connection to qemu+ssh://%s/system' % self.hypervisor)
+            self.zk.set(self.zkey + '/hypervisor', self.thishypervisor.name.encode('ascii'))
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             return
 
