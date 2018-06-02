@@ -35,6 +35,7 @@ class VMInstance:
         try:
             dom = conn.createXML(xmlconfig, 0)
         except:
+            dom = None
             print('Failed to create domain %s' % self.domuuid)
 
         if dom == None:
