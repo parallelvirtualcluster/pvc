@@ -91,6 +91,17 @@ class NodeInstance(threading.Thread):
         print("CPUs: %s" % self.cpucount)
 
         while True:
+            # Make sure that the VMs we think we're running actually are
+            for domain in self.domain_list:
+                try:
+                    dom = conn.getDomainByUUID(domain)
+                    state = dom.state()
+                    if state != libvirt.VIR_DOMAIN_RUNNING:
+                        domain_list.remove(domain)
+                except:
+                    domain_list.remove(domain)
+
+            # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
             self.cpuload = os.getloadavg()[0]
             try:
@@ -122,6 +133,7 @@ class NodeInstance(threading.Thread):
             print('Flushed nodes: %s' % flushed_node_list)
             print('Inactive nodes: %s' % inactive_node_list)
         
+            # Sleep for 10s but with quick interruptability
             for x in range(0,100):
                 time.sleep(0.1)
                 if self.stop_thread.is_set():
