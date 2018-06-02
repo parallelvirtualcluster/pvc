@@ -106,9 +106,10 @@ class NodeInstance(threading.Thread):
                 except:
                     self.domain_list.remove(domain)
 
-            # Start any VMs which should be running
-            for domain in self.s_domain:
-                print(domain.getdomuuid())
+            # Toggle state management of all VMs to start any that are failed
+            for domain, instance in self.s_domain.items():
+                if instance.gethypervisor() == self.name and ( instance.getstate() == 'start' or instance.getstate() == 'migrate' ):
+                    instance.manage_vm_state()
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()

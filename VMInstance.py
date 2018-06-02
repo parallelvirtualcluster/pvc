@@ -30,14 +30,11 @@ class VMInstance:
                 self.manage_vm_state()
 
     # Get data functions
-    def getdomuuid():
-        return self.domuuid
-
-    def getstate():
+    def getstate(self):
         return self.state
 
-    def getdom():
-        return self.dom
+    def gethypervisor(self):
+        return self.hypervisor
 
     # Start up the VM
     def start_vm(self, conn, xmlconfig):
