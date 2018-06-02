@@ -78,7 +78,7 @@ class VMInstance:
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
         while True:
-            if self.dom.state() != libvirt.VIR_DOMAIN_RUNNING:
+            if self.dom == None or self.dom.state() != libvirt.VIR_DOMAIN_RUNNING:
                 continue
             else:
                 self.zk.set(self.zkey + '/status', b'start')
