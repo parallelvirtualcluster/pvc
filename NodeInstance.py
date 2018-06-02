@@ -95,7 +95,11 @@ class NodeInstance(threading.Thread):
         print("CPUs: %s" % self.cpucount)
 
         while True:
-            # Make sure that the VMs we think we're running actually are
+            # Toggle state management of all VMs
+            for domain, instance in self.s_domain.items():
+                instance.manage_vm_state()
+
+            # Remove non-running VMs from our list
             for domain in self.domain_list:
                 try:
                     buuid = uuid.UUID(domain).bytes
@@ -105,11 +109,6 @@ class NodeInstance(threading.Thread):
                         self.domain_list.remove(domain)
                 except:
                     self.domain_list.remove(domain)
-
-            # Toggle state management of all VMs to start any that are failed
-            for domain, instance in self.s_domain.items():
-                if instance.gethypervisor() == self.name and ( instance.getstate() == 'start' or instance.getstate() == 'migrate' ):
-                    instance.manage_vm_state()
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
