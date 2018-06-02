@@ -35,14 +35,8 @@ class VMInstance:
         try:
             dom = conn.createXML(xmlconfig, 0)
         except:
-            dom = None
             print('Failed to create domain %s' % self.domuuid)
-
-        if dom == None:
-            try:
-                self.zk.set(self.zkey + '/status', 'stop'.encode('ascii'))
-            except Error as e:
-                print("Problem %s with zookeeper con %s" % (e, self.zk))
+            self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
             return None
 
         if not self.domuuid in self.thishypervisor.domain_list:
