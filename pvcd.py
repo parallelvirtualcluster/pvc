@@ -95,8 +95,6 @@ def updatedomains(new_domain_list):
 
 while True:
     # Tick loop
-    for domain in s_domain:
-        uuid = domain.
     try:
         time.sleep(0.1)
     except:
