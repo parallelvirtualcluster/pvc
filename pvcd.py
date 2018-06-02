@@ -84,7 +84,6 @@ def updatenodes(new_node_list):
 
 @zk.ChildrenWatch('/domains')
 def updatedomains(new_domain_list):
-    time.sleep(0.5)
     domain_list = new_domain_list
     print('Domain list: %s' % domain_list)
     for domain in domain_list:
