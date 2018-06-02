@@ -133,7 +133,7 @@ class VMInstance:
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
         while True:
-            if self.dom == None or self.dom.state() != libvirt.VIR_DOMAIN_RUNNING:
+            if self.dom == None or self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
                 try:
                     time.sleep(0.2)
                     print("derp")
