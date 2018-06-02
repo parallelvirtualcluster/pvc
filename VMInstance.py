@@ -149,16 +149,21 @@ class VMInstance:
         self.inreceive = True
         while True:
             try:
-                if self.dom == None or self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+                if self.dom == None:
                     self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+                elif self.dom.state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+                    continue
                 else:
-                    self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
-                    if not self.domuuid in self.thishypervisor.domain_list:
-                        self.thishypervisor.domain_list.append(self.domuuid)
                     break
             except:
                 pass
+
             time.sleep(0.2)
+
+        self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+        if not self.domuuid in self.thishypervisor.domain_list:
+            self.thishypervisor.domain_list.append(self.domuuid)
+
         print('>>> Migrated successfully' % self.domuuid)
         self.inreceive = False
 
