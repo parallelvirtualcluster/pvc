@@ -93,7 +93,7 @@ class NodeInstance(threading.Thread):
     def unflush(self):
         print('>>> Restoring node %s to active service' % self.name)
         for domain in self.s_domain:
-            former_hypervisor = self.zk.get("/domains/" + domain + '/formerhypervisor').decode('ascii')
+            former_hypervisor = self.zk.get("/domains/" + domain + '/formerhypervisor')[0].decode('ascii')
             if former_hypervisor == self.name:
                 print(">>> Setting unmigration for %s" % domain)
                 transaction = self.zk.transaction()
