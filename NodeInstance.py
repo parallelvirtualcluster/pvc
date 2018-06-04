@@ -58,21 +58,30 @@ class NodeInstance(threading.Thread):
     # Flush all VMs on the host
     def flush(self):
         for domain in self.domain_list:
-            print(domain)
             # Determine the best target hypervisor
-            least_mem = (2^64)/8
-            least_load = 999.0
-            least_host = ""
-            for node in self.t_node:
-                node_freemem = node.getfreemem()
+            least_mem = 2**64
+            least_host = None
+            for node_name, node in self.t_node.items():
+                if node_name == self.name:
+                    continue
+                node_freemem = int(node.getfreemem())
                 if node_freemem < least_mem:
                     least_mem = node_freemem
-                    least_host = node.getname()
+                    least_host = node_name
 
-            transaction = self.zk.transaction()
-            transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
-            transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
-            transaction.commit()
+            if least_host == None:
+                print(">>> Failed to find valid migration target for %s" % domain)
+                transaction = self.zk.transaction()
+                transaction.set_data('/domains/' + domain + '/state', 'shutdown'.encode('ascii'))
+                transaction.commit()
+            else:
+                transaction = self.zk.transaction()
+                transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
+                transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
+                transaction.commit()
+
+            # Wait 1s between migrations
+            time.sleep(1)
 
     def run(self):
         if self.name == socket.gethostname():
@@ -136,8 +145,7 @@ class NodeInstance(threading.Thread):
             flushed_node_list = []
             inactive_node_list = []
     
-            for node in self.t_node:
-                node_name = node.getname()
+            for node_name in self.t_node:
                 state, stat = self.zk.get('/nodes/%s/state' % node_name)
                 node_state = state.decode('ascii')
                 if node_state == 'start':
