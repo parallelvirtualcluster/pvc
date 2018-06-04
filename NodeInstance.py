@@ -86,7 +86,6 @@ class NodeInstance(threading.Thread):
                 transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
                 result = transaction.commit()
-                print(result)
 
             # Wait 1s between migrations
             time.sleep(1)
