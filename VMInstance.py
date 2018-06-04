@@ -142,7 +142,7 @@ class VMInstance:
         previous_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0].decode('ascii')
 
         print('>>> %s - Migrating VM to %s' % (self.domuuid, new_hypervisor))
-        migrate_ret = live_migrate_vm(new_hypervisor)
+        migrate_ret = self.live_migrate_vm(new_hypervisor)
         if migrate_ret != 0:
             print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
             self.stop_vm()
@@ -166,7 +166,7 @@ class VMInstance:
             transaction.set_data('/domains/' + self.domuuid + '/hypervisor', new_hypervisor.encode('ascii'))
             transaction.set_data('/domains/' + self.domuuid + '/formerhypervisor', ''.encode('ascii'))
             result = transaction.commit()
-            migrate_ret = live_migrate_vm(new_hypervisor)
+            migrate_ret = self.live_migrate_vm(new_hypervisor)
             if migrate_ret != 0:
                 print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
                 self.stop_vm()
