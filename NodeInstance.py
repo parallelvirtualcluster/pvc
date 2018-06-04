@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, socket, time, uuid, threading, libvirt, kazoo.client
+import os, sys, socket, time, threading, libvirt, kazoo.client, pvcdomf
 
 class NodeInstance(threading.Thread):
     def __init__(self, name, node_list, s_domain, zk):
@@ -105,8 +105,7 @@ class NodeInstance(threading.Thread):
             # Remove any non-running VMs from our list
             for domain in self.domain_list:
                 try:
-                    buuid = uuid.UUID(domain).bytes
-                    dom = conn.lookupByUUID(buuid)
+                    dom = pvcdomf.lookupByUUID(conn, domain)
                     state = dom.state()[0]
                     if state != libvirt.VIR_DOMAIN_RUNNING:
                         self.domain_list.remove(domain)

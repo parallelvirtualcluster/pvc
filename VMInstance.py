@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, time, uuid, threading, libvirt, kazoo.client
+import os, sys, socket, time, threading, libvirt, kazoo.client, pvcdomf
 
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
@@ -27,7 +27,7 @@ class VMInstance:
             exit(1)
     
         try:
-            self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+            self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
             conn.close()
         except libvirt.libvirtError:
             self.dom = None
@@ -152,7 +152,7 @@ class VMInstance:
         self.inreceive = True
         while True:
             try:
-                self.dom = conn.lookupByUUID(uuid.UUID(self.domuuid).bytes)
+                self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
             except:
                 time.sleep(0.2)
                 continue
