@@ -135,17 +135,13 @@ class VMInstance:
     # Migrate the VM to a target host
     def migrate_vm(self):
         self.inmigrate = True
-        this_hypervisor = self.thishypervisor.name
-        new_hypervisor = self.hypervisor
-        previous_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0].decode('ascii')
 
-        print('>>> %s - Migrating VM to %s' % (self.domuuid, new_hypervisor))
-        migrate_ret = self.live_migrate_vm(new_hypervisor)
+        print('>>> %s - Migrating VM to %s' % (self.domuuid, self.hypervisor))
+        migrate_ret = self.live_migrate_vm(self.hypervisor)
         if migrate_ret != 0:
-            print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
-            self.stop_vm()
+            print('>>> %s - Could not live migrate VM; forcing away' % self.domuuid)
+            self.shutdown_vm()
             time.sleep(0.5)
-            return
         else:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
@@ -170,11 +166,6 @@ class VMInstance:
         self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
-
-        # Reset the former_hypervisor key
-        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')
-        if former_hypervisor == self.thishypervisor.name:
-            self.zk.set(self.zkey + '/formerhypervisor', ''.encode('ascii'))
 
         print('>>> %s - Migrated successfully' % self.domuuid)
         self.inreceive = False
