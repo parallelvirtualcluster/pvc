@@ -220,4 +220,4 @@ class NodeInstance(threading.Thread):
             for x in range(0,90):
                 time.sleep(0.1)
                 if self.stop_thread.is_set():
-                    return
+                    sys.exit(0)
