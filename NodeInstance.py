@@ -185,6 +185,9 @@ class NodeInstance(threading.Thread):
                     self.active_node_list.append(node_name)
                     try:
                         self.flushed_node_list.remove(node_name)
+                    except ValueError:
+                        pass
+                    try:
                         self.inactive_node_list.remove(node_name)
                     except ValueError:
                         pass
@@ -192,6 +195,9 @@ class NodeInstance(threading.Thread):
                     self.flushed_node_list.append(node_name)
                     try:
                         self.active_node_list.remove(node_name)
+                    except ValueError:
+                        pass
+                    try:
                         self.inactive_node_list.remove(node_name)
                     except ValueError:
                         pass
@@ -199,6 +205,9 @@ class NodeInstance(threading.Thread):
                     self.inactive_node_list.append(node_name)
                     try:
                         self.active_node_list.remove(node_name)
+                    except ValueError:
+                        pass
+                    try:
                         self.flushed_node_list.remove(node_name)
                     except ValueError:
                         pass
