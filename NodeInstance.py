@@ -104,7 +104,7 @@ class NodeInstance(threading.Thread):
 
             # Remove any non-running VMs from our list
             for domain in self.domain_list:
-                dom = pvcdomf.lookupByUUID(domain)
+                dom = pvcf.lookupByUUID(domain)
                 if dom == None:
                     self.domain_list.remove(domain)
                 else:
