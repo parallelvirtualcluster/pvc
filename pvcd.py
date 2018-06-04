@@ -46,7 +46,8 @@ def cleanup():
     t_node[myhostname].stop()
     time.sleep(0.2)
     try:
-        zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
+        if t_node[myhostname].getstate() != 'flush':
+            zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
         zk.stop()
         zk.close()
     except:
