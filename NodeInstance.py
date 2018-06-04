@@ -24,7 +24,7 @@ class NodeInstance(threading.Thread):
             self.state = data.decode('ascii')
             if self.state == 'flush':
                 self.flush()
-            elif self.state == 'unflush':
+            if self.state == 'unflush':
                 self.unflush()
     
         @zk.DataWatch(self.zkey + '/memfree')
@@ -175,23 +175,38 @@ class NodeInstance(threading.Thread):
 
             print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
             print("Active domains: %s" % self.domain_list)
-    
+   
+            # Update our local node lists
             for node_name in self.t_node:
                 state, stat = self.zk.get('/nodes/%s/state' % node_name)
                 node_state = state.decode('ascii')
-                if node_state == 'start':
+
+                if node_state == 'start' and node_name not in self.active_node_list:
                     self.active_node_list.append(node_name)
-                elif node_state == 'flush':
+                    try:
+                        self.flushed_node_list.remove(node_name)
+                        self.inactive_node_list.remove(node_name)
+                    except ValueError:
+                        pass
+                if node_state == 'flush' and node_name not in self.flushed_node_list:
                     self.flushed_node_list.append(node_name)
-                else:
+                    try:
+                        self.active_node_list.remove(node_name)
+                        self.inactive_node_list.remove(node_name)
+                    except ValueError:
+                        pass
+                if node_state != 'start' and node_state != 'flush' and node_name not in self.inactive_node_list:
                     self.inactive_node_list.append(node_name)
+                    try:
+                        self.active_node_list.remove(node_name)
+                        self.flushed_node_list.remove(node_name)
+                    except ValueError:
+                        pass
             
             print('Active nodes: %s' % self.active_node_list)
             print('Flushed nodes: %s' % self.flushed_node_list)
             print('Inactive nodes: %s' % self.inactive_node_list)
 
-            # Do any actions my node requires
-        
             # Sleep for 9s but with quick interruptability
             for x in range(0,90):
                 time.sleep(0.1)
