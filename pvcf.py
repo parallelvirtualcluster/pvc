@@ -11,7 +11,7 @@ import os, sys, libvirt, uuid
 # 1. Takes a text UUID and handles converting it to bytes
 # 2. Disables stdout to avoid stupid printouts
 # 3. Try's it and returns a sensible value if not
-def lookupByUUID(conn, tuuid):
+def lookupByUUID(tuuid):
     dom = None
 
     # Convert the text UUID to bytes
@@ -22,12 +22,23 @@ def lookupByUUID(conn, tuuid):
 
     # Try
     try:
+        # Open a libvirt connection
+        libvirt_name = "qemu:///system"
+        conn = libvirt.open(libvirt_name)
+        if conn == None:
+            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
+            return dom
+    
         # Lookup the UUID
         dom = conn.lookupByUUID(buuid)
+
+        # Close the libvirt connection
+        conn.close()
     # Fail
     except:
-        # Just pass
-        pass
+        # Close the libvirt connection
+        if conn != None:
+            conn.close()
 
     # Enable stdout
     sys.stdout = sys.__stdout__

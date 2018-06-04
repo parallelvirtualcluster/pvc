@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, sys, socket, time, threading, libvirt, kazoo.client, pvcdomf
+import os, sys, socket, time, threading, libvirt, kazoo.client, pvcf
 
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
@@ -19,15 +19,7 @@ class VMInstance:
         self.inmigrate = False
         self.inreceive = False
 
-        # Start up a new Libvirt connection
-        libvirt_name = "qemu:///system"
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
-            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
-            exit(1)
-    
-        self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
-        conn.close()
+        self.dom = pvcdomf.lookupByUUID(self.domuuid)
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
@@ -51,9 +43,18 @@ class VMInstance:
         return self.hypervisor
 
     # Start up the VM
-    def start_vm(self, conn, xmlconfig):
+    def start_vm(self, xmlconfig):
         print(">>> %s - Starting VM" % self.domuuid)
         self.instart = True
+
+        # Start up a new Libvirt connection
+        libvirt_name = "qemu:///system"
+        conn = libvirt.open(libvirt_name)
+        if conn == None:
+            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
+            self.instart = False
+            return
+    
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
@@ -63,6 +64,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
+        conn.close()
         self.dom = dom
         self.instart = False
    
@@ -144,11 +146,11 @@ class VMInstance:
         self.inmigrate = False
    
     # Receive the migration from another host (wait until VM is running)
-    def receive_migrate(self, conn):
+    def receive_migrate(self):
         print('>>> %s - Receiving migration' % self.domuuid)
         self.inreceive = True
         while True:
-            self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
+            self.dom = pvcdomf.lookupByUUID(self.domuuid)
             if self.dom == None:
                 time.sleep(0.2)
                 continue
@@ -166,13 +168,6 @@ class VMInstance:
     # Main function to manage a VM (taking only self)
     #
     def manage_vm_state(self):
-        # Start up a new Libvirt connection
-        libvirt_name = "qemu:///system"
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
-            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
-            exit(1)
-    
         # Check the current state of the VM
         try:
             if self.dom != None:
@@ -192,7 +187,7 @@ class VMInstance:
 
         # VM should be migrated to this hypervisor
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name and self.inreceive == False:
-            self.receive_migrate(conn)
+            self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
@@ -208,7 +203,4 @@ class VMInstance:
             # Grab the domain information from Zookeeper
             domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
             domxml = str(domxml.decode('ascii'))
-            self.start_vm(conn, domxml)
-
-        # The VM should now be running so return the domain and active connection
-        conn.close()
+            self.start_vm(domxml)
