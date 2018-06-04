@@ -116,13 +116,14 @@ class VMInstance:
     def migrate_vm(self):
         print('>>> %s - Migrating VM to %s' % (self.domuuid, self.hypervisor))
         self.inmigrate = True
+        former_hypervisor = self.thishypervisor.name
         try:
             dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
             if dest_conn == None:
                 raise
         except:
             print('>>> %s - Failed to open connection to qemu+tcp://%s/system; aborting migration' % self.hypervisor)
-            self.zk.set(self.zkey + '/hypervisor', self.thishypervisor.name.encode('ascii'))
+            self.zk.set(self.zkey + '/hypervisor', former_hypervisor.encode('ascii'))
             self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
             return
 
@@ -130,7 +131,11 @@ class VMInstance:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
+
+            # Set the former hypervisor to us
+            self.zk.set(self.zkey + '/formerhypervisor', former_hypervisor.encode('ascii'))
             print('>>> %s - Migrated successfully' % self.domuuid)
+
         except:
             print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
             self.stop_vm()
@@ -161,6 +166,12 @@ class VMInstance:
         self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
+
+        # Reset the former_hypervisor key
+        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')
+        if former_hypervisor == self.thishypervisor.name:
+            self.zk.set(self.zkey + '/formerhypervisor', ''.encode('ascii'))
+
         print('>>> %s - Migrated successfully' % self.domuuid)
         self.inreceive = False
 
