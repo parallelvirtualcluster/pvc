@@ -21,6 +21,7 @@ def define_domain(domxmlfile):
     transaction.create('/domains/%s' % domuuid, "".encode('ascii'))
     transaction.create('/domains/%s/state' % domuuid, "stop".encode('ascii'))
     transaction.create('/domains/%s/hypervisor' % domuuid, socket.gethostname().encode('ascii'))
+    transaction.create('/domains/%s/formerhypervisor' % domuuid, ''.encode('ascii'))
     transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
     results = transaction.commit()
     zk.stop()
@@ -37,6 +38,6 @@ def migrate_domain(domuuid, target):
     zk.close()
     
 
-#define_domain('/var/home/joshua/debian9.xml')
-migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test1.i.bonilan.net')
+define_domain('/var/home/joshua/debian9.xml')
+#migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test1.i.bonilan.net')
 #migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test2.i.bonilan.net')
