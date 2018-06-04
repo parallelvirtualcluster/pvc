@@ -178,7 +178,7 @@ class VMInstance:
                 except ValueError:
                     pass
         else:
-            transaction.set_data('/domains/' + self.domuuid + '/state', 'start'.encode('ascii'))
+            self.zk.set('/domains/' + self.domuuid + '/state', 'start'.encode('ascii'))
 
         self.inmigrate = False
    
