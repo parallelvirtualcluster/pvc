@@ -56,15 +56,21 @@ class NodeInstance(threading.Thread):
         self.stop_thread.set()
 
     # Flush all VMs on the host
-    def flush(self):
+    def flush(self, active_node_list):
         for domain in self.domain_list:
             # Determine the best target hypervisor
             least_mem = 2**64
             least_host = None
-            for node_name, node in self.t_node.items():
+            for node_name in active_node_list:
+                # It should never include itself, but just in case
                 if node_name == self.name:
                     continue
+
+                # Get our node object and free memory
+                node = self.t_node[node_name]
                 node_freemem = int(node.getfreemem())
+
+                # Calculate who has the most free memory
                 if node_freemem < least_mem:
                     least_mem = node_freemem
                     least_host = node_name
@@ -75,6 +81,7 @@ class NodeInstance(threading.Thread):
                 transaction.set_data('/domains/' + domain + '/state', 'shutdown'.encode('ascii'))
                 transaction.commit()
             else:
+                print(">>> Setting migration to %s for %s" % (least_host, domain))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
@@ -168,7 +175,7 @@ class NodeInstance(threading.Thread):
 
             # Do any actions my node requires
             if self.state == 'flush':
-                self.flush()
+                self.flush(active_node_list)
             elif self.state == 'unflush':
                 self.unflush()
         
