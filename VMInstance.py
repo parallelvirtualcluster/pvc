@@ -26,11 +26,8 @@ class VMInstance:
             print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
             exit(1)
     
-        try:
-            self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
-            conn.close()
-        except libvirt.libvirtError:
-            self.dom = None
+        self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
+        conn.close()
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
@@ -151,9 +148,8 @@ class VMInstance:
         print('>>> %s - Receiving migration' % self.domuuid)
         self.inreceive = True
         while True:
-            try:
-                self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
-            except:
+            self.dom = pvcdomf.lookupByUUID(conn, self.domuuid)
+            if self.dom == None:
                 time.sleep(0.2)
                 continue
 

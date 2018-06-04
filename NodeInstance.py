@@ -104,13 +104,13 @@ class NodeInstance(threading.Thread):
 
             # Remove any non-running VMs from our list
             for domain in self.domain_list:
-                try:
-                    dom = pvcdomf.lookupByUUID(conn, domain)
+                dom = pvcdomf.lookupByUUID(conn, domain)
+                if dom == None:
+                    self.domain_list.remove(domain)
+                else:
                     state = dom.state()[0]
                     if state != libvirt.VIR_DOMAIN_RUNNING:
                         self.domain_list.remove(domain)
-                except:
-                    self.domain_list.remove(domain)
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
