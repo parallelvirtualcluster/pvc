@@ -68,7 +68,7 @@ class NodeInstance(threading.Thread):
             # Determine the best target hypervisor
             least_mem = 2**64
             least_host = None
-            for node_name in self.t_node if self.t_node[node_name].getstate() == 'start':
+            for node_name in self.active_node_list:
                 # It should never include itself, but just in case
                 if node_name == self.name:
                     continue
@@ -116,8 +116,6 @@ class NodeInstance(threading.Thread):
     def run(self):
         if self.name == socket.gethostname():
             self.setup_local_node()
-        else:
-            self.setup_remote_node()
 
     def setup_local_node(self):
         # Connect to libvirt
@@ -194,17 +192,8 @@ class NodeInstance(threading.Thread):
 
             # Do any actions my node requires
         
-            # Sleep for 10s but with quick interruptability
-            for x in range(0,100):
+            # Sleep for 9s but with quick interruptability
+            for x in range(0,90):
                 time.sleep(0.1)
                 if self.stop_thread.is_set():
                     return
-
-    def setup_remote_node(self):
-        while True:
-            for x in range(0,100):
-                time.sleep(0.1)
-                if self.stop_thread.is_set():
-                    return
-
-
