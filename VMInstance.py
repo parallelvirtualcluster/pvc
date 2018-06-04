@@ -154,9 +154,9 @@ class VMInstance:
         print('>>> %s - Unmigrating VM' % self.domuuid)
         former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')
         transaction = self.zk.transaction()
-        transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
-        transaction.set_data('/domains/' + domain + '/hypervisor', former_hypervisor.encode('ascii'))
-        transaction.set_data('/domains/' + domain + '/formerhypervisor', ''.encode('ascii'))
+        transaction.set_data('/domains/' + self.domuuid + '/state', 'migrate'.encode('ascii'))
+        transaction.set_data('/domains/' + self.domuuid + '/hypervisor', former_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/' + self.domuuid + '/formerhypervisor', ''.encode('ascii'))
         result = transaction.commit()
    
     # Receive the migration from another host (wait until VM is running)
