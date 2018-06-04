@@ -99,7 +99,7 @@ class NodeInstance(threading.Thread):
         while True:
             # Toggle state management of all VMs
             for domain, instance in self.s_domain.items():
-                if instance.inshutdown == False:
+                if instance.inshutdown == False and domain in self.domain_list:
                     instance.manage_vm_state()
 
             # Remove any non-running VMs from our list
