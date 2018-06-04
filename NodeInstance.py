@@ -106,11 +106,17 @@ class NodeInstance(threading.Thread):
             for domain in self.domain_list:
                 dom = pvcf.lookupByUUID(domain)
                 if dom == None:
-                    self.domain_list.remove(domain)
+                    try:
+                        self.domain_list.remove(domain)
+                    except:
+                        pass
                 else:
                     state = dom.state()[0]
                     if state != libvirt.VIR_DOMAIN_RUNNING:
-                        self.domain_list.remove(domain)
+                        try:
+                            self.domain_list.remove(domain)
+                        except:
+                            pass
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
