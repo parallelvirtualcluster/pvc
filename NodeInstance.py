@@ -12,6 +12,9 @@ class NodeInstance(threading.Thread):
         self.state = 'stop'
         self.stop_thread = threading.Event()
         self.t_node = t_node
+        self.active_node_list = []
+        self.flushed_node_list = []
+        self.inactive_node_list = []
         self.s_domain = s_domain
         self.domain_list = []
 
@@ -19,6 +22,10 @@ class NodeInstance(threading.Thread):
         @zk.DataWatch(self.zkey + '/state')
         def watch_hypervisor_state(data, stat, event=""):
             self.state = data.decode('ascii')
+            if self.state == 'flush':
+                self.flush()
+            elif self.state == 'unflush':
+                self.unflush()
     
         @zk.DataWatch(self.zkey + '/memfree')
         def watch_hypervisor_memfree(data, stat, event=""):
@@ -56,12 +63,12 @@ class NodeInstance(threading.Thread):
         self.stop_thread.set()
 
     # Flush all VMs on the host
-    def flush(self, active_node_list):
+    def flush(self):
         for domain in self.domain_list:
             # Determine the best target hypervisor
             least_mem = 2**64
             least_host = None
-            for node_name in active_node_list:
+            for node_name in self.t_node if self.t_node[node_name].getstate() == 'start':
                 # It should never include itself, but just in case
                 if node_name == self.name:
                     continue
@@ -170,29 +177,22 @@ class NodeInstance(threading.Thread):
 
             print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
             print("Active domains: %s" % self.domain_list)
-            active_node_list = []
-            flushed_node_list = []
-            inactive_node_list = []
     
             for node_name in self.t_node:
                 state, stat = self.zk.get('/nodes/%s/state' % node_name)
                 node_state = state.decode('ascii')
                 if node_state == 'start':
-                    active_node_list.append(node_name)
+                    self.active_node_list.append(node_name)
                 elif node_state == 'flush':
-                    flushed_node_list.append(node_name)
+                    self.flushed_node_list.append(node_name)
                 else:
-                    inactive_node_list.append(node_name)
+                    self.inactive_node_list.append(node_name)
             
-            print('Active nodes: %s' % active_node_list)
-            print('Flushed nodes: %s' % flushed_node_list)
-            print('Inactive nodes: %s' % inactive_node_list)
+            print('Active nodes: %s' % self.active_node_list)
+            print('Flushed nodes: %s' % self.flushed_node_list)
+            print('Inactive nodes: %s' % self.inactive_node_list)
 
             # Do any actions my node requires
-            if self.state == 'flush':
-                self.flush(active_node_list)
-            elif self.state == 'unflush':
-                self.unflush()
         
             # Sleep for 10s but with quick interruptability
             for x in range(0,100):
