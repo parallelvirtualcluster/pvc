@@ -90,6 +90,22 @@ class NodeInstance(threading.Thread):
             # Wait 1s between migrations
             time.sleep(1)
 
+    def unflush(self):
+        print('>>> Restoring node %s to active service' % self.name)
+        for domain in self.s_domain:
+            former_hypervisor = self.zk.get("/domains/" + domain + '/formerhypervisor').decode('ascii')
+            if former_hypervisor = self.name:
+                print(">>> Setting unmigration for %s" % domain)
+                transaction = self.zk.transaction()
+                transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
+                transaction.set_data('/domains/' + domain + '/hypervisor', self.name.encode('ascii'))
+                result = transaction.commit()
+
+                # Wait 1s between migrations
+                time.sleep(1)
+
+        self.zk.set("/nodes/" + self.name + "/state", 'start'.encode('ascii'))
+
     def run(self):
         if self.name == socket.gethostname():
             self.setup_local_node()
