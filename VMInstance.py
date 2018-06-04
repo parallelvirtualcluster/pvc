@@ -149,6 +149,15 @@ class VMInstance:
 
         dest_conn.close()
         self.inmigrate = False
+
+    def unmigrate_vm(self):
+        print('>>> %s - Unmigrating VM' % self.domuuid)
+        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')
+        transaction = self.zk.transaction()
+        transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
+        transaction.set_data('/domains/' + domain + '/hypervisor', former_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/' + domain + '/formerhypervisor', ''.encode('ascii'))
+        result = transaction.commit()
    
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
@@ -204,6 +213,10 @@ class VMInstance:
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
             self.migrate_vm()
             
+        # VM should be unmigrated
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "unmigrate" and self.hypervisor == self.thishypervisor.name and self.inmigrate == False:
+            self.unmigrate_vm()
+
         # VM is already running and should be
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             if not self.domuuid in self.thishypervisor.domain_list:
