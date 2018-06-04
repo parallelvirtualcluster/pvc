@@ -78,6 +78,7 @@ class NodeInstance(threading.Thread):
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
+                transaction.set_data('/domains/' + domain + '/flushedhypervisor', self.name.encode('ascii'))
                 transaction.commit()
 
             # Wait 1s between migrations
@@ -100,11 +101,17 @@ class NodeInstance(threading.Thread):
         # Gather data about hypervisor
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
-        self.state = 'start'
-        self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
         print("Node hostname: %s" % self.name)
         print("CPUs: %s" % self.cpucount)
+
+        # Get past state and update if needed
+        past_state = self.zk.get(self.zkey + '/state')[0].decode('ascii')
+        if past_state != 'flush':
+            self.state = 'start'
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+        else:
+            self.state = 'flush'
 
         while True:
             # Toggle state management of all VMs
@@ -152,13 +159,18 @@ class NodeInstance(threading.Thread):
                     active_node_list.append(node_name)
                 elif node_state == 'flush':
                     flushed_node_list.append(node_name)
-                    self.flush()
                 else:
                     inactive_node_list.append(node_name)
             
             print('Active nodes: %s' % active_node_list)
             print('Flushed nodes: %s' % flushed_node_list)
             print('Inactive nodes: %s' % inactive_node_list)
+
+            # Do any actions my node requires
+            if self.state == 'flush':
+                self.flush()
+            elif self.state == 'unflush':
+                self.unflush()
         
             # Sleep for 10s but with quick interruptability
             for x in range(0,100):
