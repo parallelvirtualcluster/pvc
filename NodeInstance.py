@@ -94,7 +94,7 @@ class NodeInstance(threading.Thread):
         print('>>> Restoring node %s to active service' % self.name)
         for domain in self.s_domain:
             former_hypervisor = self.zk.get("/domains/" + domain + '/formerhypervisor').decode('ascii')
-            if former_hypervisor = self.name:
+            if former_hypervisor == self.name:
                 print(">>> Setting unmigration for %s" % domain)
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
