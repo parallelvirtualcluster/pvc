@@ -3,7 +3,7 @@
 import os, sys, socket, time, threading, libvirt, kazoo.client, pvcf
 
 class NodeInstance(threading.Thread):
-    def __init__(self, name, node_list, s_domain, zk):
+    def __init__(self, name, t_node, s_domain, zk):
         super(NodeInstance, self).__init__()
         # Passed-in variables on creation
         self.zkey = '/nodes/%s' % name
@@ -11,7 +11,7 @@ class NodeInstance(threading.Thread):
         self.name = name
         self.state = 'stop'
         self.stop_thread = threading.Event()
-        self.node_list = node_list
+        self.t_node = t_node
         self.s_domain = s_domain
         self.domain_list = []
 
@@ -45,8 +45,8 @@ class NodeInstance(threading.Thread):
         return self.domain_list
 
     # Update value functions
-    def updatenodelist(self, node_list):
-        self.node_list = node_list
+    def updatenodelist(self, t_node):
+        self.t_node = t_node
 
     def updatedomainlist(self, s_domain):
         self.s_domain = s_domain
@@ -58,11 +58,12 @@ class NodeInstance(threading.Thread):
     # Flush all VMs on the host
     def flush(self):
         for domain in self.domain_list:
+            print(domain)
             # Determine the best target hypervisor
             least_mem = (2^64)/8
             least_load = 999.0
             least_host = ""
-            for node in node_list:
+            for node in self.t_node:
                 node_freemem = node.getfreemem()
                 if node_freemem < least_mem:
                     least_mem = node_freemem
@@ -135,16 +136,17 @@ class NodeInstance(threading.Thread):
             flushed_node_list = []
             inactive_node_list = []
     
-            for node in self.node_list:
-                #node_state = t_node[node].getstate()
-                state, stat = self.zk.get('/nodes/%s/state' % node)
+            for node in self.t_node:
+                node_name = node.getname()
+                state, stat = self.zk.get('/nodes/%s/state' % node_name)
                 node_state = state.decode('ascii')
                 if node_state == 'start':
-                    active_node_list.append(node)
+                    active_node_list.append(node_name)
                 elif node_state == 'flush':
-                    flushed_node_list.append(node)
+                    flushed_node_list.append(node_name)
+                    self.flush()
                 else:
-                    inactive_node_list.append(node)
+                    inactive_node_list.append(node_name)
             
             print('Active nodes: %s' % active_node_list)
             print('Flushed nodes: %s' % flushed_node_list)

@@ -75,12 +75,15 @@ def updatenodes(new_node_list):
     print('Node list: %s' % node_list)
     for node in node_list:
         if node in t_node:
-            t_node[node].updatenodelist(node_list)
+            t_node[node].updatenodelist(t_node)
         else:
-            t_node[node] = NodeInstance.NodeInstance(node, node_list, s_domain, zk);
+            t_node[node] = NodeInstance.NodeInstance(node, t_node, s_domain, zk);
             if node == myhostname:
                 t_node[node].start()
                 time.sleep(0.2)
+            for node in node_list:
+                if node in t_node:
+                    t_node[node].updatenodelist(t_node)
 
 @zk.ChildrenWatch('/domains')
 def updatedomains(new_domain_list):
