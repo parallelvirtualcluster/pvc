@@ -112,52 +112,75 @@ class VMInstance:
         self.dom = None
         self.inshutdown = False
 
-    # Migrate the VM to a target host
-    def migrate_vm(self):
-        print('>>> %s - Migrating VM to %s' % (self.domuuid, self.hypervisor))
-        self.inmigrate = True
-        former_hypervisor = self.thishypervisor.name
+    def live_migrate_vm(self, dest_hypervisor):
         try:
             dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
             if dest_conn == None:
                 raise
         except:
             print('>>> %s - Failed to open connection to qemu+tcp://%s/system; aborting migration' % self.hypervisor)
-            self.zk.set(self.zkey + '/hypervisor', former_hypervisor.encode('ascii'))
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
-            return
+            return 1
 
         try:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-
-            # Set the former hypervisor to us
-            self.zk.set(self.zkey + '/formerhypervisor', former_hypervisor.encode('ascii'))
             print('>>> %s - Migrated successfully' % self.domuuid)
-
         except:
+            dest_conn.close()
+            print('>>> %s - Could not live migrate VM' % self.domuuid)
+            return 1
+
+        dest_conn.close()
+        return 0
+
+    # Migrate the VM to a target host
+    def migrate_vm(self):
+        self.inmigrate = True
+        this_hypervisor = self.thishypervisor.name
+        new_hypervisor = self.hypervisor
+        previous_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0].decode('ascii')
+
+        print('>>> %s - Migrating VM to %s' % (self.domuuid, new_hypervisor))
+        migrate_ret = live_migrate_vm(new_hypervisor)
+        if migrate_ret != 0:
             print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
             self.stop_vm()
             time.sleep(0.5)
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+            return
+        else:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
 
-        try:
-            self.thishypervisor.domain_list.remove(self.domuuid)
-        except ValueError:
-            pass
-
-        dest_conn.close()
         self.inmigrate = False
 
     def unmigrate_vm(self):
-        print('>>> %s - Unmigrating VM' % self.domuuid)
-        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0] # I don't decode this
-        transaction = self.zk.transaction()
-        transaction.set_data('/domains/' + self.domuuid + '/state', 'migrate'.encode('ascii'))
-        transaction.set_data('/domains/' + self.domuuid + '/hypervisor', former_hypervisor)
-        transaction.set_data('/domains/' + self.domuuid + '/formerhypervisor', ''.encode('ascii'))
-        result = transaction.commit()
+        self.inmigrate = True
+        this_hypervisor = self.thishypervisor.name
+        new_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0].decode('ascii')
+        if new_hypervisor != '':
+            print('>>> %s - Unmigrating VM' % self.domuuid)
+            transaction = self.zk.transaction()
+            transaction.set_data('/domains/' + self.domuuid + '/hypervisor', new_hypervisor.encode('ascii'))
+            transaction.set_data('/domains/' + self.domuuid + '/formerhypervisor', ''.encode('ascii'))
+            result = transaction.commit()
+            migrate_ret = live_migrate_vm(new_hypervisor)
+            if migrate_ret != 0:
+                print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
+                self.stop_vm()
+                time.sleep(0.5)
+                return
+            else:
+                try:
+                    self.thishypervisor.domain_list.remove(self.domuuid)
+                except ValueError:
+                    pass
+        else:
+            transaction.set_data('/domains/' + self.domuuid + '/state', 'start'.encode('ascii'))
+
+        self.inmigrate = False
    
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
