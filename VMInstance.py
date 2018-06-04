@@ -154,32 +154,6 @@ class VMInstance:
 
         self.inmigrate = False
 
-    def unmigrate_vm(self):
-        self.inmigrate = True
-        this_hypervisor = self.thishypervisor.name
-        new_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0].decode('ascii')
-        if new_hypervisor != '':
-            print('>>> %s - Unmigrating VM' % self.domuuid)
-            transaction = self.zk.transaction()
-            transaction.set_data('/domains/' + self.domuuid + '/hypervisor', new_hypervisor.encode('ascii'))
-            transaction.set_data('/domains/' + self.domuuid + '/formerhypervisor', ''.encode('ascii'))
-            result = transaction.commit()
-            migrate_ret = self.live_migrate_vm(new_hypervisor)
-            if migrate_ret != 0:
-                print('>>> %s - Could not live migrate VM; forcing away uncleanly' % self.domuuid)
-                self.stop_vm()
-                time.sleep(0.5)
-                return
-            else:
-                try:
-                    self.thishypervisor.domain_list.remove(self.domuuid)
-                except ValueError:
-                    pass
-        else:
-            self.zk.set('/domains/' + self.domuuid + '/state', 'start'.encode('ascii'))
-
-        self.inmigrate = False
-   
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
         print('>>> %s - Receiving migration' % self.domuuid)
@@ -234,10 +208,6 @@ class VMInstance:
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
             self.migrate_vm()
             
-        # VM should be unmigrated
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "unmigrate" and self.hypervisor == self.thishypervisor.name and self.inmigrate == False:
-            self.unmigrate_vm()
-
         # VM is already running and should be
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             if not self.domuuid in self.thishypervisor.domain_list:
