@@ -152,7 +152,7 @@ class VMInstance:
 
     def unmigrate_vm(self):
         print('>>> %s - Unmigrating VM' % self.domuuid)
-        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')
+        former_hypervisor = self.zk.get(self.zkey + '/formerhypervisor')[0]
         transaction = self.zk.transaction()
         transaction.set_data('/domains/' + self.domuuid + '/state', 'migrate'.encode('ascii'))
         transaction.set_data('/domains/' + self.domuuid + '/hypervisor', former_hypervisor.encode('ascii'))
