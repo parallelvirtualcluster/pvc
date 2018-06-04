@@ -141,26 +141,26 @@ class NodeInstance(threading.Thread):
             self.state = 'flush'
 
         while True:
-            # Toggle state management of all VMs
+            # Toggle state management of all VMs and remove any non-running VMs
             for domain, instance in self.s_domain.items():
                 if instance.inshutdown == False and domain in self.domain_list:
                     instance.manage_vm_state()
-
-            # Remove any non-running VMs from our list
-            for domain in self.domain_list:
-                dom = pvcf.lookupByUUID(domain)
-                if dom == None:
-                    try:
-                        self.domain_list.remove(domain)
-                    except:
-                        pass
-                else:
-                    state = dom.state()[0]
-                    if state != libvirt.VIR_DOMAIN_RUNNING:
+                    if instance.dom == None:
                         try:
                             self.domain_list.remove(domain)
                         except:
                             pass
+                    else:
+                        try:
+                            state = instance.dom.state()[0]
+                        except:
+                            state = libvirt.VIR_DOMAIN_NOSTATE
+                            
+                        if state != libvirt.VIR_DOMAIN_RUNNING:
+                            try:
+                                self.domain_list.remove(domain)
+                            except:
+                                pass
 
             # Set our information in zookeeper
             self.memfree = conn.getFreeMemory()
