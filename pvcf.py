@@ -65,16 +65,28 @@ def stopZKConnection(zk):
 #
 # XML information parsing functions
 #
-def getInformationFromXML(zk, uuid):
+def getInformationFromXML(zk, uuid, long_output):
     # Obtain the contents of the XML from Zookeeper
     xml = zk.get('/domains/%s/xml' % uuid)[0].decode('ascii')
+    dstate = zk.get('/domains/%s/state' % uuid)[0].decode('ascii')
+    dhypervisor = zk.get('/domains/%s/hypervisor' % uuid)[0].decode('ascii')
+    dformerhypervisor = zk.get('/domains/%s/formerhypervisor' % uuid)[0].decode('ascii')
+    if dformerhypervisor == '':
+        dformerhypervisor = 'N/A'
+
     # Parse XML using lxml.objectify
     parsed_xml = lxml.objectify.fromstring(xml)
-    # Now get the information we want from it
-    print(lxml.objectify.dump(parsed_xml))
+
+    # Get the information we want from it
+    duuid = parsed_xml.uuid
+    dname = parsed_xml.name
     dmemory = parsed_xml.memory
     dmemory_unit = parsed_xml.memory.attrib['unit']
     dvcpu = parsed_xml.vcpu
+    try:
+        dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib['sockets'], parsed_xml.cpu.topology.attrib['cores'], parsed_xml.cpu.topology.attrib['threads'])
+    except:
+        dvcputopo = 'N/A'
     dtype = parsed_xml.os.type
     darch = parsed_xml.os.type.attrib['arch']
     dmachine = parsed_xml.os.type.attrib['machine']
@@ -82,17 +94,19 @@ def getInformationFromXML(zk, uuid):
     for feature in parsed_xml.features.getchildren():
         dfeatures.append(feature.tag)
     dconsole = parsed_xml.devices.console.attrib['type']
+    demulator = parsed_xml.devices.emulator
     ddisks = []
     dnets = []
     dcontrollers = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'disk':
             disk_attrib = device.source.attrib
+            disk_target = device.target.attrib
             disk_type = device.attrib['type']
             if disk_type == 'network':
-                disk_obj = { 'type': disk_attrib.get('protocol'), 'name': disk_attrib.get('name') }
+                disk_obj = { 'type': disk_attrib.get('protocol'), 'name': disk_attrib.get('name'), 'dev': disk_target.get('dev'), 'bus': disk_target.get('bus') }
             elif disk_type == 'file':
-                disk_obj = { 'type': 'file', 'name': disk_attrib.get('file') }
+                disk_obj = { 'type': 'file', 'name': disk_attrib.get('file'), 'dev': disk_target.get('dev'), 'bus': disk_target.get('bus') }
             else:
                 disk_obj = {}
             ddisks.append(disk_obj)
@@ -112,10 +126,52 @@ def getInformationFromXML(zk, uuid):
             controller_obj = { 'type': controller_type, 'model': controller_model }
             dcontrollers.append(controller_obj)
 
-    print(ddisks)
-    print(dnets)
-    print(dcontrollers)
-    return None
+    # Format a nice output; do this line-by-line then concat the elements at the end
+    ainformation = []
+    ainformation.append('Virtual machine information:')
+    ainformation.append('')
+    # Basic information
+    ainformation.append('UUID:               {}'.format(duuid))
+    ainformation.append('Name:               {}'.format(dname))
+    ainformation.append('Memory:             {} {}'.format(dmemory, dmemory_unit))
+    ainformation.append('vCPUs:              {}'.format(dvcpu))
+    ainformation.append('Topology [S/C/T]:   {}'.format(dvcputopo))
+
+    if long_output == True:
+        # Virtualization information
+        ainformation.append('')
+        ainformation.append('Emulator:           {}'.format(demulator))
+        ainformation.append('Type:               {}'.format(dtype))
+        ainformation.append('Arch:               {}'.format(darch))
+        ainformation.append('Machine:            {}'.format(dmachine))
+        ainformation.append('Features:           {}'.format(' '.join(dfeatures)))
+
+    # PVC cluster information
+    ainformation.append('')
+    ainformation.append('State:              {}'.format(dstate))
+    ainformation.append('Active Hypervisor:  {}'.format(dhypervisor))
+    ainformation.append('Former Hypervisor:  {}'.format(dformerhypervisor))
+
+    if long_output == True:
+        # Disk list
+        ainformation.append('')
+        ainformation.append('Disks:        ID  Type  Name                 Dev  Bus')
+        for disk in ddisks:
+            ainformation.append('              {0: <3} {1: <5} {2: <20} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
+        # Network list
+        ainformation.append('')
+        ainformation.append('Interfaces:   ID  Type     Source   Model    MAC')
+        for net in dnets:
+            ainformation.append('              {0: <3} {1: <8} {2: <8} {3: <8} {4: <17}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
+        # Controller list
+        ainformation.append('')
+        ainformation.append('Controllers:  ID  Type     Model')
+        for controller in dcontrollers:
+            ainformation.append('              {0: <3} {1: <8} {2: <8}'.format(dcontrollers.index(controller), controller['type'], controller['model']))
+
+    # Join it all together
+    information = '\n'.join(ainformation)
+    return information
 
 
 

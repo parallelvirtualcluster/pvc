@@ -357,7 +357,11 @@ def unmigrate_vm():
     mutually_exclusive=["dom_name"],
     help='Search for this UUID.'
 )
-def search(dom_name, dom_uuid):
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def search(dom_name, dom_uuid, long_output):
     """
     Search the cluster for a virtual machine's information.
     """
@@ -367,7 +371,8 @@ def search(dom_name, dom_uuid):
     if dom_uuid != None:
         dom_name = pvcf.searchClusterByUUID(zk, dom_uuid)
 
-    information = pvcf.getInformationFromXML(zk, dom_uuid)
+    information = pvcf.getInformationFromXML(zk, dom_uuid, long_output)
+    click.echo(information)
     pvcf.stopZKConnection(zk)
 
 #define_domain('/var/home/joshua/debian9.xml')
