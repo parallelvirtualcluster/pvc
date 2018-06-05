@@ -4,6 +4,7 @@ import os, sys, libvirt, uuid
 import kazoo.client
 import lxml
 import click
+import operator
 #from click import command, option, Option, UsageError
 
 #
@@ -70,10 +71,9 @@ def getInformationFromXML(zk, uuid):
     # Parse XML using lxml.objectify
     parsed_xml = lxml.objectify.fromstring(xml)
     # Now get the information we want from it
+    print(lxml.objectify.dump(parsed_xml))
     dmemory = parsed_xml.memory
     dmemory_unit = parsed_xml.memory.attrib['unit']
-    dcurrentMemory = parsed_xml.currentMemory
-    dcurrentMemory_unit = parsed_xml.currentMemory.attrib['unit']
     dvcpu = parsed_xml.vcpu
     dtype = parsed_xml.os.type
     darch = parsed_xml.os.type.attrib['arch']
@@ -81,11 +81,40 @@ def getInformationFromXML(zk, uuid):
     dfeatures = []
     for feature in parsed_xml.features.getchildren():
         dfeatures.append(feature.tag)
+    dconsole = parsed_xml.devices.console.attrib['type']
     ddisks = []
-    for disk in parsed_xml.devices.disk.getchildren():
-        ddisks.append(disk.attrib)
+    dnets = []
+    dcontrollers = []
+    for device in parsed_xml.devices.getchildren():
+        if device.tag == 'disk':
+            disk_attrib = device.source.attrib
+            disk_type = device.attrib['type']
+            if disk_type == 'network':
+                disk_obj = { 'type': disk_attrib.get('protocol'), 'name': disk_attrib.get('name') }
+            elif disk_type == 'file':
+                disk_obj = { 'type': 'file', 'name': disk_attrib.get('file') }
+            else:
+                disk_obj = {}
+            ddisks.append(disk_obj)
+        if device.tag == 'interface':
+            net_type = device.attrib['type']
+            net_mac = device.mac.attrib['address']
+            net_bridge = device.source.attrib[net_type]
+            net_model = device.model.attrib['type']
+            net_obj = { 'type': net_type, 'mac': net_mac, 'source': net_bridge, 'model': net_model }
+            dnets.append(net_obj)
+        if device.tag == 'controller':
+            controller_type = device.attrib['type']
+            try:
+                controller_model = device.attrib['model']
+            except KeyError:
+                controller_model = 'none'
+            controller_obj = { 'type': controller_type, 'model': controller_model }
+            dcontrollers.append(controller_obj)
 
     print(ddisks)
+    print(dnets)
+    print(dcontrollers)
     return None
 
 
