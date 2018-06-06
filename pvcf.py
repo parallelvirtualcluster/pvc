@@ -27,6 +27,17 @@ import click
 import operator
 
 #
+# Validate a UUID
+#
+def validateUUID(dom_uuid):
+    try:
+        uuid.UUID(dom_uuid, version=4)
+        return True
+    except ValueError:
+        return False
+
+
+#
 # Connect and disconnect from Zookeeper
 #
 def startZKConnection(zk_host):
@@ -178,7 +189,7 @@ def searchClusterByUUID(zk, uuid):
         name = name_list[index]
     except ValueError:
         # We didn't find anything
-        return None, None
+        return None
 
     return name
 
@@ -192,7 +203,7 @@ def searchClusterByName(zk, name):
         uuid = uuid_list[index]
     except ValueError:
         # We didn't find anything
-        return None, None
+        return None
 
     return uuid
 

@@ -117,23 +117,22 @@ def define_vm(xml_config_file, target_hypervisor):
         data = f_domxmlfile.read()
         f_domxmlfile.close()
 
-    # Parse in the XML file
+    # Parse the XML data
     parsed_xml = lxml.objectify.fromstring(data)
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
-    print('Adding new VM with Name %s and UUID %s to database' % (domname, domuuid))
+    click.echo('Adding new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid))
 
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.create('/domains/%s' % domuuid, domname.encode('ascii'))
-    transaction.create('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
-    transaction.create('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.create('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
-    transaction.create('/domains/%s/name' % domuuid, data.encode('ascii'))
-    transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
+    transaction.create('/domains/{}'.format(dom_uuid), domname.encode('ascii'))
+    transaction.create('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
+    transaction.create('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+    transaction.create('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+    transaction.create('/domains/{}/xml'.format(dom_uuid), data.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
@@ -161,25 +160,45 @@ def undefine_vm(dom_name, dom_uuid):
     Stop a virtual machine and remove it from the cluster database.
     """
 
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("You must specify either a `--name` or `--uuid` value.")
+        return
+
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
 
+    # If the --name value was passed, get the UUID
+    if dom_name != None:
+        dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+
+    click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
     # Set the domain into stop mode
     transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
+    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
     results = transaction.commit()
 
     # Wait for 3 seconds to allow state to flow to all hypervisors
+    click.echo('Waiting for cluster to update.')
     time.sleep(3)
 
     # Delete the configurations
+    click.echo('Undefining VM "{}".'.format(dom_uuid))
     transaction = zk.transaction()
-    transaction.delete('/domains/%s/state' % domuuid)
-    transaction.delete('/domains/%s/hypervisor' % domuuid)
-    transaction.delete('/domains/%s/lasthypervisor' % domuuid)
-    transaction.delete('/domains/%s/xml' % domuuid)
-    transaction.delete('/domains/%s' % domuuid)
-    results = transaction.commit()
+    transaction.delete('/domains/{}/state'.format(dom_uuid))
+    transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
+    transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
+    transaction.delete('/domains/{}/xml'.format(dom_uuid))
+    transaction.delete('/domains/{}'.format(dom_uuid))
+    transaction.commit()
 
     # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
@@ -218,7 +237,19 @@ def start_vm(dom_name, dom_uuid):
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+
+    print(dom_uuid)
+    print(dom_name)
+
     # Set the VM to start
+    click.echo('Starting VM "{}".'.format(dom_uuid))
     zk.set('/domains/%s/state' % dom_uuid, 'start'.encode('ascii'))
 
     # Close the Zookeeper connection
@@ -258,7 +289,16 @@ def shutdown_vm(dom_name, dom_uuid):
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
-    # Set the VM to start
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+
+    # Set the VM to shutdown
+    click.echo('Shutting down VM "{}".'.format(dom_uuid))
     zk.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
 
     # Close the Zookeeper connection
@@ -298,7 +338,16 @@ def stop_vm(dom_name, dom_uuid):
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+
     # Set the VM to start
+    click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
     zk.set('/domains/%s/state' % dom_uuid, 'stop'.encode('ascii'))
 
     # Close the Zookeeper connection
@@ -345,6 +394,14 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
     # If the --name value was passed, get the UUID
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
 
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
     last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
@@ -417,6 +474,14 @@ def unmigrate_vm(dom_name, dom_uuid):
     # If the --name value was passed, get the UUID
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    # Verify we got a result or abort
+    if not validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
 
     target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
@@ -541,6 +606,7 @@ node.add_command(flush_host)
 node.add_command(ready_host)
 
 vm.add_command(define_vm)
+vm.add_command(undefine_vm)
 vm.add_command(start_vm)
 vm.add_command(shutdown_vm)
 vm.add_command(stop_vm)
