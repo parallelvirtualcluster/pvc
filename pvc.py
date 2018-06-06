@@ -83,10 +83,6 @@ def ready_host():
 def vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
-
-    Notes:
-    
-    * PVC virtual machines are always managed by UUID. To find a name-to-UUID mapping, use the 'search' command.
     """
     pass
 
