@@ -20,11 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, libvirt, uuid
-import kazoo.client
-import lxml.objectify
-import click
-import operator
+import os, sys, libvirt, uuid, kazoo.client, lxml.objectify, click
 
 #
 # Validate a UUID
