@@ -178,8 +178,11 @@ class NodeInstance(threading.Thread):
    
             # Update our local node lists
             for node_name in self.t_node:
-                state, stat = self.zk.get('/nodes/%s/state' % node_name)
-                node_state = state.decode('ascii')
+                try:
+                    state, stat = self.zk.get('/nodes/%s/state' % node_name)
+                    node_state = state.decode('ascii')
+                except:
+                    node_state = 'stop'
 
                 if node_state == 'start' and node_name not in self.active_node_list:
                     self.active_node_list.append(node_name)
