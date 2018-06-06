@@ -67,10 +67,14 @@ def stopZKConnection(zk):
 #
 def getInformationFromXML(zk, uuid, long_output):
     # Obtain the contents of the XML from Zookeeper
-    xml = zk.get('/domains/%s/xml' % uuid)[0].decode('ascii')
-    dstate = zk.get('/domains/%s/state' % uuid)[0].decode('ascii')
-    dhypervisor = zk.get('/domains/%s/hypervisor' % uuid)[0].decode('ascii')
-    dlasthypervisor = zk.get('/domains/%s/lasthypervisor' % uuid)[0].decode('ascii')
+    try:
+        xml = zk.get('/domains/%s/xml' % uuid)[0].decode('ascii')
+        dstate = zk.get('/domains/%s/state' % uuid)[0].decode('ascii')
+        dhypervisor = zk.get('/domains/%s/hypervisor' % uuid)[0].decode('ascii')
+        dlasthypervisor = zk.get('/domains/%s/lasthypervisor' % uuid)[0].decode('ascii')
+    except:
+        return None
+
     if dlasthypervisor == '':
         dlasthypervisor = 'N/A'
 

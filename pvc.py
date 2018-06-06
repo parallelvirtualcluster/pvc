@@ -467,6 +467,11 @@ def search(dom_name, dom_uuid, long_output):
         dom_name = pvcf.searchClusterByUUID(zk, dom_uuid)
 
     information = pvcf.getInformationFromXML(zk, dom_uuid, long_output)
+
+    if information == None:
+        click.echo('Could not find a domain matching that name or UUID.')
+        return
+
     click.echo(information)
     pvcf.stopZKConnection(zk)
 
