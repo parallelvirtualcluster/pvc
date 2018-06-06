@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import kazoo.client, socket, time, click, lxml, pvcf
+import kazoo.client, socket, time, click, lxml.objectify, pvcf
 
 this_host = socket.gethostname()
 zk_host = ''
@@ -113,7 +113,7 @@ def define_vm(xml_config_file, target_hypervisor):
     """
 
     # Open the XML file
-    with open(cml_config_file, 'r') as f_domxmlfile:
+    with open(xml_config_file, 'r') as f_domxmlfile:
         data = f_domxmlfile.read()
         f_domxmlfile.close()
 
@@ -128,7 +128,7 @@ def define_vm(xml_config_file, target_hypervisor):
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.create('/domains/{}'.format(dom_uuid), domname.encode('ascii'))
+    transaction.create('/domains/{}'.format(dom_uuid), dom_name.encode('ascii'))
     transaction.create('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
     transaction.create('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.create('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
@@ -179,6 +179,7 @@ def undefine_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        return
 
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
     # Set the domain into stop mode
@@ -244,9 +245,7 @@ def start_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
-
-    print(dom_uuid)
-    print(dom_name)
+        return
 
     # Set the VM to start
     click.echo('Starting VM "{}".'.format(dom_uuid))
@@ -296,6 +295,7 @@ def shutdown_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        return
 
     # Set the VM to shutdown
     click.echo('Shutting down VM "{}".'.format(dom_uuid))
@@ -345,6 +345,7 @@ def stop_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        return
 
     # Set the VM to start
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
@@ -402,6 +403,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        return
 
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
     last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
@@ -482,6 +484,7 @@ def unmigrate_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        return
 
     target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 

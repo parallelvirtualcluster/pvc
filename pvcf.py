@@ -22,7 +22,7 @@
 
 import os, sys, libvirt, uuid
 import kazoo.client
-import lxml
+import lxml.objectify
 import click
 import operator
 
@@ -31,9 +31,9 @@ import operator
 #
 def validateUUID(dom_uuid):
     try:
-        uuid.UUID(dom_uuid, version=4)
+        uuid.UUID(dom_uuid)
         return True
-    except ValueError:
+    except:
         return False
 
 
