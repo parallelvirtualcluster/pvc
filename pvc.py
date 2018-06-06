@@ -478,15 +478,25 @@ def search(dom_name, dom_uuid, long_output):
 # pvc init
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster')
+@click.option('--yes', is_flag=True,
+              expose_value=False,
+              prompt='DANGER: This command will destroy any existing cluster data. Do you want to continue?')
 def init_cluster():
     """
     Perform initialization of Zookeeper to act as a PVC cluster
     """
 
-    click.echo('{}'.format(zk_host))
+    click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
 
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
+
+    # Destroy the existing data
+    try:
+        zk.delete('/domains', recursive=True)
+        zk.delete('nodes', recursive=True)
+    except:
+        pass
 
     # Create the root keys
     transaction = zk.transaction()
@@ -511,6 +521,7 @@ def cli(_zk_host):
     Parallel Virtual Cluster CLI management tool
     """
 
+    global zk_host
     zk_host = _zk_host
 
 
@@ -519,7 +530,6 @@ def cli(_zk_host):
 #
 node.add_command(flush_host)
 node.add_command(ready_host)
-#node.add_command(get_details)
 
 vm.add_command(define_vm)
 vm.add_command(start_vm)
@@ -527,11 +537,11 @@ vm.add_command(shutdown_vm)
 vm.add_command(stop_vm)
 vm.add_command(migrate_vm)
 vm.add_command(unmigrate_vm)
-#vm.add_command(get_details)
 
 cli.add_command(node)
 cli.add_command(vm)
 cli.add_command(search)
+cli.add_command(init_cluster)
 
 #
 # Main entry point
