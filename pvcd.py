@@ -53,7 +53,6 @@ def zk_listener(state):
         cleanup()
         exit(2)
     else:
-        # Handle being connected/reconnected to Zookeeper
         pass
 
 zk.add_listener(zk_listener)
