@@ -178,7 +178,7 @@ def undefine_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
@@ -244,7 +244,7 @@ def start_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     # Set the VM to start
@@ -294,7 +294,7 @@ def shutdown_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     # Set the VM to shutdown
@@ -344,7 +344,7 @@ def stop_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     # Set the VM to start
@@ -402,7 +402,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
@@ -483,7 +483,7 @@ def unmigrate_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo("Could not find VM `{}` in the cluster!".format(message_name))
+        click.echo("Could not find VM "{}" in the cluster!".format(message_name))
         return
 
     target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
