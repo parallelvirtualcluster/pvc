@@ -173,7 +173,7 @@ def undefine_vm(dom_name, dom_uuid):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
@@ -238,7 +238,7 @@ def start_vm(dom_name, dom_uuid):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
@@ -290,7 +290,7 @@ def shutdown_vm(dom_name, dom_uuid):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
@@ -339,7 +339,7 @@ def stop_vm(dom_name, dom_uuid):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
@@ -396,7 +396,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
@@ -476,7 +476,7 @@ def unmigrate_vm(dom_name, dom_uuid):
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
 
     # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
+    if not pvcf.validateUUID(dom_uuid):
         if dom_name != None:
             message_name = dom_name
         else:
