@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, libvirt, kazoo.client
+import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode
 
 class NodeInstance():
     def __init__(self, name, t_node, s_domain, zk):
@@ -179,11 +179,13 @@ class NodeInstance():
         self.cpucount = conn.getCPUMap()[0]
         self.memfree = conn.getFreeMemory()
         self.cpuload = os.getloadavg()[0]
+        keepalive_time = int(time.time())
         try:
             self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
             self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
             self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
             self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
+            self.zk.set(self.zkey + '/keepalive', keepalive_time.encode('ascii'))
         except:
             return
 
@@ -198,11 +200,21 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                state, stat = self.zk.get('/nodes/%s/state' % node_name)
-                node_state = state.decode('ascii')
+                node_state = self.zk.get('/nodes/%s/state' % node_name)[0].decode('ascii')
+                node_keepalive = int(self.zk.get('/nodes/%s/keepalive' % node_name)[0].decode('ascii'))
             except:
-                node_state = 'stop'
+                node_state = 'unknown'
+                node_keepalive = 0
 
+            # Handle deadtime and fencng if needed (>30 seconds out-of-date keepalive info)
+            node_deadtime = int(time.time()) - 30
+            if node_keepalive < node_deadtime and ( node_state != 'dead' and node_state != 'flush' and node_state != 'stop' ):
+                print('>>> Node {} is dead! Performing fence operation in 3 seconds.'.format(node_name))
+                self.zk.set('/domains/{}/state'.format(node_name), 'dead'.encode('ascii'))
+                fence_thread = threading.Thread(target=fencenode.fence, args=(node_name), kwargs={})
+                fence_thread.start()
+
+            # Update the arrays
             if node_state == 'start' and node_name not in self.active_node_list:
                 self.active_node_list.append(node_name)
                 try:

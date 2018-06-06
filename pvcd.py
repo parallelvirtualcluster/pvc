@@ -78,12 +78,14 @@ atexit.register(cleanup)
 if zk.exists('%s' % mynodestring):
     print("Node is present in Zookeeper")
 else:
+    keepalive_time = int(time.time())
     zk.create('%s' % mynodestring, 'hypervisor'.encode('ascii'))
     zk.create('%s/state' % mynodestring, 'stop'.encode('ascii'))
     zk.create('%s/cpucount' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
     zk.create('%s/runningdomains' % mynodestring, ''.encode('ascii'))
+    zk.create('%s/keepalive' % mynodestring, keepalive_time.encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
