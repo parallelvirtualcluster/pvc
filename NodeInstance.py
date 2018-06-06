@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, threading, libvirt, kazoo.client, pvcf
+import os, sys, socket, time, threading, libvirt, kazoo.client
 
 class NodeInstance(threading.Thread):
     def __init__(self, name, t_node, s_domain, zk):
