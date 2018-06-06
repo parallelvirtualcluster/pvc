@@ -4,11 +4,10 @@ import kazoo.client, socket, time, click
 import pvcf
 from lxml import objectify
 
-zk_host = '127.0.0.1:2181'
-
 this_host = socket.gethostname()
+zk_host = ''
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
 # Creates a new domain based on an XML file
 def define_domain(domxmlfile, target_hypervisor):
@@ -474,24 +473,46 @@ def search(dom_name, dom_uuid, long_output):
     click.echo(information)
     pvcf.stopZKConnection(zk)
 
-#define_domain('/var/home/joshua/debian9.xml')
-#start_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78')
-#stop_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78')
-#migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test1.i.bonilan.net')
-#migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test2.i.bonilan.net')
-#unmigrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78')
 
 ###############################################################################
-# pvc help
+# pvc init
 ###############################################################################
-@click.command()
-def help():
-    print('pvc - Parallel Virtual Cluster command-line utility')
+@click.command(name='init', short_help='Initialize a new cluster')
+def init_cluster():
+    """
+    Perform initialization of Zookeeper to act as a PVC cluster
+    """
 
+    click.echo('{}'.format(zk_host))
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # Create the root keys
+    transaction = zk.transaction()
+    transaction.create('/domains', ''.encode('ascii'))
+    transaction.create('/nodes', ''.encode('ascii'))
+    transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
+# pvc
+###############################################################################
 @click.group(context_settings=CONTEXT_SETTINGS)
-def cli():
-	"""Parallel Virtual Cluster CLI management tool"""
-	pass
+@click.option(
+    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default='{}:2181'.format(this_host), show_default=True,
+    help='Zookeeper connection string.'
+)
+def cli(_zk_host):
+    """
+    Parallel Virtual Cluster CLI management tool
+    """
+
+    zk_host = _zk_host
+
 
 #
 # Click command tree
