@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, threading, libvirt, kazoo.client, pvcf
+import os, sys, socket, time, threading, libvirt, kazoo.client
 
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
@@ -39,7 +39,7 @@ class VMInstance:
         self.inmigrate = False
         self.inreceive = False
 
-        self.dom = pvcf.lookupByUUID(self.domuuid)
+        self.dom = lookupByUUID(self.domuuid)
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
@@ -175,7 +175,7 @@ class VMInstance:
         print('>>> %s - Receiving migration' % self.domuuid)
         self.inreceive = True
         while True:
-            self.dom = pvcf.lookupByUUID(self.domuuid)
+            self.dom = lookupByUUID(self.domuuid)
             if self.dom == None:
                 time.sleep(0.2)
                 continue
