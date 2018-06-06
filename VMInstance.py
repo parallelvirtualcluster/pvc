@@ -44,13 +44,19 @@ class VMInstance:
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch(self.zkey + '/hypervisor')
         def watch_hypervisor(data, stat, event=""):
-            self.hypervisor = data.decode('ascii')
+            try:
+                self.hypervisor = data.decode('ascii')
+            except:
+                return
             self.manage_vm_state()
 
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch(self.zkey + '/state')
         def watch_state(data, stat, event=""):
-            self.state = data.decode('ascii')
+            try:
+                self.state = data.decode('ascii')
+            except:
+                return
             self.manage_vm_state()
 
     # Get data functions
@@ -197,7 +203,8 @@ class VMInstance:
         # Check the current state of the VM
         try:
             if self.dom != None:
-                running, reason = self.dom.state()
+                try:
+                    running, reason = self.dom.state()
             else:
                 raise
         except:
