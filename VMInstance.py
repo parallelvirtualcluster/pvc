@@ -216,8 +216,8 @@ class VMInstance:
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name and self.instop == False:
             self.stop_vm()
 
-        # We got no state, so the VM is deleted and should be stopped
-        elif running == libvirt.VIR_DOMAIN_NOSTATE:
+        # We got no state and the VM isn't told to stop, so the VM is deleted and should be stopped
+        elif running == libvirt.VIR_DOMAIN_NOSTATE and self.state != "stop" and self.inshutdown == False and self.instop == False:
             self.stop_vm()
 
         # VM should be shut down
