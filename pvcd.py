@@ -73,7 +73,6 @@ def cleanup():
 
 atexit.register(cleanup)
 
-
 # Check if our node exists in Zookeeper, and create it if not
 if zk.exists('%s' % mynodestring):
     print("Node is present in Zookeeper")
