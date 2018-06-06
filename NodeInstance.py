@@ -206,12 +206,13 @@ class NodeInstance():
                 node_state = 'unknown'
                 node_keepalive = 0
 
-            # Handle deadtime and fencng if needed (>30 seconds out-of-date keepalive info)
+            # Handle deadtime and fencng if needed
+            # (A node is considered dead when its keepalive timer is >30s out-of-date while in 'start' state)
             node_deadtime = int(time.time()) - 30
-            if node_keepalive < node_deadtime and ( node_state != 'dead' and node_state != 'flush' and node_state != 'stop' ):
+            if node_keepalive < node_deadtime and node_state == 'start':
                 print('>>> Node {} is dead! Performing fence operation in 3 seconds.'.format(node_name))
-                self.zk.set('/domains/{}/state'.format(node_name), 'dead'.encode('ascii'))
-                fence_thread = threading.Thread(target=fencenode.fence, args=(node_name), kwargs={})
+                self.zk.set('/nodes/{}/state'.format(node_name), 'dead'.encode('ascii'))
+                fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
