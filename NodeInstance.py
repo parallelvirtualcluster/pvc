@@ -187,6 +187,9 @@ class NodeInstance():
         except:
             return
 
+        # Close the Libvirt connection
+        conn.close()
+
         # Display node information to the terminal
         print('>>> {} - {} keepalive'.format(time.strftime('%d/%m/%Y %H:%M:%S'), self.name))
         print('    CPUs: {} | Free memory: {} | Load: {}'.format(self.cpucount, self.memfree, self.cpuload))
