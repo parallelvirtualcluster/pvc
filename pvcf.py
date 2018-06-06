@@ -1,52 +1,30 @@
 #!/usr/bin/env python3
 
+# pvcf.py - Supplemental functions for the PVC CLI client
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
 import os, sys, libvirt, uuid
 import kazoo.client
 import lxml
 import click
 import operator
-#from click import command, option, Option, UsageError
-
-#
-# Generic function helpers for PVC
-#
-
-# > lookupByUUID
-# This function is a wrapper for libvirt.lookupByUUID which fixes some problems
-# 1. Takes a text UUID and handles converting it to bytes
-# 2. Try's it and returns a sensible value if not
-def lookupByUUID(tuuid):
-    conn = None
-    dom = None
-    libvirt_name = "qemu:///system"
-
-    # Convert the text UUID to bytes
-    buuid = uuid.UUID(tuuid).bytes
-
-    # Try
-    try:
-        # Open a libvirt connection
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
-            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
-            return dom
-    
-        # Lookup the UUID
-        dom = conn.lookupByUUID(buuid)
-
-    # Fail
-    except:
-        pass
-
-    # After everything
-    finally:
-        # Close the libvirt connection
-        if conn != None:
-            conn.close()
-
-    # Return the dom object (or None)
-    return dom
-
 
 #
 # Connect and disconnect from Zookeeper
@@ -176,7 +154,6 @@ def getInformationFromXML(zk, uuid, long_output):
     # Join it all together
     information = '\n'.join(ainformation)
     return information
-
 
 
 #
