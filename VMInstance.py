@@ -216,10 +216,6 @@ class VMInstance:
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name and self.instop == False:
             self.stop_vm()
 
-        # We got no state and the VM isn't told to stop, so the VM is deleted and should be stopped
-        elif running == libvirt.VIR_DOMAIN_NOSTATE and self.state != "stop" and self.inshutdown == False and self.instop == False:
-            self.stop_vm()
-
         # VM should be shut down
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name and self.inshutdown == False:
             self.shutdown_vm()
@@ -243,6 +239,11 @@ class VMInstance:
             domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
             domxml = str(domxml.decode('ascii'))
             self.start_vm(domxml)
+
+        # We got no state and the VM isn't told to stop, so the VM is deleted and should be stopped
+        elif running == libvirt.VIR_DOMAIN_NOSTATE and self.state != "stop" and self.inshutdown == False and self.instop == False:
+            self.stop_vm()
+
 
 # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
 # 1. Takes a text UUID and handles converting it to bytes
