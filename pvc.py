@@ -20,96 +20,12 @@
 #
 ###############################################################################
 
-import kazoo.client, socket, time, click
-import pvcf
-from lxml import objectify
+import kazoo.client, socket, time, click, lxml, pvcf
 
 this_host = socket.gethostname()
 zk_host = ''
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
-
-# Creates a new domain based on an XML file
-def define_domain(domxmlfile, target_hypervisor):
-    with open(domxmlfile, 'r') as f_domxmlfile:
-        data = f_domxmlfile.read()
-        f_domxmlfile.close()
-
-    parsed_xml = objectify.fromstring(data)
-    domuuid = parsed_xml.uuid.text
-    domname = parsed_xml.name.text
-    print('Adding new VM with Name %s and UUID %s to database' % (domname, domuuid))
-
-    zk = pvcf.startZKConnection(zk_host)
-    transaction = zk.transaction()
-    transaction.create('/domains/%s' % domuuid, domname.encode('ascii'))
-    transaction.create('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
-    transaction.create('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.create('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
-    transaction.create('/domains/%s/name' % domuuid, data.encode('ascii'))
-    transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
-    results = transaction.commit()
-    pvcf.stopZKConnection(zk)
-
-def delete_domain(domuuid):
-    zk = pvcf.startZKConnection(zk_host)
-
-    # Set the domain into delete mode
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'delete'.encode('ascii'))
-    results = transaction.commit()
-    print(results)
-
-    # Wait for 3 seconds to allow state to flow to all hypervisors
-    time.sleep(3)
-
-    # Delete the configurations
-    transaction = zk.transaction()
-    transaction.delete('/domains/%s/state' % domuuid)
-    transaction.delete('/domains/%s/hypervisor' % domuuid)
-    transaction.delete('/domains/%s/lasthypervisor' % domuuid)
-    transaction.delete('/domains/%s/xml' % domuuid)
-    transaction.delete('/domains/%s' % domuuid)
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-
-# Migrate VM to target_hypervisor
-def migrate_domain(domuuid, target_hypervisor):
-    zk = pvcf.startZKConnection(zk_host)
-    current_hypervisor = zk.get('/domains/%s/hypervisor' % domuuid)[0].decode('ascii')
-    last_hypervisor = zk.get('/domains/%s/lasthypervisor' % domuuid)[0].decode('ascii')
-    if last_hypervisor != '':
-        print('The VM %s has been previously migrated from %s to %s. You must unmigrate it before migrating it again!' % (domuuid, last_hypervisor, current_hypervisor))
-        pvcf.stopZKConnection(zk)
-        return
-
-    print('Migrating VM with UUID %s from hypervisor %s to hypervisor %s' % (domuuid, current_hypervisor, target_hypervisor))
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
-    transaction.set_data('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.set_data('/domains/%s/lasthypervisor' % domuuid, current_hypervisor.encode('ascii'))
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-
-# Unmigrate VM back from previous hypervisor
-def unmigrate_domain(domuuid):
-    zk = pvcf.startZKConnection(zk_host)
-    target_hypervisor = zk.get('/domains/%s/lasthypervisor' % domuuid)[0].decode('ascii')
-    if target_hypervisor == '':
-        print('The VM %s has not been previously migrated and cannot be unmigrated.' % domuuid)
-        pvcf.stopZKConnection(zk)
-        return
-    print('Unmigrating VM with UUID %s back to hypervisor %s' % (domuuid, target_hypervisor))
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
-    transaction.set_data('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.set_data('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-    
 
 ########################
 ########################
@@ -195,7 +111,78 @@ def define_vm(xml_config_file, target_hypervisor):
 
     * The '--hypervisor' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
     """
-    define_domain(xml_config_file, target_hypervisor)
+
+    # Open the XML file
+    with open(cml_config_file, 'r') as f_domxmlfile:
+        data = f_domxmlfile.read()
+        f_domxmlfile.close()
+
+    # Parse in the XML file
+    parsed_xml = lxml.objectify.fromstring(data)
+    dom_uuid = parsed_xml.uuid.text
+    dom_name = parsed_xml.name.text
+    print('Adding new VM with Name %s and UUID %s to database' % (domname, domuuid))
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # Add the new domain to Zookeeper
+    transaction = zk.transaction()
+    transaction.create('/domains/%s' % domuuid, domname.encode('ascii'))
+    transaction.create('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
+    transaction.create('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
+    transaction.create('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
+    transaction.create('/domains/%s/name' % domuuid, data.encode('ascii'))
+    transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
+    results = transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
+# pvc vm undefine
+###############################################################################
+@click.command(name='undefine', short_help='Undefine and stop a virtual machine.')
+@click.option(
+    '-n', '--name', 'dom_name',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
+    help='Search for this human-readable name.'
+)
+@click.option(
+    '-u', '--uuid', 'dom_uuid',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
+    help='Search for this UUID.'
+)
+def undefine_vm(dom_name, dom_uuid):
+    """
+    Stop a virtual machine and remove it from the cluster database.
+    """
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # Set the domain into stop mode
+    transaction = zk.transaction()
+    transaction.set_data('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
+    results = transaction.commit()
+
+    # Wait for 3 seconds to allow state to flow to all hypervisors
+    time.sleep(3)
+
+    # Delete the configurations
+    transaction = zk.transaction()
+    transaction.delete('/domains/%s/state' % domuuid)
+    transaction.delete('/domains/%s/hypervisor' % domuuid)
+    transaction.delete('/domains/%s/lasthypervisor' % domuuid)
+    transaction.delete('/domains/%s/xml' % domuuid)
+    transaction.delete('/domains/%s' % domuuid)
+    results = transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
