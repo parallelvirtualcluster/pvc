@@ -507,6 +507,8 @@ def init_cluster():
     # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
 
+    click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
+
 
 ###############################################################################
 # pvc
