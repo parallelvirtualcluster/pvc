@@ -155,7 +155,6 @@ class VMInstance:
             print('>>> %s - Migrated successfully' % self.domuuid)
         except:
             dest_conn.close()
-            print('>>> %s - Could not live migrate VM' % self.domuuid)
             return 1
 
         dest_conn.close()
@@ -168,7 +167,7 @@ class VMInstance:
         print('>>> %s - Migrating VM to %s' % (self.domuuid, self.hypervisor))
         migrate_ret = self.live_migrate_vm(self.hypervisor)
         if migrate_ret != 0:
-            print('>>> %s - Could not live migrate VM; forcing away' % self.domuuid)
+            print('>>> %s - Could not live migrate VM; shutting down instead' % self.domuuid)
             self.shutdown_vm()
             time.sleep(0.5)
         else:
