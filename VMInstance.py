@@ -96,7 +96,10 @@ class VMInstance:
     def stop_vm(self):
         print(">>> %s - Forcibly stopping VM" % self.domuuid)
         self.instop = True
-        self.dom.destroy()
+        try:
+            self.dom.destroy()
+        except AttributeError:
+            pass
         if self.domuuid in self.thishypervisor.domain_list:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
