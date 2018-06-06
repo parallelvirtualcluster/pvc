@@ -84,7 +84,7 @@ else:
     zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
     zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
     zk.create('%s/runningdomains' % mynodestring, ''.encode('ascii'))
-    zk.create('%s/keepalive' % mynodestring, keepalive_time.encode('ascii'))
+    zk.create('%s/keepalive' % mynodestring, str(keepalive_time).encode('ascii'))
 
 t_node = dict()
 s_domain = dict()

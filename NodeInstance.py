@@ -185,7 +185,7 @@ class NodeInstance():
             self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
             self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
             self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
-            self.zk.set(self.zkey + '/keepalive', keepalive_time.encode('ascii'))
+            self.zk.set(self.zkey + '/keepalive', str(keepalive_time).encode('ascii'))
         except:
             return
 
