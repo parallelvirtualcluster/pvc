@@ -26,7 +26,7 @@ def define_domain(domxmlfile, target_hypervisor):
     transaction.create('/domains/%s' % domuuid, domname.encode('ascii'))
     transaction.create('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
     transaction.create('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.create('/domains/%s/formerhypervisor' % domuuid, ''.encode('ascii'))
+    transaction.create('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
     transaction.create('/domains/%s/name' % domuuid, data.encode('ascii'))
     transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
     results = transaction.commit()
@@ -49,36 +49,9 @@ def delete_domain(domuuid):
     transaction = zk.transaction()
     transaction.delete('/domains/%s/state' % domuuid)
     transaction.delete('/domains/%s/hypervisor' % domuuid)
-    transaction.delete('/domains/%s/formerhypervisor' % domuuid)
+    transaction.delete('/domains/%s/lasthypervisor' % domuuid)
     transaction.delete('/domains/%s/xml' % domuuid)
     transaction.delete('/domains/%s' % domuuid)
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-
-# Start up a domain
-def start_domain(domuuid):
-    zk = pvcf.startZKConnection(zk_host)
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'start'.encode('ascii'))
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-
-# Shut down a domain
-def shutdown_domain(domuuid):
-    zk = pvcf.startZKConnection(zk_host)
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'shutdown'.encode('ascii'))
-    results = transaction.commit()
-    print(results)
-    pvcf.stopZKConnection(zk)
-
-# Stop a domain
-def stop_domain(domuuid):
-    zk = pvcf.startZKConnection(zk_host)
-    transaction = zk.transaction()
-    transaction.set_data('/domains/%s/state' % domuuid, 'stop'.encode('ascii'))
     results = transaction.commit()
     print(results)
     pvcf.stopZKConnection(zk)
@@ -87,9 +60,9 @@ def stop_domain(domuuid):
 def migrate_domain(domuuid, target_hypervisor):
     zk = pvcf.startZKConnection(zk_host)
     current_hypervisor = zk.get('/domains/%s/hypervisor' % domuuid)[0].decode('ascii')
-    former_hypervisor = zk.get('/domains/%s/formerhypervisor' % domuuid)[0].decode('ascii')
-    if former_hypervisor != '':
-        print('The VM %s has been previously migrated from %s to %s. You must unmigrate it before migrating it again!' % (domuuid, former_hypervisor, current_hypervisor))
+    last_hypervisor = zk.get('/domains/%s/lasthypervisor' % domuuid)[0].decode('ascii')
+    if last_hypervisor != '':
+        print('The VM %s has been previously migrated from %s to %s. You must unmigrate it before migrating it again!' % (domuuid, last_hypervisor, current_hypervisor))
         pvcf.stopZKConnection(zk)
         return
 
@@ -97,7 +70,7 @@ def migrate_domain(domuuid, target_hypervisor):
     transaction = zk.transaction()
     transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
     transaction.set_data('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.set_data('/domains/%s/formerhypervisor' % domuuid, current_hypervisor.encode('ascii'))
+    transaction.set_data('/domains/%s/lasthypervisor' % domuuid, current_hypervisor.encode('ascii'))
     results = transaction.commit()
     print(results)
     pvcf.stopZKConnection(zk)
@@ -105,7 +78,7 @@ def migrate_domain(domuuid, target_hypervisor):
 # Unmigrate VM back from previous hypervisor
 def unmigrate_domain(domuuid):
     zk = pvcf.startZKConnection(zk_host)
-    target_hypervisor = zk.get('/domains/%s/formerhypervisor' % domuuid)[0].decode('ascii')
+    target_hypervisor = zk.get('/domains/%s/lasthypervisor' % domuuid)[0].decode('ascii')
     if target_hypervisor == '':
         print('The VM %s has not been previously migrated and cannot be unmigrated.' % domuuid)
         pvcf.stopZKConnection(zk)
@@ -114,7 +87,7 @@ def unmigrate_domain(domuuid):
     transaction = zk.transaction()
     transaction.set_data('/domains/%s/state' % domuuid, 'migrate'.encode('ascii'))
     transaction.set_data('/domains/%s/hypervisor' % domuuid, target_hypervisor.encode('ascii'))
-    transaction.set_data('/domains/%s/formerhypervisor' % domuuid, ''.encode('ascii'))
+    transaction.set_data('/domains/%s/lasthypervisor' % domuuid, ''.encode('ascii'))
     results = transaction.commit()
     print(results)
     pvcf.stopZKConnection(zk)
@@ -214,13 +187,13 @@ def define_vm(xml_config_file, target_hypervisor):
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_uuid"],
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
     help='Search for this human-readable name.'
 )
 @click.option(
     '-u', '--uuid', 'dom_uuid',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_name"],
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
     help='Search for this UUID.'
 )
 def start_vm(dom_name, dom_uuid):
@@ -230,7 +203,7 @@ def start_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a '--name' or '--uuid' value.")
+        click.echo("You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -243,7 +216,7 @@ def start_vm(dom_name, dom_uuid):
     # Set the VM to start
     zk.set('/domains/%s/state' % dom_uuid, 'start'.encode('ascii'))
 
-    # Close the zookeeper connection
+    # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
 
 
@@ -254,13 +227,13 @@ def start_vm(dom_name, dom_uuid):
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_uuid"],
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
     help='Search for this human-readable name.'
 )
 @click.option(
     '-u', '--uuid', 'dom_uuid',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_name"],
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
     help='Search for this UUID.'
 )
 def shutdown_vm(dom_name, dom_uuid):
@@ -270,7 +243,7 @@ def shutdown_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a '--name' or '--uuid' value.")
+        click.echo("You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -283,7 +256,7 @@ def shutdown_vm(dom_name, dom_uuid):
     # Set the VM to start
     zk.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
 
-    # Close the zookeeper connection
+    # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
 
 
@@ -294,13 +267,13 @@ def shutdown_vm(dom_name, dom_uuid):
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_uuid"],
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
     help='Search for this human-readable name.'
 )
 @click.option(
     '-u', '--uuid', 'dom_uuid',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_name"],
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
     help='Search for this UUID.'
 )
 def stop_vm(dom_name, dom_uuid):
@@ -310,7 +283,7 @@ def stop_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a '--name' or '--uuid' value.")
+        click.echo("You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -323,38 +296,154 @@ def stop_vm(dom_name, dom_uuid):
     # Set the VM to start
     zk.set('/domains/%s/state' % dom_uuid, 'stop'.encode('ascii'))
 
-    # Close the zookeeper connection
+    # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
 
 
+###############################################################################
+# pvc vm migrate
+###############################################################################
 @click.command(name='migrate', short_help='Migrate a virtual machine to another node.')
-def migrate_vm():
-    """
-    Migrate a running virtual machine, via live migration if possible, to another hypervisor node.
-    """
-    pass
-
-@click.command(name='unmigrate', short_help='Restore a migrated virtual machine to its original node.')
-def unmigrate_vm():
-    """
-    Restore a previously migrated virtual machine, via live migration if possible, to its original hypervisor node.
-    """
-    pass
-
-#
-# Search-level commands
-#
-@click.command(name='search', short_help='Search for a VM object')
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_uuid"],
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
     help='Search for this human-readable name.'
 )
 @click.option(
     '-u', '--uuid', 'dom_uuid',
     cls=pvcf.MutuallyExclusiveOption,
-    mutually_exclusive=["dom_name"],
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
+    help='Search for this UUID.'
+)
+@click.option(
+    '-t', '--target', 'target_hypervisor', default=None,
+    help='The target hypervisor to migrate to.'
+)
+@click.option(
+    '-f', '--force', 'force_migrate', is_flag=True, default=False,
+    help='Force migrate an already migrated VM.'
+)
+def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
+    """
+    Migrate a running virtual machine, via live migration if possible, to another hypervisor node.
+    """
+
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("You must specify either a `--name` or `--uuid` value.")
+        return
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # If the --name value was passed, get the UUID
+    if dom_name != None:
+        dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+    last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+
+    if last_hypervisor != '' and force_migrate != True:
+        click.echo('The VM "{}" has been previously migrated.'.format(dom_uuid))
+        click.echo('> Last hypervisor: {}'.format(last_hypervisor))
+        click.echo('> Current hypervisor: {}'.format(current_hypervisor))
+        click.echo('Run `vm unmigrate` to restore the VM to its previous hypervisor, or use `--force` to override this check.')
+        return
+
+    if target_hypervisor == None:
+        # Determine the best hypervisor to migrate the VM to based on active memory usage
+        hypervisor_list = zk.get_children('/nodes')
+        most_memfree = 0
+        for hypervisor in hypervisor_list:
+            state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+            if state != 'start' or hypervisor == current_hypervisor:
+                continue
+
+            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            if memfree > most_memfree:
+                most_memfree = memfree
+                target_hypervisor = hypervisor
+    else:
+        if target_hypervisor == current_hypervisor:
+            click.echo('The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
+            return
+
+    click.echo('Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+    transaction = zk.transaction()
+    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+    transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+    transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
+    transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
+# pvc vm unmigrate
+###############################################################################
+@click.command(name='unmigrate', short_help='Restore a migrated virtual machine to its original node.')
+@click.option(
+    '-n', '--name', 'dom_name',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
+    help='Search for this human-readable name.'
+)
+@click.option(
+    '-u', '--uuid', 'dom_uuid',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
+    help='Search for this UUID.'
+)
+def unmigrate_vm(dom_name, dom_uuid):
+    """
+    Restore a previously migrated virtual machine, via live migration if possible, to its original hypervisor node.
+    """
+
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("You must specify either a `--name` or `--uuid` value.")
+        return
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # If the --name value was passed, get the UUID
+    if dom_name != None:
+        dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+
+    if target_hypervisor == '':
+        click.echo('The VM "{}" has not been previously migrated.'.format(dom_uuid))
+        return
+
+    click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+    transaction = zk.transaction()
+    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+    transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+    transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+    transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
+# pvc search
+###############################################################################
+@click.command(name='search', short_help='Search for a VM object')
+@click.option(
+    '-n', '--name', 'dom_name',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
+    help='Search for this human-readable name.'
+)
+@click.option(
+    '-u', '--uuid', 'dom_uuid',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
     help='Search for this UUID.'
 )
 @click.option(
@@ -365,6 +454,12 @@ def search(dom_name, dom_uuid, long_output):
     """
     Search the cluster for a virtual machine's information.
     """
+
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("You must specify either a `--name` or `--uuid` value.")
+        return
+
     zk = pvcf.startZKConnection(zk_host)
     if dom_name != None:
         dom_uuid = pvcf.searchClusterByName(zk, dom_name)
@@ -382,6 +477,9 @@ def search(dom_name, dom_uuid, long_output):
 #migrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78', 'test2.i.bonilan.net')
 #unmigrate_domain('b1dc4e21-544f-47aa-9bb7-8af0bc443b78')
 
+###############################################################################
+# pvc help
+###############################################################################
 @click.command()
 def help():
     print('pvc - Parallel Virtual Cluster command-line utility')

@@ -70,9 +70,9 @@ def getInformationFromXML(zk, uuid, long_output):
     xml = zk.get('/domains/%s/xml' % uuid)[0].decode('ascii')
     dstate = zk.get('/domains/%s/state' % uuid)[0].decode('ascii')
     dhypervisor = zk.get('/domains/%s/hypervisor' % uuid)[0].decode('ascii')
-    dformerhypervisor = zk.get('/domains/%s/formerhypervisor' % uuid)[0].decode('ascii')
-    if dformerhypervisor == '':
-        dformerhypervisor = 'N/A'
+    dlasthypervisor = zk.get('/domains/%s/lasthypervisor' % uuid)[0].decode('ascii')
+    if dlasthypervisor == '':
+        dlasthypervisor = 'N/A'
 
     # Parse XML using lxml.objectify
     parsed_xml = lxml.objectify.fromstring(xml)
@@ -150,7 +150,7 @@ def getInformationFromXML(zk, uuid, long_output):
     ainformation.append('')
     ainformation.append('State:              {}'.format(dstate))
     ainformation.append('Active Hypervisor:  {}'.format(dhypervisor))
-    ainformation.append('Former Hypervisor:  {}'.format(dformerhypervisor))
+    ainformation.append('Last Hypervisor:  {}'.format(dlasthypervisor))
 
     if long_output == True:
         # Disk list
