@@ -21,7 +21,11 @@ class NodeInstance(threading.Thread):
         # Zookeeper handlers for changed states
         @zk.DataWatch(self.zkey + '/state')
         def watch_hypervisor_state(data, stat, event=""):
-            self.state = data.decode('ascii')
+            try:
+                self.state = data.decode('ascii')
+            except AttributeError:
+                self.state = 'stop'
+
             if self.state == 'flush':
                 self.flush()
             if self.state == 'unflush':
@@ -29,11 +33,17 @@ class NodeInstance(threading.Thread):
     
         @zk.DataWatch(self.zkey + '/memfree')
         def watch_hypervisor_memfree(data, stat, event=""):
-            self.memfree = data.decode('ascii')
+            try:
+                self.memfree = data.decode('ascii')
+            except AttributeError:
+                self.memfree = 0
     
         @zk.DataWatch(self.zkey + '/runningdomains')
         def watch_hypervisor_runningdomains(data, stat, event=""):
-            self.domain_list = data.decode('ascii').split()
+            try:
+                self.domain_list = data.decode('ascii').split()
+            except AttributeError:
+                self.domain_list = []
 
     # Get value functions
     def getfreemem(self):
