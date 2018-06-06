@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, threading, libvirt, kazoo.client
+import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
 
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
