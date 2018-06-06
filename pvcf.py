@@ -221,23 +221,33 @@ def searchClusterByName(zk, name):
 #
 class MutuallyExclusiveOption(click.Option):
     def __init__(self, *args, **kwargs):
-        self.mutually_exclusive = set(kwargs.pop('mutually_exclusive', []))
+        meargs = kwargs.pop('mutually_exclusive', [])
+        _me_arg = []
+        _me_func = []
+
+        for arg in meargs:
+            _me_arg.append(arg['argument'])
+            _me_func.append(arg['function'])
+
+        self.me_arg = set(_me_arg)
+        self.me_func = set(_me_func)
+
         help = kwargs.get('help', '')
-        if self.mutually_exclusive:
-            ex_str = ', '.join(self.mutually_exclusive)
+        if self.me_func:
+            ex_str = ', '.join(self.me_arg)
             kwargs['help'] = help + (
-                ' NOTE: This argument is mutually exclusive with '
-                'arguments: [' + ex_str + '].'
+                ' Mutually exclusive with `' + ex_str + '`.'
             )
+
         super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
 
     def handle_parse_result(self, ctx, opts, args):
-        if self.mutually_exclusive.intersection(opts) and self.name in opts:
+        if self.me_func.intersection(opts) and self.name in opts:
             raise click.UsageError(
                 "Illegal usage: `{}` is mutually exclusive with "
                 "arguments `{}`.".format(
-                    self.name,
-                    ', '.join(self.mutually_exclusive)
+                    self.opts[-1],
+                    ', '.join(self.me_arg)
                 )
             )
 
