@@ -203,8 +203,7 @@ class VMInstance:
         # Check the current state of the VM
         try:
             if self.dom != None:
-                try:
-                    running, reason = self.dom.state()
+                running, reason = self.dom.state()
             else:
                 raise
         except:
