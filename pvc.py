@@ -30,7 +30,6 @@ def define_domain(domxmlfile, target_hypervisor):
     transaction.create('/domains/%s/name' % domuuid, data.encode('ascii'))
     transaction.create('/domains/%s/xml' % domuuid, data.encode('ascii'))
     results = transaction.commit()
-    print(results)
     pvcf.stopZKConnection(zk)
 
 def delete_domain(domuuid):
