@@ -119,7 +119,7 @@ update_zookeeper = this_node.update_zookeeper
 
 # Create timer to update this node in Zookeeper
 update_timer = apscheduler.schedulers.background.BackgroundScheduler()
-update_timer.add_job(update_zookeeper, 'interval', seconds=2)
+update_timer.add_job(update_zookeeper, 'interval', seconds=5)
 update_timer.start()
 
 # Tick loop

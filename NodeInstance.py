@@ -143,14 +143,7 @@ class NodeInstance():
         conn = libvirt.open(libvirt_name)
         if conn == None:
             print('>>> Failed to open connection to %s' % libvirt_name)
-            exit(1)
-
-        # Gather data about hypervisor
-        self.name = conn.getHostname()
-        self.cpucount = conn.getCPUMap()[0]
-        self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
-        print("Node hostname: %s" % self.name)
-        print("CPUs: %s" % self.cpucount)
+            return
 
         # Get past state and update if needed
         past_state = self.zk.get(self.zkey + '/state')[0].decode('ascii')
@@ -182,18 +175,23 @@ class NodeInstance():
                             pass
 
         # Set our information in zookeeper
+        self.name = conn.getHostname()
+        self.cpucount = conn.getCPUMap()[0]
         self.memfree = conn.getFreeMemory()
         self.cpuload = os.getloadavg()[0]
         try:
+            self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
             self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
             self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
             self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
         except:
             return
 
-        print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
-        print("Active domains: %s" % self.domain_list)
-   
+        # Display node information to the terminal
+        print('>>> {} - {} keepalive'.format(time.strftime('%d/%m/%Y %H:%M:%S'), self.name))
+        print('    CPUs: {} | Free memory: {} | Load: {}'.format(self.cpucount, self.memfree, self.cpuload))
+        print('    Active domains: {}'.format(' '.join(self.domain_list)))
+
         # Update our local node lists
         for node_name in self.t_node:
             try:
@@ -233,6 +231,8 @@ class NodeInstance():
                 except ValueError:
                     pass
         
-        print('Active nodes: %s' % self.active_node_list)
-        print('Flushed nodes: %s' % self.flushed_node_list)
-        print('Inactive nodes: %s' % self.inactive_node_list)
+        # Display cluster information to the terminal
+        print('>>> {} - Cluster status'.format(time.strftime('%d/%m/%Y %H:%M:%S')))
+        print('    Active nodes: {}'.format(' '.join(self.active_node_list)))
+        print('    Flushed nodes: {}'.format(' '.join(self.flushed_node_list)))
+        print('    Inactive nodes: {}'.format(' '.join(self.inactive_node_list)))
