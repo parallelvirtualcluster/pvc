@@ -20,17 +20,15 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, threading, libvirt, kazoo.client
+import os, sys, socket, time, libvirt, kazoo.client
 
-class NodeInstance(threading.Thread):
+class NodeInstance():
     def __init__(self, name, t_node, s_domain, zk):
-        super(NodeInstance, self).__init__()
         # Passed-in variables on creation
         self.zkey = '/nodes/%s' % name
         self.zk = zk
         self.name = name
         self.state = 'stop'
-        self.stop_thread = threading.Event()
         self.t_node = t_node
         self.active_node_list = []
         self.flushed_node_list = []
@@ -88,10 +86,6 @@ class NodeInstance(threading.Thread):
     def updatedomainlist(self, s_domain):
         self.s_domain = s_domain
 
-    # Shutdown the thread
-    def stop(self):
-        self.stop_thread.set()
-
     # Flush all VMs on the host
     def flush(self):
         for domain in self.domain_list:
@@ -143,11 +137,7 @@ class NodeInstance(threading.Thread):
 
         self.zk.set("/nodes/" + self.name + "/state", 'start'.encode('ascii'))
 
-    def run(self):
-        if self.name == socket.gethostname():
-            self.setup_local_node()
-
-    def setup_local_node(self):
+    def update_zookeeper(self):
         # Connect to libvirt
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
@@ -170,87 +160,79 @@ class NodeInstance(threading.Thread):
         else:
             self.state = 'flush'
 
-        while True:
-            # Toggle state management of all VMs and remove any non-running VMs
-            for domain, instance in self.s_domain.items():
-                if instance.inshutdown == False and domain in self.domain_list:
-                    instance.manage_vm_state()
-                    if instance.dom == None:
+        # Toggle state management of all VMs and remove any non-running VMs
+        for domain, instance in self.s_domain.items():
+            if instance.inshutdown == False and domain in self.domain_list:
+                instance.manage_vm_state()
+                if instance.dom == None:
+                    try:
+                        self.domain_list.remove(domain)
+                    except:
+                        pass
+                else:
+                    try:
+                        state = instance.dom.state()[0]
+                    except:
+                        state = libvirt.VIR_DOMAIN_NOSTATE
+                        
+                    if state != libvirt.VIR_DOMAIN_RUNNING:
                         try:
                             self.domain_list.remove(domain)
                         except:
                             pass
-                    else:
-                        try:
-                            state = instance.dom.state()[0]
-                        except:
-                            state = libvirt.VIR_DOMAIN_NOSTATE
-                            
-                        if state != libvirt.VIR_DOMAIN_RUNNING:
-                            try:
-                                self.domain_list.remove(domain)
-                            except:
-                                pass
 
-            # Set our information in zookeeper
-            self.memfree = conn.getFreeMemory()
-            self.cpuload = os.getloadavg()[0]
-            try:
-                self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
-                self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
-                self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
-            except:
-                if self.stop_thread.is_set():
-                    return
+        # Set our information in zookeeper
+        self.memfree = conn.getFreeMemory()
+        self.cpuload = os.getloadavg()[0]
+        try:
+            self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
+            self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
+            self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
+        except:
+            return
 
-            print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
-            print("Active domains: %s" % self.domain_list)
+        print(">>> %s - Free memory: %s | Load: %s" % ( time.strftime("%d/%m/%Y %H:%M:%S"), self.memfree, self.cpuload ))
+        print("Active domains: %s" % self.domain_list)
    
-            # Update our local node lists
-            for node_name in self.t_node:
+        # Update our local node lists
+        for node_name in self.t_node:
+            try:
+                state, stat = self.zk.get('/nodes/%s/state' % node_name)
+                node_state = state.decode('ascii')
+            except:
+                node_state = 'stop'
+
+            if node_state == 'start' and node_name not in self.active_node_list:
+                self.active_node_list.append(node_name)
                 try:
-                    state, stat = self.zk.get('/nodes/%s/state' % node_name)
-                    node_state = state.decode('ascii')
-                except:
-                    node_state = 'stop'
-
-                if node_state == 'start' and node_name not in self.active_node_list:
-                    self.active_node_list.append(node_name)
-                    try:
-                        self.flushed_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-                    try:
-                        self.inactive_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-                if node_state == 'flush' and node_name not in self.flushed_node_list:
-                    self.flushed_node_list.append(node_name)
-                    try:
-                        self.active_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-                    try:
-                        self.inactive_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-                if node_state != 'start' and node_state != 'flush' and node_name not in self.inactive_node_list:
-                    self.inactive_node_list.append(node_name)
-                    try:
-                        self.active_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-                    try:
-                        self.flushed_node_list.remove(node_name)
-                    except ValueError:
-                        pass
-            
-            print('Active nodes: %s' % self.active_node_list)
-            print('Flushed nodes: %s' % self.flushed_node_list)
-            print('Inactive nodes: %s' % self.inactive_node_list)
-
-            # Sleep for 9s but with quick interruptability
-            for x in range(0,90):
-                time.sleep(0.1)
-                if self.stop_thread.is_set():
-                    sys.exit(0)
+                    self.flushed_node_list.remove(node_name)
+                except ValueError:
+                    pass
+                try:
+                    self.inactive_node_list.remove(node_name)
+                except ValueError:
+                    pass
+            if node_state == 'flush' and node_name not in self.flushed_node_list:
+                self.flushed_node_list.append(node_name)
+                try:
+                    self.active_node_list.remove(node_name)
+                except ValueError:
+                    pass
+                try:
+                    self.inactive_node_list.remove(node_name)
+                except ValueError:
+                    pass
+            if node_state != 'start' and node_state != 'flush' and node_name not in self.inactive_node_list:
+                self.inactive_node_list.append(node_name)
+                try:
+                    self.active_node_list.remove(node_name)
+                except ValueError:
+                    pass
+                try:
+                    self.flushed_node_list.remove(node_name)
+                except ValueError:
+                    pass
+        
+        print('Active nodes: %s' % self.active_node_list)
+        print('Flushed nodes: %s' % self.flushed_node_list)
+        print('Inactive nodes: %s' % self.inactive_node_list)

@@ -20,8 +20,7 @@
 #
 ###############################################################################
 
-from kazoo.client import KazooClient
-from kazoo.client import KazooState
+import kazoo.client
 import libvirt
 import sys
 import socket
@@ -29,8 +28,8 @@ import uuid
 import VMInstance
 import NodeInstance
 import time
-import threading
 import atexit
+import apscheduler.schedulers.background
 
 def help():
     print("pvcd - Parallel Virtual Cluster management daemon")
@@ -38,8 +37,8 @@ def help():
 
 help()
 
-# Connect to zookeeper
-zk = KazooClient(hosts='127.0.0.1:2181')
+# Connect to local zookeeper
+zk = kazoo.client.KazooClient(hosts='127.0.0.1:2181')
 try:
     zk.start()
 except:
@@ -47,10 +46,10 @@ except:
     exit(1)
 
 def zk_listener(state):
-    if state == KazooState.LOST:
+    if state == kazoo.client.KazooState.LOST:
         cleanup()
         exit(2)
-    elif state == KazooState.SUSPENDED:
+    elif state == kazoo.client.KazooState.SUSPENDED:
         cleanup()
         exit(2)
     else:
@@ -63,9 +62,8 @@ myhostname = socket.gethostname()
 mynodestring = '/nodes/%s' % myhostname
 
 def cleanup():
-    t_node[myhostname].stop()
-    time.sleep(0.2)
     try:
+        update_timer.shutdown()
         if t_node[myhostname].getstate() != 'flush':
             zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
         zk.stop()
@@ -74,6 +72,7 @@ def cleanup():
         pass
 
 atexit.register(cleanup)
+
 
 # Check if our node exists in Zookeeper, and create it if not
 if zk.exists('%s' % mynodestring):
@@ -114,13 +113,18 @@ def updatedomains(new_domain_list):
                 if node in t_node:
                     t_node[node].updatedomainlist(s_domain)
 
-t_node[myhostname].start()
-time.sleep(0.2)
+# Set up our update function
+this_node = t_node[myhostname]
+update_zookeeper = this_node.update_zookeeper
 
+# Create timer to update this node in Zookeeper
+update_timer = apscheduler.schedulers.background.BackgroundScheduler()
+update_timer.add_job(update_zookeeper, 'interval', seconds=2)
+update_timer.start()
+
+# Tick loop
 while True:
-    # Tick loop
     try:
         time.sleep(0.1)
     except:
-        cleanup()
-        exit(0)
+        break
