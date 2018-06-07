@@ -127,7 +127,7 @@ class NodeInstance():
             if last_hypervisor != self.name:
                 continue
 
-            print('>>> Setting unmigration for VM "{}".'.format(domain))
+            print('>>> Setting unmigration for VM "{}".'.format(dom_uuid))
             transaction = self.zk.transaction()
             transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
             transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
