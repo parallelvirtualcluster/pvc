@@ -25,7 +25,6 @@ import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode
 class NodeInstance():
     def __init__(self, name, t_node, s_domain, zk):
         # Passed-in variables on creation
-        self.zkey = '/nodes/%s' % name
         self.zk = zk
         self.name = name
         self.state = 'stop'
@@ -37,7 +36,7 @@ class NodeInstance():
         self.domain_list = []
 
         # Zookeeper handlers for changed states
-        @zk.DataWatch(self.zkey + '/state')
+        @zk.DataWatch('/nodes/{}/state'.format(self.name))
         def watch_hypervisor_state(data, stat, event=""):
             try:
                 self.state = data.decode('ascii')
@@ -49,14 +48,14 @@ class NodeInstance():
             if self.state == 'unflush':
                 self.unflush()
     
-        @zk.DataWatch(self.zkey + '/memfree')
+        @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):
             try:
                 self.memfree = data.decode('ascii')
             except AttributeError:
                 self.memfree = 0
     
-        @zk.DataWatch(self.zkey + '/runningdomains')
+        @zk.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
             try:
                 self.domain_list = data.decode('ascii').split()
@@ -104,7 +103,7 @@ class NodeInstance():
                     target_hypervisor = hypervisor
     
             if least_host == None:
-                print('>>> Failed to find valid migration target for %s; shutting down.'.format(dom_uuid)))
+                print('>>> Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid)))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
@@ -142,7 +141,7 @@ class NodeInstance():
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> Failed to open connection to %s' % libvirt_name)
+            print('>>> Failed to open connection to {}'.format(libvirt_name))
             return
 
         # Get past state and update if needed
@@ -200,8 +199,8 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                node_state = self.zk.get('/nodes/%s/state' % node_name)[0].decode('ascii')
-                node_keepalive = int(self.zk.get('/nodes/%s/keepalive' % node_name)[0].decode('ascii'))
+                node_state = self.zk.get('/nodes/{}/state'.format(node_name))[0].decode('ascii')
+                node_keepalive = int(self.zk.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
             except:
                 node_state = 'unknown'
                 node_keepalive = 0
