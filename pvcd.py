@@ -32,19 +32,8 @@ import atexit
 import apscheduler.schedulers.background
 import ansiiprint
 
-# ANSII colours for output
-class bcolours:
-    PURPLE = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 def help():
-    print(bcolours.BOLD + "pvcd - Parallel Virtual Cluster management daemon" + bcolours.ENDC)
+    print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
 #    exit(0)
 
 help()
@@ -54,7 +43,7 @@ zk = kazoo.client.KazooClient(hosts='127.0.0.1:2181')
 try:
     zk.start()
 except:
-    print(bcolours.RED + "Failed to connect to local Zookeeper instance" + bcolours.ENDC)
+    print(ansiiprint.red() + "Failed to connect to local Zookeeper instance" + ansiiprint.end())
     exit(1)
 
 def zk_listener(state):
@@ -86,9 +75,9 @@ atexit.register(cleanup)
 
 # Check if our node exists in Zookeeper, and create it if not
 if zk.exists('/nodes/{}'.format(myhostname)):
-    print("> Node is " + bcolours.GREEN + "present" + bcolours.ENDC + " in Zookeeper.")
+    print("Node is " + ansiiprint.green() + "present" + ansiiprint.end() + " in Zookeeper")
 else:
-    print("> Node is " + bcolours.RED + "absent" + bcolours.ENDC + " in Zookeeper; adding new node.")
+    print("Node is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new node")
     keepalive_time = int(time.time())
     zk.create('/domains/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     zk.create('/domains/{}/state'.format(myhostname), 'stop'.encode('ascii'))
@@ -107,7 +96,7 @@ domain_list = []
 def updatenodes(new_node_list):
     global node_list
     node_list = new_node_list
-    print('Node list: ' + bcolours.BLUE + '{}'.format(' '.join(node_list)) + bcolours.ENDC)
+    print(ansiiprint.blue() + 'Node list: ' + ansiiprint.end() + '{}'.format(' '.join(node_list)))
     for node in node_list:
         if node in t_node:
             t_node[node].updatenodelist(t_node)
@@ -118,7 +107,7 @@ def updatenodes(new_node_list):
 def updatedomains(new_domain_list):
     global domain_list
     domain_list = new_domain_list
-    print('Domain list: ' + bcolours.BLUE + '{}'.format(' '.join(domain_list)) + bcolours.ENDC)
+    print(ansiiprint.blue() + 'Domain list: ' + ansiiprint.end() + '{}'.format(' '.join(domain_list)))
     for domain in domain_list:
         if not domain in s_domain:
             s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);

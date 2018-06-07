@@ -22,9 +22,26 @@
 
 import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode, ansiiprint
 
+# ANSII colours for output
+def red():
+    return '\033[91m'
+def blue():
+    return '\033[94m'
+def green():
+    return '\033[92m'
+def yellow():
+    return '\033[93m'
+def purple():
+    return '\033[95m'
+def bold():
+    return '\033[1m'
+def end():
+    return '\033[0m'
+
 # Print function
 def echo(message, prefix, state):
     date = '{} - '.format(time.strftime('%Y/%m/%d %H:%M:%S'))
+    endc = end()
     # Continuation
     if state == 'c':
         date = ''
@@ -32,26 +49,25 @@ def echo(message, prefix, state):
         prompt = '    '
     # OK
     elif state == 'o':
-        colour = '\033[92m' # Green
+        colour = green()
         prompt = '>>> '
     # Error
     elif state == 'e':
-        colour = '\033[91m' # Red
+        colour = red()
         prompt = '>>> '
     # Warning
     elif state == 'w':
-        colour = '\033[93m' # Yellow
+        colour = yellow()
         prompt = '>>> '
     # Tick
     elif state == 't':
-        colour = '\033[95m' # Purple
+        colour = purple()
         prompt = '>>> '
     # Information
     elif state == 'i':
-        colour = '\033[94m' # Blue
+        colour = blue()
         prompt = '>>> '
     else:
-        colour = '\033[1m' # Bold
+        colour = bold()
         prompt = '>>> '
-    end = '\033[0m'
-    print(colour + prompt + end + date + prefix + message)
+    print(colour + prompt + endc + date + prefix + message)
