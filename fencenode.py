@@ -28,4 +28,28 @@ import os, sys, libvirt, uuid, kazoo.client, time
 def fence(node_name, zk):
     time.sleep(3)
     print('>>> Fencing node {} via IPMI reboot signal.'.format(node_name))
-    
+
+    # DO IPMI FENCE HERE
+
+    print('>>> Moving VMs from dead hypervisor {} to new hosts.'.format(node_name))
+    dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    for dom_uuid in dead_node_running_domains:
+        most_memfree = 0
+        hypervisor_list = zk.get_children('/nodes')
+        current_hypervisor = zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+        for hypervisor in hypervisor_list:
+            state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+            if state != 'start' or hypervisor == current_hypervisor:
+                continue
+
+            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            if memfree > most_memfree:
+                most_memfree = memfree
+                target_hypervisor = hypervisor
+
+        print('>>> Moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+        transaction = zk.transaction()
+        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'start'.encode('ascii'))
+        transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
+        transaction.commit()
