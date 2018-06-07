@@ -109,7 +109,7 @@ class NodeInstance():
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
             else:
-                print('>>> Moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+                print('>>> Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
