@@ -227,6 +227,10 @@ class VMInstance:
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
             self.migrate_vm()
             
+        # VM should be running but not on this hypervisor
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
+            self.stop_vm()
+
         # VM is already running and should be
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             if not self.domuuid in self.thishypervisor.domain_list:
