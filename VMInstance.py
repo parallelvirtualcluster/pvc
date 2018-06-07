@@ -68,54 +68,54 @@ class VMInstance:
 
     # Start up the VM
     def start_vm(self, xmlconfig):
-        ansiiprint.echo('Starting VM', '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Starting VM', '{}: '.format(self.domuuid), 'i')
         self.instart = True
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Failed to open local libvirt connection', '{}: '.format(self.domuuid), 'e')
             self.instart = False
             return
     
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
-            ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Failed to create VM', '{}: '.format(self.domuuid), 'e')
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
 
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
         conn.close()
-        ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
+        ansiiprint.echo('Successfully started VM', '{}: '.format(self.domuuid), 'o')
         self.dom = dom
         self.instart = False
    
     # Stop the VM forcibly without updating state
     def terminate_vm(self):
-        ansiiprint.echo('Terminating VM', '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Terminating VM', '{}: '.format(self.domuuid), 'i')
         self.instop = True
         try:
             self.dom.destroy()
         except AttributeError:
-            ansiiprint.echo('Failed to terminate VM', '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Failed to terminate VM', '{}: '.format(self.domuuid), 'e')
         if self.domuuid in self.thishypervisor.domain_list:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
-        ansiiprint.echo('Successfully terminated VM', '{}:'.format(self.domuuid), 'o')
+        ansiiprint.echo('Successfully terminated VM', '{}: '.format(self.domuuid), 'o')
 
     # Stop the VM forcibly
     def stop_vm(self):
-        ansiiprint.echo('Forcibly stopping VM', '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Forcibly stopping VM', '{}: '.format(self.domuuid), 'i')
         self.instop = True
         try:
             self.dom.destroy()
         except AttributeError:
-            ansiiprint.echo('Failed to stop VM', '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Failed to stop VM', '{}: '.format(self.domuuid), 'e')
         if self.domuuid in self.thishypervisor.domain_list:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
@@ -123,13 +123,13 @@ class VMInstance:
                 pass
 
         self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
-        ansiiprint.echo('Successfully stopped VM', '{}:'.format(self.domuuid), 'o')
+        ansiiprint.echo('Successfully stopped VM', '{}: '.format(self.domuuid), 'o')
         self.dom = None
         self.instop = False
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
-        ansiiprint.echo('Gracefully stopping VM', '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Gracefully stopping VM', '{}: '.format(self.domuuid), 'i')
         self.inshutdown = True
         self.dom.shutdown()
         try:
@@ -139,7 +139,7 @@ class VMInstance:
                 time.sleep(0.5)
 
             if tick >= 60:
-                ansiiprint.echo('Shutdown timeout expired', '{}:'.format(self.domuuid), 'e')
+                ansiiprint.echo('Shutdown timeout expired', '{}: '.format(self.domuuid), 'e')
                 self.stop_vm()
                 self.inshutdown = False
                 return
@@ -153,7 +153,7 @@ class VMInstance:
                 pass
 
         self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
-        ansiiprint.echo('Successfully shutdown VM', '{}:'.format(self.domuuid), 'o')
+        ansiiprint.echo('Successfully shutdown VM', '{}: '.format(self.domuuid), 'o')
         self.dom = None
         self.inshutdown = False
 
@@ -163,14 +163,14 @@ class VMInstance:
             if dest_conn == None:
                 raise
         except:
-            ansiiprint.echo('Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.hypervisor), '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.hypervisor), '{}: '.format(self.domuuid), 'e')
             return 1
 
         try:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-            ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
+            ansiiprint.echo('Successfully migrated VM', '{}: '.format(self.domuuid), 'o')
 
         except:
             dest_conn.close()
@@ -183,10 +183,10 @@ class VMInstance:
     def migrate_vm(self):
         self.inmigrate = True
 
-        ansiiprint.echo('Migrating VM to hypervisor "{}"'.format(self.hypervisor), '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Migrating VM to hypervisor "{}"'.format(self.hypervisor), '{}: '.format(self.domuuid), 'i')
         migrate_ret = self.live_migrate_vm(self.hypervisor)
         if migrate_ret != 0:
-            ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
+            ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}: '.format(self.domuuid), 'e')
             self.shutdown_vm()
             time.sleep(1)
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
@@ -200,7 +200,7 @@ class VMInstance:
 
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
-        ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
+        ansiiprint.echo('Receiving migration', '{}: '.format(self.domuuid), 'i')
         self.inreceive = True
         while True:
             self.dom = lookupByUUID(self.domuuid)
@@ -215,7 +215,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
-        ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
+        ansiiprint.echo('Successfully migrated VM', '{}: '.format(self.domuuid), 'o')
         self.inreceive = False
 
     #
@@ -280,7 +280,7 @@ class VMInstance:
             # Open a libvirt connection
             conn = libvirt.open(libvirt_name)
             if conn == None:
-                ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
+                ansiiprint.echo('Failed to open local libvirt connection', '{}: '.format(self.domuuid), 'e')
                 return dom
         
             # Lookup the UUID
