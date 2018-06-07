@@ -92,6 +92,20 @@ class VMInstance:
         self.dom = dom
         self.instart = False
    
+    # Stop the VM forcibly without updating state
+    def terminate_vm(self):
+        print(">>> %s - Terminating VM" % self.domuuid)
+        self.instop = True
+        try:
+            self.dom.destroy()
+        except AttributeError:
+            pass
+        if self.domuuid in self.thishypervisor.domain_list:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
+
     # Stop the VM forcibly
     def stop_vm(self):
         print(">>> %s - Forcibly stopping VM" % self.domuuid)
@@ -229,7 +243,7 @@ class VMInstance:
             
         # VM should be running but not on this hypervisor
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
-            self.stop_vm()
+            self.terminate_vm()
 
         # VM is already running and should be
         elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
