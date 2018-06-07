@@ -90,6 +90,7 @@ class NodeInstance():
         print('>>> Flushing node {} of running VMs.'.format(self.name))
         for dom_uuid in self.domain_list:
             most_memfree = 0
+            target_hypervisor = None
             hypervisor_list = self.zk.get_children('/nodes')
             current_hypervisor = self.zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
             for hypervisor in hypervisor_list:
