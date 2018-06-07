@@ -39,17 +39,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=12
 # pvc node
 ###############################################################################
 @click.group(name='node', short_help='Manage a PVC hypervisor node', context_settings=CONTEXT_SETTINGS)
-@click.option(
-    '-n', '--name', 'node_name', default=this_host, show_default=True,
-    help='The PVC node to operate on.'
-)
 def node():
     """
     Manage the state of a node in the PVC cluster.
-
-    Notes:
-
-    * The '--name' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
     """
     pass
 
@@ -58,22 +50,58 @@ def node():
 # pvc node flush
 ###############################################################################
 @click.command(name='flush', short_help='Take a node out of service')
-def flush_host():
+@click.option(
+    '-n', '--name', 'node_name', default=this_host, show_default=True,
+    help='The PVC node to operate on.'
+)
+def flush_host(node_name):
     """
     Take a node out of active service and migrate away all VMs.
+
+    Notes:
+
+    * The '--name' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
     """
-    pass
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # Add the new domain to Zookeeper
+    transaction = zk.transaction()
+    transaction.set_data('/nodes/{}/state'.format(node_name), 'flush'.encode('ascii'))
+    results = transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
 # pvc node ready
 ###############################################################################
 @click.command(name='ready', short_help='Restore node to service')
-def ready_host():
+@click.option(
+    '-n', '--name', 'node_name', default=this_host, show_default=True,
+    help='The PVC node to operate on.'
+)
+def ready_host(node_name):
     """
     Restore a host to active service and migrate back all VMs.
+
+    Notes:
+
+    * The '--name' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
     """
-    pass
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # Add the new domain to Zookeeper
+    transaction = zk.transaction()
+    transaction.set_data('/nodes/{}/state'.format(node_name), 'unflush'.encode('ascii'))
+    results = transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
