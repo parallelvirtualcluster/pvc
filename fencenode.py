@@ -36,7 +36,7 @@ def fence(node_name, zk):
     for dom_uuid in dead_node_running_domains:
         most_memfree = 0
         hypervisor_list = zk.get_children('/nodes')
-        current_hypervisor = zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+        current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
         for hypervisor in hypervisor_list:
             state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
             if state != 'start' or hypervisor == current_hypervisor:
