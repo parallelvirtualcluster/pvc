@@ -151,9 +151,14 @@ def getInformationFromXML(zk, uuid, long_output):
     if long_output == True:
         # Disk list
         ainformation.append('')
-        ainformation.append('{}Disks:{}        {}ID  Type  Name                                       Dev  Bus{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        name_length = 0
         for disk in ddisks:
-            ainformation.append('              {0: <3} {1: <5} {2: <42} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
+            _name_length = len(disk['name']) + 1
+            if _name_length > name_length:
+                name_length = _name_length
+        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus{4}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), 'Name', ansiiprint.end(), width=name_length))
+        for disk in ddisks:
+            ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
         # Network list
         ainformation.append('')
         ainformation.append('{}Interfaces:{}   {}ID  Type     Source   Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
@@ -161,9 +166,9 @@ def getInformationFromXML(zk, uuid, long_output):
             ainformation.append('              {0: <3} {1: <8} {2: <8} {3: <8} {4: <17}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
         # Controller list
         ainformation.append('')
-        ainformation.append('{}Controllers:{}  {}ID  Type     Model{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for controller in dcontrollers:
-            ainformation.append('              {0: <3} {1: <8} {2: <8}'.format(dcontrollers.index(controller), controller['type'], controller['model']))
+            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(dcontrollers.index(controller), controller['type'], controller['model']))
 
     # Join it all together
     information = '\n'.join(ainformation)
