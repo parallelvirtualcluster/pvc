@@ -151,9 +151,9 @@ def getInformationFromXML(zk, uuid, long_output):
     if long_output == True:
         # Disk list
         ainformation.append('')
-        ainformation.append('{}Disks:{}        {}ID  Type  Name                                     Dev  Bus{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        ainformation.append('{}Disks:{}        {}ID  Type  Name                                       Dev  Bus{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for disk in ddisks:
-            ainformation.append('              {0: <3} {1: <5} {2: <40} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
+            ainformation.append('              {0: <3} {1: <5} {2: <42} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
         # Network list
         ainformation.append('')
         ainformation.append('{}Interfaces:{}   {}ID  Type     Source   Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
