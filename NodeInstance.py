@@ -102,7 +102,7 @@ class NodeInstance():
                     most_memfree = memfree
                     target_hypervisor = hypervisor
     
-            if least_host == None:
+            if target_hypervisor == None:
                 print('>>> Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
