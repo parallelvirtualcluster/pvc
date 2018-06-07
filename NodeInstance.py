@@ -91,7 +91,7 @@ class NodeInstance():
         for dom_uuid in self.domain_list:
             most_memfree = 0
             hypervisor_list = self.zk.get_children('/nodes')
-            current_hypervisor = self.zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            current_hypervisor = self.zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
             for hypervisor in hypervisor_list:
                 state = self.zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
                 if state != 'start' or hypervisor == current_hypervisor:
