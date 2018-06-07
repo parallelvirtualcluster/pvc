@@ -194,9 +194,9 @@ class NodeInstance():
         conn.close()
 
         # Display node information to the terminal
-        ansiiprint.echo('{} keepalive'.format(self.name), '', 't')
-        ansiiprint.echo('CPUs: {} | Free memory: {} | Load: {}'.format(self.cpucount, self.memfree, self.cpuload), '', 'c')
-        ansiiprint.echo('Active domains: {}'.format(' '.join(self.domain_list)), '', 'c')
+        ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
+        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload), '', 'c')
+        ansiiprint.echo('{}Active domains:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.domain_list)), '', 'c')
 
         # Update our local node lists
         for node_name in self.t_node:
@@ -249,7 +249,7 @@ class NodeInstance():
                     pass
         
         # Display cluster information to the terminal
-        ansiiprint.echo('Cluster status', '', 't')
-        ansiiprint.echo('{}Active{} nodes: {}'.format(ansiiprint.green(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
-        ansiiprint.echo('{}Flushed{} nodes: {}'.format(ansiiprint.yellow(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
-        ansiiprint.echo('{}Inactive{} nodes: {}'.format(ansiiprint.red(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
+        ansiiprint.echo('{}Cluster status{}'.format(ansiiprint.purple(), ansiiprint.end()), '', 't')
+        ansiiprint.echo('{}Active nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
+        ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
+        ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
