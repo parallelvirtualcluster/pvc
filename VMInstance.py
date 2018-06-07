@@ -26,7 +26,6 @@ class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
         # Passed-in variables on creation
         self.domuuid = domuuid
-        self.zkey = '/domains/{}'.format(domuuid)
         self.zk = zk
         self.thishypervisor = thishypervisor
 
@@ -42,7 +41,7 @@ class VMInstance:
         self.dom = lookupByUUID(self.domuuid)
 
         # Watch for changes to the hypervisor field in Zookeeper
-        @zk.DataWatch(self.zkey + '/hypervisor')
+        @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
         def watch_hypervisor(data, stat, event=""):
             try:
                 self.hypervisor = data.decode('ascii')
@@ -51,7 +50,7 @@ class VMInstance:
             self.manage_vm_state()
 
         # Watch for changes to the state field in Zookeeper
-        @zk.DataWatch(self.zkey + '/state')
+        @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
             try:
                 self.state = data.decode('ascii')
@@ -83,7 +82,7 @@ class VMInstance:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
             print('>>> {} - Failed to create VM.'.format(self.domuuid))
-            self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
 
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
@@ -120,7 +119,7 @@ class VMInstance:
             except ValueError:
                 pass
 
-        self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
+        self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
         self.dom = None
         self.instop = False
     
@@ -149,7 +148,7 @@ class VMInstance:
             except ValueError:
                 pass
 
-        self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
+        self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
         self.dom = None
         self.inshutdown = False
 
@@ -184,7 +183,7 @@ class VMInstance:
             print('>>> {} - Could not live migrate VM; shutting down to migrate instead.'.format(self.domuuid))
             self.shutdown_vm()
             time.sleep(1)
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
@@ -206,7 +205,7 @@ class VMInstance:
             if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
                 break
 
-        self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
@@ -254,7 +253,7 @@ class VMInstance:
         # VM should be started
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name and self.instart == False:
             # Grab the domain information from Zookeeper
-            domxml, domxmlstat = self.zk.get(self.zkey + '/xml')
+            domxml, domxmlstat = self.zk.get('/domains/{}/xml'.format(self.domuuid))
             domxml = str(domxml.decode('ascii'))
             self.start_vm(domxml)
 
