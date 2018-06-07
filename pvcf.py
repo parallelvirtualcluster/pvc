@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, libvirt, uuid, kazoo.client, lxml.objectify, click
+import os, sys, libvirt, uuid, kazoo.client, lxml.objectify, click, ansiiprint
 
 #
 # Validate a UUID
@@ -117,44 +117,51 @@ def getInformationFromXML(zk, uuid, long_output):
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('Virtual machine information:')
+    ainformation.append('{}Virtual machine information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('UUID:               {}'.format(duuid))
-    ainformation.append('Name:               {}'.format(dname))
-    ainformation.append('Memory:             {} {}'.format(dmemory, dmemory_unit))
-    ainformation.append('vCPUs:              {}'.format(dvcpu))
-    ainformation.append('Topology [S/C/T]:   {}'.format(dvcputopo))
+    ainformation.append('{}UUID:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), duuid))
+    ainformation.append('{}Name:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dname))
+    ainformation.append('{}Memory:{}             {} {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory, dmemory_unit))
+    ainformation.append('{}vCPUs:{}              {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcpu))
+    ainformation.append('{}Topology [S/C/T]:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
 
     if long_output == True:
         # Virtualization information
         ainformation.append('')
-        ainformation.append('Emulator:           {}'.format(demulator))
-        ainformation.append('Type:               {}'.format(dtype))
-        ainformation.append('Arch:               {}'.format(darch))
-        ainformation.append('Machine:            {}'.format(dmachine))
-        ainformation.append('Features:           {}'.format(' '.join(dfeatures)))
+        ainformation.append('{}Emulator:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), demulator))
+        ainformation.append('{}Type:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dtype))
+        ainformation.append('{}Arch:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), darch))
+        ainformation.append('{}Machine:{}            {}'.format(ansiiprint.purple(), ansiiprint.end(), dmachine))
+        ainformation.append('{}Features:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), ' '.join(dfeatures)))
 
     # PVC cluster information
     ainformation.append('')
-    ainformation.append('State:              {}'.format(dstate))
-    ainformation.append('Active Hypervisor:  {}'.format(dhypervisor))
-    ainformation.append('Last Hypervisor:  {}'.format(dlasthypervisor))
+    dstate_colour = {
+        'start': ansiiprint.green(),
+        'stop': ansiiprint.red(),
+        'shutdown': ansiiprint.yellow(),
+        'migrate': ansiiprint.blue(),
+        'unmigrate': ansiiprint.blue()
+    }
+    ainformation.append('{}State:{}              {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dstate_colour[dstate], dstate, ansiiprint.end()))
+    ainformation.append('{}Active Hypervisor:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), dhypervisor))
+    ainformation.append('{}Last Hypervisor:{}    {}'.format(ansiiprint.purple(), ansiiprint.end(), dlasthypervisor))
 
     if long_output == True:
         # Disk list
         ainformation.append('')
-        ainformation.append('Disks:        ID  Type  Name                 Dev  Bus')
+        ainformation.append('{}Disks:{}        {}ID  Type  Name                                     Dev  Bus{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for disk in ddisks:
-            ainformation.append('              {0: <3} {1: <5} {2: <20} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
+            ainformation.append('              {0: <3} {1: <5} {2: <40} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus']))
         # Network list
         ainformation.append('')
-        ainformation.append('Interfaces:   ID  Type     Source   Model    MAC')
+        ainformation.append('{}Interfaces:{}   {}ID  Type     Source   Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for net in dnets:
             ainformation.append('              {0: <3} {1: <8} {2: <8} {3: <8} {4: <17}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
         # Controller list
         ainformation.append('')
-        ainformation.append('Controllers:  ID  Type     Model')
+        ainformation.append('{}Controllers:{}  {}ID  Type     Model{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for controller in dcontrollers:
             ainformation.append('              {0: <3} {1: <8} {2: <8}'.format(dcontrollers.index(controller), controller['type'], controller['model']))
 
