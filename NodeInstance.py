@@ -90,14 +90,14 @@ class NodeInstance():
         print('>>> Flushing node {} of running VMs.'.format(self.name))
         for dom_uuid in self.domain_list:
             most_memfree = 0
-            hypervisor_list = zk.get_children('/nodes')
-            current_hypervisor = zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            hypervisor_list = self.zk.get_children('/nodes')
+            current_hypervisor = self.zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
             for hypervisor in hypervisor_list:
-                state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+                state = self.zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
                 if state != 'start' or hypervisor == current_hypervisor:
                     continue
     
-                memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+                memfree = int(self.zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
                 if memfree > most_memfree:
                     most_memfree = memfree
                     target_hypervisor = hypervisor
