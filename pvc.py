@@ -186,7 +186,7 @@ def undefine_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -202,7 +202,7 @@ def undefine_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
@@ -252,7 +252,7 @@ def start_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -268,7 +268,7 @@ def start_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     # Set the VM to start
@@ -302,7 +302,7 @@ def shutdown_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -318,7 +318,7 @@ def shutdown_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     # Set the VM to shutdown
@@ -352,7 +352,7 @@ def stop_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -368,7 +368,7 @@ def stop_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     # Set the VM to start
@@ -410,7 +410,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -426,14 +426,14 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
     last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if last_hypervisor != '' and force_migrate != True:
-        click.echo('The VM "{}" has been previously migrated.'.format(dom_uuid))
+        click.echo('ERROR: The VM "{}" has been previously migrated.'.format(dom_uuid))
         click.echo('> Last hypervisor: {}'.format(last_hypervisor))
         click.echo('> Current hypervisor: {}'.format(current_hypervisor))
         click.echo('Run `vm unmigrate` to restore the VM to its previous hypervisor, or use `--force` to override this check.')
@@ -454,7 +454,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
                 target_hypervisor = hypervisor
     else:
         if target_hypervisor == current_hypervisor:
-            click.echo('The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
+            click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
 
     click.echo('Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
@@ -491,7 +491,7 @@ def unmigrate_vm(dom_name, dom_uuid):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     # Open a Zookeeper connection
@@ -507,13 +507,13 @@ def unmigrate_vm(dom_name, dom_uuid):
             message_name = dom_name
         else:
             message_name = dom_uuid
-        click.echo('Could not find VM "{}" in the cluster!'.format(message_name))
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
     target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == '':
-        click.echo('The VM "{}" has not been previously migrated.'.format(dom_uuid))
+        click.echo('ERROR: The VM "{}" has not been previously migrated.'.format(dom_uuid))
         return
 
     click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
@@ -554,7 +554,7 @@ def search(dom_name, dom_uuid, long_output):
 
     # Ensure at least one search method is set
     if dom_name == None and dom_uuid == None:
-        click.echo("You must specify either a `--name` or `--uuid` value.")
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
         return
 
     zk = pvcf.startZKConnection(zk_host)
@@ -566,7 +566,7 @@ def search(dom_name, dom_uuid, long_output):
     information = pvcf.getInformationFromXML(zk, dom_uuid, long_output)
 
     if information == None:
-        click.echo('Could not find a domain matching that name or UUID.')
+        click.echo('ERROR: Could not find a domain matching that name or UUID.')
         return
 
     click.echo(information)
