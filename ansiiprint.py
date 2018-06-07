@@ -70,4 +70,8 @@ def echo(message, prefix, state):
     else:
         colour = bold()
         prompt = '>>> '
+
+    # Append space to prefix
+    if prefix != '':
+        prefix = prefix + ' '
     print(colour + prompt + endc + date + prefix + message)
