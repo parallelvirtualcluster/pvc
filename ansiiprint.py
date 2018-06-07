@@ -54,4 +54,4 @@ def echo(message, prefix, state):
         colour = '\033[1m' # Bold
         prompt = '>>> '
     end = '\033[0m'
-    print(colour + prompt + end + date + prefix + '{}'.format(message))
+    print(colour + prompt + end + date + prefix + message)
