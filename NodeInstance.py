@@ -250,6 +250,6 @@ class NodeInstance():
         
         # Display cluster information to the terminal
         ansiiprint.echo('Cluster status', '', 't')
-        ansiiprint.echo('Active nodes: {}'.format(' '.join(self.active_node_list)), '', 'c')
-        ansiiprint.echo('Flushed nodes: {}'.format(' '.join(self.flushed_node_list)), '', 'c')
-        ansiiprint.echo('Inactive nodes: {}'.format(' '.join(self.inactive_node_list)), '', 'c')
+        ansiiprint.echo('{}Active{} nodes: {}'.format(ansiiprint.green(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
+        ansiiprint.echo('{}Flushed{} nodes: {}'.format(ansiiprint.yellow(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
+        ansiiprint.echo('{}Inactive{} nodes: {}'.format(ansiiprint.red(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
