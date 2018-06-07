@@ -40,8 +40,10 @@ def end():
 
 # Print function
 def echo(message, prefix, state):
+    # Get the date
     date = '{} - '.format(time.strftime('%Y/%m/%d %H:%M:%S'))
     endc = end()
+
     # Continuation
     if state == 'c':
         date = ''
@@ -74,4 +76,5 @@ def echo(message, prefix, state):
     # Append space to prefix
     if prefix != '':
         prefix = prefix + ' '
+
     print(colour + prompt + endc + date + prefix + message)
