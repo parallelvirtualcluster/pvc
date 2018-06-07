@@ -180,7 +180,7 @@ class VMInstance:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-            print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Migrated successfully.'.format(self.domuuid))
+            print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully migrated VM.'.format(self.domuuid))
         except:
             dest_conn.close()
             return 1
@@ -224,7 +224,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
-        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Migrated successfully.'.format(self.domuuid))
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully migrated VM.'.format(self.domuuid))
         self.inreceive = False
 
     #
