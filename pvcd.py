@@ -31,8 +31,18 @@ import time
 import atexit
 import apscheduler.schedulers.background
 
+class bcolours:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def help():
-    print("pvcd - Parallel Virtual Cluster management daemon")
+    print(bcolours.HEADER + bcolours.BOLD + bcolours.RED + "pvcd - Parallel Virtual Cluster management daemon" + bcolours.ENDC)
 #    exit(0)
 
 help()
@@ -42,7 +52,7 @@ zk = kazoo.client.KazooClient(hosts='127.0.0.1:2181')
 try:
     zk.start()
 except:
-    print("Failed to connect to local Zookeeper instance")
+    print(bcolours.RED + "Failed to connect to local Zookeeper instance" + bcolours.ENDC)
     exit(1)
 
 def zk_listener(state):
@@ -64,7 +74,7 @@ def cleanup():
     try:
         update_timer.shutdown()
         if t_node[myhostname].getstate() != 'flush':
-            zk.set('/nodes/' + myhostname + '/state', 'stop'.encode('ascii'))
+            zk.set('/nodes/{}/state'.format(myhostname), 'stop'.encode('ascii'))
         zk.stop()
         zk.close()
     except:
@@ -73,17 +83,18 @@ def cleanup():
 atexit.register(cleanup)
 
 # Check if our node exists in Zookeeper, and create it if not
-if zk.exists('%s' % mynodestring):
-    print("Node is present in Zookeeper")
+if zk.exists('/nodes/{}'.format(myhostname)):
+    print("> Node is " + bcolours.GREEN + "present" + bcolours.ENDC + " in Zookeeper.")
 else:
+    print("> Node is " + bcolours.RED + "absent" + bcolours.ENDC + " in Zookeeper; adding new node.")
     keepalive_time = int(time.time())
-    zk.create('%s' % mynodestring, 'hypervisor'.encode('ascii'))
-    zk.create('%s/state' % mynodestring, 'stop'.encode('ascii'))
-    zk.create('%s/cpucount' % mynodestring, '0'.encode('ascii'))
-    zk.create('%s/memfree' % mynodestring, '0'.encode('ascii'))
-    zk.create('%s/cpuload' % mynodestring, '0.0'.encode('ascii'))
-    zk.create('%s/runningdomains' % mynodestring, ''.encode('ascii'))
-    zk.create('%s/keepalive' % mynodestring, str(keepalive_time).encode('ascii'))
+    zk.create('/domains/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
+    zk.create('/domains/{}/state'.format(myhostname), 'stop'.encode('ascii'))
+    zk.create('/domains/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/domains/{}/memfree'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/domains/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
+    zk.create('/domains/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
+    zk.create('/domains/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
@@ -94,7 +105,7 @@ domain_list = []
 def updatenodes(new_node_list):
     global node_list
     node_list = new_node_list
-    print('Node list: %s' % node_list)
+    print('Node list: ' + bcolours.BLUE + '{}'.format(' '.join(node_list)) + bcolours.ENDC)
     for node in node_list:
         if node in t_node:
             t_node[node].updatenodelist(t_node)
@@ -105,7 +116,7 @@ def updatenodes(new_node_list):
 def updatedomains(new_domain_list):
     global domain_list
     domain_list = new_domain_list
-    print('Domain list: %s' % domain_list)
+    print('Domain list: ' + bcolours.BLUE + '{}'.format(' '.join(domain_list)) + bcolours.ENDC)
     for domain in domain_list:
         if not domain in s_domain:
             s_domain[domain] = VMInstance.VMInstance(domain, zk, t_node[myhostname]);
