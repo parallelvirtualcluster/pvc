@@ -103,7 +103,7 @@ class NodeInstance():
                     target_hypervisor = hypervisor
     
             if least_host == None:
-                print('>>> Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid)))
+                print('>>> Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
