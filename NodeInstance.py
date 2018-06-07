@@ -88,54 +88,54 @@ class NodeInstance():
 
     # Flush all VMs on the host
     def flush(self):
-        for domain in self.domain_list:
-            # Determine the best target hypervisor
-            least_mem = 2**64
-            least_host = None
-            for node_name in self.active_node_list:
-                # It should never include itself, but just in case
-                if node_name == self.name:
+        print('>>> Flushing node {} of running VMs.'.format(self.name))
+        for dom_uuid in self.domain_list:
+            most_memfree = 0
+            hypervisor_list = zk.get_children('/nodes')
+            current_hypervisor = zk.get('/dom_uuids/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            for hypervisor in hypervisor_list:
+                state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+                if state != 'start' or hypervisor == current_hypervisor:
                     continue
-
-                # Get our node object and free memory
-                node = self.t_node[node_name]
-                node_freemem = int(node.getfreemem())
-
-                # Calculate who has the most free memory
-                if node_freemem < least_mem:
-                    least_mem = node_freemem
-                    least_host = node_name
-
+    
+                memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+                if memfree > most_memfree:
+                    most_memfree = memfree
+                    target_hypervisor = hypervisor
+    
             if least_host == None:
-                print(">>> Failed to find valid migration target for %s" % domain)
+                print('>>> Failed to find valid migration target for %s; shutting down.'.format(dom_uuid)))
                 transaction = self.zk.transaction()
-                transaction.set_data('/domains/' + domain + '/state', 'shutdown'.encode('ascii'))
+                transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
             else:
-                print(">>> Setting migration to %s for %s" % (least_host, domain))
+                print('>>> Moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
                 transaction = self.zk.transaction()
-                transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
-                transaction.set_data('/domains/' + domain + '/hypervisor', least_host.encode('ascii'))
+                transaction.set_data('/domains/{}/state'.format(dom_uuid), 'start'.encode('ascii'))
+                transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+                transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
                 result = transaction.commit()
 
             # Wait 1s between migrations
             time.sleep(1)
 
     def unflush(self):
-        print('>>> Restoring node %s to active service' % self.name)
-        for domain in self.s_domain:
-            last_hypervisor = self.zk.get("/domains/" + domain + '/lasthypervisor')[0].decode('ascii')
-            if last_hypervisor == self.name:
-                print(">>> Setting unmigration for %s" % domain)
-                transaction = self.zk.transaction()
-                transaction.set_data('/domains/' + domain + '/state', 'migrate'.encode('ascii'))
-                transaction.set_data('/domains/' + domain + '/hypervisor', self.name.encode('ascii'))
-                result = transaction.commit()
+        print('>>> Restoring node {} to active service.'.format(self.name))
+        self.zk.set('/nodes/{}/state'.format(self.name), 'start'.encode('ascii'))
+        for dom_uuid in self.s_domain:
+            last_hypervisor = self.zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+            if last_hypervisor != self.name:
+                continue
 
-                # Wait 1s between migrations
-                time.sleep(1)
+            print('>>> Setting unmigration for VM "{}".'.format(domain))
+            transaction = self.zk.transaction()
+            transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+            transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
+            transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+            result = transaction.commit()
 
-        self.zk.set("/nodes/" + self.name + "/state", 'start'.encode('ascii'))
+            # Wait 1s between migrations
+            time.sleep(1)
 
     def update_zookeeper(self):
         # Connect to libvirt
