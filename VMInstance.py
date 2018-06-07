@@ -26,7 +26,7 @@ class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
         # Passed-in variables on creation
         self.domuuid = domuuid
-        self.zkey = '/domains/%s' % domuuid
+        self.zkey = '/domains/{}'.format(domuuid)
         self.zk = zk
         self.thishypervisor = thishypervisor
 
@@ -68,21 +68,21 @@ class VMInstance:
 
     # Start up the VM
     def start_vm(self, xmlconfig):
-        print(">>> %s - Starting VM" % self.domuuid)
+        print(">>> {} - Starting VM.".format(self.domuuid))
         self.instart = True
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
+            print('>>> {} - Failed to open local libvirt connection.'.format(self.domuuid))
             self.instart = False
             return
     
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
-            print('>>> %s - Failed to create VM' % self.domuuid)
+            print('>>> {} - Failed to create VM.'.format(self.domuuid))
             self.zk.set(self.zkey + '/state', 'stop'.encode('ascii'))
 
         if not self.domuuid in self.thishypervisor.domain_list:
@@ -94,7 +94,7 @@ class VMInstance:
    
     # Stop the VM forcibly without updating state
     def terminate_vm(self):
-        print(">>> %s - Terminating VM" % self.domuuid)
+        print(">>> {} - Terminating VM.".format(self.domuuid))
         self.instop = True
         try:
             self.dom.destroy()
@@ -108,7 +108,7 @@ class VMInstance:
 
     # Stop the VM forcibly
     def stop_vm(self):
-        print(">>> %s - Forcibly stopping VM" % self.domuuid)
+        print(">>> {} - Forcibly stopping VM.".format(self.domuuid))
         self.instop = True
         try:
             self.dom.destroy()
@@ -126,7 +126,7 @@ class VMInstance:
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
-        print(">>> %s - Gracefully stopping VM" % self.domuuid)
+        print(">>> {} - Gracefully stopping VM.".format(self.domuuid))
         self.inshutdown = True
         self.dom.shutdown()
         try:
@@ -136,7 +136,7 @@ class VMInstance:
                 time.sleep(0.5)
 
             if tick >= 60:
-                print(">>> %s - Shutdown timeout expired" % self.domuuid)
+                print(">>> {} - Shutdown timeout expired.".format(self.domuuid))
                 self.stop_vm()
                 self.inshutdown = False
                 return
@@ -155,18 +155,18 @@ class VMInstance:
 
     def live_migrate_vm(self, dest_hypervisor):
         try:
-            dest_conn = libvirt.open('qemu+tcp://%s/system' % self.hypervisor)
+            dest_conn = libvirt.open('qemu+tcp://{}/system'.format(self.hypervisor))
             if dest_conn == None:
                 raise
         except:
-            print('>>> %s - Failed to open connection to qemu+tcp://%s/system; aborting migration' % self.hypervisor)
+            print('>>> {} - Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.dom_uuid, self.hypervisor))
             return 1
 
         try:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-            print('>>> %s - Migrated successfully' % self.domuuid)
+            print('>>> {} - Migrated successfully.'.format(self.domuuid))
         except:
             dest_conn.close()
             return 1
@@ -178,12 +178,13 @@ class VMInstance:
     def migrate_vm(self):
         self.inmigrate = True
 
-        print('>>> %s - Migrating VM to %s' % (self.domuuid, self.hypervisor))
+        print('>>> {} - Migrating VM to hypervisor "{}".'.format(self.domuuid, self.hypervisor))
         migrate_ret = self.live_migrate_vm(self.hypervisor)
         if migrate_ret != 0:
-            print('>>> %s - Could not live migrate VM; shutting down instead' % self.domuuid)
+            print('>>> {} - Could not live migrate VM; shutting down to migrate instead.'.format(self.domuuid))
             self.shutdown_vm()
-            time.sleep(0.5)
+            time.sleep(1)
+            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
         else:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
@@ -194,7 +195,7 @@ class VMInstance:
 
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
-        print('>>> %s - Receiving migration' % self.domuuid)
+        print('>>> {} - Receiving migration.'.format(self.domuuid))
         self.inreceive = True
         while True:
             self.dom = lookupByUUID(self.domuuid)
@@ -209,7 +210,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
-        print('>>> %s - Migrated successfully' % self.domuuid)
+        print('>>> {} - Migrated successfully.'.format(self.domuuid))
         self.inreceive = False
 
     #
@@ -274,7 +275,7 @@ def lookupByUUID(tuuid):
         # Open a libvirt connection
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> %s - Failed to open local libvirt connection.' % self.domuuid)
+            print('>>> {} - Failed to open local libvirt connection.'.format(self.domuuid))
             return dom
     
         # Lookup the UUID
