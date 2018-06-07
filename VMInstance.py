@@ -203,7 +203,7 @@ class VMInstance:
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         self.inreceive = True
         while True:
-            self.dom = lookupByUUID(self.domuuid)
+            self.dom = self.lookupByUUID(self.domuuid)
             if self.dom == None:
                 time.sleep(0.2)
                 continue
