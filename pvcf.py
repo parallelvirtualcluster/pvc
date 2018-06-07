@@ -161,9 +161,9 @@ def getInformationFromXML(zk, uuid, long_output):
             ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
         # Network list
         ainformation.append('')
-        ainformation.append('{}Interfaces:{}   {}ID  Type     Source   Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
         for net in dnets:
-            ainformation.append('              {0: <3} {1: <8} {2: <8} {3: <8} {4: <17}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
+            ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
         # Controller list
         ainformation.append('')
         ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
