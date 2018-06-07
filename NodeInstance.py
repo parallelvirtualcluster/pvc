@@ -22,6 +22,17 @@
 
 import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode
 
+# ANSII colours for output
+class bcolours:
+    PURPLE = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 class NodeInstance():
     def __init__(self, name, t_node, s_domain, zk):
         # Passed-in variables on creation
@@ -87,7 +98,7 @@ class NodeInstance():
 
     # Flush all VMs on the host
     def flush(self):
-        print('>>> Flushing node {} of running VMs.'.format(self.name))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Flushing node {} of running VMs.'.format(self.name))
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
@@ -104,12 +115,12 @@ class NodeInstance():
                     target_hypervisor = hypervisor
     
             if target_hypervisor == None:
-                print('>>> Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid))
+                print(bcolours.RED + '>>> ' + bcolours.ENDC + 'Failed to find migration target for VM "{}"; shutting down.'.format(dom_uuid))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
             else:
-                print('>>> Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+                print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
                 transaction = self.zk.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
@@ -120,14 +131,14 @@ class NodeInstance():
             time.sleep(1)
 
     def unflush(self):
-        print('>>> Restoring node {} to active service.'.format(self.name))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Restoring node {} to active service.'.format(self.name))
         self.zk.set('/nodes/{}/state'.format(self.name), 'start'.encode('ascii'))
         for dom_uuid in self.s_domain:
             last_hypervisor = self.zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
             if last_hypervisor != self.name:
                 continue
 
-            print('>>> Setting unmigration for VM "{}".'.format(dom_uuid))
+            print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Setting unmigration for VM "{}".'.format(dom_uuid))
             transaction = self.zk.transaction()
             transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
             transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
@@ -142,7 +153,7 @@ class NodeInstance():
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> Failed to open connection to {}'.format(libvirt_name))
+            print(bcolours.RED  + '>>> ' + bcolours.ENDC + 'Failed to open connection to {}'.format(libvirt_name))
             return
 
         # Get past state and update if needed
@@ -193,7 +204,7 @@ class NodeInstance():
         conn.close()
 
         # Display node information to the terminal
-        print('>>> {} - {} keepalive'.format(time.strftime('%d/%m/%Y %H:%M:%S'), self.name))
+        print(bcolours.PURPLE + '>>> ' + bcolours.ENDC + '{} - {} keepalive'.format(time.strftime('%d/%m/%Y %H:%M:%S'), self.name))
         print('    CPUs: {} | Free memory: {} | Load: {}'.format(self.cpucount, self.memfree, self.cpuload))
         print('    Active domains: {}'.format(' '.join(self.domain_list)))
 
@@ -210,7 +221,7 @@ class NodeInstance():
             # (A node is considered dead when its keepalive timer is >30s out-of-date while in 'start' state)
             node_deadtime = int(time.time()) - 30
             if node_keepalive < node_deadtime and node_state == 'start':
-                print('>>> Node {} is dead! Performing fence operation in 3 seconds.'.format(node_name))
+                print(bcolours.RED + '>>> ' + bcolours.ENDC + 'Node {} is dead! Performing fence operation in 3 seconds.'.format(node_name))
                 self.zk.set('/nodes/{}/state'.format(node_name), 'dead'.encode('ascii'))
                 fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
@@ -248,7 +259,7 @@ class NodeInstance():
                     pass
         
         # Display cluster information to the terminal
-        print('>>> {} - Cluster status'.format(time.strftime('%d/%m/%Y %H:%M:%S')))
+        print(bcolours.PURPLE + '>>> ' + bcolours.ENDC + '{} - Cluster status'.format(time.strftime('%d/%m/%Y %H:%M:%S')))
         print('    Active nodes: {}'.format(' '.join(self.active_node_list)))
         print('    Flushed nodes: {}'.format(' '.join(self.flushed_node_list)))
         print('    Inactive nodes: {}'.format(' '.join(self.inactive_node_list)))

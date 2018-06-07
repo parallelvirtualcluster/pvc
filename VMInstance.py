@@ -22,6 +22,17 @@
 
 import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
 
+# ANSII colours for output
+class bcolours:
+    PURPLE = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 class VMInstance:
     def __init__(self, domuuid, zk, thishypervisor):
         # Passed-in variables on creation
@@ -67,52 +78,54 @@ class VMInstance:
 
     # Start up the VM
     def start_vm(self, xmlconfig):
-        print(">>> {} - Starting VM.".format(self.domuuid))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Starting VM.'.format(self.domuuid))
         self.instart = True
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> {} - Failed to open local libvirt connection.'.format(self.domuuid))
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to open local libvirt connection.'.format(self.domuuid))
             self.instart = False
             return
     
         try:
             dom = conn.createXML(xmlconfig, 0)
         except libvirt.libvirtError as e:
-            print('>>> {} - Failed to create VM.'.format(self.domuuid))
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to create VM.'.format(self.domuuid))
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
 
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
         conn.close()
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully started VM.'.format(self.domuuid))
         self.dom = dom
         self.instart = False
    
     # Stop the VM forcibly without updating state
     def terminate_vm(self):
-        print(">>> {} - Terminating VM.".format(self.domuuid))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Terminating VM.'.format(self.domuuid))
         self.instop = True
         try:
             self.dom.destroy()
         except AttributeError:
-            pass
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to terminate VM.'.format(self.domuuid))
         if self.domuuid in self.thishypervisor.domain_list:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully terminated VM.'.format(self.domuuid))
 
     # Stop the VM forcibly
     def stop_vm(self):
-        print(">>> {} - Forcibly stopping VM.".format(self.domuuid))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Forcibly stopping VM.'.format(self.domuuid))
         self.instop = True
         try:
             self.dom.destroy()
         except AttributeError:
-            pass
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to stop VM.'.format(self.domuuid))
         if self.domuuid in self.thishypervisor.domain_list:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
@@ -120,12 +133,13 @@ class VMInstance:
                 pass
 
         self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully stopped VM.'.format(self.domuuid))
         self.dom = None
         self.instop = False
     
     # Shutdown the VM gracefully
     def shutdown_vm(self):
-        print(">>> {} - Gracefully stopping VM.".format(self.domuuid))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Gracefully stopping VM.'.format(self.domuuid))
         self.inshutdown = True
         self.dom.shutdown()
         try:
@@ -135,7 +149,7 @@ class VMInstance:
                 time.sleep(0.5)
 
             if tick >= 60:
-                print(">>> {} - Shutdown timeout expired.".format(self.domuuid))
+                print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Shutdown timeout expired.'.format(self.domuuid))
                 self.stop_vm()
                 self.inshutdown = False
                 return
@@ -149,6 +163,7 @@ class VMInstance:
                 pass
 
         self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Successfully shutdown VM.'.format(self.domuuid))
         self.dom = None
         self.inshutdown = False
 
@@ -158,14 +173,14 @@ class VMInstance:
             if dest_conn == None:
                 raise
         except:
-            print('>>> {} - Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.dom_uuid, self.hypervisor))
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.dom_uuid, self.hypervisor))
             return 1
 
         try:
             target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
-            print('>>> {} - Migrated successfully.'.format(self.domuuid))
+            print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Migrated successfully.'.format(self.domuuid))
         except:
             dest_conn.close()
             return 1
@@ -177,10 +192,10 @@ class VMInstance:
     def migrate_vm(self):
         self.inmigrate = True
 
-        print('>>> {} - Migrating VM to hypervisor "{}".'.format(self.domuuid, self.hypervisor))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Migrating VM to hypervisor "{}".'.format(self.domuuid, self.hypervisor))
         migrate_ret = self.live_migrate_vm(self.hypervisor)
         if migrate_ret != 0:
-            print('>>> {} - Could not live migrate VM; shutting down to migrate instead.'.format(self.domuuid))
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Could not live migrate VM; shutting down to migrate instead.'.format(self.domuuid))
             self.shutdown_vm()
             time.sleep(1)
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
@@ -194,7 +209,7 @@ class VMInstance:
 
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
-        print('>>> {} - Receiving migration.'.format(self.domuuid))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + '{} - Receiving migration.'.format(self.domuuid))
         self.inreceive = True
         while True:
             self.dom = lookupByUUID(self.domuuid)
@@ -209,7 +224,7 @@ class VMInstance:
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
 
-        print('>>> {} - Migrated successfully.'.format(self.domuuid))
+        print(bcolours.GREEN + '>>> ' + bcolours.ENDC + '{} - Migrated successfully.'.format(self.domuuid))
         self.inreceive = False
 
     #
@@ -274,7 +289,7 @@ def lookupByUUID(tuuid):
         # Open a libvirt connection
         conn = libvirt.open(libvirt_name)
         if conn == None:
-            print('>>> {} - Failed to open local libvirt connection.'.format(self.domuuid))
+            print(bcolours.RED + '>>> ' + bcolours.ENDC + '{} - Failed to open local libvirt connection.'.format(self.domuuid))
             return dom
     
         # Lookup the UUID

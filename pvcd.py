@@ -31,8 +31,9 @@ import time
 import atexit
 import apscheduler.schedulers.background
 
+# ANSII colours for output
 class bcolours:
-    HEADER = '\033[95m'
+    PURPLE = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
@@ -42,7 +43,7 @@ class bcolours:
     UNDERLINE = '\033[4m'
 
 def help():
-    print(bcolours.HEADER + bcolours.BOLD + bcolours.RED + "pvcd - Parallel Virtual Cluster management daemon" + bcolours.ENDC)
+    print(bcolours.BOLD + "pvcd - Parallel Virtual Cluster management daemon" + bcolours.ENDC)
 #    exit(0)
 
 help()

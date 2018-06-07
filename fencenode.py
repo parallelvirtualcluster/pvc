@@ -22,16 +22,27 @@
 
 import os, sys, libvirt, uuid, kazoo.client, time
 
+# ANSII colours for output
+class bcolours:
+    PURPLE = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 #
 # Trigger function
 #
 def fence(node_name, zk):
     time.sleep(3)
-    print('>>> Fencing node {} via IPMI reboot signal.'.format(node_name))
+    print(bcolours.YELLOW + '>>> ' + bcolours.ENDC + 'Fencing node {} via IPMI reboot signal.'.format(node_name))
 
     # DO IPMI FENCE HERE
 
-    print('>>> Moving VMs from dead hypervisor {} to new hosts.'.format(node_name))
+    print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Moving VMs from dead hypervisor {} to new hosts.'.format(node_name))
     dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     for dom_uuid in dead_node_running_domains:
         most_memfree = 0
@@ -47,7 +58,7 @@ def fence(node_name, zk):
                 most_memfree = memfree
                 target_hypervisor = hypervisor
 
-        print('>>> Moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+        print(bcolours.BLUE + '>>> ' + bcolours.ENDC + 'Moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
         transaction = zk.transaction()
         transaction.set_data('/domains/{}/state'.format(dom_uuid), 'start'.encode('ascii'))
         transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
