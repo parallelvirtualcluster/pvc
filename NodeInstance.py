@@ -145,10 +145,10 @@ class NodeInstance():
             return
 
         # Get past state and update if needed
-        past_state = self.zk.get(self.zkey + '/state')[0].decode('ascii')
+        past_state = self.zk.get('/nodes/{}/state'.format(self.name))[0].decode('ascii')
         if past_state != 'flush':
             self.state = 'start'
-            self.zk.set(self.zkey + '/state', 'start'.encode('ascii'))
+            self.zk.set('/nodes/{}/state'.format(self.name), 'start'.encode('ascii'))
         else:
             self.state = 'flush'
 
@@ -180,11 +180,11 @@ class NodeInstance():
         self.cpuload = os.getloadavg()[0]
         keepalive_time = int(time.time())
         try:
-            self.zk.set(self.zkey + '/cpucount', str(self.cpucount).encode('ascii'))
-            self.zk.set(self.zkey + '/memfree', str(self.memfree).encode('ascii'))
-            self.zk.set(self.zkey + '/cpuload', str(self.cpuload).encode('ascii'))
-            self.zk.set(self.zkey + '/runningdomains', ' '.join(self.domain_list).encode('ascii'))
-            self.zk.set(self.zkey + '/keepalive', str(keepalive_time).encode('ascii'))
+            self.zk.set('/nodes/{}/cpucount'.format(self.name), str(self.cpucount).encode('ascii'))
+            self.zk.set('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
+            self.zk.set('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
+            self.zk.set('/nodes/{}/runningdomains'.format(self.name), ' '.join(self.domain_list).encode('ascii'))
+            self.zk.set('/nodes/{}/keepalive'.format(self.name), str(keepalive_time).encode('ascii'))
         except:
             return
 
