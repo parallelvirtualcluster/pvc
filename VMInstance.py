@@ -24,10 +24,11 @@ import os, sys, uuid, socket, time, threading, libvirt, kazoo.client, ansiiprint
 
 class VMInstance:
     # Initialization function
-    def __init__(self, domuuid, zk, thishypervisor):
+    def __init__(self, domuuid, zk, config, thishypervisor):
         # Passed-in variables on creation
         self.domuuid = domuuid
         self.zk = zk
+        self.config = config
         self.thishypervisor = thishypervisor
 
         # These will all be set later

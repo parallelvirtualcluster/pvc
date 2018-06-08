@@ -24,9 +24,10 @@ import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode, ansii
 
 class NodeInstance():
     # Initialization function
-    def __init__(self, name, t_node, s_domain, zk):
+    def __init__(self, name, t_node, s_domain, zk, config):
         # Passed-in variables on creation
         self.zk = zk
+        self.config = config
         self.name = name
         self.state = 'stop'
         self.t_node = t_node
@@ -35,6 +36,7 @@ class NodeInstance():
         self.inactive_node_list = []
         self.s_domain = s_domain
         self.domain_list = []
+        self.ipmiaddress = ''
 
         # Zookeeper handlers for changed states
         @zk.DataWatch('/nodes/{}/state'.format(self.name))
@@ -193,9 +195,12 @@ class NodeInstance():
         # Close the Libvirt connection
         conn.close()
 
+        # Get IPMI address
+        self.ipmiaddress = fencenode.getIPMIAddress()
+
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload), '', 'c')
+        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}  {0}IPMI Address:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload, self.ipmiaddress), '', 'c')
         ansiiprint.echo('{}Active domains:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.domain_list)), '', 'c')
 
         # Update our local node lists
