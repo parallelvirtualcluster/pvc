@@ -36,7 +36,7 @@ class NodeInstance():
         self.inactive_node_list = []
         self.s_domain = s_domain
         self.domain_list = []
-        self.ipmiaddress = ''
+        self.ipmi_hostname = self.config['ipmi_hostname']
 
         # Zookeeper handlers for changed states
         @zk.DataWatch('/nodes/{}/state'.format(self.name))
@@ -195,12 +195,9 @@ class NodeInstance():
         # Close the Libvirt connection
         conn.close()
 
-        # Get IPMI address
-        self.ipmiaddress = fencenode.getIPMIAddress()
-
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}  {0}IPMI Address:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload, self.ipmiaddress), '', 'c')
+        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}  {0}IPMI Address:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload, self.ipmi_hostname), '', 'c')
         ansiiprint.echo('{}Active domains:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.domain_list)), '', 'c')
 
         # Update our local node lists
@@ -213,8 +210,9 @@ class NodeInstance():
                 node_keepalive = 0
 
             # Handle deadtime and fencng if needed
-            # (A node is considered dead when its keepalive timer is >30s out-of-date while in 'start' state)
-            node_deadtime = int(time.time()) - 30
+            # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
+            # out-of-date while in 'start' state)
+            node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
             if node_keepalive < node_deadtime and node_state == 'start':
                 ansiiprint.echo('Node {} is dead - performing fence operation in 3 seconds'.format(node_name), '', 'w')
                 self.zk.set('/nodes/{}/state'.format(node_name), 'dead'.encode('ascii'))

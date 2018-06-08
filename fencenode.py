@@ -29,10 +29,10 @@ def fence(node_name, zk):
     time.sleep(3)
     ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'w')
 
-    ipmi_address = zk.get('/nodes/{}/ipmiaddress'.format(node_name))[0].decode('ascii')
+    ipmi_hostname = zk.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
     ipmi_username = zk.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
     ipmi_password = zk.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
-    rebootViaIPMI(ipmi_address, ipmi_user, ipmi_password)
+    rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password)
 
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
     dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
@@ -57,17 +57,17 @@ def fence(node_name, zk):
         transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
         transaction.commit()
 
-def getIPMIAddress():
-    ipmi_command = ['bash', '/fakeipmi.sh']
+#def getIPMIAddress():
+#    ipmi_command = ['bash', '/fakeipmi.sh']
+#
+#    # Get the IPMI address
+#    ipmi_lan_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#    ipmi_lan_parsed = ipmi_lan_output.stdout.decode('ascii').split('\n')
+#    ipmi_lan_address = [s for s in ipmi_lan_parsed if re.search('IP Address[ ]*:', s)][0].split(':')[-1].strip()
+#    return ipmi_lan_address
 
-    # Get the IPMI address
-    ipmi_lan_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ipmi_lan_parsed = ipmi_lan_output.stdout.decode('ascii').split('\n')
-    ipmi_lan_address = [s for s in ipmi_lan_parsed if re.search('IP Address[ ]*:', s)][0].split(':')[-1].strip()
-    return ipmi_lan_address
-
-def rebootViaIPMI(ipmi_address, ipmi_user, ipmi_password):
-    ipmi_command = ['ipmitool', '-H', ipmi_address, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
+def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
+    ipmi_command = ['ipmitool', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
     ipmi_command_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if ipmi_command_output == 0:
         ansiiprint.echo('Successfully rebooted dead node', '', 'o')

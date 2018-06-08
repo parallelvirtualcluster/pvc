@@ -106,9 +106,9 @@ else:
     zk.create('/domains/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
     # Keepalives and fencing information
     zk.create('/domains/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
-    zk.create('/domains/{}/ipmiaddress'.format(myhostname), ''.encode('ascii'))
-    zk.create('/domains/{}/ipmiusername'.format(myhostname), ''.encode('ascii'))
-    zk.create('/domains/{}/ipmipassword'.format(myhostname), ''.encode('ascii'))
+    zk.create('/domains/{}/ipmihostname'.format(config['ipmi_hostname']), ''.encode('ascii'))
+    zk.create('/domains/{}/ipmiusername'.format(config['ipmi_username']), ''.encode('ascii'))
+    zk.create('/domains/{}/ipmipassword'.format(config['ipmi_password']), ''.encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
@@ -144,7 +144,7 @@ update_zookeeper = this_node.update_zookeeper
 
 # Create timer to update this node in Zookeeper
 update_timer = apscheduler.schedulers.background.BackgroundScheduler()
-update_timer.add_job(update_zookeeper, 'interval', seconds=config['keepalive_interval'])
+update_timer.add_job(update_zookeeper, 'interval', seconds=int(config['keepalive_interval']))
 update_timer.start()
 
 # Tick loop
