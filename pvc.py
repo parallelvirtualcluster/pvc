@@ -574,6 +574,20 @@ def search(dom_name, dom_uuid, long_output):
 
 
 ###############################################################################
+# pvc list
+###############################################################################
+@click.command(name='vlist', short_help='List all VM objects')
+def vlist():
+    """
+    List all virtual machines in the cluster.
+    """
+
+    zk = pvcf.startZKConnection(zk_host)
+    for vm in zk.get_children('/domains'):
+        print(vm)
+
+
+###############################################################################
 # pvc init
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster')
@@ -643,6 +657,7 @@ vm.add_command(unmigrate_vm)
 cli.add_command(node)
 cli.add_command(vm)
 cli.add_command(search)
+cli.add_command(vlist)
 cli.add_command(init_cluster)
 
 #

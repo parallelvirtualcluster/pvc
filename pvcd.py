@@ -97,18 +97,18 @@ if zk.exists('/nodes/{}'.format(myhostname)):
 else:
     print("Node is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new node")
     keepalive_time = int(time.time())
-    zk.create('/domains/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
+    zk.create('/nodes/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     # Basic state information
-    zk.create('/domains/{}/state'.format(myhostname), 'stop'.encode('ascii'))
-    zk.create('/domains/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
-    zk.create('/domains/{}/memfree'.format(myhostname), '0'.encode('ascii'))
-    zk.create('/domains/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
-    zk.create('/domains/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
+    zk.create('/nodes/{}/state'.format(myhostname), 'stop'.encode('ascii'))
+    zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
+    zk.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
     # Keepalives and fencing information
-    zk.create('/domains/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
-    zk.create('/domains/{}/ipmihostname'.format(config['ipmi_hostname']), ''.encode('ascii'))
-    zk.create('/domains/{}/ipmiusername'.format(config['ipmi_username']), ''.encode('ascii'))
-    zk.create('/domains/{}/ipmipassword'.format(config['ipmi_password']), ''.encode('ascii'))
+    zk.create('/nodes/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
+    zk.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
+    zk.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
+    zk.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
