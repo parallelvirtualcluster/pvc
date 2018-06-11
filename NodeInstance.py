@@ -147,6 +147,7 @@ class NodeInstance():
                 if memfree > most_memfree:
                     most_memfree = memfree
                     target_hypervisor = hypervisor
+                    print('Here - ' + target_hypervisor)
     
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
