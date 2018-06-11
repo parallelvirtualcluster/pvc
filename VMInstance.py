@@ -85,6 +85,7 @@ class VMInstance:
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            return
 
         if not self.domuuid in self.thishypervisor.domain_list:
             self.thishypervisor.domain_list.append(self.domuuid)
