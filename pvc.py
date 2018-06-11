@@ -139,6 +139,13 @@ def node_info(dom_name, dom_uuid, long_output):
     Search the cluster for a node's information.
     """
 
+    # Verify node is valid
+    try:
+        zk.get('/nodes/{}'.format(node_name))
+    except:
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        exit(1)
+
     pass
 
 
@@ -148,14 +155,59 @@ def node_info(dom_name, dom_uuid, long_output):
 @click.command(name='list', short_help='List all Node objects')
 def node_list():
     """
-    List all virtual machines in the cluster.
+    List all hypervisor nodes in the cluster.
     """
 
-    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State    RAM       vCPUs  Hypervisor           Migrated?' + ansiiprint.end()
-    vm_list = []
+    node_list_header = ansiiprint.bold() + 'Name                   State: Daemon    Nodes     VMs   CPUs  RAM [MiB]: Total   Used    Free    Allocated' + ansiiprint.end()
+    node_list = []
     zk = pvcf.startZKConnection(zk_host)
-    for vm in zk.get_children('/domains'):
-        pass
+    for node_name in zk.get_children('/nodes'):
+
+        node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_domain_state = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+        node_cpu_count = zk.get('/nodes/{}/cpucount'.format(node_name))[0].decode('ascii')
+        node_mem_used = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
+        node_mem_free = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
+        node_mem_total = int(node_mem_used) + int(node_mem_free)
+        node_domains_count = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
+        node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+        node_mem_allocated = 0
+        for domain in node_running_domains:
+            parsed_xml = pvcf.getDomainXML(zk, domain)
+            duuid, dname, dmemory, dvcpu, dvcputopo = pvcf.getDomainMainDetails(parsed_xml)
+            node_mem_allocated += int(dmemory)
+
+        if node_daemon_state == 'start':
+            daemon_state_colour = ansiiprint.green()
+        elif node_daemon_state == 'stop' or node_daemon_state == 'shutdown':
+            daemon_state_colour = ansiiprint.red()
+        else:
+            daemon_state_colour = ansiiprint.yellow()
+
+        if node_domain_state == 'ready':
+            domain_state_colour = ansiiprint.green()
+        else:
+            domain_state_colour = ansiiprint.blue()
+
+        node_output_string = '{3: <28}  {0}{4: <8}{2}  {1}{5: <8}{2}  {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
+            daemon_state_colour,
+            domain_state_colour,
+            ansiiprint.end(),
+            node_name,
+            node_daemon_state,
+            node_domain_state,
+            node_domains_count,
+            node_cpu_count,
+            node_mem_total,
+            node_mem_used,
+            node_mem_free,
+            node_mem_allocated
+        )
+        node_list.append(node_output_string)
+
+    click.echo(node_list_header)
+    click.echo('\n'.join(sorted(node_list)))
+
 
 
 ###############################################################################
@@ -727,7 +779,7 @@ def vm_list(hypervisor):
     List all virtual machines in the cluster.
     """
 
-    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State    RAM       vCPUs  Hypervisor           Migrated?' + ansiiprint.end()
+    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State     RAM [MiB]  vCPUs  Hypervisor            Migrated?' + ansiiprint.end()
     vm_list = []
     zk = pvcf.startZKConnection(zk_host)
     for vm in zk.get_children('/domains'):
@@ -744,7 +796,7 @@ def vm_list(hypervisor):
             vm_migrated = 'no'
 
         vm_xml = pvcf.getDomainXML(zk, vm)
-        vm_uuid, vm_name, vm_memory, vm_memory_unit, vm_vcpu, vm_vcputopo = pvcf.getDomainMainDetails(vm_xml)
+        vm_uuid, vm_name, vm_memory, vm_vcpu, vm_vcputopo = pvcf.getDomainMainDetails(vm_xml)
 
         if vm_state == 'start':
             state_colour = ansiiprint.green()
@@ -753,7 +805,17 @@ def vm_list(hypervisor):
         else:
             state_colour = ansiiprint.yellow()
 
-        vm_output_string = '{0: <16} {1: <32}  {8}{2: <8}{9} {3: <4} {4: <4} {5: <5}  {6: <16}  {7: <20}'.format(vm_name, vm_uuid, vm_state, str(vm_memory), vm_memory_unit, vm_vcpu, vm_hypervisor, vm_migrated, state_colour, ansiiprint.end())
+        vm_output_string = '{2: <16} {3: <32}  {0}{4: <8}{1}  {5: <6}     {6: <5}  {7: <20}  {8: <25}'.format(
+            state_colour,
+            ansiiprint.end(),
+            vm_name,
+            vm_uuid,
+            vm_state,
+            vm_memory,
+            vm_vcpu,
+            vm_hypervisor,
+            vm_migrated
+        )
         vm_list.append(vm_output_string)
 
     click.echo(vm_list_header)

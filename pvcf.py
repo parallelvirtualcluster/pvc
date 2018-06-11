@@ -58,13 +58,17 @@ def getDomainMainDetails(parsed_xml):
     dname = str(parsed_xml.name)
     dmemory = str(parsed_xml.memory)
     dmemory_unit = str(parsed_xml.memory.attrib['unit'])
+    if dmemory_unit == 'KiB':
+        dmemory = str(int(dmemory) * 1024)
+    elif dmemory_unit == 'GiB':
+        dmemory = str(int(dmemory) / 1024)
     dvcpu = str(parsed_xml.vcpu)
     try:
         dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib['sockets'], parsed_xml.cpu.topology.attrib['cores'], parsed_xml.cpu.topology.attrib['threads'])
     except:
         dvcputopo = 'N/A'
 
-    return duuid, dname, dmemory, dmemory_unit, dvcpu, dvcputopo
+    return duuid, dname, dmemory, dvcpu, dvcputopo
 
 # Get long-format details
 def getDomainExtraDetails(parsed_xml):
@@ -157,7 +161,7 @@ def getInformationFromXML(zk, uuid, long_output):
 
     parsed_xml = getDomainXML(zk, uuid)
 
-    duuid, dname, dmemory, dmemory_unit, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+    duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
     if long_output == True:
         dtype, darch, dmachine, dconsole, demulator = getDomainExtraDetails(parsed_xml)
         dfeatures = getDomainCPUFeatures(parsed_xml)
@@ -172,7 +176,7 @@ def getInformationFromXML(zk, uuid, long_output):
     # Basic information
     ainformation.append('{}UUID:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), duuid))
     ainformation.append('{}Name:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dname))
-    ainformation.append('{}Memory:{}             {} {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory, dmemory_unit))
+    ainformation.append('{}Memory [MiB]:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory))
     ainformation.append('{}vCPUs:{}              {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcpu))
     ainformation.append('{}Topology [S/C/T]:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
 
