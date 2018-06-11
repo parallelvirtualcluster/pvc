@@ -134,8 +134,10 @@ else:
     zk.create('/nodes/{}/state'.format(myhostname), 'stop'.encode('ascii'))
     zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
     zk.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
+    zk.create('/nodes/{}/domainscount'.format(myhostname), '0'.encode('ascii'))
     # Keepalives and fencing information
     zk.create('/nodes/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
     zk.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))

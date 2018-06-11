@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode, ansiiprint
+import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, fencenode, ansiiprint
 
 class NodeInstance():
     # Initialization function
@@ -37,6 +37,9 @@ class NodeInstance():
         self.s_domain = s_domain
         self.domain_list = []
         self.ipmi_hostname = self.config['ipmi_hostname']
+        self.domains_count = 0
+        self.memused = 0
+        self.memfree = 0
 
         # Zookeeper handlers for changed states
         @zk.DataWatch('/nodes/{}/state'.format(self.name))
@@ -144,6 +147,8 @@ class NodeInstance():
         # Connect to libvirt
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
+        print(conn.listDomainsID())
+        print(psutil.virtual_memory())
         if conn == None:
             ansiiprint.echo('Failed to open connection to "{}"'.format(libvirt_name), '', 'e')
             return
@@ -180,14 +185,18 @@ class NodeInstance():
         # Set our information in zookeeper
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
-        self.memfree = conn.getFreeMemory()
+        self.memused = psutil.virtual_memory().used / 1024 / 1024
+        self.memfree = psutil.virtual_memory().free / 1024 / 1024
         self.cpuload = os.getloadavg()[0]
+        self.domains_count = len(conn.listDomainsID())
         keepalive_time = int(time.time())
         try:
             self.zk.set('/nodes/{}/cpucount'.format(self.name), str(self.cpucount).encode('ascii'))
+            self.zk.set('/nodes/{}/memused'.format(self.name), str(self.memused).encode('ascii'))
             self.zk.set('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
             self.zk.set('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
             self.zk.set('/nodes/{}/runningdomains'.format(self.name), ' '.join(self.domain_list).encode('ascii'))
+            self.zk.set('/nodes/{}/domainscount'.format(self.name), str(self.domains_count).encode('ascii'))
             self.zk.set('/nodes/{}/keepalive'.format(self.name), str(keepalive_time).encode('ascii'))
         except:
             return
@@ -197,8 +206,8 @@ class NodeInstance():
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory:{1} {3}  {0}Load:{1} {4}  {0}IPMI Address:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.cpuload, self.ipmi_hostname), '', 'c')
-        ansiiprint.echo('{}Active domains:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.domain_list)), '', 'c')
+        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory [MiB]:{1} {3} {0}Used memory [MiB]:{4}  {0}Load:{1} {5}  {0}IPMI Address:{1} {6}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.memused, self.cpuload, self.ipmi_hostname), '', 'c')
+        ansiiprint.echo('{}Active domains:{} {} [{}]'.format(ansiiprint.bold(), ansiiprint.end(), self.runningdomains, ','.join(self.domain_list)), '', 'c')
 
         # Update our local node lists
         for node_name in self.t_node:
