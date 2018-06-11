@@ -41,6 +41,7 @@ class NodeInstance():
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
+        self.inflush = False
 
         # Zookeeper handlers for changed states
         @zk.DataWatch('/nodes/{}/state'.format(self.name))
@@ -95,6 +96,7 @@ class NodeInstance():
 
     # Flush all VMs on the host
     def flush(self):
+        self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
         for dom_uuid in self.domain_list:
             most_memfree = 0
@@ -126,6 +128,9 @@ class NodeInstance():
 
             # Wait 1s between migrations
             time.sleep(1)
+
+        self.zk.set('/nodes/{}/state'.format(self.name), 'flushed'.encode('ascii'))
+        self.inflush = False
 
     def unflush(self):
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
@@ -181,6 +186,12 @@ class NodeInstance():
                             self.domain_list.remove(domain)
                         except:
                             pass
+
+        # toggle state management of this node
+        if self.state == 'flush':
+            self.flush()
+        if self.state == 'unflush':
+            self.unflush()
 
         # Set our information in zookeeper
         self.name = conn.getHostname()
