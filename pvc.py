@@ -205,15 +205,17 @@ def undefine_vm(dom_name, dom_uuid):
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
-    click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
-    # Set the domain into stop mode
-    transaction = zk.transaction()
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
-    results = transaction.commit()
+    current_vm_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if current_vm_state != 'stop':
+        click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
+        # Set the domain into stop mode
+        transaction = zk.transaction()
+        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
+        transaction.commit()
 
-    # Wait for 3 seconds to allow state to flow to all hypervisors
-    click.echo('Waiting for cluster to update.')
-    time.sleep(3)
+        # Wait for 3 seconds to allow state to flow to all hypervisors
+        click.echo('Waiting for cluster to update.')
+        time.sleep(3)
 
     # Delete the configurations
     click.echo('Undefining VM "{}".'.format(dom_uuid))
