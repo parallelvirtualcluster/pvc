@@ -247,24 +247,28 @@ class VMInstance:
         except:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
+        # Conditional pass one - If we're already doing something, bail out
+        if self.instart == True or self.instop == True or self.inshutdown == True or self.inmigrate == True or self.inreceive == True:
+            return 0
+
         # VM should be stopped
-        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name and self.instop == False:
+        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
 
         # VM should be shut down
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name and self.inshutdown == False:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
             self.shutdown_vm()
 
         # VM should be migrated to this hypervisor
-        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name and self.inreceive == False:
+        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False and self.inreceive == False:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
         # VM should be running but not on this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False and self.inreceive == False:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
             self.terminate_vm()
 
         # VM is already running and should be
@@ -279,7 +283,7 @@ class VMInstance:
                 self.thishypervisor.domain_list.append(self.domuuid)
     
         # VM should be started
-        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name and self.instart == False:
+        elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name:
             # Grab the domain information from Zookeeper
             domxml, domxmlstat = self.zk.get('/domains/{}/xml'.format(self.domuuid))
             domxml = str(domxml.decode('ascii'))
