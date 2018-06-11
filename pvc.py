@@ -68,7 +68,7 @@ def flush_host(node_name):
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node_name)
+        zk.get('/nodes/{}'.format(node_name))
     except:
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
         exit(1)
