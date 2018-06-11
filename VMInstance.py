@@ -204,13 +204,13 @@ class VMInstance:
     def receive_migrate(self):
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         self.inreceive = True
-        while True:
+        while self.state == 'migrate':
             self.dom = self.lookupByUUID(self.domuuid)
             if self.dom == None:
                 time.sleep(0.2)
                 continue
 
-            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING or self.state != 'migrate':
+            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
                 break
 
         if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
