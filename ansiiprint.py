@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, libvirt, kazoo.client, threading, fencenode, ansiiprint
+import os, sys, socket, time, datetime, libvirt, kazoo.client, threading, fencenode, ansiiprint
 
 # ANSII colours for output
 def red():
@@ -41,7 +41,7 @@ def end():
 # Print function
 def echo(message, prefix, state):
     # Get the date
-    date = '{} - '.format(time.strftime('%Y/%m/%d %H:%M:%S'))
+    date = '{} - '.format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
     endc = end()
 
     # Continuation
