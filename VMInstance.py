@@ -210,14 +210,18 @@ class VMInstance:
                 time.sleep(0.2)
                 continue
 
-            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING or self.state != 'migrate':
                 break
 
-        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
-        if not self.domuuid in self.thishypervisor.domain_list:
-            self.thishypervisor.domain_list.append(self.domuuid)
+        if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            if not self.domuuid in self.thishypervisor.domain_list:
+                self.thishypervisor.domain_list.append(self.domuuid)
 
-        ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
+            ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
+        else:
+            ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
+
         self.inreceive = False
 
     #
