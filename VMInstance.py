@@ -212,7 +212,7 @@ class VMInstance:
             self.dom = self.lookupByUUID(self.domuuid)
             print(self.state)
 
-            if self.dom == None and self.state == 'migrate':
+            if self.dom == None or self.state == 'migrate':
                 continue
 
             if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING or self.state != 'migrate':
