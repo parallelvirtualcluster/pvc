@@ -39,9 +39,9 @@ print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + 
 
 # Get the config file variable from the environment
 try:
-    pvcd_config_file = os.environ['PVC_CONFIG_FILE']
+    pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
 except:
-    print('ERROR: The "PVC_CONFIG_FILE" environment variable must be set before starting pvcd.')
+    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcd.')
     exit(1)
 
 print('Loading configuration from file {}'.format(pvcd_config_file))
@@ -49,9 +49,6 @@ print('Loading configuration from file {}'.format(pvcd_config_file))
 myhostname = socket.gethostname()
 myshorthostname = myhostname.split('.', 1)[0]
 mydomainname = ''.join(myhostname.split('.', 1)[1:])
-print(myhostname)
-print(myshorthostname)
-print(mydomainname)
 
 # Config values dictionary
 config_values = [
@@ -69,13 +66,21 @@ def readConfig(pvcd_config_file, myhostname):
     try:
         entries = o_config[myhostname]
     except:
-        entries = o_config['default']
+        try:
+            entries = o_config['default']
+        except:
+            print('ERROR: Config file is not valid!')
+            exit(1)
 
     for entry in config_values:
         try:
             config[entry] = entries[entry]
         except:
-            config[entry] = o_config['default'][entry]
+            try:
+                config[entry] = o_config['default'][entry]
+            except:
+                print('ERROR: Config file missing required value "{}" for this host!'.format(entry))
+                exit(1)
 
     # Handle an empty ipmi_hostname
     if config['ipmi_hostname'] == '':
