@@ -130,6 +130,9 @@ class NodeInstance():
             for hypervisor in hypervisor_list:
                 daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
                 domain_state = self.zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+                print(hypervisor)
+                print(daemon_state)
+                print(domain_state)
                 if hypervisor == current_hypervisor:
                     continue
 
