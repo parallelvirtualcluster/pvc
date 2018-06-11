@@ -20,12 +20,10 @@
 #
 ###############################################################################
 
-import kazoo.client, socket, time, click, lxml.objectify, pvcf, ansiiprint
+import kazoo.client, os, socket, time, click, lxml.objectify, pvcf, ansiiprint, configparser
 
-this_host = socket.gethostname()
+myhostname = socket.gethostname()
 zk_host = ''
-
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
 ########################
 ########################
@@ -34,6 +32,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=12
 ##                    ##
 ########################
 ########################
+
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
 ###############################################################################
 # pvc node
@@ -51,7 +51,7 @@ def node():
 ###############################################################################
 @click.command(name='flush', short_help='Take a node out of service')
 @click.option(
-    '-n', '--name', 'node_name', default=this_host, show_default=True,
+    '-n', '--name', 'node_name', default=myhostname, show_default=True,
     help='The PVC node to operate on.'
 )
 def flush_host(node_name):
@@ -80,7 +80,7 @@ def flush_host(node_name):
 ###############################################################################
 @click.command(name='ready', short_help='Restore node to service')
 @click.option(
-    '-n', '--name', 'node_name', default=this_host, show_default=True,
+    '-n', '--name', 'node_name', default=myhostname, show_default=True,
     help='The PVC node to operate on.'
 )
 def ready_host(node_name):
@@ -124,7 +124,7 @@ def vm():
     help='The XML config file to define the domain from.'
 )
 @click.option(
-    '-v', '--hypervisor', 'target_hypervisor', default=this_host, show_default=True,
+    '-v', '--hypervisor', 'target_hypervisor', default=myhostname, show_default=True,
     help='The home hypervisor for this domain.'
 )
 def define_vm(xml_config_file, target_hypervisor):
@@ -747,7 +747,7 @@ def init_cluster():
 ###############################################################################
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option(
-    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default='{}:2181'.format(this_host), show_default=True,
+    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default='{}:2181'.format(myhostname), show_default=True,
     help='Zookeeper connection string.'
 )
 def cli(_zk_host):
