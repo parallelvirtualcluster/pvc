@@ -188,7 +188,6 @@ class VMInstance:
         self.inmigrate = True
         ansiiprint.echo('Migrating VM to hypervisor "{}"'.format(self.hypervisor), '{}:'.format(self.domuuid), 'i')
         migrate_ret = self.live_migrate_vm(self.hypervisor)
-        print(migrate_ret)
         if migrate_ret != 0:
             ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
             self.shutdown_vm()
@@ -212,7 +211,6 @@ class VMInstance:
             time.sleep(0.5)
             self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
-            print(self.state)
 
             if self.dom == None and self.state == 'migrate':
                 continue
