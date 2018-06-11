@@ -49,7 +49,6 @@ print('Loading configuration from file {}'.format(pvcd_config_file))
 myhostname = socket.gethostname()
 myshorthostname = myhostname.split('.', 1)[0]
 mydomainname = ''.join(myhostname.split('.', 1)[1:])
-config = readConfig(pvcd_config_file, myhostname)
 print(myhostname)
 print(myshorthostname)
 print(mydomainname)
@@ -70,19 +69,21 @@ def readConfig(pvcd_config_file, myhostname):
     try:
         entries = o_config[myhostname]
     except:
-        entries = o_config['*']
+        entries = o_config['default']
 
     for entry in config_values:
         try:
             config[entry] = entries[entry]
         except:
-            config[entry] = entries['*']
+            config[entry] = o_config['default'][entry]
 
     # Handle an empty ipmi_hostname
     if config['ipmi_hostname'] == '':
-        config['ipmi_hostname'] = myshorthostname + '-lom' + mydomainname
+        config['ipmi_hostname'] = myshorthostname + '-lom.' + mydomainname
 
     return config
+
+config = readConfig(pvcd_config_file, myhostname)
 
 # Connect to local zookeeper
 zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
