@@ -277,6 +277,12 @@ class VMInstance:
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
     
+        # VM is already running and should be but stuck in migrate state
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor == self.thishypervisor.name:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            if not self.domuuid in self.thishypervisor.domain_list:
+                self.thishypervisor.domain_list.append(self.domuuid)
+    
         # VM should be started
         elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor == self.thishypervisor.name and self.instart == False:
             # Grab the domain information from Zookeeper
