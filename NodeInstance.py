@@ -185,8 +185,8 @@ class NodeInstance():
         # Set our information in zookeeper
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
-        self.memused = psutil.virtual_memory().used / 1024 / 1024
-        self.memfree = psutil.virtual_memory().free / 1024 / 1024
+        self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
+        self.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
         self.cpuload = os.getloadavg()[0]
         self.domains_count = len(conn.listDomainsID())
         keepalive_time = int(time.time())
@@ -206,7 +206,7 @@ class NodeInstance():
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory [MiB]:{1} {3} {0}Used memory [MiB]:{4}  {0}Load:{1} {5}  {0}IPMI Address:{1} {6}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.memused, self.cpuload, self.ipmi_hostname), '', 'c')
+        ansiiprint.echo('{0}CPUs:{1} {2}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.cpucount, self.memfree, self.memused, self.cpuload), '', 'c')
         ansiiprint.echo('{}Active domains:{} {} [{}]'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, ','.join(self.domain_list)), '', 'c')
 
         # Update our local node lists
