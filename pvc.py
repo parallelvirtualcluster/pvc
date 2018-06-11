@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import kazoo.client, socket, time, click, lxml.objectify, pvcf
+import kazoo.client, socket, time, click, lxml.objectify, pvcf, ansiiprint
 
 this_host = socket.gethostname()
 zk_host = ''
@@ -427,6 +427,8 @@ def move_vm(dom_name, dom_uuid, target_hypervisor):
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
+    current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+
     if target_hypervisor == None:
         # Determine the best hypervisor to migrate the VM to based on active memory usage
         hypervisor_list = zk.get_children('/nodes')
@@ -613,9 +615,9 @@ def unmigrate_vm(dom_name, dom_uuid):
 
 
 ###############################################################################
-# pvc search
+# pvc vm info
 ###############################################################################
-@click.command(name='search', short_help='Search for a VM object')
+@click.command(name='info', short_help='List details of a VM object')
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
@@ -632,7 +634,7 @@ def unmigrate_vm(dom_name, dom_uuid):
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
-def search(dom_name, dom_uuid, long_output):
+def vm_info(dom_name, dom_uuid, long_output):
     """
     Search the cluster for a virtual machine's information.
     """
@@ -659,17 +661,49 @@ def search(dom_name, dom_uuid, long_output):
 
 
 ###############################################################################
-# pvc list
+# pvc vm list
 ###############################################################################
-@click.command(name='vlist', short_help='List all VM objects')
-def vlist():
+@click.command(name='list', short_help='List all VM objects')
+@click.option(
+    '-t', '--hypervisor', 'hypervisor', default=None,
+    help='Limit list to this hypervisor.'
+)
+def vm_list(hypervisor):
     """
     List all virtual machines in the cluster.
     """
 
+    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State    RAM       vCPUs  Hypervisor           Migrated?' + ansiiprint.end()
+    vm_list = []
     zk = pvcf.startZKConnection(zk_host)
     for vm in zk.get_children('/domains'):
-        print(vm)
+        # Check hypervisor to avoid unneeded ZK calls
+        vm_hypervisor = zk.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
+        if hypervisor != None and vm_hypervisor != hypervisor:
+            continue
+
+        vm_state = zk.get('/domains/{}/state'.format(vm))[0].decode('ascii')
+        vm_lasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(vm))[0].decode('ascii')
+        if vm_lasthypervisor != '':
+            vm_migrated = 'from {}'.format(vm_lasthypervisor)
+        else:
+            vm_migrated = 'no'
+
+        vm_xml = pvcf.getDomainXML(zk, vm)
+        vm_uuid, vm_name, vm_memory, vm_memory_unit, vm_vcpu, vm_vcputopo = pvcf.getDomainMainDetails(vm_xml)
+
+        if vm_state == 'start':
+            state_colour = ansiiprint.green()
+        elif vm_state == 'stop' or vm_state == 'shutdown':
+            state_colour = ansiiprint.red()
+        else:
+            state_colour = ansiiprint.yellow()
+
+        vm_output_string = '{0: <16} {1: <32}  {8}{2: <8}{9} {3: <4} {4: <4} {5: <5}  {6: <16}  {7: <20}'.format(vm_name, vm_uuid, vm_state, str(vm_memory), vm_memory_unit, vm_vcpu, vm_hypervisor, vm_migrated, state_colour, ansiiprint.end())
+        vm_list.append(vm_output_string)
+
+    click.echo(vm_list_header)
+    click.echo('\n'.join(sorted(vm_list)))
 
 
 ###############################################################################
@@ -736,13 +770,14 @@ vm.add_command(undefine_vm)
 vm.add_command(start_vm)
 vm.add_command(shutdown_vm)
 vm.add_command(stop_vm)
+vm.add_command(move_vm)
 vm.add_command(migrate_vm)
 vm.add_command(unmigrate_vm)
+vm.add_command(vm_info)
+vm.add_command(vm_list)
 
 cli.add_command(node)
 cli.add_command(vm)
-cli.add_command(search)
-cli.add_command(vlist)
 cli.add_command(init_cluster)
 
 #
