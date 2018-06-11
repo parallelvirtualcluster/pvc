@@ -46,17 +46,43 @@ except:
 
 print('Loading configuration from file {}'.format(pvcd_config_file))
 
+myhostname = socket.gethostname()
+myshorthostname = myhostname.split('.', 1)[0]
+mydomainname = ''.join(myhostname.split('.', 1)[1:])
+config = readConfig(pvcd_config_file, myhostname)
+print(myhostname)
+print(myshorthostname)
+print(mydomainname)
+
+# Config values dictionary
+config_values = [
+    'zookeeper',
+    'keepalive_interval',
+    'ipmi_hostname',
+    'ipmi_username',
+    'ipmi_password'
+]
 def readConfig(pvcd_config_file, myhostname):
     o_config = configparser.ConfigParser()
     o_config.read(pvcd_config_file)
-    entries = o_config[myhostname]
     config = {}
-    for entry in entries:
-        config[entry] = entries[entry]
-    return config
 
-myhostname = socket.gethostname()
-config = readConfig(pvcd_config_file, myhostname)
+    try:
+        entries = o_config[myhostname]
+    except:
+        entries = o_config['*']
+
+    for entry in config_values:
+        try:
+            config[entry] = entries[entry]
+        except:
+            config[entry] = entries['*']
+
+    # Handle an empty ipmi_hostname
+    if config['ipmi_hostname'] == '':
+        config['ipmi_hostname'] = myshorthostname + '-lom' + mydomainname
+
+    return config
 
 # Connect to local zookeeper
 zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
