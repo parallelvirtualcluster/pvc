@@ -77,7 +77,7 @@ def flush_host(node_name):
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.set_data('/nodes/{}/state'.format(node_name), 'flush'.encode('ascii'))
+    transaction.set_data('/nodes/{}/domainstate'.format(node_name), 'flush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
@@ -115,11 +115,47 @@ def ready_host(node_name):
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.set_data('/nodes/{}/state'.format(node_name), 'unflush'.encode('ascii'))
+    transaction.set_data('/nodes/{}/domainstate'.format(node_name), 'unflush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
     pvcf.stopZKConnection(zk)
+
+
+###############################################################################
+# pvc node info
+###############################################################################
+@click.command(name='info', short_help='Show details of a node object')
+@click.option(
+    '-n', '--name', 'dom_name',
+    help='Search for this name.'
+)
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def node_info(dom_name, dom_uuid, long_output):
+    """
+    Search the cluster for a node's information.
+    """
+
+    pass
+
+
+###############################################################################
+# pvc node list
+###############################################################################
+@click.command(name='list', short_help='List all Node objects')
+def node_list():
+    """
+    List all virtual machines in the cluster.
+    """
+
+    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State    RAM       vCPUs  Hypervisor           Migrated?' + ansiiprint.end()
+    vm_list = []
+    zk = pvcf.startZKConnection(zk_host)
+    for vm in zk.get_children('/domains'):
+        pass
 
 
 ###############################################################################
@@ -635,7 +671,7 @@ def unmigrate_vm(dom_name, dom_uuid):
 ###############################################################################
 # pvc vm info
 ###############################################################################
-@click.command(name='info', short_help='List details of a VM object')
+@click.command(name='info', short_help='Show details of a VM object')
 @click.option(
     '-n', '--name', 'dom_name',
     cls=pvcf.MutuallyExclusiveOption,
@@ -782,6 +818,8 @@ def cli(_zk_host):
 #
 node.add_command(flush_host)
 node.add_command(ready_host)
+node.add_command(node_info)
+node.add_command(node_list)
 
 vm.add_command(define_vm)
 vm.add_command(undefine_vm)
