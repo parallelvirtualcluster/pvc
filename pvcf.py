@@ -50,43 +50,43 @@ def stopZKConnection(zk):
 #
 # XML information parsing functions
 #
-def getInformationFromXML(zk, uuid, long_output):
-    # Obtain the contents of the XML from Zookeeper
-    try:
-        xml = zk.get('/domains/%s/xml' % uuid)[0].decode('ascii')
-        dstate = zk.get('/domains/%s/state' % uuid)[0].decode('ascii')
-        dhypervisor = zk.get('/domains/%s/hypervisor' % uuid)[0].decode('ascii')
-        dlasthypervisor = zk.get('/domains/%s/lasthypervisor' % uuid)[0].decode('ascii')
-    except:
-        return None
 
-    if dlasthypervisor == '':
-        dlasthypervisor = 'N/A'
-
-    # Parse XML using lxml.objectify
-    parsed_xml = lxml.objectify.fromstring(xml)
-
+# Get the main details for a VM object from XML
+def getDomainMainDetails(parsed_xml):
     # Get the information we want from it
-    duuid = parsed_xml.uuid
-    dname = parsed_xml.name
-    dmemory = parsed_xml.memory
-    dmemory_unit = parsed_xml.memory.attrib['unit']
-    dvcpu = parsed_xml.vcpu
+    duuid = str(parsed_xml.uuid)
+    dname = str(parsed_xml.name)
+    dmemory = str(parsed_xml.memory)
+    dmemory_unit = str(parsed_xml.memory.attrib['unit'])
+    dvcpu = str(parsed_xml.vcpu)
     try:
         dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib['sockets'], parsed_xml.cpu.topology.attrib['cores'], parsed_xml.cpu.topology.attrib['threads'])
     except:
         dvcputopo = 'N/A'
+
+    return duuid, dname, dmemory, dmemory_unit, dvcpu, dvcputopo
+
+# Get long-format details
+def getDomainExtraDetails(parsed_xml):
     dtype = parsed_xml.os.type
     darch = parsed_xml.os.type.attrib['arch']
     dmachine = parsed_xml.os.type.attrib['machine']
+    dconsole = parsed_xml.devices.console.attrib['type']
+    demulator = parsed_xml.devices.emulator
+
+    return dtype, darch, dmachine, dconsole, demulator
+
+# Get CPU features
+def getDomainCPUFeatures(parsed_xml):
     dfeatures = []
     for feature in parsed_xml.features.getchildren():
         dfeatures.append(feature.tag)
-    dconsole = parsed_xml.devices.console.attrib['type']
-    demulator = parsed_xml.devices.emulator
+
+    return dfeatures
+
+# Get disk devices
+def getDomainDisks(parsed_xml):
     ddisks = []
-    dnets = []
-    dcontrollers = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'disk':
             disk_attrib = device.source.attrib
@@ -99,6 +99,13 @@ def getInformationFromXML(zk, uuid, long_output):
             else:
                 disk_obj = {}
             ddisks.append(disk_obj)
+
+    return ddisks
+
+# Get network devices
+def getDomainNetworks(parsed_xml):
+    dnets = []
+    for device in parsed_xml.devices.getchildren():
         if device.tag == 'interface':
             net_type = device.attrib['type']
             net_mac = device.mac.attrib['address']
@@ -106,6 +113,13 @@ def getInformationFromXML(zk, uuid, long_output):
             net_model = device.model.attrib['type']
             net_obj = { 'type': net_type, 'mac': net_mac, 'source': net_bridge, 'model': net_model }
             dnets.append(net_obj)
+
+    return dnets
+
+# Get controller devices
+def getDomainControllers(parsed_xml):
+    dcontrollers = []
+    for device in parsed_xml.devices.getchildren():
         if device.tag == 'controller':
             controller_type = device.attrib['type']
             try:
@@ -114,6 +128,42 @@ def getInformationFromXML(zk, uuid, long_output):
                 controller_model = 'none'
             controller_obj = { 'type': controller_type, 'model': controller_model }
             dcontrollers.append(controller_obj)
+
+    return dcontrollers
+
+# Parse an XML object
+def getDomainXML(zk, dom_uuid):
+    try:
+        xml = zk.get('/domains/%s/xml' % dom_uuid)[0].decode('ascii')
+    except:
+        return None
+    
+    # Parse XML using lxml.objectify
+    parsed_xml = lxml.objectify.fromstring(xml)
+    return parsed_xml
+
+# Root function
+def getInformationFromXML(zk, uuid, long_output):
+    # Obtain the contents of the XML from Zookeeper
+    try:
+        dstate = zk.get('/domains/{}/state'.format(uuid))[0].decode('ascii')
+        dhypervisor = zk.get('/domains/{}/hypervisor'.format(uuid))[0].decode('ascii')
+        dlasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(uuid))[0].decode('ascii')
+    except:
+        return None
+
+    if dlasthypervisor == '':
+        dlasthypervisor = 'N/A'
+
+    parsed_xml = getDomainXML(zk, uuid)
+
+    duuid, dname, dmemory, dmemory_unit, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+    if long_output == True:
+        dtype, darch, dmachine, dconsole, demulator = getDomainExtraDetails(parsed_xml)
+        dfeatures = getDomainCPUFeatures(parsed_xml)
+        ddisks = getDomainDisks(parsed_xml)
+        dnetss = getDomainNetworks(parsed_xml)
+        dcontrollers = getDomainControllers(parsed_xml)
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
