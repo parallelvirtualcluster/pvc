@@ -194,11 +194,12 @@ class VMInstance:
             time.sleep(1)
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
+            time.sleep(1)
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
         self.inmigrate = False
 
