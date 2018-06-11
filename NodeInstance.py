@@ -147,8 +147,6 @@ class NodeInstance():
         # Connect to libvirt
         libvirt_name = "qemu:///system"
         conn = libvirt.open(libvirt_name)
-        print(conn.listDomainsID())
-        print(psutil.virtual_memory())
         if conn == None:
             ansiiprint.echo('Failed to open connection to "{}"'.format(libvirt_name), '', 'e')
             return

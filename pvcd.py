@@ -144,8 +144,8 @@ else:
     zk.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
     zk.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
 
-print('Node hostname: {}'.format(myhostname))
-print('IPMI hostname: {}'.format(config['ipmi_hostname']))
+print('{0}Node hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), myhostname))
+print('{0}IPMI hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), config['ipmi_hostname']))
 
 t_node = dict()
 s_domain = dict()
