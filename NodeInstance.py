@@ -279,7 +279,7 @@ class NodeInstance():
                 fence_thread.start()
 
             # Update the arrays
-            if node_daemon_state == 'start' and node_domain_state != 'flush' and node_name not in self.active_node_list:
+            if node_daemon_state == 'start' and node_domain_state != 'flushed' and node_name not in self.active_node_list:
                 self.active_node_list.append(node_name)
                 try:
                     self.flushed_node_list.remove(node_name)
@@ -289,7 +289,7 @@ class NodeInstance():
                     self.inactive_node_list.remove(node_name)
                 except ValueError:
                     pass
-            if node_daemon_state != 'start' and node_daemon_state != 'flush' and node_name not in self.inactive_node_list:
+            if node_daemon_state != 'start' and node_daemon_state != 'flushed' and node_name not in self.inactive_node_list:
                 self.inactive_node_list.append(node_name)
                 try:
                     self.active_node_list.remove(node_name)
@@ -299,7 +299,7 @@ class NodeInstance():
                     self.flushed_node_list.remove(node_name)
                 except ValueError:
                     pass
-            if node_domain_state == 'flush' and node_name not in self.flushed_node_list:
+            if node_domain_state == 'flushed' and node_name not in self.flushed_node_list:
                 self.flushed_node_list.append(node_name)
                 try:
                     self.active_node_list.remove(node_name)
