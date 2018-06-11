@@ -45,6 +45,7 @@ class VMInstance:
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
         def watch_hypervisor(data, stat, event=""):
+            print(data.decode('ascii'))
             try:
                 self.hypervisor = data.decode('ascii')
             except:
@@ -54,6 +55,7 @@ class VMInstance:
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
+            print(data.decode('ascii'))
             try:
                 self.state = data.decode('ascii')
             except:
