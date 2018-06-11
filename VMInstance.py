@@ -257,11 +257,11 @@ class VMInstance:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False and self.inreceive == False:
             self.migrate_vm()
             
         # VM should be running but not on this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start" and self.hypervisor != self.thishypervisor.name and self.inmigrate == False and self.inreceive == False:
             self.terminate_vm()
 
         # VM is already running and should be
