@@ -101,6 +101,7 @@ class VMInstance:
             except ValueError:
                 pass
         ansiiprint.echo('Successfully terminated VM', '{}:'.format(self.domuuid), 'o')
+        self.instop = False
 
     # Stop the VM forcibly
     def stop_vm(self):
@@ -198,7 +199,6 @@ class VMInstance:
         self.inreceive = True
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         while True:
-            time.sleep(0.5)
             self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
 
@@ -229,9 +229,6 @@ class VMInstance:
     # Main function to manage a VM (taking only self)
     #
     def manage_vm_state(self):
-        # Just a short delay to avoid race conditions
-        time.sleep(0.1)
-
         # Get the current values from zookeeper
         self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
         self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
