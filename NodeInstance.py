@@ -50,7 +50,7 @@ class NodeInstance():
             except AttributeError:
                 self.state = 'stop'
 
-            if self.name = self.this_node:
+            if self.name == self.this_node:
                 if self.state == 'flush':
                     self.flush()
                 if self.state == 'unflush':
