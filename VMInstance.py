@@ -216,7 +216,7 @@ class VMInstance:
             if self.dom == None or self.state == 'migrate':
                 continue
 
-            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING or self.state != 'migrate':
+            if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING and self.state != 'migrate':
                 break
 
         if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
