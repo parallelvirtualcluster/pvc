@@ -194,6 +194,7 @@ class VMInstance:
             time.sleep(1)
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
@@ -206,7 +207,7 @@ class VMInstance:
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         self.inreceive = True
         while True:
-            time.sleep(0.2)
+            time.sleep(0.5)
             self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
             print(self.state)
