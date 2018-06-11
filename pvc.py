@@ -66,6 +66,15 @@ def flush_host(node_name):
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
 
+    # Verify node is valid
+    try:
+        zk.get('/nodes/{}'.format(node_name)
+    except:
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        exit(1)
+
+    click.echo('Flushing hypervisor {} of running VMs.'.format(node_name)
+
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
     transaction.set_data('/nodes/{}/state'.format(node_name), 'flush'.encode('ascii'))
@@ -94,6 +103,15 @@ def ready_host(node_name):
 
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
+
+    # Verify node is valid
+    try:
+        zk.get('/nodes/{}'.format(node_name)
+    except:
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        exit(1)
+
+    click.echo('Restoring hypervisor {} to active service.'.format(node_name)
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
