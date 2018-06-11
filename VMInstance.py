@@ -46,25 +46,13 @@ class VMInstance:
         @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
         def watch_hypervisor(data, stat, event=""):
             print(data.decode('ascii'))
-            try:
-                if self.hypervisor != data.decode('ascii'):
-                    self.hypervisor = data.decode('ascii')
-                    self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
-                    self.manage_vm_state()
-            except Exception as e:
-                print(e)
+            self.manage_vm_state()
 
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
             print(data.decode('ascii'))
-            try:
-                if self.state != data.decode('ascii'):
-                    self.state = data.decode('ascii')
-                    self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
-                    self.manage_vm_state()
-            except Exception as e:
-                print(e)
+            self.manage_vm_state()
 
     # Get data functions
     def getstate(self):
@@ -243,6 +231,13 @@ class VMInstance:
     # Main function to manage a VM (taking only self)
     #
     def manage_vm_state(self):
+        # Just a short delay to avoid race conditions
+        time.sleep(0.5)
+
+        # Get the current values from zookeeper
+        self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
+        self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
+
         # Check the current state of the VM
         try:
             if self.dom != None:
