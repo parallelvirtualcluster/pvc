@@ -114,8 +114,7 @@ zk.add_listener(zk_listener)
 def cleanup():
     try:
         update_timer.shutdown()
-        if t_node[myhostname].getstate() != 'flush':
-            zk.set('/nodes/{}/state'.format(myhostname), 'stop'.encode('ascii'))
+        zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
         zk.stop()
         zk.close()
     except:
@@ -134,7 +133,8 @@ else:
     keepalive_time = int(time.time())
     zk.create('/nodes/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     # Basic state information
-    zk.create('/nodes/{}/state'.format(myhostname), 'stop'.encode('ascii'))
+    zk.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
+    zk.create('/nodes/{}/domainstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))

@@ -30,7 +30,8 @@ class NodeInstance():
         self.config = config
         self.this_node = this_node
         self.name = name
-        self.state = 'stop'
+        self.daemon_state = 'stop'
+        self.domain_state = 'ready'
         self.t_node = t_node
         self.active_node_list = []
         self.flushed_node_list = []
@@ -41,20 +42,26 @@ class NodeInstance():
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
-        self.inflush = False
 
         # Zookeeper handlers for changed states
-        @zk.DataWatch('/nodes/{}/state'.format(self.name))
-        def watch_hypervisor_state(data, stat, event=""):
+        @zk.DataWatch('/nodes/{}/daemonstate'.format(self.name))
+        def watch_hypervisor_daemonstate(data, stat, event=""):
             try:
-                self.state = data.decode('ascii')
+                self.daemon_state = data.decode('ascii')
             except AttributeError:
-                self.state = 'stop'
+                self.daemon_state = 'stop'
+
+        @zk.DataWatch('/nodes/{}/domainstate'.format(self.name))
+        def watch_hypervisor_domainstate(data, stat, event=""):
+            try:
+                self.domain_state = data.decode('ascii')
+            except AttributeError:
+                self.domain_state = 'stop'
 
             if self.name == self.this_node:
-                if self.state == 'flush':
+                if self.domain_state == 'flush':
                     self.flush()
-                if self.state == 'unflush':
+                if self.domain_state == 'unflush':
                     self.unflush()
     
         @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
@@ -64,6 +71,13 @@ class NodeInstance():
             except AttributeError:
                 self.memfree = 0
     
+        @zk.DataWatch('/nodes/{}/memused'.format(self.name))
+        def watch_hypervisor_memused(data, stat, event=""):
+            try:
+                self.memused = data.decode('ascii')
+            except AttributeError:
+                self.memused = 0
+    
         @zk.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
             try:
@@ -71,6 +85,13 @@ class NodeInstance():
             except AttributeError:
                 self.domain_list = []
 
+        @zk.DataWatch('/nodes/{}/domainscount'.format(self.name))
+        def watch_hypervisor_domainscount(data, stat, event=""):
+            try:
+                self.domains_count = data.decode('ascii')
+            except AttributeError:
+                self.domains_count = 0
+    
     # Get value functions
     def getfreemem(self):
         return self.memfree
@@ -81,8 +102,11 @@ class NodeInstance():
     def getname(self):
         return self.name
 
-    def getstate(self):
-        return self.state
+    def getdaemonstate(self):
+        return self.daemon_state
+
+    def getdomainstate(self):
+        return self.domain_state
 
     def getdomainlist(self):
         return self.domain_list
@@ -96,16 +120,20 @@ class NodeInstance():
 
     # Flush all VMs on the host
     def flush(self):
-        self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
+        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
             hypervisor_list = self.zk.get_children('/nodes')
             current_hypervisor = self.zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
             for hypervisor in hypervisor_list:
-                state = self.zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
-                if state != 'start' or hypervisor == current_hypervisor:
+                daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+                domain_state = self.zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+                if hypervisor == current_hypervisor:
+                    continue
+
+                if daemon_state != 'start' or domain_state != 'ready':
                     continue
     
                 memfree = int(self.zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
@@ -129,12 +157,9 @@ class NodeInstance():
             # Wait 1s between migrations
             time.sleep(1)
 
-        self.zk.set('/nodes/{}/state'.format(self.name), 'flushed'.encode('ascii'))
-        self.inflush = False
-
     def unflush(self):
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
-        self.zk.set('/nodes/{}/state'.format(self.name), 'start'.encode('ascii'))
+        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
         for dom_uuid in self.s_domain:
             last_hypervisor = self.zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
             if last_hypervisor != self.name:
@@ -159,12 +184,12 @@ class NodeInstance():
             return
 
         # Get past state and update if needed
-        past_state = self.zk.get('/nodes/{}/state'.format(self.name))[0].decode('ascii')
-        if past_state != 'flush':
-            self.state = 'start'
-            self.zk.set('/nodes/{}/state'.format(self.name), 'start'.encode('ascii'))
+        past_state = self.zk.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
+        if past_state != 'start':
+            self.daemon_state = 'start'
+            self.zk.set('/nodes/{}/daemonstate'.format(self.name), 'start'.encode('ascii'))
         else:
-            self.state = 'flush'
+            self.daemon_state = 'start'
 
         # Toggle state management of all VMs and remove any non-running VMs
         for domain, instance in self.s_domain.items():
@@ -188,9 +213,9 @@ class NodeInstance():
                             pass
 
         # toggle state management of this node
-        if self.state == 'flush':
+        if self.domain_state == 'flush':
             self.flush()
-        if self.state == 'unflush':
+        if self.domain_state == 'unflush':
             self.unflush()
 
         # Set our information in zookeeper
@@ -222,7 +247,7 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                node_state = self.zk.get('/nodes/{}/state'.format(node_name))[0].decode('ascii')
+                node_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
                 node_keepalive = int(self.zk.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
             except:
                 node_state = 'unknown'
@@ -234,7 +259,7 @@ class NodeInstance():
             node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
             if node_keepalive < node_deadtime and node_state == 'start':
                 ansiiprint.echo('Node {} is dead - performing fence operation in 3 seconds'.format(node_name), '', 'w')
-                self.zk.set('/nodes/{}/state'.format(node_name), 'dead'.encode('ascii'))
+                self.zk.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
                 fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
 
