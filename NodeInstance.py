@@ -139,15 +139,9 @@ class NodeInstance():
                     continue
     
                 memfree = int(self.zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
-                print(hypervisor)
-                print(daemon_state)
-                print(domain_state)
-                print(memfree)
-                print(most_memfree)
                 if memfree > most_memfree:
                     most_memfree = memfree
                     target_hypervisor = hypervisor
-                    print('Here - ' + target_hypervisor)
     
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
