@@ -206,10 +206,12 @@ class VMInstance:
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         self.inreceive = True
         while True:
+            time.sleep(0.2)
+            self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
             print(self.state)
+
             if self.dom == None and self.state == 'migrate':
-                time.sleep(0.2)
                 continue
 
             if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING or self.state != 'migrate':
@@ -222,6 +224,7 @@ class VMInstance:
 
             ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
         else:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
             ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
 
         self.inreceive = False
