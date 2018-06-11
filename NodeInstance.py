@@ -260,24 +260,26 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                node_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+                node_daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+                node_domain_state = self.zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
                 node_keepalive = int(self.zk.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
             except:
-                node_state = 'unknown'
+                node_daemon_state = 'unknown'
+                node_domain_state = 'unknown'
                 node_keepalive = 0
 
             # Handle deadtime and fencng if needed
             # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
             # out-of-date while in 'start' state)
             node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
-            if node_keepalive < node_deadtime and node_state == 'start':
-                ansiiprint.echo('Node {} is dead - performing fence operation in 3 seconds'.format(node_name), '', 'w')
+            if node_keepalive < node_deadtime and node_daemon_state == 'start':
+                ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
                 self.zk.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
                 fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
-            if node_state == 'start' and node_name not in self.active_node_list:
+            if node_daemon_state == 'start' and node_domain_state != 'flush' and node_name not in self.active_node_list:
                 self.active_node_list.append(node_name)
                 try:
                     self.flushed_node_list.remove(node_name)
@@ -287,17 +289,7 @@ class NodeInstance():
                     self.inactive_node_list.remove(node_name)
                 except ValueError:
                     pass
-            if node_state == 'flush' and node_name not in self.flushed_node_list:
-                self.flushed_node_list.append(node_name)
-                try:
-                    self.active_node_list.remove(node_name)
-                except ValueError:
-                    pass
-                try:
-                    self.inactive_node_list.remove(node_name)
-                except ValueError:
-                    pass
-            if node_state != 'start' and node_state != 'flush' and node_name not in self.inactive_node_list:
+            if node_daemon_state != 'start' and node_daemon_state != 'flush' and node_name not in self.inactive_node_list:
                 self.inactive_node_list.append(node_name)
                 try:
                     self.active_node_list.remove(node_name)
@@ -307,9 +299,19 @@ class NodeInstance():
                     self.flushed_node_list.remove(node_name)
                 except ValueError:
                     pass
+            if node_domain_state == 'flush' and node_name not in self.flushed_node_list:
+                self.flushed_node_list.append(node_name)
+                try:
+                    self.active_node_list.remove(node_name)
+                except ValueError:
+                    pass
+                try:
+                    self.inactive_node_list.remove(node_name)
+                except ValueError:
+                    pass
         
         # Display cluster information to the terminal
         ansiiprint.echo('{}Cluster status{}'.format(ansiiprint.purple(), ansiiprint.end()), '', 't')
         ansiiprint.echo('{}Active nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
-        ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
         ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
+        ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
