@@ -380,6 +380,89 @@ def stop_vm(dom_name, dom_uuid):
 
 
 ###############################################################################
+# pvc vm move
+###############################################################################
+@click.command(name='move', short_help='Permanently move a virtual machine to another node.')
+@click.option(
+    '-n', '--name', 'dom_name',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
+    help='Search for this human-readable name.'
+)
+@click.option(
+    '-u', '--uuid', 'dom_uuid',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
+    help='Search for this UUID.'
+)
+@click.option(
+    '-t', '--target', 'target_hypervisor', default=None,
+    help='The target hypervisor to migrate to.'
+)
+def move_vm(dom_name, dom_uuid, target_hypervisor):
+    """
+    Permanently move a virtual machine, via live migration if running and possible, to another hypervisor node.
+    """
+
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
+        return
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # If the --name value was passed, get the UUID
+    if dom_name != None:
+        dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    # Verify we got a result or abort
+    if not pvcf.validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+        return
+
+    if target_hypervisor == None:
+        # Determine the best hypervisor to migrate the VM to based on active memory usage
+        hypervisor_list = zk.get_children('/nodes')
+        most_memfree = 0
+        for hypervisor in hypervisor_list:
+            state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+            if state != 'start' or hypervisor == current_hypervisor:
+                continue
+
+            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            if memfree > most_memfree:
+                most_memfree = memfree
+                target_hypervisor = hypervisor
+    else:
+        if target_hypervisor == current_hypervisor:
+            click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
+            return
+
+    current_vm_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if current_vm_state == 'start':
+        click.echo('Permanently migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+        transaction = zk.transaction()
+        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+        transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+        transaction.commit()
+    else:
+        click.echo('Permanently moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
+        transaction = zk.transaction()
+        transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+        transaction.commit()
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
 # pvc vm migrate
 ###############################################################################
 @click.command(name='migrate', short_help='Migrate a virtual machine to another node.')
