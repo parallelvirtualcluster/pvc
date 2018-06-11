@@ -42,6 +42,7 @@ class NodeInstance():
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
+        self.inflush = False
 
         # Zookeeper handlers for changed states
         @zk.DataWatch('/nodes/{}/daemonstate'.format(self.name))
@@ -58,7 +59,7 @@ class NodeInstance():
             except AttributeError:
                 self.domain_state = 'stop'
 
-            if self.name == self.this_node:
+            if self.name == self.this_node and self.inflush == False:
                 if self.domain_state == 'flush':
                     self.flush()
                 if self.domain_state == 'unflush':
@@ -120,6 +121,7 @@ class NodeInstance():
 
     # Flush all VMs on the host
     def flush(self):
+        self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
         self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         for dom_uuid in self.domain_list:
@@ -162,7 +164,10 @@ class NodeInstance():
             # Wait 1s between migrations
             time.sleep(1)
 
+        self.inflush = False
+
     def unflush(self):
+        self.inflush = True
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
         self.zk.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
         for dom_uuid in self.s_domain:
@@ -179,6 +184,8 @@ class NodeInstance():
 
             # Wait 1s between migrations
             time.sleep(1)
+
+        self.inflush = False
 
     def update_zookeeper(self):
         # Connect to libvirt
