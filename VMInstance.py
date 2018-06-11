@@ -232,7 +232,7 @@ class VMInstance:
     #
     def manage_vm_state(self):
         # Just a short delay to avoid race conditions
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         # Get the current values from zookeeper
         self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
