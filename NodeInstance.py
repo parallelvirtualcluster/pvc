@@ -204,7 +204,7 @@ class NodeInstance():
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}Active Domains:{1} {2}  {0}CPUs:{1} {3}  {0}Free memory [MiB]:{1} {4}  {0}Used memory [MiB]:{1} {5}  {0}Load:{1} {6}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.cpucount, self.memfree, self.memused, self.cpuload), '', 'c')
+        ansiiprint.echo('{0}Active domains:{1} {2}  {0}CPUs:{1} {3}  {0}Free memory [MiB]:{1} {4}  {0}Used memory [MiB]:{1} {5}  {0}Load:{1} {6}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.cpucount, self.memfree, self.memused, self.cpuload), '', 'c')
 
         # Update our local node lists
         for node_name in self.t_node:
