@@ -73,7 +73,7 @@ def flush_host(node_name):
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
         exit(1)
 
-    click.echo('Flushing hypervisor {} of running VMs.'.format(node_name)
+    click.echo('Flushing hypervisor {} of running VMs.'.format(node_name))
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
@@ -106,12 +106,12 @@ def ready_host(node_name):
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node_name)
+        zk.get('/nodes/{}'.format(node_name))
     except:
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
         exit(1)
 
-    click.echo('Restoring hypervisor {} to active service.'.format(node_name)
+    click.echo('Restoring hypervisor {} to active service.'.format(node_name))
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
