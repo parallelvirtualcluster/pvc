@@ -242,6 +242,8 @@ class VMInstance:
         except:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
+        ansiiprint.echo('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.hypervisor), '', 'i')
+
         # Conditional pass one - If we're already doing something, bail out
         if self.instart == True or self.instop == True or self.inshutdown == True or self.inmigrate == True or self.inreceive == True:
             return 0
