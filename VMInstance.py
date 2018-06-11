@@ -184,7 +184,6 @@ class VMInstance:
     # Migrate the VM to a target host
     def migrate_vm(self):
         self.inmigrate = True
-
         ansiiprint.echo('Migrating VM to hypervisor "{}"'.format(self.hypervisor), '{}:'.format(self.domuuid), 'i')
         migrate_ret = self.live_migrate_vm(self.hypervisor)
         print(migrate_ret)
@@ -205,8 +204,8 @@ class VMInstance:
 
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
-        ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         self.inreceive = True
+        ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         while True:
             time.sleep(0.5)
             self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
@@ -220,14 +219,13 @@ class VMInstance:
                 break
 
         if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
-
             ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
-        else:
             self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+        else:
             ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
         self.inreceive = False
 
