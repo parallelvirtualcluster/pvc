@@ -218,7 +218,7 @@ class VMInstance:
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
 
-            ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
+            ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
         else:
             ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
 
