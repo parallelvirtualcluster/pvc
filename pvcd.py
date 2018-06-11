@@ -134,7 +134,7 @@ else:
     zk.create('/nodes/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     # Basic state information
     zk.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
-    zk.create('/nodes/{}/domainstate'.format(myhostname), 'stop'.encode('ascii'))
+    zk.create('/nodes/{}/domainstate'.format(myhostname), 'ready'.encode('ascii'))
     zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
