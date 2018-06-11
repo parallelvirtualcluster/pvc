@@ -24,10 +24,11 @@ import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, fencenod
 
 class NodeInstance():
     # Initialization function
-    def __init__(self, name, t_node, s_domain, zk, config):
+    def __init__(self, this_node, name, t_node, s_domain, zk, config):
         # Passed-in variables on creation
         self.zk = zk
         self.config = config
+        self.this_node = this_node
         self.name = name
         self.state = 'stop'
         self.t_node = t_node
@@ -49,10 +50,11 @@ class NodeInstance():
             except AttributeError:
                 self.state = 'stop'
 
-            if self.state == 'flush':
-                self.flush()
-            if self.state == 'unflush':
-                self.unflush()
+            if self.name = self.this_node:
+                if self.state == 'flush':
+                    self.flush()
+                if self.state == 'unflush':
+                    self.unflush()
     
         @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):

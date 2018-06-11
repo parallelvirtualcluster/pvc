@@ -161,7 +161,7 @@ def updatenodes(new_node_list):
         if node in t_node:
             t_node[node].updatenodelist(t_node)
         else:
-            t_node[node] = NodeInstance.NodeInstance(node, t_node, s_domain, zk, config)
+            t_node[node] = NodeInstance.NodeInstance(myhostname, node, t_node, s_domain, zk, config)
 
 @zk.ChildrenWatch('/domains')
 def updatedomains(new_domain_list):
