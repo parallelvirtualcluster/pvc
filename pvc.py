@@ -178,7 +178,7 @@ def vm():
     help='The XML config file to define the domain from.'
 )
 @click.option(
-    '-v', '--hypervisor', 'target_hypervisor', default=myhostname, show_default=True,
+    '-t', '--hypervisor', 'target_hypervisor', default=myhostname, show_default=True,
     help='The home hypervisor for this domain.'
 )
 def define_vm(xml_config_file, target_hypervisor):
