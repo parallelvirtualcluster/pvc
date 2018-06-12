@@ -166,7 +166,7 @@ def getInformationFromXML(zk, uuid, long_output):
         dtype, darch, dmachine, dconsole, demulator = getDomainExtraDetails(parsed_xml)
         dfeatures = getDomainCPUFeatures(parsed_xml)
         ddisks = getDomainDisks(parsed_xml)
-        dnetss = getDomainNetworks(parsed_xml)
+        dnets = getDomainNetworks(parsed_xml)
         dcontrollers = getDomainControllers(parsed_xml)
 
     # Format a nice output; do this line-by-line then concat the elements at the end
