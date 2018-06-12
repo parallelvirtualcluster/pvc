@@ -249,6 +249,7 @@ class VMInstance:
             return 0
 
         print('got there')
+        print(running)
         # VM should be stopped
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
