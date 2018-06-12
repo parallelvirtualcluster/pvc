@@ -117,7 +117,7 @@ class NodeInstance():
     def flush(self):
         self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
-        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
+        ansiiprint.echo('Domain list: ' + ', '.join(self.domain_list), '', 'i')
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
@@ -157,6 +157,7 @@ class NodeInstance():
             # Wait 2s between migrations
             time.sleep(2)
 
+        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         self.inflush = False
 
     def unflush(self):
