@@ -25,6 +25,8 @@ import libvirt
 import sys
 import os
 import socket
+import psutil
+import subprocess
 import uuid
 import VMInstance
 import NodeInstance
@@ -137,6 +139,7 @@ else:
     zk.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.create('/nodes/{}/domainstate'.format(myhostname), 'ready'.encode('ascii'))
     zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
+    zk.create('/nodes/{}/staticdata'.format(myhostname), ''.encode('ascii'))
     zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
@@ -147,6 +150,17 @@ else:
     zk.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
     zk.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
     zk.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
+
+
+# Gather useful data about our host for staticdata
+# Static data format: 'cpu_count', 'arch', 'kernel', 'os'
+staticdata = []
+staticdata.append(str(psutil.cpu_count()))
+staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+
+zk.set('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
