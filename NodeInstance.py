@@ -198,10 +198,12 @@ class NodeInstance():
         else:
             self.daemon_state = 'start'
 
-        # Toggle state management of all VMs and remove any non-running VMs
+        # Toggle state management of dead VMs
         for domain, instance in self.s_domain.items():
             if instance.inshutdown == False and domain in self.domain_list:
-                instance.manage_vm_state()
+                if instance.getstate() == 'start' and instance.gethypervisor() == self.name and instance.dom == None:
+                    instance.manage_vm_state()
+
                 if instance.dom == None:
                     try:
                         self.domain_list.remove(domain)
@@ -218,6 +220,8 @@ class NodeInstance():
                             self.domain_list.remove(domain)
                         except:
                             pass
+                    else:
+                        instance.setnoclobber()
 
         # toggle state management of this node
         if self.domain_state == 'flush':

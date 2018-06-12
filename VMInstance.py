@@ -40,17 +40,24 @@ class VMInstance:
         self.inmigrate = False
         self.inreceive = False
 
-        self.dom = self.lookupByUUID(self.domuuid)
+        # These stop a weird clobber at startup
+        self.noclobber = False
 
-        # Watch for changes to the hypervisor field in Zookeeper
-        @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
-        def watch_hypervisor(data, stat, event=""):
-            self.manage_vm_state()
+        self.dom = self.lookupByUUID(self.domuuid)
 
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
-            self.manage_vm_state()
+            if self.noclobber == False:
+                self.noclobber = True
+                self.manage_vm_state()
+
+        # Watch for changes to the hypervisor field in Zookeeper
+        @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
+        def watch_hypervisor(data, stat, event=""):
+            if self.noclobber == False:
+                self.noclobber = True
+                self.manage_vm_state()
 
     # Get data functions
     def getstate(self):
@@ -58,6 +65,10 @@ class VMInstance:
 
     def gethypervisor(self):
         return self.hypervisor
+
+    # Allow the node to set the noclobber status once it performs its first keepalive
+    def setnoclobber(self):
+        self.noclobber = False
 
     # Start up the VM
     def start_vm(self, xmlconfig):
@@ -285,7 +296,6 @@ class VMInstance:
             domxml, domxmlstat = self.zk.get('/domains/{}/xml'.format(self.domuuid))
             domxml = str(domxml.decode('ascii'))
             self.start_vm(domxml)
-
 
     # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
     # 1. Takes a text UUID and handles converting it to bytes
