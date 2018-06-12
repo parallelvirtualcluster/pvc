@@ -221,12 +221,6 @@ class NodeInstance():
                         except:
                             pass
 
-        # toggle state management of this node
-        if self.domain_state == 'flush':
-            self.flush()
-        if self.domain_state == 'unflush':
-            self.unflush()
-
         # Set our information in zookeeper
         self.name = conn.getHostname()
         self.cpucount = conn.getCPUMap()[0]
@@ -311,3 +305,10 @@ class NodeInstance():
         ansiiprint.echo('{}Active nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
         ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
+
+        # toggle state management of this node
+        if self.domain_state == 'flush':
+            self.flush()
+        if self.domain_state == 'unflush':
+            self.unflush()
+
