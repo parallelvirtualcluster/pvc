@@ -225,12 +225,16 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             
     # Format the string (elements)
     for node_name in node_list:
-        if node_daemon_state[node_name] == 'start':
+        if node_daemon_state[node_name] == 'run':
             daemon_state_colour = ansiiprint.green()
         elif node_daemon_state[node_name] == 'stop':
             daemon_state_colour = ansiiprint.red()
-        else:
+        elif node_daemon_state[node_name] == 'init':
             daemon_state_colour = ansiiprint.yellow()
+        elif node_daemon_state[node_name] == 'dead':
+            daemon_state_colour = ansiiprint.red() + ansiiprint.bold()
+        else
+            daemon_state_colour = ansiiprint.blue()
 
         if node_domain_state[node_name] == 'ready':
             domain_state_colour = ansiiprint.green()

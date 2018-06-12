@@ -26,8 +26,22 @@ import os, sys, libvirt, uuid, kazoo.client, time, subprocess, re, ansiiprint
 # Trigger function
 #
 def fence(node_name, zk):
-    time.sleep(3)
-    ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'w')
+    failcount = 0
+    while failcount < 3
+        # Wait 5 seconds
+        time.sleep(5)
+        # Get the state
+        node_daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        # Is it still 'dead'
+        if node_daemon_state == 'dead':
+            failcount += 1
+            ansiiprint.echo('Node "{}" failed {} saving throw'.format(node_name, failcount), '', 'w')
+        # It changed back to something else so it must be alive
+        else:
+            ansiiprint.echo('Node "{}" passed a saving throw; canceling fence'.format(node_name), '', 'o')
+            return
+
+    ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'e')
 
     ipmi_hostname = zk.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
     ipmi_username = zk.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')

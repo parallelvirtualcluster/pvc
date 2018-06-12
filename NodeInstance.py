@@ -155,7 +155,7 @@ class NodeInstance():
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
                 transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
-                result = transaction.commit()
+                transaction.commit()
 
             # Wait 2s between migrations
             time.sleep(2)
@@ -177,7 +177,7 @@ class NodeInstance():
             transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
             transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
             transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
-            result = transaction.commit()
+            transaction.commit()
 
             # Wait 2s between migrations
             time.sleep(2)
@@ -196,7 +196,7 @@ class NodeInstance():
         past_state = self.zk.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
         if past_state != 'start':
             self.daemon_state = 'start'
-            self.zk.set('/nodes/{}/daemonstate'.format(self.name), 'start'.encode('ascii'))
+            self.zk.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
         else:
             self.daemon_state = 'start'
 
@@ -221,13 +221,15 @@ class NodeInstance():
         self.domains_count = len(conn.listDomainsID())
         keepalive_time = int(time.time())
         try:
-            self.zk.set('/nodes/{}/cpucount'.format(self.name), str(self.cpucount).encode('ascii'))
-            self.zk.set('/nodes/{}/memused'.format(self.name), str(self.memused).encode('ascii'))
-            self.zk.set('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
-            self.zk.set('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
-            self.zk.set('/nodes/{}/runningdomains'.format(self.name), ' '.join(self.domain_list).encode('ascii'))
-            self.zk.set('/nodes/{}/domainscount'.format(self.name), str(self.domains_count).encode('ascii'))
-            self.zk.set('/nodes/{}/keepalive'.format(self.name), str(keepalive_time).encode('ascii'))
+            transaction = self.zk.transaction()
+            transaction.set_data('/nodes/{}/cpucount'.format(self.name), str(self.cpucount).encode('ascii'))
+            transaction.set_data('/nodes/{}/memused'.format(self.name), str(self.memused).encode('ascii'))
+            transaction.set_data('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
+            transaction.set_data('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
+            transaction.set_data('/nodes/{}/runningdomains'.format(self.name), ' '.join(self.domain_list).encode('ascii'))
+            transaction.set_data('/nodes/{}/domainscount'.format(self.name), str(self.domains_count).encode('ascii'))
+            transaction.set_data('/nodes/{}/keepalive'.format(self.name), str(keepalive_time).encode('ascii'))
+            transaction.commit()
         except:
             return
 
