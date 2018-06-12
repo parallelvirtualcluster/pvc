@@ -47,16 +47,6 @@ class VMInstance:
         def watch_state(data, stat, event=""):
             self.manage_vm_state()
 
-        # Watch for changes to the hypervisor field in Zookeeper
-#        @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
-#        def watch_hypervisor(data, stat, event=""):
-#            if self.ininit == False:
-#                self.manage_vm_state()
-#            else:
-#                # This case handles the very first init at startup to avoid it happening twice
-#                self.ininit = False
-#                self.manage_vm_state()
-
     # Get data functions
     def getstate(self):
         return self.state
@@ -237,7 +227,7 @@ class VMInstance:
         # Give ourselves a bit of leeway time
         time.sleep(0.2)
 
-        # Get the current values from zookeeper
+        # Get the current values from zookeeper (don't rely on the watch)
         self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
         self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
 
@@ -252,10 +242,13 @@ class VMInstance:
 
         ansiiprint.echo('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.hypervisor), '', 'i')
 
+        print('got here')
+
         # Conditional pass one - If we're already doing something, bail out
         if self.instart == True or self.instop == True or self.inshutdown == True or self.inmigrate == True or self.inreceive == True:
             return 0
 
+        print('got there')
         # VM should be stopped
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
