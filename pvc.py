@@ -233,7 +233,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             daemon_state_colour = ansiiprint.yellow()
         elif node_daemon_state[node_name] == 'dead':
             daemon_state_colour = ansiiprint.red() + ansiiprint.bold()
-        else
+        else:
             daemon_state_colour = ansiiprint.blue()
 
         if node_domain_state[node_name] == 'ready':
