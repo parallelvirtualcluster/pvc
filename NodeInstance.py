@@ -59,12 +59,6 @@ class NodeInstance():
             except AttributeError:
                 self.domain_state = 'stop'
 
-            if self.name == self.this_node and self.inflush == False:
-                if self.domain_state == 'flush':
-                    self.flush()
-                if self.domain_state == 'unflush':
-                    self.unflush()
-    
         @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):
             try:
@@ -311,8 +305,8 @@ class NodeInstance():
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
 
         # toggle state management of this node
-        if self.domain_state == 'flush':
+        if self.domain_state == 'flush' and self.inflush == False:
             self.flush()
-        if self.domain_state == 'unflush':
+        if self.domain_state == 'unflush' and self.inflush == False:
             self.unflush()
 
