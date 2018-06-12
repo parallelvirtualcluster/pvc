@@ -179,7 +179,7 @@ def node_list():
 
         if node_daemon_state == 'start':
             daemon_state_colour = ansiiprint.green()
-        elif node_daemon_state == 'stop' or node_daemon_state == 'shutdown':
+        elif node_daemon_state == 'stop':
             daemon_state_colour = ansiiprint.red()
         else:
             daemon_state_colour = ansiiprint.yellow()
