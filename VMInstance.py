@@ -194,6 +194,7 @@ class VMInstance:
         self.inreceive = True
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         while True:
+            time.sleep(0.5)
             self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
 
