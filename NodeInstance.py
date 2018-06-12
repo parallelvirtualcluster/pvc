@@ -145,7 +145,7 @@ class NodeInstance():
 
                 print('{} {} {} {}'.format(hypervisor, memfree, most_memfree, target_hypervisor))
 
-            print(target_hypervisor)
+            print('{} {}'.format(dom_uuid, target_hypervisor))
     
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
