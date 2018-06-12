@@ -39,24 +39,24 @@ class VMInstance:
         self.inshutdown = False
         self.inmigrate = False
         self.inreceive = False
-
-        # These stop a weird clobber at startup
-        self.noclobber = False
+        self.ininit = True
 
         self.dom = self.lookupByUUID(self.domuuid)
 
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
-            if self.noclobber == False:
-                self.noclobber = True
+            if self.ininit == False:
                 self.manage_vm_state()
 
         # Watch for changes to the hypervisor field in Zookeeper
         @zk.DataWatch('/domains/{}/hypervisor'.format(self.domuuid))
         def watch_hypervisor(data, stat, event=""):
-            if self.noclobber == False:
-                self.noclobber = True
+            if self.ininit == False:
+                self.manage_vm_state()
+            else:
+                # This case handles the very first init at startup to avoid it happening twice
+                self.ininit = False
                 self.manage_vm_state()
 
     # Get data functions
@@ -65,10 +65,6 @@ class VMInstance:
 
     def gethypervisor(self):
         return self.hypervisor
-
-    # Allow the node to set the noclobber status once it performs its first keepalive
-    def setnoclobber(self):
-        self.noclobber = False
 
     # Start up the VM
     def start_vm(self, xmlconfig):

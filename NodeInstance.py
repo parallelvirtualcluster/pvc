@@ -220,7 +220,6 @@ class NodeInstance():
                             self.domain_list.remove(domain)
                         except:
                             pass
-                instance.setnoclobber()
 
         # toggle state management of this node
         if self.domain_state == 'flush':
