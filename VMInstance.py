@@ -243,14 +243,9 @@ class VMInstance:
 
         ansiiprint.echo('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.hypervisor), '', 'i')
 
-        print('{} got here'.format(self.domuuid))
-
         # Conditional pass one - If we're already doing something, bail out
         if self.instart == True or self.instop == True or self.inshutdown == True or self.inmigrate == True or self.inreceive == True:
             return 0
-
-        print('{} got there'.format(self.domuuid))
-        print('{} {}'.format(self.domuuid, running))
 
         # VM should be stopped
         if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:

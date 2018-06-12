@@ -124,7 +124,7 @@ class NodeInstance():
     def flush(self):
         self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
-        ansiiprint.echo('Domain list: ' + ', '.join(self.domain_list), '', 'i')
+        ansiiprint.echo('Domain list: {}'.format(', '.join(self.domain_list)), '', 'c')
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
@@ -144,10 +144,6 @@ class NodeInstance():
                     most_memfree = memfree
                     target_hypervisor = hypervisor
 
-                print('{} {} {} {}'.format(hypervisor, memfree, most_memfree, target_hypervisor))
-
-            print('{} {}'.format(dom_uuid, target_hypervisor))
-    
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
                 transaction = self.zk.transaction()
