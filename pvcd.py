@@ -110,6 +110,7 @@ def zk_listener(state):
         pass
 
 zk.add_listener(zk_listener)
+zk.set('/nodes/{}/daemonstate'.format(myhostname), 'startup'.encode('ascii'))
 
 def cleanup():
     try:
