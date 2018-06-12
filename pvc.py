@@ -158,7 +158,7 @@ def node_list():
     List all hypervisor nodes in the cluster.
     """
 
-    node_list_header = ansiiprint.bold() + 'Name                   State: Daemon    Nodes     VMs   CPUs  RAM [MiB]: Total   Used    Free    Allocated' + ansiiprint.end()
+    node_list_header = ansiiprint.bold() + 'Name                   State: Daemon  Nodes    Resources: VMs   CPUs  RAM [MiB]: Total   Used    Free    Allocated' + ansiiprint.end()
     node_list = []
     zk = pvcf.startZKConnection(zk_host)
     for node_name in zk.get_children('/nodes'):
@@ -189,7 +189,7 @@ def node_list():
         else:
             domain_state_colour = ansiiprint.blue()
 
-        node_output_string = '{3: <28}  {0}{4: <8}{2}  {1}{5: <8}{2}  {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
+        node_output_string = '{3: <28}  {0}{4: <6}{2}  {1}{5: <8}{2}            {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
             daemon_state_colour,
             domain_state_colour,
             ansiiprint.end(),
