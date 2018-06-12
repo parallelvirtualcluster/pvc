@@ -189,7 +189,7 @@ def node_list():
         else:
             domain_state_colour = ansiiprint.blue()
 
-        node_output_string = '{3: <28}  {0}{4: <8}{2}  {1}{5: <8}{2}            {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
+        node_output_string = '{3: <28}  {0}{4: <7}{2}  {1}{5: <8}{2}            {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
             daemon_state_colour,
             domain_state_colour,
             ansiiprint.end(),
