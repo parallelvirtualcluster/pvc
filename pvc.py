@@ -202,7 +202,7 @@ def node_list():
     # Format the string (header)
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}} \
-State: {daemon_state_colour}{node_daemon_state: <8}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
+State: {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
 Resources: {node_domains_count: <4} {node_cpu_count: <5}  \
 RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
             node_name_length=node_name_length,
@@ -243,7 +243,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
 
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}} \
-       {daemon_state_colour}{node_daemon_state: <8}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
+       {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
            {node_domains_count: <4} {node_cpu_count: <5}  \
            {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
                 node_name_length=node_name_length,
