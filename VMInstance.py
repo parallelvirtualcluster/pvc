@@ -236,6 +236,9 @@ class VMInstance:
     # Main function to manage a VM (taking only self)
     #
     def manage_vm_state(self):
+        # Give ourselves a bit of leeway time
+        time.sleep(0.2)
+
         # Get the current values from zookeeper
         self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
         self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
