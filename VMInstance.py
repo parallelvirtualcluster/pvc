@@ -54,6 +54,9 @@ class VMInstance:
     def gethypervisor(self):
         return self.hypervisor
 
+    def getdom(self):
+        return self.dom
+
     # Start up the VM
     def start_vm(self, xmlconfig):
         ansiiprint.echo('Starting VM', '{}:'.format(self.domuuid), 'i')
