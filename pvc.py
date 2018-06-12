@@ -158,56 +158,112 @@ def node_list():
     List all hypervisor nodes in the cluster.
     """
 
-    node_list_header = ansiiprint.bold() + 'Name                   State: Daemon   Nodes    Resources: VMs   CPUs  RAM [MiB]: Total   Used    Free    Allocated' + ansiiprint.end()
-    node_list = []
+    # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
-    for node_name in zk.get_children('/nodes'):
 
-        node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
-        node_domain_state = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-        node_cpu_count = zk.get('/nodes/{}/cpucount'.format(node_name))[0].decode('ascii')
-        node_mem_used = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
-        node_mem_free = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
-        node_mem_total = int(node_mem_used) + int(node_mem_free)
-        node_domains_count = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
-        node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
-        node_mem_allocated = 0
-        for domain in node_running_domains:
+    node_list = zk.get_children('/nodes')
+    node_list_output = []
+    node_daemon_state = {}
+    node_daemon_state = {}
+    node_domain_state = {}
+    node_cpu_count = {}
+    node_mem_used = {}
+    node_mem_free = {}
+    node_mem_total = {}
+    node_domains_count = {}
+    node_running_domains = {}
+    node_mem_allocated = {}
+
+    # Gather information for printing
+    for node_name in node_list:
+        node_daemon_state[node_name] = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_domain_state[node_name] = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+        node_cpu_count[node_name] = zk.get('/nodes/{}/cpucount'.format(node_name))[0].decode('ascii')
+        node_mem_used[node_name] = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
+        node_mem_free[node_name] = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
+        node_mem_total[node_name] = int(node_mem_used[node_name]) + int(node_mem_free[node_name])
+        node_domains_count[node_name] = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
+        node_running_domains[node_name] = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+        node_mem_allocated[node_name] = 0
+        for domain in node_running_domains[node_name]:
             parsed_xml = pvcf.getDomainXML(zk, domain)
             duuid, dname, dmemory, dvcpu, dvcputopo = pvcf.getDomainMainDetails(parsed_xml)
-            node_mem_allocated += int(dmemory)
+            node_mem_allocated[node_name] += int(dmemory)
 
-        if node_daemon_state == 'start':
+    # Determine optimal column widths
+    # Dynamic columns: node_name, hypervisor, migrated
+    node_name_length = 0
+    for node_name in node_list:
+        # node_name column
+        _node_name_length = len(node_name) + 1
+        if _node_name_length > node_name_length:
+            node_name_length = _node_name_length
+
+    # Format the string (header)
+    node_list_output.append(
+        '{bold}{node_name: <{node_name_length}} \
+State: {daemon_state_colour}{node_daemon_state: <8}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
+Resources: {node_domains_count: <4} {node_cpu_count: <5}  \
+RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+            node_name_length=node_name_length,
+            bold=ansiiprint.bold(),
+            end_bold=ansiiprint.end(),
+            daemon_state_colour='',
+            domain_state_colour='',
+            end_colour='',
+            node_name='Name',
+            node_daemon_state='Daemon',
+            node_domain_state='Domain',
+            node_domains_count='VMs',
+            node_cpu_count='CPUs',
+            node_mem_total='Total',
+            node_mem_used='Used',
+            node_mem_free='Free',
+            node_mem_allocated='VMs'
+        )
+    )
+            
+    # Format the string (elements)
+    for node_name in node_list:
+        if node_daemon_state[node_name] == 'start':
             daemon_state_colour = ansiiprint.green()
-        elif node_daemon_state == 'stop':
+        elif node_daemon_state[node_name] == 'stop':
             daemon_state_colour = ansiiprint.red()
         else:
             daemon_state_colour = ansiiprint.yellow()
 
-        if node_domain_state == 'ready':
+        if node_domain_state[node_name] == 'ready':
             domain_state_colour = ansiiprint.green()
         else:
             domain_state_colour = ansiiprint.blue()
 
-        node_output_string = '{3: <28}  {0}{4: <7}{2}  {1}{5: <8}{2}            {6: <4}  {7: <4}             {8: <6}  {9: <6}  {10: <6}  {11: <6}'.format(
-            daemon_state_colour,
-            domain_state_colour,
-            ansiiprint.end(),
-            node_name,
-            node_daemon_state,
-            node_domain_state,
-            node_domains_count,
-            node_cpu_count,
-            node_mem_total,
-            node_mem_used,
-            node_mem_free,
-            node_mem_allocated
+        node_list_output.append(
+            '{bold}{node_name: <{node_name_length}} \
+       {daemon_state_colour}{node_daemon_state: <8}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
+           {node_domains_count: <4} {node_cpu_count: <5}  \
+           {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+                node_name_length=node_name_length,
+                bold='',
+                end_bold='',
+                daemon_state_colour=daemon_state_colour,
+                domain_state_colour=domain_state_colour,
+                end_colour=ansiiprint.end(),
+                node_name=node_name,
+                node_daemon_state=node_daemon_state[node_name],
+                node_domain_state=node_domain_state[node_name],
+                node_domains_count=node_domains_count[node_name],
+                node_cpu_count=node_cpu_count[node_name],
+                node_mem_total=node_mem_total[node_name],
+                node_mem_used=node_mem_used[node_name],
+                node_mem_free=node_mem_free[node_name],
+                node_mem_allocated=node_mem_allocated[node_name]
+            )
         )
-        node_list.append(node_output_string)
 
-    click.echo(node_list_header)
-    click.echo('\n'.join(sorted(node_list)))
+    click.echo('\n'.join(sorted(node_list_output)))
 
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
@@ -780,47 +836,117 @@ def vm_list(hypervisor):
     List all virtual machines in the cluster.
     """
 
-    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State     RAM [MiB]  vCPUs  Hypervisor            Migrated?' + ansiiprint.end()
-    vm_list = []
+    # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
-    for vm in zk.get_children('/domains'):
+
+    vm_list = zk.get_children('/domains')
+    vm_list_output = []
+
+    vm_hypervisor = {}
+    vm_state = {}
+    vm_migrated = {}
+    vm_uuid = {}
+    vm_name = {}
+    vm_memory = {}
+    vm_vcpu = {}
+
+    # Gather information for printing
+    for vm in vm_list:
         # Check hypervisor to avoid unneeded ZK calls
-        vm_hypervisor = zk.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
-        if hypervisor != None and vm_hypervisor != hypervisor:
+        vm_hypervisor[vm] = zk.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
+        if hypervisor != None and vm_hypervisor[vm] != hypervisor:
             continue
 
-        vm_state = zk.get('/domains/{}/state'.format(vm))[0].decode('ascii')
+        vm_state[vm] = zk.get('/domains/{}/state'.format(vm))[0].decode('ascii')
         vm_lasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(vm))[0].decode('ascii')
         if vm_lasthypervisor != '':
-            vm_migrated = 'from {}'.format(vm_lasthypervisor)
+            vm_migrated[vm] = 'from {}'.format(vm_lasthypervisor)
         else:
-            vm_migrated = 'no'
+            vm_migrated[vm] = 'no'
 
         vm_xml = pvcf.getDomainXML(zk, vm)
-        vm_uuid, vm_name, vm_memory, vm_vcpu, vm_vcputopo = pvcf.getDomainMainDetails(vm_xml)
+        vm_uuid[vm], vm_name[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = pvcf.getDomainMainDetails(vm_xml)
 
-        if vm_state == 'start':
-            state_colour = ansiiprint.green()
-        elif vm_state == 'stop' or vm_state == 'shutdown':
-            state_colour = ansiiprint.red()
-        else:
-            state_colour = ansiiprint.yellow()
+    # Determine optimal column widths
+    # Dynamic columns: node_name, hypervisor, migrated
+    vm_name_length = 0
+    vm_hypervisor_length = 0
+    vm_migrated_length = 0
+    for vm in vm_list:
+        # vm_name column
+        _vm_name_length = len(vm_name[vm]) + 1
+        if _vm_name_length > vm_name_length:
+            vm_name_length = _vm_name_length
+        # vm_hypervisor column
+        _vm_hypervisor_length = len(vm_hypervisor[vm]) + 1
+        if _vm_hypervisor_length > vm_hypervisor_length:
+            vm_hypervisor_length = _vm_hypervisor_length
+        # vm_migrated column
+        _vm_migrated_length = len(vm_migrated[vm]) + 1
+        if _vm_migrated_length > vm_migrated_length:
+            vm_migrated_length = _vm_migrated_length
 
-        vm_output_string = '{2: <16} {3: <32}  {0}{4: <8}{1}  {5: <6}     {6: <5}  {7: <20}  {8: <25}'.format(
-            state_colour,
-            ansiiprint.end(),
-            vm_name,
-            vm_uuid,
-            vm_state,
-            vm_memory,
-            vm_vcpu,
-            vm_hypervisor,
-            vm_migrated
+    # Format the string (header)
+    vm_list_header = ansiiprint.bold() + 'Name             UUID                                  State     RAM [MiB]  vCPUs  Hypervisor            Migrated?' + ansiiprint.end()
+    vm_list_output.append(
+        '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
+{vm_state_colour}{vm_state: <8}{end_colour} \
+{vm_memory: <10} {vm_vcpu: <6} \
+{vm_hypervisor: <{vm_hypervisor_length}} \
+{vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
+            vm_name_length=vm_name_length,
+            vm_hypervisor_length=vm_hypervisor_length,
+            vm_migrated_length=vm_migrated_length,
+            bold=ansiiprint.bold(),
+            end_bold=ansiiprint.end(),
+            vm_state_colour='',
+            end_colour='',
+            vm_name='Name',
+            vm_uuid='UUID',
+            vm_state='State',
+            vm_memory='RAM (MiB)',
+            vm_vcpu='vCPUs',
+            vm_hypervisor='Hypervisor',
+            vm_migrated='Migrated'
         )
-        vm_list.append(vm_output_string)
+    )
+            
+    # Format the string (elements)
+    for vm in vm_list:
+        if vm_state[vm] == 'start':
+            vm_state_colour = ansiiprint.green()
+        elif vm_state[vm] == 'stop':
+            vm_state_colour = ansiiprint.red()
+        else:
+            vm_state_colour = ansiiprint.blue()
 
-    click.echo(vm_list_header)
-    click.echo('\n'.join(sorted(vm_list)))
+        vm_list_output.append(
+            '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
+{vm_state_colour}{vm_state: <8}{end_colour} \
+{vm_memory: <10} {vm_vcpu: <6} \
+{vm_hypervisor: <{vm_hypervisor_length}} \
+{vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
+                vm_name_length=vm_name_length,
+                vm_hypervisor_length=vm_hypervisor_length,
+                vm_migrated_length=vm_migrated_length,
+                bold='',
+                end_bold='',
+                vm_state_colour=vm_state_colour,
+                end_colour=ansiiprint.end(),
+                vm_name=vm_name[vm],
+                vm_uuid=vm_uuid[vm],
+                vm_state=vm_state[vm],
+                vm_memory=vm_memory[vm],
+                vm_vcpu=vm_vcpu[vm],
+                vm_hypervisor=vm_hypervisor[vm],
+                vm_migrated=vm_migrated[vm]
+            )
+        )
+
+    click.echo('\n'.join(sorted(vm_list_output)))
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
