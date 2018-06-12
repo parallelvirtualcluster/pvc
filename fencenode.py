@@ -27,7 +27,7 @@ import os, sys, libvirt, uuid, kazoo.client, time, subprocess, re, ansiiprint
 #
 def fence(node_name, zk):
     failcount = 0
-    while failcount < 3
+    while failcount < 3:
         # Wait 5 seconds
         time.sleep(5)
         # Get the state
@@ -35,7 +35,7 @@ def fence(node_name, zk):
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
-            ansiiprint.echo('Node "{}" failed {} saving throw'.format(node_name, failcount), '', 'w')
+            ansiiprint.echo('Node "{}" failed {} saving throws'.format(node_name, failcount), '', 'w')
         # It changed back to something else so it must be alive
         else:
             ansiiprint.echo('Node "{}" passed a saving throw; canceling fence'.format(node_name), '', 'o')
