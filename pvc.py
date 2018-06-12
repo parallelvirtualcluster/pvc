@@ -201,7 +201,7 @@ def node_list():
 
     # Format the string (header)
     node_list_output.append(
-        '{bold}{node_name: <{node_name_length}} \
+        '{bold}{node_name: <{node_name_length}}  \
 State: {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
 Resources: {node_domains_count: <4} {node_cpu_count: <5}  \
 RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
@@ -213,7 +213,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             end_colour='',
             node_name='Name',
             node_daemon_state='Daemon',
-            node_domain_state='Domain',
+            node_domain_state='Domains',
             node_domains_count='VMs',
             node_cpu_count='CPUs',
             node_mem_total='Total',
@@ -242,7 +242,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             domain_state_colour = ansiiprint.blue()
 
         node_list_output.append(
-            '{bold}{node_name: <{node_name_length}} \
+            '{bold}{node_name: <{node_name_length}}  \
        {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
            {node_domains_count: <4} {node_cpu_count: <5}  \
            {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
