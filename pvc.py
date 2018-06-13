@@ -856,7 +856,7 @@ def vm_info(dom_name, dom_uuid, long_output):
     help='Limit list to this hypervisor.'
 )
 def vm_list(hypervisor):
-    vm_list(hypervisor)
+    _vm_list(hypervisor)
 
 # Wrapped function to allow calling from `node info`
 def _vm_list(hypervisor):
