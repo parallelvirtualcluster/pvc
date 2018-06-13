@@ -236,9 +236,9 @@ def getInformationFromXML(zk, uuid, long_output):
     # Basic information
     ainformation.append('{}UUID:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), duuid))
     ainformation.append('{}Name:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dname))
-    ainformation.append('{}Memory [MiB]:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory))
+    ainformation.append('{}Memory (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory))
     ainformation.append('{}vCPUs:{}              {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcpu))
-    ainformation.append('{}Topology [S/C/T]:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
+    ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
 
     if long_output == True:
         # Virtualization information
