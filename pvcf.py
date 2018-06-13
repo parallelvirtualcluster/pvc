@@ -161,8 +161,8 @@ def getInformationFromNode(zk, node_name, long_output):
     node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     node_mem_allocated = 0
     for domain in node_running_domains:
-        parsed_xml = pvcf.getDomainXML(zk, domain)
-        duuid, dname, dmemory, dvcpu, dvcputopo = pvcf.getDomainMainDetails(parsed_xml)
+        parsed_xml = getDomainXML(zk, domain)
+        duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
         node_mem_allocated += int(dmemory)
 
     if node_daemon_state == 'run':
