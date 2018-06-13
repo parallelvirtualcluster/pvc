@@ -157,9 +157,6 @@ class NodeInstance():
                 transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
                 transaction.commit()
 
-            # Wait 2s between migrations
-            time.sleep(2)
-
         self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         self.inflush = False
 
@@ -178,9 +175,6 @@ class NodeInstance():
             transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
             transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
             transaction.commit()
-
-            # Wait 2s between migrations
-            time.sleep(2)
 
         self.inflush = False
 
