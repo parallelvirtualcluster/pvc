@@ -107,8 +107,8 @@ class VMInstance:
             ansiiprint.echo('Successfully restarted VM', '{}:'.format(self.domuuid), 'o')
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to restart VM', '{}:'.format(self.domuuid), 'e')
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
+        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         conn.close()
         self.inrestart = False
 
