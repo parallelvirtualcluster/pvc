@@ -58,7 +58,7 @@ class VMInstance:
         return self.dom
 
     # Start up the VM
-    def start_vm(self, xmlconfig):
+    def start_vm(self):
         ansiiprint.echo('Starting VM', '{}:'.format(self.domuuid), 'i')
         self.instart = True
 
@@ -71,6 +71,8 @@ class VMInstance:
             return
     
         try:
+            # Grab the domain information from Zookeeper
+            xmlconfig = self.zk.get('/domains/{}/xml'.format(self.domuuid))[0].decode('ascii')
             dom = conn.createXML(xmlconfig, 0)
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
@@ -247,51 +249,61 @@ class VMInstance:
 
         ansiiprint.echo('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.hypervisor), '', 'i')
 
-        # Conditional pass one - If we're already doing something, bail out
-        if self.instart == True or self.instop == True or self.inshutdown == True or self.inmigrate == True or self.inreceive == True:
-            return 0
+        #######################
+        # Handle state changes
+        #######################
+        # Valid states are:
+        #   start
+        #   migrate
+        #   shutdown
+        #   stop
 
-        # Conditional pass two - Is this VM running on this hypervisor
-        print('{} {} {}'.format(self.domuuid, self.thishypervisor.name, running))
-        if self.hypervisor == self.thishypervisor.name:
-            # VM should be stopped
-            if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop":
-                self.stop_vm()
-
-            # VM should be shut down
-            elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown":
-                self.shutdown_vm()
-
-            # VM should be migrated to this hypervisor
-            elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate":
-                self.receive_migrate()
-
-            # VM is already running and should be
-            elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "start":
-                if not self.domuuid in self.thishypervisor.domain_list:
-                    self.thishypervisor.domain_list.append(self.domuuid)
-
-            # VM is already running and should be but stuck in migrate state
-            elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate":
-                self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
-                if not self.domuuid in self.thishypervisor.domain_list:
-                    self.thishypervisor.domain_list.append(self.domuuid)
-
-            # VM should be started
-            elif running != libvirt.VIR_DOMAIN_RUNNING and self.state == "start":
-                # Grab the domain information from Zookeeper
-                domxml, domxmlstat = self.zk.get('/domains/{}/xml'.format(self.domuuid))
-                domxml = str(domxml.decode('ascii'))
-                self.start_vm(domxml)
-
-        else:
-            # VM should be migrated away from this hypervisor
-            if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate":
-                self.migrate_vm()
-            
-            # VM should be running but not on this hypervisor
-            elif running == libvirt.VIR_DOMAIN_RUNNING and self.state != "migrate":
-                self.terminate_vm()
+        # Conditional pass one - Are we already performing an action
+        if self.instart == False and self.instop == False and self.inshutdown == False and self.inmigrate == False and self.inreceive == False:
+            # Conditional pass two - Is this VM configured to run on this hypervisor
+            if self.hypervisor == self.thishypervisor.name:
+                # Conditional pass three - Is this VM currently running on this hypervisor
+                if running == libvirt.VIR_DOMAIN_RUNNING:
+                    # VM is already running and should be
+                    if self.state == "start":
+                        if not self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.append(self.domuuid)
+                    # VM is already running and should be but stuck in migrate state
+                    elif self.state == "migrate":
+                        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        if not self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.append(self.domuuid)
+                    # VM should be shut down
+                    elif self.state == "shutdown":
+                        self.shutdown_vm()
+                    # VM should be stopped
+                    elif self.state == "stop":
+                        self.stop_vm()
+                else:
+                    # VM should be started
+                    if self.state == "start":
+                        self.start_vm()
+                    # VM should be migrated to this hypervisor
+                    elif self.state == "migrate":
+                        self.receive_migrate()
+                    # VM should be shut down; ensure it's gone from this node's domain_list
+                    elif self.state == "shutdown":
+                        if self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.remove(self.domuuid)
+                    # VM should be stoped; ensure it's gone from this node's domain_list
+                    elif self.state == "stop":
+                        if self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.remove(self.domuuid)
+                        
+            else:
+                # Conditional pass three - Is this VM currently running on this hypervisor
+                if running == libvirt.VIR_DOMAIN_RUNNING:
+                    # VM should be migrated away from this hypervisor
+                    if self.state == "migrate":
+                        self.migrate_vm()
+                    # VM should be terminated
+                    else:
+                        self.terminate_vm()
 
 
     # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
