@@ -137,7 +137,7 @@ class NodeInstance():
                 if hypervisor == current_hypervisor:
                     continue
 
-                if daemon_state != 'start' or domain_state != 'ready':
+                if daemon_state != 'run' or domain_state != 'ready':
                     continue
     
                 memfree = int(self.zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
@@ -196,11 +196,11 @@ class NodeInstance():
 
         # Get past state and update if needed
         past_state = self.zk.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
-        if past_state != 'start':
-            self.daemon_state = 'start'
+        if past_state != 'run':
+            self.daemon_state = 'run'
             self.zk.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
         else:
-            self.daemon_state = 'start'
+            self.daemon_state = 'run'
 
         # Toggle state management of dead VMs to restart them
         for domain, instance in self.s_domain.items():
@@ -255,14 +255,14 @@ class NodeInstance():
             # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
             # out-of-date while in 'start' state)
             node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
-            if node_keepalive < node_deadtime and node_daemon_state == 'start':
+            if node_keepalive < node_deadtime and node_daemon_state == 'run':
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
                 self.zk.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
                 fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
-            if node_daemon_state == 'start' and node_domain_state != 'flushed' and node_name not in self.active_node_list:
+            if node_daemon_state == 'run' and node_domain_state != 'flushed' and node_name not in self.active_node_list:
                 self.active_node_list.append(node_name)
                 try:
                     self.flushed_node_list.remove(node_name)
@@ -272,7 +272,7 @@ class NodeInstance():
                     self.inactive_node_list.remove(node_name)
                 except ValueError:
                     pass
-            if node_daemon_state != 'start' and node_daemon_state != 'flushed' and node_name not in self.inactive_node_list:
+            if node_daemon_state != 'run' and node_domain_state != 'flushed' and node_name not in self.inactive_node_list:
                 self.inactive_node_list.append(node_name)
                 try:
                     self.active_node_list.remove(node_name)
