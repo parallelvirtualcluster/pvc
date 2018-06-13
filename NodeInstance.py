@@ -131,6 +131,9 @@ class NodeInstance():
             target_hypervisor = None
             hypervisor_list = self.zk.get_children('/nodes')
             current_hypervisor = self.zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            if current_hypervisor != self.this_node:
+                continue
+
             for hypervisor in hypervisor_list:
                 daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
                 domain_state = self.zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
