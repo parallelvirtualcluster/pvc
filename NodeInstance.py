@@ -214,7 +214,6 @@ class NodeInstance():
 
         # Set our information in zookeeper
         self.name = conn.getHostname()
-        self.cpucount = conn.getCPUMap()[0]
         self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
         self.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
         self.cpuload = os.getloadavg()[0]
@@ -222,7 +221,6 @@ class NodeInstance():
         keepalive_time = int(time.time())
         try:
             transaction = self.zk.transaction()
-            transaction.set_data('/nodes/{}/cpucount'.format(self.name), str(self.cpucount).encode('ascii'))
             transaction.set_data('/nodes/{}/memused'.format(self.name), str(self.memused).encode('ascii'))
             transaction.set_data('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
             transaction.set_data('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
@@ -238,7 +236,7 @@ class NodeInstance():
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}Active domains:{1} {2}  {0}CPUs:{1} {3}  {0}Free memory [MiB]:{1} {4}  {0}Used memory [MiB]:{1} {5}  {0}Load:{1} {6}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.cpucount, self.memfree, self.memused, self.cpuload), '', 'c')
+        ansiiprint.echo('{0}Active domains:{1} {2}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.memfree, self.memused, self.cpuload), '', 'c')
 
         # Update our local node lists
         for node_name in self.t_node:

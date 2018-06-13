@@ -146,7 +146,67 @@ def getDomainXML(zk, dom_uuid):
     parsed_xml = lxml.objectify.fromstring(xml)
     return parsed_xml
 
-# Root function
+# Root functions
+def getInformationFromNode(zk, node_name, long_output):
+    node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+    node_domain_state = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+    node_cpu_count = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
+    node_arch = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[1]
+    node_os = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[2]
+    node_kernel = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[3]
+    node_mem_used = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
+    node_mem_free = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
+    node_mem_total = int(node_mem_used) + int(node_mem_free)
+    node_domains_count = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
+    node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    node_mem_allocated = 0
+    for domain in node_running_domains:
+        parsed_xml = pvcf.getDomainXML(zk, domain)
+        duuid, dname, dmemory, dvcpu, dvcputopo = pvcf.getDomainMainDetails(parsed_xml)
+        node_mem_allocated += int(dmemory)
+
+    if node_daemon_state == 'run':
+        daemon_state_colour = ansiiprint.green()
+    elif node_daemon_state == 'stop':
+        daemon_state_colour = ansiiprint.red()
+    elif node_daemon_state == 'init':
+        daemon_state_colour = ansiiprint.yellow()
+    elif node_daemon_state == 'dead':
+        daemon_state_colour = ansiiprint.red() + ansiiprint.bold()
+    else:
+        daemon_state_colour = ansiiprint.blue()
+
+    if node_domain_state == 'ready':
+        domain_state_colour = ansiiprint.green()
+    else:
+        domain_state_colour = ansiiprint.blue()
+
+    # Format a nice output; do this line-by-line then concat the elements at the end
+    ainformation = []
+    ainformation.append('{}Hypervisor Node information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('')
+    # Basic information
+    ainformation.append('{}Name:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_name))
+    ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), daemon_state_colour, node_daemon_state, ansiiprint.end()))
+    ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), domain_state_colour, node_domain_state, ansiiprint.end()))
+    ainformation.append('{}Active Domain Count:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), node_domains_count))
+    if long_output == True:
+        ainformation.append('')
+        ainformation.append('{}Architecture:{}         {}'.format(ansiiprint.purple(), ansiiprint.end(), node_arch))
+        ainformation.append('{}Operating System:{}     {}'.format(ansiiprint.purple(), ansiiprint.end(), node_os))
+        ainformation.append('{}Kernel Version:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_kernel))
+    ainformation.append('')
+    ainformation.append('{}CPUs:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_cpu_count))
+    ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_total))
+    ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_used))
+    ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_free))
+    ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_allocated))
+
+    # Join it all together
+    information = '\n'.join(ainformation)
+    return information
+
+
 def getInformationFromXML(zk, uuid, long_output):
     # Obtain the contents of the XML from Zookeeper
     try:

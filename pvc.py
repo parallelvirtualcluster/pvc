@@ -127,17 +127,20 @@ def ready_host(node_name):
 ###############################################################################
 @click.command(name='info', short_help='Show details of a node object')
 @click.option(
-    '-n', '--name', 'dom_name',
+    '-n', '--name', 'node_name',
     help='Search for this name.'
 )
 @click.option(
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
-def node_info(dom_name, dom_uuid, long_output):
+def node_info(node_name, long_output):
     """
     Search the cluster for a node's information.
     """
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
 
     # Verify node is valid
     try:
@@ -146,7 +149,24 @@ def node_info(dom_name, dom_uuid, long_output):
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
         exit(1)
 
-    pass
+    # Get information about node in a pretty format
+    information = pvcf.getInformationFromNode(zk, node_name, long_output)
+
+    if information == None:
+        click.echo('ERROR: Could not find a domain matching that name or UUID.')
+        return
+
+    click.echo(information)
+
+    if long_output == True:
+        click.echo('')
+        click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+        click.echo('')
+        # List all VMs on this node
+        _vm_list(node_name)
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
 
 
 ###############################################################################
@@ -178,7 +198,7 @@ def node_list():
     for node_name in node_list:
         node_daemon_state[node_name] = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
         node_domain_state[node_name] = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-        node_cpu_count[node_name] = zk.get('/nodes/{}/cpucount'.format(node_name))[0].decode('ascii')
+        node_cpu_count[node_name] = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
         node_mem_used[node_name] = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
         node_mem_free[node_name] = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
         node_mem_total[node_name] = int(node_mem_used[node_name]) + int(node_mem_free[node_name])
@@ -836,6 +856,10 @@ def vm_info(dom_name, dom_uuid, long_output):
     help='Limit list to this hypervisor.'
 )
 def vm_list(hypervisor):
+    vm_list(hypervisor)
+
+# Wrapped function to allow calling from `node info`
+def _vm_list(hypervisor):
     """
     List all virtual machines in the cluster.
     """

@@ -112,7 +112,6 @@ def zk_listener(state):
         pass
 
 zk.add_listener(zk_listener)
-zk.set('/nodes/{}/daemonstate'.format(myhostname), 'init'.encode('ascii'))
 
 def cleanup():
     try:
@@ -125,12 +124,28 @@ def cleanup():
 
 atexit.register(cleanup)
 
+# Gather useful data about our host for staticdata
+# Static data format: 'cpu_count', 'arch', 'os', 'kernel'
+staticdata = []
+staticdata.append(str(psutil.cpu_count()))
+staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+# Print static data on start
+
 print('{0}Node hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), myhostname))
 print('{0}IPMI hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), config['ipmi_hostname']))
+print('{0}Machine details:{1}'.format(ansiiprint.bold(), ansiiprint.end()))
+print('  {0}CPUs:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[0]))
+print('  {0}Arch:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[1]))
+print('  {0}OS:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[2]))
+print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[3]))
 
 # Check if our node exists in Zookeeper, and create it if not
 if zk.exists('/nodes/{}'.format(myhostname)):
     print("Node is " + ansiiprint.green() + "present" + ansiiprint.end() + " in Zookeeper")
+    # Update static data just in case it's changed
+    zk.set('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
 else:
     print("Node is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new node")
     keepalive_time = int(time.time())
@@ -138,8 +153,7 @@ else:
     # Basic state information
     zk.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.create('/nodes/{}/domainstate'.format(myhostname), 'ready'.encode('ascii'))
-    zk.create('/nodes/{}/cpucount'.format(myhostname), '0'.encode('ascii'))
-    zk.create('/nodes/{}/staticdata'.format(myhostname), ''.encode('ascii'))
+    zk.create('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
     zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
     zk.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
@@ -151,16 +165,7 @@ else:
     zk.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
     zk.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
 
-
-# Gather useful data about our host for staticdata
-# Static data format: 'cpu_count', 'arch', 'kernel', 'os'
-staticdata = []
-staticdata.append(str(psutil.cpu_count()))
-staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
-staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
-staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
-
-zk.set('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
+zk.set('/nodes/{}/daemonstate'.format(myhostname), 'init'.encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
