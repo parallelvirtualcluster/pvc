@@ -252,11 +252,11 @@ class VMInstance:
             return 0
 
         # VM should be stopped
-        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name and self.dom != None:
+        if running == libvirt.VIR_DOMAIN_RUNNING and self.state == "stop" and self.hypervisor == self.thishypervisor.name:
             self.stop_vm()
 
         # VM should be shut down
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name and self.dom != None:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "shutdown" and self.hypervisor == self.thishypervisor.name:
             self.shutdown_vm()
 
         # VM should be migrated to this hypervisor
@@ -264,11 +264,11 @@ class VMInstance:
             self.receive_migrate()
 
         # VM should be migrated away from this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name and self.dom != None:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state == "migrate" and self.hypervisor != self.thishypervisor.name:
             self.migrate_vm()
             
         # VM should be running but not on this hypervisor
-        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state != "migrate" and self.hypervisor != self.thishypervisor.name and self.dom != None:
+        elif running == libvirt.VIR_DOMAIN_RUNNING and self.state != "migrate" and self.hypervisor != self.thishypervisor.name:
             self.terminate_vm()
 
         # VM is already running and should be
