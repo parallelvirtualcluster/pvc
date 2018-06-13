@@ -999,10 +999,12 @@ def _vm_list(hypervisor):
     for vm in vm_list:
         if vm_state[vm] == 'start':
             vm_state_colour = ansiiprint.green()
-        elif vm_state[vm] == 'stop':
-            vm_state_colour = ansiiprint.red()
         elif vm_state[vm] == 'restart':
             vm_state_colour = ansiiprint.yellow()
+        elif vm_state[vm] == 'shutdown':
+            vm_state_colour = ansiiprint.yellow()
+        elif vm_state[vm] == 'stop':
+            vm_state_colour = ansiiprint.red()
         else:
             vm_state_colour = ansiiprint.blue()
 
