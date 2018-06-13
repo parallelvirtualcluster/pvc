@@ -157,6 +157,7 @@ class NodeInstance():
                 transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
                 transaction.commit()
 
+        self.zk.set('/nodes/{}/runningdomains'.format(self.name), ''.encode('ascii'))
         self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         self.inflush = False
 
