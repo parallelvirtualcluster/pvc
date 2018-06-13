@@ -867,7 +867,8 @@ def _vm_list(hypervisor):
     # Open a Zookeeper connection
     zk = pvcf.startZKConnection(zk_host)
 
-    vm_list = zk.get_children('/domains')
+    vm_list_raw = zk.get_children('/domains')
+    vm_list = []
     vm_list_output = []
 
     vm_hypervisor = {}
@@ -878,13 +879,18 @@ def _vm_list(hypervisor):
     vm_memory = {}
     vm_vcpu = {}
 
-    # Gather information for printing
-    for vm in vm_list:
+    # If we're limited, remove other nodes' VMs
+    for vm in vm_list_raw:
         # Check hypervisor to avoid unneeded ZK calls
         vm_hypervisor[vm] = zk.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
-        if hypervisor != None and vm_hypervisor[vm] != hypervisor:
-            continue
+        if hypervisor != None:
+            if vm_hypervisor[vm] == hypervisor:
+                vm_list.append(vm)
+        else:
+            vm_list.append(vm)
 
+    # Gather information for printing
+    for vm in vm_list:
         vm_state[vm] = zk.get('/domains/{}/state'.format(vm))[0].decode('ascii')
         vm_lasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(vm))[0].decode('ascii')
         if vm_lasthypervisor != '':
