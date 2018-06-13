@@ -253,8 +253,9 @@ def getInformationFromXML(zk, uuid, long_output):
     ainformation.append('')
     dstate_colour = {
         'start': ansiiprint.green(),
-        'stop': ansiiprint.red(),
+        'restart': ansiiprint.yellow(),
         'shutdown': ansiiprint.yellow(),
+        'stop': ansiiprint.red(),
         'migrate': ansiiprint.blue(),
         'unmigrate': ansiiprint.blue()
     }
