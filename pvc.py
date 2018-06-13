@@ -719,7 +719,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
         for hypervisor in hypervisor_list:
             daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
             domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-            if daemon_state != 'start' or domain_state != 'ready' or hypervisor == current_hypervisor:
+            if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
                 continue
 
             memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
