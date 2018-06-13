@@ -143,7 +143,9 @@ class VMInstance:
             except ValueError:
                 pass
 
-        self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+        if self.inrestart == False:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+
         ansiiprint.echo('Successfully stopped VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
         self.instop = False
@@ -173,7 +175,9 @@ class VMInstance:
             except ValueError:
                 pass
 
-        self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+        if self.inrestart == False:
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+
         ansiiprint.echo('Successfully shutdown VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
         self.inshutdown = False
