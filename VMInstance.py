@@ -35,10 +35,11 @@ class VMInstance:
         self.hypervisor = None
         self.state = None
         self.instart = False
-        self.instop = False
-        self.inshutdown = False
+        self.inrestart = False
         self.inmigrate = False
         self.inreceive = False
+        self.inshutdown = False
+        self.instop = False
 
         self.dom = self.lookupByUUID(self.domuuid)
 
@@ -86,7 +87,31 @@ class VMInstance:
 
         conn.close()
         self.instart = False
-   
+  
+    # Restart the VM
+    def restart_vm(self):
+        ansiiprint.echo('Restarting VM', '{}:'.format(self.domuuid), 'i')
+        self.inrestart = True
+
+        # Start up a new Libvirt connection
+        libvirt_name = "qemu:///system"
+        conn = libvirt.open(libvirt_name)
+        if conn == None:
+            ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
+            self.inrestart = False
+            return
+    
+        try:
+            self.shutdown_vm()
+            self.start_vm()
+            ansiiprint.echo('Successfully restarted VM', '{}:'.format(self.domuuid), 'o')
+        except libvirt.libvirtError as e:
+            ansiiprint.echo('Failed to restart VM', '{}:'.format(self.domuuid), 'e')
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+
+        conn.close()
+        self.inrestart = False
+
     # Stop the VM forcibly without updating state
     def terminate_vm(self):
         ansiiprint.echo('Terminating VM', '{}:'.format(self.domuuid), 'i')
@@ -255,11 +280,17 @@ class VMInstance:
         # Valid states are:
         #   start
         #   migrate
+        #   restart
         #   shutdown
         #   stop
 
         # Conditional pass one - Are we already performing an action
-        if self.instart == False and self.instop == False and self.inshutdown == False and self.inmigrate == False and self.inreceive == False:
+        if self.instart == False \
+        and self.inrestart == False \
+        and self.inmigrate == False \
+        and self.inreceive == False \
+        and self.inshutdown == False \
+        and self.instop == False:
             # Conditional pass two - Is this VM configured to run on this hypervisor
             if self.hypervisor == self.thishypervisor.name:
                 # Conditional pass three - Is this VM currently running on this hypervisor
@@ -273,6 +304,9 @@ class VMInstance:
                         self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
                         if not self.domuuid in self.thishypervisor.domain_list:
                             self.thishypervisor.domain_list.append(self.domuuid)
+                    # VM should be restarted
+                    elif self.state == "restart":
+                        self.restart_vm()
                     # VM should be shut down
                     elif self.state == "shutdown":
                         self.shutdown_vm()
@@ -286,6 +320,9 @@ class VMInstance:
                     # VM should be migrated to this hypervisor
                     elif self.state == "migrate":
                         self.receive_migrate()
+                    # VM should be restarted (i.e. started since it isn't running)
+                    if self.state == "restart":
+                        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
                     # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
                         if self.domuuid in self.thishypervisor.domain_list:
