@@ -468,6 +468,56 @@ def start_vm(dom_name, dom_uuid):
 
 
 ###############################################################################
+# pvc vm restart
+###############################################################################
+@click.command(name='restart', short_help='Restart virtual machine.')
+@click.option(
+    '-n', '--name', 'dom_name',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
+    help='Search for this human-readable name.'
+)
+@click.option(
+    '-u', '--uuid', 'dom_uuid',
+    cls=pvcf.MutuallyExclusiveOption,
+    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
+    help='Search for this UUID.'
+)
+def start_vm(dom_name, dom_uuid):
+    """
+    Restart a virtual machine on its configured hypervisor.
+    """
+
+    # Ensure at least one search method is set
+    if dom_name == None and dom_uuid == None:
+        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
+        return
+
+    # Open a Zookeeper connection
+    zk = pvcf.startZKConnection(zk_host)
+
+    # If the --name value was passed, get the UUID
+    if dom_name != None:
+        dom_uuid = pvcf.searchClusterByName(zk, dom_name)
+
+    # Verify we got a result or abort
+    if not pvcf.validateUUID(dom_uuid):
+        if dom_name != None:
+            message_name = dom_name
+        else:
+            message_name = dom_uuid
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+        return
+
+    # Set the VM to start
+    click.echo('Restarting VM "{}".'.format(dom_uuid))
+    zk.set('/domains/%s/state' % dom_uuid, 'restart'.encode('ascii'))
+
+    # Close the Zookeeper connection
+    pvcf.stopZKConnection(zk)
+
+
+###############################################################################
 # pvc vm shutdown
 ###############################################################################
 @click.command(name='shutdown', short_help='Gracefully shut down a running virtual machine.')
@@ -951,6 +1001,8 @@ def _vm_list(hypervisor):
             vm_state_colour = ansiiprint.green()
         elif vm_state[vm] == 'stop':
             vm_state_colour = ansiiprint.red()
+        elif vm_state[vm] == 'restart':
+            vm_state_colour = ansiiprint.yellow()
         else:
             vm_state_colour = ansiiprint.blue()
 
@@ -1047,6 +1099,7 @@ node.add_command(node_list)
 vm.add_command(define_vm)
 vm.add_command(undefine_vm)
 vm.add_command(start_vm)
+vm.add_command(restart_vm)
 vm.add_command(shutdown_vm)
 vm.add_command(stop_vm)
 vm.add_command(move_vm)
