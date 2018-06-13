@@ -483,7 +483,7 @@ def start_vm(dom_name, dom_uuid):
     mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
     help='Search for this UUID.'
 )
-def start_vm(dom_name, dom_uuid):
+def restart_vm(dom_name, dom_uuid):
     """
     Restart a virtual machine on its configured hypervisor.
     """
