@@ -59,11 +59,12 @@ class NodeInstance():
             except AttributeError:
                 self.domain_state = 'unknown'
 
-            # toggle state management of this node
-            if self.domain_state == 'flush' and self.inflush == False:
-                self.flush()
-            if self.domain_state == 'unflush' and self.inflush == False:
-                self.unflush()
+            if self.name == self.this_node:
+                # toggle state management of this node
+                if self.domain_state == 'flush' and self.inflush == False:
+                    self.flush()
+                if self.domain_state == 'unflush' and self.inflush == False:
+                    self.unflush()
 
 
         @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
