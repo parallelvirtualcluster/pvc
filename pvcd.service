@@ -1,0 +1,16 @@
+# Parallel Virtual Cluster node daemon unit file
+[Unit]
+Description = Parallel Virtual Cluster node daemon
+After = network-online.target libvirtd.service
+
+[Service]
+Type = simple
+WorkingDirectory = /var/home/joshua/pvc
+Environment = PYTHONUNBUFFERED=true
+Environment = PVCD_CONFIG_FILE=/etc/pvcd.conf
+#ExecStartPre = /bin/bash -c "GIT_SSH_COMMAND='/usr/bin/ssh -i /srv/git-deploy.key' /usr/bin/git pull"
+ExecStart = /var/home/joshua/pvc/pvcd.py
+Restart = on-failure
+
+[Install]
+WantedBy = multi-user.target
