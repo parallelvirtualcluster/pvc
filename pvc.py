@@ -268,6 +268,7 @@ def getInformationFromXML(zk, uuid, long_output):
         'restart': ansiiprint.yellow(),
         'shutdown': ansiiprint.yellow(),
         'stop': ansiiprint.red(),
+        'failed': ansiiprint.red(),
         'migrate': ansiiprint.blue(),
         'unmigrate': ansiiprint.blue()
     }
@@ -1366,6 +1367,8 @@ def _vm_list(hypervisor):
         elif vm_state[vm] == 'shutdown':
             vm_state_colour = ansiiprint.yellow()
         elif vm_state[vm] == 'stop':
+            vm_state_colour = ansiiprint.red()
+        elif vm_state[vm] == 'failed':
             vm_state_colour = ansiiprint.red()
         else:
             vm_state_colour = ansiiprint.blue()
