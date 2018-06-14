@@ -20,7 +20,8 @@
 #
 ###############################################################################
 
-import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, ansiiprint
+import os, sys, psutil, socket, time, libvirt, kazoo.client, threading
+import pvc.ansiiprint as ansiiprint
 
 class NodeInstance():
     # Initialization function

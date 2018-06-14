@@ -20,7 +20,8 @@
 #
 ###############################################################################
 
-import os, sys, uuid, socket, time, threading, libvirt, kazoo.client, ansiiprint
+import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
+import pvc.ansiiprint as ansiiprint
 
 class VMInstance:
     # Initialization function
