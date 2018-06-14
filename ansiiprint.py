@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# ansiprint.py - Printing function for formatted daemon messages
+# ansiprint.py - Printing function for formatted messages
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, datetime, libvirt, kazoo.client, threading, ansiiprint
+import datetime
 
 # ANSII colours for output
 def red():
