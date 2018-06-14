@@ -83,7 +83,7 @@ class VMInstance:
             self.dom = dom
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            self.zk.set('/domains/{}/state'.format(self.domuuid), 'failed'.encode('ascii'))
             self.dom = None
 
         conn.close()
