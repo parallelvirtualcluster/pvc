@@ -28,13 +28,14 @@ import socket
 import psutil
 import subprocess
 import uuid
-import VMInstance
-import NodeInstance
 import time
 import atexit
 import configparser
 import apscheduler.schedulers.background
-import ansiiprint
+
+import pvc.ansiiprint as ansiiprint
+import pvc.VMInstance as VMInstance
+import pvc.NodeInstance as NodeInstance
 
 print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
 

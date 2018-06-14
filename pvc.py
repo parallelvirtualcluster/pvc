@@ -20,7 +20,15 @@
 #
 ###############################################################################
 
-import kazoo.client, os, socket, time, click, lxml.objectify, ansiiprint, configparser
+import os
+import socket
+import time
+import click
+import lxml.objectify
+import configparser
+import kazoo.client
+
+import pvc.ansiiprint as ansiiprint
 
 ###############################################################################
 # Supplemental functions
