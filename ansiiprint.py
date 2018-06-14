@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, socket, time, datetime, libvirt, kazoo.client, threading, fencenode, ansiiprint
+import os, sys, socket, time, datetime, libvirt, kazoo.client, threading, ansiiprint
 
 # ANSII colours for output
 def red():

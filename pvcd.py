@@ -34,7 +34,6 @@ import time
 import atexit
 import configparser
 import apscheduler.schedulers.background
-import fencenode
 import ansiiprint
 
 print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + ansiiprint.end())

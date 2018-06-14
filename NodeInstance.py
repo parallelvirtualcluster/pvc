@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, fencenode, ansiiprint
+import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, ansiiprint
 
 class NodeInstance():
     # Initialization function
@@ -255,7 +255,7 @@ class NodeInstance():
             if node_keepalive < node_deadtime and node_daemon_state == 'run':
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
                 self.zk.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
-                fence_thread = threading.Thread(target=fencenode.fence, args=(node_name, self.zk), kwargs={})
+                fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
@@ -295,3 +295,63 @@ class NodeInstance():
         ansiiprint.echo('{}Active nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.active_node_list)), '', 'c')
         ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
+
+#
+# Fence thread entry function
+#
+def fenceNode(node_name, zk):
+    failcount = 0
+    while failcount < 3:
+        # Wait 5 seconds
+        time.sleep(5)
+        # Get the state
+        node_daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        # Is it still 'dead'
+        if node_daemon_state == 'dead':
+            failcount += 1
+            ansiiprint.echo('Node "{}" failed {} saving throws'.format(node_name, failcount), '', 'w')
+        # It changed back to something else so it must be alive
+        else:
+            ansiiprint.echo('Node "{}" passed a saving throw; canceling fence'.format(node_name), '', 'o')
+            return
+
+    ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'e')
+
+    ipmi_hostname = zk.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
+    ipmi_username = zk.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
+    ipmi_password = zk.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
+    rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password)
+
+    ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
+    dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    for dom_uuid in dead_node_running_domains:
+        most_memfree = 0
+        hypervisor_list = zk.get_children('/nodes')
+        current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+        for hypervisor in hypervisor_list:
+            state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
+            if state != 'start' or hypervisor == current_hypervisor:
+                continue
+
+            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            if memfree > most_memfree:
+                most_memfree = memfree
+                target_hypervisor = hypervisor
+
+        ansiiprint.echo('Moving VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
+        transaction = zk.transaction()
+        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'start'.encode('ascii'))
+        transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
+        transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
+        transaction.commit()
+
+#
+# Perform an IPMI fence
+#
+def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
+    ipmi_command = ['ipmitool', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
+    ipmi_command_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if ipmi_command_output == 0:
+        ansiiprint.echo('Successfully rebooted dead node', '', 'o')
+    else:
+        ansiiprint.echo('Failed to reboot dead node', '', 'e')
