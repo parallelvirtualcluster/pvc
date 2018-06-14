@@ -70,7 +70,7 @@ def readConfig(pvcd_config_file, myhostname):
     except:
         try:
             entries = o_config['default']
-        except:
+        except Exception as e:
             print('ERROR: Config file is not valid!')
             exit(1)
 
