@@ -875,7 +875,7 @@ def restart_vm(dom_name, dom_uuid):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
@@ -931,7 +931,7 @@ def shutdown_vm(dom_name, dom_uuid):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
@@ -987,7 +987,7 @@ def stop_vm(dom_name, dom_uuid):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
@@ -1047,7 +1047,7 @@ def move_vm(dom_name, dom_uuid, target_hypervisor):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
@@ -1142,7 +1142,7 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
@@ -1230,7 +1230,7 @@ def unmigrate_vm(dom_name, dom_uuid):
 
     # Get state and verify we're OK to proceed
     current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if curent_state != 'start':
+    if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
