@@ -202,7 +202,7 @@ def getInformationFromNode(zk, node_name, long_output):
     ainformation.append('{}Name:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_name))
     ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), daemon_state_colour, node_daemon_state, ansiiprint.end()))
     ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), domain_state_colour, node_domain_state, ansiiprint.end()))
-    ainformation.append('{}Active Domain Count:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), node_domains_count))
+    ainformation.append('{}Active VM Count:{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), node_domains_count))
     if long_output == True:
         ainformation.append('')
         ainformation.append('{}Architecture:{}         {}'.format(ansiiprint.purple(), ansiiprint.end(), node_arch))
