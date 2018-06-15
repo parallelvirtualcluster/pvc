@@ -768,7 +768,7 @@ def undefine_vm(dom_name, dom_uuid):
         time.sleep(3)
 
     # Gracefully terminate the class instances
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
+    zk.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
     time.sleep(2)
     # Delete the configurations
     click.echo('Undefining VM "{}".'.format(dom_uuid))
