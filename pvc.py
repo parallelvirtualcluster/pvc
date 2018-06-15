@@ -873,6 +873,12 @@ def restart_vm(dom_name, dom_uuid):
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        return
+
     # Set the VM to start
     click.echo('Restarting VM "{}".'.format(dom_uuid))
     zk.set('/domains/%s/state' % dom_uuid, 'restart'.encode('ascii'))
@@ -923,6 +929,12 @@ def shutdown_vm(dom_name, dom_uuid):
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        return
+
     # Set the VM to shutdown
     click.echo('Shutting down VM "{}".'.format(dom_uuid))
     zk.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
@@ -971,6 +983,12 @@ def stop_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+        return
+
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to start
@@ -1025,6 +1043,12 @@ def move_vm(dom_name, dom_uuid, target_hypervisor):
         else:
             message_name = dom_uuid
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+        return
+
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
@@ -1116,6 +1140,12 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
         return
 
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        return
+
     current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
     last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
@@ -1196,6 +1226,12 @@ def unmigrate_vm(dom_name, dom_uuid):
         else:
             message_name = dom_uuid
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+        return
+
+    # Get state and verify we're OK to proceed
+    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    if curent_state != 'start':
+        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
