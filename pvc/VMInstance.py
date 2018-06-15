@@ -47,7 +47,12 @@ class VMInstance:
         # Watch for changes to the state field in Zookeeper
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
-            self.manage_vm_state()
+            # If we get a delete state, just terminate outselves
+            if state == 'delete':
+                del self
+            # Otherwise perform a management command
+            else:
+                self.manage_vm_state()
 
     # Get data functions
     def getstate(self):
