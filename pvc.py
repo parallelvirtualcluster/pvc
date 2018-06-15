@@ -23,6 +23,7 @@
 import os
 import socket
 import time
+import uuid
 import click
 import lxml.objectify
 import configparser
