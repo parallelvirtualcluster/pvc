@@ -48,8 +48,8 @@ class VMInstance:
         @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
             # If we get a delete state, just terminate outselves
-            if data.decode('ascii') == 'delete':
-                self.__delete__
+            if data == None:
+                return
             # Otherwise perform a management command
             else:
                 self.manage_vm_state()

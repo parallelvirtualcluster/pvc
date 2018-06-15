@@ -765,11 +765,11 @@ def undefine_vm(dom_name, dom_uuid):
 
         # Wait for 3 seconds to allow state to flow to all hypervisors
         click.echo('Waiting for cluster to update.')
-        time.sleep(3)
+        time.sleep(1)
 
     # Gracefully terminate the class instances
     zk.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
-    time.sleep(2)
+    time.sleep(5)
     # Delete the configurations
     click.echo('Undefining VM "{}".'.format(dom_uuid))
     transaction = zk.transaction()
