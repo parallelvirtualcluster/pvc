@@ -164,9 +164,9 @@ def getInformationFromNode(zk, node_name, long_output):
     node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
     node_domain_state = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
     node_cpu_count = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
-    node_arch = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[1]
+    node_kernel = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[1]
     node_os = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[2]
-    node_kernel = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[3]
+    node_arch = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[3]
     node_mem_used = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
     node_mem_free = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
     node_mem_total = int(node_mem_used) + int(node_mem_free)
