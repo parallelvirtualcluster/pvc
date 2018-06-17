@@ -331,9 +331,9 @@ def fenceNode(node_name, zk):
         current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
         for hypervisor in hypervisor_list:
             print(hypervisor)
-            daemonstate = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domainstate = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-            if daemonstate != 'run' or domainstate != 'ready':
+            daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            if daemon_state != 'run' or domain_state != 'ready':
                 continue
 
             memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
@@ -347,6 +347,9 @@ def fenceNode(node_name, zk):
         transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
         transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
         transaction.commit()
+
+    # Set node in flushed state for easy remigrating when it comes back
+    zk.set('/nodes/{}/domainstate'.format(node_name), 'flushed'.encode('ascii'))
 
 #
 # Perform an IPMI fence
