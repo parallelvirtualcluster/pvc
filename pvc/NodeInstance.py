@@ -322,6 +322,7 @@ def fenceNode(node_name, zk):
     ipmi_username = zk.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
     ipmi_password = zk.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
     rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password)
+    time.sleep(5)
 
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
     dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
