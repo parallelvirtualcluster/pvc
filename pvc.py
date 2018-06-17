@@ -761,7 +761,7 @@ def start_vm(domain):
 @click.argument(
     'domain'
 )
-def restart_vm(dom_name, dom_uuid):
+def restart_vm(domain):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
