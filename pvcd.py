@@ -24,6 +24,7 @@ import kazoo.client
 import libvirt
 import sys
 import os
+import signal
 import socket
 import psutil
 import subprocess
@@ -119,6 +120,9 @@ def cleanup():
     zk.stop()
     zk.close()
     update_timer.shutdown()
+
+# Handle SIGTERM gracefully
+signal.signal(signal.SIGTERM, cleanup)
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
