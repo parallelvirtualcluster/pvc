@@ -223,9 +223,10 @@ update_zookeeper = this_node.update_zookeeper
 
 # Create timer to update this node in Zookeeper
 def createKeepaliveTimer():
-    ansiiprint.echo('Starting keepalive timer', '', 'o')
+    interval = int(config['keepalive_interval'])
+    ansiiprint.echo('Starting keepalive timer ({} second intervals)'.format(interval), '', 'o')
     update_timer = apscheduler.schedulers.background.BackgroundScheduler()
-    update_timer.add_job(update_zookeeper, 'interval', seconds=int(config['keepalive_interval']))
+    update_timer.add_job(update_zookeeper, 'interval', seconds=interval)
     update_timer.start()
     return update_timer
 
