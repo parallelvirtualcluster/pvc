@@ -116,10 +116,11 @@ zk.add_listener(zk_listener)
 
 @atexit.register
 def cleanup():
+    update_timer.shutdown()
     zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.stop()
     zk.close()
-    update_timer.shutdown()
+    exit(0)
 
 # Handle SIGTERM gracefully
 signal.signal(signal.SIGTERM, cleanup)
