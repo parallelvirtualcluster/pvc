@@ -113,16 +113,12 @@ def zk_listener(state):
 
 zk.add_listener(zk_listener)
 
+@atexit.register
 def cleanup():
-    try:
-        update_timer.shutdown()
-        zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
-        zk.stop()
-        zk.close()
-    except:
-        pass
-
-atexit.register(cleanup)
+    update_timer.shutdown()
+    zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
+    zk.stop()
+    zk.close()
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
