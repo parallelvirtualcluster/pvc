@@ -306,7 +306,7 @@ def fenceNode(node_name, zk):
         # Wait 5 seconds
         time.sleep(5)
         # Get the state
-        node_daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
