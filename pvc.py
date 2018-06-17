@@ -484,7 +484,7 @@ def node_info(node, long_output):
 ###############################################################################
 # pvc node list
 ###############################################################################
-@click.command(name='list', short_help='List all Node objects')
+@click.command(name='list', short_help='List all node objects')
 def node_list():
     """
     List all hypervisor nodes in the cluster.
