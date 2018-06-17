@@ -350,7 +350,7 @@ def fenceNode(node_name, zk):
 # Perform an IPMI fence
 #
 def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
-    ipmi_command = ['ipmitool', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
+    ipmi_command = ['/usr/bin/ipmitool', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
     ipmi_command_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if ipmi_command_output == 0:
         ansiiprint.echo('Successfully rebooted dead node', '', 'o')
