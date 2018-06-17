@@ -126,7 +126,6 @@ def cleanup():
 signal.signal(signal.SIGTERM, cleanup)
 signal.signal(signal.SIGINT, cleanup)
 signal.signal(signal.SIGQUIT, cleanup)
-signal.signal(signal.SIGHUP, getConfig)
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
