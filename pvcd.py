@@ -90,11 +90,8 @@ def readConfig(pvcd_config_file, myhostname):
 
     return config
 
-config = {}
-
-def getConfig():
-    global config
-    config = readConfig(pvcd_config_file, myhostname)
+# Get config
+config = readConfig(pvcd_config_file, myhostname)
 
 # Connect to local zookeeper
 zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
