@@ -345,47 +345,6 @@ def searchClusterByName(zk, name):
     return uuid
 
 
-#
-# Allow mutually exclusive options in Click
-#
-class MutuallyExclusiveOption(click.Option):
-    def __init__(self, *args, **kwargs):
-        meargs = kwargs.pop('mutually_exclusive', [])
-        _me_arg = []
-        _me_func = []
-
-        for arg in meargs:
-            _me_arg.append(arg['argument'])
-            _me_func.append(arg['function'])
-
-        self.me_arg = set(_me_arg)
-        self.me_func = set(_me_func)
-
-        help = kwargs.get('help', '')
-        if self.me_func:
-            ex_str = ', '.join(self.me_arg)
-            kwargs['help'] = help + (
-                ' Mutually exclusive with `' + ex_str + '`.'
-            )
-
-        super(MutuallyExclusiveOption, self).__init__(*args, **kwargs)
-
-    def handle_parse_result(self, ctx, opts, args):
-        if self.me_func.intersection(opts) and self.name in opts:
-            raise click.UsageError(
-                "Illegal usage: `{}` is mutually exclusive with "
-                "arguments `{}`.".format(
-                    self.opts[-1],
-                    ', '.join(self.me_arg)
-                )
-            )
-
-        return super(MutuallyExclusiveOption, self).handle_parse_result(
-            ctx,
-            opts,
-            args
-        )
-
 ########################
 ########################
 ##                    ##
@@ -414,17 +373,12 @@ def node():
 # pvc node flush
 ###############################################################################
 @click.command(name='flush', short_help='Take a node out of service')
-@click.option(
-    '-n', '--name', 'node_name', default=myhostname, show_default=True,
-    help='The PVC node to operate on.'
+@click.argument(
+    'node', default=myhostname
 )
-def flush_host(node_name):
+def flush_host(node):
     """
-    Take a node out of active service and migrate away all VMs.
-
-    Notes:
-
-    * The '--name' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
+    Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
 
     # Open a Zookeeper connection
@@ -432,16 +386,16 @@ def flush_host(node_name):
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node_name))
+        zk.get('/nodes/{}'.format(node))
     except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
 
-    click.echo('Flushing hypervisor {} of running VMs.'.format(node_name))
+    click.echo('Flushing hypervisor {} of running VMs.'.format(node))
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.set_data('/nodes/{}/domainstate'.format(node_name), 'flush'.encode('ascii'))
+    transaction.set_data('/nodes/{}/domainstate'.format(node), 'flush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
@@ -452,17 +406,12 @@ def flush_host(node_name):
 # pvc node ready
 ###############################################################################
 @click.command(name='ready', short_help='Restore node to service')
-@click.option(
-    '-n', '--name', 'node_name', default=myhostname, show_default=True,
-    help='The PVC node to operate on.'
+@click.argument(
+    'node', default=myhostname
 )
-def ready_host(node_name):
+def ready_host(node):
     """
-    Restore a host to active service and migrate back all VMs.
-
-    Notes:
-
-    * The '--name' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
+    Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
     # Open a Zookeeper connection
@@ -470,16 +419,16 @@ def ready_host(node_name):
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node_name))
+        zk.get('/nodes/{}'.format(node))
     except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
 
-    click.echo('Restoring hypervisor {} to active service.'.format(node_name))
+    click.echo('Restoring hypervisor {} to active service.'.format(node))
 
     # Add the new domain to Zookeeper
     transaction = zk.transaction()
-    transaction.set_data('/nodes/{}/domainstate'.format(node_name), 'unflush'.encode('ascii'))
+    transaction.set_data('/nodes/{}/domainstate'.format(node), 'unflush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
@@ -490,17 +439,16 @@ def ready_host(node_name):
 # pvc node info
 ###############################################################################
 @click.command(name='info', short_help='Show details of a node object')
-@click.option(
-    '-n', '--name', 'node_name',
-    help='Search for this name.'
+@click.argument(
+    'node', default=myhostname
 )
 @click.option(
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
-def node_info(node_name, long_output):
+def node_info(node, long_output):
     """
-    Search the cluster for a node's information.
+    Show information about node NODE. If unspecified, defaults to this host.
     """
 
     # Open a Zookeeper connection
@@ -508,16 +456,16 @@ def node_info(node_name, long_output):
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node_name))
+        zk.get('/nodes/{}'.format(node))
     except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node_name))
+        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
 
     # Get information about node in a pretty format
-    information = getInformationFromNode(zk, node_name, long_output)
+    information = getInformationFromNode(zk, node, long_output)
 
     if information == None:
-        click.echo('ERROR: Could not find a domain matching that name or UUID.')
+        click.echo('ERROR: Could not find a node matching that name.')
         return
 
     click.echo(information)
@@ -527,7 +475,7 @@ def node_info(node_name, long_output):
         click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
         click.echo('')
         # List all VMs on this node
-        _vm_list(node_name)
+        get_vm_list(node)
 
     # Close the Zookeeper connection
     stopZKConnection(zk)
@@ -670,26 +618,20 @@ def vm():
 ###############################################################################
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
-    '-x', '--xml', 'xml_config_file',
-    help='The XML config file to define the domain from.'
-)
-@click.option(
     '-t', '--hypervisor', 'target_hypervisor', default=myhostname, show_default=True,
     help='The home hypervisor for this domain.'
 )
-def define_vm(xml_config_file, target_hypervisor):
+@click.argument(
+    'config', type=click.File()
+)
+def define_vm(config, target_hypervisor):
     """
-    Define a new virtual machine from a Libvirt XML configuration file.
-
-    Notes:
-
-    * The '--hypervisor' option defaults to the current host if not set, which is likely not what you want when running this command from a remote host!
+    Define a new virtual machine from Libvirt XML configuration file CONFIG.
     """
 
     # Open the XML file
-    with open(xml_config_file, 'r') as f_domxmlfile:
-        data = f_domxmlfile.read()
-        f_domxmlfile.close()
+    data = config.read()
+    config.close()
 
     # Parse the XML data
     parsed_xml = lxml.objectify.fromstring(data)
@@ -717,42 +659,33 @@ def define_vm(xml_config_file, target_hypervisor):
 # pvc vm undefine
 ###############################################################################
 @click.command(name='undefine', short_help='Undefine and stop a virtual machine.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+    'domain'
 )
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-def undefine_vm(dom_name, dom_uuid):
+def undefine_vm(domain):
     """
-    Stop a virtual machine and remove it from the cluster database.
+    Stop virtual machine DOMAIN and remove it from the cluster database. DOMAIN may be a UUID or name.
     """
 
     # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
+    if domain == None:
+        click.echo("ERROR: You must specify either a name or UUID value.")
         return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     current_vm_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
@@ -768,6 +701,7 @@ def undefine_vm(dom_name, dom_uuid):
         time.sleep(1)
 
     # Gracefully terminate the class instances
+    click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
     zk.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
     time.sleep(5)
     # Delete the configurations
@@ -788,42 +722,28 @@ def undefine_vm(dom_name, dom_uuid):
 # pvc vm start
 ###############################################################################
 @click.command(name='start', short_help='Start up a defined virtual machine.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+    'domain'
 )
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-def start_vm(dom_name, dom_uuid):
+def start_vm(domain):
     """
-    Start up a virtual machine on its configured hypervisor.
+    Start virtual machine DOMAIN on its configured hypervisor. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Set the VM to start
@@ -838,42 +758,28 @@ def start_vm(dom_name, dom_uuid):
 # pvc vm restart
 ###############################################################################
 @click.command(name='restart', short_help='Restart virtual machine.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
-)
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
+@click.argument(
+    'domain'
 )
 def restart_vm(dom_name, dom_uuid):
     """
     Restart a virtual machine on its configured hypervisor.
     """
 
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
-
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -894,42 +800,28 @@ def restart_vm(dom_name, dom_uuid):
 # pvc vm shutdown
 ###############################################################################
 @click.command(name='shutdown', short_help='Gracefully shut down a running virtual machine.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+	'domain'
 )
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-def shutdown_vm(dom_name, dom_uuid):
+def shutdown_vm(domain):
     """
-    Gracefully shut down a running virtual machine.
+    Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -950,42 +842,28 @@ def shutdown_vm(dom_name, dom_uuid):
 # pvc vm stop
 ###############################################################################
 @click.command(name='stop', short_help='Forcibly halt a running virtual machine.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+    'domain'
 )
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-def stop_vm(dom_name, dom_uuid):
+def stop_vm(domain):
     """
-    Forcibly halt (destroy) a running virtual machine.
+    Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -1006,46 +884,32 @@ def stop_vm(dom_name, dom_uuid):
 # pvc vm move
 ###############################################################################
 @click.command(name='move', short_help='Permanently move a virtual machine to another node.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+	'domain'
 )
 @click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
+    '-t', '--hypervisor', 'target_hypervisor', default=None,
+    help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
-@click.option(
-    '-t', '--target', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to.'
-)
-def move_vm(dom_name, dom_uuid, target_hypervisor):
+def move_vm(domain, target_hypervisor):
     """
-    Permanently move a virtual machine, via live migration if running and possible, to another hypervisor node.
+    Permanently move virtual machine DOMAIN, via live migration if running and possible, to another hypervisor node. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -1061,8 +925,9 @@ def move_vm(dom_name, dom_uuid, target_hypervisor):
         hypervisor_list = zk.get_children('/nodes')
         most_memfree = 0
         for hypervisor in hypervisor_list:
-            state = zk.get('/nodes/{}/state'.format(hypervisor))[0].decode('ascii')
-            if state != 'start' or hypervisor == current_hypervisor:
+            daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
                 continue
 
             memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
@@ -1097,50 +962,36 @@ def move_vm(dom_name, dom_uuid, target_hypervisor):
 # pvc vm migrate
 ###############################################################################
 @click.command(name='migrate', short_help='Migrate a virtual machine to another node.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+    'domain'
 )
 @click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-@click.option(
-    '-t', '--target', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to.'
+    '-t', '--hypervisor', 'target_hypervisor', default=None,
+    help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
 @click.option(
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
     help='Force migrate an already migrated VM.'
 )
-def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
+def migrate_vm(domain, target_hypervisor, force_migrate):
     """
-    Migrate a running virtual machine, via live migration if possible, to another hypervisor node.
+    Migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -1193,42 +1044,28 @@ def migrate_vm(dom_name, dom_uuid, target_hypervisor, force_migrate):
 # pvc vm unmigrate
 ###############################################################################
 @click.command(name='unmigrate', short_help='Restore a migrated virtual machine to its original node.')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
+@click.argument(
+    'domain'
 )
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
-)
-def unmigrate_vm(dom_name, dom_uuid):
+def unmigrate_vm(domain):
     """
-    Restore a previously migrated virtual machine, via live migration if possible, to its original hypervisor node.
+    Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original hypervisor node. DOMAIN may be a UUID or name.
     """
-
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
 
     # Open a Zookeeper connection
     zk = startZKConnection(zk_host)
 
-    # If the --name value was passed, get the UUID
-    if dom_name != None:
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
+        dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    # Verify we got a result or abort
-    if not validateUUID(dom_uuid):
-        if dom_name != None:
-            message_name = dom_name
-        else:
-            message_name = dom_uuid
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(message_name))
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
     # Get state and verify we're OK to proceed
@@ -1258,45 +1095,39 @@ def unmigrate_vm(dom_name, dom_uuid):
 # pvc vm info
 ###############################################################################
 @click.command(name='info', short_help='Show details of a VM object')
-@click.option(
-    '-n', '--name', 'dom_name',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_uuid', 'argument': '--uuid' }],
-    help='Search for this human-readable name.'
-)
-@click.option(
-    '-u', '--uuid', 'dom_uuid',
-    cls=MutuallyExclusiveOption,
-    mutually_exclusive=[{ 'function': 'dom_name', 'argument': '--name' }],
-    help='Search for this UUID.'
+@click.argument(
+    'domain'
 )
 @click.option(
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
-def vm_info(dom_name, dom_uuid, long_output):
+def vm_info(domain, long_output):
     """
-    Search the cluster for a virtual machine's information.
+	Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    # Ensure at least one search method is set
-    if dom_name == None and dom_uuid == None:
-        click.echo("ERROR: You must specify either a `--name` or `--uuid` value.")
-        return
-
+	# Open a Zookeeper connection
     zk = startZKConnection(zk_host)
-    if dom_name != None:
+
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk, domain)
         dom_uuid = searchClusterByName(zk, dom_name)
-    if dom_uuid != None:
+    else:
+        dom_uuid = searchClusterByName(zk, domain)
         dom_name = searchClusterByUUID(zk, dom_uuid)
 
-    information = getInformationFromXML(zk, dom_uuid, long_output)
-
-    if information == None:
-        click.echo('ERROR: Could not find a domain matching that name or UUID.')
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk)
         return
 
+    # Gather information from XML config and print it
+    information = getInformationFromXML(zk, dom_uuid, long_output)
     click.echo(information)
+
+    # Close the Zookeeper connection
     stopZKConnection(zk)
 
 
@@ -1309,10 +1140,10 @@ def vm_info(dom_name, dom_uuid, long_output):
     help='Limit list to this hypervisor.'
 )
 def vm_list(hypervisor):
-    _vm_list(hypervisor)
+    get_vm_list(hypervisor)
 
 # Wrapped function to allow calling from `node info`
-def _vm_list(hypervisor):
+def get_vm_list(hypervisor):
     """
     List all virtual machines in the cluster.
     """
