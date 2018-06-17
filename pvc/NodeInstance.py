@@ -331,8 +331,9 @@ def fenceNode(node_name, zk):
         current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
         for hypervisor in hypervisor_list:
             print(hypervisor)
-            state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-            if state != 'ready':
+            daemonstate = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domainstate = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            if daemonstate != 'run' or domainstate != 'ready':
                 continue
 
             memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
