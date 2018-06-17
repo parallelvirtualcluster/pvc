@@ -102,21 +102,12 @@ except:
     print('ERROR: Failed to connect to Zookeeper')
     exit(1)
 
-def zk_listener(state):
-    if state == kazoo.client.KazooState.LOST:
-        cleanup()
-    elif state == kazoo.client.KazooState.SUSPENDED:
-        cleanup()
-    else:
-        pass
-
-zk.add_listener(zk_listener)
-
-def cleanup():
-    update_timer.shutdown()
+def cleanup(signum, frame):
+    ansiiprint.echo('Terminating daemon', '', 'e')
     zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.stop()
     zk.close()
+    update_timer.join()
     sys.exit(0)
 
 # Handle signals gracefully
