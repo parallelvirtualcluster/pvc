@@ -5,11 +5,10 @@ After = network-online.target libvirtd.service zookeeper.service
 
 [Service]
 Type = simple
-WorkingDirectory = /var/home/joshua/pvc
+WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
-Environment = PVCD_CONFIG_FILE=/etc/pvcd.conf
-#ExecStartPre = /bin/bash -c "GIT_SSH_COMMAND='/usr/bin/ssh -i /srv/git-deploy.key' /usr/bin/git pull"
-ExecStart = /var/home/joshua/pvc/pvcd.py
+Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcd.conf
+ExecStart = /usr/share/pvc/pvcd.py
 Restart = on-failure
 
 [Install]

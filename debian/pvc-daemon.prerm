@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Disable the servive
+systemctl disable pvcd.service
+

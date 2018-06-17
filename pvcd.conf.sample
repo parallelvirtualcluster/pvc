@@ -1,4 +1,4 @@
-# pvcd cluster configuration file
+# pvcd cluster configuration file example
 #
 # This configuration file lists all nodes that should be running in the cluster and provides
 # basic configuration information for them.
@@ -17,15 +17,16 @@
 #    ipmi_hostname: the IPMI hostname for fencing (defaults to <shortname>-lom.<domain>)
 #    ipmi_username: username to connect to IPMI
 #    ipmi_password: password to connect to IPMI
+#
+# Copy this example to /etc/pvc/pvcd.conf and edit to your needs
 
 [default]
 zookeeper = 127.0.0.1:2181
 keepalive_interval = 5
+#ipmi_username = admin
+#ipmi_password = admin
+
+[myhost]
 ipmi_username = admin
 ipmi_password = admin
-
-[test1.i.bonilan.net]
-ipmi_hostname = test1-lom.m.bonilan.net
-
-[test2.i.bonilan.net]
-ipmi_hostname = test2-lom.m.bonilan.net
+ipmi_hostname = myhost-lom

@@ -21,7 +21,7 @@
 ###############################################################################
 
 import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, subprocess
-import pvc.ansiiprint as ansiiprint
+import pvcd.ansiiprint as ansiiprint
 
 class NodeInstance():
     # Initialization function

@@ -33,9 +33,9 @@ import time
 import configparser
 import apscheduler.schedulers.background
 
-import pvc.ansiiprint as ansiiprint
-import pvc.VMInstance as VMInstance
-import pvc.NodeInstance as NodeInstance
+import pvcd.ansiiprint as ansiiprint
+import pvcd.VMInstance as VMInstance
+import pvcd.NodeInstance as NodeInstance
 
 print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
 
