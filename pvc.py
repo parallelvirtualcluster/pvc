@@ -757,13 +757,13 @@ def start_vm(domain):
 ###############################################################################
 # pvc vm restart
 ###############################################################################
-@click.command(name='restart', short_help='Restart virtual machine.')
+@click.command(name='restart', short_help='Restart a running virtual machine.')
 @click.argument(
     'domain'
 )
 def restart_vm(dom_name, dom_uuid):
     """
-    Restart a virtual machine on its configured hypervisor.
+    Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
     # Open a Zookeeper connection
