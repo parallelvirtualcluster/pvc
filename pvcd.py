@@ -30,7 +30,6 @@ import psutil
 import subprocess
 import uuid
 import time
-import atexit
 import configparser
 import apscheduler.schedulers.background
 
@@ -47,8 +46,6 @@ except:
     print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcd.')
     exit(1)
 
-print('Loading configuration from file {}'.format(pvcd_config_file))
-
 myhostname = socket.gethostname()
 myshorthostname = myhostname.split('.', 1)[0]
 mydomainname = ''.join(myhostname.split('.', 1)[1:])
@@ -62,6 +59,8 @@ config_values = [
     'ipmi_password'
 ]
 def readConfig(pvcd_config_file, myhostname):
+    print('Loading configuration from file {}'.format(pvcd_config_file))
+
     o_config = configparser.ConfigParser()
     o_config.read(pvcd_config_file)
     config = {}
@@ -91,7 +90,11 @@ def readConfig(pvcd_config_file, myhostname):
 
     return config
 
-config = readConfig(pvcd_config_file, myhostname)
+config = {}
+
+def getConfig():
+    global config
+    config = readConfig(pvcd_config_file, myhostname)
 
 # Connect to local zookeeper
 zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
@@ -105,25 +108,25 @@ except:
 def zk_listener(state):
     if state == kazoo.client.KazooState.LOST:
         cleanup()
-        exit(1)
     elif state == kazoo.client.KazooState.SUSPENDED:
         cleanup()
-        exit(1)
     else:
         pass
 
 zk.add_listener(zk_listener)
 
-@atexit.register
 def cleanup():
     update_timer.shutdown()
     zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     zk.stop()
     zk.close()
-    exit(0)
+    sys.exit(0)
 
-# Handle SIGTERM gracefully
+# Handle signals gracefully
 signal.signal(signal.SIGTERM, cleanup)
+signal.signal(signal.SIGINT, cleanup)
+signal.signal(signal.SIGQUIT, cleanup)
+signal.signal(signal.SIGHUP, getConfig)
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
