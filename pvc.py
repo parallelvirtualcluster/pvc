@@ -912,12 +912,6 @@ def move_vm(domain, target_hypervisor):
         stopZKConnection(zk_conn)
         return
 
-    # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
-
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == None:
@@ -975,7 +969,7 @@ def move_vm(domain, target_hypervisor):
 )
 def migrate_vm(domain, target_hypervisor, force_migrate):
     """
-    Migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name.
+    Migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
     # Open a Zookeeper connection
@@ -997,8 +991,9 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
+        target_state = 'start'
+    else:
+        target_state = 'migrate'
 
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
     last_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
@@ -1031,7 +1026,7 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
 
     click.echo('Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
     transaction = zk_conn.transaction()
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+    transaction.set_data('/domains/{}/state'.format(dom_uuid), target_state.encode('ascii'))
     transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
     transaction.commit()
@@ -1049,7 +1044,7 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
 )
 def unmigrate_vm(domain):
     """
-    Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original hypervisor node. DOMAIN may be a UUID or name.
+    Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original hypervisor node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
     # Open a Zookeeper connection
@@ -1071,8 +1066,9 @@ def unmigrate_vm(domain):
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
+        target_state = 'start'
+    else:
+        target_state = 'migrate'
 
     target_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
@@ -1082,7 +1078,7 @@ def unmigrate_vm(domain):
 
     click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
     transaction = zk_conn.transaction()
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
+    transaction.set_data('/domains/{}/state'.format(dom_uuid), target_state.encode('ascii'))
     transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
     transaction.commit()
