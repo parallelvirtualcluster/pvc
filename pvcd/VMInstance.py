@@ -250,7 +250,12 @@ class VMInstance:
             except:
                 continue
 
-        if self.dom.state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+        try:
+            dom_state = self.dom.state()[0]
+        except AttributeError:
+            dom_state = None
+
+        if dom_state == libvirt.VIR_DOMAIN_RUNNING:
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
             ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
