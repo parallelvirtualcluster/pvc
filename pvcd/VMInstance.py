@@ -219,15 +219,14 @@ class VMInstance:
             ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
             self.shutdown_vm()
             time.sleep(1)
-            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
             time.sleep(1)
-            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
+        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         self.inmigrate = False
 
     # Receive the migration from another host (wait until VM is running)
