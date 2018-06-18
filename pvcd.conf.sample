@@ -5,14 +5,6 @@
 # be used by the local daemon. Default values apply to all hosts for any value
 # not specifically overridden.
 #
-# Nodes can be specified individually, e.g.
-#    [node1.domain]
-#    ...
-#    [node2.domain]
-#    ...
-# Or a default configuration can be specified
-#    [*]
-#
 # The following values are required for each host or in a default section:
 #    zookeeper: the IP+port of the Zookeper instance (defaults to 127.0.0.1:2181)
 #    keepalive_interval: the interval between keepalives and for dead node timeout (defaults to 5)
