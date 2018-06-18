@@ -1,7 +1,9 @@
 # pvcd cluster configuration file example
 #
-# This configuration file lists all nodes that should be running in the cluster and provides
-# basic configuration information for them.
+# This configuration file specifies details for this node in PVC. Multiple host
+# blocks can be added but only the one matching the current system hostname will
+# be used by the local daemon. Default values apply to all hosts for any value
+# not specifically overridden.
 #
 # Nodes can be specified individually, e.g.
 #    [node1.domain]
