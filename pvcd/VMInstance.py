@@ -25,10 +25,10 @@ import pvcd.ansiiprint as ansiiprint
 
 class VMInstance:
     # Initialization function
-    def __init__(self, domuuid, zk, config, thishypervisor):
+    def __init__(self, domuuid, zk_conn, config, thishypervisor):
         # Passed-in variables on creation
         self.domuuid = domuuid
-        self.zk = zk
+        self.zk_conn = zk_conn
         self.config = config
         self.thishypervisor = thishypervisor
 
@@ -45,7 +45,7 @@ class VMInstance:
         self.dom = self.lookupByUUID(self.domuuid)
 
         # Watch for changes to the state field in Zookeeper
-        @zk.DataWatch('/domains/{}/state'.format(self.domuuid))
+        @zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
             # If we get a delete state, just terminate outselves
             if data == None:
@@ -71,16 +71,16 @@ class VMInstance:
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
+        lv_conn = libvirt.open(libvirt_name)
+        if lv_conn == None:
             ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
             self.instart = False
             return
     
         try:
             # Grab the domain information from Zookeeper
-            xmlconfig = self.zk.get('/domains/{}/xml'.format(self.domuuid))[0].decode('ascii')
-            dom = conn.createXML(xmlconfig, 0)
+            xmlconfig = self.zk_conn.get('/domains/{}/xml'.format(self.domuuid))[0].decode('ascii')
+            dom = lv_conn.createXML(xmlconfig, 0)
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
 
@@ -88,10 +88,10 @@ class VMInstance:
             self.dom = dom
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'failed'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'failed'.encode('ascii'))
             self.dom = None
 
-        conn.close()
+        lv_conn.close()
         self.instart = False
   
     # Restart the VM
@@ -101,8 +101,8 @@ class VMInstance:
 
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
+        lv_conn = libvirt.open(libvirt_name)
+        if lv_conn == None:
             ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
             self.inrestart = False
             return
@@ -114,8 +114,8 @@ class VMInstance:
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to restart VM', '{}:'.format(self.domuuid), 'e')
 
-        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
-        conn.close()
+        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+        lv_conn.close()
         self.inrestart = False
 
     # Stop the VM forcibly without updating state
@@ -150,7 +150,7 @@ class VMInstance:
                 pass
 
         if self.inrestart == False:
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
 
         ansiiprint.echo('Successfully stopped VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
@@ -182,7 +182,7 @@ class VMInstance:
                 pass
 
         if self.inrestart == False:
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
 
         ansiiprint.echo('Successfully shutdown VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
@@ -190,24 +190,24 @@ class VMInstance:
 
     def live_migrate_vm(self, dest_hypervisor):
         try:
-            dest_conn = libvirt.open('qemu+tcp://{}/system'.format(self.hypervisor))
-            if dest_conn == None:
+            dest_lv_conn = libvirt.open('qemu+tcp://{}/system'.format(self.hypervisor))
+            if dest_lv_conn == None:
                 raise
         except:
             ansiiprint.echo('Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.hypervisor), '{}:'.format(self.domuuid), 'e')
             return 1
 
         try:
-            target_dom = self.dom.migrate(dest_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
+            target_dom = self.dom.migrate(dest_lv_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
             if target_dom == None:
                 raise
             ansiiprint.echo('Successfully migrated VM', '{}:'.format(self.domuuid), 'o')
 
         except:
-            dest_conn.close()
+            dest_lv_conn.close()
             return 1
 
-        dest_conn.close()
+        dest_lv_conn.close()
         return 0
 
     # Migrate the VM to a target host
@@ -219,14 +219,14 @@ class VMInstance:
             ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
             self.shutdown_vm()
             time.sleep(1)
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
             try:
                 self.thishypervisor.domain_list.remove(self.domuuid)
             except ValueError:
                 pass
             time.sleep(1)
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
         self.inmigrate = False
 
@@ -236,7 +236,7 @@ class VMInstance:
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         while True:
             time.sleep(0.5)
-            self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
+            self.state = self.zk_conn.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
             self.dom = self.lookupByUUID(self.domuuid)
 
             if self.dom == None and self.state == 'migrate':
@@ -255,10 +255,10 @@ class VMInstance:
             if not self.domuuid in self.thishypervisor.domain_list:
                 self.thishypervisor.domain_list.append(self.domuuid)
             ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         else:
             ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
-            self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
 
         self.inreceive = False
 
@@ -270,8 +270,8 @@ class VMInstance:
         time.sleep(0.2)
 
         # Get the current values from zookeeper (don't rely on the watch)
-        self.state = self.zk.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
-        self.hypervisor = self.zk.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
+        self.state = self.zk_conn.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
+        self.hypervisor = self.zk_conn.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
 
         # Check the current state of the VM
         try:
@@ -311,7 +311,7 @@ class VMInstance:
                             self.thishypervisor.domain_list.append(self.domuuid)
                     # VM is already running and should be but stuck in migrate state
                     elif self.state == "migrate":
-                        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
                         if not self.domuuid in self.thishypervisor.domain_list:
                             self.thishypervisor.domain_list.append(self.domuuid)
                     # VM should be restarted
@@ -332,7 +332,7 @@ class VMInstance:
                         self.receive_migrate()
                     # VM should be restarted (i.e. started since it isn't running)
                     if self.state == "restart":
-                        self.zk.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
                     # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
                         if self.domuuid in self.thishypervisor.domain_list:
@@ -357,7 +357,7 @@ class VMInstance:
     # 1. Takes a text UUID and handles converting it to bytes
     # 2. Try's it and returns a sensible value if not
     def lookupByUUID(self, tuuid):
-        conn = None
+        lv_conn = None
         dom = None
         libvirt_name = "qemu:///system"
     
@@ -367,13 +367,13 @@ class VMInstance:
         # Try
         try:
             # Open a libvirt connection
-            conn = libvirt.open(libvirt_name)
-            if conn == None:
+            lv_conn = libvirt.open(libvirt_name)
+            if lv_conn == None:
                 ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
                 return dom
         
             # Lookup the UUID
-            dom = conn.lookupByUUID(buuid)
+            dom = lv_conn.lookupByUUID(buuid)
     
         # Fail
         except:
@@ -382,8 +382,8 @@ class VMInstance:
         # After everything
         finally:
             # Close the libvirt connection
-            if conn != None:
-                conn.close()
+            if lv_conn != None:
+                lv_conn.close()
     
         # Return the dom object (or None)
         return dom

@@ -25,9 +25,9 @@ import pvcd.ansiiprint as ansiiprint
 
 class NodeInstance():
     # Initialization function
-    def __init__(self, this_node, name, t_node, s_domain, zk, config):
+    def __init__(self, this_node, name, t_node, s_domain, zk_conn, config):
         # Passed-in variables on creation
-        self.zk = zk
+        self.zk_conn = zk_conn
         self.config = config
         self.this_node = this_node
         self.name = name
@@ -46,14 +46,14 @@ class NodeInstance():
         self.inflush = False
 
         # Zookeeper handlers for changed states
-        @zk.DataWatch('/nodes/{}/daemonstate'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/daemonstate'.format(self.name))
         def watch_hypervisor_daemonstate(data, stat, event=""):
             try:
                 self.daemon_state = data.decode('ascii')
             except AttributeError:
                 self.daemon_state = 'stop'
 
-        @zk.DataWatch('/nodes/{}/domainstate'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/domainstate'.format(self.name))
         def watch_hypervisor_domainstate(data, stat, event=""):
             try:
                 self.domain_state = data.decode('ascii')
@@ -68,28 +68,28 @@ class NodeInstance():
                     self.unflush()
 
 
-        @zk.DataWatch('/nodes/{}/memfree'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):
             try:
                 self.memfree = data.decode('ascii')
             except AttributeError:
                 self.memfree = 0
     
-        @zk.DataWatch('/nodes/{}/memused'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/memused'.format(self.name))
         def watch_hypervisor_memused(data, stat, event=""):
             try:
                 self.memused = data.decode('ascii')
             except AttributeError:
                 self.memused = 0
     
-        @zk.DataWatch('/nodes/{}/runningdomains'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
             try:
                 self.domain_list = data.decode('ascii').split()
             except AttributeError:
                 self.domain_list = []
 
-        @zk.DataWatch('/nodes/{}/domainscount'.format(self.name))
+        @zk_conn.DataWatch('/nodes/{}/domainscount'.format(self.name))
         def watch_hypervisor_domainscount(data, stat, event=""):
             try:
                 self.domains_count = data.decode('ascii')
@@ -130,53 +130,53 @@ class NodeInstance():
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
-            hypervisor_list = self.zk.get_children('/nodes')
-            current_hypervisor = self.zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            hypervisor_list = self.zk_conn.get_children('/nodes')
+            current_hypervisor = self.zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
             if current_hypervisor != self.this_node:
                 continue
 
             for hypervisor in hypervisor_list:
-                daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-                domain_state = self.zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+                daemon_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+                domain_state = self.zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
                 if hypervisor == current_hypervisor:
                     continue
 
                 if daemon_state != 'run' or domain_state != 'ready':
                     continue
     
-                memfree = int(self.zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+                memfree = int(self.zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
                 if memfree > most_memfree:
                     most_memfree = memfree
                     target_hypervisor = hypervisor
 
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
-                transaction = self.zk.transaction()
+                transaction = self.zk_conn.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'shutdown'.encode('ascii'))
                 transaction.commit()
             else:
                 ansiiprint.echo('Migrating VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
-                transaction = self.zk.transaction()
+                transaction = self.zk_conn.transaction()
                 transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
                 transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
                 transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
                 transaction.commit()
 
-        self.zk.set('/nodes/{}/runningdomains'.format(self.name), ''.encode('ascii'))
-        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
+        self.zk_conn.set('/nodes/{}/runningdomains'.format(self.name), ''.encode('ascii'))
+        self.zk_conn.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
         self.inflush = False
 
     def unflush(self):
         self.inflush = True
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
-        self.zk.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
+        self.zk_conn.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
         for dom_uuid in self.s_domain:
-            last_hypervisor = self.zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+            last_hypervisor = self.zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
             if last_hypervisor != self.name:
                 continue
 
             ansiiprint.echo('Setting unmigration for VM "{}"'.format(dom_uuid), '', 'i')
-            transaction = self.zk.transaction()
+            transaction = self.zk_conn.transaction()
             transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
             transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), self.name.encode('ascii'))
             transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
@@ -187,16 +187,16 @@ class NodeInstance():
     def update_zookeeper(self):
         # Connect to libvirt
         libvirt_name = "qemu:///system"
-        conn = libvirt.open(libvirt_name)
-        if conn == None:
+        lv_conn = libvirt.open(libvirt_name)
+        if lv_conn == None:
             ansiiprint.echo('Failed to open connection to "{}"'.format(libvirt_name), '', 'e')
             return
 
         # Get past state and update if needed
-        past_state = self.zk.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
+        past_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
         if past_state != 'run':
             self.daemon_state = 'run'
-            self.zk.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
+            self.zk_conn.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
         else:
             self.daemon_state = 'run'
 
@@ -210,17 +210,17 @@ class NodeInstance():
                                 raise
                         except Exception as e:
                             # Toggle a state "change"
-                            self.zk.set('/domains/{}/state'.format(domain), instance.getstate().encode('ascii'))
+                            self.zk_conn.set('/domains/{}/state'.format(domain), instance.getstate().encode('ascii'))
 
         # Set our information in zookeeper
-        self.name = conn.getHostname()
+        self.name = lv_conn.getHostname()
         self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
         self.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
         self.cpuload = os.getloadavg()[0]
-        self.domains_count = len(conn.listDomainsID())
+        self.domains_count = len(lv_conn.listDomainsID())
         keepalive_time = int(time.time())
         try:
-            transaction = self.zk.transaction()
+            transaction = self.zk_conn.transaction()
             transaction.set_data('/nodes/{}/memused'.format(self.name), str(self.memused).encode('ascii'))
             transaction.set_data('/nodes/{}/memfree'.format(self.name), str(self.memfree).encode('ascii'))
             transaction.set_data('/nodes/{}/cpuload'.format(self.name), str(self.cpuload).encode('ascii'))
@@ -232,7 +232,7 @@ class NodeInstance():
             return
 
         # Close the Libvirt connection
-        conn.close()
+        lv_conn.close()
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
@@ -241,9 +241,9 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                node_daemon_state = self.zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
-                node_domain_state = self.zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-                node_keepalive = int(self.zk.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
+                node_daemon_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+                node_domain_state = self.zk_conn.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+                node_keepalive = int(self.zk_conn.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
             except:
                 node_daemon_state = 'unknown'
                 node_domain_state = 'unknown'
@@ -255,8 +255,8 @@ class NodeInstance():
             node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
             if node_keepalive < node_deadtime and node_daemon_state == 'run':
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
-                self.zk.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
-                fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk), kwargs={})
+                self.zk_conn.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
+                fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk_conn), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
@@ -300,13 +300,13 @@ class NodeInstance():
 #
 # Fence thread entry function
 #
-def fenceNode(node_name, zk):
+def fenceNode(node_name, zk_conn):
     failcount = 0
     while failcount < 3:
         # Wait 5 seconds
         time.sleep(5)
         # Get the state
-        node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
@@ -318,39 +318,39 @@ def fenceNode(node_name, zk):
 
     ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'e')
 
-    ipmi_hostname = zk.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
-    ipmi_username = zk.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
-    ipmi_password = zk.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
+    ipmi_hostname = zk_conn.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
+    ipmi_username = zk_conn.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
+    ipmi_password = zk_conn.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
     rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password)
     time.sleep(5)
 
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
-    dead_node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    dead_node_running_domains = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     for dom_uuid in dead_node_running_domains:
         most_memfree = 0
-        hypervisor_list = zk.get_children('/nodes')
-        current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+        hypervisor_list = zk_conn.get_children('/nodes')
+        current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
         for hypervisor in hypervisor_list:
             print(hypervisor)
-            daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
             if daemon_state != 'run' or domain_state != 'ready':
                 continue
 
-            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
             if memfree > most_memfree:
                 most_memfree = memfree
                 target_hypervisor = hypervisor
 
         ansiiprint.echo('Moving VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
-        transaction = zk.transaction()
+        transaction = zk_conn.transaction()
         transaction.set_data('/domains/{}/state'.format(dom_uuid), 'start'.encode('ascii'))
         transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
         transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
         transaction.commit()
 
     # Set node in flushed state for easy remigrating when it comes back
-    zk.set('/nodes/{}/domainstate'.format(node_name), 'flushed'.encode('ascii'))
+    zk_conn.set('/nodes/{}/domainstate'.format(node_name), 'flushed'.encode('ascii'))
 
 #
 # Perform an IPMI fence

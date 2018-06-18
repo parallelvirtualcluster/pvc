@@ -97,25 +97,26 @@ config = readConfig(pvcd_config_file, myhostname)
 libvirt_check_name = "qemu+tcp://127.0.0.1:16509/system"
 try:
     print('Connecting to Libvirt instance at {}'.format(libvirt_check_name))
-    conn = libvirt.open(libvirt_check_name)
-    if conn == None:
+    lv_conn = libvirt.open(libvirt_check_name)
+    if lv_conn == None:
         raise
 except:
     print('ERROR: Failed to open local libvirt connection via TCP; required for PVC!')
     exit(1)
+lv_conn.close()
 
 # Connect to local zookeeper
-zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
+zk_conn = kazoo.client.KazooClient(hosts=config['zookeeper'])
 try:
     print('Connecting to Zookeeper instance at {}'.format(config['zookeeper']))
-    zk.start()
+    zk_conn.start()
 except:
     print('ERROR: Failed to connect to Zookeeper')
     exit(1)
 
 # Handle zookeeper failures
 def zk_listener(state):
-    global zk, update_timer
+    global zk_conn, update_timer
     if state == kazoo.client.KazooState.SUSPENDED:
         ansiiprint.echo('Connection to Zookeeper lost; retrying', '', 'e')
 
@@ -123,10 +124,10 @@ def zk_listener(state):
         stopKeepaliveTimer(update_timer)
 
         while True:
-            _zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
+            _zk_conn = kazoo.client.KazooClient(hosts=config['zookeeper'])
             try:
-                _zk.start()
-                zk = _zk
+                _zk_conn.start()
+                zk_conn = _zk_conn
                 break
             except:
                 time.sleep(1)
@@ -138,15 +139,15 @@ def zk_listener(state):
     else:
         pass
 
-zk.add_listener(zk_listener)
+zk_conn.add_listener(zk_listener)
 
 # Cleanup function
 def cleanup(signum, frame):
     ansiiprint.echo('Terminating daemon', '', 'e')
     # Set stop state in Zookeeper
-    zk.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
+    zk_conn.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
     # Close the Zookeeper connection
-    zk.close()
+    zk_conn.close()
     # Stop keepalive thread
     stopKeepaliveTimer(update_timer)
     # Exit
@@ -175,37 +176,37 @@ print('  {0}OS:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[2
 print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[3]))
 
 # Check if our node exists in Zookeeper, and create it if not
-if zk.exists('/nodes/{}'.format(myhostname)):
+if zk_conn.exists('/nodes/{}'.format(myhostname)):
     print("Node is " + ansiiprint.green() + "present" + ansiiprint.end() + " in Zookeeper")
     # Update static data just in case it's changed
-    zk.set('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
+    zk_conn.set('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
 else:
     print("Node is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new node")
     keepalive_time = int(time.time())
-    zk.create('/nodes/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
+    zk_conn.create('/nodes/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     # Basic state information
-    zk.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
-    zk.create('/nodes/{}/domainstate'.format(myhostname), 'ready'.encode('ascii'))
-    zk.create('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
-    zk.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
-    zk.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
-    zk.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
-    zk.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
-    zk.create('/nodes/{}/domainscount'.format(myhostname), '0'.encode('ascii'))
+    zk_conn.create('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
+    zk_conn.create('/nodes/{}/domainstate'.format(myhostname), 'ready'.encode('ascii'))
+    zk_conn.create('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
+    zk_conn.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
+    zk_conn.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
+    zk_conn.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
+    zk_conn.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
+    zk_conn.create('/nodes/{}/domainscount'.format(myhostname), '0'.encode('ascii'))
     # Keepalives and fencing information
-    zk.create('/nodes/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
-    zk.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
-    zk.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
-    zk.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
+    zk_conn.create('/nodes/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
+    zk_conn.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
+    zk_conn.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
+    zk_conn.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
 
-zk.set('/nodes/{}/daemonstate'.format(myhostname), 'init'.encode('ascii'))
+zk_conn.set('/nodes/{}/daemonstate'.format(myhostname), 'init'.encode('ascii'))
 
 t_node = dict()
 s_domain = dict()
 node_list = []
 domain_list = []
 
-@zk.ChildrenWatch('/nodes')
+@zk_conn.ChildrenWatch('/nodes')
 def updatenodes(new_node_list):
     global node_list
     node_list = new_node_list
@@ -214,16 +215,16 @@ def updatenodes(new_node_list):
         if node in t_node:
             t_node[node].updatenodelist(t_node)
         else:
-            t_node[node] = NodeInstance.NodeInstance(myhostname, node, t_node, s_domain, zk, config)
+            t_node[node] = NodeInstance.NodeInstance(myhostname, node, t_node, s_domain, zk_conn, config)
 
-@zk.ChildrenWatch('/domains')
+@zk_conn.ChildrenWatch('/domains')
 def updatedomains(new_domain_list):
     global domain_list
     domain_list = new_domain_list
     print(ansiiprint.blue() + 'Domain list: ' + ansiiprint.end() + '{}'.format(' '.join(domain_list)))
     for domain in domain_list:
         if not domain in s_domain:
-            s_domain[domain] = VMInstance.VMInstance(domain, zk, config, t_node[myhostname]);
+            s_domain[domain] = VMInstance.VMInstance(domain, zk_conn, config, t_node[myhostname]);
             for node in node_list:
                 if node in t_node:
                     t_node[node].updatedomainlist(s_domain)

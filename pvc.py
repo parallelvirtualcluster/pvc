@@ -50,13 +50,13 @@ def validateUUID(dom_uuid):
 # Connect and disconnect from Zookeeper
 #
 def startZKConnection(zk_host):
-    zk = kazoo.client.KazooClient(hosts=zk_host)
-    zk.start()
-    return zk
+    zk_conn = kazoo.client.KazooClient(hosts=zk_host)
+    zk_conn.start()
+    return zk_conn
 
-def stopZKConnection(zk):
-    zk.stop()
-    zk.close()
+def stopZKConnection(zk_conn):
+    zk_conn.stop()
+    zk_conn.close()
     return 0
 
 
@@ -149,9 +149,9 @@ def getDomainControllers(parsed_xml):
     return dcontrollers
 
 # Parse an XML object
-def getDomainXML(zk, dom_uuid):
+def getDomainXML(zk_conn, dom_uuid):
     try:
-        xml = zk.get('/domains/%s/xml' % dom_uuid)[0].decode('ascii')
+        xml = zk_conn.get('/domains/%s/xml' % dom_uuid)[0].decode('ascii')
     except:
         return None
     
@@ -160,21 +160,21 @@ def getDomainXML(zk, dom_uuid):
     return parsed_xml
 
 # Root functions
-def getInformationFromNode(zk, node_name, long_output):
-    node_daemon_state = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
-    node_domain_state = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-    node_cpu_count = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
-    node_kernel = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[1]
-    node_os = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[2]
-    node_arch = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[3]
-    node_mem_used = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
-    node_mem_free = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
+def getInformationFromNode(zk_conn, node_name, long_output):
+    node_daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+    node_domain_state = zk_conn.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+    node_cpu_count = zk_conn.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
+    node_kernel = zk_conn.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[1]
+    node_os = zk_conn.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[2]
+    node_arch = zk_conn.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[3]
+    node_mem_used = zk_conn.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
+    node_mem_free = zk_conn.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
     node_mem_total = int(node_mem_used) + int(node_mem_free)
-    node_domains_count = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
-    node_running_domains = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    node_domains_count = zk_conn.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
+    node_running_domains = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     node_mem_allocated = 0
     for domain in node_running_domains:
-        parsed_xml = getDomainXML(zk, domain)
+        parsed_xml = getDomainXML(zk_conn, domain)
         duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
         node_mem_allocated += int(dmemory)
 
@@ -220,19 +220,19 @@ def getInformationFromNode(zk, node_name, long_output):
     return information
 
 
-def getInformationFromXML(zk, uuid, long_output):
+def getInformationFromXML(zk_conn, uuid, long_output):
     # Obtain the contents of the XML from Zookeeper
     try:
-        dstate = zk.get('/domains/{}/state'.format(uuid))[0].decode('ascii')
-        dhypervisor = zk.get('/domains/{}/hypervisor'.format(uuid))[0].decode('ascii')
-        dlasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(uuid))[0].decode('ascii')
+        dstate = zk_conn.get('/domains/{}/state'.format(uuid))[0].decode('ascii')
+        dhypervisor = zk_conn.get('/domains/{}/hypervisor'.format(uuid))[0].decode('ascii')
+        dlasthypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(uuid))[0].decode('ascii')
     except:
         return None
 
     if dlasthypervisor == '':
         dlasthypervisor = 'N/A'
 
-    parsed_xml = getDomainXML(zk, uuid)
+    parsed_xml = getDomainXML(zk_conn, uuid)
 
     duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
     if long_output == True:
@@ -307,19 +307,19 @@ def getInformationFromXML(zk, uuid, long_output):
 #
 # Cluster search functions
 #
-def getClusterDomainList(zk):
+def getClusterDomainList(zk_conn):
     # Get a list of UUIDs by listing the children of /domains
-    uuid_list = zk.get_children('/domains')
+    uuid_list = zk_conn.get_children('/domains')
     name_list = []
     # For each UUID, get the corresponding name from the data
     for uuid in uuid_list:
-        name_list.append(zk.get('/domains/%s' % uuid)[0].decode('ascii'))
+        name_list.append(zk_conn.get('/domains/%s' % uuid)[0].decode('ascii'))
     return uuid_list, name_list
 
-def searchClusterByUUID(zk, uuid):
+def searchClusterByUUID(zk_conn, uuid):
     try:
         # Get the lists
-        uuid_list, name_list = getClusterDomainList(zk)
+        uuid_list, name_list = getClusterDomainList(zk_conn)
         # We're looking for UUID, so find that element ID
         index = uuid_list.index(uuid)
         # Get the name_list element at that index
@@ -330,10 +330,10 @@ def searchClusterByUUID(zk, uuid):
 
     return name
 
-def searchClusterByName(zk, name):
+def searchClusterByName(zk_conn, name):
     try:
         # Get the lists
-        uuid_list, name_list = getClusterDomainList(zk)
+        uuid_list, name_list = getClusterDomainList(zk_conn)
         # We're looking for name, so find that element ID
         index = name_list.index(name)
         # Get the uuid_list element at that index
@@ -382,11 +382,11 @@ def flush_host(node):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node))
+        zk_conn.get('/nodes/{}'.format(node))
     except:
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
@@ -394,12 +394,12 @@ def flush_host(node):
     click.echo('Flushing hypervisor {} of running VMs.'.format(node))
 
     # Add the new domain to Zookeeper
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.set_data('/nodes/{}/domainstate'.format(node), 'flush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -415,11 +415,11 @@ def ready_host(node):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node))
+        zk_conn.get('/nodes/{}'.format(node))
     except:
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
@@ -427,12 +427,12 @@ def ready_host(node):
     click.echo('Restoring hypervisor {} to active service.'.format(node))
 
     # Add the new domain to Zookeeper
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.set_data('/nodes/{}/domainstate'.format(node), 'unflush'.encode('ascii'))
     results = transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -452,17 +452,17 @@ def node_info(node, long_output):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
     try:
-        zk.get('/nodes/{}'.format(node))
+        zk_conn.get('/nodes/{}'.format(node))
     except:
         click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
         exit(1)
 
     # Get information about node in a pretty format
-    information = getInformationFromNode(zk, node, long_output)
+    information = getInformationFromNode(zk_conn, node, long_output)
 
     if information == None:
         click.echo('ERROR: Could not find a node matching that name.')
@@ -478,7 +478,7 @@ def node_info(node, long_output):
         get_vm_list(node)
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -491,9 +491,9 @@ def node_list():
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
-    node_list = zk.get_children('/nodes')
+    node_list = zk_conn.get_children('/nodes')
     node_list_output = []
     node_daemon_state = {}
     node_daemon_state = {}
@@ -508,17 +508,17 @@ def node_list():
 
     # Gather information for printing
     for node_name in node_list:
-        node_daemon_state[node_name] = zk.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
-        node_domain_state[node_name] = zk.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-        node_cpu_count[node_name] = zk.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
-        node_mem_used[node_name] = zk.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
-        node_mem_free[node_name] = zk.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
+        node_daemon_state[node_name] = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_domain_state[node_name] = zk_conn.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
+        node_cpu_count[node_name] = zk_conn.get('/nodes/{}/staticdata'.format(node_name))[0].decode('ascii').split()[0]
+        node_mem_used[node_name] = zk_conn.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
+        node_mem_free[node_name] = zk_conn.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
         node_mem_total[node_name] = int(node_mem_used[node_name]) + int(node_mem_free[node_name])
-        node_domains_count[node_name] = zk.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
-        node_running_domains[node_name] = zk.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+        node_domains_count[node_name] = zk_conn.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
+        node_running_domains[node_name] = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
         node_mem_allocated[node_name] = 0
         for domain in node_running_domains[node_name]:
-            parsed_xml = getDomainXML(zk, domain)
+            parsed_xml = getDomainXML(zk_conn, domain)
             duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
             node_mem_allocated[node_name] += int(dmemory)
 
@@ -599,7 +599,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
     click.echo('\n'.join(sorted(node_list_output)))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -640,10 +640,10 @@ def define_vm(config, target_hypervisor):
     click.echo('Adding new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid))
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Add the new domain to Zookeeper
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.create('/domains/{}'.format(dom_uuid), dom_name.encode('ascii'))
     transaction.create('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
     transaction.create('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
@@ -652,7 +652,7 @@ def define_vm(config, target_hypervisor):
     results = transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -673,26 +673,26 @@ def undefine_vm(domain):
         return
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
-    current_vm_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_vm_state != 'stop':
         click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
         # Set the domain into stop mode
-        transaction = zk.transaction()
+        transaction = zk_conn.transaction()
         transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
         transaction.commit()
 
@@ -702,11 +702,11 @@ def undefine_vm(domain):
 
     # Gracefully terminate the class instances
     click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
-    zk.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
+    zk_conn.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
     time.sleep(5)
     # Delete the configurations
     click.echo('Undefining VM "{}".'.format(dom_uuid))
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.delete('/domains/{}/state'.format(dom_uuid))
     transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
     transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
@@ -715,7 +715,7 @@ def undefine_vm(domain):
     transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -731,27 +731,27 @@ def start_vm(domain):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Set the VM to start
     click.echo('Starting VM "{}".'.format(dom_uuid))
-    zk.set('/domains/%s/state' % dom_uuid, 'start'.encode('ascii'))
+    zk_conn.set('/domains/%s/state' % dom_uuid, 'start'.encode('ascii'))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -767,33 +767,33 @@ def restart_vm(domain):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to start
     click.echo('Restarting VM "{}".'.format(dom_uuid))
-    zk.set('/domains/%s/state' % dom_uuid, 'restart'.encode('ascii'))
+    zk_conn.set('/domains/%s/state' % dom_uuid, 'restart'.encode('ascii'))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -809,33 +809,33 @@ def shutdown_vm(domain):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to shutdown
     click.echo('Shutting down VM "{}".'.format(dom_uuid))
-    zk.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
+    zk_conn.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -851,33 +851,33 @@ def stop_vm(domain):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to start
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
-    zk.set('/domains/%s/state' % dom_uuid, 'stop'.encode('ascii'))
+    zk_conn.set('/domains/%s/state' % dom_uuid, 'stop'.encode('ascii'))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -897,40 +897,40 @@ def move_vm(domain, target_hypervisor):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
-    current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+    current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == None:
         # Determine the best hypervisor to migrate the VM to based on active memory usage
-        hypervisor_list = zk.get_children('/nodes')
+        hypervisor_list = zk_conn.get_children('/nodes')
         most_memfree = 0
         for hypervisor in hypervisor_list:
-            daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
             if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
                 continue
 
-            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
             if memfree > most_memfree:
                 most_memfree = memfree
                 target_hypervisor = hypervisor
@@ -939,23 +939,23 @@ def move_vm(domain, target_hypervisor):
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
 
-    current_vm_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_vm_state == 'start':
         click.echo('Permanently migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
-        transaction = zk.transaction()
+        transaction = zk_conn.transaction()
         transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
         transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
         transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
         transaction.commit()
     else:
         click.echo('Permanently moving VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
-        transaction = zk.transaction()
+        transaction = zk_conn.transaction()
         transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
         transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
         transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -979,29 +979,29 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
-    current_hypervisor = zk.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
-    last_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+    current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+    last_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if last_hypervisor != '' and force_migrate != True:
         click.echo('ERROR: The VM "{}" has been previously migrated.'.format(dom_uuid))
@@ -1012,15 +1012,15 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
 
     if target_hypervisor == None:
         # Determine the best hypervisor to migrate the VM to based on active memory usage
-        hypervisor_list = zk.get_children('/nodes')
+        hypervisor_list = zk_conn.get_children('/nodes')
         most_memfree = 0
         for hypervisor in hypervisor_list:
-            daemon_state = zk.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
             if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
                 continue
 
-            memfree = int(zk.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
             if memfree > most_memfree:
                 most_memfree = memfree
                 target_hypervisor = hypervisor
@@ -1030,14 +1030,14 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
             return
 
     click.echo('Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
     transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -1053,42 +1053,42 @@ def unmigrate_vm(domain):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Get state and verify we're OK to proceed
-    current_state = zk.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
-    target_hypervisor = zk.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+    target_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == '':
         click.echo('ERROR: The VM "{}" has not been previously migrated.'.format(dom_uuid))
         return
 
     click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
     transaction.set_data('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -1108,27 +1108,27 @@ def vm_info(domain, long_output):
     """
 
 	# Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Validate and obtain alternate passed value
     if validateUUID(domain):
-        dom_name = searchClusterByUUID(zk, domain)
-        dom_uuid = searchClusterByName(zk, dom_name)
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
     else:
-        dom_uuid = searchClusterByName(zk, domain)
-        dom_name = searchClusterByUUID(zk, dom_uuid)
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk)
+        stopZKConnection(zk_conn)
         return
 
     # Gather information from XML config and print it
-    information = getInformationFromXML(zk, dom_uuid, long_output)
+    information = getInformationFromXML(zk_conn, dom_uuid, long_output)
     click.echo(information)
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -1149,9 +1149,9 @@ def get_vm_list(hypervisor):
     """
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
-    vm_list_raw = zk.get_children('/domains')
+    vm_list_raw = zk_conn.get_children('/domains')
     vm_list = []
     vm_list_output = []
 
@@ -1166,7 +1166,7 @@ def get_vm_list(hypervisor):
     # If we're limited, remove other nodes' VMs
     for vm in vm_list_raw:
         # Check hypervisor to avoid unneeded ZK calls
-        vm_hypervisor[vm] = zk.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
+        vm_hypervisor[vm] = zk_conn.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
         if hypervisor != None:
             if vm_hypervisor[vm] == hypervisor:
                 vm_list.append(vm)
@@ -1175,14 +1175,14 @@ def get_vm_list(hypervisor):
 
     # Gather information for printing
     for vm in vm_list:
-        vm_state[vm] = zk.get('/domains/{}/state'.format(vm))[0].decode('ascii')
-        vm_lasthypervisor = zk.get('/domains/{}/lasthypervisor'.format(vm))[0].decode('ascii')
+        vm_state[vm] = zk_conn.get('/domains/{}/state'.format(vm))[0].decode('ascii')
+        vm_lasthypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(vm))[0].decode('ascii')
         if vm_lasthypervisor != '':
             vm_migrated[vm] = 'from {}'.format(vm_lasthypervisor)
         else:
             vm_migrated[vm] = 'no'
 
-        vm_xml = getDomainXML(zk, vm)
+        vm_xml = getDomainXML(zk_conn, vm)
         vm_uuid[vm], vm_name[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = getDomainMainDetails(vm_xml)
 
     # Determine optimal column widths
@@ -1270,7 +1270,7 @@ def get_vm_list(hypervisor):
     click.echo('\n'.join(sorted(vm_list_output)))
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
 
 ###############################################################################
@@ -1288,23 +1288,23 @@ def init_cluster():
     click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
 
     # Open a Zookeeper connection
-    zk = startZKConnection(zk_host)
+    zk_conn = startZKConnection(zk_host)
 
     # Destroy the existing data
     try:
-        zk.delete('/domains', recursive=True)
-        zk.delete('nodes', recursive=True)
+        zk_conn.delete('/domains', recursive=True)
+        zk_conn.delete('nodes', recursive=True)
     except:
         pass
 
     # Create the root keys
-    transaction = zk.transaction()
+    transaction = zk_conn.transaction()
     transaction.create('/domains', ''.encode('ascii'))
     transaction.create('/nodes', ''.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
-    stopZKConnection(zk)
+    stopZKConnection(zk_conn)
 
     click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
 
