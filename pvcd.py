@@ -93,6 +93,17 @@ def readConfig(pvcd_config_file, myhostname):
 # Get config
 config = readConfig(pvcd_config_file, myhostname)
 
+# Check that libvirtd is listening TCP
+libvirt_check_name = "qemu+tcp://127.0.0.1:16509/system"
+try:
+    print('Connecting to Libvirt instance at {}'.format(libvirt_check_name))
+    conn = libvirt.open(libvirt_check_name)
+    if conn == None:
+        raise
+except:
+    print('ERROR: Failed to open local libvirt connection via TCP; required for PVC!')
+    exit(1)
+
 # Connect to local zookeeper
 zk = kazoo.client.KazooClient(hosts=config['zookeeper'])
 try:
