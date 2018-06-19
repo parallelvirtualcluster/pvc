@@ -203,14 +203,20 @@ class NodeInstance():
         # Toggle state management of dead VMs to restart them
         for domain, instance in self.s_domain.items():
             if instance.inshutdown == False and domain in self.domain_list:
-                if instance.getstate() == 'start' and instance.gethypervisor() == self.name:
-                    if instance.getdom() != None:
-                        try:
-                            if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
-                                raise
-                        except Exception as e:
-                            # Toggle a state "change"
-                            self.zk_conn.set('/domains/{}/state'.format(domain), instance.getstate().encode('ascii'))
+                if instance.gethypervisor() == self.name:
+                    if instance.getstate() == 'start':
+                        if instance.getdom() != None:
+                            try:
+                                if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+                                    raise
+                            except Exception as e:
+                                # Toggle a state "change"
+                                self.zk_conn.set('/domains/{}/state'.format(domain), instance.getstate().encode('ascii'))
+                    else:
+                        self.domain_list.remove(domain)
+                else:
+                    self.domain_list.remove(domain)
+                        
 
         # Set our information in zookeeper
         self.name = lv_conn.getHostname()
