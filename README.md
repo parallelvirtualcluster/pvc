@@ -105,3 +105,19 @@ The following sections walk through the steps the daemon takes from startup thro
 #### 0.1
 
 * Initial release; all basic functionality implemented.
+
+## Building
+
+This repo contains the required elements to build Debian packages for PVC. It is not handled like a normal Python package but instead the debs contain the raw files placed in Debianized places.
+
+1. Run `build-deb.sh`; you will need `dpkg-buildpackage` installed.
+2. The output files, `pvc-daemon_vvv.deb` and `pvc-client_vvv.deb`, will be located in the parent directory.
+
+## Installing
+
+1. Ensure a Zookeeper cluster is installed and configured, ideally on the nodes themselves.
+2. Install the `pvc-daemon_vvv.deb` package and, optionally, the `pvc-client_vvv.deb` (the client is not required and the cluster can be managed remotely).
+3. Configure your `/etc/pvc/pvcd.conf` file for the node. A sample can be found at `/etc/pvc/pvcd.conf.sample` listing the available options.
+4. Start up the PVC daemon with `systemctl start pvcd.service`
+5. Check the output of the process; using the `-o cat` option to `journalctl` provides nicer output: `journalctl -u pvcd.service -f -o cat`
+6. Use the `pvc` command-line tool to manage the cluster.
