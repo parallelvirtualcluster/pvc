@@ -568,11 +568,11 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
         else:
             daemon_state_colour = ansiiprint.blue()
 
-        if node_domain_state[node_name] == 'ready':
-            domain_state_colour = ansiiprint.green()
-        elif node_mem_allocated[node_name] >= node_mem_total[node_name]:
+        if node_mem_allocated[node_name] >= node_mem_total[node_name]:
             node_domain_state[node_name] == 'overprov'
             domain_state_colour = ansiiprint.red()
+        elif node_domain_state[node_name] == 'ready':
+            domain_state_colour = ansiiprint.green()
         else:
             domain_state_colour = ansiiprint.blue()
 
