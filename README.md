@@ -121,3 +121,9 @@ This repo contains the required elements to build Debian packages for PVC. It is
 4. Start up the PVC daemon with `systemctl start pvcd.service`
 5. Check the output of the process; using the `-o cat` option to `journalctl` provides nicer output: `journalctl -u pvcd.service -f -o cat`
 6. Use the `pvc` command-line tool to manage the cluster.
+
+## Example usage
+
+This picture shows examples of the CLI managing a simple test cluster.
+
+![Example usage](https://git.bonifacelabs.ca/bonifacelabs/pvc/blob/master/pvc-usage.png "Example usage")
