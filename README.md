@@ -126,4 +126,4 @@ This repo contains the required elements to build Debian packages for PVC. It is
 
 This picture shows examples of the CLI managing a simple test cluster.
 
-![Example usage](https://git.bonifacelabs.ca/bonifacelabs/pvc/blob/master/pvc-usage.png "Example usage")
+![Example usage](https://git.bonifacelabs.ca/bonifacelabs/pvc/raw/master/pvc-usage.png "Example usage")
