@@ -81,6 +81,9 @@ class VMInstance:
             # Grab the domain information from Zookeeper
             xmlconfig = self.zk_conn.get('/domains/{}/xml'.format(self.domuuid))[0].decode('ascii')
             dom = lv_conn.createXML(xmlconfig, 0)
+            if not self.domuuid in self.thishypervisor.domain_list:
+                self.thishypervisor.domain_list.append(self.domuuid)
+
             ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
             self.dom = dom
         except libvirt.libvirtError as e:
@@ -123,6 +126,11 @@ class VMInstance:
             self.dom.destroy()
         except AttributeError:
             ansiiprint.echo('Failed to terminate VM', '{}:'.format(self.domuuid), 'e')
+        if self.domuuid in self.thishypervisor.domain_list:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
         ansiiprint.echo('Successfully terminated VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
         self.instop = False
@@ -135,6 +143,11 @@ class VMInstance:
             self.dom.destroy()
         except AttributeError:
             ansiiprint.echo('Failed to stop VM', '{}:'.format(self.domuuid), 'e')
+        if self.domuuid in self.thishypervisor.domain_list:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
 
         if self.inrestart == False:
             self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
@@ -161,6 +174,12 @@ class VMInstance:
                 return
         except:
             pass
+
+        if self.domuuid in self.thishypervisor.domain_list:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
 
         if self.inrestart == False:
             self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
@@ -200,6 +219,12 @@ class VMInstance:
             ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
             self.shutdown_vm()
             time.sleep(1)
+        else:
+            try:
+                self.thishypervisor.domain_list.remove(self.domuuid)
+            except ValueError:
+                pass
+            time.sleep(1)
 
         self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
         self.inmigrate = False
@@ -231,6 +256,8 @@ class VMInstance:
             dom_state = None
 
         if dom_state == libvirt.VIR_DOMAIN_RUNNING:
+            if not self.domuuid in self.thishypervisor.domain_list:
+                self.thishypervisor.domain_list.append(self.domuuid)
             ansiiprint.echo('Successfully received migrated VM', '{}:'.format(self.domuuid), 'o')
         else:
             ansiiprint.echo('Failed to receive migrated VM', '{}:'.format(self.domuuid), 'e')
@@ -282,10 +309,13 @@ class VMInstance:
                 if running == libvirt.VIR_DOMAIN_RUNNING:
                     # VM is already running and should be
                     if self.state == "start":
-                        pass
+                        if not self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.append(self.domuuid)
                     # VM is already running and should be but stuck in migrate state
                     elif self.state == "migrate":
                         self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        if not self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.append(self.domuuid)
                     # VM should be restarted
                     elif self.state == "restart":
                         self.restart_vm()
@@ -305,12 +335,15 @@ class VMInstance:
                     # VM should be restarted (i.e. started since it isn't running)
                     if self.state == "restart":
                         self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
-                    # VM should be shut down
+                    # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
-                        pass
-                    # VM should be stoped
+                        if self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.remove(self.domuuid)
+                    # VM should be stoped; ensure it's gone from this node's domain_list
                     elif self.state == "stop":
-                        pass
+                        if self.domuuid in self.thishypervisor.domain_list:
+                            self.thishypervisor.domain_list.remove(self.domuuid)
+                        
             else:
                 # Conditional pass three - Is this VM currently running on this hypervisor
                 if running == libvirt.VIR_DOMAIN_RUNNING:
