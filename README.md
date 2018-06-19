@@ -46,7 +46,7 @@ In short, PVC does not look to replace large projects like OpenStack, only a par
 1. You have a small (3+ node) KVM cluster and want to efficiently manage your VMs via CLI.
 2. You need a very scalable solution to manage dozens of KVM hypervisors.
 
-Really, PVC bennefits both the small and large usecases.
+Really, PVC benefits both the small and large use-cases. If your requirement is for a simple and easy-to-use tool to automatically manage VMs, PVC will work for you.
 
 ## Why shouldn't you use PVC?
 
