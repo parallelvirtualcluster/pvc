@@ -37,7 +37,7 @@ PVC is based on the Unix philosophy of "do one thing and do it well". As such, i
 1. Provisioning of VMs
 2. Networking on the hypervisor nodes
 3. Alerting of errors/failed VMs (though it will restart failing VMs or mark them `failed`)
-4. Resource usage of VMs
+4. Resource usage of VMs, beyond basic memory reporting
 
 In short, PVC does not look to replace large projects like OpenStack, only a particular component provided in my original usage by Pacemaker/Corosync. However, it should be possible to build support into any larger project by interfacing directly with the Zookeeper cluster, just as the `pvc` client utility does. I will not rule out integration possiblities but I do not use any of these larger projects.
 
