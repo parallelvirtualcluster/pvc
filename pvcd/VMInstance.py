@@ -68,16 +68,22 @@ class VMInstance:
     def addDomainToList(self):
         if not self.domuuid in self.thishypervisor.domain_list:
             try:
+                # Add the domain to the domain_list array
                 self.thishypervisor.domain_list.append(self.domuuid)
+                # Push the change up to Zookeeper
+                self.zk_conn.set('/nodes/{}/runningdomains'.format(self.thishypervisor.name), ' '.join(self.thishypervisor.domain_list).encode('ascii'))
             except Exception as e:
-                ansiiprint.echo('ERROR: {}'.format(e), '', 'c')
+                ansiiprint.echo('Error adding domain to list: {}'.format(e), '', 'c')
 
     def removeDomainFromList(self):
         if self.domuuid in self.thishypervisor.domain_list:
             try:
+                # Remove the domain from the domain_list array
                 self.thishypervisor.domain_list.remove(self.domuuid)
+                # Push the change up to Zookeeper
+                self.zk_conn.set('/nodes/{}/runningdomains'.format(self.thishypervisor.name), ' '.join(self.thishypervisor.domain_list).encode('ascii'))
             except Exception as e:
-                ansiiprint.echo('ERROR: {}'.format(e), '', 'c')
+                ansiiprint.echo('Error removing domain from list: {}'.format(e), '', 'c')
 
     # Start up the VM
     def start_vm(self):
@@ -216,7 +222,12 @@ class VMInstance:
     def migrate_vm(self):
         self.inmigrate = True
         ansiiprint.echo('Migrating VM to hypervisor "{}"'.format(self.hypervisor), '{}:'.format(self.domuuid), 'i')
-        migrate_ret = self.live_migrate_vm(self.hypervisor)
+
+        try:
+            migrate_ret = self.live_migrate_vm(self.hypervisor)
+        except:
+            migrate_ret = 0
+
         if migrate_ret != 0:
             ansiiprint.echo('Could not live migrate VM; shutting down to migrate instead', '{}:'.format(self.domuuid), 'e')
             self.shutdown_vm()
