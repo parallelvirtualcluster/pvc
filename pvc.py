@@ -1319,6 +1319,8 @@ def init_cluster():
 def cli(_zk_host):
     """
     Parallel Virtual Cluster CLI management tool
+
+    You can use the environment variable "PVC_ZOOKEEPER" to set the Zookeeper address in addition to using "--zookeeper".
     """
 
     global zk_host
