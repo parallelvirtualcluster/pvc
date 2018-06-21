@@ -1,0 +1,26 @@
+stages:
+   - build
+   - deploy
+
+build:
+  stage: build
+  before_script: 
+    - git submodule update --init
+  script:
+    - /usr/local/bin/build-package
+  artifacts:
+    when: on_failure
+    paths:
+      - public
+    expire_in: 5 min 
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  script:
+    - /usr/local/bin/deploy-package
+  artifacts:
+    expire_in: 1 min
+  only:
+    - master
