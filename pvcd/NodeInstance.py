@@ -254,6 +254,7 @@ class NodeInstance():
             # out-of-date while in 'start' state)
             node_deadtime = int(time.time()) - ( int(self.config['keepalive_interval']) * 6 )
             if node_keepalive < node_deadtime and node_daemon_state == 'run':
+                # CHECK VERSIONING HERE
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
                 self.zk_conn.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
                 fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk_conn), kwargs={})
