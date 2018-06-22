@@ -344,6 +344,14 @@ def searchClusterByName(zk_conn, name):
 
     return uuid
 
+def verifyNode(zk_conn, node):
+    # Verify node is valid
+    try:
+        zk_conn.get('/nodes/{}'.format(node))
+    except:
+        click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
+        exit(1)
+
 
 ########################
 ########################
@@ -385,11 +393,7 @@ def flush_host(node):
     zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
-    try:
-        zk_conn.get('/nodes/{}'.format(node))
-    except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
-        exit(1)
+    verifyNode(zk_conn, node)
 
     click.echo('Flushing hypervisor {} of running VMs.'.format(node))
 
@@ -418,11 +422,7 @@ def ready_host(node):
     zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
-    try:
-        zk_conn.get('/nodes/{}'.format(node))
-    except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
-        exit(1)
+    verifyNode(zk_conn, node)
 
     click.echo('Restoring hypervisor {} to active service.'.format(node))
 
@@ -455,11 +455,7 @@ def node_info(node, long_output):
     zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
-    try:
-        zk_conn.get('/nodes/{}'.format(node))
-    except:
-        click.echo('ERROR: No node named {} is present in the cluster.'.format(node))
-        exit(1)
+    verifyNode(zk_conn, node)
 
     # Get information about node in a pretty format
     information = getInformationFromNode(zk_conn, node, long_output)
@@ -644,6 +640,9 @@ def define_vm(config, target_hypervisor):
 
     # Open a Zookeeper connection
     zk_conn = startZKConnection(zk_host)
+
+    # Verify node is valid
+    verifyNode(zk_conn, target_typervisor)
 
     # Add the new domain to Zookeeper
     transaction = zk_conn.transaction()
@@ -936,6 +935,9 @@ def move_vm(domain, target_hypervisor):
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
 
+        # Verify node is valid
+        verifyNode(zk_conn, target_hypervisor)
+
     current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_vm_state == 'start':
         click.echo('Permanently migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
@@ -958,7 +960,7 @@ def move_vm(domain, target_hypervisor):
 ###############################################################################
 # pvc vm migrate
 ###############################################################################
-@click.command(name='migrate', short_help='Migrate a virtual machine to another node.')
+@click.command(name='migrate', short_help='Temporarily migrate a virtual machine to another node.')
 @click.argument(
     'domain'
 )
@@ -972,7 +974,7 @@ def move_vm(domain, target_hypervisor):
 )
 def migrate_vm(domain, target_hypervisor, force_migrate):
     """
-    Migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
+    Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
     # Open a Zookeeper connection
@@ -1026,6 +1028,9 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
+
+        # Verify node is valid
+        verifyNode(zk_conn, target_hypervisor)
 
     click.echo('Migrating VM "{}" to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
     transaction = zk_conn.transaction()
@@ -1149,6 +1154,10 @@ def get_vm_list(hypervisor):
 
     # Open a Zookeeper connection
     zk_conn = startZKConnection(zk_host)
+
+    if hypervisor != None:
+        # Verify node is valid
+        verifyNode(zk_conn, hypervisor)
 
     vm_list_raw = zk_conn.get_children('/domains')
     vm_list = []
