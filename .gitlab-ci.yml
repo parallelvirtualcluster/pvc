@@ -7,7 +7,7 @@ build:
   before_script: 
     - git submodule update --init
   script:
-    - /usr/local/bin/build-package
+    - /usr/local/bin/build-package 0.1
   artifacts:
     when: on_failure
     paths:
