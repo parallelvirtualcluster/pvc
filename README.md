@@ -1,5 +1,7 @@
 # PVC - The Parallel Virtual Cluster tool
 
+[![pipeline status](https://dev.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://dev.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
+
 PVC is a tool to manage QEMU/KVM virtual machines in a cluster environment using Python, Libvirt, and Zookeeper. The primary motivation for developing PVC was my percieved shortfalls in Pacemaker/Corosync, which would often put my virtual cluster into undefined states and generally cause a lot of headaches.
 
 ## How it works
