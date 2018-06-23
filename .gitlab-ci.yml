@@ -10,9 +10,7 @@ build:
     - /usr/local/bin/build-package 0.1
     - /usr/local/bin/deploy-package
   artifacts:
-    when: on_failure
     paths:
-      - public
-    expire_in: 5 min 
+      - *.deb
   only:
     - master
