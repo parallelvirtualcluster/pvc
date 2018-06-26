@@ -153,10 +153,27 @@ def cleanup(signum, frame):
     # Exit
     sys.exit(0)
 
+# Flush function
+def flush():
+    this_node = t_node[myhostname]
+    this_node.flush()
+
+# Shutdown function
+def dshutdown():
+    ansiiprint.echo('Flushing this node', '', 'e')
+    flush()
+    ansiiprint.echo('NOTE: This node must be unflushed by the administrator after daemon startup', '', 'i')
+    cleanup()
+
+# Reload shutdown function
+def dreload():
+    cleanup()
+
 # Handle signals gracefully
-signal.signal(signal.SIGTERM, cleanup)
-signal.signal(signal.SIGINT, cleanup)
-signal.signal(signal.SIGQUIT, cleanup)
+signal.signal(signal.SIGTERM, dshutdown)
+signal.signal(signal.SIGINT, dshutdown)
+signal.signal(signal.SIGQUIT, dshutdown)
+signal.signal(signal.SIGHUP, dreload)
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
