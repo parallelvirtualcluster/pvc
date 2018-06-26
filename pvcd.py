@@ -142,7 +142,7 @@ def zk_listener(state):
 zk_conn.add_listener(zk_listener)
 
 # Cleanup function
-def cleanup():
+def cleanup(signum, frame):
     ansiiprint.echo('Terminating daemon', '', 'e')
     # Set stop state in Zookeeper
     zk_conn.set('/nodes/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
@@ -150,6 +150,8 @@ def cleanup():
     zk_conn.close()
     # Stop keepalive thread
     stopKeepaliveTimer(update_timer)
+    # Exit
+    sys.exit(0)
 
 # Flush function
 def flush():
@@ -157,18 +159,15 @@ def flush():
     this_node.flush()
 
 # Shutdown function
-def dshutdown(signum, frame):
+def dshutdown():
     ansiiprint.echo('Flushing this node', '', 'e')
     flush()
     ansiiprint.echo('NOTE: This node must be unflushed by the administrator after daemon startup', '', 'i')
     cleanup()
-    sys.exit(0)
 
 # Reload shutdown function
-def dreload(signum, frame):
+def dreload():
     cleanup()
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
 
 # Handle signals gracefully
 signal.signal(signal.SIGTERM, dshutdown)
