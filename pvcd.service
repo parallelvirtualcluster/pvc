@@ -9,7 +9,6 @@ WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcd.conf
 ExecStart = /usr/share/pvc/pvcd.py
-ExecReload = /bin/kill -HUP $MAINPID
 Restart = on-failure
 
 [Install]
