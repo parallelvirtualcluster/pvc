@@ -2,7 +2,7 @@
 
 [![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
 
-PVC is a tool to manage QEMU/KVM virtual machines in a cluster environment using Python, Libvirt, and Zookeeper. The primary motivation for developing PVC was my percieved shortfalls in Pacemaker/Corosync, which would often put my virtual cluster into undefined states and generally cause a lot of headaches.
+PVC is a Python 3 tool to manage QEMU/KVM virtual machines in a cluster environment using Python, Libvirt, and Zookeeper. The primary motivation for developing PVC was my percieved shortfalls in Pacemaker/Corosync, which would often put my virtual cluster into undefined states and generally cause a lot of headaches.
 
 ## How it works
 
