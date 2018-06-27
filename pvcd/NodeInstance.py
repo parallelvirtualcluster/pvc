@@ -162,14 +162,14 @@ class NodeInstance():
                 transaction.set_data('/domains/{}/lasthypervisor'.format(dom_uuid), current_hypervisor.encode('ascii'))
                 transaction.commit()
 
-        self.zk_conn.set('/nodes/{}/runningdomains'.format(self.name), ''.encode('ascii'))
-        self.zk_conn.set('/nodes/{}/domainstate'.format(self.name), 'flushed'.encode('ascii'))
+        zkhandler.writedata(self.zk_conn, '/nodes/{}/runningdomains'.format(self.name), [ '' ])
+        zkhandler.writedata(self.zk_conn, '/nodes/{}/domainstate'.format(self.name), [ 'flushed' ])
         self.inflush = False
 
     def unflush(self):
         self.inflush = True
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
-        self.zk_conn.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
+        zkhandler.writedata(self.zk_conn, '/nodes/{}/domainstate'.format(self.name), [ 'ready' ])
         for dom_uuid in self.s_domain:
             last_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/lasthypervisor'.format(dom_uuid))
             if last_hypervisor != self.name:
@@ -196,7 +196,7 @@ class NodeInstance():
         past_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/daemonstate'.format(self.name))
         if past_state != 'run':
             self.daemon_state = 'run'
-            self.zk_conn.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
+            zkhandler.writedata(self.zk_conn, '/nodes/{}/daemonstate'.format(self.name), [ 'run' ])
         else:
             self.daemon_state = 'run'
 
@@ -210,7 +210,7 @@ class NodeInstance():
                                 raise
                         except Exception as e:
                             # Toggle a state "change"
-                            self.zk_conn.set('/domains/{}/state'.format(domain), instance.getstate().encode('ascii'))
+                            zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(domain), [ instance.getstate() ])
 
         # Set our information in zookeeper
         self.name = lv_conn.getHostname()
@@ -256,7 +256,7 @@ class NodeInstance():
             if node_keepalive < node_deadtime and node_daemon_state == 'run':
                 # CHECK VERSIONING HERE
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
-                self.zk_conn.set('/nodes/{}/daemonstate'.format(node_name), 'dead'.encode('ascii'))
+                zkhandler.writedata(self.zk_conn, '/nodes/{}/daemonstate'.format(node_name), [ 'dead' ])
                 fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk_conn), kwargs={})
                 fence_thread.start()
 
@@ -351,7 +351,7 @@ def fenceNode(node_name, zk_conn):
         transaction.commit()
 
     # Set node in flushed state for easy remigrating when it comes back
-    zk_conn.set('/nodes/{}/domainstate'.format(node_name), 'flushed'.encode('ascii'))
+    zkhandler.writedata(self.zk_conn, '/nodes/{}/domainstate'.format(node_name), [ 'flushed' ])
 
 #
 # Perform an IPMI fence

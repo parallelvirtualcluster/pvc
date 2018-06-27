@@ -72,7 +72,7 @@ class VMInstance:
                 # Add the domain to the domain_list array
                 self.thishypervisor.domain_list.append(self.domuuid)
                 # Push the change up to Zookeeper
-                self.zk_conn.set('/nodes/{}/runningdomains'.format(self.thishypervisor.name), ' '.join(self.thishypervisor.domain_list).encode('ascii'))
+                zkhandler.writedata(self.zk_conn, '/nodes/{}/runningdomains'.format(self.thishypervisor.name), [ ' '.join(self.thishypervisor.domain_list) ])
             except Exception as e:
                 ansiiprint.echo('Error adding domain to list: {}'.format(e), '', 'c')
 
@@ -82,7 +82,7 @@ class VMInstance:
                 # Remove the domain from the domain_list array
                 self.thishypervisor.domain_list.remove(self.domuuid)
                 # Push the change up to Zookeeper
-                self.zk_conn.set('/nodes/{}/runningdomains'.format(self.thishypervisor.name), ' '.join(self.thishypervisor.domain_list).encode('ascii'))
+                zkhandler.writedata(self.zk_conn, '/nodes/{}/runningdomains'.format(self.thishypervisor.name), [ ' '.join(self.thishypervisor.domain_list) ])
             except Exception as e:
                 ansiiprint.echo('Error removing domain from list: {}'.format(e), '', 'c')
 
@@ -108,7 +108,7 @@ class VMInstance:
             self.dom = dom
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
-            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'failed'.encode('ascii'))
+            zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'failed' ])
             self.dom = None
 
         lv_conn.close()
@@ -135,7 +135,7 @@ class VMInstance:
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to restart VM', '{}:'.format(self.domuuid), 'e')
 
-        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+        zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'start' ])
         lv_conn.close()
         self.inrestart = False
 
@@ -163,7 +163,7 @@ class VMInstance:
         self.removeDomainFromList()
 
         if self.inrestart == False:
-            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'stop' ])
 
         ansiiprint.echo('Successfully stopped VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
@@ -191,7 +191,7 @@ class VMInstance:
         self.removeDomainFromList()
 
         if self.inrestart == False:
-            self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'stop'.encode('ascii'))
+            zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'stop' ])
 
         ansiiprint.echo('Successfully shutdown VM', '{}:'.format(self.domuuid), 'o')
         self.dom = None
@@ -237,7 +237,7 @@ class VMInstance:
             self.removeDomainFromList()
             time.sleep(1)
 
-        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+        zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'start' ])
         self.inmigrate = False
 
     # Receive the migration from another host (wait until VM is running)
@@ -322,7 +322,7 @@ class VMInstance:
                         self.addDomainToList()
                     # VM is already running and should be but stuck in migrate state
                     elif self.state == "migrate":
-                        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'start' ])
                         self.addDomainToList()
                     # VM should be restarted
                     elif self.state == "restart":
@@ -342,7 +342,7 @@ class VMInstance:
                         self.receive_migrate()
                     # VM should be restarted (i.e. started since it isn't running)
                     if self.state == "restart":
-                        self.zk_conn.set('/domains/{}/state'.format(self.domuuid), 'start'.encode('ascii'))
+                        zkhandler.writedata(self.zk_conn, '/domains/{}/state'.format(self.domuuid), [ 'start' ])
                     # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
                         self.removeDomainFromList()

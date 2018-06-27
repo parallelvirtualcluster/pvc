@@ -46,8 +46,7 @@ def writedata(zk_conn, key, data):
     version = meta.version
     new_version = version + 1
     zk_transaction = zk_conn.transaction()
-    for line in data:
-        zk_transaction.set_data(key, line.encode('ascii'))
+    zk_transaction.set_data(key, data.encode('ascii'))
     try:
         zk_transaction.check(key, new_version)
     except TypeError:
@@ -55,11 +54,4 @@ def writedata(zk_conn, key, data):
         return 1
     zk_transaction.commit()
     return 0
-
-# Key create function
-def createkey(zk_conn, key, data):
-    zk_transaction = zk_conn.transaction()
-    for line in data:
-        zk_transaction.create(key, line.encode('ascii'))
-    zk_transaction.commit()
 
