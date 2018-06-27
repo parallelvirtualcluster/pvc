@@ -130,21 +130,21 @@ class NodeInstance():
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
-            hypervisor_list = self.zk_conn.get_children('/nodes')
-            current_hypervisor = self.zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+            hypervisor_list = zkhander.listchildren(self.zk_conn, '/nodes')
+            current_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
             if current_hypervisor != self.this_node:
                 continue
 
             for hypervisor in hypervisor_list:
-                daemon_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-                domain_state = self.zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+                daemon_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
+                domain_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
                 if hypervisor == current_hypervisor:
                     continue
 
                 if daemon_state != 'run' or domain_state != 'ready':
                     continue
     
-                memfree = int(self.zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+                memfree = int(zkhandler.readdata(self.zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
                 if memfree > most_memfree:
                     most_memfree = memfree
                     target_hypervisor = hypervisor
@@ -171,7 +171,7 @@ class NodeInstance():
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
         self.zk_conn.set('/nodes/{}/domainstate'.format(self.name), 'ready'.encode('ascii'))
         for dom_uuid in self.s_domain:
-            last_hypervisor = self.zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
+            last_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/lasthypervisor'.format(dom_uuid))
             if last_hypervisor != self.name:
                 continue
 
@@ -193,7 +193,7 @@ class NodeInstance():
             return
 
         # Get past state and update if needed
-        past_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(self.name))[0].decode('ascii')
+        past_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/daemonstate'.format(self.name))
         if past_state != 'run':
             self.daemon_state = 'run'
             self.zk_conn.set('/nodes/{}/daemonstate'.format(self.name), 'run'.encode('ascii'))
@@ -241,9 +241,9 @@ class NodeInstance():
         # Update our local node lists
         for node_name in self.t_node:
             try:
-                node_daemon_state = self.zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
-                node_domain_state = self.zk_conn.get('/nodes/{}/domainstate'.format(node_name))[0].decode('ascii')
-                node_keepalive = int(self.zk_conn.get('/nodes/{}/keepalive'.format(node_name))[0].decode('ascii'))
+                node_daemon_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/daemonstate'.format(node_name))
+                node_domain_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/domainstate'.format(node_name))
+                node_keepalive = int(zkhandler.readdata(self.zk_conn, '/nodes/{}/keepalive'.format(node_name)))
             except:
                 node_daemon_state = 'unknown'
                 node_domain_state = 'unknown'
@@ -307,7 +307,7 @@ def fenceNode(node_name, zk_conn):
         # Wait 5 seconds
         time.sleep(5)
         # Get the state
-        node_daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
+        node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
@@ -319,26 +319,26 @@ def fenceNode(node_name, zk_conn):
 
     ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'e')
 
-    ipmi_hostname = zk_conn.get('/nodes/{}/ipmihostname'.format(node_name))[0].decode('ascii')
-    ipmi_username = zk_conn.get('/nodes/{}/ipmiusername'.format(node_name))[0].decode('ascii')
-    ipmi_password = zk_conn.get('/nodes/{}/ipmipassword'.format(node_name))[0].decode('ascii')
+    ipmi_hostname = zkhandler.readdata(zk_conn, '/nodes/{}/ipmihostname'.format(node_name))
+    ipmi_username = zkhandler.readdata(zk_conn, '/nodes/{}/ipmiusername'.format(node_name))
+    ipmi_password = zkhandler.readdata(zk_conn, '/nodes/{}/ipmipassword'.format(node_name))
     rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password)
     time.sleep(5)
 
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
-    dead_node_running_domains = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
+    dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
         most_memfree = 0
-        hypervisor_list = zk_conn.get_children('/nodes')
-        current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+        hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
+        current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
         for hypervisor in hypervisor_list:
             print(hypervisor)
-            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
+            daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
+            domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
             if daemon_state != 'run' or domain_state != 'ready':
                 continue
 
-            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
+            memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
             if memfree > most_memfree:
                 most_memfree = memfree
                 target_hypervisor = hypervisor

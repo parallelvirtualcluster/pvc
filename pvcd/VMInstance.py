@@ -22,6 +22,7 @@
 
 import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
 import pvcd.ansiiprint as ansiiprint
+import pvcd.zkhandler as zkhandler
 
 class VMInstance:
     # Initialization function
@@ -100,7 +101,7 @@ class VMInstance:
     
         try:
             # Grab the domain information from Zookeeper
-            xmlconfig = self.zk_conn.get('/domains/{}/xml'.format(self.domuuid))[0].decode('ascii')
+            xmlconfig = zkhandler.readdata(self.zk_conn, '/domains/{}/xml'.format(self.domuuid))
             dom = lv_conn.createXML(xmlconfig, 0)
             self.addDomainToList()
             ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
@@ -245,7 +246,7 @@ class VMInstance:
         ansiiprint.echo('Receiving migration', '{}:'.format(self.domuuid), 'i')
         while True:
             time.sleep(0.5)
-            self.state = self.zk_conn.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
+            self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
             self.dom = self.lookupByUUID(self.domuuid)
 
             if self.dom == None and self.state == 'migrate':
@@ -281,8 +282,8 @@ class VMInstance:
         time.sleep(0.2)
 
         # Get the current values from zookeeper (don't rely on the watch)
-        self.state = self.zk_conn.get('/domains/{}/state'.format(self.domuuid))[0].decode('ascii')
-        self.hypervisor = self.zk_conn.get('/domains/{}/hypervisor'.format(self.domuuid))[0].decode('ascii')
+        self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
+        self.hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/hypervisor'.format(self.domuuid))
 
         # Check the current state of the VM
         try:
