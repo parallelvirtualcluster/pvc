@@ -58,12 +58,12 @@ Really, PVC benefits both the small and large use-cases. If your requirement is 
 
 ## How the daemon works
 
-The daemon is the main piece of machinery. It consists of 4 main files - one entry point, 2 classes, and a supplemental function:
+The daemon is the main piece of machinery. It consists of 5 main files - one entry point, 2 classes, and 2 supplemental function sets:
 
 * `pvcd.py` - The main daemon entry point.
 * `pvcd/NodeInstance.py` - A class definition for a hypervisor node object.
 * `pvcd/VMInstance.py` - A class definition for a virtual machine object.
-* `pvcd/ansiiprint.py` - A supplemental function to output log lines.
+* `pvcd/ansiiprint.py` - A supplemental function set to output log lines.
 * `pvcd/zkhandler.py` - A supplemental function set to read and write from Zookeeper consistently.
 
 The following sections walk through the steps the daemon takes from startup through to running VMs.
