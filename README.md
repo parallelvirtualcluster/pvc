@@ -64,6 +64,7 @@ The daemon is the main piece of machinery. It consists of 4 main files - one ent
 * `pvcd/NodeInstance.py` - A class definition for a hypervisor node object.
 * `pvcd/VMInstance.py` - A class definition for a virtual machine object.
 * `pvcd/ansiiprint.py` - A supplemental function to output log lines.
+* `pvcd/zkhandler.py` - A supplemental function set to read and write from Zookeeper consistently.
 
 The following sections walk through the steps the daemon takes from startup through to running VMs.
 
