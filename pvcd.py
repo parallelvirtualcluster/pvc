@@ -146,7 +146,7 @@ zk_conn.add_listener(zk_listener)
 def cleanup(signum, frame):
     ansiiprint.echo('Terminating daemon', '', 'e')
     # Set stop state in Zookeeper
-    zkhandler.writedata(zk_conn, '/nodes/{}/daemonstate'.format(myhostname), [ 'stop' ])
+    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
     # Close the Zookeeper connection
     zk_conn.close()
     # Stop keepalive thread
@@ -180,7 +180,7 @@ print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticda
 if zk_conn.exists('/nodes/{}'.format(myhostname)):
     print("Node is " + ansiiprint.green() + "present" + ansiiprint.end() + " in Zookeeper")
     # Update static data just in case it's changed
-    zkhandler.writedata(zk_conn, '/nodes/{}/staticdata'.format(myhostname), [ ' '.join(staticdata) ])
+    zkhandler.writedata(zk_conn, { '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata) })
 else:
     print("Node is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new node")
     keepalive_time = int(time.time())
@@ -202,7 +202,7 @@ else:
     transaction.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
     transaction.commit()
 
-zkhandler.writedata(zk_conn, '/nodes/{}/daemonstate'.format(myhostname), [ 'init' ])
+zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'init' })
 
 t_node = dict()
 s_domain = dict()
