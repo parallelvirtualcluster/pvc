@@ -48,7 +48,7 @@ def writedata(zk_conn, kv):
     version = meta.version
     new_version = version + 1
     zk_transaction = zk_conn.transaction()
-    for key, data in kv:
+    for key, data in kv.items():
         zk_transaction.set_data(key, data.encode('ascii'))
     try:
         zk_transaction.check(first_key, new_version)
