@@ -88,7 +88,7 @@ The following sections walk through the steps the daemon takes from startup thro
 
 #### 3. Class object initalization
 
-* The daemon reads the list of domains in the cluster (children of `/domains` in Zookeeper) and initalizes an instance of the `NodeInstance` class for each one. This read is a Zookeeper ChildrenWatch function, and is called again each time the list of children changes.
+* The daemon reads the list of nodes in the cluster (children of `/nodess` in Zookeeper) and initalizes an instance of the `NodeInstance` class for each one. This read is a Zookeeper ChildrenWatch function, and is called again each time the list of children changes (i.e. new nodes are added or removed).
 * The daemon performs a similar action for the list of VMs (`/domains`) in the cluster using a similar watch function.
 * The daemon creates a thread to send keepalives to Zookeeper.
 * The thread starts and the node sets its daemon status to `run`.
