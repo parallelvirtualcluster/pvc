@@ -22,6 +22,7 @@
 
 import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, subprocess
 import pvcd.ansiiprint as ansiiprint
+import pvcd.zkhandler as zkhandler
 
 class NodeInstance():
     # Initialization function
