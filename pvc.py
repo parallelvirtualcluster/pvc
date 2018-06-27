@@ -407,13 +407,24 @@ def flush_host(node):
 
 
 ###############################################################################
-# pvc node ready
+# pvc node ready/unflush
 ###############################################################################
 @click.command(name='ready', short_help='Restore node to service')
 @click.argument(
     'node', default=myhostname
 )
 def ready_host(node):
+    do_ready_host(node)
+
+@click.command(name='unflush', short_help='Restore node to service')
+@click.argument(
+    'node', default=myhostname
+)
+def unflush_host(node):
+    do_ready_host(node)
+
+
+def do_ready_host(node):
     """
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
@@ -1341,6 +1352,7 @@ def cli(_zk_host):
 #
 node.add_command(flush_host)
 node.add_command(ready_host)
+node.add_command(unflush_host)
 node.add_command(node_info)
 node.add_command(node_list)
 
