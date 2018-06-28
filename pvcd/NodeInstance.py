@@ -131,7 +131,7 @@ class NodeInstance():
         for dom_uuid in self.domain_list:
             most_memfree = 0
             target_hypervisor = None
-            hypervisor_list = zkhander.listchildren(self.zk_conn, '/nodes')
+            hypervisor_list = zkhandler.listchildren(self.zk_conn, '/nodes')
             current_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
             if current_hypervisor != self.this_node:
                 continue
