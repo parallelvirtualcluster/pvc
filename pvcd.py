@@ -55,6 +55,10 @@ mydomainname = ''.join(myhostname.split('.', 1)[1:])
 config_values = [
     'zookeeper',
     'keepalive_interval',
+    'fence_intervals',
+    'suicide_intervals',
+    'successful_fence',
+    'failed_fence',
     'ipmi_hostname',
     'ipmi_username',
     'ipmi_password'
