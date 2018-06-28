@@ -148,7 +148,11 @@ def cleanup(signum, frame):
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
     # Close the Zookeeper connection
-    zk_conn.close()
+    try:
+        zk_conn.stop()
+        zk_conn.close()
+    except:
+        pass
     # Stop keepalive thread
     stopKeepaliveTimer(update_timer)
     # Exit
