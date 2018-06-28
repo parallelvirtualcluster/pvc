@@ -8,6 +8,16 @@
 # The following values are required for each host or in a default section:
 #    zookeeper: the IP+port of the Zookeper instance (defaults to 127.0.0.1:2181)
 #    keepalive_interval: the interval between keepalives and for dead node timeout (defaults to 5)
+#    fence_intervals: the number of keepalive_intervals without Zookeeper contact before this node
+#                     will consider another node dead and fence it (defaults to 6, i.e. 30s)
+#    suicide_intervals: the number of keepalive_intervals without Zookeeper contact before this
+#                       node will consider itself failed and terminate all running VMs (defaults
+#                       to 0, i.e. disabled); should be less than "fence_intervals"
+#    successful_fence: the action to take on a successful fencing operation; can be "none" or
+#                      "migrate" (defaults to "migrate")
+#    failed_fence: the action to take on a failed fencing operation; can be "none" or "migrate"
+#                  (defaults to "none"); "migrate" requires "suicide_intervals" to be set)
+#                  NOTE: POTENTIALLY DANGEROUS - see README for details
 #    ipmi_hostname: the IPMI hostname for fencing (defaults to <shortname>-lom.<domain>)
 #    ipmi_username: username to connect to IPMI
 #    ipmi_password: password to connect to IPMI
@@ -17,8 +27,10 @@
 [default]
 zookeeper = 127.0.0.1:2181
 keepalive_interval = 5
-#ipmi_username = admin
-#ipmi_password = admin
+fence_intervals = 6
+suicide_intervals = 0
+successful_fence = migrate
+failed_fence = none
 
 [myhost]
 ipmi_username = admin
