@@ -256,7 +256,7 @@ class NodeInstance():
                 # CHECK VERSIONING HERE
                 ansiiprint.echo('Node {} seems dead - starting monitor for fencing'.format(node_name), '', 'w')
                 zkhandler.writedata(self.zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
-                fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk_conn), kwargs={})
+                fence_thread = threading.Thread(target=fenceNode, args=(node_name, self.zk_conn, self.config), kwargs={})
                 fence_thread.start()
 
             # Update the arrays
@@ -300,8 +300,9 @@ class NodeInstance():
 #
 # Fence thread entry function
 #
-def fenceNode(node_name, zk_conn):
+def fenceNode(node_name, zk_conn, config):
     failcount = 0
+    # We allow exactly 3 saving throws for the host to come back online
     while failcount < 3:
         # Wait 5 seconds
         time.sleep(5)
@@ -318,12 +319,25 @@ def fenceNode(node_name, zk_conn):
 
     ansiiprint.echo('Fencing node "{}" via IPMI reboot signal'.format(node_name), '', 'e')
 
+    # Get IPMI information
     ipmi_hostname = zkhandler.readdata(zk_conn, '/nodes/{}/ipmihostname'.format(node_name))
     ipmi_username = zkhandler.readdata(zk_conn, '/nodes/{}/ipmiusername'.format(node_name))
     ipmi_password = zkhandler.readdata(zk_conn, '/nodes/{}/ipmipassword'.format(node_name))
-    rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password)
-    time.sleep(5)
 
+    # Shoot it in the head
+    fence_status = rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password)
+    # Hold to ensure the fence takes effect
+    time.sleep(3)
+
+    # If the fence succeeded and successful_fence is migrate
+    if fence_status == True and config['successful_fence'] == 'migrate':
+        migrateFromFencedHost(zk_conn, node_name)
+    # If the fence failed and failed_fence is migrate
+    if fence_status == False and config['failed_fence'] == 'migrate' and config['suicide_intervals'] != '0':
+        migrateFromFencedHost(zk_conn, node_name)
+
+# Migrate hosts away from a fenced node
+def migrateFromFencedHost(zk_conn, node_name):
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
@@ -343,14 +357,14 @@ def fenceNode(node_name, zk_conn):
                 target_hypervisor = hypervisor
 
         ansiiprint.echo('Moving VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
-        zkhandler.writedata(self.zk_conn, {
+        zkhandler.writedata(zk_conn, {
             '/domains/{}/state'.format(dom_uuid): 'start',
             '/domains/{}/hypervisor'.format(dom_uuid): target_hypervisor,
             '/domains/{}/lasthypervisor'.format(dom_uuid): current_hypervisor
         })
 
     # Set node in flushed state for easy remigrating when it comes back
-    zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })
+    zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })
 
 #
 # Perform an IPMI fence
@@ -360,5 +374,7 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
     ipmi_command_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if ipmi_command_output == 0:
         ansiiprint.echo('Successfully rebooted dead node', '', 'o')
+        return True
     else:
         ansiiprint.echo('Failed to reboot dead node', '', 'e')
+        return False
