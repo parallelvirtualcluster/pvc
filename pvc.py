@@ -170,6 +170,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     node_mem_used = zk_conn.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
     node_mem_free = zk_conn.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
     node_mem_total = int(node_mem_used) + int(node_mem_free)
+    node_load = zk_conn.get('/nodes/{}/cpuload'.format(node_name))[0].decode('ascii')
     node_domains_count = zk_conn.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
     node_running_domains = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     node_mem_allocated = 0
@@ -210,6 +211,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
         ainformation.append('{}Kernel Version:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_kernel))
     ainformation.append('')
     ainformation.append('{}CPUs:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_cpu_count))
+    ainformation.append('{}Load:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_load))
     ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_total))
     ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_used))
     ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_free))
@@ -512,6 +514,7 @@ def node_list():
     node_domains_count = {}
     node_running_domains = {}
     node_mem_allocated = {}
+    node_load = {}
 
     # Gather information for printing
     for node_name in node_list:
@@ -521,6 +524,7 @@ def node_list():
         node_mem_used[node_name] = zk_conn.get('/nodes/{}/memused'.format(node_name))[0].decode('ascii')
         node_mem_free[node_name] = zk_conn.get('/nodes/{}/memfree'.format(node_name))[0].decode('ascii')
         node_mem_total[node_name] = int(node_mem_used[node_name]) + int(node_mem_free[node_name])
+        node_load[node_name] = zk_conn.get('/nodes/{}/cpuload'.format(node_name))[0].decode('ascii')
         node_domains_count[node_name] = zk_conn.get('/nodes/{}/domainscount'.format(node_name))[0].decode('ascii')
         node_running_domains[node_name] = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
         node_mem_allocated[node_name] = 0
@@ -542,7 +546,7 @@ def node_list():
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}}  \
 State: {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
-Resources: {node_domains_count: <4} {node_cpu_count: <5}  \
+Resources: {node_domains_count: <4} {node_cpu_count: <5} {node_load: <6}  \
 RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
             node_name_length=node_name_length,
             bold=ansiiprint.bold(),
@@ -555,10 +559,11 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             node_domain_state='Domains',
             node_domains_count='VMs',
             node_cpu_count='CPUs',
+            node_load='Load',
             node_mem_total='Total',
             node_mem_used='Used',
             node_mem_free='Free',
-            node_mem_allocated='VMs'
+            node_mem_allocated='VMs',
         )
     )
             
@@ -586,7 +591,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}}  \
        {daemon_state_colour}{node_daemon_state: <7}{end_colour} {domain_state_colour}{node_domain_state: <8}{end_colour}  \
-           {node_domains_count: <4} {node_cpu_count: <5}  \
+           {node_domains_count: <4} {node_cpu_count: <5} {node_load: <6}  \
            {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
                 node_name_length=node_name_length,
                 bold='',
@@ -599,6 +604,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
                 node_domain_state=node_domain_state[node_name],
                 node_domains_count=node_domains_count[node_name],
                 node_cpu_count=node_cpu_count[node_name],
+                node_load=node_load[node_name],
                 node_mem_total=node_mem_total[node_name],
                 node_mem_used=node_mem_used[node_name],
                 node_mem_free=node_mem_free[node_name],
