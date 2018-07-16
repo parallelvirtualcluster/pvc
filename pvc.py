@@ -653,7 +653,7 @@ def define_vm(config, target_hypervisor):
     zk_conn = startZKConnection(zk_host)
 
     # Verify node is valid
-    verifyNode(zk_conn, target_typervisor)
+    verifyNode(zk_conn, target_hypervisor)
 
     # Add the new domain to Zookeeper
     transaction = zk_conn.transaction()
