@@ -170,7 +170,11 @@ class NodeInstance():
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
         for dom_uuid in self.s_domain:
-            last_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/lasthypervisor'.format(dom_uuid))
+            try:
+                last_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/lasthypervisor'.format(dom_uuid))
+            except:
+                continue
+
             if last_hypervisor != self.name:
                 continue
 
