@@ -383,10 +383,14 @@ def node():
 # pvc node flush
 ###############################################################################
 @click.command(name='flush', short_help='Take a node out of service')
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migrations to complete before returning.'
+)
 @click.argument(
     'node', default=myhostname
 )
-def flush_host(node):
+def flush_host(node, wait):
     """
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
@@ -403,6 +407,13 @@ def flush_host(node):
     transaction = zk_conn.transaction()
     transaction.set_data('/nodes/{}/domainstate'.format(node), 'flush'.encode('ascii'))
     results = transaction.commit()
+
+    if wait == True:
+        while True:
+            sleep(1)
+            node_state = zk_conn.get('/nodes/{}/state'.format(node_name))[0].decode('ascii')
+            if node_state == "flushed":
+                break
 
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
