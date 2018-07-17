@@ -164,7 +164,7 @@ class NodeInstance():
                 # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
                 while True:
                     time.sleep(1)
-                    vm_current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(domuuid))
+                    vm_current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid))
                     if vm_current_state == "start":
                         break
 
