@@ -64,10 +64,11 @@ class NodeInstance():
             # toggle state management of this node
             if self.name == self.this_node:
                 if self.domain_state == 'flush' and self.inflush == False:
-                    self.flush()
+                    # Do flushing in a thread so it doesn't block the migrates out
+                    flush_thread = threading.Thread(target=flush, args=(self), kwargs={})
+                    flush_thread.start()
                 if self.domain_state == 'unflush' and self.inflush == False:
                     self.unflush()
-
 
         @zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):
