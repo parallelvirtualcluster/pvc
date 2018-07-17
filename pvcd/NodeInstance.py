@@ -161,6 +161,13 @@ class NodeInstance():
                     '/domains/{}/lasthypervisor'.format(dom_uuid): current_hypervisor
                 })
 
+                # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
+                while True:
+                    time.sleep(1)
+                    vm_current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(domuuid))
+                    if vm_current_state == "start":
+                        break
+
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
         self.inflush = False
