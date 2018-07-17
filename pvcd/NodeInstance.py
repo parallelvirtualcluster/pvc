@@ -223,6 +223,13 @@ class NodeInstance():
                             # Toggle a state "change"
                             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
 
+        # Ensure that any running VMs are readded to the domain_list
+        running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
+        for domain in running_domains:
+            domain_uuid = domain.UUIDString()
+            if domain_uuid not in self.domain_list:
+                self.domain_list.append(domain_uuid)
+
         # Set our information in zookeeper
         self.name = lv_conn.getHostname()
         self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
