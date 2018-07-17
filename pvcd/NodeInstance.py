@@ -65,7 +65,7 @@ class NodeInstance():
             if self.name == self.this_node:
                 if self.domain_state == 'flush' and self.inflush == False:
                     # Do flushing in a thread so it doesn't block the migrates out
-                    flush_thread = threading.Thread(target=flush, args=(self), kwargs={})
+                    flush_thread = threading.Thread(target=self.flush, args=(), kwargs={})
                     flush_thread.start()
                 if self.domain_state == 'unflush' and self.inflush == False:
                     self.unflush()
