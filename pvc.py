@@ -411,7 +411,7 @@ def flush_host(node, wait):
     if wait == True:
         while True:
             time.sleep(1)
-            node_state = zk_conn.get('/nodes/{}/state'.format(node_name))[0].decode('ascii')
+            node_state = zk_conn.get('/nodes/{}/state'.format(node))[0].decode('ascii')
             if node_state == "flushed":
                 break
 
