@@ -129,7 +129,10 @@ class NodeInstance():
         self.inflush = True
         ansiiprint.echo('Flushing node "{}" of running VMs'.format(self.name), '', 'i')
         ansiiprint.echo('Domain list: {}'.format(', '.join(self.domain_list)), '', 'c')
-        for dom_uuid in self.domain_list:
+        fixed_domain_list = self.domain_list.copy()
+        for dom_uuid in fixed_domain_list:
+            ansiiprint.echo('Selecting target to migrate VM "{}"'.format(dom_uuid), '', 'i')
+
             most_memfree = 0
             target_hypervisor = None
             hypervisor_list = zkhandler.listchildren(self.zk_conn, '/nodes')
@@ -177,7 +180,8 @@ class NodeInstance():
         self.inflush = True
         ansiiprint.echo('Restoring node {} to active service.'.format(self.name), '', 'i')
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
-        for dom_uuid in self.s_domain:
+        fixed_domain_list = self.s_domain.copy()
+        for dom_uuid in fixed_domain_list:
             try:
                 last_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/lasthypervisor'.format(dom_uuid))
             except:
