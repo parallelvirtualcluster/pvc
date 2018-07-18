@@ -45,6 +45,7 @@ class NodeInstance():
         self.memused = 0
         self.memfree = 0
         self.memalloc = 0
+        self.vcpualloc = 0
         self.inflush = False
 
         # Zookeeper handlers for changed states
@@ -92,6 +93,13 @@ class NodeInstance():
             except AttributeError:
                 self.memalloc = 0
     
+        @zk_conn.DataWatch('/nodes/{}/vcpualloc'.format(self.name))
+        def watch_hypervisor_vcpualloc(data, stat, event=""):
+            try:
+                self.vcpualloc = data.decode('ascii')
+            except AttributeError:
+                self.vcpualloc = 0
+    
         @zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
             try:
@@ -112,6 +120,9 @@ class NodeInstance():
 
     def getallocmem(self):
         return self.memalloc
+
+    def getallocvcpu(self):
+        return self.vcpualloc
 
     def getcpuload(self):
         return self.cpuload
@@ -209,10 +220,12 @@ class NodeInstance():
 
         # Toggle state management of dead VMs to restart them
         memalloc = 0
+        vcpualloc = 0
         for domain, instance in self.s_domain.items():
             if instance.inshutdown == False and domain in self.domain_list:
                 # Add the allocated memory to our memalloc value
                 memalloc += instance.getmemory()
+                vcpualloc += instance.getvcpus()
                 if instance.getstate() == 'start' and instance.gethypervisor() == self.name:
                     if instance.getdom() != None:
                         try:
@@ -234,6 +247,7 @@ class NodeInstance():
         self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
         self.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
         self.memalloc = memalloc
+        self.vcpualloc = vcpualloc
         self.cpuload = os.getloadavg()[0]
         self.domains_count = len(lv_conn.listDomainsID())
         keepalive_time = int(time.time())
@@ -242,6 +256,7 @@ class NodeInstance():
                 '/nodes/{}/memused'.format(self.name): str(self.memused),
                 '/nodes/{}/memfree'.format(self.name): str(self.memfree),
                 '/nodes/{}/memalloc'.format(self.name): str(self.memalloc),
+                '/nodes/{}/vcpualloc'.format(self.name): str(self.vcpualloc),
                 '/nodes/{}/cpuload'.format(self.name): str(self.cpuload),
                 '/nodes/{}/runningdomains'.format(self.name): ' '.join(self.domain_list),
                 '/nodes/{}/domainscount'.format(self.name): str(self.domains_count),
@@ -392,7 +407,11 @@ def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        pass
+        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(hypervisor)))
+
+        if vcpus < least_vcpus:
+            least_vcpus = vcpus
+            target_hypervisor = hypervisor
 
     return target_hypervisor
 

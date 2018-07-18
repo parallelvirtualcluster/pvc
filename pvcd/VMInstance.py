@@ -73,6 +73,14 @@ class VMInstance:
 
         return memory
 
+    def getvcpus(self):
+        try:
+            vcpus = int(self.dom.info()[3])
+        except:
+            vcpus = 0
+
+        return vcpus
+
     # Manage local node domain_list
     def addDomainToList(self):
         if not self.domuuid in self.thishypervisor.domain_list:
