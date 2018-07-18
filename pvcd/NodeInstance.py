@@ -317,7 +317,7 @@ class NodeInstance():
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
 
 # Find a target node
-def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node)
+def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node):
     if search_field == 'mem':
         return findTargetHypervisorMem(zk_conn, dom_uuid, this_node)
     return None
