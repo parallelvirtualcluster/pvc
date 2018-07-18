@@ -67,7 +67,7 @@ class VMInstance:
 
     def getmemory(self):
         try:
-            memory = self.dom.info()[2] / 1024
+            memory = int(self.dom.info()[2] / 1024)
         except:
             memory = 0
 
