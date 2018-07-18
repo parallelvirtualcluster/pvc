@@ -227,8 +227,11 @@ class NodeInstance():
             self.daemon_state = 'run'
 
         # Toggle state management of dead VMs to restart them
+        memalloc = 0
         for domain, instance in self.s_domain.items():
             if instance.inshutdown == False and domain in self.domain_list:
+                # Add the allocated memory to our memalloc value
+                memalloc += instance.maxMemory()
                 if instance.getstate() == 'start' and instance.gethypervisor() == self.name:
                     if instance.getdom() != None:
                         try:
@@ -239,12 +242,9 @@ class NodeInstance():
                             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
 
         # Ensure that any running VMs are readded to the domain_list
-        memalloc = 0
         running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
         for domain in running_domains:
             domain_uuid = domain.UUIDString()
-            # Add the allocated memory to our memalloc value
-            memalloc += instance.maxMemory()
             if domain_uuid not in self.domain_list:
                 self.domain_list.append(domain_uuid)
 
