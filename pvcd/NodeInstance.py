@@ -317,20 +317,27 @@ class NodeInstance():
         ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
 
-# Find a target node
+#
+# Find a migration target
+#
 def findTargetHypervisor(zk_conn, search_field, dom_uuid):
     if search_field == 'mem':
         return findTargetHypervisorMem(zk_conn, dom_uuid)
+    if search_field == 'load':
+        return findTargetHypervisorLoad(zk_conn, dom_uuid)
+    if search_field == 'vcpus':
+        return findTargetHypervisorVCPUs(zk_conn, dom_uuid)
+    if search_field == 'vms':
+        return findTargetHypervisorVMs(zk_conn, dom_uuid)
     return None
 
-def findTargetHypervisorMem(zk_conn, dom_uuid):
-    most_allocfree = 0
-    target_hypervisor = None
-
-    hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
+# Get the list of valid target hypervisors
+def getHypervisors(zk_conn, dom_uuid):
+    valid_hypervisor_list = {}
+    full_hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
     current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
 
-    for hypervisor in hypervisor_list:
+    for hypervisor in full_hypervisor_list:
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
         domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
 
@@ -339,7 +346,18 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
 
         if daemon_state != 'run' or domain_state != 'ready':
             continue
+
+        valid_hypervisor_list.append(hypervisor)
+
+    return full_hypervisor_list
     
+# via free memory (relative to allocated memory)
+def findTargetHypervisorMem(zk_conn, dom_uuid):
+    most_allocfree = 0
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
         memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(hypervisor)))
         memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(hypervisor)))
         memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
@@ -351,6 +369,48 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
             target_hypervisor = hypervisor
 
     return target_hypervisor
+
+# via load average
+def findTargetHypervisorLoad(zk_conn, dom_uuid):
+    least_load = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(hypervisor)))
+
+        if load < least_load:
+            least_load = load
+            target_hypevisor = hypervisor
+
+    return target_hypervisor
+
+# via total vCPUs
+def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
+    least_vcpus = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        pass
+
+    return target_hypervisor
+
+# via total VMs
+def findTargetHypervisorVMs(zk_conn, dom_uuid):
+    least_vms = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(hypervisor)))
+
+        if vms < least_vms:
+            least_vms = vms
+            target_hypervisor = hypervisor
+
+    return target_hypervisor
+
 
 #
 # Fence thread entry function
