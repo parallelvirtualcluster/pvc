@@ -105,6 +105,10 @@ The following sections walk through the steps the daemon takes from startup thro
 
 ## Changelog
 
+#### 0.2
+
+* Minor tweaks and stability improvements (Issues #1, #2, #3, #4, #5, #6, #7, #9)
+
 #### 0.1
 
 * Initial release; all basic functionality implemented.

@@ -1,3 +1,9 @@
+pvc (0.2-1) unstable; urgency=medium
+
+  * Minor version bump with stability fixes
+
+ -- Joshua Boniface <joshua@boniface.me>  Wed, 18 Jul 2018 02:18:25 -0400
+
 pvc (0.1-1) unstable; urgency=medium
 
   * Initial packaging release
