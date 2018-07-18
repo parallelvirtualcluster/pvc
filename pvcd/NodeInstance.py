@@ -322,7 +322,7 @@ def findTargetHypervisor(zk_conn, search_field, dom_uuid):
         return findTargetHypervisorMem(zk_conn, dom_uuid)
     return None
 
-def findTargetHypervisorMem(zk_conn, search_field, dom_uuid):
+def findTargetHypervisorMem(zk_conn, dom_uuid):
     most_allocfree = 0
     target_hypervisor = None
 
