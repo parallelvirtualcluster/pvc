@@ -144,6 +144,7 @@ class NodeInstance():
         for dom_uuid in fixed_domain_list:
             ansiiprint.echo('Selecting target to migrate VM "{}"'.format(dom_uuid), '', 'i')
 
+            current_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
             target_hypervisor = findTargetHypervisor(self.zk_conn, 'mem', dom_uuid)
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
