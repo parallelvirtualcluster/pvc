@@ -354,20 +354,27 @@ def verifyNode(zk_conn, node):
         click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
         exit(1)
 
+#
+# Find a migration target
+#
 def findTargetHypervisor(zk_conn, search_field, dom_uuid):
     if search_field == 'mem':
         return findTargetHypervisorMem(zk_conn, dom_uuid)
+    if search_field == 'load':
+        return findTargetHypervisorLoad(zk_conn, dom_uuid)
+    if search_field == 'vcpus':
+        return findTargetHypervisorVCPUs(zk_conn, dom_uuid)
+    if search_field == 'vms':
+        return findTargetHypervisorVMs(zk_conn, dom_uuid)
     return None
 
-def findTargetHypervisorMem(zk_conn, dom_uuid):
-    # Find a target node
-    most_allocfree = 0
-    target_hypervisor = None
-
-    hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
+# Get the list of valid target hypervisors
+def getHypervisors(zk_conn, dom_uuid):
+    valid_hypervisor_list = {}
+    full_hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
     current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
 
-    for hypervisor in hypervisor_list:
+    for hypervisor in full_hypervisor_list:
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
         domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
 
@@ -376,7 +383,18 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
 
         if daemon_state != 'run' or domain_state != 'ready':
             continue
+
+        valid_hypervisor_list.append(hypervisor)
+
+    return full_hypervisor_list
     
+# via free memory (relative to allocated memory)
+def findTargetHypervisorMem(zk_conn, dom_uuid):
+    most_allocfree = 0
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
         memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(hypervisor)))
         memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(hypervisor)))
         memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
@@ -385,6 +403,51 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
 
         if allocfree > most_allocfree:
             most_allocfree = allocfree
+            target_hypervisor = hypervisor
+
+    return target_hypervisor
+
+# via load average
+def findTargetHypervisorLoad(zk_conn, dom_uuid):
+    least_load = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(hypervisor)))
+
+        if load < least_load:
+            least_load = load
+            target_hypevisor = hypervisor
+
+    return target_hypervisor
+
+# via total vCPUs
+def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
+    least_vcpus = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(hypervisor)))
+
+        if vcpus < least_vcpus:
+            least_vcpus = vcpus
+            target_hypervisor = hypervisor
+
+    return target_hypervisor
+
+# via total VMs
+def findTargetHypervisorVMs(zk_conn, dom_uuid):
+    least_vms = 9999
+    target_hypervisor = None
+
+    hypervisor_list = getHypervisors(zk_conn, dom_uuid)
+    for hypervisor in hypervisor_list:
+        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(hypervisor)))
+
+        if vms < least_vms:
+            least_vms = vms
             target_hypervisor = hypervisor
 
     return target_hypervisor
@@ -680,13 +743,18 @@ def vm():
 ###############################################################################
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
-    '-t', '--hypervisor', 'target_hypervisor', default=myhostname, show_default=True,
-    help='The home hypervisor for this domain.'
+    '-t', '--hypervisor', 'target_hypervisor',
+    help='The home hypervisor for this domain; autoselects if unspecified.'
+)
+@click.option(
+    '-s', '--selector', 'selector', default='mem',
+    type=click.Choice(['mem','load','vcpus','vms']),
+    help='Method to determine the optimal target hypervisor automatically.'
 )
 @click.argument(
     'config', type=click.File()
 )
-def define_vm(config, target_hypervisor):
+def define_vm(config, target_hypervisor, selector):
     """
     Define a new virtual machine from Libvirt XML configuration file CONFIG.
     """
@@ -703,6 +771,9 @@ def define_vm(config, target_hypervisor):
 
     # Open a Zookeeper connection
     zk_conn = startZKConnection(zk_host)
+
+    if target_hypervisor == None:
+        target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
 
     # Verify node is valid
     verifyNode(zk_conn, target_hypervisor)
@@ -956,7 +1027,12 @@ def stop_vm(domain):
     '-t', '--hypervisor', 'target_hypervisor', default=None,
     help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
-def move_vm(domain, target_hypervisor):
+@click.option(
+    '-s', '--selector', 'selector', default='mem',
+    type=click.Choice(['mem','load','vcpus','vms']),
+    help='Method to determine the optimal target hypervisor automatically.'
+)
+def move_vm(domain, target_hypervisor, selector):
     """
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another hypervisor node. DOMAIN may be a UUID or name.
     """
@@ -980,7 +1056,7 @@ def move_vm(domain, target_hypervisor):
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == None:
-        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid)
+        target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
@@ -1020,10 +1096,15 @@ def move_vm(domain, target_hypervisor):
     help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
 @click.option(
+    '-s', '--selector', 'selector', default='mem',
+    type=click.Choice(['mem','load','vcpus','vms']),
+    help='Method to determine the optimal target hypervisor automatically.'
+)
+@click.option(
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
     help='Force migrate an already migrated VM.'
 )
-def migrate_vm(domain, target_hypervisor, force_migrate):
+def migrate_vm(domain, target_hypervisor, selector, force_migrate):
     """
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another hypervisor node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
@@ -1062,19 +1143,7 @@ def migrate_vm(domain, target_hypervisor, force_migrate):
         return
 
     if target_hypervisor == None:
-        # Determine the best hypervisor to migrate the VM to based on active memory usage
-        hypervisor_list = zk_conn.get_children('/nodes')
-        most_memfree = 0
-        for hypervisor in hypervisor_list:
-            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-            if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
-                continue
-
-            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
-            if memfree > most_memfree:
-                most_memfree = memfree
-                target_hypervisor = hypervisor
+        target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
