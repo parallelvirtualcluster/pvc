@@ -200,6 +200,7 @@ else:
     transaction.create('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
     transaction.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
     transaction.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
+    transaction.create('/nodes/{}/memalloc'.format(myhostname), '0'.encode('ascii'))
     transaction.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
     transaction.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
     transaction.create('/nodes/{}/domainscount'.format(myhostname), '0'.encode('ascii'))

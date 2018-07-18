@@ -44,6 +44,7 @@ class NodeInstance():
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
+        self.memalloc = 0
         self.inflush = False
 
         # Zookeeper handlers for changed states
@@ -84,6 +85,13 @@ class NodeInstance():
             except AttributeError:
                 self.memused = 0
     
+        @zk_conn.DataWatch('/nodes/{}/memalloc'.format(self.name))
+        def watch_hypervisor_memalloc(data, stat, event=""):
+            try:
+                self.memalloc = data.decode('ascii')
+            except AttributeError:
+                self.memalloc = 0
+    
         @zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
             try:
@@ -101,6 +109,9 @@ class NodeInstance():
     # Get value functions
     def getfreemem(self):
         return self.memfree
+
+    def getallocmem(self):
+        return self.memalloc
 
     def getcpuload(self):
         return self.cpuload
@@ -228,9 +239,12 @@ class NodeInstance():
                             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
 
         # Ensure that any running VMs are readded to the domain_list
+        memalloc = 0
         running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
         for domain in running_domains:
             domain_uuid = domain.UUIDString()
+            # Add the allocated memory to our memalloc value
+            memalloc += instance.maxMemory()
             if domain_uuid not in self.domain_list:
                 self.domain_list.append(domain_uuid)
 
@@ -238,6 +252,7 @@ class NodeInstance():
         self.name = lv_conn.getHostname()
         self.memused = int(psutil.virtual_memory().used / 1024 / 1024)
         self.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
+        self.memalloc = memalloc
         self.cpuload = os.getloadavg()[0]
         self.domains_count = len(lv_conn.listDomainsID())
         keepalive_time = int(time.time())
@@ -245,6 +260,7 @@ class NodeInstance():
             zkhandler.writedata(self.zk_conn, {
                 '/nodes/{}/memused'.format(self.name): str(self.memused),
                 '/nodes/{}/memfree'.format(self.name): str(self.memfree),
+                '/nodes/{}/memalloc'.format(self.name): str(self.memalloc),
                 '/nodes/{}/cpuload'.format(self.name): str(self.cpuload),
                 '/nodes/{}/runningdomains'.format(self.name): ' '.join(self.domain_list),
                 '/nodes/{}/domainscount'.format(self.name): str(self.domains_count),
@@ -258,7 +274,7 @@ class NodeInstance():
 
         # Display node information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}Active domains:{1} {2}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.memfree, self.memused, self.cpuload), '', 'c')
+        ansiiprint.echo('{0}Active domains:{1} {2}  {0}Allocated memory [MiB]:{1} {6}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.domains_count, self.memfree, self.memused, self.cpuload, self.memalloc), '', 'c')
 
         # Update our local node lists
         for node_name in self.t_node:
