@@ -144,7 +144,7 @@ class NodeInstance():
         for dom_uuid in fixed_domain_list:
             ansiiprint.echo('Selecting target to migrate VM "{}"'.format(dom_uuid), '', 'i')
 
-            target_hypervisor = findTargetHypervisor(self.zk_conn, 'mem', dom_uuid, self.this_node)
+            target_hypervisor = findTargetHypervisor(self.zk_conn, 'mem', dom_uuid)
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
@@ -317,20 +317,17 @@ class NodeInstance():
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
 
 # Find a target node
-def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node):
+def findTargetHypervisor(zk_conn, search_field, dom_uuid):
     if search_field == 'mem':
-        return findTargetHypervisorMem(zk_conn, dom_uuid, this_node)
+        return findTargetHypervisorMem(zk_conn, dom_uuid)
     return None
 
-def findTargetHypervisorMem(zk_conn, search_field, dom_uuid, this_node):
+def findTargetHypervisorMem(zk_conn, search_field, dom_uuid):
     most_allocfree = 0
     target_hypervisor = None
 
     hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
     current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
-
-    if current_hypervisor != this_node:
-        continue
 
     for hypervisor in hypervisor_list:
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
@@ -398,7 +395,7 @@ def migrateFromFencedHost(zk_conn, node_name):
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
-        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid, node_name)
+        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid)
 
         ansiiprint.echo('Moving VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
         zkhandler.writedata(zk_conn, {

@@ -354,21 +354,18 @@ def verifyNode(zk_conn, node):
         click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
         exit(1)
 
-def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node)
+def findTargetHypervisor(zk_conn, search_field, dom_uuid)
     if search_field == 'mem':
-        return findTargetHypervisorMem(zk_conn, dom_uuid, this_node)
+        return findTargetHypervisorMem(zk_conn, dom_uuid)
     return None
 
-def findTargetHypervisorMem(zk_conn, dom_uuid, this_node):
+def findTargetHypervisorMem(zk_conn, dom_uuid):
     # Find a target node
     most_allocfree = 0
     target_hypervisor = None
 
     hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
     current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
-
-    if current_hypervisor != this_node:
-        continue
 
     for hypervisor in hypervisor_list:
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
@@ -983,7 +980,7 @@ def move_vm(domain, target_hypervisor):
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == None:
-        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid, current_hypervisor)
+        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
