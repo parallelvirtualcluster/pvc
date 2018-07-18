@@ -18,6 +18,10 @@
 #    failed_fence: the action to take on a failed fencing operation; can be "none" or "migrate"
 #                  (defaults to "none"); "migrate" requires "suicide_intervals" to be set)
 #                  NOTE: POTENTIALLY DANGEROUS - see README for details
+#    migration_target_selector: the method to use to select target hypervisor nodes during a
+#                               flush action; can be "mem", "load", "vcpus", or "vms" (defaults
+#                               to "mem"); the best choice based on this field is selected for
+#                               each VM to be migrated
 #    ipmi_hostname: the IPMI hostname for fencing (defaults to <shortname>-lom.<domain>)
 #    ipmi_username: username to connect to IPMI
 #    ipmi_password: password to connect to IPMI
@@ -31,6 +35,7 @@ fence_intervals = 6
 suicide_intervals = 0
 successful_fence = migrate
 failed_fence = none
+migration_target_selector = mem
 
 [myhost]
 ipmi_username = admin

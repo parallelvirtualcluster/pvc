@@ -59,6 +59,7 @@ config_values = [
     'suicide_intervals',
     'successful_fence',
     'failed_fence',
+    'migration_target_selector',
     'ipmi_hostname',
     'ipmi_username',
     'ipmi_password'
