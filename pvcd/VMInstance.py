@@ -44,7 +44,11 @@ class VMInstance:
         self.instop = False
 
         self.dom = self.lookupByUUID(self.domuuid)
-        self.maxmemory = self.dom.maxMemory()
+
+        try:
+            self.maxmemory = self.dom.maxMemory()
+        except:
+            self.maxmemory = 0
 
         # Watch for changes to the state field in Zookeeper
         @zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
