@@ -44,6 +44,7 @@ class VMInstance:
         self.instop = False
 
         self.dom = self.lookupByUUID(self.domuuid)
+        self.maxmemory = self.dom.maxMemory()
 
         # Watch for changes to the state field in Zookeeper
         @zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
@@ -64,6 +65,9 @@ class VMInstance:
 
     def getdom(self):
         return self.dom
+
+    def getmaxmemory(self):
+        return self.maxmemory
 
     # Manage local node domain_list
     def addDomainToList(self):
