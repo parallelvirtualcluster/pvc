@@ -144,27 +144,7 @@ class NodeInstance():
         for dom_uuid in fixed_domain_list:
             ansiiprint.echo('Selecting target to migrate VM "{}"'.format(dom_uuid), '', 'i')
 
-            most_memfree = 0
-            target_hypervisor = None
-            hypervisor_list = zkhandler.listchildren(self.zk_conn, '/nodes')
-            current_hypervisor = zkhandler.readdata(self.zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
-            if current_hypervisor != self.this_node:
-                continue
-
-            for hypervisor in hypervisor_list:
-                daemon_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
-                domain_state = zkhandler.readdata(self.zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
-                if hypervisor == current_hypervisor:
-                    continue
-
-                if daemon_state != 'run' or domain_state != 'ready':
-                    continue
-    
-                memfree = int(zkhandler.readdata(self.zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
-                if memfree > most_memfree:
-                    most_memfree = memfree
-                    target_hypervisor = hypervisor
-
+            target_hypervisor = findTargetHypervisor(self.zk_conn, 'mem', dom_uuid, self.this_node)
             if target_hypervisor == None:
                 ansiiprint.echo('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), '', 'e')
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
@@ -336,6 +316,44 @@ class NodeInstance():
         ansiiprint.echo('{}Inactive nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_node_list)), '', 'c')
         ansiiprint.echo('{}Flushed nodes:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.flushed_node_list)), '', 'c')
 
+# Find a target node
+def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node)
+    if search_field == 'mem':
+        return findTargetHypervisorMem(zk_conn, dom_uuid, this_node)
+    return None
+
+def findTargetHypervisorMem(zk_conn, search_field, dom_uuid, this_node):
+    most_allocfree = 0
+    target_hypervisor = None
+
+    hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
+    current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
+
+    if current_hypervisor != this_node:
+        continue
+
+    for hypervisor in hypervisor_list:
+        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
+        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
+
+        if hypervisor == current_hypervisor:
+            continue
+
+        if daemon_state != 'run' or domain_state != 'ready':
+            continue
+    
+        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(hypervisor)))
+        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(hypervisor)))
+        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
+        memtotal = memused + memfree
+        allocfree = memtotal - memalloc
+
+        if allocfree > most_allocfree:
+            most_allocfree = allocfree
+            target_hypervisor = hypervisor
+
+    return target_hypervisor
+
 #
 # Fence thread entry function
 #
@@ -380,20 +398,7 @@ def migrateFromFencedHost(zk_conn, node_name):
     ansiiprint.echo('Moving VMs from dead hypervisor "{}" to new hosts'.format(node_name), '', 'i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
-        most_memfree = 0
-        hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
-        current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
-        for hypervisor in hypervisor_list:
-            print(hypervisor)
-            daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
-            domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
-            if daemon_state != 'run' or domain_state != 'ready':
-                continue
-
-            memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
-            if memfree > most_memfree:
-                most_memfree = memfree
-                target_hypervisor = hypervisor
+        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid, node_name)
 
         ansiiprint.echo('Moving VM "{}" to hypervisor "{}"'.format(dom_uuid, target_hypervisor), '', 'i')
         zkhandler.writedata(zk_conn, {

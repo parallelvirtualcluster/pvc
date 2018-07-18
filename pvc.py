@@ -354,6 +354,44 @@ def verifyNode(zk_conn, node):
         click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
         exit(1)
 
+def findTargetHypervisor(zk_conn, search_field, dom_uuid, this_node)
+    if search_field == 'mem':
+        return findTargetHypervisorMem(zk_conn, dom_uuid, this_node)
+    return None
+
+def findTargetHypervisorMem(zk_conn, dom_uuid, this_node):
+    # Find a target node
+    most_allocfree = 0
+    target_hypervisor = None
+
+    hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
+    current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
+
+    if current_hypervisor != this_node:
+        continue
+
+    for hypervisor in hypervisor_list:
+        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
+        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
+
+        if hypervisor == current_hypervisor:
+            continue
+
+        if daemon_state != 'run' or domain_state != 'ready':
+            continue
+    
+        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(hypervisor)))
+        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(hypervisor)))
+        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
+        memtotal = memused + memfree
+        allocfree = memtotal - memalloc
+
+        if allocfree > most_allocfree:
+            most_allocfree = allocfree
+            target_hypervisor = hypervisor
+
+    return target_hypervisor
+
 
 ########################
 ########################
@@ -945,19 +983,7 @@ def move_vm(domain, target_hypervisor):
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == None:
-        # Determine the best hypervisor to migrate the VM to based on active memory usage
-        hypervisor_list = zk_conn.get_children('/nodes')
-        most_memfree = 0
-        for hypervisor in hypervisor_list:
-            daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-            domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-            if daemon_state != 'run' or domain_state != 'ready' or hypervisor == current_hypervisor:
-                continue
-
-            memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
-            if memfree > most_memfree:
-                most_memfree = memfree
-                target_hypervisor = hypervisor
+        target_hypervisor = findTargetHypervisor(zk_conn, 'mem', dom_uuid, current_hypervisor)
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
