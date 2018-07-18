@@ -267,6 +267,7 @@ class NodeInstance():
                 '/nodes/{}/keepalive'.format(self.name): str(keepalive_time)
             })
         except:
+            ansiiprint.echo('Failed to set keepalive data', '', 'e')
             return
 
         # Close the Libvirt connection
