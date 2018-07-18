@@ -231,7 +231,7 @@ class NodeInstance():
         for domain, instance in self.s_domain.items():
             if instance.inshutdown == False and domain in self.domain_list:
                 # Add the allocated memory to our memalloc value
-                memalloc += instance.getmaxmemory()
+                memalloc += instance.getmemory()
                 if instance.getstate() == 'start' and instance.gethypervisor() == self.name:
                     if instance.getdom() != None:
                         try:
