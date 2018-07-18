@@ -354,7 +354,7 @@ def verifyNode(zk_conn, node):
         click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
         exit(1)
 
-def findTargetHypervisor(zk_conn, search_field, dom_uuid)
+def findTargetHypervisor(zk_conn, search_field, dom_uuid):
     if search_field == 'mem':
         return findTargetHypervisorMem(zk_conn, dom_uuid)
     return None
