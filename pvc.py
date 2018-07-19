@@ -744,12 +744,12 @@ def vm():
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor',
-    help='The home hypervisor for this domain; autoselects if unspecified.'
+    help='The home hypervisor for this domain; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine the optimal target hypervisor automatically.'
+    help='Method to determine optimal target hypervisor during autodetect.'
 )
 @click.argument(
     'config', type=click.File()
@@ -1025,12 +1025,12 @@ def stop_vm(domain):
 )
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
+    help='The target hypervisor to migrate to; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine the optimal target hypervisor automatically.'
+    help='Method to determine optimal target hypervisor during autodetect.'
 )
 def move_vm(domain, target_hypervisor, selector):
     """
@@ -1093,12 +1093,12 @@ def move_vm(domain, target_hypervisor, selector):
 )
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
+    help='The target hypervisor to migrate to; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine the optimal target hypervisor automatically.'
+    help='Method to determine optimal target hypervisor during autodetect.'
 )
 @click.option(
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
