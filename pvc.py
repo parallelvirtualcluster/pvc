@@ -480,7 +480,7 @@ def node():
 ###############################################################################
 # pvc node flush
 ###############################################################################
-@click.command(name='flush', short_help='Take a node out of service')
+@click.command(name='flush', short_help='Take a node out of service.')
 @click.option(
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migrations to complete before returning.'
@@ -520,14 +520,14 @@ def flush_host(node, wait):
 ###############################################################################
 # pvc node ready/unflush
 ###############################################################################
-@click.command(name='ready', short_help='Restore node to service')
+@click.command(name='ready', short_help='Restore node to service.')
 @click.argument(
     'node', default=myhostname
 )
 def ready_host(node):
     do_ready_host(node)
 
-@click.command(name='unflush', short_help='Restore node to service')
+@click.command(name='unflush', short_help='Restore node to service.')
 @click.argument(
     'node', default=myhostname
 )
@@ -560,7 +560,7 @@ def do_ready_host(node):
 ###############################################################################
 # pvc node info
 ###############################################################################
-@click.command(name='info', short_help='Show details of a node object')
+@click.command(name='info', short_help='Show details of a node object.')
 @click.argument(
     'node', default=myhostname
 )
@@ -602,7 +602,7 @@ def node_info(node, long_output):
 ###############################################################################
 # pvc node list
 ###############################################################################
-@click.command(name='list', short_help='List all node objects')
+@click.command(name='list', short_help='List all node objects.')
 def node_list():
     """
     List all hypervisor nodes in the cluster.
@@ -1218,7 +1218,7 @@ def unmigrate_vm(domain):
 ###############################################################################
 # pvc vm info
 ###############################################################################
-@click.command(name='info', short_help='Show details of a VM object')
+@click.command(name='info', short_help='Show details of a VM object.')
 @click.argument(
     'domain'
 )
@@ -1258,7 +1258,7 @@ def vm_info(domain, long_output):
 ###############################################################################
 # pvc vm list
 ###############################################################################
-@click.command(name='list', short_help='List all VM objects')
+@click.command(name='list', short_help='List all VM objects.')
 @click.option(
     '-t', '--hypervisor', 'hypervisor', default=None,
     help='Limit list to this hypervisor.'
@@ -1404,7 +1404,7 @@ def get_vm_list(hypervisor):
 ###############################################################################
 # pvc init
 ###############################################################################
-@click.command(name='init', short_help='Initialize a new cluster')
+@click.command(name='init', short_help='Initialize a new cluster.')
 @click.option('--yes', is_flag=True,
               expose_value=False,
               prompt='DANGER: This command will destroy any existing cluster data. Do you want to continue?')
