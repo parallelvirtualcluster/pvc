@@ -1410,7 +1410,9 @@ def get_vm_list(hypervisor):
               prompt='DANGER: This command will destroy any existing cluster data. Do you want to continue?')
 def init_cluster():
     """
-    Perform initialization of Zookeeper to act as a PVC cluster
+    Perform initialization of Zookeeper to act as a PVC cluster.
+
+    DANGER: This command will overwrite any existing cluster data and provision a new cluster at the specified Zookeeper connection string. Do not run this against a cluster unless you are sure this is what you want.
     """
 
     click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
