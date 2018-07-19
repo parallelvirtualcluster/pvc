@@ -747,7 +747,7 @@ def vm():
     help='The home hypervisor for this domain; autoselects if unspecified.'
 )
 @click.option(
-    '-s', '--selector', 'selector', default='mem',
+    '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
     help='Method to determine the optimal target hypervisor automatically.'
 )
@@ -1028,7 +1028,7 @@ def stop_vm(domain):
     help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
 @click.option(
-    '-s', '--selector', 'selector', default='mem',
+    '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
     help='Method to determine the optimal target hypervisor automatically.'
 )
@@ -1096,7 +1096,7 @@ def move_vm(domain, target_hypervisor, selector):
     help='The target hypervisor to migrate to. Autodetect based on most free RAM if unspecified.'
 )
 @click.option(
-    '-s', '--selector', 'selector', default='mem',
+    '-s', '--selector', 'selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
     help='Method to determine the optimal target hypervisor automatically.'
 )
