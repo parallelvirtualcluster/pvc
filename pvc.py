@@ -744,7 +744,7 @@ def vm():
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor',
-    help='The home hypervisor for this domain; autodetect if unspecified.'
+    help='Home hypervisor for this domain; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
@@ -921,7 +921,7 @@ def restart_vm(domain):
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to start
@@ -963,7 +963,7 @@ def shutdown_vm(domain):
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to shutdown
@@ -1005,7 +1005,7 @@ def stop_vm(domain):
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
-        click.echo('ERROR: The VM "{}" is not in "start" state!'.format(dom_uuid))
+        click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
         return
 
     # Set the VM to start
@@ -1025,7 +1025,7 @@ def stop_vm(domain):
 )
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to; autodetect if unspecified.'
+    help='Target hypervisor to migrate to; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
@@ -1059,7 +1059,7 @@ def move_vm(domain, target_hypervisor, selector):
         target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
-            click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
+            click.echo('ERROR: VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
 
         # Verify node is valid
@@ -1093,7 +1093,7 @@ def move_vm(domain, target_hypervisor, selector):
 )
 @click.option(
     '-t', '--hypervisor', 'target_hypervisor', default=None,
-    help='The target hypervisor to migrate to; autodetect if unspecified.'
+    help='Target hypervisor to migrate to; autodetect if unspecified.'
 )
 @click.option(
     '-s', '--selector', 'selector', default='mem', show_default=True,
@@ -1136,7 +1136,7 @@ def migrate_vm(domain, target_hypervisor, selector, force_migrate):
     last_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if last_hypervisor != '' and force_migrate != True:
-        click.echo('ERROR: The VM "{}" has been previously migrated.'.format(dom_uuid))
+        click.echo('ERROR: VM "{}" has been previously migrated.'.format(dom_uuid))
         click.echo('> Last hypervisor: {}'.format(last_hypervisor))
         click.echo('> Current hypervisor: {}'.format(current_hypervisor))
         click.echo('Run `vm unmigrate` to restore the VM to its previous hypervisor, or use `--force` to override this check.')
@@ -1146,7 +1146,7 @@ def migrate_vm(domain, target_hypervisor, selector, force_migrate):
         target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
-            click.echo('ERROR: The VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
+            click.echo('ERROR: VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
             return
 
         # Verify node is valid
@@ -1201,7 +1201,7 @@ def unmigrate_vm(domain):
     target_hypervisor = zk_conn.get('/domains/{}/lasthypervisor'.format(dom_uuid))[0].decode('ascii')
 
     if target_hypervisor == '':
-        click.echo('ERROR: The VM "{}" has not been previously migrated.'.format(dom_uuid))
+        click.echo('ERROR: VM "{}" has not been previously migrated.'.format(dom_uuid))
         return
 
     click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
