@@ -370,7 +370,7 @@ def findTargetHypervisor(zk_conn, search_field, dom_uuid):
 
 # Get the list of valid target hypervisors
 def getHypervisors(zk_conn, dom_uuid):
-    valid_hypervisor_list = {}
+    valid_hypervisor_list = []
     full_hypervisor_list = zk_conn.get_children('/nodes')
     current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
