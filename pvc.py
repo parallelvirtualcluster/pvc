@@ -418,7 +418,7 @@ def findTargetHypervisorLoad(zk_conn, dom_uuid):
 
         if load < least_load:
             least_load = load
-            target_hypevisor = hypervisor
+            target_hypervisor = hypervisor
 
     return target_hypervisor
 
