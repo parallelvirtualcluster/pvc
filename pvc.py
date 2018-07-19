@@ -386,7 +386,7 @@ def getHypervisors(zk_conn, dom_uuid):
 
         valid_hypervisor_list.append(hypervisor)
 
-    return full_hypervisor_list
+    return valid_hypervisor_list
     
 # via free memory (relative to allocated memory)
 def findTargetHypervisorMem(zk_conn, dom_uuid):
