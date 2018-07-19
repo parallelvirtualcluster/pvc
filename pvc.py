@@ -525,6 +525,10 @@ def flush_host(node, wait):
     'node', default=myhostname
 )
 def ready_host(node):
+    """
+    Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
+    """
+
     do_ready_host(node)
 
 @click.command(name='unflush', short_help='Restore node to service.')
@@ -532,6 +536,10 @@ def ready_host(node):
     'node', default=myhostname
 )
 def unflush_host(node):
+    """
+    Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
+    """
+
     do_ready_host(node)
 
 
@@ -1264,6 +1272,10 @@ def vm_info(domain, long_output):
     help='Limit list to this hypervisor.'
 )
 def vm_list(hypervisor):
+    """
+    List all virtual machines in the cluster.
+    """
+
     get_vm_list(hypervisor)
 
 # Wrapped function to allow calling from `node info`
