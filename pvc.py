@@ -414,7 +414,7 @@ def findTargetHypervisorLoad(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        load = int(zk_conn.get('/nodes/{}/cpuload'.format(hypervisor))[0].decode('ascii'))
+        load = float(zk_conn.get('/nodes/{}/cpuload'.format(hypervisor))[0].decode('ascii'))
 
         if load < least_load:
             least_load = load
