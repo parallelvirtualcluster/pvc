@@ -371,12 +371,12 @@ def findTargetHypervisor(zk_conn, search_field, dom_uuid):
 # Get the list of valid target hypervisors
 def getHypervisors(zk_conn, dom_uuid):
     valid_hypervisor_list = {}
-    full_hypervisor_list = zkhandler.listchildren(zk_conn, '/nodes')
-    current_hypervisor = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(dom_uuid))
+    full_hypervisor_list = zk_conn.get_children('/nodes')
+    current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
 
     for hypervisor in full_hypervisor_list:
-        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(hypervisor))
-        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(hypervisor))
+        daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
+        domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
 
         if hypervisor == current_hypervisor:
             continue
@@ -395,9 +395,9 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(hypervisor)))
-        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(hypervisor)))
-        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(hypervisor)))
+        memalloc = int(zk_conn.get('/nodes/{}/memalloc'.format(hypervisor))[0].decode('ascii'))
+        memused = int(zk_conn.get('/nodes/{}/memused'.format(hypervisor))[0].decode('ascii'))
+        memfree = int(zk_conn.get('/nodes/{}/memfree'.format(hypervisor))[0].decode('ascii'))
         memtotal = memused + memfree
         allocfree = memtotal - memalloc
 
@@ -414,7 +414,7 @@ def findTargetHypervisorLoad(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(hypervisor)))
+        load = int(zk_conn.get('/nodes/{}/load'.format(hypervisor))[0].decode('ascii'))
 
         if load < least_load:
             least_load = load
@@ -429,7 +429,7 @@ def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(hypervisor)))
+        vcpus = int(zk_conn.get('/nodes/{}/vcpualloc'.format(hypervisor))[0].decode('ascii'))
 
         if vcpus < least_vcpus:
             least_vcpus = vcpus
@@ -444,7 +444,7 @@ def findTargetHypervisorVMs(zk_conn, dom_uuid):
 
     hypervisor_list = getHypervisors(zk_conn, dom_uuid)
     for hypervisor in hypervisor_list:
-        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(hypervisor)))
+        vms = int(zk_conn.get('/nodes/{}/domainscount'.format(hypervisor))[0].decode('ascii'))
 
         if vms < least_vms:
             least_vms = vms
