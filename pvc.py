@@ -469,7 +469,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=12
 ###############################################################################
 # pvc node
 ###############################################################################
-@click.group(name='node', short_help='Manage a PVC hypervisor node', context_settings=CONTEXT_SETTINGS)
+@click.group(name='node', short_help='Manage a PVC hypervisor node.', context_settings=CONTEXT_SETTINGS)
 def node():
     """
     Manage the state of a node in the PVC cluster.
@@ -730,7 +730,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
 ###############################################################################
 # pvc vm
 ###############################################################################
-@click.group(name='vm', short_help='Manage a PVC virtual machine', context_settings=CONTEXT_SETTINGS)
+@click.group(name='vm', short_help='Manage a PVC virtual machine.', context_settings=CONTEXT_SETTINGS)
 def vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
@@ -1449,7 +1449,9 @@ def cli(_zk_host):
     """
     Parallel Virtual Cluster CLI management tool
 
-    You can use the environment variable "PVC_ZOOKEEPER" to set the Zookeeper address in addition to using "--zookeeper".
+    Environment variables:
+
+      "PVC_ZOOKEEPER": Set the cluster Zookeeper address instead of using "--zookeeper".
     """
 
     global zk_host
