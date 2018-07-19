@@ -372,7 +372,11 @@ def findTargetHypervisor(zk_conn, search_field, dom_uuid):
 def getHypervisors(zk_conn, dom_uuid):
     valid_hypervisor_list = []
     full_hypervisor_list = zk_conn.get_children('/nodes')
-    current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+
+    try:
+        current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
+    except:
+        current_hypervisor = None
 
     for hypervisor in full_hypervisor_list:
         daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
