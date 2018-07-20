@@ -122,9 +122,11 @@ class VMInstance:
             self.addDomainToList()
             ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
             self.dom = dom
+            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
+            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): e })
             self.dom = None
 
         lv_conn.close()
