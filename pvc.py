@@ -24,6 +24,7 @@ import os
 import socket
 import time
 import uuid
+import re
 import click
 import lxml.objectify
 import configparser
@@ -605,7 +606,7 @@ def node_info(node, long_output):
         click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
         click.echo('')
         # List all VMs on this node
-        get_vm_list(node)
+        get_vm_list(node, None)
 
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
@@ -615,15 +616,30 @@ def node_info(node, long_output):
 # pvc node list
 ###############################################################################
 @click.command(name='list', short_help='List all node objects.')
-def node_list():
+@click.argument(
+    'limit', default=None, required=False
+)
+def node_list(limit):
     """
-    List all hypervisor nodes in the cluster.
+    List all hypervisor nodes in the cluster; optionally only match names matching regex LIMIT.
     """
 
     # Open a Zookeeper connection
     zk_conn = startZKConnection(zk_host)
 
-    node_list = zk_conn.get_children('/nodes')
+    # Match our limit
+    node_list = []
+    full_node_list = zk_conn.get_children('/nodes')
+    for node in full_node_list:
+        if limit != None:
+            try:
+                if re.match(limit, node) == None:
+                    continue
+            except Exception as e:
+                click.echo('Regex Error: {}'.format(e))
+                exit(1)
+        node_list.append(node)
+
     node_list_output = []
     node_daemon_state = {}
     node_daemon_state = {}
@@ -1271,19 +1287,22 @@ def vm_info(domain, long_output):
 # pvc vm list
 ###############################################################################
 @click.command(name='list', short_help='List all VM objects.')
+@click.argument(
+    'limit', default=None, required=False
+)
 @click.option(
     '-t', '--hypervisor', 'hypervisor', default=None,
     help='Limit list to this hypervisor.'
 )
-def vm_list(hypervisor):
+def vm_list(hypervisor, limit):
     """
-    List all virtual machines in the cluster.
+    List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
     """
 
-    get_vm_list(hypervisor)
+    get_vm_list(hypervisor, limit)
 
 # Wrapped function to allow calling from `node info`
-def get_vm_list(hypervisor):
+def get_vm_list(hypervisor, limit):
     """
     List all virtual machines in the cluster.
     """
@@ -1309,11 +1328,19 @@ def get_vm_list(hypervisor):
 
     # If we're limited, remove other nodes' VMs
     for vm in vm_list_raw:
+        # Check we don't match the limit
+        name = zk_conn.get('/domains/{}'.format(vm))[0].decode('ascii')
+        if limit != None:
+            try:
+                if re.match(limit, name) == None:
+                    continue
+            except Exception as e:
+                click.echo('Regex Error: {}'.format(e))
+                exit(1)
         # Check hypervisor to avoid unneeded ZK calls
         vm_hypervisor[vm] = zk_conn.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
-        if hypervisor != None:
-            if vm_hypervisor[vm] == hypervisor:
-                vm_list.append(vm)
+        if hypervisor != None and vm_hypervisor[vm] == hypervisor:
+            vm_list.append(vm)
         else:
             vm_list.append(vm)
 
