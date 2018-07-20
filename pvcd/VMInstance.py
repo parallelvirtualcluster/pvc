@@ -126,7 +126,7 @@ class VMInstance:
         except libvirt.libvirtError as e:
             ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): e })
+            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): str(e) })
             self.dom = None
 
         lv_conn.close()
@@ -145,13 +145,9 @@ class VMInstance:
             self.inrestart = False
             return
     
-        try:
-            self.shutdown_vm()
-            self.start_vm()
-            self.addDomainToList()
-            ansiiprint.echo('Successfully restarted VM', '{}:'.format(self.domuuid), 'o')
-        except libvirt.libvirtError as e:
-            ansiiprint.echo('Failed to restart VM', '{}:'.format(self.domuuid), 'e')
+        self.shutdown_vm()
+        self.start_vm()
+        self.addDomainToList()
 
         zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
         lv_conn.close()
