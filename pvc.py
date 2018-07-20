@@ -1279,6 +1279,12 @@ def vm_info(domain, long_output):
     information = getInformationFromXML(zk_conn, dom_uuid, long_output)
     click.echo(information)
 
+    # Get a failure reason if applicable
+    failedreason = zk_conn.get('/domains/{}/failedreason'.format(dom_uuid))[0].decode('ascii')
+    if failedreason != '':
+        click.echo('')
+        click.echo('{}Failure reason:{}     {}'.format(ansiiprint.purple(), ansiiprint.end(), failedreason))
+
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
 
