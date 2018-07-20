@@ -608,9 +608,10 @@ def node_info(node, long_output):
     if long_output == True:
         click.echo('')
         click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
-        click.echo('')
         # List all VMs on this node
         get_vm_list(node, None)
+
+    click.echo('')
 
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
@@ -1397,6 +1398,8 @@ def vm_info(domain, long_output):
     if failedreason != '':
         click.echo('')
         click.echo('{}Failure reason:{}     {}'.format(ansiiprint.purple(), ansiiprint.end(), failedreason))
+
+    click.echo('')
 
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
