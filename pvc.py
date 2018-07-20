@@ -1339,10 +1339,11 @@ def get_vm_list(hypervisor, limit):
                 exit(1)
         # Check hypervisor to avoid unneeded ZK calls
         vm_hypervisor[vm] = zk_conn.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
-        if hypervisor != None and vm_hypervisor[vm] == hypervisor:
+        if hypervisor == None:
             vm_list.append(vm)
         else:
-            vm_list.append(vm)
+            if vm_hypervisor[vm] == hypervisor:
+                vm_list.append(vm)
 
     # Gather information for printing
     for vm in vm_list:
