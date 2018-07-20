@@ -25,6 +25,10 @@ import socket
 import time
 import uuid
 import re
+import tempfile
+import subprocess
+import difflib
+import colorama
 import click
 import lxml.objectify
 import configparser
@@ -820,6 +824,115 @@ def define_vm(config, target_hypervisor, selector):
 
 
 ###############################################################################
+# pvc vm modify
+###############################################################################
+@click.command(name='modify', short_help='Modify an existing VM configuration.')
+@click.option(
+    '-e', '--editor', 'editor', is_flag=True,
+    help='Use local editor to modify existing config.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True,
+    help='Immediately restart VM to apply new config.'
+)
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'config', type=click.File(), default=None, required=False
+)
+def modify_vm(domain, config, editor, restart):
+    """
+    Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
+    """
+
+    if editor == False and config == None:
+        click.echo('Either an XML config file or the "--editor" option must be specified.')
+        exit(1)
+
+    # Open a Zookeeper connection
+    zk_conn = startZKConnection(zk_host)
+
+    # Validate and obtain alternate passed value
+    if validateUUID(domain):
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
+
+    if dom_uuid == None:
+        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        stopZKConnection(zk_conn)
+        exit(1)
+
+    # We're operating in edit-in-place mode
+    if editor == True:
+        # Grab the current config
+        current_vm_config = zk_conn.get('/domains/{}/xml'.format(dom_uuid))[0].decode('ascii')
+
+        # Write it to a tempfile
+        fd, path = tempfile.mkstemp()
+        fw = os.fdopen(fd, 'w')
+        fw.write(current_vm_config)
+        fw.close()
+
+        # Edit it
+        editor = os.getenv('EDITOR', 'vi')
+        subprocess.call('%s %s' % (editor, path), shell=True)
+
+        # Open the tempfile to read
+        with open(path, 'r') as fr:
+            new_vm_config = fr.read()
+            fr.close()
+
+        # Delete the tempfile
+        os.unlink(path)
+
+        # Show a diff and confirm
+        diff = list(difflib.unified_diff(current_vm_config.split('\n'), new_vm_config.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        if len(diff) < 1:
+            click.echo('Aborting with no modifications.')
+            exit(0)
+
+        click.echo('Pending modifications:')
+        click.echo('')
+        for line in diff:
+            if re.match('^\+', line) != None:
+                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            elif re.match('^\-', line) != None:
+                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            elif re.match('^\^', line) != None:
+                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            else:
+                click.echo(line)
+        click.echo('')
+
+        click.confirm('Write modifications to Zookeeper?', abort=True)
+
+        click.echo('Writing modified config of VM "{}".'.format(dom_name))
+
+    # We're operating in replace mode
+    else:
+        # Open the XML file
+        new_vm_config = config.read()
+        config.close()
+
+        click.echo('Replacing config of VM "{}".'.format(dom_name, config))
+
+    # Add the modified config to Zookeeper
+    transaction = zk_conn.transaction()
+    transaction.set_data('/domains/{}'.format(dom_uuid), dom_name.encode('ascii'))
+    transaction.set_data('/domains/{}/xml'.format(dom_uuid), new_vm_config.encode('ascii'))
+    if restart == True:
+        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'restart'.encode('ascii'))
+    results = transaction.commit()
+
+    # Close the Zookeeper connection
+    stopZKConnection(zk_conn)
+
+
+###############################################################################
 # pvc vm undefine
 ###############################################################################
 @click.command(name='undefine', short_help='Undefine and stop a virtual machine.')
@@ -1520,6 +1633,7 @@ node.add_command(node_info)
 node.add_command(node_list)
 
 vm.add_command(define_vm)
+vm.add_command(modify_vm)
 vm.add_command(undefine_vm)
 vm.add_command(start_vm)
 vm.add_command(restart_vm)
