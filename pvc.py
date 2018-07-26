@@ -817,6 +817,7 @@ def define_vm(config, target_hypervisor, selector):
     transaction.create('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
     transaction.create('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.create('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
+    transaction.create('/domains/{}/failedreason'.format(dom_uuid), ''.encode('ascii'))
     transaction.create('/domains/{}/xml'.format(dom_uuid), data.encode('ascii'))
     results = transaction.commit()
 
@@ -988,6 +989,7 @@ def undefine_vm(domain):
     transaction.delete('/domains/{}/state'.format(dom_uuid))
     transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
     transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
+    transaction.delete('/domains/{}/failedreason'.format(dom_uuid))
     transaction.delete('/domains/{}/xml'.format(dom_uuid))
     transaction.delete('/domains/{}'.format(dom_uuid))
     transaction.commit()
