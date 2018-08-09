@@ -962,37 +962,43 @@ def undefine_vm(domain):
         dom_uuid = searchClusterByName(zk_conn, domain)
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
-    if dom_uuid == None:
-        click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        stopZKConnection(zk_conn)
-        return
+    # Shut down the VM
+    try:
+        current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+        if current_vm_state != 'stop':
+            click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
+            # Set the domain into stop mode
+            transaction = zk_conn.transaction()
+            transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
+            transaction.commit()
 
-    current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
-    if current_vm_state != 'stop':
-        click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
-        # Set the domain into stop mode
-        transaction = zk_conn.transaction()
-        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
-        transaction.commit()
-
-        # Wait for 3 seconds to allow state to flow to all hypervisors
-        click.echo('Waiting for cluster to update.')
-        time.sleep(1)
+            # Wait for 3 seconds to allow state to flow to all hypervisors
+            click.echo('Waiting for cluster to update.')
+            time.sleep(1)
+    except:
+        pass
 
     # Gracefully terminate the class instances
-    click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
-    zk_conn.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
-    time.sleep(5)
+    try:
+        click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
+        zk_conn.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
+        time.sleep(5)
+    except:
+        pass
+
     # Delete the configurations
-    click.echo('Undefining VM "{}".'.format(dom_uuid))
-    transaction = zk_conn.transaction()
-    transaction.delete('/domains/{}/state'.format(dom_uuid))
-    transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
-    transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
-    transaction.delete('/domains/{}/failedreason'.format(dom_uuid))
-    transaction.delete('/domains/{}/xml'.format(dom_uuid))
-    transaction.delete('/domains/{}'.format(dom_uuid))
-    transaction.commit()
+    try:
+        click.echo('Undefining VM "{}".'.format(dom_uuid))
+        transaction = zk_conn.transaction()
+        transaction.delete('/domains/{}/state'.format(dom_uuid))
+        transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
+        transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
+        transaction.delete('/domains/{}/failedreason'.format(dom_uuid))
+        transaction.delete('/domains/{}/xml'.format(dom_uuid))
+        transaction.delete('/domains/{}'.format(dom_uuid))
+        transaction.commit()
+    except:
+        pass
 
     # Close the Zookeeper connection
     stopZKConnection(zk_conn)
