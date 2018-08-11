@@ -34,11 +34,31 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import pvc.ansiiprint as ansiiprint
-
 ###############################################################################
 # Supplemental functions
 ###############################################################################
+
+#
+# ansiiprint output
+#
+
+class ansiiprint:
+    # ANSII colours for output
+    def red():
+        return '\033[91m'
+    def blue():
+        return '\033[94m'
+    def green():
+        return '\033[92m'
+    def yellow():
+        return '\033[93m'
+    def purple():
+        return '\033[95m'
+    def bold():
+        return '\033[1m'
+    def end():
+        return '\033[0m'
+
 
 #
 # Validate a UUID
