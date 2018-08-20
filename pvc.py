@@ -200,8 +200,11 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     node_running_domains = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
     node_mem_allocated = 0
     for domain in node_running_domains:
-        parsed_xml = getDomainXML(zk_conn, domain)
-        duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+        try:
+            parsed_xml = getDomainXML(zk_conn, domain)
+            duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+        except AttributeError:
+            click.echo('Error: Domain {} does not exist.'.format(domain))
         node_mem_allocated += int(dmemory)
 
     if node_daemon_state == 'run':
@@ -259,9 +262,12 @@ def getInformationFromXML(zk_conn, uuid, long_output):
     if dlasthypervisor == '':
         dlasthypervisor = 'N/A'
 
-    parsed_xml = getDomainXML(zk_conn, uuid)
+    try:
+        parsed_xml = getDomainXML(zk_conn, uuid)
+        duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+    except AttributeError:
+        click.echo('Error: Domain {} does not exist.'.format(domain))
 
-    duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
     if long_output == True:
         dtype, darch, dmachine, dconsole, demulator = getDomainExtraDetails(parsed_xml)
         dfeatures = getDomainCPUFeatures(parsed_xml)
@@ -691,8 +697,11 @@ def node_list(limit):
         node_running_domains[node_name] = zk_conn.get('/nodes/{}/runningdomains'.format(node_name))[0].decode('ascii').split()
         node_mem_allocated[node_name] = 0
         for domain in node_running_domains[node_name]:
-            parsed_xml = getDomainXML(zk_conn, domain)
-            duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+            try:
+                parsed_xml = getDomainXML(zk_conn, domain)
+                duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+            except AttributeError:
+                click.echo('Error: Domain {} does not exist.'.format(domain))
             node_mem_allocated[node_name] += int(dmemory)
 
     # Determine optimal column widths
@@ -1504,8 +1513,11 @@ def get_vm_list(hypervisor, limit):
         else:
             vm_migrated[vm] = 'no'
 
-        vm_xml = getDomainXML(zk_conn, vm)
-        vm_uuid[vm], vm_name[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = getDomainMainDetails(vm_xml)
+        try:
+            vm_xml = getDomainXML(zk_conn, vm)
+            vm_uuid[vm], vm_name[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = getDomainMainDetails(vm_xml)
+        except AttributeError:
+            click.echo('Error: Domain {} does not exist.'.format(domain))
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
