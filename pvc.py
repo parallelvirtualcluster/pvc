@@ -203,9 +203,9 @@ def getInformationFromNode(zk_conn, node_name, long_output):
         try:
             parsed_xml = getDomainXML(zk_conn, domain)
             duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+            node_mem_allocated += int(dmemory)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
-        node_mem_allocated += int(dmemory)
 
     if node_daemon_state == 'run':
         daemon_state_colour = ansiiprint.green()
@@ -700,9 +700,9 @@ def node_list(limit):
             try:
                 parsed_xml = getDomainXML(zk_conn, domain)
                 duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+                node_mem_allocated[node_name] += int(dmemory)
             except AttributeError:
                 click.echo('Error: Domain {} does not exist.'.format(domain))
-            node_mem_allocated[node_name] += int(dmemory)
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
