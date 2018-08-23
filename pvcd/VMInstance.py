@@ -114,20 +114,33 @@ class VMInstance:
             ansiiprint.echo('Failed to open local libvirt connection', '{}:'.format(self.domuuid), 'e')
             self.instart = False
             return
-    
+   
+        # Try to get the current state in case it's already running
         try:
-            # Grab the domain information from Zookeeper
-            xmlconfig = zkhandler.readdata(self.zk_conn, '/domains/{}/xml'.format(self.domuuid))
-            dom = lv_conn.createXML(xmlconfig, 0)
+            self.dom = self.lookupByUUID(self.domuuid)
+            curstate = self.dom.state()[0]
+        except:
+            curstate = 'notstart'
+
+        if curstate == libvirt.VIR_DOMAIN_RUNNING:
+            # If it is running just update the model
             self.addDomainToList()
-            ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
-            self.dom = dom
             zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
-        except libvirt.libvirtError as e:
-            ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): str(e) })
-            self.dom = None
+        else:
+            # Or try to create it
+            try:
+                # Grab the domain information from Zookeeper
+                xmlconfig = zkhandler.readdata(self.zk_conn, '/domains/{}/xml'.format(self.domuuid))
+                dom = lv_conn.createXML(xmlconfig, 0)
+                self.addDomainToList()
+                ansiiprint.echo('Successfully started VM', '{}:'.format(self.domuuid), 'o')
+                self.dom = dom
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
+            except libvirt.libvirtError as e:
+                ansiiprint.echo('Failed to create VM', '{}:'.format(self.domuuid), 'e')
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): str(e) })
+                self.dom = None
 
         lv_conn.close()
         self.instart = False
