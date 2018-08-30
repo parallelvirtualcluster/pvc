@@ -627,7 +627,8 @@ def node_info(node, long_output):
 
     if information == None:
         click.echo('ERROR: Could not find a node matching that name.')
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     click.echo(information)
 
@@ -978,7 +979,7 @@ def undefine_vm(domain):
     # Ensure at least one search method is set
     if domain == None:
         click.echo("ERROR: You must specify either a name or UUID value.")
-        return
+        exit(1)
 
     # Open a Zookeeper connection
     zk_conn = startZKConnection(zk_host)
@@ -1059,7 +1060,7 @@ def start_vm(domain):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Set the VM to start
     click.echo('Starting VM "{}".'.format(dom_uuid))
@@ -1095,13 +1096,14 @@ def restart_vm(domain):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     # Set the VM to start
     click.echo('Restarting VM "{}".'.format(dom_uuid))
@@ -1137,13 +1139,14 @@ def shutdown_vm(domain):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     # Set the VM to shutdown
     click.echo('Shutting down VM "{}".'.format(dom_uuid))
@@ -1179,13 +1182,14 @@ def stop_vm(domain):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
     if current_state != 'start':
         click.echo('ERROR: VM "{}" is not in "start" state!'.format(dom_uuid))
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     # Set the VM to start
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
@@ -1239,7 +1243,8 @@ def move_vm(domain, target_hypervisor, selector):
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
-            return
+            stopZKConnection(zk_conn)
+            exit(1)
 
         # Verify node is valid
         verifyNode(zk_conn, target_hypervisor)
@@ -1302,7 +1307,7 @@ def migrate_vm(domain, target_hypervisor, selector, force_migrate):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
@@ -1319,14 +1324,16 @@ def migrate_vm(domain, target_hypervisor, selector, force_migrate):
         click.echo('> Last hypervisor: {}'.format(last_hypervisor))
         click.echo('> Current hypervisor: {}'.format(current_hypervisor))
         click.echo('Run `vm unmigrate` to restore the VM to its previous hypervisor, or use `--force` to override this check.')
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     if target_hypervisor == None:
         target_hypervisor = findTargetHypervisor(zk_conn, selector, dom_uuid)
     else:
         if target_hypervisor == current_hypervisor:
             click.echo('ERROR: VM "{}" is already running on hypervisor "{}".'.format(dom_uuid, current_hypervisor))
-            return
+            stopZKConnection(zk_conn)
+            exit(1)
 
         # Verify node is valid
         verifyNode(zk_conn, target_hypervisor)
@@ -1368,7 +1375,7 @@ def unmigrate_vm(domain):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Get state and verify we're OK to proceed
     current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
@@ -1381,7 +1388,8 @@ def unmigrate_vm(domain):
 
     if target_hypervisor == '':
         click.echo('ERROR: VM "{}" has not been previously migrated.'.format(dom_uuid))
-        return
+        stopZKConnection(zk_conn)
+        exit(1)
 
     click.echo('Unmigrating VM "{}" back to hypervisor "{}".'.format(dom_uuid, target_hypervisor))
     transaction = zk_conn.transaction()
@@ -1424,7 +1432,7 @@ def vm_info(domain, long_output):
     if dom_uuid == None:
         click.echo('ERROR: Could not find VM "{}" in the cluster!'.format(domain))
         stopZKConnection(zk_conn)
-        return
+        exit(1)
 
     # Gather information from XML config and print it
     information = getInformationFromXML(zk_conn, dom_uuid, long_output)
