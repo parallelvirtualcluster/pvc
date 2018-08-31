@@ -481,7 +481,7 @@ def migrateFromFencedHost(zk_conn, node_name):
         zkhandler.writedata(zk_conn, {
             '/domains/{}/state'.format(dom_uuid): 'start',
             '/domains/{}/hypervisor'.format(dom_uuid): target_hypervisor,
-            '/domains/{}/lasthypervisor'.format(dom_uuid): current_hypervisor
+            '/domains/{}/lasthypervisor'.format(dom_uuid): node_name
         })
 
     # Set node in flushed state for easy remigrating when it comes back
