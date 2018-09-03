@@ -93,6 +93,7 @@ def stopZKConnection(zk_conn):
 def getDomainMainDetails(parsed_xml):
     # Get the information we want from it
     duuid = str(parsed_xml.uuid)
+    ddescription = str(parsed_xml.description)
     dname = str(parsed_xml.name)
     dmemory = str(parsed_xml.memory)
     dmemory_unit = str(parsed_xml.memory.attrib['unit'])
@@ -106,7 +107,7 @@ def getDomainMainDetails(parsed_xml):
     except:
         dvcputopo = 'N/A'
 
-    return duuid, dname, dmemory, dvcpu, dvcputopo
+    return duuid, dname, ddescription, dmemory, dvcpu, dvcputopo
 
 # Get long-format details
 def getDomainExtraDetails(parsed_xml):
@@ -202,7 +203,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     for domain in node_running_domains:
         try:
             parsed_xml = getDomainXML(zk_conn, domain)
-            duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+            duuid, dname, ddescription, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
             node_mem_allocated += int(dmemory)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
@@ -264,7 +265,7 @@ def getInformationFromXML(zk_conn, uuid, long_output):
 
     try:
         parsed_xml = getDomainXML(zk_conn, uuid)
-        duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+        duuid, dname, ddescription, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
     except AttributeError:
         click.echo('Error: Domain {} does not exist.'.format(domain))
 
@@ -282,6 +283,7 @@ def getInformationFromXML(zk_conn, uuid, long_output):
     # Basic information
     ainformation.append('{}UUID:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), duuid))
     ainformation.append('{}Name:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dname))
+    ainformation.append('{}Description:{}        {}'.format(ansiiprint.purple(), ansiiprint.end(), ddescription))
     ainformation.append('{}Memory (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory))
     ainformation.append('{}vCPUs:{}              {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcpu))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
@@ -1490,6 +1492,7 @@ def get_vm_list(hypervisor, limit):
     vm_migrated = {}
     vm_uuid = {}
     vm_name = {}
+    vm_description = {}
     vm_memory = {}
     vm_vcpu = {}
 
@@ -1523,7 +1526,7 @@ def get_vm_list(hypervisor, limit):
 
         try:
             vm_xml = getDomainXML(zk_conn, vm)
-            vm_uuid[vm], vm_name[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = getDomainMainDetails(vm_xml)
+            vm_uuid[vm], vm_name[vm], vm_description[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = getDomainMainDetails(vm_xml)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
 
