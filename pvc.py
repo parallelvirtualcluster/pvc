@@ -93,7 +93,10 @@ def stopZKConnection(zk_conn):
 def getDomainMainDetails(parsed_xml):
     # Get the information we want from it
     duuid = str(parsed_xml.uuid)
-    ddescription = str(parsed_xml.description)
+    try:
+        ddescription = str(parsed_xml.description)
+    except AttributeError:
+        ddescription = "N/A"
     dname = str(parsed_xml.name)
     dmemory = str(parsed_xml.memory)
     dmemory_unit = str(parsed_xml.memory.attrib['unit'])
