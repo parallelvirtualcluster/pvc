@@ -705,7 +705,7 @@ def node_list(limit):
         for domain in node_running_domains[node_name]:
             try:
                 parsed_xml = getDomainXML(zk_conn, domain)
-                duuid, dname, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
+                duuid, dname, ddescription, dmemory, dvcpu, dvcputopo = getDomainMainDetails(parsed_xml)
                 node_mem_allocated[node_name] += int(dmemory)
             except AttributeError:
                 click.echo('Error: Domain {} does not exist.'.format(domain))
