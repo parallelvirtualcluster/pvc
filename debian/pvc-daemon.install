@@ -1,4 +1,4 @@
-pvcd.py usr/share/pvc
-pvcd.service lib/systemd/system
-pvcd.conf.sample etc/pvc
-pvcd usr/share/pvc
+daemon/pvcd.py usr/share/pvc
+daemon/pvcd.service lib/systemd/system
+daemon/pvcd.conf.sample etc/pvc
+daemon/pvcd usr/share/pvc
