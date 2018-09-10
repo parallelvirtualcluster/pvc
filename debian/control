@@ -6,16 +6,16 @@ Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
 X-Python3-Version: >= 3.2
 
-Package: pvc-daemon
+Package: pvc-virtdaemon
 Architecture: all
 Depends: python3-kazoo, python3-libvirt, python3-psutil, python3-apscheduler, ipmitool, libvirt-daemon-system
 Suggests: pvc-client
-Description: Parallel Virtual Cluster daemon (Python 3)
+Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters,
  including full control of running VMs, definitions, and hypervisors (including fencing via
  IPMI). This package provides the daemon component for a hypervisor node.
  .
- This package installs the PVC daemon utility
+ This package installs the PVC virtualization daemon
 
 Package: pvc-client
 Architecture: all
