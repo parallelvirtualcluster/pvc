@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcd.py - Daemon startup stub
+# pvcvd.py - Virtualization daemon startup stub
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -20,4 +20,4 @@
 #
 ###############################################################################
 
-import pvcd.Daemon
+import pvcvd.Daemon

@@ -1,4 +1,4 @@
-# pvcd cluster configuration file example
+# pvcvd cluster configuration file example
 #
 # This configuration file specifies details for this node in PVC. Multiple host
 # blocks can be added but only the one matching the current system hostname will
