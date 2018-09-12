@@ -39,13 +39,13 @@ import lib.zkhandler as zkhandler
 import pvcvd.VMInstance as VMInstance
 import pvcvd.NodeInstance as NodeInstance
 
-print(ansiiprint.bold() + "pvcvd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
+print(ansiiprint.bold() + "pvcvd - Parallel Virtual Cluster virtualization daemon" + ansiiprint.end())
 
 # Get the config file variable from the environment
 try:
-    pvcvd_config_file = os.environ['PVCD_CONFIG_FILE']
+    pvcvd_config_file = os.environ['PVCVD_CONFIG_FILE']
 except:
-    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcvd.')
+    print('ERROR: The "PVCVD_CONFIG_FILE" environment variable must be set before starting pvcvd.')
     exit(1)
 
 myhostname = socket.gethostname()
@@ -182,9 +182,9 @@ print('{0}Node hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), myh
 print('{0}IPMI hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), config['ipmi_hostname']))
 print('{0}Machine details:{1}'.format(ansiiprint.bold(), ansiiprint.end()))
 print('  {0}CPUs:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[0]))
-print('  {0}Arch:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[1]))
+print('  {0}Arch:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[3]))
 print('  {0}OS:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[2]))
-print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[3]))
+print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[1]))
 
 # Check if our node exists in Zookeeper, and create it if not
 if zk_conn.exists('/nodes/{}'.format(myhostname)):
