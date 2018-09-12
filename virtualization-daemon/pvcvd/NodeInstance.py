@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# NodeInstance.py - Class implementing a PVC node and run by pvcd
+# NodeInstance.py - Class implementing a PVC node and run by pvcvd
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -21,8 +21,8 @@
 ###############################################################################
 
 import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, subprocess
-import pvcd.ansiiprint as ansiiprint
-import pvcd.zkhandler as zkhandler
+import pvcvd.ansiiprint as ansiiprint
+import pvcvd.zkhandler as zkhandler
 
 class NodeInstance():
     # Initialization function

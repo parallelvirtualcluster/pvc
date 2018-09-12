@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# VMInstance.py - Class implementing a PVC virtual machine and run by pvcd
+# VMInstance.py - Class implementing a PVC virtual machine and run by pvcvd
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -21,8 +21,8 @@
 ###############################################################################
 
 import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
-import pvcd.ansiiprint as ansiiprint
-import pvcd.zkhandler as zkhandler
+import pvcvd.ansiiprint as ansiiprint
+import pvcvd.zkhandler as zkhandler
 
 class VMInstance:
     # Initialization function

@@ -33,18 +33,18 @@ import time
 import configparser
 import apscheduler.schedulers.background
 
-import pvcd.ansiiprint as ansiiprint
-import pvcd.zkhandler as zkhandler
-import pvcd.VMInstance as VMInstance
-import pvcd.NodeInstance as NodeInstance
+import pvcvd.ansiiprint as ansiiprint
+import pvcvd.zkhandler as zkhandler
+import pvcvd.VMInstance as VMInstance
+import pvcvd.NodeInstance as NodeInstance
 
-print(ansiiprint.bold() + "pvcd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
+print(ansiiprint.bold() + "pvcvd - Parallel Virtual Cluster management daemon" + ansiiprint.end())
 
 # Get the config file variable from the environment
 try:
-    pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
+    pvcvd_config_file = os.environ['PVCD_CONFIG_FILE']
 except:
-    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcd.')
+    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcvd.')
     exit(1)
 
 myhostname = socket.gethostname()
@@ -64,11 +64,11 @@ config_values = [
     'ipmi_username',
     'ipmi_password'
 ]
-def readConfig(pvcd_config_file, myhostname):
-    print('Loading configuration from file {}'.format(pvcd_config_file))
+def readConfig(pvcvd_config_file, myhostname):
+    print('Loading configuration from file {}'.format(pvcvd_config_file))
 
     o_config = configparser.ConfigParser()
-    o_config.read(pvcd_config_file)
+    o_config.read(pvcvd_config_file)
     config = {}
 
     try:
@@ -97,7 +97,7 @@ def readConfig(pvcd_config_file, myhostname):
     return config
 
 # Get config
-config = readConfig(pvcd_config_file, myhostname)
+config = readConfig(pvcvd_config_file, myhostname)
 
 # Check that libvirtd is listening TCP
 libvirt_check_name = "qemu+tcp://127.0.0.1:16509/system"

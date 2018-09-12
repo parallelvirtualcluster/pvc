@@ -1,4 +1,0 @@
-virtualization-daemon/pvcd.py usr/share/pvc
-virtualization-daemon/pvcd.service lib/systemd/system
-virtualization-daemon/pvcd.conf.sample etc/pvc
-virtualization-daemon/pvcd usr/share/pvc

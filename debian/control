@@ -6,7 +6,7 @@ Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
 X-Python3-Version: >= 3.2
 
-Package: pvc-virtdaemon
+Package: pvc-virtualization-daemon
 Architecture: all
 Depends: python3-kazoo, python3-libvirt, python3-psutil, python3-apscheduler, ipmitool, libvirt-daemon-system
 Suggests: pvc-client
