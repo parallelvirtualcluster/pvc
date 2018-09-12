@@ -1,5 +1,5 @@
 #!/bin/sh
-ver="0.2"
+ver="0.3"
 git pull
 rm ../pvc_*
 dh_make -p pvc_${ver} --createorig --single --yes

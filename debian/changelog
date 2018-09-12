@@ -1,3 +1,9 @@
+pvc (0.3-1) unstable; urgency=medium
+
+  * Code and package reorganization pending additional daemons
+
+ -- Joshua Boniface <joshua@boniface.me>  Wed, 12 Sep 2018 12:08:28 -0400
+
 pvc (0.2-1) unstable; urgency=medium
 
   * Minor version bump with stability fixes

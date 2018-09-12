@@ -6,9 +6,18 @@ Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
 X-Python3-Version: >= 3.2
 
+Package: pvc-daemon-common
+Architecture: all
+Depends: python3-kazoo, python3-psutil, python3-apscheduler
+Suggests: pvc-virtualization-daemon, pvc-client
+Description: Parallel Virtual Cluster common daemon libraries (Python 3)
+ The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
+ .
+ This package installs the common daemon libraries
+
 Package: pvc-virtualization-daemon
 Architecture: all
-Depends: python3-kazoo, python3-libvirt, python3-psutil, python3-apscheduler, ipmitool, libvirt-daemon-system
+Depends: pvc-daemon-common, python3-libvirt, ipmitool, libvirt-daemon-system
 Suggests: pvc-client
 Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters,

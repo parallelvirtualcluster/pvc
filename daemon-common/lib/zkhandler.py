@@ -21,7 +21,7 @@
 ###############################################################################
 
 import kazoo.client
-import pvcvd.ansiiprint as ansiiprint
+import ansiiprint
 
 # Child list function
 def listchildren(zk_conn, key):
