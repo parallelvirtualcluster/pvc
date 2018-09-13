@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Daemon.py - PVC hypervisor node daemon
+# Daemon.py - PVC hypervisor virtualization daemon
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
