@@ -26,6 +26,17 @@ Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  .
  This package installs the PVC virtualization daemon
 
+Package: pvc-network-daemon
+Architecture: all
+Depends: pvc-daemon-common, python3-libvirt, ipmitool, libvirt-daemon-system
+Suggests: pvc-client, pvc-virtualization-daemon
+Description: Parallel Virtual Cluster network daemon (Python 3)
+ The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters,
+ including full control of running VMs, definitions, and hypervisors (including fencing via
+ IPMI). This package provides the daemon component for networking on a hypervisor node.
+ .
+ This package installs the PVC network daemon
+
 Package: pvc-client
 Architecture: all
 Depends: python3-kazoo, python3-libvirt, python3-psutil, python3-click, python3-lxml

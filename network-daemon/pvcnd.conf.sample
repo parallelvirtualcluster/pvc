@@ -1,0 +1,22 @@
+# pvcnd cluster configuration file example
+#
+# This configuration file specifies details for this node in PVC. Multiple host
+# blocks can be added but only the one matching the current system hostname will
+# be used by the local daemon. Default values apply to all hosts for any value
+# not specifically overridden.
+#
+# The following values are required for each host or in a default section:
+#    zookeeper: the IP+port of the Zookeper instance (defaults to 127.0.0.1:2181)
+#    vni_dev: the lower-level network device to bind VNI to
+#    vni_dev_ip: the IP address (CIDR) of the lower-level network device, used
+#                by FRR to communicate with the route reflectors and pass routes
+#                for VNI interfaces
+#
+# Copy this example to /etc/pvc/pvcnd.conf and edit to your needs
+
+[default]
+zookeeper = 127.0.0.1:2181
+
+[myhost]
+vni_dev = ens4
+vni_dev_ip = 10.255.0.3/24
