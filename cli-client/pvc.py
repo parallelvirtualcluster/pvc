@@ -445,6 +445,10 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
             most_allocfree = allocfree
             target_hypervisor = hypervisor
 
+    if target_hypervisor == None:
+        click.echo('ERROR: Could not find a suitable target hypervisor!')
+        exit(1)
+
     return target_hypervisor
 
 # via load average
