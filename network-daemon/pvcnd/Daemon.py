@@ -170,12 +170,12 @@ if config['vni_dev_ip'] == 'dhcp':
     vni_dev = config['vni_dev']
     ansiiprint.echo('Configuring VNI parent device {} with DHCP IP'.format(vni_dev), '', 'o')
     os.system(
-        'sudo ip link set {0} up'.format(
+        'ip link set {0} up'.format(
             vni_dev
         )
     )
     os.system(
-        'sudo dhclient {0}'.format(
+        'dhclient {0}'.format(
             vni_dev
         )
     )
@@ -184,12 +184,12 @@ else:
     vni_dev_ip = config['vni_dev_ip']
     ansiiprint.echo('Configuring VNI parent device {} with IP {}'.format(vni_dev, vni_dev_ip), '', 'o')
     os.system(
-        'sudo ip link set {0} up'.format(
+        'ip link set {0} up'.format(
             vni_dev
         )
     )
     os.system(
-        'sudo ip address add {0} dev {1}'.format(
+        'ip address add {0} dev {1}'.format(
             vni_dev_ip,
             vni_dev
         )
