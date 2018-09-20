@@ -184,7 +184,7 @@ def getDomainUUID(zk_conn, domain):
 #
 def define_vm(zk_conn, config_data, target_hypervisor, selector):
     # Parse the XML data
-    parsed_xml = lxml.objectify.fromstring(data)
+    parsed_xml = lxml.objectify.fromstring(config_data)
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
     click.echo('Adding new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid))
