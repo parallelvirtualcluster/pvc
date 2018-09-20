@@ -20,9 +20,18 @@
 #
 ###############################################################################
 
-import os, sys, psutil, socket, time, libvirt, kazoo.client, threading, subprocess
-import lib.ansiiprint as ansiiprint
-import lib.zkhandler as zkhandler
+import os
+import sys
+import psutil
+import socket
+import time
+import libvirt
+import kazoo.client
+import threading
+import subprocess
+
+import daemon_lib.ansiiprint as ansiiprint
+import daemon_lib.zkhandler as zkhandler
 
 class NodeInstance():
     # Initialization function

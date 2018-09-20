@@ -20,9 +20,17 @@
 #
 ###############################################################################
 
-import os, sys, uuid, socket, time, threading, libvirt, kazoo.client
-import lib.ansiiprint as ansiiprint
-import lib.zkhandler as zkhandler
+import os
+import sys
+import uuid
+import socket
+import time
+import threading
+import libvirt
+import kazoo.client
+
+import daemon_lib.ansiiprint as ansiiprint
+import daemon_lib.zkhandler as zkhandler
 
 class VMInstance:
     # Initialization function

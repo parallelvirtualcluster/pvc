@@ -23,9 +23,9 @@
 import socket
 import click
 
-import lib.common as common
-import lib.node as node
-import lib.vm as vm
+import client_lib.common as common
+import client_lib.node as node
+import client_lib.vm as vm
 
 myhostname = socket.gethostname()
 zk_host = ''

@@ -20,9 +20,11 @@
 #
 ###############################################################################
 
-import os, sys
-import lib.ansiiprint as ansiiprint
-import lib.zkhandler as zkhandler
+import os
+import sys
+
+import daemon_lib.ansiiprint as ansiiprint
+import daemon_lib.zkhandler as zkhandler
 
 class VXNetworkInstance():
     # Initialization function

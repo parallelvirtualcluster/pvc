@@ -33,8 +33,8 @@ import time
 import configparser
 import apscheduler.schedulers.background
 
-import lib.ansiiprint as ansiiprint
-import lib.zkhandler as zkhandler
+import daemon_lib.ansiiprint as ansiiprint
+import daemon_lib.zkhandler as zkhandler
 
 import pvcvd.VMInstance as VMInstance
 import pvcvd.NodeInstance as NodeInstance

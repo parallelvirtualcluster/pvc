@@ -34,8 +34,8 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import lib.ansiiprint as ansiiprint
-import lib.common as common
+import client_lib.ansiiprint as ansiiprint
+import client_lib.common as common
 
 def getInformationFromNode(zk_conn, node_name, long_output):
     node_daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')

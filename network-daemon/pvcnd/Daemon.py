@@ -29,8 +29,8 @@ import psutil
 import configparser
 import time
 
-import lib.ansiiprint as ansiiprint
-import lib.zkhandler as zkhandler
+import daemon_lib.ansiiprint as ansiiprint
+import daemon_lib.zkhandler as zkhandler
 
 import pvcnd.VXNetworkInstance as VXNetworkInstance
 

@@ -34,8 +34,8 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import lib.ansiiprint as ansiiprint
-import lib.common as common
+import client_lib.ansiiprint as ansiiprint
+import client_lib.common as common
 
 #
 # XML information parsing functions
