@@ -202,7 +202,7 @@ def define_vm(zk_conn, config_data, target_hypervisor, selector):
     transaction.create('/domains/{}/hypervisor'.format(dom_uuid), target_hypervisor.encode('ascii'))
     transaction.create('/domains/{}/lasthypervisor'.format(dom_uuid), ''.encode('ascii'))
     transaction.create('/domains/{}/failedreason'.format(dom_uuid), ''.encode('ascii'))
-    transaction.create('/domains/{}/xml'.format(dom_uuid), data.encode('ascii'))
+    transaction.create('/domains/{}/xml'.format(dom_uuid), config_data.encode('ascii'))
     results = transaction.commit()
 
     return True, ''

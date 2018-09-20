@@ -101,30 +101,6 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     information = '\n'.join(ainformation)
     return information
 
-# Get the list of valid target hypervisors
-def getHypervisors(zk_conn, dom_uuid):
-    valid_hypervisor_list = []
-    full_hypervisor_list = zk_conn.get_children('/nodes')
-
-    try:
-        current_hypervisor = zk_conn.get('/domains/{}/hypervisor'.format(dom_uuid))[0].decode('ascii')
-    except:
-        current_hypervisor = None
-
-    for hypervisor in full_hypervisor_list:
-        daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(hypervisor))[0].decode('ascii')
-        domain_state = zk_conn.get('/nodes/{}/domainstate'.format(hypervisor))[0].decode('ascii')
-
-        if hypervisor == current_hypervisor:
-            continue
-
-        if daemon_state != 'run' or domain_state != 'ready':
-            continue
-
-        valid_hypervisor_list.append(hypervisor)
-
-    return valid_hypervisor_list
-    
 #
 # Direct Functions
 #
