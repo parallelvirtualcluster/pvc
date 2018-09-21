@@ -106,7 +106,7 @@ def zk_listener(state):
             except:
                 time.sleep(1)
     elif state == kazoo.client.KazooState.CONNECTED:
-        anisiprint.echo('Connection to Zookeeper started', '', 'o')
+        ansiiprint.echo('Connection to Zookeeper started', '', 'o')
     else:
         pass
 
