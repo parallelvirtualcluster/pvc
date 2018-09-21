@@ -256,14 +256,7 @@ def undefine_vm(zk_conn, domain):
     # Delete the configurations
     try:
         click.echo('Undefining VM "{}".'.format(dom_uuid))
-        transaction = zk_conn.transaction()
-        transaction.delete('/domains/{}/state'.format(dom_uuid))
-        transaction.delete('/domains/{}/hypervisor'.format(dom_uuid))
-        transaction.delete('/domains/{}/lasthypervisor'.format(dom_uuid))
-        transaction.delete('/domains/{}/failedreason'.format(dom_uuid))
-        transaction.delete('/domains/{}/xml'.format(dom_uuid))
-        transaction.delete('/domains/{}'.format(dom_uuid))
-        transaction.commit()
+        zk_conn.delete('/domains/{}'.format(dom_uuid), recursive=True)
     except:
         pass
 
