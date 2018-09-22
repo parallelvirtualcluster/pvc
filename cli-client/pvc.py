@@ -23,9 +23,10 @@
 import socket
 import click
 
-import client_lib.common as common
-import client_lib.node as node
-import client_lib.vm as vm
+import client_lib.common as pvc_common
+import client_lib.node as pvc_node
+import client_lib.vm as pvc_vm
+import client_lib.network as pvc_network
 
 myhostname = socket.gethostname()
 zk_host = ''
@@ -33,7 +34,7 @@ zk_host = ''
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
 def cleanup(retcode, retmsg, zk_conn):
-    common.stopZKConnection(zk_conn)
+    pvc_common.stopZKConnection(zk_conn)
     if retcode == True:
         if retmsg != '':
             click.echo(retmsg)
@@ -70,8 +71,8 @@ def node_flush(node, wait):
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
     
-    zk_conn = common.startZKConnection(zk_host)
-    retstate, retmsg = node.flush_node(node, wait)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retstate, retmsg = pvc_node.flush_node(node, wait)
     cleanup(retstate, retmsg, zk_conn)
 
 ###############################################################################
@@ -86,8 +87,8 @@ def node_ready(node):
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    zk_conn = common.startZKConnection(zk_host)
-    retstate, retmsg = node.ready_node(zk_conn, node)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retstate, retmsg = pvc_node.ready_node(zk_conn, node)
     cleanup(retstate, retcode, zk_conn)
 
 @click.command(name='unflush', short_help='Restore node to service.')
@@ -99,8 +100,8 @@ def node_unflush(node):
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    zk_conn = common.startZKConnection(zk_host)
-    retstate, retmsg = node.ready_node(zk_conn, node)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retstate, retmsg = pvc_node.ready_node(zk_conn, node)
     cleanup(retstate, retcode, zk_conn)
 
 ###############################################################################
@@ -119,8 +120,8 @@ def node_info(node, long_output):
     Show information about node NODE. If unspecified, defaults to this host.
     """
 
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = node.get_info(node, long_output)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_node.get_info(node, long_output)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -135,8 +136,8 @@ def node_list(limit):
     List all hypervisor nodes in the cluster; optionally only match names matching regex LIMIT.
     """
 
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = node.get_list(zk_conn, limit)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_node.get_list(zk_conn, limit)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -174,8 +175,8 @@ def vm_define(config, target_hypervisor, selector):
     config_data = config.read()
     config.close()
 
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.define_vm(zk_conn, config_data, target_hypervisor, selector)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.define_vm(zk_conn, config_data, target_hypervisor, selector)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -204,10 +205,10 @@ def vm_modify(domain, config, editor, restart):
     if editor == False and config == None:
         cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
 
-    zk_conn = common.startZKConnection(zk_host)
+    zk_conn = pvc_common.startZKConnection(zk_host)
 
     if editor == True:
-        dom_uuid = vm.getDomainUUID(zk_conn, domain)
+        dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
         if dom_uuid == None:
             cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
 
@@ -263,7 +264,7 @@ def vm_modify(domain, config, editor, restart):
 
         click.echo('Replacing config of VM "{}".'.format(dom_name, config))
 
-    retcode, retmsg = vm.modify_vm(zk_conn, domain, restart)
+    retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -284,8 +285,8 @@ def vm_undefine(domain):
         exit(1)
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.undefine_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.undefine_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -301,8 +302,8 @@ def vm_start(domain):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.start_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.start_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -318,8 +319,8 @@ def vm_restart(domain):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.restart_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.restart_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -335,8 +336,8 @@ def vm_shutdown(domain):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.shutdown_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.shutdown_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -352,8 +353,8 @@ def vm_stop(domain):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.stop_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.stop_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -378,8 +379,8 @@ def vm_move(domain, target_hypervisor, selector):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.move_vm(zk_conn, domain, target_hypervisor, selector)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.move_vm(zk_conn, domain, target_hypervisor, selector)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -408,8 +409,8 @@ def vm_migrate(domain, target_hypervisor, selector, force_migrate):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.migrate_vm(zk_conn, domain, target_hypervisor, selector, force_migrate)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_hypervisor, selector, force_migrate)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -425,8 +426,8 @@ def vm_unmigrate(domain):
     """
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.unmigrate_vm(zk_conn, domain)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.unmigrate_vm(zk_conn, domain)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -446,8 +447,8 @@ def vm_info(domain, long_output):
     """
 
 	# Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.get_info(zk_conn, domain, long_output)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.get_info(zk_conn, domain, long_output)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -466,9 +467,126 @@ def vm_list(hypervisor, limit):
     List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
     """
 
-    zk_conn = common.startZKConnection(zk_host)
-    retcode, retmsg = vm.get_list(zk_conn, hypervisor, limit)
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.get_list(zk_conn, hypervisor, limit)
     cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network
+###############################################################################
+@click.group(name='network', short_help='Manage a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
+def cli_network():
+    """
+    Manage the state of a VXLAN network in the PVC cluster.
+    """
+    pass
+
+###############################################################################
+# pvc network add
+###############################################################################
+@click.command(name='add', short_help='Add a new virtual network to the cluster.')
+@click.option(
+    '-d', '--description', 'description',
+    default="",
+    help='Description of the network.'
+)
+@click.option(
+    '-i', '--ipnet', 'ip_network',
+    required=True,
+    help='CIDR-format network address for subnet.'
+)
+@click.option(
+    '-g', '--gateway', 'ip_gateway',
+    required=True,
+    help='Default gateway address for subnet.'
+)
+@click.option(
+    '-r', '--router', 'ip_routers',
+    multiple=True,
+    required=True,
+    help='Router addresses for subnet (specify one or two; mapped to routers in order given).'
+)
+@click.option(
+    '-c', '--dhcp', 'dhcp_flag',
+    is_flag=True,
+    default=False,
+    help='Enable DHCP for clients on subnet.'
+)
+@click.argument(
+    'vni'
+)
+def net_add(vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
+    """
+    Add a new virtual network with VXLAN identifier VNI to the cluster.
+
+    Example:
+    pvc network add 1001 --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --router 10.1.1.2 --router 10.1.1.3 --dhcp
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network remove
+###############################################################################
+@click.command(name='remove', short_help='Remove a virtual network from the cluster.')
+@click.argument(
+    'net'
+)
+def net_remove(net):
+    """
+    Remove an existing virtual network NET from the cluster; NET can be either a VNI or description.
+
+    WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
+    that all client VMs have been removed from the network or undefined behaviour may occur.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.remove_network(zk_conn, net)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network info
+###############################################################################
+@click.command(name='info', short_help='Show details of a network.')
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def net_info(vni, long_output):
+    """
+	Show information about virtual network VNI.
+    """
+
+	# Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.get_info(zk_conn, vni, long_output)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network list
+###############################################################################
+@click.command(name='list', short_help='List all VM objects.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def net_list(limit):
+    """
+    List all virtual networks in the cluster; optionally only match VNIs or Descriptions matching regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.get_list(zk_conn, hypervisor, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+
+
+
+
 
 ###############################################################################
 # pvc init
@@ -487,7 +605,7 @@ def init_cluster():
     click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
 
     # Open a Zookeeper connection
-    zk_conn = common.startZKConnection(zk_host)
+    zk_conn = pvc_common.startZKConnection(zk_host)
 
     # Destroy the existing data
     try:
@@ -504,7 +622,7 @@ def init_cluster():
     transaction.commit()
 
     # Close the Zookeeper connection
-    common.stopZKConnection(zk_conn)
+    pvc_common.stopZKConnection(zk_conn)
 
     click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
 
@@ -552,8 +670,15 @@ cli_vm.add_command(vm_unmigrate)
 cli_vm.add_command(vm_info)
 cli_vm.add_command(vm_list)
 
+cli_network.add_command(net_add)
+#cli_network.add_command(net_modify)
+cli_network.add_command(net_remove)
+cli_network.add_command(net_info)
+cli_network.add_command(net_list)
+
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
+cli.add_command(cli_network)
 cli.add_command(init_cluster)
 
 #
