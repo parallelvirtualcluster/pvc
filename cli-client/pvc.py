@@ -72,7 +72,7 @@ def node_flush(node, wait):
     """
     
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retstate, retmsg = pvc_node.flush_node(node, wait)
+    retstate, retmsg = pvc_node.flush_node(zk_conn, node, wait)
     cleanup(retstate, retmsg, zk_conn)
 
 ###############################################################################
