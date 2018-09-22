@@ -106,7 +106,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
 #
 def flush_node(zk_conn, node, wait):
     # Verify node is valid
-    verifyNode(zk_conn, node)
+    common.verifyNode(zk_conn, node)
 
     click.echo('Flushing hypervisor {} of running VMs.'.format(node))
 
