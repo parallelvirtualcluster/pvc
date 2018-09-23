@@ -126,7 +126,7 @@ def flush_node(zk_conn, node, wait):
 
 def ready_node(zk_conn, node):
     # Verify node is valid
-    verifyNode(zk_conn, node)
+    common.verifyNode(zk_conn, node)
 
     click.echo('Restoring hypervisor {} to active service.'.format(node))
 
@@ -139,7 +139,7 @@ def ready_node(zk_conn, node):
 
 def get_info(zk_conn, node, long_output):
     # Verify node is valid
-    verifyNode(zk_conn, node)
+    common.verifyNode(zk_conn, node)
 
     # Get information about node in a pretty format
     information = getInformationFromNode(zk_conn, node, long_output)
