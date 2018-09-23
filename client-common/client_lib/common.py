@@ -170,9 +170,9 @@ def getDomainControllers(parsed_xml):
 def verifyNode(zk_conn, node):
     try:
         zk_conn.get('/nodes/{}'.format(node))
+        return True
     except:
-        click.echo('ERROR: No node named "{}" is present in the cluster.'.format(node))
-        exit(1)
+        return False
 
 #
 # Get the list of valid target hypervisors

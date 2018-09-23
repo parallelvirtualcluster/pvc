@@ -72,8 +72,8 @@ def node_flush(node, wait):
     """
     
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retstate, retmsg = pvc_node.flush_node(zk_conn, node, wait)
-    cleanup(retstate, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.flush_node(zk_conn, node, wait)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc node ready/unflush
@@ -88,8 +88,8 @@ def node_ready(node):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retstate, retmsg = pvc_node.ready_node(zk_conn, node)
-    cleanup(retstate, retcode, zk_conn)
+    retcode, retmsg = pvc_node.ready_node(zk_conn, node)
+    cleanup(retcode, retmsg, zk_conn)
 
 @click.command(name='unflush', short_help='Restore node to service.')
 @click.argument(
@@ -101,8 +101,8 @@ def node_unflush(node):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retstate, retmsg = pvc_node.ready_node(zk_conn, node)
-    cleanup(retstate, retcode, zk_conn)
+    retcode, retmsg = pvc_node.ready_node(zk_conn, node)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc node info
