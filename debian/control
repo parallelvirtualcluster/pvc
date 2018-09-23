@@ -9,7 +9,7 @@ X-Python3-Version: >= 3.2
 Package: pvc-daemon-common
 Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-apscheduler
-Suggests: pvc-virtualization-daemon, pvc-client
+Suggests: pvc-virtualization-daemon, pvc-cli-client
 Description: Parallel Virtual Cluster common daemon libraries (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
  .
@@ -18,7 +18,7 @@ Description: Parallel Virtual Cluster common daemon libraries (Python 3)
 Package: pvc-virtualization-daemon
 Architecture: all
 Depends: pvc-daemon-common, python3-libvirt, ipmitool, libvirt-daemon-system
-Suggests: pvc-client
+Suggests: pvc-cli-client
 Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
  .
@@ -27,7 +27,7 @@ Description: Parallel Virtual Cluster virtualization daemon (Python 3)
 Package: pvc-network-daemon
 Architecture: all
 Depends: pvc-daemon-common, python3-libvirt, ipmitool, libvirt-daemon-system
-Suggests: pvc-client, pvc-virtualization-daemon
+Suggests: pvc-cli-client, pvc-virtualization-daemon
 Description: Parallel Virtual Cluster network daemon (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
  .
