@@ -23,7 +23,7 @@
 import os
 import sys
 import time
-import apscheduler
+import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
