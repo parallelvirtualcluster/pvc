@@ -507,10 +507,10 @@ def cli_network():
     help='Router addresses for subnet (specify one or two; mapped to routers in order given).'
 )
 @click.option(
-    '-c', '--dhcp', 'dhcp_flag',
+    '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
     default=False,
-    help='Enable DHCP for clients on subnet.'
+    help='Enable/disable DHCP for clients on subnet.'
 )
 @click.argument(
     'vni'
@@ -525,6 +525,51 @@ def net_add(vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network modify
+###############################################################################
+@click.command(name='modify', short_help='Modify an existing virtual network.')
+@click.option(
+    '-d', '--description', 'description',
+    default=None,
+    help='Description of the network.'
+)
+@click.option(
+    '-i', '--ipnet', 'ip_network',
+    default=None,
+    help='CIDR-format network address for subnet.'
+)
+@click.option(
+    '-g', '--gateway', 'ip_gateway',
+    default=None,
+    help='Default gateway address for subnet.'
+)
+@click.option(
+    '-r', '--router', 'ip_routers',
+    multiple=True,
+    help='Router addresses for subnet (specify one or two; mapped to routers in order given).'
+)
+@click.option(
+    '--dhcp/--no-dhcp', 'dhcp_flag',
+    default=None,
+    is_flag=True,
+    help='Enable/disable DHCP for clients on subnet.'
+)
+@click.argument(
+    'vni'
+)
+def net_modify(vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
+    """
+    Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
+
+    Example:
+    pvc network modify 1001 --gateway 10.1.1.255 --router 10.1.1.251 --router 10.1.1.252 --no-dhcp
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, ip_network=ip_network, ip_gateway=ip_gateway, ip_routers=ip_routers, dhcp_flag=dhcp_flag)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -580,7 +625,7 @@ def net_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list(zk_conn, hypervisor, limit)
+    retcode, retmsg = pvc_network.get_list(zk_conn, limit)
     cleanup(retcode, retmsg, zk_conn)
 
 
@@ -671,7 +716,7 @@ cli_vm.add_command(vm_info)
 cli_vm.add_command(vm_list)
 
 cli_network.add_command(net_add)
-#cli_network.add_command(net_modify)
+cli_network.add_command(net_modify)
 cli_network.add_command(net_remove)
 cli_network.add_command(net_info)
 cli_network.add_command(net_list)
