@@ -42,7 +42,7 @@ class VXNetworkInstance():
         self.watch_change = False
 
         self.update_timer = apscheduler.schedulers.background.BackgroundScheduler()
-        self.update_timer.add_job(updateCorosyncResource, 'interval', seconds=1)
+        self.update_timer.add_job(self.updateCorosyncResource, 'interval', seconds=1)
 
         # Zookeper handlers for changed states
         @zk_conn.DataWatch('/networks/{}/description'.format(self.vni))
@@ -86,7 +86,6 @@ class VXNetworkInstance():
             self.watch_change = True
 
     def createCorosyncResource(self):
-        self.corosync_provisioned = True
         ansiiprint.echo('Creating Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
         os.system(
             """
@@ -105,6 +104,7 @@ class VXNetworkInstance():
                 self.bridge_nic
             )
         )
+        self.corosync_provisioned = True
 
     def removeCorosyncResource(self):
         ansiiprint.echo('Removing Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
@@ -186,15 +186,17 @@ class VXNetworkInstance():
 
     def updateCorosyncResource(self):
         if self.corosync_provisioned and self.watch_change:
+            self.watch_change = False
             # Rebuild the resource
-            removeCorosyncResource()
-            createCorosyncResource()
+            self.removeCorosyncResource()
+            self.createCorosyncResource()
 
     def provision(self):
-        createNetwork()
-        createCorosyncConfig()
+        self.createNetwork()
+        self.createCorosyncResource()
         self.update_timer.start()
 
     def deprovision(self):
         self.update_timer.shutdown()
-        removeCorosyncConfig()
+        removeCorosyncResource()
+        removeNetwork()
