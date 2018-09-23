@@ -89,14 +89,14 @@ class VXNetworkInstance():
         self.corosync_provisioned = True
         ansiiprint.echo('Creating Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
         os.system(
-            'echo "
+            'echo \"
                 configure
                     primitive vnivip_{0} ocf:heartbeat:IPaddr2 params ip={1} cidr_netmask={2} nic={3} op monitor interval=1s
                     commit
                     up
                 resource
                     start vnivip_{0}
-            " | crm -f -'.format(
+            \" | crm -f -'.format(
                 self.description,
                 self.ip_gateway,
                 self.ip_cidrnetmask
@@ -107,14 +107,14 @@ class VXNetworkInstance():
     def removeCorosyncResource(self):
         ansiiprint.echo('Removing Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
         os.system(
-            'echo "
+            'echo \"
                 resource
                     stop vnivip_{0}
                     up
                 configure
                     delete vnivip_{0}
                     commit
-            " | crm -f -'.format(
+            \" | crm -f -'.format(
                 self.description
             )
         )
