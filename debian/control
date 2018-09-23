@@ -33,6 +33,14 @@ Description: Parallel Virtual Cluster network daemon (Python 3)
  .
  This package installs the PVC network daemon
 
+Package: pvc-router-daemon
+Architecture: all
+Depends: pvc-daemon-common
+Description: Parallel Virtual Cluster router daemon (Python 3)
+ The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
+ .
+ This package installs the PVC router daemon
+
 Package: pvc-client-common
 Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml
