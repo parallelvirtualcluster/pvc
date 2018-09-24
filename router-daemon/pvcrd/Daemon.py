@@ -210,12 +210,17 @@ def updaterouters(new_router_list):
         else:
             t_router[router] = RouterInstance.RouterInstance(myhostname, router, t_router, s_network, zk_conn, config)
 
+# Set up our update function
+this_router = t_router[myhostname]
+update_zookeeper = this_router.update_zookeeper
+update_zookeeper()
+
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
     global network_list
     for network in new_network_list:
         if not network in s_network:
-            s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname]);
+            s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname])
         if not network in new_network_list:
             s_network[network].removeAddress()
             s_network[network].removeNetwork()
@@ -225,9 +230,9 @@ def updatenetworks(new_network_list):
     network_list = new_network_list
     print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(network_list)))
 
-# Set up our update function
-this_router = t_router[myhostname]
-update_zookeeper = this_router.update_zookeeper
+# Ensure we force startup of interfaces if we're primary
+if this_router.getnetworkstate() == 'primary':
+    this_router.become_primary()
 
 # Create timer to update this router in Zookeeper
 def createKeepaliveTimer():

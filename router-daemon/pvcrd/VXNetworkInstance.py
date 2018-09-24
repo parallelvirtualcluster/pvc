@@ -30,10 +30,10 @@ import daemon_lib.common as common
 
 class VXNetworkInstance():
     # Initialization function
-    def __init__ (self, vni, zk_conn, config, thisrouter):
+    def __init__ (self, vni, zk_conn, config, this_router):
         self.vni = vni
         self.zk_conn = zk_conn
-        self.thisrouter = thisrouter
+        self.this_router = this_router
         self.vni_dev = config['vni_dev']
 
         self.old_description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
@@ -88,7 +88,7 @@ class VXNetworkInstance():
     def createAddress(self):
         if self.this_router.getnetworkstate() == 'primary':
             ansiiprint.echo('Creating gateway {} on interface {}'.format(self.ip_gateway, self.vni_dev), '', 'o')
-            common.run_os_command('ip address add {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.vni_dev))
+            common.run_os_command('ip address add {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic))
 
     def removeNetwork(self):
         ansiiprint.echo('Removing VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
@@ -100,4 +100,4 @@ class VXNetworkInstance():
 
     def removeAddress(self):
         ansiiprint.echo('Removing gateway {} from interface {}'.format(self.ip_gateway, self.vni_dev), '', 'o')
-        common.run_os_command('ip address delete {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.vni_dev))
+        common.run_os_command('ip address delete {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic))

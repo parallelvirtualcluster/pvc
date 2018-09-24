@@ -61,22 +61,17 @@ class RouterInstance():
         @zk_conn.DataWatch('/routers/{}/networkstate'.format(self.name))
         def watch_hypervisor_networkstate(data, stat, event=""):
             try:
-                new_network_state = data.decode('ascii')
+                self.network_state = data.decode('ascii')
             except AttributeError:
-                new_network_state = 'secondary'
+                self.network_state = 'secondary'
 
-            if new_network_state != self.network_state:
-                self.network_state = new_network_state
-                # toggle state management of this router
+            # toggle state management of this router
+            if s_network != {}: # If there's no network list, we're too early in startup
                 if self.name == self.this_router:
                     if self.network_state == 'secondary':
-                        self.set_secondary()
+                        self.become_secondary()
                     if self.network_state == 'primary':
-                        self.set_primary()
-                        for router in t_router:
-                            if t_router[router].getname() != self.name:
-                                t_router[router].set_secondary()
-
+                        self.become_primary()
 
     # Get value functions
     def getname(self):
@@ -100,20 +95,30 @@ class RouterInstance():
         for network in s_network:
             self.network_list.append(s_network[network].getvni())
 
-    # Flush all VMs on the host
+    def become_secondary(self):
+        ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
+        ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
+        for network in self.s_network:
+            self.s_network[network].removeAddress()
+        for router in self.t_router:
+            if self.t_router[router].getname() != self.this_router:
+                zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
+
     def set_secondary(self):
-        ansiiprint.echo('Setting node {} to secondary state'.format(self.name), '', 'i')
-        ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
         zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'secondary' })
-        for network in self.s_network:
-            network.removeAddress()
-    
-    def set_primary(self):
-        ansiiprint.echo('Setting node {} to master state.'.format(self.name), '', 'i')
+   
+    def become_primary(self):
+        ansiiprint.echo('Setting router {} to primary state.'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
-        zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'primary' })
         for network in self.s_network:
-            network.createAddress()
+            self.s_network[network].createAddress()
+        for router in self.t_router:
+            if self.t_router[router].getname() != self.this_router:
+                zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'secondary' })
+
+    def set_primary(self):
+        zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'primary' })
+                
 
     def update_zookeeper(self):
         # Get past state and update if needed
