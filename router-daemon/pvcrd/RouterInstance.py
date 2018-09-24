@@ -41,7 +41,7 @@ class RouterInstance():
         self.this_router = this_router
         self.name = name
         self.daemon_state = 'stop'
-        self.network_state = 'primary'
+        self.network_state = 'secondary'
         self.t_router = t_router
         self.primary_router_list = []
         self.secondary_router_list = []
@@ -76,6 +76,7 @@ class RouterInstance():
                         for router in t_router:
                             if router.getname() != self.name:
                                 router.set_secondary()
+
 
     # Get value functions
     def getname(self):
@@ -189,7 +190,11 @@ class RouterInstance():
                     self.inactive_router_list.remove(router_name)
                 except ValueError:
                     pass
-        
+       
+        # Try to set ourself primary if there is no primary
+        if not self.primary_router_list:
+            self.set_primary()
+
         # Display cluster information to the terminal
         ansiiprint.echo('{}Cluster status{}'.format(ansiiprint.purple(), ansiiprint.end()), '', 't')
         ansiiprint.echo('{}Primary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.primary_router_list)), '', 'c')
