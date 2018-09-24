@@ -122,7 +122,7 @@ def node_info(node, long_output):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.get_info(node, long_output)
+    retcode, retmsg = pvc_node.get_info(zk_conn, node, long_output)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -201,7 +201,7 @@ def router_info(router, long_output):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_router.get_info(router, long_output)
+    retcode, retmsg = pvc_router.get_info(zk_conn, router, long_output)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
