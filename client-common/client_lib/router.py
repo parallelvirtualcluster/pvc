@@ -65,12 +65,12 @@ def getInformationFromRouter(zk_conn, router_name, long_output):
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('{}Hypervisor Router information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('{}Router information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
     ainformation.append('')
     # Basic information
     ainformation.append('{}Name:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), router_name))
     ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), daemon_state_colour, router_daemon_state, ansiiprint.end()))
-    ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), network_state_colour, router_network_state, ansiiprint.end()))
+    ainformation.append('{}Network State:{}        {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), network_state_colour, router_network_state, ansiiprint.end()))
     ainformation.append('{}CPUs:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), router_cpu_count))
     ainformation.append('{}Load:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), router_cpu_load))
     if long_output == True:
