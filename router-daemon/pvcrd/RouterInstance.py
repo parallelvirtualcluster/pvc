@@ -133,10 +133,12 @@ class RouterInstance():
             self.daemon_state = 'run'
 
         # Set our information in zookeeper
+        cpuload = os.getloadavg()[0]
         keepalive_time = int(time.time())
         try:
             zkhandler.writedata(self.zk_conn, {
-                '/routers/{}/keepalive'.format(self.name): str(keepalive_time)
+                '/routers/{}/keepalive'.format(self.name): str(keepalive_time),
+                '/routers/{}/cpuload'.format(self.name): str(cpuload),
             })
         except:
             ansiiprint.echo('Failed to set keepalive data', '', 'e')
@@ -144,7 +146,7 @@ class RouterInstance():
 
         # Display router information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}Network list:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), self.network_list), '', 'c')
+        ansiiprint.echo('{0}Networks count:{1} {2}  {0}Load average:{1} {3}'.format(ansiiprint.bold(), ansiiprint.end(), len(self.network_list), cpuload), '', 'c')
 
         # Update our local router lists
         for router_name in self.t_router:
