@@ -102,7 +102,7 @@ class RouterInstance():
             if self.t_router[router].getname() != self.this_router:
                 if self.t_router[router].getnetworkstate() != 'primary':
                     zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
-        time.sleep(1)
+        time.sleep(2)
         for network in self.s_network:
             self.s_network[network].removeAddress()
 
