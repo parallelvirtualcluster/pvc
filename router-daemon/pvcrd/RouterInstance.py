@@ -192,7 +192,7 @@ class RouterInstance():
         
         # Display cluster information to the terminal
         ansiiprint.echo('{}Cluster status{}'.format(ansiiprint.purple(), ansiiprint.end()), '', 't')
-        ansiiprint.echo('{}Primary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.primray_router_list)), '', 'c')
+        ansiiprint.echo('{}Primary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.primary_router_list)), '', 'c')
         ansiiprint.echo('{}Secondary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.secondary_router_list)), '', 'c')
         ansiiprint.echo('{}Inactive routers:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_router_list)), '', 'c')
 
