@@ -165,7 +165,7 @@ def router_secondary(router):
     """
     
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_router.secondary_router(zk_conn, router, wait)
+    retcode, retmsg = pvc_router.secondary_router(zk_conn, router)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
