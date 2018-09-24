@@ -89,7 +89,7 @@ class VXNetworkInstance():
             self.ip_cidrnetmask,
             self.bridge_nic
         ))
-        common.run_os_command('crm configure location lvnivip_{0} vnivip_{0} 100: test-dcr1'.format(self.description))
+        common.run_os_command('crm configure location lvnivip_{0} vnivip_{0} 100: 1'.format(self.description))
         common.run_os_command('crm resource start vnivip_{0}'.format(self.description))
         common.run_os_command('crm resource refresh'.format(self.description))
 
