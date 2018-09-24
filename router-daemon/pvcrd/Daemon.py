@@ -21,19 +21,22 @@
 ###############################################################################
 
 import kazoo.client
+import libvirt
 import sys
 import os
 import signal
 import socket
 import psutil
-import configparser
-import time
 import subprocess
+import uuid
+import time
+import configparser
+import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
-import daemon_lib.common as common
 
+import pvcrd.RouterInstance as RouterInstance
 import pvcrd.VXNetworkInstance as VXNetworkInstance
 
 print(ansiiprint.bold() + "pvcrd - Parallel Virtual Cluster router daemon" + ansiiprint.end())
@@ -47,13 +50,17 @@ except:
 
 myhostname = socket.gethostname()
 myshorthostname = myhostname.split('.', 1)[0]
-mydomainname = ''.join(myhostname.split('.', 1)[1:])
+mynetworkname = ''.join(myhostname.split('.', 1)[1:])
 
 # Config values dictionary
 config_values = [
     'zookeeper',
+    'keepalive_interval',
     'vni_dev',
-    'vni_dev_ip',
+    'vni_dev_ip'
+    'ipmi_hostname',
+    'ipmi_username',
+    'ipmi_password'
 ]
 def readConfig(pvcrd_config_file, myhostname):
     print('Loading configuration from file {}'.format(pvcrd_config_file))
@@ -67,7 +74,7 @@ def readConfig(pvcrd_config_file, myhostname):
     except:
         try:
             entries = o_config['default']
-        except:
+        except Exception as e:
             print('ERROR: Config file is not valid!')
             exit(1)
 
@@ -81,23 +88,32 @@ def readConfig(pvcrd_config_file, myhostname):
                 print('ERROR: Config file missing required value "{}" for this host!'.format(entry))
                 exit(1)
 
+    # Handle an empty ipmi_hostname
+    if config['ipmi_hostname'] == '':
+        config['ipmi_hostname'] = myshorthostname + '-lom.' + mynetworkname
+
     return config
 
+# Get config
 config = readConfig(pvcrd_config_file, myhostname)
 
+# Connect to local zookeeper
 zk_conn = kazoo.client.KazooClient(hosts=config['zookeeper'])
 try:
     print('Connecting to Zookeeper instance at {}'.format(config['zookeeper']))
     zk_conn.start()
 except:
-    print('ERROR: Failed to connect to Zookeeper!')
+    print('ERROR: Failed to connect to Zookeeper')
     exit(1)
 
-# Handle zookeeper failures gracefully
+# Handle zookeeper failures
 def zk_listener(state):
-    global zk_conn
+    global zk_conn, update_timer
     if state == kazoo.client.KazooState.SUSPENDED:
-        ansiiprint.echo('Connection to Zookeeper list; retrying', '', 'e')
+        ansiiprint.echo('Connection to Zookeeper lost; retrying', '', 'e')
+
+        # Stop keepalive thread
+        stopKeepaliveTimer(update_timer)
 
         while True:
             _zk_conn = kazoo.client.KazooClient(hosts=config['zookeeper'])
@@ -109,6 +125,9 @@ def zk_listener(state):
                 time.sleep(1)
     elif state == kazoo.client.KazooState.CONNECTED:
         ansiiprint.echo('Connection to Zookeeper started', '', 'o')
+
+        # Start keepalive thread
+        update_timer = createKeepaliveTimer()
     else:
         pass
 
@@ -117,99 +136,118 @@ zk_conn.add_listener(zk_listener)
 # Cleanup function
 def cleanup(signum, frame):
     ansiiprint.echo('Terminating daemon', '', 'e')
+    # Set stop state in Zookeeper
+    zkhandler.writedata(zk_conn, { '/routers/{}/daemonstate'.format(myhostname): 'stop' })
     # Close the Zookeeper connection
     try:
         zk_conn.stop()
         zk_conn.close()
     except:
         pass
+    # Stop keepalive thread
+    stopKeepaliveTimer(update_timer)
     # Exit
-    exit(0)
+    sys.exit(0)
 
-# Handle signals with cleanup
+# Handle signals gracefully
 signal.signal(signal.SIGTERM, cleanup)
 signal.signal(signal.SIGINT, cleanup)
 signal.signal(signal.SIGQUIT, cleanup)
 
-# What this daemon does:
-#  1. Configure public networks dynamically on startup (e.g. bonding, vlans, etc.) from config
-#   * no /etc/network/interfaces config for these - just mgmt interface via DHCP!
-#  2. Watch ZK /networks
-#  3. Provision required network interfaces when a network is added
-#   a. create vxlan interface targeting local dev from config
-#   b. create bridge interface
-#   c. add vxlan to bridge
-#   d. set interfaces up
-#   e. add corosync config for virtual gateway IP
-#  4. Remove network interfaces when network disapears
+# Gather useful data about our host for staticdata
+# Static data format: 'cpu_count', 'arch', 'os', 'kernel'
+staticdata = []
+staticdata.append(str(psutil.cpu_count()))
+staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+# Print static data on start
 
-# Zookeeper schema:
-#   networks/
-#       <VXLANID>/
-#           ipnet <NETWORK-CIDR>  e.g. 10.101.0.0/24
-#           gateway <IPADDR>      e.g. 10.101.0.1 [1]
-#           dhcp <YES/NO>         e.g. YES [2]
-#           reservations/
-#               <HOSTNAME/DESCRIPTION>/
-#                   address <IPADDR> e.g. 10.101.0.30
-#                   mac <MACADDR>    e.g. ff:ff:fe:ab:cd:ef
-#           fwrules/
-#               <RULENAME>/
-#                   description <DESCRIPTION>                  e.g. Allow HTTP from any to this net
-#                   src <HOSTNAME/IPADDR/SUBNET/"any"/"this">  e.g. any
-#                   dest <HOSTNAME/IPADDR/SUBNET/"any"/"this"> e.g. this
-#                   port <PORT/RANGE/"any">                    e.g. 80
+print('{0}Router hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), myhostname))
+print('{0}IPMI hostname:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), config['ipmi_hostname']))
+print('{0}Machine details:{1}'.format(ansiiprint.bold(), ansiiprint.end()))
+print('  {0}CPUs:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[0]))
+print('  {0}Arch:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[3]))
+print('  {0}OS:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[2]))
+print('  {0}Kernel:{1} {2}'.format(ansiiprint.bold(), ansiiprint.end(), staticdata[1]))
 
-# Notes:          
-# [1] becomes a VIP between the pair of routers in multi-router envs
-# [2] enables or disables a DHCP subnet definition for the network
-
-
-# Enable routing
-common.run_os_command('sysctl sysctl net.ipv4.ip_forward=1')
-common.run_os_command('sysctl sysctl net.ipv6.ip_forward=1')
-common.run_os_command('sysctl sysctl net.ipv4.all.send_redirects=1')
-common.run_os_command('sysctl sysctl net.ipv6.all.send_redirects=1')
-common.run_os_command('sysctl sysctl net.ipv4.all.accept_source_route=1')
-common.run_os_command('sysctl sysctl net.ipv6.all.accept_source_route=1')
-
-# Prepare underlying interface
-if config['vni_dev_ip'] == 'dhcp':
-    vni_dev = config['vni_dev']
-    ansiiprint.echo('Configuring VNI parent device {} with DHCP IP'.format(vni_dev), '', 'o')
-    common.run_os_command('ip link set {0} up'.format(vni_dev))
-    common.run_os_command('dhclient {0}'.format(vni_dev))
+# Check if our router exists in Zookeeper, and create it if not
+if zk_conn.exists('/routers/{}'.format(myhostname)):
+    print("Router is " + ansiiprint.green() + "present" + ansiiprint.end() + " in Zookeeper")
+    # Update static data just in case it's changed
+    zkhandler.writedata(zk_conn, { '/routers/{}/staticdata'.format(myhostname): ' '.join(staticdata) })
 else:
-    vni_dev = config['vni_dev']
-    vni_dev_ip = config['vni_dev_ip']
-    ansiiprint.echo('Configuring VNI parent device {} with IP {}'.format(vni_dev, vni_dev_ip), '', 'o')
-    common.run_os_command('ip link set {0} up'.format(vni_dev))
-    common.run_os_command('ip address add {0} dev {1}'.format(vni_dev_ip, vni_dev))
+    print("Router is " + ansiiprint.red() + "absent" + ansiiprint.end() + " in Zookeeper; adding new router")
+    keepalive_time = int(time.time())
+    transaction = zk_conn.transaction()
+    transaction.create('/routers/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
+    # Basic state information
+    transaction.create('/routers/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
+    transaction.create('/routers/{}/networkstate'.format(myhostname), 'ready'.encode('ascii'))
+    transaction.create('/routers/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
+    # Keepalives and fencing information
+    transaction.create('/routers/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
+    transaction.create('/routers/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
+    transaction.create('/routers/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
+    transaction.create('/routers/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
+    transaction.commit()
 
-# Disable stonith in corosync
-common.run_os_command('crm configure property stonith-enabled="false"')
+zkhandler.writedata(zk_conn, { '/routers/{}/daemonstate'.format(myhostname): 'init' })
 
-# Prepare VNI list
-t_vni = dict()
-vni_list = []
+t_router = dict()
+s_network = dict()
+router_list = []
+network_list = []
+
+@zk_conn.ChildrenWatch('/routers')
+def updaterouters(new_router_list):
+    global router_list
+    router_list = new_router_list
+    print(ansiiprint.blue() + 'Router list: ' + ansiiprint.end() + '{}'.format(' '.join(router_list)))
+    for router in router_list:
+        if router in t_router:
+            t_router[router].updaterouterlist(t_router)
+        else:
+            t_router[router] = RouterInstance.RouterInstance(myhostname, router, t_router, s_network, zk_conn, config)
 
 @zk_conn.ChildrenWatch('/networks')
-def updatenetworks(new_vni_list):
-    global vni_list
-    print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(new_vni_list)))
-    # Add new VNIs
-    for vni in new_vni_list:
-        if vni not in vni_list:
-            vni_list.append(vni)
-            t_vni[vni] = VXNetworkInstance.VXNetworkInstance(vni, zk_conn, config)
-            t_vni[vni].provision()
+def updatenetworks(new_network_list):
+    global network_list
+    for network in network_list:
+        if not network in s_network:
+            s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname]);
+            for router in router_list:
+                if router in t_router:
+                    t_router[router].updatenetworklist(s_network)
+        if not network in new_network_list:
+            s_network[network].removeAddress()
+            s_network[network].removeNetwork()
+            for router in router_list:
+                if router in t_router:
+                    t_router[router].updatenetworklist(s_network)
+    network_list = new_network_list
+    print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(network_list)))
 
-    # Remove deleted VNIs
-    for vni in vni_list:
-        if vni not in new_vni_list:
-            vni_list.remove(vni)
-            t_vni[vni].deprovision()
-            
+# Set up our update function
+this_router = t_router[myhostname]
+update_zookeeper = this_router.update_zookeeper
+
+# Create timer to update this router in Zookeeper
+def createKeepaliveTimer():
+    interval = int(config['keepalive_interval'])
+    ansiiprint.echo('Starting keepalive timer ({} second interval)'.format(interval), '', 'o')
+    update_timer = apscheduler.schedulers.background.BackgroundScheduler()
+    update_timer.add_job(update_zookeeper, 'interval', seconds=interval)
+    update_timer.start()
+    return update_timer
+
+def stopKeepaliveTimer(update_timer):
+    ansiiprint.echo('Stopping keepalive timer', '', 'c')
+    update_timer.shutdown()
+
+# Start keepalive thread
+update_timer = createKeepaliveTimer()
+
 # Tick loop
 while True:
     try:

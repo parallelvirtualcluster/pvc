@@ -23,8 +23,6 @@
 import os
 import sys
 import time
-import subprocess
-import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
@@ -32,9 +30,10 @@ import daemon_lib.common as common
 
 class VXNetworkInstance():
     # Initialization function
-    def __init__ (self, vni, zk_conn, config):
+    def __init__ (self, vni, zk_conn, config, thisrouter):
         self.vni = vni
         self.zk_conn = zk_conn
+        self.thisrouter = thisrouter
         self.vni_dev = config['vni_dev']
 
         self.old_description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
@@ -47,11 +46,7 @@ class VXNetworkInstance():
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
 
-        self.corosync_provisioned = False
-        self.watch_change = False
-
-        self.update_timer = apscheduler.schedulers.background.BackgroundScheduler()
-        self.update_timer.add_job(self.updateCorosyncResource, 'interval', seconds=1)
+        self.createNetwork()
 
         # Zookeper handlers for changed states
         @zk_conn.DataWatch('/networks/{}'.format(self.vni))
@@ -59,7 +54,6 @@ class VXNetworkInstance():
             if data != None and self.description != data.decode('ascii'):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
-                self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
         def watch_network_ip_network(data, stat, event=''):
@@ -67,40 +61,18 @@ class VXNetworkInstance():
                 ip_network = data.decode('ascii')
                 self.ip_network = ip_network
                 self.ip_cidrnetmask = ip_network.split('/')[-1]
-                self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
             if data != None and self.ip_gateway != data.decode('ascii'):
+                self.removeAddress()
                 self.ip_gateway = data.decode('ascii')
-                self.watch_change = True
+                self.addAddress()
 
         @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
-                self.watch_change = True
-
-    def createCorosyncResource(self):
-        ansiiprint.echo('Creating Corosync resource for network {} gateway {} on VNI {}'.format(self.description, self.ip_gateway, self.vni), '', 'o')
-        common.run_os_command('crm configure primitive vnivip_{0} ocf:heartbeat:IPaddr2 params ip={1} cidr_netmask={2} nic={3} op monitor interval=1s meta target-role=Stopped'.format(
-            self.description,
-            self.ip_gateway,
-            self.ip_cidrnetmask,
-            self.bridge_nic
-        ))
-        common.run_os_command('crm configure location lvnivip_{0} vnivip_{0} 100: 1'.format(self.description))
-        common.run_os_command('crm resource start vnivip_{0}'.format(self.description))
-        common.run_os_command('crm resource refresh'.format(self.description))
-
-        self.watch_change = False
-        self.corosync_provisioned = True
-
-    def removeCorosyncResource(self):
-        ansiiprint.echo('Removing Corosync resource for network {} on VNI {}'.format(self.old_description, self.vni), '', 'o')
-        common.run_os_command('crm resource stop vnivip_{}'.format(self.old_description))
-        common.run_os_command('crm configure delete vnivip_{}'.format(self.old_description))
-        self.corosync_provisioned = False
 
     def createNetwork(self):
         ansiiprint.echo('Creating VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
@@ -110,6 +82,11 @@ class VXNetworkInstance():
         common.run_os_command('ip link set {} up'.format(self.vxlan_nic))
         common.run_os_command('ip link set {} up'.format(self.bridge_nic))
 
+    def createAddress(self):
+        if self.this_router.getnetworkstate() == 'primary':
+            ansiiprint.echo('Creating gateway {} on interface {}'.format(self.ip_gateway, self.vni_dev), '', 'o')
+            common.run_os_command('ip address add {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.vni_dev))
+
     def removeNetwork(self):
         ansiiprint.echo('Removing VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
         common.run_os_command('ip link set {} down'.format(self.bridge_nic))
@@ -118,20 +95,6 @@ class VXNetworkInstance():
         common.run_os_command('brctl delbr {}'.format(self.bridge_nic))
         common.run_os_command('ip link delete {}'.format(self.vxlan_nic))
 
-    def updateCorosyncResource(self):
-        if self.corosync_provisioned and self.watch_change:
-            self.watch_change = False
-            # Rebuild the resource
-            self.removeCorosyncResource()
-            self.createCorosyncResource()
-
-    def provision(self):
-        self.update_timer.start()
-        self.createNetwork()
-        time.sleep(0.1)
-        self.createCorosyncResource()
-
-    def deprovision(self):
-        self.update_timer.shutdown()
-        self.removeCorosyncResource()
-        self.removeNetwork()
+    def removeAddress(self):
+        ansiiprint.echo('Removing gateway {} from interface {}'.format(self.ip_gateway, self.vni_dev), '', 'o')
+        common.run_os_command('ip address delete {}/{} dev {}'.format(self.ip_gateway, self.ip_cidrnetmask, self.vni_dev))
