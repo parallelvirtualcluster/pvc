@@ -21,12 +21,24 @@
 ###############################################################################
 
 import subprocess
+import threading
 
-def run_os_command(command_string):
-    command = command_string.split() 
-    command_output = subprocess.run(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    return command_output.returncode
+def run_os_command(command_string, background=False):
+    command = command_string.split()
+    if background:
+        def runcmd():
+            subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+        thread = threading.Thread(target=runcmd, args=())
+        thread.start()
+        return 0
+    else:
+        command_output = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return command_output.returncode

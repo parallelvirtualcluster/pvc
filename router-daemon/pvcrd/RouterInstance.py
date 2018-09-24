@@ -98,11 +98,13 @@ class RouterInstance():
     def become_secondary(self):
         ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
-        for network in self.s_network:
-            self.s_network[network].removeAddress()
         for router in self.t_router:
             if self.t_router[router].getname() != self.this_router:
-                zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
+                if self.t_router[router].getnetworkstate() != 'primary':
+                    zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
+        time.sleep(1)
+        for network in self.s_network:
+            self.s_network[network].removeAddress()
 
     def set_secondary(self):
         zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'secondary' })
@@ -114,7 +116,8 @@ class RouterInstance():
             self.s_network[network].createAddress()
         for router in self.t_router:
             if self.t_router[router].getname() != self.this_router:
-                zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'secondary' })
+                if self.t_router[router].getnetworkstate() != 'secondary':
+                    zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'secondary' })
 
     def set_primary(self):
         zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'primary' })

@@ -33,6 +33,7 @@ import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
 import pvcrd.RouterInstance as RouterInstance
 import pvcrd.VXNetworkInstance as VXNetworkInstance
@@ -96,6 +97,13 @@ def readConfig(pvcrd_config_file, myhostname):
 
 # Get config
 config = readConfig(pvcrd_config_file, myhostname)
+
+# Set up our VNI interface
+vni_dev = config['vni_dev']
+vni_dev_ip = config['vni_dev_ip']
+print('Setting up VNI interface {} with IP {}'.format(vni_dev, vni_dev_ip)
+common.run_os_command('ip link set {} up'.format(vni_dev))
+common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, vni_dev))
 
 # Connect to local zookeeper
 zk_conn = kazoo.client.KazooClient(hosts=config['zookeeper'])
