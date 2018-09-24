@@ -25,7 +25,6 @@ import sys
 import psutil
 import socket
 import time
-import libvirt
 import threading
 import subprocess
 
