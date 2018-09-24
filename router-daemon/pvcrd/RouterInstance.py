@@ -191,8 +191,13 @@ class RouterInstance():
                 except ValueError:
                     pass
        
-        # Try to set ourself primary if there is no primary
-        if not self.primary_router_list:
+       # Try to set ourself primary if there is no primary in the cluster
+        cluster_has_primary = False
+        for router in t_routers:
+            if t_routers[router].getnetworkstate() == 'primary':
+                cluster_has_primary = True
+                break
+        if not cluster_has_primary:
             self.set_primary()
 
         # Display cluster information to the terminal
