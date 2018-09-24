@@ -213,18 +213,15 @@ def updaterouters(new_router_list):
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
     global network_list
-    for network in network_list:
+    for network in new_network_list:
         if not network in s_network:
             s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname]);
-            for router in router_list:
-                if router in t_router:
-                    t_router[router].updatenetworklist(s_network)
         if not network in new_network_list:
             s_network[network].removeAddress()
             s_network[network].removeNetwork()
-            for router in router_list:
-                if router in t_router:
-                    t_router[router].updatenetworklist(s_network)
+    for router in router_list:
+        if router in t_router:
+            t_router[router].updatenetworklist(s_network)
     network_list = new_network_list
     print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(network_list)))
 

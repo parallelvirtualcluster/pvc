@@ -98,7 +98,7 @@ class RouterInstance():
     def updatenetworklist(self, s_network):
         self.s_network = s_network
         for network in s_network:
-            self.network_list.append(network.getvni())
+            self.network_list.append(s_network[network].getvni())
 
     # Flush all VMs on the host
     def set_secondary(self):
