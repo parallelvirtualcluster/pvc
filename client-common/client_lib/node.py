@@ -148,7 +148,6 @@ def get_info(zk_conn, node, long_output):
     information = getInformationFromNode(zk_conn, node, long_output)
 
     if information == None:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find a node matching that name.'
 
     click.echo(information)
@@ -178,7 +177,6 @@ def get_list(zk_conn, limit):
         node_list.append(node)
 
     node_list_output = []
-    node_daemon_state = {}
     node_daemon_state = {}
     node_domain_state = {}
     node_cpu_count = {}
