@@ -56,6 +56,8 @@ mynetworkname = ''.join(myhostname.split('.', 1)[1:])
 config_values = [
     'zookeeper',
     'keepalive_interval',
+    'keepalive_interval',
+    'fence_intervals',
     'vni_dev',
     'vni_dev_ip'
     'ipmi_hostname',

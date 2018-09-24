@@ -7,16 +7,27 @@
 #
 # The following values are required for each host or in a default section:
 #    zookeeper: the IP+port of the Zookeper instance (defaults to 127.0.0.1:2181)
+#    keepalive_interval: the interval between keepalives and for dead node timeout (defaults to 5)
+#    fence_intervals: the number of keepalive_intervals without Zookeeper contact before this node
+#                     will consider another node dead and fence it (defaults to 6, i.e. 30s)
 #    vni_dev: the lower-level network device to bind VNI to
 #    vni_dev_ip: the IP address (CIDR) of the lower-level network device, used
 #                by FRR to communicate with the route reflectors and pass routes
 #                for VNI interfaces
+#    ipmi_hostname: the IPMI hostname for fencing (defaults to <shortname>-lom.<domain>)
+#    ipmi_username: username to connect to IPMI
+#    ipmi_password: password to connect to IPMI
 #
 # Copy this example to /etc/pvc/pvcrd.conf and edit to your needs
 
 [default]
 zookeeper = 127.0.0.1:2181
+keepalive_interval = 5
+fence_intervals = 6
 
 [myhost]
 vni_dev = ens4
-vni_dev_ip = 10.255.0.3/24
+vni_dev_ip = 10.255.0.1/24
+ipmi_hostname = myhost-lom
+ipmi_username = username
+ipmi_password = password
