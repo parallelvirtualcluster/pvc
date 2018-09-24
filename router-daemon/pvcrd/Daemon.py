@@ -101,7 +101,7 @@ config = readConfig(pvcrd_config_file, myhostname)
 # Set up our VNI interface
 vni_dev = config['vni_dev']
 vni_dev_ip = config['vni_dev_ip']
-print('Setting up VNI interface {} with IP {}'.format(vni_dev, vni_dev_ip)
+print('Setting up VNI interface {} with IP {}'.format(vni_dev, vni_dev_ip))
 common.run_os_command('ip link set {} up'.format(vni_dev))
 common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, vni_dev))
 
