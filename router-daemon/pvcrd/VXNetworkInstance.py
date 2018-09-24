@@ -74,6 +74,9 @@ class VXNetworkInstance():
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
 
+    def getvni(self):
+        return self.vni
+
     def createNetwork(self):
         ansiiprint.echo('Creating VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
         common.run_os_command('ip link add {} type vxlan id {} dstport 4789 dev {}'.format(self.vxlan_nic, self.vni, self.vni_dev))

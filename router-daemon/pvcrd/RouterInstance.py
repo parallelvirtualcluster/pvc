@@ -96,6 +96,8 @@ class RouterInstance():
 
     def updatenetworklist(self, s_network):
         self.s_network = s_network
+        for network in s_network:
+            self.network_list.append(network.getvni())
 
     # Flush all VMs on the host
     def set_secondary(self):
@@ -133,7 +135,7 @@ class RouterInstance():
 
         # Display router information to the terminal
         ansiiprint.echo('{}{} keepalive{}'.format(ansiiprint.purple(), self.name, ansiiprint.end()), '', 't')
-        ansiiprint.echo('{0}Active networks:{1} {2}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.networks_count, self.memfree, self.memused, self.cpuload), '', 'c')
+        ansiiprint.echo('{0}Active networks:{1} {2}  {0}Free memory [MiB]:{1} {3}  {0}Used memory [MiB]:{1} {4}  {0}Load:{1} {5}'.format(ansiiprint.bold(), ansiiprint.end(), self.network_list, self.memfree, self.memused, self.cpuload), '', 'c')
 
         # Update our local router lists
         for router_name in self.t_router:
