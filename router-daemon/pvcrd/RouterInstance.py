@@ -239,7 +239,7 @@ def fenceRouter(router_name, zk_conn, config):
 def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
     retcode = common.run_os_command('ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
         ipmi_hostname, ipmi_user, ipmi_password
-    )
+    ))
     if retcode == 0:
         ansiiprint.echo('Successfully rebooted dead router', '', 'o')
         return True
