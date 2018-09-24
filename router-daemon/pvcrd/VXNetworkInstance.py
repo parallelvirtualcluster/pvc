@@ -23,10 +23,12 @@
 import os
 import sys
 import time
+import subprocess
 import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
 class VXNetworkInstance():
     # Initialization function
@@ -34,6 +36,13 @@ class VXNetworkInstance():
         self.vni = vni
         self.zk_conn = zk_conn
         self.vni_dev = config['vni_dev']
+
+        self.old_description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
+        self.description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
+        self.ip_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_gateway'.format(self.vni))
+        self.ip_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni))
+        self.ip_cidrnetmask = self.ip_network.split('/')[-1]
+        self.dhcp_flag = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp_flag'.format(self.vni)) == 'True' )
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
@@ -45,144 +54,65 @@ class VXNetworkInstance():
         self.update_timer.add_job(self.updateCorosyncResource, 'interval', seconds=1)
 
         # Zookeper handlers for changed states
-        @zk_conn.DataWatch('/networks/{}/description'.format(self.vni))
+        @zk_conn.DataWatch('/networks/{}'.format(self.vni))
         def watch_network_description(data, stat, event=''):
-            try:
+            if self.description != data.decode('ascii'):
+                self.old_description = self.description
                 self.description = data.decode('ascii')
-            except AttributeError:
-                self.description = self.vni
-
-            self.watch_change = True
+                self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
         def watch_network_ip_network(data, stat, event=''):
-            try:
+            if self.ip_network != data.decode('ascii'):
                 ip_network = data.decode('ascii')
                 self.ip_network = ip_network
                 self.ip_cidrnetmask = ip_network.split('/')[-1]
-            except AttributeError:
-                self.ip_network = ''
-                self.ip_cidrnetmask = ''
-
-            self.watch_change = True
+                self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
-            try:
+            if self.ip_gateway != data.decode('ascii'):
                 self.ip_gateway = data.decode('ascii')
-            except AttributeError:
-                self.ip_gateway = ''
-
-            self.watch_change = True
+                self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
-            try:
-                dhcp_flag = data.decode('ascii')
-                self.dhcp_flag = ( dhcp_flag == 'True' )
-            except AttributeError:
-                self.dhcp_flag = False
-
-            self.watch_change = True
+            if self.dhcp_flag != data.decode('ascii'):
+                self.dhcp_flag = ( data.decode('ascii') == 'True' )
+                self.watch_change = True
 
     def createCorosyncResource(self):
-        ansiiprint.echo('Creating Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
-        os.system(
-            """
-            echo "
-                configure
-                    primitive vnivip_{0} ocf:heartbeat:IPaddr2 params ip={1} cidr_netmask={2} nic={3} op monitor interval=1s
-                    commit
-                    up
-                resource
-                    start vnivip_{0}
-            " | crm -f -
-            """.format(
-                self.description,
-                self.ip_gateway,
-                self.ip_cidrnetmask,
-                self.bridge_nic
-            )
-        )
+        ansiiprint.echo('Creating Corosync resource for network {} gateway {} on VNI {}'.format(self.description, self.ip_gateway, self.vni), '', 'o')
+        common.run_os_command("""
+            crm configure
+            primitive vnivip_{} ocf:heartbeat:IPaddr2
+            params ip={} cidr_netmask={} nic={}
+            op monitor interval=1s
+        """.format( self.description, self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic))
+        self.watch_change = False
         self.corosync_provisioned = True
 
     def removeCorosyncResource(self):
-        ansiiprint.echo('Removing Corosync resource for gateway {} on interface {}'.format(self.ip_gateway, self.vni), '', 'o')
-        os.system(
-            """
-            echo "
-                resource
-                    stop vnivip_{0}
-                    up
-                configure
-                    delete vnivip_{0}
-                    commit
-            " | crm -f -
-            """.format(
-                self.description
-            )
-        )
+        ansiiprint.echo('Removing Corosync resource for network {} on VNI {}'.format(self.old_description, self.vni), '', 'o')
+        common.run_os_command('crm resource stop vnivip_{}'.format(self.old_description))
+        common.run_os_command('crm configure delete vnivip_{}'.format(self.old_description))
         self.corosync_provisioned = False
 
     def createNetwork(self):
         ansiiprint.echo('Creating VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
-        os.system(
-            'ip link add {0} type vxlan id {1} dstport 4789 dev {2}'.format(
-                self.vxlan_nic,
-                self.vni,
-                self.vni_dev
-            )
-        )
-        os.system(
-            'brctl addbr {0}'.format(
-                self.bridge_nic
-            )
-        )
-        os.system(
-            'brctl addif {0} {1}'.format(
-                self.bridge_nic,
-                self.vxlan_nic
-            )
-        )
-        os.system(
-            'ip link set {0} up'.format(
-                self.vxlan_nic
-            )
-        )
-        os.system(
-            'ip link set {0} up'.format(
-                self.bridge_nic
-            )
-        )
+        common.run_os_command('ip link add {} type vxlan id {} dstport 4789 dev {}'.format(self.vxlan_nic, self.vni, self.vni_dev))
+        common.run_os_command('brctl addbr {}'.format(self.bridge_nic))
+        common.run_os_command('brctl addif {} {}'.format(self.bridge_nic, self.vxlan_nic))
+        common.run_os_command('ip link set {} up'.format(self.vxlan_nic))
+        common.run_os_command('ip link set {} up'.format(self.bridge_nic))
 
     def removeNetwork(self):
         ansiiprint.echo('Removing VNI {} device on interface {}'.format(self.vni, self.vni_dev), '', 'o')
-        os.system(
-            'ip link set {0} down'.format(
-                self.bridge_nic
-            )
-        )
-        os.system(
-            'ip link set {0} down'.format(
-                self.vxlan_nic
-            )
-        )
-        os.system(
-            'brctl delif {0} {1}'.format(
-                self.bridge_nic,
-                self.vxlan_nic
-            )
-        )
-        os.system(
-            'brctl delbr {0}'.format(
-                self.bridge_nic
-            )
-        )
-        os.system(
-            'ip link delete {0}'.format(
-                self.vxlan_nic
-            )
-        )
+        common.run_os_command('ip link set {} down'.format(self.bridge_nic))
+        common.run_os_command('ip link set {} down'.format(self.vxlan_nic))
+        common.run_os_command('brctl delif {} {}'.format(self.bridge_nic, self.vxlan_nic))
+        common.run_os_command('brctl delbr {}'.format(self.bridge_nic))
+        common.run_os_command('ip link delete {}'.format(self.vxlan_nic))
 
     def updateCorosyncResource(self):
         if self.corosync_provisioned and self.watch_change:
@@ -192,11 +122,11 @@ class VXNetworkInstance():
             self.createCorosyncResource()
 
     def provision(self):
+        self.update_timer.start()
         self.createNetwork()
         self.createCorosyncResource()
-        self.update_timer.start()
 
     def deprovision(self):
         self.update_timer.shutdown()
-        removeCorosyncResource()
-        removeNetwork()
+        self.removeCorosyncResource()
+        self.removeNetwork()

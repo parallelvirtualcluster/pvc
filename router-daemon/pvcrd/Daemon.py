@@ -28,9 +28,11 @@ import socket
 import psutil
 import configparser
 import time
+import subprocess
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
 import pvcrd.VXNetworkInstance as VXNetworkInstance
 
@@ -163,35 +165,29 @@ signal.signal(signal.SIGQUIT, cleanup)
 # [2] enables or disables a DHCP subnet definition for the network
 
 
+# Enable routing
+common.run_os_command('sysctl sysctl net.ipv4.ip_forward=1')
+common.run_os_command('sysctl sysctl net.ipv6.ip_forward=1')
+common.run_os_command('sysctl sysctl net.ipv4.all.send_redirects=1')
+common.run_os_command('sysctl sysctl net.ipv6.all.send_redirects=1')
+common.run_os_command('sysctl sysctl net.ipv4.all.accept_source_route=1')
+common.run_os_command('sysctl sysctl net.ipv6.all.accept_source_route=1')
+
 # Prepare underlying interface
 if config['vni_dev_ip'] == 'dhcp':
     vni_dev = config['vni_dev']
     ansiiprint.echo('Configuring VNI parent device {} with DHCP IP'.format(vni_dev), '', 'o')
-    os.system(
-        'ip link set {0} up'.format(
-            vni_dev
-        )
-    )
-    os.system(
-        'dhclient {0}'.format(
-            vni_dev
-        )
-    )
+    common.run_os_command('ip link set {0} up'.format(vni_dev))
+    common.run_os_command('dhclient {0}'.format(vni_dev))
 else:
     vni_dev = config['vni_dev']
     vni_dev_ip = config['vni_dev_ip']
     ansiiprint.echo('Configuring VNI parent device {} with IP {}'.format(vni_dev, vni_dev_ip), '', 'o')
-    os.system(
-        'ip link set {0} up'.format(
-            vni_dev
-        )
-    )
-    os.system(
-        'ip address add {0} dev {1}'.format(
-            vni_dev_ip,
-            vni_dev
-        )
-    )
+    common.run_os_command('ip link set {0} up'.format(vni_dev))
+    common.run_os_command('ip address add {0} dev {1}'.format(vni_dev_ip, vni_dev))
+
+# Disable stonith in corosync
+common.run_os_command('crm configure property stonith-enabled="false"')
 
 # Prepare VNI list
 t_vni = dict()
