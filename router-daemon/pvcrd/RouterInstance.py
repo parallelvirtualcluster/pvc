@@ -74,8 +74,8 @@ class RouterInstance():
                     if self.network_state == 'primary':
                         self.set_primary()
                         for router in t_router:
-                            if router.getname() != self.name:
-                                router.set_secondary()
+                            if t_router[router].getname() != self.name:
+                                t_router[router].set_secondary()
 
 
     # Get value functions
