@@ -663,6 +663,7 @@ def init_cluster():
     transaction = zk_conn.transaction()
     transaction.create('/domains', ''.encode('ascii'))
     transaction.create('/nodes', ''.encode('ascii'))
+    transaction.create('/routers', ''.encode('ascii'))
     transaction.create('/networks', ''.encode('ascii'))
     transaction.commit()
 
