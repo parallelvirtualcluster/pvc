@@ -56,14 +56,14 @@ class VXNetworkInstance():
         # Zookeper handlers for changed states
         @zk_conn.DataWatch('/networks/{}'.format(self.vni))
         def watch_network_description(data, stat, event=''):
-            if self.description != data.decode('ascii'):
+            if data != None and self.description != data.decode('ascii'):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
                 self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
         def watch_network_ip_network(data, stat, event=''):
-            if self.ip_network != data.decode('ascii'):
+            if data != None and self.ip_network != data.decode('ascii'):
                 ip_network = data.decode('ascii')
                 self.ip_network = ip_network
                 self.ip_cidrnetmask = ip_network.split('/')[-1]
@@ -71,24 +71,28 @@ class VXNetworkInstance():
 
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
-            if self.ip_gateway != data.decode('ascii'):
+            if data != None and self.ip_gateway != data.decode('ascii'):
                 self.ip_gateway = data.decode('ascii')
                 self.watch_change = True
 
         @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
-            if self.dhcp_flag != data.decode('ascii'):
+            if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
                 self.watch_change = True
 
     def createCorosyncResource(self):
         ansiiprint.echo('Creating Corosync resource for network {} gateway {} on VNI {}'.format(self.description, self.ip_gateway, self.vni), '', 'o')
-        common.run_os_command("""
-            crm configure
-            primitive vnivip_{} ocf:heartbeat:IPaddr2
-            params ip={} cidr_netmask={} nic={}
-            op monitor interval=1s
-        """.format( self.description, self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic))
+        common.run_os_command('crm configure primitive vnivip_{0} ocf:heartbeat:IPaddr2 params ip={1} cidr_netmask={2} nic={3} op monitor interval=1s meta target-role=Stopped'.format(
+            self.description,
+            self.ip_gateway,
+            self.ip_cidrnetmask,
+            self.bridge_nic
+        ))
+        common.run_os_command('crm configure location lvnivip_{0} vnivip_{0} 100: test-dcr1'.format(self.description))
+        common.run_os_command('crm resource start vnivip_{0}'.format(self.description))
+        common.run_os_command('crm resource refresh'.format(self.description))
+
         self.watch_change = False
         self.corosync_provisioned = True
 
@@ -124,6 +128,7 @@ class VXNetworkInstance():
     def provision(self):
         self.update_timer.start()
         self.createNetwork()
+        time.sleep(0.1)
         self.createCorosyncResource()
 
     def deprovision(self):
