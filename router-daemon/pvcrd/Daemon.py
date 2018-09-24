@@ -21,14 +21,12 @@
 ###############################################################################
 
 import kazoo.client
-import libvirt
 import sys
 import os
 import signal
 import socket
 import psutil
 import subprocess
-import uuid
 import time
 import configparser
 import apscheduler.schedulers.background

@@ -26,12 +26,12 @@ import psutil
 import socket
 import time
 import libvirt
-import kazoo.client
 import threading
 import subprocess
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
 class RouterInstance():
     # Initialization function
@@ -237,9 +237,10 @@ def fenceRouter(router_name, zk_conn, config):
 # Perform an IPMI fence
 #
 def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password):
-    ipmi_command = ['/usr/bin/ipmitool', '-I', 'lanplus', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
-    ipmi_command_output = subprocess.run(ipmi_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if ipmi_command_output.returncode == 0:
+    retcode = common.run_os_command('ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
+        ipmi_hostname, ipmi_user, ipmi_password
+    )
+    if retcode == 0:
         ansiiprint.echo('Successfully rebooted dead router', '', 'o')
         return True
     else:
