@@ -193,8 +193,8 @@ class RouterInstance():
        
        # Try to set ourself primary if there is no primary in the cluster
         cluster_has_primary = False
-        for router in self.t_routers:
-            if self.t_routers[router].getnetworkstate() == 'primary':
+        for router in self.t_router:
+            if self.t_router[router].getnetworkstate() == 'primary':
                 cluster_has_primary = True
                 break
         if not cluster_has_primary:
