@@ -57,7 +57,7 @@ config_values = [
     'keepalive_interval',
     'fence_intervals',
     'vni_dev',
-    'vni_dev_ip'
+    'vni_dev_ip',
     'ipmi_hostname',
     'ipmi_username',
     'ipmi_password'
