@@ -183,7 +183,7 @@ else:
     transaction.create('/routers/{}'.format(myhostname), 'hypervisor'.encode('ascii'))
     # Basic state information
     transaction.create('/routers/{}/daemonstate'.format(myhostname), 'stop'.encode('ascii'))
-    transaction.create('/routers/{}/networkstate'.format(myhostname), 'ready'.encode('ascii'))
+    transaction.create('/routers/{}/networkstate'.format(myhostname), 'secondary'.encode('ascii'))
     transaction.create('/routers/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
     # Keepalives and fencing information
     transaction.create('/routers/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
