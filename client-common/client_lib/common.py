@@ -173,6 +173,16 @@ def verifyNode(zk_conn, node):
         return True
     except:
         return False
+#
+# Verify router is valid in cluster
+#
+def verifyRouter(zk_conn, router):
+    try:
+        zk_conn.get('/routers/{}'.format(router))
+        return True
+    except:
+        return False
+
 
 #
 # Get the list of valid target hypervisors

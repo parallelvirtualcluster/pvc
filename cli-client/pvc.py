@@ -25,6 +25,7 @@ import click
 
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
+import client_lib.router as pvc_router
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
 
@@ -138,6 +139,85 @@ def node_list(limit):
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_node.get_list(zk_conn, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc router
+###############################################################################
+@click.group(name='router', short_help='Manage a PVC router.', context_settings=CONTEXT_SETTINGS)
+def cli_router():
+    """
+    Manage the state of a router in the PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# pvc router secondary
+###############################################################################
+@click.command(name='secondary', short_help='Set a router in secondary status.')
+@click.argument(
+    'router'
+)
+def router_secondary(router):
+    """
+    Take ROUTER out of primary mode handling gateways and into secondary mode.
+    """
+    
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_router.secondary_router(zk_conn, router, wait)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc router primary
+###############################################################################
+@click.command(name='primary', short_help='Set a router in primary status.')
+@click.argument(
+    'router'
+)
+def router_primary(router):
+    """
+    Put ROUTER into primary mode handling gateways.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_router.primary_router(zk_conn, router)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc router info
+###############################################################################
+@click.command(name='info', short_help='Show details of a router object.')
+@click.argument(
+    'router'
+)
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def router_info(router, long_output):
+    """
+    Show information about router ROUTER.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_router.get_info(router, long_output)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc router list
+###############################################################################
+@click.command(name='list', short_help='List all router objects.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def router_list(limit):
+    """
+    List all routers in the cluster; optionally only match names matching regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_router.get_list(zk_conn, limit)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -703,6 +783,11 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
+cli_router.add_command(router_secondary)
+cli_router.add_command(router_primary)
+cli_router.add_command(router_info)
+cli_router.add_command(router_list)
+
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
@@ -723,6 +808,7 @@ cli_network.add_command(net_info)
 cli_network.add_command(net_list)
 
 cli.add_command(cli_node)
+cli.add_command(cli_router)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(init_cluster)
