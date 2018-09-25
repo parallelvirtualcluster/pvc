@@ -28,10 +28,10 @@ FRRouting is used to manage virtual networking via BGP EVPN, and Libvirt is used
 
 PVC itself is composed of four daemons:
 
-    * Virtualization
-    * Network
-    * Router
-    * Provisioning
+* Virtualization
+* Network
+* Router
+* Provisioning
 
 #### Virtualization
 
@@ -56,10 +56,10 @@ The provisioning daemon (`pvcpd`, package `pvc-provisioning-daemon`) manages the
 
 PVC provides three main administrator interfaces and a supplemental option:
 
-    * CLI
-    * HTTP API
-    * WebUI
-    * Direct Python bindings
+* CLI
+* HTTP API
+* WebUI
+* Direct Python bindings
 
 #### CLI
 
