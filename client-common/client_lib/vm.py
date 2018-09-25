@@ -25,7 +25,6 @@ import socket
 import time
 import uuid
 import re
-import tempfile
 import subprocess
 import difflib
 import colorama
@@ -179,6 +178,17 @@ def getDomainUUID(zk_conn, domain):
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     return dom_uuid
+
+def getDomainName(zk_conn, domain):
+    # Validate and obtain alternate passed value
+    if common.validateUUID(domain):
+        dom_name = searchClusterByUUID(zk_conn, domain)
+        dom_uuid = searchClusterByName(zk_conn, dom_name)
+    else:
+        dom_uuid = searchClusterByName(zk_conn, domain)
+        dom_name = searchClusterByUUID(zk_conn, dom_uuid)
+
+    return dom_name
 
 #
 # Direct functions
