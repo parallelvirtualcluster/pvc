@@ -341,7 +341,10 @@ def vm_modify(domain, config, editor, restart):
 
         click.confirm('Write modifications to Zookeeper?', abort=True)
 
-        click.echo('Writing modified config of VM "{}".'.format(dom_name))
+        if restart:
+            click.echo('Writing modified config of VM "{}" and restarting.'.format(dom_name))
+        else:
+            click.echo('Writing modified config of VM "{}".'.format(dom_name))
 
     # We're operating in replace mode
     else:
@@ -349,7 +352,10 @@ def vm_modify(domain, config, editor, restart):
         new_vm_config = config.read()
         config.close()
 
-        click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config))
+        if restart:
+            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config))
+        else:
+            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config))
 
     retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart, new_vm_config)
     cleanup(retcode, retmsg, zk_conn)
