@@ -2,112 +2,92 @@
 
 [![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
 
-PVC is a Python 3 tool to manage QEMU/KVM virtual machines in a cluster environment using Python, Libvirt, and Zookeeper. The primary motivation for developing PVC was my percieved shortfalls in Pacemaker/Corosync, which would often put my virtual cluster into undefined states and generally cause a lot of headaches.
+PVC is a suite of Python 3 tools to manage virtualized clusters. It provides a fully-functional private cloud based on the priciple that "PVC is not hyperscale". It is designed to be administrator-friendly while powerful, but without the feature bloat and complexity of tools like OpenStack that are designed to support public clouds. With PVC, an administrator can provision, manage, and update a cluster of dozens or more hypervisors running thousands of VMs using a simple CLI tool, HTTP API, or web interface. PVC is based entirely on Debian GNU/Linux and Free-and-Open-Source tools, providing the glue to provision and manage the cluster.
 
-## How it works
+## Architecture overview
 
-### Zookeeper
+A PVC deployment ("cluster") consists of a standard physical layout and suite of daemons to manage the physical elements. The cluster is backed by a Zookeeper instance running on a subset of the machines and which all daemons communicate with to coordinate state.
 
-Zookeeper is the bedrock on which PVC is built. Before deploying PVC itself, ensure you have a working Zookeeper cluster. By default, each PVC node should also be a Zookeeper node, but with configuration tweaking an external cluster can be used as well.
+### Physical infrastructure
 
-The Zookeeper cluster handles a set of key/value pairs for each node object and each VM object (usually called a `domain`). These values determine details like the current state, the domain XML configuration, and current free RAM on a node, just to name a few. Each instance of the daemon talks to Zookeeper, by default the local instance, and performs actions based on changes to these values. In this sense, each node is completely independent, and except during live migration nodes do not talk to one another directly.
+A cluster consists of two main kinds of physical servers - routers and hypervisors. A cluster will normally have two routers in a failover pair, and at least three hypervisors.
 
-If the Zookeeper cluster becomes unusable, the individual PVC daemons will cease functioning normally and may trigger fencing. It is very important to keep this in mind before performing major work on the Zookeeper cluster.
+Router nodes may be less powerful than full hypervisors; they act primarily as the gateway for VM networks and handles inter-network ACLs. While they are not strictly required, a proper deployment with all functionality will require them.
 
-### Libvirt and QEMU/KVM
+Hypervisor nodes should be scaled at the administrator's discretion; they may be low-power and scaled out, or high-power and scaled up. PVC provides a straightforward automated provisioning system to expand the cluster as required.
 
-PVC manages VMs using Libvirt, and specifically QEMU/KVM. While Xen or any other hypervisor should work transparently and PVC makes no special assumptions, it has only been tested so far with KVM. A working Libvirt instance listening in TCP mode with no authentication is required for the PVC daemon to start, and for live migration to occur. Note that live migration is an important feature of PVC, so while it is possible to run without this feature enabled, the experience will be suboptimal.
+The underlying networking is left up to the administrator; the only requirement is that all routers and hypervisors must be reachable by each other. In the simplest deployment, all physical nodes may be connected to a single dumb switch. All inter-VM networking is handled dynamically via software-defined networking within the cluster itself and is handled transparently above the underlying network layer. More advanced configurations may be specified during cluster initalization.
 
-### `pvcd`
+### Software infrastructure
 
-The node-side component of PVC is `pvcd`, or the PVC daemon. It is written entirely in Python3 and handles all actions that can occur on a node. This includes updating the nodes state via keepalives to Zookeeper, and managing all parts of a VM lifecycle on the node.
+The core functionality of PVC is obtained via Zookeeper. During cluster initalization, the administrator must set either 3 or 5 hypervisors to act as the Zookeeper coordination subcluster. These hypervisors are special in the cluster and should not be removed after creation. This configuration prevents Zookeeper cluster size bloat as the cluster grows while still providing adequate redundancy for Zookeeper.
 
-A key concept in PVC is that all node daemon instances are idempotent and talks only to the Zookeeper instance. As such, each node will create a class instance for each node in the cluster (including itself) to track their state, as well as a class instance for each VM in the cluster for the same reason. These instances normally do nothing except monitor for changes, and if they occur fire actions on the local host as required.
+All daemons communicate with Zookeeper to obtain state, and update Zookeper as required, providing a high degree of self-management. Most major failure conditions are handled transparently by the cluster.
 
-### `pvc`
+FRRouting is used to manage virtual networking via BGP EVPN, and Libvirt is used to manage virtual machines.
 
-The client command-line interface for PVC is called, simply enough, `pvc`. It is used by an administrator to manage the PVC cluster and perform any actions that might need to be taken. The `pvc` command is built using Click, and is self-documenting - use the `-h` option for help on a given command.
+PVC itself is composed of four daemons:
 
-## What can I do with it?
+    * Virtualization
+    * Network
+    * Router
+    * Provisioning
 
-The main goal of PVC is to provide the KVM management layer in a more scalable and extensible way that the tool it was built to replace, Pacemaker/Corosync with the Libvirt resource agent. As such, PVC lets you manage your VM cluster without hassle and in an almost-infinitely scalable manner (based only on the limits of Zookeeper).
+#### Virtualization
 
-## What can't I do with it?
+The virtualization daemon (`pvcvd`, package `pvc-virtualization-daemon`) manages QEMU/KVM virtual machins. Domain configurations are stored in Zookeeper and are dynamically created on hypervisor nodes based on Zookeeper configuration values. The virtualization daemon handles all stages of the VM lifecycle, including triggering startup, restart, graceful ACPI shutdown, and forceful termination.
 
-PVC is based on the Unix philosophy of "do one thing and do it well". As such, it has one task: manage KVM VMs. It does not manage:
+By default, each VM lives on a particular "home" node, and can be live migrated away either temporarily (`migrate`) or permanently (`move`). During provisioning and normal `migrate`/`move` commands, the selection of the target hypervisor is dynamic, based on administator-configurable variables.
 
-1. Provisioning of VMs
-2. Networking on the hypervisor nodes
-3. Alerting of errors/failed VMs (though it will restart failing VMs or mark them `failed`)
-4. Resource usage of VMs, beyond basic memory reporting
+#### Network
 
-In short, PVC does not look to replace large projects like OpenStack, only a particular component provided in my original usage by Pacemaker/Corosync. However, it should be possible to build support into any larger project by interfacing directly with the Zookeeper cluster, just as the `pvc` client utility does. I will not rule out integration possiblities but I do not use any of these larger projects.
+The network daemon (`pvcnd`, package `pvc-network-daemon`) manages the hypervisor-side virtual networking for the cluster. It is responsible for provisioning VXLAN devices on hypervisor nodes for VM network access.
 
-## Why might you want to use PVC?
+#### Router
 
-1. You have a small (3+ node) KVM cluster and want to efficiently manage your VMs via CLI.
-2. You need a very scalable solution to manage dozens of KVM hypervisors.
+The router daemon (`pvcrd`, package `pvc-router-daemon`) manages the router-side virtual networking for the cluster. It includes functionality for managing the gateways of each virtual network, as well as providing network ACLs and IP forwarding to an upsteam, and DHCP for client networks.
 
-Really, PVC benefits both the small and large use-cases. If your requirement is for a simple and easy-to-use tool to automatically manage VMs, PVC will work for you.
+#### Provisioning
 
-## Why shouldn't you use PVC?
+The provisioning daemon (`pvcpd`, package `pvc-provisioning-daemon`) manages the setup and creation of new physical nodes, new virtual machines, as well as handling updates of the cluster. The provisioning daemon can be run on any nodes, but is normally run on the routers to simplify administration.
 
-1. You need something to provision your VMs and Networking for you - PVC explicitly does not handle this.
-2. You need more advanced reporting or management of VM resources.
-3. You hate Python.
 
-## How the daemon works
+### Client interfaces
 
-The daemon is the main piece of machinery. It consists of 5 main files - one entry point, 2 classes, and 2 supplemental function sets:
+PVC provides three main administrator interfaces and a supplemental option:
 
-* `pvcd.py` - The main daemon entry point.
-* `pvcd/NodeInstance.py` - A class definition for a hypervisor node object.
-* `pvcd/VMInstance.py` - A class definition for a virtual machine object.
-* `pvcd/ansiiprint.py` - A supplemental function set to output log lines.
-* `pvcd/zkhandler.py` - A supplemental function set to read and write from Zookeeper consistently.
+    * CLI
+    * HTTP API
+    * WebUI
+    * Direct Python bindings
 
-The following sections walk through the steps the daemon takes from startup through to running VMs.
+#### CLI
 
-#### 1. Preflight checks
+The CLI interface (`pvc`, package `pvc-cli-client`) is used to bootstrap the cluster and is able to perform all administrative tasks. The client requires direct access to the Zookeeper cluster to operate, but is usable on any client machine; initalization however requires a Debian-based GNU/Linux system for optimal administrative ease.
 
-* The daemon starts up and verifies that the `PVCD_CONFIG_FILE` environment variable was specified. Terminates if it is not.
-* The daemon reads its config file and parses the values into its configuration dictionary. Terminates if any required configuration field is missing.
-* The daemon verifies that there is a running Libvirt instance at `qemu+tcp://127.0.0.1:16509/system`. Terminates if the connection fails.
-* The daemon opens a connection to Zookeeper at the address specified in the config file. Terminates if the connection fails.
-* The daemon creates a Zookeeper listener against the connection to monitor for disconnects.
-* The daemon traps the `SIGTERM`, `SIGINT`, and `SIGQUIT` signals to ensure this connection is cleaned up and the node state updated on exit.
+Once the other administrative interfaces are provisioned, the CLI is not required, but is installed by default on all nodes in the cluster to facilitate on-machine troubleshooting and maintenance.
 
-#### 2. Initialization
+#### HTTP API
 
-* The daemon obtains some static information about the current node, including CPU count, OS, kernel version, and architecture.
-* The daemon outputs this information to the log console for administrator reference.
-* The daemon verifies that a node with its name exists in Zookeeper at `/domains/system.host.name`.
-    * If it does, it updates the static data and continues.
-    * If it does not, it adds the required keys for the new node with some default/empty values.
-* The daemon sets its state to `init`.
+The HTTP API interface (`pvcapi`, package `pvc-api-client`) is configured by default on a special set of cluster-aware VMs, and provides a feature-complete implementation of the CLI interface via standard HTTP commands. The API allows building advanced configuration utilities integrating PVC without the overhead of the CLI. The HTTP API is optional and installation can be disabled during cluter initalization.
 
-#### 3. Class object initalization
+#### WebUI
 
-* The daemon reads the list of nodes in the cluster (children of `/nodess` in Zookeeper) and initalizes an instance of the `NodeInstance` class for each one. This read is a Zookeeper ChildrenWatch function, and is called again each time the list of children changes (i.e. new nodes are added or removed).
-* The daemon performs a similar action for the list of VMs (`/domains`) in the cluster using a similar watch function.
-* The daemon creates a thread to send keepalives to Zookeeper.
-* The thread starts and the node sets its daemon status to `run`.
+The HTTP Web user interface (`pvcweb`, package `pvc-web-client`) is configured by default on the cluster-aware VMs running the HTTP API, and provides a stripped-down web interface for a number of common administrative tasks, as well as reporting and monitoring functionality. Like the HTTP API, the WebUI is optional and installation can be disabled during cluster initalization.
 
-#### 4. Normal operation
+#### Direct Python bindings
 
-* Once started, the daemon sends keepalives every few seconds (configurable, defaults to 5) to Zookeper.
-* The daemon watches for these keepalives from all other nodes in the cluster; if one is not sent for 6 ticks, the remote node is considered dead and fencing is triggered.
-* The daemon watches for VM state changes and, in response, performs actions based on the target VM state and hypervisor.
-
-#### 5. Termination
-
-* On shutdown, the daemon performs a cleaup, sets its daemon state to `stop`, and terminates the Zookeeper connection. It does NOT flush or otherwise modify running VMs by design; an administrator must flush the node first if this is required.
+While not specifically an interface, the Python functions used by the above interfaces are available via the package `pvc-client-common`, and can be used in custom scripts or programs directly to bypass the CLI or API interfaces.
 
 ## Changelog
 
+#### 0.3
+
+* Major revisions to expand functionality.
+
 #### 0.2
 
-* Minor tweaks and stability improvements (Issues #1, #2, #3, #4, #5, #6, #7, #9)
+* Minor tweaks and stability improvements.
 
 #### 0.1
 
@@ -118,19 +98,4 @@ The following sections walk through the steps the daemon takes from startup thro
 This repo contains the required elements to build Debian packages for PVC. It is not handled like a normal Python package but instead the debs contain the raw files placed in Debianized places.
 
 1. Run `build-deb.sh`; you will need `dpkg-buildpackage` installed.
-2. The output files, `pvc-daemon_vvv.deb` and `pvc-client_vvv.deb`, will be located in the parent directory.
-
-## Installing
-
-1. Ensure a Zookeeper cluster is installed and configured, ideally on the nodes themselves.
-2. Install the `pvc-daemon_vvv.deb` package and, optionally, the `pvc-client_vvv.deb` (the client is not required and the cluster can be managed remotely).
-3. Configure your `/etc/pvc/pvcd.conf` file for the node. A sample can be found at `/etc/pvc/pvcd.conf.sample` listing the available options.
-4. Start up the PVC daemon with `systemctl start pvcd.service`
-5. Check the output of the process; using the `-o cat` option to `journalctl` provides nicer output: `journalctl -u pvcd.service -f -o cat`
-6. Use the `pvc` command-line tool to manage the cluster.
-
-## Example usage
-
-This picture shows examples of the CLI managing a simple test cluster.
-
-![Example usage](https://git.bonifacelabs.ca/bonifacelabs/pvc/raw/master/pvc_usage.png "Example usage")
+2. The output files for each daemon and client will be located in the parent directory.
