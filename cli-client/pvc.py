@@ -672,14 +672,18 @@ def net_remove(net):
 @click.argument(
     'vni'
 )
-def net_info(vni):
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def net_info(vni, long_output):
     """
 	Show information about virtual network VNI.
     """
 
 	# Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_info(zk_conn, vni)
+    retcode, retmsg = pvc_network.get_info(zk_conn, vni, long_output)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

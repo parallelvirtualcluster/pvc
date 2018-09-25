@@ -201,13 +201,13 @@ def remove_network(zk_conn, network):
 
     return True, 'Network "{}" removed successfully!'.format(description)
 
-def get_info(zk_conn, network):
+def get_info(zk_conn, network, long_output):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    information = getNetworkInformation(zk_conn, net_vni)
+    information = getNetworkInformation(zk_conn, net_vni, long_output)
     click.echo(information)
     click.echo('')
 
