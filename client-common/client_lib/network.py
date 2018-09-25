@@ -35,6 +35,7 @@ import configparser
 import kazoo.client
 
 import client_lib.ansiiprint as ansiiprint
+import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 
 #
@@ -214,9 +215,19 @@ def get_info(zk_conn, network, long_output):
     return True, ''
 
 def get_list(zk_conn,  limit):
-    net_list = zk_conn.get_children('/networks')
-    net_list_output = []
+    net_list = []
+    full_net_list = zk_conn.get_children('/networks')
+    for net in full_net_list:
+        description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
+        if limit != None:
+            try:
+                if not re.match(limit, net) or not re.match(limit, description):
+                    continue
+            except Exception as e:
+                return False, 'Regex Error: {}'.format(e)
+        net_list.append(net)
 
+    net_list_output = []
     description = {}
     ip_network = {}
     ip_gateway = {}
