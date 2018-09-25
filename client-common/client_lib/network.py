@@ -207,7 +207,7 @@ def get_info(zk_conn, network, long_output):
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    information = getNetworkInformation(zk_conn, net_vni, long_output)
+    information = formatNetworkInformation(zk_conn, net_vni, long_output)
     click.echo(information)
     click.echo('')
 
