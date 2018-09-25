@@ -112,16 +112,13 @@ def getNetworkInformation(zk_conn, vni):
     description = zk_conn.get('/networks/{}'.format(vni))[0].decode('ascii')
     ip_network = zk_conn.get('/networks/{}/ip_network'.format(vni))[0].decode('ascii')
     ip_gateway = zk_conn.get('/networks/{}/ip_gateway'.format(vni))[0].decode('ascii')
-    ip_routers_raw = zk_conn.get('/networks/{}/ip_routers'.format(vni))[0].decode('ascii')
     dhcp_flag = zk_conn.get('/networks/{}/dhcp_flag'.format(vni))[0].decode('ascii')
 
     # Add a human-friendly space
-    ip_routers = ', '.join(ip_routers_raw.split(','))
-
-    return description, ip_network, ip_gateway, ip_routers, dhcp_flag
+    return description, ip_network, ip_gateway, dhcp_flag
 
 def formatNetworkInformation(zk_conn, vni, long_output):
-    description, ip_network, ip_gateway, ip_routers, dhcp_flag = getNetworkInformation(zk_conn, vni)
+    description, ip_network, ip_gateway, dhcp_flag = getNetworkInformation(zk_conn, vni)
 
     # Format a nice output: do this line-by-line then concat the elements at the end
     ainformation = []
@@ -132,7 +129,6 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     ainformation.append('{}Description:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
     ainformation.append('{}IP network:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
     ainformation.append('{}IP gateway:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
-    ainformation.append('{}Routers:{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_routers))
     ainformation.append('{}DHCP enabled:{} {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag))
 
     if long_output:
@@ -155,7 +151,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
 #
 # Direct functions
 #
-def add_network(zk_conn, vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
+def add_network(zk_conn, vni, description, ip_network, ip_gateway, dhcp_flag):
     if description == '':
         description = vni
 
@@ -168,7 +164,6 @@ def add_network(zk_conn, vni, description, ip_network, ip_gateway, ip_routers, d
     transaction.create('/networks/{}'.format(vni), description.encode('ascii'))
     transaction.create('/networks/{}/ip_network'.format(vni), ip_network.encode('ascii'))
     transaction.create('/networks/{}/ip_gateway'.format(vni), ip_gateway.encode('ascii'))
-    transaction.create('/networks/{}/ip_routers'.format(vni), ','.join(ip_routers).encode('ascii'))
     transaction.create('/networks/{}/dhcp_flag'.format(vni), str(dhcp_flag).encode('ascii'))
     transaction.create('/networks/{}/dhcp_reservations'.format(vni), ''.encode('ascii'))
     transaction.create('/networks/{}/firewall_rules'.format(vni), ''.encode('ascii'))
@@ -185,8 +180,6 @@ def modify_network(zk_conn, vni, **parameters):
         transaction.set_data('/networks/{}/ip_network'.format(vni), parameters['ip_network'].encode('ascii'))
     if parameters['ip_gateway'] != None:
         transaction.set_data('/networks/{}/ip_gateway'.format(vni), parameters['ip_gateway'].encode('ascii'))
-    if parameters['ip_routers'] != ():
-        transaction.set_data('/networks/{}/ip_routers'.format(vni), ','.join(parameters['ip_routers']).encode('ascii'))
     if parameters['dhcp_flag'] != None:
         transaction.set_data('/networks/{}/dhcp_flag'.format(vni), str(parameters['dhcp_flag']).encode('ascii'))
     results = transaction.commit()
@@ -227,13 +220,12 @@ def get_list(zk_conn,  limit):
     description = {}
     ip_network = {}
     ip_gateway = {}
-    ip_routers = {}
     dhcp_flag = {}
 
     # Gather information for printing
     for net in net_list:
         # get info
-        description[net], ip_network[net], ip_gateway[net], ip_routers[net], dhcp_flag[net] = getNetworkInformation(zk_conn, net)
+        description[net], ip_network[net], ip_gateway[net], dhcp_flag[net] = getNetworkInformation(zk_conn, net)
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
@@ -241,7 +233,6 @@ def get_list(zk_conn,  limit):
     net_description_length = 13
     net_ip_network_length = 12
     net_ip_gateway_length = 9
-    net_ip_routers_length = 9
     for net in net_list:
         # vni column
         _net_vni_length = len(net) + 1
@@ -259,10 +250,6 @@ def get_list(zk_conn,  limit):
         _net_ip_gateway_length = len(ip_gateway[net]) + 1
         if _net_ip_gateway_length > net_ip_gateway_length:
             net_ip_gateway_length = _net_ip_gateway_length
-        # ip_routers column
-        _net_ip_routers_length = len(ip_routers[net]) + 1
-        if _net_ip_routers_length > net_ip_routers_length:
-            net_ip_routers_length = _net_ip_routers_length
 
     # Format the string (header)
     net_list_output_header = '{bold}\
@@ -270,7 +257,6 @@ def get_list(zk_conn,  limit):
 {net_description: <{net_description_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{net_ip_routers: <{net_ip_routers_length}} \
 {net_dhcp_flag: <8}\
 {end_bold}'.format(
         bold=ansiiprint.bold(),
@@ -279,12 +265,10 @@ def get_list(zk_conn,  limit):
         net_description_length=net_description_length,
         net_ip_network_length=net_ip_network_length,
         net_ip_gateway_length=net_ip_gateway_length,
-        net_ip_routers_length=net_ip_routers_length,
         net_vni='VNI',
         net_description='Description',
         net_ip_network='Network',
         net_ip_gateway='Gateway',
-        net_ip_routers='Routers',
         net_dhcp_flag='DHCP'
     )
 
@@ -295,7 +279,6 @@ def get_list(zk_conn,  limit):
 {net_description: <{net_description_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{net_ip_routers: <{net_ip_routers_length}} \
 {net_dhcp_flag: <8}\
 {end_bold}'.format(
                 bold='',
@@ -304,12 +287,10 @@ def get_list(zk_conn,  limit):
                 net_description_length=net_description_length,
                 net_ip_network_length=net_ip_network_length,
                 net_ip_gateway_length=net_ip_gateway_length,
-                net_ip_routers_length=net_ip_routers_length,
                 net_vni=net,
                 net_description=description[net],
                 net_ip_network=ip_network[net],
                 net_ip_gateway=ip_gateway[net],
-                net_ip_routers=ip_routers[net],
                 net_dhcp_flag=dhcp_flag[net]
             )
         )

@@ -581,12 +581,6 @@ def cli_network():
     help='Default gateway address for subnet.'
 )
 @click.option(
-    '-r', '--router', 'ip_routers',
-    multiple=True,
-    required=True,
-    help='Router addresses for subnet (specify one or two; mapped to routers in order given).'
-)
-@click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
     default=False,
@@ -595,16 +589,16 @@ def cli_network():
 @click.argument(
     'vni'
 )
-def net_add(vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
+def net_add(vni, description, ip_network, ip_gateway, dhcp_flag):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
     Example:
-    pvc network add 1001 --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --router 10.1.1.2 --router 10.1.1.3 --dhcp
+    pvc network add 1001 --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --dhcp
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, ip_network, ip_gateway, dhcp_flag)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
