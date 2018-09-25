@@ -672,7 +672,7 @@ def net_remove(net):
 @click.argument(
     'vni'
 )
-def net_info(vni, long_output):
+def net_info(vni):
     """
 	Show information about virtual network VNI.
     """
