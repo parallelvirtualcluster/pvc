@@ -121,6 +121,12 @@ def getNetworkInformation(zk_conn, vni):
 def formatNetworkInformation(zk_conn, vni, long_output):
     description, ip_network, ip_gateway, dhcp_flag = getNetworkInformation(zk_conn, vni)
 
+    if dhcp_flag:
+        dhcp_flag_colour = ansiiprint.green()
+    else:
+        dhcp_flag_colour = ansiiprint.blue()
+    colour_off = ansiiprint.end()
+
     # Format a nice output: do this line-by-line then concat the elements at the end
     ainformation = []
     ainformation.append('{}Virtual network information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
@@ -130,7 +136,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     ainformation.append('{}Description:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
     ainformation.append('{}IP network:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
     ainformation.append('{}IP gateway:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
-    ainformation.append('{}DHCP enabled:{} {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag))
+    ainformation.append('{}DHCP enabled:{} {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
 
     if long_output:
         dhcp_reservations = getNetworkDHCPReservations(zk_conn, vni)
@@ -237,18 +243,23 @@ def get_list(zk_conn,  limit):
         else:
             net_list.append(net)
 
-    print(net_list)
-
     net_list_output = []
     description = {}
     ip_network = {}
     ip_gateway = {}
     dhcp_flag = {}
+    dhcp_flag_colour = {}
+    colour_off = ansiiprint.end()
 
     # Gather information for printing
     for net in net_list:
         # get info
         description[net], ip_network[net], ip_gateway[net], dhcp_flag[net] = getNetworkInformation(zk_conn, net)
+        if dhcp_flag[net]:
+            dhcp_flag_colour[net] = ansiiprint.green()
+        else:
+            dhcp_flag_colour[net] = ansiiprint.blue()
+
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
@@ -302,7 +313,7 @@ def get_list(zk_conn,  limit):
 {net_description: <{net_description_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{net_dhcp_flag: <8}\
+{dhcp_flag_colour}{net_dhcp_flag: <8}{colour_off}\
 {end_bold}'.format(
                 bold='',
                 end_bold='',
@@ -314,7 +325,9 @@ def get_list(zk_conn,  limit):
                 net_description=description[net],
                 net_ip_network=ip_network[net],
                 net_ip_gateway=ip_gateway[net],
-                net_dhcp_flag=dhcp_flag[net]
+                net_dhcp_flag=dhcp_flag[net],
+                dhcp_flag_colour=dhcp_flag_colour[net],
+                colour_off=colour_off
             )
         )
 
