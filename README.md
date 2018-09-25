@@ -35,7 +35,7 @@ PVC itself is composed of four daemons:
 
 #### Virtualization
 
-The virtualization daemon (`pvcvd`, package `pvc-virtualization-daemon`) manages QEMU/KVM virtual machins. Domain configurations are stored in Zookeeper and are dynamically created on hypervisor nodes based on Zookeeper configuration values. The virtualization daemon handles all stages of the VM lifecycle, including triggering startup, restart, graceful ACPI shutdown, and forceful termination.
+The virtualization daemon (`pvcvd`, package `pvc-virtualization-daemon`) manages QEMU/KVM virtual machines on hypervisor nodes. Domain configurations are stored in Zookeeper and VMs are dynamically created on hypervisor nodes based on Zookeeper configuration values. The virtualization daemon handles all stages of the VM lifecycle, including triggering startup, restart, graceful ACPI shutdown, and forceful termination.
 
 By default, each VM lives on a particular "home" node, and can be live migrated away either temporarily (`migrate`) or permanently (`move`). During provisioning and normal `migrate`/`move` commands, the selection of the target hypervisor is dynamic, based on administator-configurable variables.
 
