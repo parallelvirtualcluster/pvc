@@ -35,6 +35,7 @@ import configparser
 import kazoo.client
 
 import client_lib.ansiiprint as ansiiprint
+import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 
 #
@@ -466,7 +467,7 @@ def get_list(zk_conn, hypervisor, limit):
         # Verify node is valid
         common.verifyNode(zk_conn, hypervisor)
 
-    vm_list_raw = zk_conn.get_children('/domains')
+    full_vm_list = zk_conn.get_children('/domains')
     vm_list = []
     vm_list_output = []
 
@@ -480,23 +481,41 @@ def get_list(zk_conn, hypervisor, limit):
     vm_vcpu = {}
 
     # If we're limited, remove other nodes' VMs
-    for vm in vm_list_raw:
+    for vm in full_vm_list:
+
         # Check we don't match the limit
-        name = zk_conn.get('/domains/{}'.format(vm))[0].decode('ascii')
+        name = zkhandler.readdata(zk_conn, '/domains/{}'.format(vm))
+        vm_hypervisor[vm] = zkhandler.readdata(zk_conn, '/domains/{}/hypervisor'.format(vm))
         if limit != None:
             try:
-                if re.match(limit, name) == None:
-                    continue
+                # Implcitly assume fuzzy limits
+                if re.match('\^.*', limit) == None:
+                    limit = '.*' + limit
+                if re.match('.*\$', limit) == None:
+                    limit = limit + '.*'
+
+                if re.match(limit, vm) != None:
+                    if hypervisor == None:
+                        vm_list.append(vm)
+                    else:
+                        if vm_hypervisor[vm] == hypervisor:
+                            vm_list.append(vm)
+
+                if re.match(limit, name) != None:
+                    if hypervisor == None:
+                        vm_list.append(vm)
+                    else:
+                        if vm_hypervisor[vm] == hypervisor:
+                            vm_list.append(vm)
             except Exception as e:
-                click.echo('Regex Error: {}'.format(e))
-                exit(1)
-        # Check hypervisor to avoid unneeded ZK calls
-        vm_hypervisor[vm] = zk_conn.get('/domains/{}/hypervisor'.format(vm))[0].decode('ascii')
-        if hypervisor == None:
-            vm_list.append(vm)
+                return False, 'Regex Error: {}'.format(e)
         else:
-            if vm_hypervisor[vm] == hypervisor:
+            # Check hypervisor to avoid unneeded ZK calls
+            if hypervisor == None:
                 vm_list.append(vm)
+            else:
+                if vm_hypervisor[vm] == hypervisor:
+                    vm_list.append(vm)
 
     # Gather information for printing
     for vm in vm_list:

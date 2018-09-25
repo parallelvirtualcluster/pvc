@@ -217,15 +217,27 @@ def get_info(zk_conn, network, long_output):
 def get_list(zk_conn,  limit):
     net_list = []
     full_net_list = zk_conn.get_children('/networks')
+
     for net in full_net_list:
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
         if limit != None:
             try:
-                if not re.match(limit, net) or not re.match(limit, description):
-                    continue
+                # Implcitly assume fuzzy limits
+                if re.match('\^.*', limit) == None:
+                    limit = '.*' + limit
+                if re.match('.*\$', limit) == None:
+                    limit = limit + '.*'
+
+                if re.match(limit, net) != None:
+                    net_list.append(net)
+                if re.match(limit, description) != None:
+                    net_list.append(net)
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
-        net_list.append(net)
+        else:
+            net_list.append(net)
+
+    print(net_list)
 
     net_list_output = []
     description = {}

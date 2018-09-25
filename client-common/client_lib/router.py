@@ -121,12 +121,18 @@ def get_list(zk_conn, limit):
     for router in full_router_list:
         if limit != None:
             try:
-                if re.match(limit, router) == None:
-                    continue
+                # Implcitly assume fuzzy limits
+                if re.match('\^.*', limit) == None:
+                    limit = '.*' + limit
+                if re.match('.*\$', limit) == None:
+                    limit = limit + '.*'
+
+                if re.match(limit, router) != None:
+                    router_list.append(router)
             except Exception as e:
-                common.stopZKConnection(zk_conn)
                 return False, 'Regex Error: {}'.format(e)
-        router_list.append(router)
+        else:
+            router_list.append(router)
 
     router_list_output = []
     router_daemon_state = {}

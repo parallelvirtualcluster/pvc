@@ -169,11 +169,18 @@ def get_list(zk_conn, limit):
     for node in full_node_list:
         if limit != None:
             try:
-                if re.match(limit, node) == None:
-                    continue
+                # Implcitly assume fuzzy limits
+                if re.match('\^.*', limit) == None:
+                    limit = '.*' + limit
+                if re.match('.*\$', limit) == None:
+                    limit = limit + '.*'
+
+                if re.match(limit, node) != None:
+                    node_list.append(node)
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
-        node_list.append(node)
+        else:
+            node_list.append(node)
 
     node_list_output = []
     node_daemon_state = {}
