@@ -172,7 +172,6 @@ def get_list(zk_conn, limit):
                 if re.match(limit, node) == None:
                     continue
             except Exception as e:
-                common.stopZKConnection(zk_conn)
                 return False, 'Regex Error: {}'.format(e)
         node_list.append(node)
 
