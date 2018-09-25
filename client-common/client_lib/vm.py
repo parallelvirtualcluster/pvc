@@ -218,10 +218,11 @@ def define_vm(zk_conn, config_data, target_hypervisor, selector):
 
     return True, ''
 
-def modify_vm(zk_conn, domain, restart):
+def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if dom_uuid == None:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+    dom_name = getDomainName(zk_conn, domain)
 
     # Add the modified config to Zookeeper
     transaction = zk_conn.transaction()

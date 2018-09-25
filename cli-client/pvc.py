@@ -22,6 +22,12 @@
 
 import socket
 import click
+import tempfile
+import os
+import subprocess
+import difflib
+import re
+import colorama
 
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
@@ -291,6 +297,7 @@ def vm_modify(domain, config, editor, restart):
         dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
         if dom_uuid == None:
             cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
 
         # Grab the current config
         current_vm_config = zk_conn.get('/domains/{}/xml'.format(dom_uuid))[0].decode('ascii')
@@ -342,9 +349,9 @@ def vm_modify(domain, config, editor, restart):
         new_vm_config = config.read()
         config.close()
 
-        click.echo('Replacing config of VM "{}".'.format(dom_name, config))
+        click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config))
 
-    retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart)
+    retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart, new_vm_config)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
