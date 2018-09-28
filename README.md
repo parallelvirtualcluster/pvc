@@ -2,6 +2,9 @@
 
 [![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
 
+![Logo](./pvc_logo.svg)
+<img src="./pvc_logo.svg">
+
 PVC is a suite of Python 3 tools to manage virtualized clusters. It provides a fully-functional private cloud based on the priciple that "PVC is not hyperscale". It is designed to be administrator-friendly while powerful, but without the feature bloat and complexity of tools like OpenStack that are designed to support public clouds. With PVC, an administrator can provision, manage, and update a cluster of dozens or more hypervisors running thousands of VMs using a simple CLI tool, HTTP API, or web interface. PVC is based entirely on Debian GNU/Linux and Free-and-Open-Source tools, providing the glue to provision and manage the cluster.
 
 ## Architecture overview
