@@ -41,7 +41,11 @@ def writedata(zk_conn, kv):
     zk_transaction = zk_conn.transaction()
 
     # Proceed one KV pair at a time
-    for key, data in kv.items():
+    for key in sorted(kv):
+        data = kv[key]
+        if not data:
+            data = ''
+
         # Check if this key already exists or not
         if not zk_conn.exists(key):
             # We're creating a new key
@@ -61,7 +65,7 @@ def writedata(zk_conn, kv):
             try:
                 zk_transaction.check(key, new_version)
             except TypeError:
-                print('Zookeeper key "{}" does not match expected version'.format(first_key))
+                print('Zookeeper key "{}" does not match expected version'.format(key))
                 return False
 
     # Commit the transaction
