@@ -125,7 +125,7 @@ class RouterInstance():
 
     def set_primary(self):
         result = zkhandler.writedata(self.zk_conn, { 
-                '/routers/primary': self.name,
+                '/routers': self.name,
                 '/routers/{}/networkstate'.format(self.name): 'primary',
             })
         if not result:
