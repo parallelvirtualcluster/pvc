@@ -581,7 +581,12 @@ def cli_network():
 @click.option(
     '-d', '--description', 'description',
     default="",
-    help='Description of the network. Should not contain whitespace.'
+    help='Description of the network; should not contain whitespace.'
+)
+@click.option(
+    '-n', '--domain', 'domain',
+    required=True,
+    help='Domain name of the network.'
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
@@ -602,16 +607,16 @@ def cli_network():
 @click.argument(
     'vni'
 )
-def net_add(vni, description, ip_network, ip_gateway, dhcp_flag):
+def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
     Example:
-    pvc network add 1001 --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --dhcp
+    pvc network add 1001 --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --dhcp
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, ip_network, ip_gateway, dhcp_flag)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -621,7 +626,7 @@ def net_add(vni, description, ip_network, ip_gateway, dhcp_flag):
 @click.option(
     '-d', '--description', 'description',
     default=None,
-    help='Description of the network. Should not contain whitespace.'
+    help='Description of the network; should not contain whitespace.'
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
@@ -735,7 +740,7 @@ def net_dhcp():
 @click.option(
     '-d', '--description', 'description',
     default=None,
-    help='Description of the DHCP reservation; defaults to MACADDR if unspecified. Should not contain whitespace.'
+    help='Description of the DHCP reservation; defaults to MACADDR if unspecified; should not contain whitespace.'
 )
 @click.argument(
     'net'
