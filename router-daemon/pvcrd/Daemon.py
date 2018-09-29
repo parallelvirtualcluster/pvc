@@ -201,6 +201,14 @@ else:
     transaction.create('/routers/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
     transaction.commit()
 
+# Check that the primary key exists, and create it with us as master if not
+current_primary = zkhandler.readdata(zk_conn, '/routers')
+if current_primary:
+    print('Current primary router is {}"{}"{}.'.format(ansiiprint.blue(), current_primary, ansiiprint.end()))
+else:
+    print('No primary router key found; creating with us as primary.')
+    zkhandler.writedata(zk_conn, { '/routers': myhostname })
+
 zkhandler.writedata(zk_conn, { '/routers/{}/daemonstate'.format(myhostname): 'init' })
 
 t_router = dict()
@@ -224,6 +232,13 @@ this_router = t_router[myhostname]
 update_zookeeper = this_router.update_zookeeper
 update_zookeeper()
 
+@zk_conn.DataWatch('/routers')
+def updateprimary(data, meta):
+    if data == myhostname:
+        this_router.set_primary()
+    else:
+        this_router.set_secondary()
+
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
     global network_list
@@ -238,10 +253,6 @@ def updatenetworks(new_network_list):
             t_router[router].updatenetworklist(s_network)
     network_list = new_network_list
     print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(network_list)))
-
-# Ensure we force startup of interfaces if we're primary
-if this_router.getnetworkstate() == 'primary':
-    this_router.become_primary()
 
 # Create timer to update this router in Zookeeper
 def createKeepaliveTimer():
