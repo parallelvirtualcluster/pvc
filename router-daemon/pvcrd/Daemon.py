@@ -232,13 +232,6 @@ this_router = t_router[myhostname]
 update_zookeeper = this_router.update_zookeeper
 update_zookeeper()
 
-@zk_conn.DataWatch('/routers')
-def updateprimary(data, meta):
-    if data == myhostname:
-        this_router.set_primary()
-    else:
-        this_router.set_secondary()
-
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
     global network_list
