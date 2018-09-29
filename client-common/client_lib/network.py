@@ -139,14 +139,14 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     ainformation.append('{}Virtual network information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}VNI:{}          {}'.format(ansiiprint.purple(), ansiiprint.end(), vni))
-    ainformation.append('{}Description:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
-    ainformation.append('{}Domain:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), domain))
-    ainformation.append('{}IP network:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
-    ainformation.append('{}IP gateway:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
-    ainformation.append('{}DHCP enabled:{} {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
+    ainformation.append('{}VNI:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), vni))
+    ainformation.append('{}Description:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
+    ainformation.append('{}Domain:{}        {}'.format(ansiiprint.purple(), ansiiprint.end(), domain))
+    ainformation.append('{}IP network:{}    {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
+    ainformation.append('{}IP gateway:{}    {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
+    ainformation.append('{}DHCP enabled:{}  {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
     if dhcp_flag == "True":
-        ainformation.append('{}DHCP range:{}   {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
+        ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
 
     if long_output:
         dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni))
