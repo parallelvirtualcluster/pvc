@@ -37,24 +37,41 @@ def readdata(zk_conn, key):
 
 # Data write function
 def writedata(zk_conn, kv):
-    # Get the current version; we base this off the first key (ordering in multi-key calls is irrelevant)
-    first_key = list(kv.keys())[0]
-    orig_data_raw = zk_conn.get(first_key)
-    meta = orig_data_raw[1]
-    if meta == None:
-        ansiiprint.echo('Zookeeper key "{}" does not exist'.format(first_key), '', 'e')
-        return 1
-
-    version = meta.version
-    new_version = version + 1
+    # Start up a transaction
     zk_transaction = zk_conn.transaction()
-    for key, data in kv.items():
-        zk_transaction.set_data(key, data.encode('ascii'))
+
+    # Proceed one KV pair at a time
+    for key in sorted(kv):
+        data = kv[key]
+        if not data:
+            data = ''
+
+        # Check if this key already exists or not
+        if not zk_conn.exists(key):
+            # We're creating a new key
+            zk_transaction.create(key, data.encode('ascii'))
+        else:
+            # We're updating a key with version validation
+            orig_data = zk_conn.get(key)
+            version = orig_data[1].version
+
+            # Set what we expect the new version to be
+            new_version = version + 1
+
+            # Update the data
+            zk_transaction.set_data(key, data.encode('ascii'))
+
+            # Set up the check
+            try:
+                zk_transaction.check(key, new_version)
+            except TypeError:
+                print('Zookeeper key "{}" does not match expected version'.format(key))
+                return False
+
+    # Commit the transaction
     try:
-        zk_transaction.check(first_key, new_version)
-    except TypeError:
-        ansiiprint.echo('Zookeeper key "{}" does not match expected version'.format(first_key), '', 'e')
-        return 1
-    zk_transaction.commit()
-    return 0
+        zk_transaction.commit()
+        return True
+    except Exception:
+        return False
 
