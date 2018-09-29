@@ -303,7 +303,7 @@ def formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list):
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
     reservation_description_length = 13
-    reservation_ip_address_length = 13
+    reservation_ip_address_length = 11
     reservation_mac_address_length = 13
     for dhcp_reservation in dhcp_reservations_list:
         # description column
