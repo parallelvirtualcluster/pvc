@@ -36,6 +36,7 @@ import kazoo.client
 
 import client_lib.ansiiprint as ansiiprint
 import client_lib.common as common
+import client_lib.vm as pvc_vm
 
 def getInformationFromNode(zk_conn, node_name, long_output):
     node_daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node_name))[0].decode('ascii')
@@ -155,8 +156,9 @@ def get_info(zk_conn, node, long_output):
     if long_output == True:
         click.echo('')
         click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+        click.echo('')
         # List all VMs on this node
-        common.get_list(zk_conn, node, None)
+        pvc_vm.get_list(zk_conn, node, None)
 
     click.echo('')
 
