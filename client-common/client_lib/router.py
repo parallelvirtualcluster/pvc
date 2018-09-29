@@ -101,7 +101,10 @@ def primary_router(zk_conn, router):
         return False, 'ERROR: No router named "{}" is present in the cluster.'.format(router)
 
     click.echo('Setting router {} in primary mode.'.format(router))
-    zkhandler.writedata(zk_conn, { '/routers/{}/networkstate'.format(router): 'primary' })
+    zkhandler.writedata(zk_conn, {
+        '/routers': router,
+        '/routers/{}/networkstate'.format(router): 'primary'
+    })
     return True, ''
 
 def get_info(zk_conn, router, long_output):
