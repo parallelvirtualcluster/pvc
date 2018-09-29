@@ -604,19 +604,29 @@ def cli_network():
     default=False,
     help='Enable/disable DHCP for clients on subnet.'
 )
+@click.option(
+    '--dhcp-start', 'dhcp_start',
+    default=None,
+    help='DHCP range start address.'
+)
+@click.option(
+    '--dhcp-end', 'dhcp_end',
+    default=None,
+    help='DHCP range end address.'
+)
 @click.argument(
     'vni'
 )
-def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag):
+def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
     Example:
-    pvc network add 1001 --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1 --dhcp
+    pvc network add 1001 --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

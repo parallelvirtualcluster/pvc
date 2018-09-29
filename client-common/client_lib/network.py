@@ -110,12 +110,14 @@ def getNetworkFirewallRules(zk_conn, vni):
     return None
 
 def getNetworkInformation(zk_conn, vni):
-    description = zk_conn.get('/networks/{}'.format(vni))[0].decode('ascii')
-    domain = zk_conn.get('/networks/{}/domain'.format(vni))[0].decode('ascii')
-    ip_network = zk_conn.get('/networks/{}/ip_network'.format(vni))[0].decode('ascii')
-    ip_gateway = zk_conn.get('/networks/{}/ip_gateway'.format(vni))[0].decode('ascii')
-    dhcp_flag = zk_conn.get('/networks/{}/dhcp_flag'.format(vni))[0].decode('ascii')
-    return description, domain, ip_network, ip_gateway, dhcp_flag
+    description = zkhandler.readdata(zk_conn, '/networks/{}'.format(vni))
+    domain = zkhandler.readdata(zk_conn, '/networks/{}/domain'.format(vni))
+    ip_network = zkhandler.readdata(zk_conn, '/networks/{}/ip_network'.format(vni))
+    ip_gateway = zkhandler.readdata(zk_conn, '/networks/{}/ip_gateway'.format(vni))
+    dhcp_flag = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_flag'.format(vni))
+    dhcp_start = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_start'.format(vni))
+    dhcp_end = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_end'.format(vni))
+    return description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end
 
 def getDHCPReservationInformation(zk_conn, vni, reservation):
     description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(vni, reservation))
@@ -124,9 +126,9 @@ def getDHCPReservationInformation(zk_conn, vni, reservation):
     return description, ip_address, mac_address
 
 def formatNetworkInformation(zk_conn, vni, long_output):
-    description, ip_network, ip_gateway, dhcp_flag = getNetworkInformation(zk_conn, vni)
+    description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
 
-    if dhcp_flag:
+    if dhcp_flag == "True":
         dhcp_flag_colour = ansiiprint.green()
     else:
         dhcp_flag_colour = ansiiprint.blue()
@@ -139,9 +141,12 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     # Basic information
     ainformation.append('{}VNI:{}          {}'.format(ansiiprint.purple(), ansiiprint.end(), vni))
     ainformation.append('{}Description:{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
+    ainformation.append('{}Domain:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), domain))
     ainformation.append('{}IP network:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
     ainformation.append('{}IP gateway:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
     ainformation.append('{}DHCP enabled:{} {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
+    if dhcp_flag == "True":
+        ainformation.append('{}DHCP range:{}   {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
 
     if long_output:
         dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni))
@@ -171,16 +176,22 @@ def formatNetworkList(zk_conn, net_list):
     ip_gateway = {}
     dhcp_flag = {}
     dhcp_flag_colour = {}
+    dhcp_start = {}
+    dhcp_end = {}
+    dhcp_range = {}
     colour_off = ansiiprint.end()
 
     # Gather information for printing
     for net in net_list:
         # get info
-        description[net], domain[net], ip_network[net], ip_gateway[net], dhcp_flag[net] = getNetworkInformation(zk_conn, net)
-        if dhcp_flag[net]:
+        description[net], domain[net], ip_network[net], ip_gateway[net], dhcp_flag[net], dhcp_start[net], dhcp_end[net] = getNetworkInformation(zk_conn, net)
+
+        if dhcp_flag[net] == "True":
             dhcp_flag_colour[net] = ansiiprint.green()
+            dhcp_range[net] = '{} - {}'.format(dhcp_start[net], dhcp_end[net])
         else:
             dhcp_flag_colour[net] = ansiiprint.blue()
+            dhcp_range[net] = 'N/A'
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
@@ -189,6 +200,7 @@ def formatNetworkList(zk_conn, net_list):
     net_domain_length = 8
     net_ip_network_length = 12
     net_ip_gateway_length = 9
+    net_dhcp_range_length = 12
     for net in net_list:
         # vni column
         _net_vni_length = len(net) + 1
@@ -210,6 +222,10 @@ def formatNetworkList(zk_conn, net_list):
         _net_ip_gateway_length = len(ip_gateway[net]) + 1
         if _net_ip_gateway_length > net_ip_gateway_length:
             net_ip_gateway_length = _net_ip_gateway_length
+        # dhcp_range column
+        _net_dhcp_range_length = len(dhcp_range[net]) + 1
+        if _net_dhcp_range_length > net_dhcp_range_length:
+            net_dhcp_range_length = _net_dhcp_range_length
 
     # Format the string (header)
     net_list_output_header = '{bold}\
@@ -218,7 +234,8 @@ def formatNetworkList(zk_conn, net_list):
 {net_domain: <{net_domain_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{net_dhcp_flag: <8}\
+{net_dhcp_flag: <6} \
+{net_dhcp_range: <{net_dhcp_range_length}} \
 {end_bold}'.format(
         bold=ansiiprint.bold(),
         end_bold=ansiiprint.end(),
@@ -227,12 +244,14 @@ def formatNetworkList(zk_conn, net_list):
         net_domain_length=net_domain_length,
         net_ip_network_length=net_ip_network_length,
         net_ip_gateway_length=net_ip_gateway_length,
+        net_dhcp_range_length=net_dhcp_range_length,
         net_vni='VNI',
         net_description='Description',
         net_domain='Domain',
         net_ip_network='Network',
         net_ip_gateway='Gateway',
-        net_dhcp_flag='DHCP'
+        net_dhcp_flag='DHCP',
+        net_dhcp_range='Range',
     )
 
     for net in net_list:
@@ -243,7 +262,8 @@ def formatNetworkList(zk_conn, net_list):
 {net_domain: <{net_domain_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{dhcp_flag_colour}{net_dhcp_flag: <8}{colour_off}\
+{dhcp_flag_colour}{net_dhcp_flag: <6}{colour_off} \
+{net_dhcp_range: <{net_dhcp_range_length}} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
@@ -252,12 +272,14 @@ def formatNetworkList(zk_conn, net_list):
                 net_domain_length=net_domain_length,
                 net_ip_network_length=net_ip_network_length,
                 net_ip_gateway_length=net_ip_gateway_length,
+                net_dhcp_range_length=net_dhcp_range_length,
                 net_vni=net,
                 net_description=description[net],
                 net_domain=domain[net],
                 net_ip_network=ip_network[net],
                 net_ip_gateway=ip_gateway[net],
                 net_dhcp_flag=dhcp_flag[net],
+                net_dhcp_range=dhcp_range[net],
                 dhcp_flag_colour=dhcp_flag_colour[net],
                 colour_off=colour_off
             )
@@ -362,39 +384,47 @@ def isValidIP(ipaddr):
 #
 # Direct functions
 #
-def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag):
+def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
     if description == '':
         description = vni
+
+    if dhcp_flag and ( not dhcp_start or not dhcp_end ):
+        return False, 'ERROR: DHCP start and end addresses are required for a DHCP-enabled network.'
 
     # Check if a network with this VNI already exists
     if zk_conn.exists('/networks/{}'.format(vni)):
         return False, 'ERROR: A network with VNI {} already exists!'.format(vni)
 
     # Add the new network to Zookeeper
-    transaction = zk_conn.transaction()
-    transaction.create('/networks/{}'.format(vni), description.encode('ascii'))
-    transaction.create('/networks/{}/domain'.format(vni), domain.encode('ascii'))
-    transaction.create('/networks/{}/ip_network'.format(vni), ip_network.encode('ascii'))
-    transaction.create('/networks/{}/ip_gateway'.format(vni), ip_gateway.encode('ascii'))
-    transaction.create('/networks/{}/dhcp_flag'.format(vni), str(dhcp_flag).encode('ascii'))
-    transaction.create('/networks/{}/dhcp_reservations'.format(vni), ''.encode('ascii'))
-    transaction.create('/networks/{}/firewall_rules'.format(vni), ''.encode('ascii'))
-    results = transaction.commit()
+    zkhandler.writedata(zk_conn, {
+        '/networks/{}'.format(vni): description,
+        '/networks/{}/domain'.format(vni): domain,
+        '/networks/{}/ip_network'.format(vni): ip_network,
+        '/networks/{}/ip_gateway'.format(vni): ip_gateway,
+        '/networks/{}/dhcp_flag'.format(vni): str(dhcp_flag),
+        '/networks/{}/dhcp_start'.format(vni): dhcp_start,
+        '/networks/{}/dhcp_end'.format(vni): dhcp_end,
+        '/networks/{}/dhcp_reservations'.format(vni): '',
+        '/networks/{}/firewall_rules'.format(vni): ''
+    })
 
     return True, 'Network "{}" added successfully!'.format(description)
 
 def modify_network(zk_conn, vni, **parameters):
     # Add the new network to Zookeeper
     transaction = zk_conn.transaction()
+    zk_data = {}
     if parameters['description'] != None:
-        transaction.set_data('/networks/{}'.format(vni), parameters['description'].encode('ascii'))
+        zk_data.update({'/networks/{}'.format(vni): parameters['description']})
     if parameters['ip_network'] != None:
-        transaction.set_data('/networks/{}/ip_network'.format(vni), parameters['ip_network'].encode('ascii'))
+        zk_data.update({'/networks/{}/ip_network'.format(vni): parameters['ip_network']})
     if parameters['ip_gateway'] != None:
-        transaction.set_data('/networks/{}/ip_gateway'.format(vni), parameters['ip_gateway'].encode('ascii'))
+        zk_data.update({'/networks/{}/ip_gateway'.format(vni): parameters['ip_gateway']})
     if parameters['dhcp_flag'] != None:
-        transaction.set_data('/networks/{}/dhcp_flag'.format(vni), str(parameters['dhcp_flag']).encode('ascii'))
-    results = transaction.commit()
+        zk_data.update({'/networks/{}/dhcp_flag'.format(vni): str(parameters['dhcp_flag'])})
+
+    print(zk_data)
+    zkhandler.writedata(zk_conn, zk_data)
     
     return True, 'Network "{}" modified successfully!'.format(vni)
 
