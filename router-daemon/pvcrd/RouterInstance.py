@@ -107,8 +107,13 @@ class RouterInstance():
             self.s_network[network].removeAddress()
 
     def set_secondary(self):
-        zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'secondary' })
-   
+        try:
+            zkhandler.writedata(self.zk_conn, {
+                '/routers/{}/networkstate'.format(self.name): 'secondary'
+            })
+        except:
+            time.sleep(1)
+
     def become_primary(self):
         ansiiprint.echo('Setting router {} to primary state.'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
@@ -120,7 +125,13 @@ class RouterInstance():
                     zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'secondary' })
 
     def set_primary(self):
-        zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.name): 'primary' })
+        try:
+            zkhandler.writedata(self.zk_conn, { 
+                '/routers/primary': self.name,
+                '/routers/{}/networkstate'.format(self.name): 'primary',
+            })
+        except:
+            time.sleep(1)
                 
 
     def update_zookeeper(self):
