@@ -581,7 +581,7 @@ def cli_network():
 @click.option(
     '-d', '--description', 'description',
     default="",
-    help='Description of the network.'
+    help='Description of the network. Should not contain whitespace.'
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
@@ -621,7 +621,7 @@ def net_add(vni, description, ip_network, ip_gateway, dhcp_flag):
 @click.option(
     '-d', '--description', 'description',
     default=None,
-    help='Description of the network.'
+    help='Description of the network. Should not contain whitespace.'
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
@@ -715,6 +715,93 @@ def net_list(limit):
     retcode, retmsg = pvc_network.get_list(zk_conn, limit)
     cleanup(retcode, retmsg, zk_conn)
 
+###############################################################################
+# pvc network dhcp
+###############################################################################
+@click.group(name='dhcp', short_help='Manage a PVC virtual network DHCP reservations.', context_settings=CONTEXT_SETTINGS)
+def net_dhcp():
+    """
+    Manage host DHCP reservations of a VXLAN network in the PVC cluster.
+    
+    Note: DHCP reservations are only useful if the network has DHCP enabled.
+    """
+    pass
+
+
+###############################################################################
+# pvc network dhcp add
+###############################################################################
+@click.command(name='add', short_help='Add a DHCP reservation to a virtual network.')
+@click.option(
+    '-d', '--description', 'description',
+    default=None,
+    help='Description of the DHCP reservation; defaults to MACADDR if unspecified. Should not contain whitespace.'
+)
+@click.argument(
+    'net'
+)
+@click.argument(
+    'ipaddr'
+)
+@click.argument(
+    'macaddr'
+)
+def net_dhcp_add(net, ipaddr, macaddr, description):
+    """
+    Add a new DHCP reservation of IP address IPADDR for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.add_dhcp_reservation(zk_conn, net, ipaddr, macaddr, description)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network dhcp remove
+###############################################################################
+@click.command(name='remove', short_help='Remove a DHCP reservation from a virtual network.')
+@click.argument(
+    'net'
+)
+@click.argument(
+    'reservation'
+)
+def net_dhcp_remove(net, reservation):
+    """
+    Remove a DHCP reservation RESERVATION from virtual network NET; RESERVATION can be either a MAC address, an IP address, or a description; NET can be either a VNI or description.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, net, reservation)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network dhcp list
+###############################################################################
+@click.command(name='list', short_help='List all DHCP reservation objects.')
+@click.argument(
+    'net'
+)
+@click.argument(
+    'limit', default=None, required=False
+)
+def net_dhcp_list(net, limit):
+    """
+    List all DHCP reservations in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.get_list_dhcp_reservations(zk_conn, net, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network acl
+###############################################################################
+@click.group(name='acl', short_help='Manage a PVC virtual network firewall ACL rule.', context_settings=CONTEXT_SETTINGS)
+def net_acl():
+    """
+    Manage firewall ACLs of a VXLAN network in the PVC cluster.
+    """
+    pass
 
 
 
@@ -813,6 +900,12 @@ cli_network.add_command(net_modify)
 cli_network.add_command(net_remove)
 cli_network.add_command(net_info)
 cli_network.add_command(net_list)
+cli_network.add_command(net_dhcp)
+cli_network.add_command(net_acl)
+
+net_dhcp.add_command(net_dhcp_add)
+net_dhcp.add_command(net_dhcp_remove)
+net_dhcp.add_command(net_dhcp_list)
 
 cli.add_command(cli_node)
 cli.add_command(cli_router)
