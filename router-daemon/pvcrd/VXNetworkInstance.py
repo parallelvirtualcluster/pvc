@@ -79,7 +79,7 @@ class VXNetworkInstance():
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
                 if self.dhcp_flag:
-                    self.dhcp_instance = DHCPInstance.DHCPInstance(self.vni, self.config)
+                    self.dhcp_instance = DHCPServer.DHCPServer(self.vni, self.config)
                 else:
                     self.dhcp_instance.remove()
                     self.dhcp_instance = None
