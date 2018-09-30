@@ -155,7 +155,7 @@ class VXNetworkInstance():
                 '',
                 'o'
             )
-            dhcp_configuration = DHCPServerConfiguration(
+            dhcp_configuration = DHCPServer.DHCPServerConfiguration(
                 zk_conn=self.zk_conn,
                 ipaddr=self.ip_gateway,
                 iface=self.bridge_nic,
