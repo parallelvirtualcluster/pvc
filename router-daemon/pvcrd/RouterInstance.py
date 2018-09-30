@@ -49,6 +49,7 @@ class RouterInstance():
         self.s_network = s_network
         self.network_list = []
         self.ipmi_hostname = self.config['ipmi_hostname']
+        self.active = False
 
         # Zookeeper handlers for changed states
         @zk_conn.DataWatch('/routers/{}/daemonstate'.format(self.name))
@@ -64,14 +65,6 @@ class RouterInstance():
                 self.network_state = data.decode('ascii')
             except AttributeError:
                 self.network_state = 'secondary'
-
-            # toggle state management of this router
-            if s_network != {}: # If there's no network list, we're too early in startup
-                if self.name == self.this_router:
-                    if self.network_state == 'secondary':
-                        self.become_secondary()
-                    if self.network_state == 'primary':
-                        self.become_primary()
 
     # Get value functions
     def getname(self):
@@ -96,6 +89,7 @@ class RouterInstance():
             self.network_list.append(s_network[network].getvni())
 
     def become_secondary(self):
+        self.active = True
         ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
         for router in self.t_router:
@@ -115,6 +109,7 @@ class RouterInstance():
             time.sleep(1)
 
     def become_primary(self):
+        self.active = True
         ansiiprint.echo('Setting router {} to primary state.'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
         for network in self.s_network:
@@ -212,6 +207,14 @@ class RouterInstance():
                 except ValueError:
                     pass
        
+       # toggle state management of this router
+       if s_network != {} and not self.active: # If there's no network list, we're too early in startup
+            if self.name == self.this_router:
+                if self.network_state == 'secondary':
+                    self.become_secondary()
+                if self.network_state == 'primary':
+                    self.become_primary()
+
        # Try to set ourself primary if there is no primary in the cluster
         cluster_has_primary = False
         for router in self.t_router:
