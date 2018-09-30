@@ -638,9 +638,13 @@ class ZKDatabase(object):
     def delete(self, pattern):
         macaddr = pattern[0]
         try:
-            zkhandler.delete(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+            timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+            if timestamp != 'static':
+                zkhandler.delete(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+                return True
         except Exception:
             pass
+        return False
 
     def all(self):
         leases = []
@@ -716,8 +720,8 @@ class HostDatabase(object):
         return list(map(Host.from_tuple, self.db.all()))
 
     def replace(self, host):
-        self.delete(host)
-        self.add(host)
+        if self.delete(host):
+            self.add(host)
         
 def sorted_hosts(hosts):
     hosts = list(hosts)
