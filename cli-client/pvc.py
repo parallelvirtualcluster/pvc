@@ -159,6 +159,22 @@ def cli_router():
 
 
 ###############################################################################
+# pvc router secondary
+###############################################################################
+@click.command(name='secondary', short_help='Set a router in secondary status.')
+@click.argument(
+    'router'
+)
+def router_secondary(router):
+    """
+    Take ROUTER out of primary mode handling gateways and into secondary mode.
+    """
+    
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_router.secondary_router(zk_conn, router)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc router primary
 ###############################################################################
 @click.command(name='primary', short_help='Set a router in primary status.')
@@ -874,6 +890,7 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
+cli_router.add_command(router_secondary)
 cli_router.add_command(router_primary)
 cli_router.add_command(router_info)
 cli_router.add_command(router_list)

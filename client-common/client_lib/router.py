@@ -86,15 +86,38 @@ def getInformationFromRouter(zk_conn, router_name, long_output):
 #
 # Direct Functions
 #
+def secondary_router(zk_conn, router):
+    # Verify router is valid
+    if not common.verifyRouter(zk_conn, router):
+        return False, 'ERROR: No router named "{}" is present in the cluster.'.format(router)
+
+    # Get current state
+    current_state = zkhandler.readdata(zk_conn, '/routers/{}/networkstate'.format(router))
+    if current_state == 'primary':
+        click.echo('Setting router {} in secondary mode.'.format(router))
+        zkhandler.writedata(zk_conn, {
+            '/routers': 'none'
+        })
+    else:
+        click.echo('Router {} is already in secondary mode.'.format(router))
+
+    return True, ''
+
 def primary_router(zk_conn, router):
     # Verify router is valid
     if not common.verifyRouter(zk_conn, router):
         return False, 'ERROR: No router named "{}" is present in the cluster.'.format(router)
 
-    click.echo('Setting router {} in primary mode.'.format(router))
-    zkhandler.writedata(zk_conn, {
-        '/routers': router
-    })
+    # Get current state
+    current_state = zkhandler.readdata(zk_conn, '/routers/{}/networkstate'.format(router))
+    if current_state == 'secondary':
+        click.echo('Setting router {} in primary mode.'.format(router))
+        zkhandler.writedata(zk_conn, {
+            '/routers': router
+        })
+    else:
+        click.echo('Router {} is already in primary mode.'.format(router))
+
     return True, ''
 
 def get_info(zk_conn, router, long_output):
