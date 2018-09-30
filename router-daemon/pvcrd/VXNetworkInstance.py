@@ -192,7 +192,6 @@ class VXNetworkInstance():
                 start_addr=self.dhcp_start,
                 end_addr=self.dhcp_end
             )
-            dhcp_configuration.debug = print
             self.dhcp_server = DHCPServer.DHCPServer(dhcp_configuration)
             self.dhcp_server.start()
 

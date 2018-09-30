@@ -236,7 +236,6 @@ class ReadBootProtocolPacket(object):
             setattr(self, 'option_{}'.format(option), option_data)
 
     def __getitem__(self, key):
-        print(key, dir(self))
         return getattr(self, key, None)
 
     def __contains__(self, key):
@@ -293,7 +292,6 @@ if __name__ == '__main__':
         reads = select.select([s1], [], [], 1)[0]
         for s in reads:
             packet = ReadBootProtocolPacket(*s.recvfrom(4096))
-            print(packet)
 
 
 def get_host_ip_addresses():
@@ -355,7 +353,6 @@ class WriteBootProtocolPacket(object):
 
         for option in self.options:
             value = self.get_option(option)
-            #print(option, value)
             if value is None:
                 continue
             result += bytes([option, len(value)]) + value
@@ -768,14 +765,12 @@ class DHCPServer(object):
             reads = select.select([self.socket], [], [], timeout)[0]
         except ValueError as e:
             # ValueError: file descriptor cannot be a negative integer (-1)
-            print(e)
             return
         for socket in reads:
             try:
                 packet = ReadBootProtocolPacket(*socket.recvfrom(4096))
             except OSError as e:
                 # OSError: [WinError 10038] An operation was attempted on something that is not a socket
-                print(e)
                 pass
             else:
                 self.received(packet)
@@ -813,11 +808,9 @@ class DHCPServer(object):
             for host in known_hosts:
                 if self.is_valid_client_address(host.ip):
                     ip = host.ip
-            print('known ip:', ip)
         if ip is None and self.is_valid_client_address(requested_ip_address):
             # 2. choose valid requested ip address
             ip = requested_ip_address
-            print('valid ip:', ip)
         if ip is None:
             # 3. choose new, free ip address
             chosen = False
@@ -831,9 +824,7 @@ class DHCPServer(object):
                 network_hosts.sort(key = lambda host: host.last_used)
                 ip = network_hosts[0].ip
                 assert self.is_valid_client_address(ip)
-            print('new ip:', ip)
         if not any([host.ip == ip for host in known_hosts]):
-            print('add', mac_address, ip, packet.host_name)
             self.hosts.replace(Host(mac_address, ip, packet.host_name or '', time.time()))
         return ip
 
