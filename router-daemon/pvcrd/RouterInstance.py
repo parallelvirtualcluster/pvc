@@ -130,7 +130,6 @@ class RouterInstance():
             self.network_list.append(s_network[network].getvni())
 
     def become_secondary(self):
-        time.sleep(1)
         ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
         for network in self.s_network:
