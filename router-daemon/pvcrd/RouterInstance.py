@@ -40,6 +40,7 @@ class RouterInstance():
         self.config = config
         self.this_router = this_router
         self.name = name
+        self.primary_router = None
         self.daemon_state = 'stop'
         self.network_state = 'secondary'
         self.t_router = t_router
@@ -52,26 +53,59 @@ class RouterInstance():
 
         # Zookeeper handlers for changed states
         @zk_conn.DataWatch('/routers/{}/daemonstate'.format(self.name))
-        def watch_hypervisor_daemonstate(data, stat, event=""):
+        def watch_router_daemonstate(data, stat, event=''):
             try:
-                self.daemon_state = data.decode('ascii')
+                data  = data.decode('ascii')
             except AttributeError:
-                self.daemon_state = 'stop'
+                data = 'stop'
+
+            if data != self.daemon_state:
+                self.daemon_state = data
 
         @zk_conn.DataWatch('/routers/{}/networkstate'.format(self.name))
-        def watch_hypervisor_networkstate(data, stat, event=""):
+        def watch_router_networkstate(data, stat, event=''):
             try:
-                self.network_state = data.decode('ascii')
+                data = data.decode('ascii')
             except AttributeError:
-                self.network_state = 'secondary'
+                data = 'secondary'
 
-            # toggle state management of this router
-            if s_network != {}: # If there's no network list, we're too early in startup
+            if data != self.network_state:
+                self.network_state = data
                 if self.name == self.this_router:
-                    if self.network_state == 'secondary':
-                        self.become_secondary()
                     if self.network_state == 'primary':
                         self.become_primary()
+                    else:
+                        self.become_secondary()
+
+        @zk_conn.DataWatch('/routers')
+        def watch_primary_router(data, stat, event=''):
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = 'none'
+
+            # toggle state management of this router
+            if data != self.primary_router:
+                if data == 'none':
+                    if self.name == self.this_router:
+                        if self.daemon_state == 'run' and self.network_state != 'primary':
+                            # Contend for primary
+                            ansiiprint.echo('Contending for primary', '', 'i')
+                            zkhandler.writedata(self.zk_conn, {
+                                '/routers': self.name
+                            })
+                elif data == self.this_router:
+                    if self.name == self.this_router:
+                        zkhandler.writedata(self.zk_conn, { 
+                            '/routers/{}/networkstate'.format(self.name): 'primary',
+                        })
+                        self.primary_router = data
+                else:
+                    if self.name == self.this_router:
+                        zkhandler.writedata(self.zk_conn, { 
+                            '/routers/{}/networkstate'.format(self.name): 'secondary',
+                        })
+                        self.primary_router = data
 
     # Get value functions
     def getname(self):
@@ -96,23 +130,12 @@ class RouterInstance():
             self.network_list.append(s_network[network].getvni())
 
     def become_secondary(self):
+        time.sleep(1)
         ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
-        for router in self.t_router:
-            if self.t_router[router].getname() != self.this_router:
-                if self.t_router[router].getnetworkstate() != 'primary':
-                    zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
-        time.sleep(2)
         for network in self.s_network:
             self.s_network[network].stopDHCPServer()
             self.s_network[network].removeGatewayAddress()
-
-    def set_secondary(self):
-        result = zkhandler.writedata(self.zk_conn, {
-                '/routers/{}/networkstate'.format(self.name): 'secondary'
-            })
-        if not result:
-            time.sleep(1)
 
     def become_primary(self):
         ansiiprint.echo('Setting router {} to primary state.'.format(self.name), '', 'i')
@@ -120,19 +143,6 @@ class RouterInstance():
         for network in self.s_network:
             self.s_network[network].createGatewayAddress()
             self.s_network[network].startDHCPServer()
-        for router in self.t_router:
-            if self.t_router[router].getname() != self.this_router:
-                if self.t_router[router].getnetworkstate() != 'secondary':
-                    zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'secondary' })
-
-    def set_primary(self):
-        result = zkhandler.writedata(self.zk_conn, { 
-                '/routers': self.name,
-                '/routers/{}/networkstate'.format(self.name): 'primary',
-            })
-        if not result:
-            time.sleep(1)
-                
 
     def update_zookeeper(self):
         # Get past state and update if needed
@@ -181,7 +191,7 @@ class RouterInstance():
                 fence_thread.start()
 
             # Update the arrays
-            if router_daemon_state == 'run' and router_network_state != 'secondary' and router_name not in self.primary_router_list:
+            if router_daemon_state == 'run' and router_network_state == 'primary' and router_name not in self.primary_router_list:
                 self.primary_router_list.append(router_name)
                 try:
                     self.secondary_router_list.remove(router_name)
@@ -191,17 +201,7 @@ class RouterInstance():
                     self.inactive_router_list.remove(router_name)
                 except ValueError:
                     pass
-            if router_daemon_state != 'run' and router_network_state != 'secondary' and router_name not in self.inactive_router_list:
-                self.inactive_router_list.append(router_name)
-                try:
-                    self.primary_router_list.remove(router_name)
-                except ValueError:
-                    pass
-                try:
-                    self.secondary_router_list.remove(router_name)
-                except ValueError:
-                    pass
-            if router_network_state == 'secondary' and router_name not in self.secondary_router_list:
+            if router_daemon_state == 'run' and router_network_state == 'secondary' and router_name not in self.secondary_router_list:
                 self.secondary_router_list.append(router_name)
                 try:
                     self.primary_router_list.remove(router_name)
@@ -211,16 +211,17 @@ class RouterInstance():
                     self.inactive_router_list.remove(router_name)
                 except ValueError:
                     pass
+            if router_daemon_state != 'run' and router_name not in self.inactive_router_list:
+                self.inactive_router_list.append(router_name)
+                try:
+                    self.primary_router_list.remove(router_name)
+                except ValueError:
+                    pass
+                try:
+                    self.secondary_router_list.remove(router_name)
+                except ValueError:
+                    pass
        
-       # Try to set ourself primary if there is no primary in the cluster
-        cluster_has_primary = False
-        for router in self.t_router:
-            if self.t_router[router].getnetworkstate() == 'primary':
-                cluster_has_primary = True
-                break
-        if not cluster_has_primary:
-            self.set_primary()
-
         # Display cluster information to the terminal
         ansiiprint.echo('{}Cluster status{}'.format(ansiiprint.purple(), ansiiprint.end()), '', 't')
         ansiiprint.echo('{}Primary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.primary_router_list)), '', 'c')

@@ -23,12 +23,13 @@
 import kazoo.client
 import sys
 import os
-import signal
 import socket
 import psutil
 import subprocess
 import time
 import configparser
+import signal
+import atexit
 import apscheduler.schedulers.background
 
 import daemon_lib.ansiiprint as ansiiprint
@@ -142,25 +143,30 @@ def zk_listener(state):
 zk_conn.add_listener(zk_listener)
 
 # Cleanup function
-def cleanup(signum, frame):
-    ansiiprint.echo('Terminating daemon', '', 'e')
+def cleanup():
+    ansiiprint.echo('Cleaning up', '', 'e')
+
+    # Stop keepalive thread
+    stopKeepaliveTimer(update_timer)
+
     # Set stop state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/routers/{}/daemonstate'.format(myhostname): 'stop' })
+    zkhandler.writedata(zk_conn, {'/routers/{}/daemonstate'.format(myhostname): 'stop'})
+    if this_router.name == this_router.primary_router:
+        zkhandler.writedata(zk_conn, {'/routers': 'none'})
+
+    # Wait for everything to flush
+    time.sleep(3)
+
     # Close the Zookeeper connection
     try:
         zk_conn.stop()
         zk_conn.close()
     except:
         pass
-    # Stop keepalive thread
-    stopKeepaliveTimer(update_timer)
-    # Exit
-    sys.exit(0)
 
-# Handle signals gracefully
-signal.signal(signal.SIGTERM, cleanup)
-signal.signal(signal.SIGINT, cleanup)
-signal.signal(signal.SIGQUIT, cleanup)
+    ansiiprint.echo('Terminating daemon', '', 'e')
+
+atexit.register(cleanup)
 
 # Gather useful data about our host for staticdata
 # Static data format: 'cpu_count', 'arch', 'os', 'kernel'
@@ -230,7 +236,6 @@ def updaterouters(new_router_list):
 # Set up our update function
 this_router = t_router[myhostname]
 update_zookeeper = this_router.update_zookeeper
-update_zookeeper()
 
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
@@ -269,6 +274,6 @@ update_timer = createKeepaliveTimer()
 # Tick loop
 while True:
     try:
-        time.sleep(0.1)
+        time.sleep(0.5)
     except:
         break
