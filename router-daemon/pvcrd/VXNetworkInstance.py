@@ -79,10 +79,10 @@ class VXNetworkInstance():
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
             if data and self.ip_gateway != data.decode('ascii'):
+                self.ip_gateway = data.decode('ascii')
                 if self.this_router.network_state == 'primary':
                     if self.ip_gateway:
                         self.removeGatewayAddress()
-                    self.ip_gateway = data.decode('ascii')
                     self.createGatewayAddress()
 
         @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
