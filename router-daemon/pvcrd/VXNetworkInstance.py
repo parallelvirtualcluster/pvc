@@ -166,14 +166,15 @@ class VXNetworkInstance():
                 '',
                 'o'
             )
-            config = {
-                'ipaddr': self.ip_gateway,
-                'iface': self.bridge_nic,
-                'network': self.ip_network,
-                'router': [self.ip_gateway],
-                'dns_servers': [self.ip_gateway]
-            }
-            dhcp_configuration = DHCPServerConfiguration(config)
+            dhcp_configuration = DHCPServerConfiguration(
+                zk_conn=self.zk_conn,
+                ipaddr=self.ip_gateway,
+                iface=self.bridge_nic,
+                vni=self.vni,
+                network=self.ip_network,
+                router=[self.ip_gateway],
+                dns_servers=[self.ip_gateway]
+            )
             dhcp_configuration.debug = print
             self.dhcp_server = DHCPServer.DHCPServer(dhcp_configuration)
             self.dhcp_server.start()

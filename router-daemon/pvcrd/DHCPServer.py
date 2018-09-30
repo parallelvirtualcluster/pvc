@@ -39,6 +39,8 @@ import select
 import ipaddress
 from socket import *
 
+import daemon_lib.zkhandler as zkhandler
+
 # see https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol
 # section DHCP options
 
@@ -500,26 +502,25 @@ class Transaction(object):
         self.server.client_has_chosen(inform)
 
 class DHCPServerConfiguration(object):
-    def __init__(self, configuration):
+
+    def __init__(self, zk_conn, ipaddr, iface, vni, network, router, dns_servers):
         self.dhcp_offer_after_seconds = 1
         self.dhcp_acknowledge_after_seconds = 1
         self.length_of_transaction = 60
 
-        print(configuration)
-        if not configuration:
-            print('ERROR: Invalid DHCP configuration!')
-            exit(1)
+        self.zk_conn = zk_conn
 
-        self.ipaddr = configuration['ipaddr']
-        self.iface = configuration['iface']
+        self.ipaddr = ipaddr
+        self.iface = iface
+        self.vni = vni
 
-        network_cidr = ipaddress.IPv4Network(configuration['network'], False)
-        self.network = network_cidr.network_address
-        self.broadcast_address = network_cidr.broadcast_address
-        self.subnet_mask = network_cidr.netmask
+        network_cidr = ipaddress.IPv4Network(network, False)
+        self.network = str(network_cidr.network_address)
+        self.broadcast_address = str(network_cidr.broadcast_address)
+        self.subnet_mask = str(network_cidr.netmask)
 
-        self.router = configuration['router']
-        self.domain_name_server = configuration['dns_servers']
+        self.router = router
+        self.domain_name_server = dns_servers
 
         # 1 day is 86400
         self.ip_address_lease_time = 300 # seconds
@@ -561,7 +562,6 @@ class GREATER(object):
 class NETWORK(object):
     def __init__(self, network, subnet_mask):
         self.subnet_mask = struct.unpack('>I', inet_aton(subnet_mask))[0]
-        print(self.subnet_mask)
         self.network = struct.unpack('>I', inet_aton(network))[0]
     def __eq__(self, other):
         ip = struct.unpack('>I', inet_aton(other))[0]
@@ -606,6 +606,53 @@ class CSVDatabase(object):
         with self.file() as f:
             return [list(line.strip().split(self.delimiter)) for line in f]
 
+
+class ZKDatabase(object):
+
+    # Store DHCP leases in zookeeper
+    #  /networks/<VNI>/dhcp_leases/<MAC>:<timestamp>/{ipaddr,hostname}
+    # Line:
+    #  ['52:54:00:21:34:11', '10.10.10.6', 'test1', '1538287572']
+
+    def __init__(self, zk_conn, key):
+        self.zk_conn = zk_conn
+        self.key = key
+        zkhandler.writedata(self.zk_conn, { self.key: '' }) # Create base key
+
+    def get(self, pattern):
+        pattern = list(pattern) 
+        return [line for line in self.all() if pattern == line]
+
+    def add(self, line):
+        macaddr = line[0]
+        ipaddr = line[1]
+        hostname = line[2]
+        timestamp = line[3]
+
+        zkhandler.writedata(self.zk_conn, {
+            '{}/{}'.format(self.key, macaddr): timestamp,
+            '{}/{}/ipaddr'.format(self.key, macaddr): ipaddr,
+            '{}/{}/hostname'.format(self.key, macaddr): hostname
+        })
+
+    def delete(self, pattern):
+        macaddr = pattern[0]
+        try:
+            zkhandler.delete(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+        except Exception:
+            pass
+
+    def all(self):
+        leases = []
+        mac_list = zkhandler.listchildren(self.zk_conn, self.key)
+        for macaddr in mac_list:
+            timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+            ipaddr = zkhandler.readdata(self.zk_conn, '{}/{}/ipaddr'.format(self.key, macaddr))
+            hostname = zkhandler.readdata(self.zk_conn, '{}/{}/hostname'.format(self.key, macaddr))
+            leases.append([macaddr, ipaddr, hostname, timestamp])
+        return leases
+        
+
 class Host(object):
 
     def __init__(self, mac, ip, hostname, last_used):
@@ -648,8 +695,8 @@ class Host(object):
         
 
 class HostDatabase(object):
-    def __init__(self, file_name):
-        self.db = CSVDatabase(file_name)
+    def __init__(self, zk_conn, vni):
+        self.db = ZKDatabase(zk_conn, '/networks/{}/dhcp_leases'.format(vni))
 
     def get(self, **kw):
         pattern = Host.get_pattern(**kw)
@@ -685,11 +732,10 @@ class DHCPServer(object):
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.setsockopt(SOL_SOCKET, 25, self.configuration.iface.encode('ascii'))
         self.socket.bind(('<broadcast>', 67))
-        print(self.socket)
         self.delay_worker = DelayWorker()
         self.closed = False
         self.transactions = collections.defaultdict(lambda: Transaction(self)) # id: transaction
-        self.hosts = HostDatabase(self.configuration.host_file)
+        self.hosts = HostDatabase(self.configuration.zk_conn, self.configuration.vni)
         self.time_started = time.time()
 
     def close(self):
