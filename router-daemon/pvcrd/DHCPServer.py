@@ -39,6 +39,7 @@ import select
 import ipaddress
 from socket import *
 
+import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
 
 # see https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol
@@ -715,7 +716,8 @@ class HostDatabase(object):
         return list(map(Host.from_tuple, self.db.get(pattern)))
 
     def add(self, host):
-        self.db.add(host.to_tuple())
+        host_tuple = host.to_tuple()
+        self.db.add(host_tuple)
 
     def delete(self, host = None, **kw):
         if host is None:
@@ -833,6 +835,7 @@ class DHCPServer(object):
         if not any([host.ip == ip for host in known_hosts]):
             print('add', mac_address, ip, packet.host_name)
             self.hosts.replace(Host(mac_address, ip, packet.host_name or '', time.time()))
+        ansiiprint.echo('DHCP client allocated - {} {} {}'.format(mac_address, ip, packet.host_name), '', 'i')
         return ip
 
     @property
