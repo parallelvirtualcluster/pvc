@@ -610,7 +610,7 @@ class CSVDatabase(object):
 class ZKDatabase(object):
 
     # Store DHCP leases in zookeeper
-    #  /networks/<VNI>/dhcp_leases/<MAC>:<timestamp>/{ipaddr,hostname}
+    #  /networks/<VNI>/dhcp_leases/<MAC>:<timestamp>/{ipaddr,description/hostname}
     # Line:
     #  ['52:54:00:21:34:11', '10.10.10.6', 'test1', '1538287572']
 
@@ -626,13 +626,13 @@ class ZKDatabase(object):
     def add(self, line):
         macaddr = line[0]
         ipaddr = line[1]
-        hostname = line[2]
+        description = line[2]
         timestamp = line[3]
 
         zkhandler.writedata(self.zk_conn, {
             '{}/{}'.format(self.key, macaddr): timestamp,
             '{}/{}/ipaddr'.format(self.key, macaddr): ipaddr,
-            '{}/{}/hostname'.format(self.key, macaddr): hostname
+            '{}/{}/description'.format(self.key, macaddr): description
         })
 
     def delete(self, pattern):
@@ -648,8 +648,8 @@ class ZKDatabase(object):
         for macaddr in mac_list:
             timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
             ipaddr = zkhandler.readdata(self.zk_conn, '{}/{}/ipaddr'.format(self.key, macaddr))
-            hostname = zkhandler.readdata(self.zk_conn, '{}/{}/hostname'.format(self.key, macaddr))
-            leases.append([macaddr, ipaddr, hostname, timestamp])
+            description = zkhandler.readdata(self.zk_conn, '{}/{}/description'.format(self.key, macaddr))
+            leases.append([macaddr, ipaddr, description, timestamp])
         return leases
         
 
