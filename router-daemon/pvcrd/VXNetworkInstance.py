@@ -87,7 +87,7 @@ class VXNetworkInstance():
                         router=[self.ip_gateway],
                         dns_servers=[]
                     )
-                    self.dhcp_instance = DHCPServer.DHCPServer(self.vni, dhcp_config)
+                    self.dhcp_instance = DHCPServer.DHCPServer(dhcp_config)
                 else:
                     self.dhcp_instance.remove()
                     self.dhcp_instance = None
