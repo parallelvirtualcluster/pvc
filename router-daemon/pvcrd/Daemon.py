@@ -249,10 +249,10 @@ def updatenetworks(new_network_list):
                 s_network[network].stopDHCPServer()
                 s_network[network].removeGatewayAddress()
             s_network[network].removeNetwork()
+    network_list = new_network_list
     for router in router_list:
         if router in t_router:
             t_router[router].updatenetworklist(s_network)
-    network_list = new_network_list
     print(ansiiprint.blue() + 'Network list: ' + ansiiprint.end() + '{}'.format(' '.join(network_list)))
 
 # Create timer to update this router in Zookeeper
