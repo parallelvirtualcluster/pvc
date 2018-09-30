@@ -207,8 +207,8 @@ class RouterInstance():
                 except ValueError:
                     pass
        
-       # toggle state management of this router
-       if s_network != {} and not self.active: # If there's no network list, we're too early in startup
+        # toggle state management of this router
+        if s_network != {} and not self.active: # If there's no network list, we're too early in startup
             if self.name == self.this_router:
                 if self.network_state == 'secondary':
                     self.become_secondary()

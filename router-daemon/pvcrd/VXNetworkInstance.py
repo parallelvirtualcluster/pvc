@@ -71,14 +71,17 @@ class VXNetworkInstance():
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
             if data != None and self.ip_gateway != data.decode('ascii'):
-                self.removeAddress()
-                self.ip_gateway = data.decode('ascii')
-                self.addAddress()
+                if self.this_router.isprimary():
+                    self.removeGatewayAddress()
+                    self.ip_gateway = data.decode('ascii')
+                    self.createGatewayAddress()
 
         @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
+                if self.dhcp_flag and self.this_router.isprimary():
+                    createDHCPServer()
 
     def getvni(self):
         return self.vni
