@@ -9,6 +9,7 @@ WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVCVD_CONFIG_FILE=/etc/pvc/pvcvd.conf
 ExecStart = /usr/share/pvc/pvcvd.py
+KillSignal = SIGINT
 Restart = on-failure
 
 [Install]

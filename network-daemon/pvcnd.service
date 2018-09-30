@@ -9,6 +9,7 @@ WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVCND_CONFIG_FILE=/etc/pvc/pvcnd.conf
 ExecStart = /usr/share/pvc/pvcnd.py
+KillSignal = SIGINT
 Restart = on-failure
 
 [Install]
