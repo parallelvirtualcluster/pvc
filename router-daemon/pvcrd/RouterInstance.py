@@ -104,7 +104,8 @@ class RouterInstance():
                     zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
         time.sleep(2)
         for network in self.s_network:
-            self.s_network[network].removeAddress()
+            self.s_network[network].removeGatewayAddress()
+            self.s_network[network].stopDHCPServer()
 
     def set_secondary(self):
         result = zkhandler.writedata(self.zk_conn, {
@@ -117,7 +118,8 @@ class RouterInstance():
         ansiiprint.echo('Setting router {} to primary state.'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
         for network in self.s_network:
-            self.s_network[network].createAddress()
+            self.s_network[network].createGatewayAddress()
+            self.s_network[network].startDHCPServer()
         for router in self.t_router:
             if self.t_router[router].getname() != self.this_router:
                 if self.t_router[router].getnetworkstate() != 'secondary':
