@@ -102,8 +102,13 @@ def getNetworkDescription(zk_conn, network):
 
 def getNetworkDHCPReservations(zk_conn, vni):
     # Get a list of VNIs by listing the children of /networks/<vni>/dhcp_reservations
-    dhcp_reservations = sorted(zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni)))
-    return dhcp_reservations
+    dhcp_reservations = []
+    dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
+    for lease in dhcp_leases:
+        timestamp = zkhandler.readdata(zk_conn, lease)
+        if timestamp == 'static':
+            dhcp_reservations.append(lease)
+    return sorted(dhcp_reservations)
 
 def getNetworkFirewallRules(zk_conn, vni):
     firewall_rules = zk_conn.get_children('/networks/{}/firewall_rules'.format(vni))
@@ -119,10 +124,10 @@ def getNetworkInformation(zk_conn, vni):
     dhcp_end = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_end'.format(vni))
     return description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end
 
-def getDHCPReservationInformation(zk_conn, vni, reservation):
-    description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(vni, reservation))
-    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipv4addr'.format(vni, reservation))
-    mac_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/macaddr'.format(vni, reservation))
+def getDHCPReservationInformation(zk_conn, vni, macaddr):
+    description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/description'.format(vni, macaddr))
+    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, macaddr))
+    mac_address = macaddr
     return description, ip_address, mac_address
 
 def formatNetworkInformation(zk_conn, vni, long_output):
@@ -149,7 +154,12 @@ def formatNetworkInformation(zk_conn, vni, long_output):
         ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
 
     if long_output:
-        dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni))
+        dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
+        dhcp_reservations_list = []
+        for lease in dhcp_leases:
+            description = zkhandler.readdata(zk_conn, lease)
+            if description == 'static':
+                dhcp_reservations_list.append(lease)
         if dhcp_reservations_list:
             ainformation.append('')
             ainformation.append('{}Client DHCP reservations:{}'.format(ansiiprint.bold(), ansiiprint.end()))
@@ -157,6 +167,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
             dhcp_reservations_string = formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list)
             for line in dhcp_reservations_string.split('\n'):
                 ainformation.append(line)
+
         firewall_rules = zk_conn.get_children('/networks/{}/firewall_rules'.format(vni))
         if firewall_rules:
             ainformation.append('')
@@ -450,8 +461,8 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, description):
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    # Use lowercase MAC format exclusively
-    macaddress = macaddress.lower()
+    # Use uppercase MAC format exclusively
+    macaddress = macaddress.upper()
 
     if not isValidMAC(macaddress):
         return False, 'ERROR: MAC address "{}" is not valid! Always use ":" as a separator.'.format(macaddress)
@@ -462,15 +473,15 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, description):
     if not description:
         description = macaddress
 
-    if zk_conn.exists('/networks/{}/dhcp_reservations/{}'.format(net_vni, description)):
-        return False, 'ERROR: A reservation with description {} already exists!'.format(description)
+    if zk_conn.exists('/networks/{}/dhcp_leases/{}'.format(net_vni, macaddress)):
+        return False, 'ERROR: A reservation with MAC "{}" already exists!'.format(macaddress)
 
     # Add the new network to ZK
     try:
         zkhandler.writedata(zk_conn, {
-            '/networks/{}/dhcp_reservations/{}'.format(net_vni, description): description,
-            '/networks/{}/dhcp_reservations/{}/macaddr'.format(net_vni, description): macaddress,
-            '/networks/{}/dhcp_reservations/{}/ipv4addr'.format(net_vni, description): ipaddress
+            '/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddr): description,
+            '/networks/{}/dhcp_reservations/{}/description'.format(net_vni, macaddr): description,
+            '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddr): ipaddress
         })
     except Exception as e:
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
@@ -486,19 +497,22 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     match_description = ''
 
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
-    reservation_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(net_vni))
-    for description in reservation_list:
-        macaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/macaddr'.format(net_vni, description))
-        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipv4addr'.format(net_vni, description))
-        if reservation == description or reservation == macaddress or reservation == ipaddress:
-            match_description = description
+    reservation_list = zk_conn.get_children('/networks/{}/dhcp_leases'.format(net_vni))
+    for macaddr in reservation_list:
+        timestamp = zkhandler.readdata(zk_conn, macaddr)
+        if timestamp != 'static':
+            continue
+        description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/description'.format(net_vni, macaddr))
+        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(net_vni, macaddr))
+        if reservation == macaddr or reservation == description or reservation == ipaddress:
+            match_description = macaddr
     
     if not match_description:
         return False, 'ERROR: No DHCP reservation exists matching "{}"!'.format(reservation)
 
     # Remove the entry from zookeeper
     try:
-        zk_conn.delete('/networks/{}/dhcp_reservations/{}'.format(net_vni, match_description), recursive=True)
+        zk_conn.delete('/networks/{}/dhcp_leases/{}'.format(net_vni, match_description), recursive=True)
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
