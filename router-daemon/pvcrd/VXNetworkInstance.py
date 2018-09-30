@@ -77,23 +77,6 @@ class VXNetworkInstance():
         def watch_network_dhcp_status(data, stat, event=''):
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
-                if self.dhcp_flag:
-                    ansiiprint.echo('Starting DHCP server for network "{}".'.format(self.ip_network), '', 'o')
-                    dhcp_config = DHCPServer.DHCPServerConfiguration(
-                        zk_conn=self.zk_conn,
-                        ipaddr=self.ip_gateway,
-                        iface=self.bridge_nic,
-                        vni=self.vni,
-                        network=self.ip_network,
-                        router=[self.ip_gateway],
-                        dns_servers=[]
-                    )
-                    self.dhcp_instance = DHCPServer.DHCPServer(dhcp_config)
-                    self.dhcp_instance.start()
-                else:
-                    self.dhcp_instance.close()
-                    self.dhcp_instance = None
-
 
     def getvni(self):
         return self.vni
