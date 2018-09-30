@@ -89,6 +89,8 @@ class VXNetworkInstance():
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
                 if self.dhcp_flag and self.this_router.network_state == 'primary':
                     self.startDHCPServer()
+                elif self.this_router.network_state == 'primary':
+                    self.stopDHCPServer()
 
     def getvni(self):
         return self.vni
@@ -236,4 +238,12 @@ class VXNetworkInstance():
 
     def stopDHCPServer(self):
         if self.dhcp_server:
+            ansiiprint.echo(
+                'Stopping DHCP server on interface {} (VNI {})'.format(
+                    self.bridge_nic,
+                    self.vni
+                ),
+                '',
+                'o'
+            )
             self.dhcp_server.close()
