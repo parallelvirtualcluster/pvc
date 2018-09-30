@@ -50,6 +50,8 @@ class VXNetworkInstance():
 
         self.firewall_rules = {}
 
+        self.dhcp_server = None
+
         self.createNetwork()
 
         # Zookeper handlers for changed states
@@ -223,4 +225,5 @@ class VXNetworkInstance():
         )
 
     def stopDHCPServer(self):
-        self.dhcp_server.close()
+        if self.dhcp_server:
+            self.dhcp_server.close()
