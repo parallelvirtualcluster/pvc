@@ -37,13 +37,13 @@ class VXNetworkInstance():
         self.this_router = this_router
         self.vni_dev = config['vni_dev']
 
-        self.old_description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
-        self.description = zkhandler.readdata(self.zk_conn, '/networks/{}'.format(self.vni))
-        self.domain = zkhandler.readdata(self.zk_conn, '/networks/{}/domain'.format(self.vni))
-        self.ip_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_gateway'.format(self.vni))
-        self.ip_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni))
-        self.ip_cidrnetmask = self.ip_network.split('/')[-1]
-        self.dhcp_flag = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp_flag'.format(self.vni)) == 'True' )
+        self.old_description = None
+        self.description = None
+        self.domain = None
+        self.ip_gateway = None
+        self.ip_network = None
+        self.ip_cidrnetmask = None
+        self.dhcp_flag = None
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
@@ -61,6 +61,12 @@ class VXNetworkInstance():
                 self.old_description = self.description
                 self.description = data.decode('ascii')
 
+        @zk_conn.DataWatch('/networks/{}/domain'.format(self.vni))
+        def watch_network_domain(data, stat, event=''):
+            if data != None and self.domain != data.decode('ascii'):
+                domain = data.decode('ascii')
+                self.domain = domain
+
         @zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
         def watch_network_ip_network(data, stat, event=''):
             if data != None and self.ip_network != data.decode('ascii'):
@@ -71,8 +77,9 @@ class VXNetworkInstance():
         @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
             if data != None and self.ip_gateway != data.decode('ascii'):
-                if self.this_router.isprimary():
-                    self.removeGatewayAddress()
+                if self.this_router.network_state == 'primary':
+                    if self.ip_gateway:
+                        self.removeGatewayAddress()
                     self.ip_gateway = data.decode('ascii')
                     self.createGatewayAddress()
 
@@ -80,8 +87,8 @@ class VXNetworkInstance():
         def watch_network_dhcp_status(data, stat, event=''):
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
-                if self.dhcp_flag and self.this_router.isprimary():
-                    createDHCPServer()
+                if self.dhcp_flag and self.this_router.network_state == 'primary':
+                    self.startDHCPServer()
 
     def getvni(self):
         return self.vni
