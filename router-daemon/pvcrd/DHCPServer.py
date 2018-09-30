@@ -610,50 +610,58 @@ class CSVDatabase(object):
 class ZKDatabase(object):
 
     # Store DHCP leases in zookeeper
-    #  /networks/<VNI>/dhcp_leases/<MAC>:<timestamp>/{ipaddr,description/hostname}
+    #  /networks/<VNI>/dhcp_leases/<MAC>:<timestamp>/{ipaddr,hostname}
     # Line:
     #  ['52:54:00:21:34:11', '10.10.10.6', 'test1', '1538287572']
 
     def __init__(self, zk_conn, key):
         self.zk_conn = zk_conn
         self.key = key
-        zkhandler.writedata(self.zk_conn, { self.key: '' }) # Create base key
 
     def get(self, pattern):
-        pattern = list(pattern) 
-        return [line for line in self.all() if pattern == line]
+        pattern = list(pattern)
+        return [line for line in self.all() if pattern[0] == line[0] or pattern[1] == line[1] or pattern[2] == line[2]]
+
+    def isstatic(self, pattern):
+        macaddr = pattern[0]
+        try:
+            timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+            if timestamp == 'static':
+                return True
+            else:
+                return False
+        except Exception:
+            return False
 
     def add(self, line):
         macaddr = line[0]
         ipaddr = line[1]
-        description = line[2]
+        hostname = line[2]
         timestamp = line[3]
 
         zkhandler.writedata(self.zk_conn, {
             '{}/{}'.format(self.key, macaddr): timestamp,
             '{}/{}/ipaddr'.format(self.key, macaddr): ipaddr,
-            '{}/{}/description'.format(self.key, macaddr): description
+            '{}/{}/hostname'.format(self.key, macaddr): hostname
         })
 
     def delete(self, pattern):
         macaddr = pattern[0]
         try:
-            timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
-            if timestamp != 'static':
-                zkhandler.delete(self.zk_conn, '{}/{}'.format(self.key, macaddr))
-                return True
+            zkhandler.delete(self.zk_conn, '{}/{}'.format(self.key, macaddr))
         except Exception:
             pass
-        return False
 
     def all(self):
         leases = []
         mac_list = zkhandler.listchildren(self.zk_conn, self.key)
         for macaddr in mac_list:
             timestamp = zkhandler.readdata(self.zk_conn, '{}/{}'.format(self.key, macaddr))
+            if timestamp == 'static':
+                timestamp = 0
             ipaddr = zkhandler.readdata(self.zk_conn, '{}/{}/ipaddr'.format(self.key, macaddr))
-            description = zkhandler.readdata(self.zk_conn, '{}/{}/description'.format(self.key, macaddr))
-            leases.append([macaddr, ipaddr, description, timestamp])
+            hostname = zkhandler.readdata(self.zk_conn, '{}/{}/hostname'.format(self.key, macaddr))
+            leases.append([macaddr, ipaddr, hostname, timestamp])
         return leases
         
 
@@ -716,11 +724,15 @@ class HostDatabase(object):
             pattern = host.to_pattern()
         self.db.delete(pattern)
 
+    def isstatic(self, host):
+        return self.db.isstatic(host.to_tuple())
+
     def all(self):
         return list(map(Host.from_tuple, self.db.all()))
 
     def replace(self, host):
-        if self.delete(host):
+        if not self.isstatic(host):
+            self.delete(host)
             self.add(host)
         
 def sorted_hosts(hosts):
@@ -752,14 +764,16 @@ class DHCPServer(object):
     def update(self, timeout = 0):
         try:
             reads = select.select([self.socket], [], [], timeout)[0]
-        except ValueError:
+        except ValueError as e:
             # ValueError: file descriptor cannot be a negative integer (-1)
+            print(e)
             return
         for socket in reads:
             try:
                 packet = ReadBootProtocolPacket(*socket.recvfrom(4096))
-            except OSError:
+            except OSError as e:
                 # OSError: [WinError 10038] An operation was attempted on something that is not a socket
+                print(e)
                 pass
             else:
                 self.received(packet)
@@ -793,7 +807,7 @@ class DHCPServer(object):
         known_hosts = self.hosts.get(mac = CASEINSENSITIVE(mac_address))
         ip = None
         if known_hosts:
-            # 1. choose known ip address
+            # 1. choose known ip address (including static lease)
             for host in known_hosts:
                 if self.is_valid_client_address(host.ip):
                     ip = host.ip

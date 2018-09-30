@@ -747,11 +747,6 @@ def net_dhcp():
 # pvc network dhcp add
 ###############################################################################
 @click.command(name='add', short_help='Add a DHCP reservation to a virtual network.')
-@click.option(
-    '-d', '--description', 'description',
-    default=None,
-    help='Description of the DHCP reservation; defaults to MACADDR if unspecified; should not contain whitespace.'
-)
 @click.argument(
     'net'
 )
@@ -761,13 +756,16 @@ def net_dhcp():
 @click.argument(
     'macaddr'
 )
-def net_dhcp_add(net, ipaddr, macaddr, description):
+@click.argument(
+    'hostname'
+)
+def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
-    Add a new DHCP reservation of IP address IPADDR for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
+    Add a new DHCP reservation of host HOSTNAME with IP address IPADDR for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_dhcp_reservation(zk_conn, net, ipaddr, macaddr, description)
+    retcode, retmsg = pvc_network.add_dhcp_reservation(zk_conn, net, ipaddr, macaddr, hostname)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

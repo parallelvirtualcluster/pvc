@@ -101,7 +101,7 @@ def getNetworkDescription(zk_conn, network):
     return net_description
 
 def getNetworkDHCPReservations(zk_conn, vni):
-    # Get a list of VNIs by listing the children of /networks/<vni>/dhcp_reservations
+    # Get a list of VNIs by listing the children of /networks/<vni>/dhcp_leases
     dhcp_reservations = []
     dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
     for lease in dhcp_leases:
@@ -125,10 +125,10 @@ def getNetworkInformation(zk_conn, vni):
     return description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end
 
 def getDHCPReservationInformation(zk_conn, vni, macaddr):
-    description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/description'.format(vni, macaddr))
+    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, macaddr))
     ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, macaddr))
     mac_address = macaddr
-    return description, ip_address, mac_address
+    return hostname, ip_address, mac_address
 
 def formatNetworkInformation(zk_conn, vni, long_output):
     description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
@@ -301,26 +301,26 @@ def formatNetworkList(zk_conn, net_list):
 
 def formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list):
     dhcp_reservation_list_output = []
-    description = {}
+    hostname = {}
     ip_address = {}
     mac_address = {}
 
     # Gather information for printing
     for dhcp_reservation in dhcp_reservations_list:
         # get info
-        description[dhcp_reservation], ip_address[dhcp_reservation], mac_address[dhcp_reservation] = getDHCPReservationInformation(zk_conn, vni, dhcp_reservation)
+        hostname[dhcp_reservation], ip_address[dhcp_reservation], mac_address[dhcp_reservation] = getDHCPReservationInformation(zk_conn, vni, dhcp_reservation)
        
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
-    reservation_description_length = 13
+    reservation_hostname_length = 13
     reservation_ip_address_length = 11
     reservation_mac_address_length = 13
     for dhcp_reservation in dhcp_reservations_list:
-        # description column
-        _reservation_description_length = len(description[dhcp_reservation]) + 1
-        if _reservation_description_length > reservation_description_length:
-            reservation_description_length = _reservation_description_length
+        # hostname column
+        _reservation_hostname_length = len(hostname[dhcp_reservation]) + 1
+        if _reservation_hostname_length > reservation_hostname_length:
+            reservation_hostname_length = _reservation_hostname_length
         # ip_network column
         _reservation_ip_address_length = len(ip_address[dhcp_reservation]) + 1
         if _reservation_ip_address_length > reservation_ip_address_length:
@@ -332,32 +332,32 @@ def formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list):
 
     # Format the string (header)
     dhcp_reservation_list_output_header = '{bold}\
-{reservation_description: <{reservation_description_length}} \
+{reservation_hostname: <{reservation_hostname_length}} \
 {reservation_ip_address: <{reservation_ip_address_length}} \
 {reservation_mac_address: <{reservation_mac_address_length}} \
 {end_bold}'.format(
         bold=ansiiprint.bold(),
         end_bold=ansiiprint.end(),
-        reservation_description_length=reservation_description_length,
+        reservation_hostname_length=reservation_hostname_length,
         reservation_ip_address_length=reservation_ip_address_length,
         reservation_mac_address_length=reservation_mac_address_length,
-        reservation_description='Description',
+        reservation_hostname='Hostname',
         reservation_ip_address='IP Address',
         reservation_mac_address='MAC Address'
     )
 
     for dhcp_reservation in dhcp_reservations_list:
         dhcp_reservation_list_output.append('{bold}\
-{reservation_description: <{reservation_description_length}} \
+{reservation_hostname: <{reservation_hostname_length}} \
 {reservation_ip_address: <{reservation_ip_address_length}} \
 {reservation_mac_address: <{reservation_mac_address_length}} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
-                reservation_description_length=reservation_description_length,
+                reservation_hostname_length=reservation_hostname_length,
                 reservation_ip_address_length=reservation_ip_address_length,
                 reservation_mac_address_length=reservation_mac_address_length,
-                reservation_description=description[dhcp_reservation],
+                reservation_hostname=hostname[dhcp_reservation],
                 reservation_ip_address=ip_address[dhcp_reservation],
                 reservation_mac_address=mac_address[dhcp_reservation]
             )
@@ -415,7 +415,7 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
         '/networks/{}/dhcp_flag'.format(vni): str(dhcp_flag),
         '/networks/{}/dhcp_start'.format(vni): dhcp_start,
         '/networks/{}/dhcp_end'.format(vni): dhcp_end,
-        '/networks/{}/dhcp_reservations'.format(vni): '',
+        '/networks/{}/dhcp_leases'.format(vni): '',
         '/networks/{}/firewall_rules'.format(vni): ''
     })
 
@@ -434,7 +434,6 @@ def modify_network(zk_conn, vni, **parameters):
     if parameters['dhcp_flag'] != None:
         zk_data.update({'/networks/{}/dhcp_flag'.format(vni): str(parameters['dhcp_flag'])})
 
-    print(zk_data)
     zkhandler.writedata(zk_conn, zk_data)
     
     return True, 'Network "{}" modified successfully!'.format(vni)
@@ -455,7 +454,7 @@ def remove_network(zk_conn, network):
     return True, 'Network "{}" removed successfully!'.format(description)
 
 
-def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, description):
+def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
@@ -470,23 +469,20 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, description):
     if not isValidIP(ipaddress):
         return False, 'ERROR: IP address "{}" is not valid!'.format(macaddress)
 
-    if not description:
-        description = macaddress
-
     if zk_conn.exists('/networks/{}/dhcp_leases/{}'.format(net_vni, macaddress)):
         return False, 'ERROR: A reservation with MAC "{}" already exists!'.format(macaddress)
 
-    # Add the new network to ZK
+    # Add the new static lease to ZK
     try:
         zkhandler.writedata(zk_conn, {
-            '/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddr): description,
-            '/networks/{}/dhcp_reservations/{}/description'.format(net_vni, macaddr): description,
-            '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddr): ipaddress
+            '/networks/{}/dhcp_leases/{}'.format(net_vni, macaddress): 'static',
+            '/networks/{}/dhcp_leases/{}/hostname'.format(net_vni, macaddress): hostname,
+            '/networks/{}/dhcp_leases/{}/ipaddr'.format(net_vni, macaddress): ipaddress
         })
     except Exception as e:
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
-    return True, 'DHCP reservation "{}" added successfully!'.format(description)
+    return True, 'DHCP reservation "{}" added successfully!'.format(macaddress)
 
 def remove_dhcp_reservation(zk_conn, network, reservation):
     # Validate and obtain standard passed value
@@ -499,12 +495,12 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
     reservation_list = zk_conn.get_children('/networks/{}/dhcp_leases'.format(net_vni))
     for macaddr in reservation_list:
-        timestamp = zkhandler.readdata(zk_conn, macaddr)
+        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(net_vni, macaddr))
         if timestamp != 'static':
             continue
-        description = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/description'.format(net_vni, macaddr))
+        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(net_vni, macaddr))
         ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(net_vni, macaddr))
-        if reservation == macaddr or reservation == description or reservation == ipaddress:
+        if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
     
     if not match_description:
