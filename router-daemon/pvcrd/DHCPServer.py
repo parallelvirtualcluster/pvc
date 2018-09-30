@@ -504,7 +504,7 @@ class Transaction(object):
 
 class DHCPServerConfiguration(object):
 
-    def __init__(self, zk_conn, ipaddr, iface, vni, network, router, dns_servers):
+    def __init__(self, zk_conn, ipaddr, iface, vni, network, router, dns_servers, start_addr, end_addr):
         self.dhcp_offer_after_seconds = 1
         self.dhcp_acknowledge_after_seconds = 1
         self.length_of_transaction = 60
@@ -515,36 +515,35 @@ class DHCPServerConfiguration(object):
         self.iface = iface
         self.vni = vni
 
-        network_cidr = ipaddress.IPv4Network(network, False)
-        self.network = str(network_cidr.network_address)
-        self.broadcast_address = str(network_cidr.broadcast_address)
-        self.subnet_mask = str(network_cidr.netmask)
+        self.network_cidr = ipaddress.IPv4Network(network, False)
+        self.network = str(self.network_cidr.network_address)
+        self.broadcast_address = str(self.network_cidr.broadcast_address)
+        self.subnet_mask = str(self.network_cidr.netmask)
 
         self.router = router
         self.domain_name_server = dns_servers
 
+        self.start_addr = start_addr
+        self.end_addr = end_addr
+
         # 1 day is 86400
         self.ip_address_lease_time = 300 # seconds
-
-        self.host_file = 'hosts.csv'
 
         self.debug = lambda *args, **kw: None
 
     def all_ip_addresses(self):
-        ips = ip_addresses(self.network, self.subnet_mask)
-        for i in range(5):
-            next(ips)
+        ips = ip_addresses(self.network, self.subnet_mask, self.start_addr, self.end_addr)
         return ips
 
     def network_filter(self):
         return NETWORK(self.network, self.subnet_mask)
 
-def ip_addresses(network, subnet_mask):
+def ip_addresses(network, subnet_mask, start_addr, end_addr):
     subnet_mask = struct.unpack('>I', inet_aton(subnet_mask))[0]
     network = struct.unpack('>I', inet_aton(network))[0]
     network = network & subnet_mask
-    start = network + 1
-    end = (network | (~subnet_mask & 0xffffffff))
+    start = struct.unpack('>I', inet_aton(start_addr))[0]
+    end = struct.unpack('>I', inet_aton(end_addr))[0]
     return (inet_ntoa(struct.pack('>I', i)) for i in range(start, end))
 
 class ALL(object):
