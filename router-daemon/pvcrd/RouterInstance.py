@@ -104,8 +104,8 @@ class RouterInstance():
                     zkhandler.writedata(self.zk_conn, { '/routers/{}/networkstate'.format(self.t_router[router].getname()): 'primary' })
         time.sleep(2)
         for network in self.s_network:
-            self.s_network[network].removeGatewayAddress()
             self.s_network[network].stopDHCPServer()
+            self.s_network[network].removeGatewayAddress()
 
     def set_secondary(self):
         result = zkhandler.writedata(self.zk_conn, {

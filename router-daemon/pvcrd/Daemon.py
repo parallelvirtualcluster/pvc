@@ -239,7 +239,8 @@ def updatenetworks(new_network_list):
         if not network in s_network:
             s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname])
         if not network in new_network_list:
-            s_network[network].removeAddress()
+            s_network[network].stopDHCPServer()
+            s_network[network].removeGatewayAddress()
             s_network[network].removeNetwork()
     for router in router_list:
         if router in t_router:
