@@ -48,7 +48,6 @@ class VXNetworkInstance():
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
 
-        self.dhcp_reservations = {}
         self.firewall_rules = {}
 
         self.createNetwork()
@@ -79,15 +78,20 @@ class VXNetworkInstance():
             if data != None and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
                 if self.dhcp_flag:
-                    self.dhcp_instance = DHCPServer.DHCPServer(self.vni, self.config)
+                    dhcp_config = DHCPServer.DHCPServerConfiguration(
+                        zk_conn=self.zk_conn,
+                        ipaddr=self.ip_gateway,
+                        iface=self.bridge_nic,
+                        vni=self.vni,
+                        network=self.ip_network,
+                        router=[self.ip_gateway],
+                        dns_servers=[]
+                    )
+                    self.dhcp_instance = DHCPServer.DHCPServer(self.vni, dhcp_config)
                 else:
                     self.dhcp_instance.remove()
                     self.dhcp_instance = None
 
-
-        @zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
-        def watch_network_dhcp_reservations(data, event=''):
-            print(data)
 
     def getvni(self):
         return self.vni
