@@ -132,6 +132,7 @@ class RouterInstance():
     def become_secondary(self):
         ansiiprint.echo('Setting router {} to secondary state'.format(self.name), '', 'i')
         ansiiprint.echo('Network list: {}'.format(', '.join(self.network_list)), '', 'c')
+        time.sleep(0.5)
         for network in self.s_network:
             self.s_network[network].stopDHCPServer()
             self.s_network[network].removeGatewayAddress()
