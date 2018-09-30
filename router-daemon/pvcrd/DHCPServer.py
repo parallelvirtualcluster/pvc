@@ -476,6 +476,7 @@ class Transaction(object):
         offer.dhcp_message_type = 'DHCPOFFER'
         offer.client_identifier = mac
         self.server.broadcast(offer)
+        ansiiprint.echo('DHCP server allocated {} to {} (hostname "{}")'.format(ip, mac, discovery.host_name), '', 'i')
     
     def received_dhcp_request(self, request):
         if self.is_done(): return 
@@ -834,7 +835,6 @@ class DHCPServer(object):
         if not any([host.ip == ip for host in known_hosts]):
             print('add', mac_address, ip, packet.host_name)
             self.hosts.replace(Host(mac_address, ip, packet.host_name or '', time.time()))
-        ansiiprint.echo('DHCP client allocated - {} {} {}'.format(mac_address, ip, packet.host_name), '', 'i')
         return ip
 
     @property
