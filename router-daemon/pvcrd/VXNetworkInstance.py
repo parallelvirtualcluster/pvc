@@ -40,10 +40,10 @@ class VXNetworkInstance():
         self.old_description = None
         self.description = None
         self.domain = None
-        self.ip_gateway = None
+        self.ip_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_gateway'.format(self.vni))
         self.ip_network = None
         self.ip_cidrnetmask = None
-        self.dhcp_flag = None
+        self.dhcp_flag = zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp_flag'.format(self.vni))
         self.dhcp_start = None
         self.dhcp_end = None
 

@@ -243,12 +243,16 @@ def updatenetworks(new_network_list):
     for network in new_network_list:
         if not network in s_network:
             s_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, t_router[myhostname])
+            if this_router.network_state == 'primary':
+                s_network[network].createGatewayAddress()
+                s_network[network].startDHCPServer()
     for network in network_list:
         if not network in new_network_list:
             if this_router.network_state == 'primary':
                 s_network[network].stopDHCPServer()
                 s_network[network].removeGatewayAddress()
             s_network[network].removeNetwork()
+            del(s_network[network])
     network_list = new_network_list
     for router in router_list:
         if router in t_router:

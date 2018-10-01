@@ -155,6 +155,12 @@ class RouterInstance():
         else:
             self.daemon_state = 'run'
 
+        # Ensure the master key is properly set at a keepalive
+        if self.name == self.this_router:
+            if self.network_state == 'primary':
+                if zkhandler.readdata(self.zk_conn, '/routers') == 'none':
+                    zkhandler.writedata(self.zk_conn, {'/routers': self.name})
+
         # Set our information in zookeeper
         cpuload = os.getloadavg()[0]
         keepalive_time = int(time.time())
