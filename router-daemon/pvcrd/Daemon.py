@@ -274,6 +274,7 @@ def stopKeepaliveTimer(update_timer):
 
 # Start keepalive thread
 update_timer = createKeepaliveTimer()
+update_zookeeper()
 
 # Tick loop
 while True:
