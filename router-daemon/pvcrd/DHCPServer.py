@@ -618,7 +618,7 @@ class ZKDatabase(object):
 
     def get(self, pattern):
         pattern = list(pattern)
-        return [line for line in self.all() if pattern[0] == line[0] or pattern[1] == line[1] or pattern[2] == line[2]]
+        return [line for line in self.all() if pattern[0] == line[0] and pattern[1] == line[1] and pattern[2] == line[2]]
 
     def isstatic(self, pattern):
         macaddr = pattern[0]
