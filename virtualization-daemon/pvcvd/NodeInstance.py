@@ -58,15 +58,25 @@ class NodeInstance():
         self.inflush = False
 
         # Zookeeper handlers for changed states
-        @zk_conn.DataWatch('/nodes/{}/daemonstate'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/daemonstate'.format(self.name))
         def watch_hypervisor_daemonstate(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.daemon_state = data.decode('ascii')
             except AttributeError:
                 self.daemon_state = 'stop'
 
-        @zk_conn.DataWatch('/nodes/{}/domainstate'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/domainstate'.format(self.name))
         def watch_hypervisor_domainstate(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.domain_state = data.decode('ascii')
             except AttributeError:
@@ -81,43 +91,73 @@ class NodeInstance():
                 if self.domain_state == 'unflush' and self.inflush == False:
                     self.unflush()
 
-        @zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_hypervisor_memfree(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.memfree = data.decode('ascii')
             except AttributeError:
                 self.memfree = 0
     
-        @zk_conn.DataWatch('/nodes/{}/memused'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/memused'.format(self.name))
         def watch_hypervisor_memused(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.memused = data.decode('ascii')
             except AttributeError:
                 self.memused = 0
     
-        @zk_conn.DataWatch('/nodes/{}/memalloc'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/memalloc'.format(self.name))
         def watch_hypervisor_memalloc(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.memalloc = data.decode('ascii')
             except AttributeError:
                 self.memalloc = 0
     
-        @zk_conn.DataWatch('/nodes/{}/vcpualloc'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/vcpualloc'.format(self.name))
         def watch_hypervisor_vcpualloc(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.vcpualloc = data.decode('ascii')
             except AttributeError:
                 self.vcpualloc = 0
     
-        @zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_hypervisor_runningdomains(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.domain_list = data.decode('ascii').split()
             except AttributeError:
                 self.domain_list = []
 
-        @zk_conn.DataWatch('/nodes/{}/domainscount'.format(self.name))
+        @self.zk_conn.DataWatch('/nodes/{}/domainscount'.format(self.name))
         def watch_hypervisor_domainscount(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             try:
                 self.domains_count = data.decode('ascii')
             except AttributeError:

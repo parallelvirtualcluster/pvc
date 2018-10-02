@@ -54,8 +54,13 @@ class VMInstance:
         self.dom = self.lookupByUUID(self.domuuid)
 
         # Watch for changes to the state field in Zookeeper
-        @zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
+        @self.zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
         def watch_state(data, stat, event=""):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             # If we get a delete state, just terminate outselves
             if data == None:
                 return
