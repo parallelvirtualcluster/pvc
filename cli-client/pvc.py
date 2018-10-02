@@ -733,7 +733,7 @@ def net_list(limit):
 ###############################################################################
 # pvc network dhcp
 ###############################################################################
-@click.group(name='dhcp', short_help='Manage a PVC virtual network DHCP reservations.', context_settings=CONTEXT_SETTINGS)
+@click.group(name='dhcp', short_help='Manage DHCP leases in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
 def net_dhcp():
     """
     Manage host DHCP leases of a VXLAN network in the PVC cluster.
@@ -790,8 +790,8 @@ def net_dhcp_remove(net, lease):
 ###############################################################################
 @click.command(name='list', short_help='List DHCP lease objects.')
 @click.option(
-    '-r', '--reservations', 'only_reservations', is_flag=True, default=False,
-    help='Show only static reservations instead of all leases.'
+    '-s', '--static', 'only_static', is_flag=True, default=False,
+    help='Show only static leases.'
 )
 @click.argument(
     'net'
@@ -799,7 +799,7 @@ def net_dhcp_remove(net, lease):
 @click.argument(
     'limit', default=None, required=False
 )
-def net_dhcp_list(net, limit, only_reservations):
+def net_dhcp_list(net, limit, only_static):
     """
     List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
     """

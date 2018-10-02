@@ -558,7 +558,7 @@ def get_list(zk_conn, limit):
 
     return True, ''
 
-def get_list_dhcp_leases(zk_conn, network, limit, only_reservations=False):
+def get_list_dhcp_leases(zk_conn, network, limit, only_static=False):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
@@ -580,7 +580,7 @@ def get_list_dhcp_leases(zk_conn, network, limit, only_reservations=False):
 
     for lease in full_dhcp_leases_list:
         valid_lease = False
-        if only_reservations:
+        if only_static:
             lease_timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(net_vni, lease))
             if lease_timestamp == 'static':
                 if limit:
@@ -591,7 +591,13 @@ def get_list_dhcp_leases(zk_conn, network, limit, only_reservations=False):
                 else:
                     valid_lease = True
         else:
-            valid_lease = True
+            if limit:
+                if re.match(limit, lease) != None:
+                    valid_lease = True
+                if re.match(limit, lease) != None:
+                    valid_lease = True
+            else:
+                valid_lease = True
 
         if valid_lease:
             dhcp_leases_list.append(lease)
