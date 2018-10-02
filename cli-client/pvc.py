@@ -805,7 +805,7 @@ def net_dhcp_list(net, limit, only_static):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_dhcp_leases(zk_conn, net, limit, only_reservations=only_reservations)
+    retcode, retmsg = pvc_network.get_list_dhcp_leases(zk_conn, net, limit, only_static=only_static)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
