@@ -736,9 +736,7 @@ def net_list(limit):
 @click.group(name='dhcp', short_help='Manage a PVC virtual network DHCP reservations.', context_settings=CONTEXT_SETTINGS)
 def net_dhcp():
     """
-    Manage host DHCP reservations of a VXLAN network in the PVC cluster.
-    
-    Note: DHCP reservations are only useful if the network has DHCP enabled.
+    Manage host DHCP leases of a VXLAN network in the PVC cluster.
     """
     pass
 
@@ -746,7 +744,7 @@ def net_dhcp():
 ###############################################################################
 # pvc network dhcp add
 ###############################################################################
-@click.command(name='add', short_help='Add a DHCP reservation to a virtual network.')
+@click.command(name='add', short_help='Add a static DHCP lease to a virtual network.')
 @click.argument(
     'net'
 )
@@ -761,7 +759,7 @@ def net_dhcp():
 )
 def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
-    Add a new DHCP reservation of host HOSTNAME with IP address IPADDR for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
+    Add a new static DHCP lease of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
@@ -780,7 +778,7 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
 )
 def net_dhcp_remove(net, lease):
     """
-    Remove a DHCP lease (or reservation) LEASE from virtual network NET; LEASE can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
+    Remove a DHCP lease LEASE from virtual network NET; LEASE can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
