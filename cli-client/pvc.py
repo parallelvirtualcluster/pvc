@@ -752,10 +752,10 @@ def net_dhcp():
     'ipaddr'
 )
 @click.argument(
-    'macaddr'
+    'hostname'
 )
 @click.argument(
-    'hostname'
+    'macaddr'
 )
 def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
