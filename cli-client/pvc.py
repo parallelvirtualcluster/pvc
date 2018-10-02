@@ -771,39 +771,43 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
 ###############################################################################
 # pvc network dhcp remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a DHCP reservation from a virtual network.')
+@click.command(name='remove', short_help='Remove a DHCP lease from a virtual network.')
 @click.argument(
     'net'
 )
 @click.argument(
-    'reservation'
+    'lease'
 )
-def net_dhcp_remove(net, reservation):
+def net_dhcp_remove(net, lease):
     """
-    Remove a DHCP reservation RESERVATION from virtual network NET; RESERVATION can be either a MAC address, an IP address, or a description; NET can be either a VNI or description.
+    Remove a DHCP lease (or reservation) LEASE from virtual network NET; LEASE can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, net, reservation)
+    retcode, retmsg = pvc_network.remove_dhcp_lease(zk_conn, net, lease)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc network dhcp list
 ###############################################################################
-@click.command(name='list', short_help='List all DHCP reservation objects.')
+@click.command(name='list', short_help='List DHCP lease objects.')
+@click.option(
+    '-r', '--reservations', 'only_reservations', is_flag=True, default=False,
+    help='Show only static reservations instead of all leases.'
+)
 @click.argument(
     'net'
 )
 @click.argument(
     'limit', default=None, required=False
 )
-def net_dhcp_list(net, limit):
+def net_dhcp_list(net, limit, only_reservations):
     """
-    List all DHCP reservations in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
+    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_dhcp_reservations(zk_conn, net, limit)
+    retcode, retmsg = pvc_network.get_list_dhcp_leases(zk_conn, net, limit, only_reservations=only_reservations)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

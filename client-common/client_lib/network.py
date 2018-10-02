@@ -100,12 +100,17 @@ def getNetworkDescription(zk_conn, network):
 
     return net_description
 
+def getNetworkDHCPLeases(zk_conn, vni):
+    # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp_leases
+    dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
+    return sorted(dhcp_leases)
+
 def getNetworkDHCPReservations(zk_conn, vni):
     # Get a list of VNIs by listing the children of /networks/<vni>/dhcp_leases
     dhcp_reservations = []
-    dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
+    dhcp_leases = getNetworkDHCPLeases(zk_conn, vni)
     for lease in dhcp_leases:
-        timestamp = zkhandler.readdata(zk_conn, lease)
+        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format (vni, lease))
         if timestamp == 'static':
             dhcp_reservations.append(lease)
     return sorted(dhcp_reservations)
@@ -124,11 +129,11 @@ def getNetworkInformation(zk_conn, vni):
     dhcp_end = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_end'.format(vni))
     return description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end
 
-def getDHCPReservationInformation(zk_conn, vni, macaddr):
-    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, macaddr))
-    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, macaddr))
-    mac_address = macaddr
-    return hostname, ip_address, mac_address
+def getDHCPLeaseInformation(zk_conn, vni, mac_address):
+    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, mac_address))
+    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, mac_address))
+    timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(vni, mac_address))
+    return hostname, ip_address, mac_address, timestamp
 
 def formatNetworkInformation(zk_conn, vni, long_output):
     description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
@@ -154,17 +159,13 @@ def formatNetworkInformation(zk_conn, vni, long_output):
         ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
 
     if long_output:
-        dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
-        dhcp_reservations_list = []
-        for lease in dhcp_leases:
-            description = zkhandler.readdata(zk_conn, lease)
-            if description == 'static':
-                dhcp_reservations_list.append(lease)
+        dhcp_reservations_list = getNetworkDHCPReservations(zk_conn, vni)
         if dhcp_reservations_list:
             ainformation.append('')
             ainformation.append('{}Client DHCP reservations:{}'.format(ansiiprint.bold(), ansiiprint.end()))
             ainformation.append('')
-            dhcp_reservations_string = formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list)
+            # Only show static reservations in the detailed information
+            dhcp_reservations_string = formatDHCPLeaseList(zk_conn, vni, dhcp_reservations_list)
             for line in dhcp_reservations_string.split('\n'):
                 ainformation.append(line)
 
@@ -299,71 +300,77 @@ def formatNetworkList(zk_conn, net_list):
     output_string = net_list_output_header + '\n' + '\n'.join(sorted(net_list_output))
     return output_string
 
-def formatDHCPReservationList(zk_conn, vni, dhcp_reservations_list):
-    dhcp_reservation_list_output = []
+def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list):
+    dhcp_lease_list_output = []
     hostname = {}
     ip_address = {}
     mac_address = {}
+    timestamp = {}
 
     # Gather information for printing
-    for dhcp_reservation in dhcp_reservations_list:
+    for dhcp_lease in dhcp_leases_list:
         # get info
-        hostname[dhcp_reservation], ip_address[dhcp_reservation], mac_address[dhcp_reservation] = getDHCPReservationInformation(zk_conn, vni, dhcp_reservation)
+        hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPLeaseInformation(zk_conn, vni, dhcp_lease)
        
 
     # Determine optimal column widths
-    # Dynamic columns: node_name, hypervisor, migrated
-    reservation_hostname_length = 13
-    reservation_ip_address_length = 11
-    reservation_mac_address_length = 13
-    for dhcp_reservation in dhcp_reservations_list:
+    lease_hostname_length = 13
+    lease_ip_address_length = 11
+    lease_mac_address_length = 13
+    for dhcp_lease in dhcp_leases_list:
         # hostname column
-        _reservation_hostname_length = len(hostname[dhcp_reservation]) + 1
-        if _reservation_hostname_length > reservation_hostname_length:
-            reservation_hostname_length = _reservation_hostname_length
+        _lease_hostname_length = len(hostname[dhcp_lease]) + 1
+        if _lease_hostname_length > lease_hostname_length:
+            lease_hostname_length = _lease_hostname_length
         # ip_network column
-        _reservation_ip_address_length = len(ip_address[dhcp_reservation]) + 1
-        if _reservation_ip_address_length > reservation_ip_address_length:
-            reservation_ip_address_length = _reservation_ip_address_length
+        _lease_ip_address_length = len(ip_address[dhcp_lease]) + 1
+        if _lease_ip_address_length > lease_ip_address_length:
+            lease_ip_address_length = _lease_ip_address_length
         # ip_gateway column
-        _reservation_mac_address_length = len(mac_address[dhcp_reservation]) + 1
-        if _reservation_mac_address_length > reservation_mac_address_length:
-            reservation_mac_address_length = _reservation_mac_address_length
+        _lease_mac_address_length = len(mac_address[dhcp_lease]) + 1
+        if _lease_mac_address_length > lease_mac_address_length:
+            lease_mac_address_length = _lease_mac_address_length
 
     # Format the string (header)
-    dhcp_reservation_list_output_header = '{bold}\
-{reservation_hostname: <{reservation_hostname_length}} \
-{reservation_ip_address: <{reservation_ip_address_length}} \
-{reservation_mac_address: <{reservation_mac_address_length}} \
+    dhcp_lease_list_output_header = '{bold}\
+{lease_hostname: <{lease_hostname_length}} \
+{lease_ip_address: <{lease_ip_address_length}} \
+{lease_mac_address: <{lease_mac_address_length}} \
+{lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
         bold=ansiiprint.bold(),
         end_bold=ansiiprint.end(),
-        reservation_hostname_length=reservation_hostname_length,
-        reservation_ip_address_length=reservation_ip_address_length,
-        reservation_mac_address_length=reservation_mac_address_length,
-        reservation_hostname='Hostname',
-        reservation_ip_address='IP Address',
-        reservation_mac_address='MAC Address'
+        lease_hostname_length=lease_hostname_length,
+        lease_ip_address_length=lease_ip_address_length,
+        lease_mac_address_length=lease_mac_address_length,
+        lease_timestamp_length=12,
+        lease_hostname='Hostname',
+        lease_ip_address='IP Address',
+        lease_mac_address='MAC Address',
+        lease_timestamp='Timestamp'
     )
 
-    for dhcp_reservation in dhcp_reservations_list:
-        dhcp_reservation_list_output.append('{bold}\
-{reservation_hostname: <{reservation_hostname_length}} \
-{reservation_ip_address: <{reservation_ip_address_length}} \
-{reservation_mac_address: <{reservation_mac_address_length}} \
+    for dhcp_lease in dhcp_leases_list:
+        dhcp_lease_list_output.append('{bold}\
+{lease_hostname: <{lease_hostname_length}} \
+{lease_ip_address: <{lease_ip_address_length}} \
+{lease_mac_address: <{lease_mac_address_length}} \
+{lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
-                reservation_hostname_length=reservation_hostname_length,
-                reservation_ip_address_length=reservation_ip_address_length,
-                reservation_mac_address_length=reservation_mac_address_length,
-                reservation_hostname=hostname[dhcp_reservation],
-                reservation_ip_address=ip_address[dhcp_reservation],
-                reservation_mac_address=mac_address[dhcp_reservation]
+                lease_hostname_length=lease_hostname_length,
+                lease_ip_address_length=lease_ip_address_length,
+                lease_mac_address_length=lease_mac_address_length,
+                lease_timestamp_length=12,
+                lease_hostname=hostname[dhcp_lease],
+                lease_ip_address=ip_address[dhcp_lease],
+                lease_mac_address=mac_address[dhcp_lease],
+                lease_timestamp=timestamp[dhcp_lease]
             )
         )
 
-    output_string = dhcp_reservation_list_output_header + '\n' + '\n'.join(sorted(dhcp_reservation_list_output))
+    output_string = dhcp_lease_list_output_header + '\n' + '\n'.join(sorted(dhcp_lease_list_output))
     return output_string
 
 def isValidMAC(macaddr):
@@ -484,7 +491,7 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
 
     return True, 'DHCP reservation "{}" added successfully!'.format(macaddress)
 
-def remove_dhcp_reservation(zk_conn, network, reservation):
+def remove_dhcp_lease(zk_conn, network, lease):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
@@ -493,18 +500,15 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     match_description = ''
 
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
-    reservation_list = zk_conn.get_children('/networks/{}/dhcp_leases'.format(net_vni))
-    for macaddr in reservation_list:
-        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(net_vni, macaddr))
-        if timestamp != 'static':
-            continue
+    dhcp_leases_list = zk_conn.get_children('/networks/{}/dhcp_leases'.format(net_vni))
+    for macaddr in dhcp_leases_list:
         hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(net_vni, macaddr))
         ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(net_vni, macaddr))
-        if reservation == macaddr or reservation == hostname or reservation == ipaddress:
+        if lease == macaddr or lease == hostname or lease == ipaddress:
             match_description = macaddr
     
     if not match_description:
-        return False, 'ERROR: No DHCP reservation exists matching "{}"!'.format(reservation)
+        return False, 'ERROR: No DHCP lease exists matching "{}"!'.format(reservation)
 
     # Remove the entry from zookeeper
     try:
@@ -512,7 +516,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
-    return True, 'DHCP reservation "{}" removed successfully!'.format(match_description)
+    return True, 'DHCP lease "{}" removed successfully!'.format(match_description)
 
 def get_info(zk_conn, network, long_output):
     # Validate and obtain alternate passed value
@@ -554,34 +558,45 @@ def get_list(zk_conn, limit):
 
     return True, ''
 
-def get_list_dhcp_reservations(zk_conn, network, limit):
+def get_list_dhcp_leases(zk_conn, network, limit, only_reservations=False):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    dhcp_reservations_list = []
-    full_dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(net_vni))
+    dhcp_leases_list = []
+    full_dhcp_leases_list = getNetworkDHCPLeases(zk_conn, net_vni)
 
-    for dhcp_reservation in full_dhcp_reservations_list:
-        if limit != None:
-            try:
-                # Implcitly assume fuzzy limits
-                if re.match('\^.*', limit) == None:
-                    limit = '.*' + limit
-                if re.match('.*\$', limit) == None:
-                    limit = limit + '.*'
+    if limit:
+        try:
+            # Implcitly assume fuzzy limits
+            if re.match('\^.*', limit) == None:
+                limit = '.*' + limit
+            if re.match('.*\$', limit) == None:
+                limit = limit + '.*'
+        except Exception as e:
+            return False, 'Regex Error: {}'.format(e)
+        
 
-                if re.match(limit, net) != None:
-                    dhcp_reservations_list.append(dhcp_reservation)
-                if re.match(limit, description) != None:
-                    dhcp_reservations_list.append(dhcp_reservation)
-            except Exception as e:
-                return False, 'Regex Error: {}'.format(e)
+    for lease in full_dhcp_leases_list:
+        valid_lease = False
+        if only_reservations:
+            lease_timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(net_vni, lease))
+            if lease_timestamp == 'static':
+                if limit:
+                    if re.match(limit, lease) != None:
+                        valid_lease = True
+                    if re.match(limit, lease) != None:
+                        valid_lease = True
+                else:
+                    valid_lease = True
         else:
-            dhcp_reservations_list.append(dhcp_reservation)
+            valid_lease = True
 
-    output_string = formatDHCPReservationList(zk_conn, net_vni, dhcp_reservations_list)
+        if valid_lease:
+            dhcp_leases_list.append(lease)
+
+    output_string = formatDHCPLeaseList(zk_conn, net_vni, dhcp_leases_list)
     click.echo(output_string)
 
     return True, ''
