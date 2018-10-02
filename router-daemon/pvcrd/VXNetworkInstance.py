@@ -57,27 +57,47 @@ class VXNetworkInstance():
         self.createNetwork()
 
         # Zookeper handlers for changed states
-        @zk_conn.DataWatch('/networks/{}'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
         def watch_network_description(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.description != data.decode('ascii'):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
 
-        @zk_conn.DataWatch('/networks/{}/domain'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/domain'.format(self.vni))
         def watch_network_domain(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.domain != data.decode('ascii'):
                 domain = data.decode('ascii')
                 self.domain = domain
 
-        @zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
         def watch_network_ip_network(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.ip_network != data.decode('ascii'):
                 ip_network = data.decode('ascii')
                 self.ip_network = ip_network
                 self.ip_cidrnetmask = ip_network.split('/')[-1]
 
-        @zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.ip_gateway != data.decode('ascii'):
                 orig_gateway = self.ip_gateway
                 self.ip_gateway = data.decode('ascii')
@@ -86,8 +106,13 @@ class VXNetworkInstance():
                         self.removeGatewayAddress()
                     self.createGatewayAddress()
 
-        @zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.dhcp_flag != data.decode('ascii'):
                 self.dhcp_flag = ( data.decode('ascii') == 'True' )
                 if self.dhcp_flag and self.this_router.network_state == 'primary':
@@ -95,13 +120,23 @@ class VXNetworkInstance():
                 elif self.this_router.network_state == 'primary':
                     self.stopDHCPServer()
 
-        @zk_conn.DataWatch('/networks/{}/dhcp_start'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/dhcp_start'.format(self.vni))
         def watch_network_dhcp_start(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.dhcp_start != data.decode('ascii'):
                 self.dhcp_start = data.decode('ascii')
 
-        @zk_conn.DataWatch('/networks/{}/dhcp_end'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/dhcp_end'.format(self.vni))
         def watch_network_dhcp_end(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if data and self.dhcp_end != data.decode('ascii'):
                 self.dhcp_end = data.decode('ascii')
 
