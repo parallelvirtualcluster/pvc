@@ -4,9 +4,9 @@
 
 This software is still incomplete, and should be considered pre-alpha and not suitable for production use! Not all features described below are implemented, and I will be committing directly to master until they are. If you wish to test out PVC, the following table details the currently-working features, but be warned that functionality may change regularly. Use the tag `v0.3` for a stable implementation of the working features.
 
-Working features: pvcvd, cli-client (for VM and hypervisor management)
-In progress features: pvcrd, pvcnd, cli-client support for the aforementioned
-Unstarted features: pvcpd, api-client, web-client
+* Working features: pvcvd, cli-client (for VM and hypervisor management)
+* In progress features: pvcrd, pvcnd, cli-client support for the aforementioned
+* Unstarted features: pvcpd, api-client, web-client
 
 [![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
 
