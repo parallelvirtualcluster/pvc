@@ -70,6 +70,7 @@ def readConfig(pvcrd_config_file, myhostname):
     o_config = configparser.ConfigParser()
     o_config.read(pvcrd_config_file)
     config = {}
+    config['pvcrd_config_file'] = pvcrd_config_file
 
     try:
         entries = o_config[myhostname]
