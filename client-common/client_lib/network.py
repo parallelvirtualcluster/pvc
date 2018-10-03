@@ -106,13 +106,8 @@ def getNetworkDHCPLeases(zk_conn, vni):
     return sorted(dhcp_leases)
 
 def getNetworkDHCPReservations(zk_conn, vni):
-    # Get a list of VNIs by listing the children of /networks/<vni>/dhcp_leases
-    dhcp_reservations = []
-    dhcp_leases = getNetworkDHCPLeases(zk_conn, vni)
-    for lease in dhcp_leases:
-        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format (vni, lease))
-        if timestamp == 'static':
-            dhcp_reservations.append(lease)
+    # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp_reservations
+    dhcp_reservations = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni))
     return sorted(dhcp_reservations)
 
 def getNetworkFirewallRules(zk_conn, vni):
@@ -132,7 +127,10 @@ def getNetworkInformation(zk_conn, vni):
 def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, mac_address))
     ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, mac_address))
-    timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(vni, mac_address))
+    try:
+        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/expiry'.format(vni, mac_address))
+    except:
+        timestamp = 'static'
     return hostname, ip_address, mac_address, timestamp
 
 def formatNetworkInformation(zk_conn, vni, long_output):
@@ -423,6 +421,7 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
         '/networks/{}/dhcp_start'.format(vni): dhcp_start,
         '/networks/{}/dhcp_end'.format(vni): dhcp_end,
         '/networks/{}/dhcp_leases'.format(vni): '',
+        '/networks/{}/dhcp_reservations'.format(vni): '',
         '/networks/{}/firewall_rules'.format(vni): ''
     })
 
@@ -558,14 +557,18 @@ def get_list(zk_conn, limit):
 
     return True, ''
 
-def get_list_dhcp_leases(zk_conn, network, limit, only_static=False):
+def get_list_dhcp(zk_conn, network, limit, only_static=False):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    dhcp_leases_list = []
-    full_dhcp_leases_list = getNetworkDHCPLeases(zk_conn, net_vni)
+    dhcp_list = []
+
+    if only_static:
+        full_dhcp_list = getNetworkDHCPReservations(zk_conn, net_vni)
+    else:
+        full_dhcp_list = getNetworkDHCPLeases(zk_conn, net_vni)
 
     if limit:
         try:
@@ -578,31 +581,20 @@ def get_list_dhcp_leases(zk_conn, network, limit, only_static=False):
             return False, 'Regex Error: {}'.format(e)
         
 
-    for lease in full_dhcp_leases_list:
+    for lease in full_dhcp_list:
         valid_lease = False
-        if only_static:
-            lease_timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}'.format(net_vni, lease))
-            if lease_timestamp == 'static':
-                if limit:
-                    if re.match(limit, lease) != None:
-                        valid_lease = True
-                    if re.match(limit, lease) != None:
-                        valid_lease = True
-                else:
-                    valid_lease = True
-        else:
-            if limit:
-                if re.match(limit, lease) != None:
-                    valid_lease = True
-                if re.match(limit, lease) != None:
-                    valid_lease = True
-            else:
+        if limit:
+            if re.match(limit, lease) != None:
                 valid_lease = True
+            if re.match(limit, lease) != None:
+                valid_lease = True
+        else:
+            valid_lease = True
 
         if valid_lease:
-            dhcp_leases_list.append(lease)
+            dhcp_list.append(lease)
 
-    output_string = formatDHCPLeaseList(zk_conn, net_vni, dhcp_leases_list)
+    output_string = formatDHCPLeaseList(zk_conn, net_vni, dhcp_list)
     click.echo(output_string)
 
     return True, ''

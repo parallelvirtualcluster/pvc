@@ -740,11 +740,39 @@ def net_dhcp():
     """
     pass
 
+###############################################################################
+# pvc network dhcp list
+###############################################################################
+@click.command(name='list', short_help='List active DHCP leases.')
+@click.argument(
+    'net'
+)
+@click.argument(
+    'limit', default=None, required=False
+)
+def net_dhcp_list(net, limit):
+    """
+    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=False)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
-# pvc network dhcp add
+# pvc network dhcp static
 ###############################################################################
-@click.command(name='add', short_help='Add a static DHCP lease to a virtual network.')
+@click.group(name='static', short_help='Manage DHCP static reservations in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
+def net_dhcp_static():
+    """
+    Manage host DHCP static reservations of a VXLAN network in the PVC cluster.
+    """
+    pass
+
+###############################################################################
+# pvc network dhcp static add
+###############################################################################
+@click.command(name='add', short_help='Add a DHCP static reservation.')
 @click.argument(
     'net'
 )
@@ -757,9 +785,9 @@ def net_dhcp():
 @click.argument(
     'macaddr'
 )
-def net_dhcp_add(net, ipaddr, macaddr, hostname):
+def net_dhcp_static_add(net, ipaddr, macaddr, hostname):
     """
-    Add a new static DHCP lease of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
+    Add a new DHCP static reservation of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
@@ -767,45 +795,41 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
-# pvc network dhcp remove
+# pvc network dhcp static remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a DHCP lease from a virtual network.')
+@click.command(name='remove', short_help='Remove a DHCP static reservation.')
 @click.argument(
     'net'
 )
 @click.argument(
-    'lease'
+    'reservation'
 )
-def net_dhcp_remove(net, lease):
+def net_dhcp_static_remove(net, reservation):
     """
-    Remove a DHCP lease LEASE from virtual network NET; LEASE can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
+    Remove a DHCP static reservation RESERVATION from virtual network NET; RESERVATION can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.remove_dhcp_lease(zk_conn, net, lease)
+    retcode, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, net, reservation)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
-# pvc network dhcp list
+# pvc network dhcp static list
 ###############################################################################
-@click.command(name='list', short_help='List DHCP lease objects.')
-@click.option(
-    '-s', '--static', 'only_static', is_flag=True, default=False,
-    help='Show only static leases.'
-)
+@click.command(name='list', short_help='List DHCP static reservations.')
 @click.argument(
     'net'
 )
 @click.argument(
     'limit', default=None, required=False
 )
-def net_dhcp_list(net, limit, only_static):
+def net_dhcp_static_list(net, limit):
     """
-    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
+    List all DHCP static reservations in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_dhcp_leases(zk_conn, net, limit, only_static=only_static)
+    retcode, retmsg = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=True)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -918,9 +942,12 @@ cli_network.add_command(net_list)
 cli_network.add_command(net_dhcp)
 cli_network.add_command(net_acl)
 
-net_dhcp.add_command(net_dhcp_add)
-net_dhcp.add_command(net_dhcp_remove)
 net_dhcp.add_command(net_dhcp_list)
+net_dhcp.add_command(net_dhcp_static)
+
+net_dhcp_static.add_command(net_dhcp_static_add)
+net_dhcp_static.add_command(net_dhcp_static_remove)
+net_dhcp_static.add_command(net_dhcp_static_list)
 
 cli.add_command(cli_node)
 cli.add_command(cli_router)
