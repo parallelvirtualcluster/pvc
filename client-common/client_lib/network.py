@@ -433,12 +433,18 @@ def modify_network(zk_conn, vni, **parameters):
     zk_data = {}
     if parameters['description'] != None:
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
+    if parameters['domain'] != None:
+        zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
     if parameters['ip_network'] != None:
         zk_data.update({'/networks/{}/ip_network'.format(vni): parameters['ip_network']})
     if parameters['ip_gateway'] != None:
         zk_data.update({'/networks/{}/ip_gateway'.format(vni): parameters['ip_gateway']})
     if parameters['dhcp_flag'] != None:
         zk_data.update({'/networks/{}/dhcp_flag'.format(vni): str(parameters['dhcp_flag'])})
+    if parameters['dhcp_start'] != None:
+        zk_data.update({'/networks/{}/dhcp_start'.format(vni): parameters['dhcp_start']})
+    if parameters['dhcp_end'] != None:
+        zk_data.update({'/networks/{}/dhcp_end'.format(vni): parameters['dhcp_end']})
 
     zkhandler.writedata(zk_conn, zk_data)
     

@@ -639,6 +639,11 @@ def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_st
     help='Description of the network; should not contain whitespace.'
 )
 @click.option(
+    '-n', '--domain', 'domain',
+    default=None,
+    help='Domain name of the network.'
+)
+@click.option(
     '-i', '--ipnet', 'ip_network',
     default=None,
     help='CIDR-format network address for subnet.'
@@ -649,29 +654,34 @@ def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_st
     help='Default gateway address for subnet.'
 )
 @click.option(
-    '-r', '--router', 'ip_routers',
-    multiple=True,
-    help='Router addresses for subnet (specify one or two; mapped to routers in order given).'
-)
-@click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     default=None,
     is_flag=True,
     help='Enable/disable DHCP for clients on subnet.'
 )
+@click.option(
+    '--dhcp-start', 'dhcp_start',
+    default=None,
+    help='DHCP range start address.'
+)
+@click.option(
+    '--dhcp-end', 'dhcp_end',
+    default=None,
+    help='DHCP range end address.'
+)
 @click.argument(
     'vni'
 )
-def net_modify(vni, description, ip_network, ip_gateway, ip_routers, dhcp_flag):
+def net_modify(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
     Example:
-    pvc network modify 1001 --gateway 10.1.1.255 --router 10.1.1.251 --router 10.1.1.252 --no-dhcp
+    pvc network modify 1001 --gateway 10.1.1.1 --dhcp
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, ip_network=ip_network, ip_gateway=ip_gateway, ip_routers=ip_routers, dhcp_flag=dhcp_flag)
+    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, ip_network=ip_network, ip_gateway=ip_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
