@@ -156,14 +156,20 @@ class VXNetworkInstance():
                             )
                         )
                         entry = '{},{}'.format(reservation, ipaddr)
-                        with open(filename, 'w') as outfile:
-                            outfile.write(entry)
+                        outfile = open(filename, 'w')
+                        outfile.write(entry)
+                        outfile.close()
+
                 for reservation in self.dhcp_reservations:
                     if reservation not in reservations:
                         filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
                         # Remove old reservation file
-                        os.remove(filename)
-                self.dhcp_server_daemon.signal('hup')
+                        try:
+                            os.remove(filename)
+                            self.dhcp_server_daemon.signal('hup')
+                        except:
+                            pass
+
                 self.dhcp_reservations = reservations
 
     def getvni(self):
@@ -340,7 +346,7 @@ class VXNetworkInstance():
     def stopDHCPServer(self):
         if self.dhcp_server_daemon:
             ansiiprint.echo(
-                'Stopping DHCP server on interface {} (VNI {})'.format(
+                'Stopping dnsmasq DHCP server on interface {} (VNI {})'.format(
                     self.bridge_nic,
                     self.vni
                 ),
