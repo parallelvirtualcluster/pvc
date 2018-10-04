@@ -35,12 +35,12 @@ class OSDaemon(object):
             stderr=subprocess.PIPE,
         )
 
-    def signal(self, signal):
+    def signal(self, sent_signal):
         signal_map = {
             'hup': signal.SIGHUP,
             'int': signal.SIGINT
         }
-        self.proc.send_signal(signal_map[signal])
+        self.proc.send_signal(signal_map[sent_signal])
 
 def run_os_daemon(command_string, background=False, environment=None, return_pid=False):
     command = command_string.split()
