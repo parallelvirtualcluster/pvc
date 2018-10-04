@@ -27,8 +27,6 @@ import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 
-import pvcrd.DHCPServer as DHCPServer
-
 class VXNetworkInstance():
     # Initialization function
     def __init__ (self, vni, zk_conn, config, this_router):
@@ -52,7 +50,10 @@ class VXNetworkInstance():
 
         self.firewall_rules = {}
 
-        self.dhcp_server = None
+        self.dhcp_server_daemon = None
+
+        self.dnsmasq_hostsdir = '/var/lib/dnsmasq/{}'.format(self.vni)
+        self.dhcp_reservations = zkhandler.listchildren(self.zk_conn, '/networks/{}/dhcp_reservations'.format(self.vni))
 
         self.createNetwork()
 
@@ -140,6 +141,32 @@ class VXNetworkInstance():
             if data and self.dhcp_end != data.decode('ascii'):
                 self.dhcp_end = data.decode('ascii')
 
+        @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
+        def watch_network_dhcp_reservations(reservations, event=''):
+            print(reservations)
+            if self.dhcp_reservations != reservations:
+                for reservation in reservations:
+                    if reservation not in self.dhcp_reservations:
+                        # Add new reservation file
+                        filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
+                        ipaddr = zkhandler.readdata(
+                            self.zk_conn,
+                            '/networks/{}/dhcp_reservations/{}/ipaddr'.format(
+                                self.vni,
+                                reservation
+                            )
+                        )
+                        entry = '{},{}'.format(reservation, ipaddr)
+                        with open(filename, 'w') as outfile:
+                            outfile.write(entry)
+                for reservation in self.dhcp_reservations:
+                    if reservation not in reservations:
+                        filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
+                        # Remove old reservation file
+                        os.remove(filename)
+                self.dhcp_server_daemon.signal('hup')
+                self.dhcp_reservations = reservations
+
     def getvni(self):
         return self.vni
 
@@ -210,26 +237,52 @@ class VXNetworkInstance():
     def startDHCPServer(self):
         if self.this_router.getnetworkstate() == 'primary':
             ansiiprint.echo(
-                'Starting DHCP server on interface {} (VNI {})'.format(
+                'Starting dnsmasq DHCP server on interface {} (VNI {})'.format(
                     self.bridge_nic,
                     self.vni
                 ),
                 '',
                 'o'
             )
-            dhcp_configuration = DHCPServer.DHCPServerConfiguration(
-                zk_conn=self.zk_conn,
-                ipaddr=self.ip_gateway,
-                iface=self.bridge_nic,
-                vni=self.vni,
-                network=self.ip_network,
-                router=[self.ip_gateway],
-                dns_servers=[self.ip_gateway],
-                start_addr=self.dhcp_start,
-                end_addr=self.dhcp_end
+            # Create the network hostsdir
+            common.run_os_command(
+                '/bin/mkdir --parents {}'.format(
+                    self.dnsmasq_hostsdir
+                )
             )
-            self.dhcp_server = DHCPServer.DHCPServer(dhcp_configuration)
-            self.dhcp_server.start()
+            # Recreate the environment we need for dnsmasq
+            pvcrd_config_file = os.environ['PVCRD_CONFIG_FILE']
+            dhcp_environment = {
+                'DNSMASQ_INTERFACE': self.bridge_nic,
+                'PVCRD_CONFIG_FILE': pvcrd_config_file
+            }
+            # Define the dnsmasq config
+            dhcp_configuration = [
+                '--domain-needed',
+                '--bogus-priv',
+                '--no-resolv',
+                '--filterwin2k',
+                '--expand-hosts',
+                '--domain={}'.format(self.domain),
+                '--local=/{}/'.format(self.domain),
+                '--listen-address={}'.format(self.ip_gateway),
+                '--bind-interfaces',
+                '--leasefile-ro',
+                '--dhcp-script=/usr/share/pvc/pvcrd/dnsmasq-zookeeper-leases.py',
+                '--dhcp-range={},{},4h'.format(self.dhcp_start, self.dhcp_end),
+                '--dhcp-lease-max=99',
+                '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
+                '--log-facility=DAEMON',
+                '--keep-in-foreground'
+            ]
+            # Start the dnsmasq process in a thread
+            self.dhcp_server_daemon = common.run_os_daemon(
+                '/usr/sbin/dnsmasq {}'.format(
+                    ' '.join(dhcp_configuration)
+                ),
+                environment=dhcp_environment,
+                return_pid=True
+            )
 
     def removeNetwork(self):
         ansiiprint.echo(
@@ -286,7 +339,7 @@ class VXNetworkInstance():
         )
 
     def stopDHCPServer(self):
-        if self.dhcp_server:
+        if self.dhcp_server_daemon:
             ansiiprint.echo(
                 'Stopping DHCP server on interface {} (VNI {})'.format(
                     self.bridge_nic,
@@ -295,4 +348,4 @@ class VXNetworkInstance():
                 '',
                 'o'
             )
-            self.dhcp_server.close()
+            self.dhcp_server_daemon.signal('int')
