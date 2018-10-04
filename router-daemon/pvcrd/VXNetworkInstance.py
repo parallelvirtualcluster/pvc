@@ -143,7 +143,6 @@ class VXNetworkInstance():
 
         @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
         def watch_network_dhcp_reservations(reservations, event=''):
-            print(reservations)
             if self.dhcp_reservations != reservations:
                 for reservation in reservations:
                     if reservation not in self.dhcp_reservations:
