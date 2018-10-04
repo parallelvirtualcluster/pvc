@@ -22,23 +22,50 @@
 
 import subprocess
 import threading
+import signal
 
-def run_os_command(command_string, background=False):
+import daemon_lib.ansiiprint as ansiiprint
+
+class OSDaemon(object):
+    def __init__(self, command, environment):
+        self.proc = subprocess.Popen(
+            command,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    def signal(self, signal):
+        signal_map = {
+            'hup': signal.SIGHUP,
+            'int': signal.SIGINT
+        }
+        self.proc.send_signal(signal_map[signal])
+
+def run_os_daemon(command_string, background=False, environment=None, return_pid=False):
+    command = command_string.split()
+    daemon = OSDaemon(command, environment)
+    return daemon
+
+# Run a oneshot command, optionally without blocking
+def run_os_command(command_string, background=False, environment=None):
     command = command_string.split()
     if background:
         def runcmd():
-            subprocess.run(
+            subprocess.Popen(
                 command,
+                env=environment,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
             )
         thread = threading.Thread(target=runcmd, args=())
         thread.start()
         return 0
     else:
-        command_output = subprocess.run(
+        command_output = subprocess.Popen(
             command,
+            env=environment,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
         return command_output.returncode
