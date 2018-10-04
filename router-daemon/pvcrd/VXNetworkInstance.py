@@ -143,6 +143,11 @@ class VXNetworkInstance():
 
         @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
         def watch_network_dhcp_reservations(reservations, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
             if self.dhcp_reservations != reservations:
                 for reservation in reservations:
                     if reservation not in self.dhcp_reservations:
