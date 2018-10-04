@@ -504,7 +504,7 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
 
     return True, 'DHCP reservation "{}" added successfully!'.format(macaddress)
 
-def remove_dhcp_lease(zk_conn, network, lease):
+def remove_dhcp_reservation(zk_conn, network, reservation):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
@@ -513,23 +513,23 @@ def remove_dhcp_lease(zk_conn, network, lease):
     match_description = ''
 
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
-    dhcp_leases_list = zk_conn.get_children('/networks/{}/dhcp_leases'.format(net_vni))
-    for macaddr in dhcp_leases_list:
-        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(net_vni, macaddr))
-        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(net_vni, macaddr))
-        if lease == macaddr or lease == hostname or lease == ipaddress:
+    dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(net_vni))
+    for macaddr in dhcp_reservations_list:
+        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/hostname'.format(net_vni, macaddr))
+        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddr))
+        if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
     
     if not match_description:
-        return False, 'ERROR: No DHCP lease exists matching "{}"!'.format(reservation)
+        return False, 'ERROR: No DHCP reservation exists matching "{}"!'.format(reservation)
 
     # Remove the entry from zookeeper
     try:
-        zk_conn.delete('/networks/{}/dhcp_leases/{}'.format(net_vni, match_description), recursive=True)
+        zk_conn.delete('/networks/{}/dhcp_reservations/{}'.format(net_vni, match_description), recursive=True)
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
-    return True, 'DHCP lease "{}" removed successfully!'.format(match_description)
+    return True, 'DHCP reservation "{}" removed successfully!'.format(match_description)
 
 def get_info(zk_conn, network, long_output):
     # Validate and obtain alternate passed value
