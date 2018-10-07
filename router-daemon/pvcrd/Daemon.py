@@ -41,6 +41,14 @@ import pvcrd.VXNetworkInstance as VXNetworkInstance
 
 print(ansiiprint.bold() + "pvcrd - Parallel Virtual Cluster router daemon" + ansiiprint.end())
 
+# Set sysctl to enable routing before we do anything else
+common.run_os_command('sysctl net.ipv4.ip_forward=1')
+common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
+common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
+common.run_os_command('sysctl net.ipv6.ip_forward=1')
+common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
+common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
+
 # Get the config file variable from the environment
 try:
     pvcrd_config_file = os.environ['PVCRD_CONFIG_FILE']
