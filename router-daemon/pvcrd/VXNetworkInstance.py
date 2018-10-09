@@ -55,7 +55,7 @@ class VXNetworkInstance():
 
         self.dhcp_server_daemon = None
         self.dnsmasq_hostsdir = '{}/{}'.format(config['dnsmasq_hosts_dir'], self.vni)
-        self.dhcp_reservations = None
+        self.dhcp_reservations = []
 
         # Zookeper handlers for changed states
         @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
