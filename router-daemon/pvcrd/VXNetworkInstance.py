@@ -22,6 +22,7 @@
 
 import os
 import sys
+from textwrap import dedent
 
 import daemon_lib.ansiiprint as ansiiprint
 import daemon_lib.zkhandler as zkhandler
@@ -48,14 +49,13 @@ class VXNetworkInstance():
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
 
-        self.firewall_rules = {}
+        self.nftables_update_filename = '{}/update'.format(config['nftables_rules_dir'])
+        self.nftables_netconf_filename = '{}/networks/{}.nft'.format(config['nftables_rules_dir'], self.vni)
+        self.firewall_rules = []
 
         self.dhcp_server_daemon = None
-
-        self.dnsmasq_hostsdir = '/var/lib/dnsmasq/{}'.format(self.vni)
-        self.dhcp_reservations = zkhandler.listchildren(self.zk_conn, '/networks/{}/dhcp_reservations'.format(self.vni))
-
-        self.createNetwork()
+        self.dnsmasq_hostsdir = '{}/{}'.format(config['dnsmasq_hosts_dir'], self.vni)
+        self.dhcp_reservations = None
 
         # Zookeper handlers for changed states
         @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
@@ -142,43 +142,71 @@ class VXNetworkInstance():
                 self.dhcp_end = data.decode('ascii')
 
         @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
-        def watch_network_dhcp_reservations(reservations, event=''):
+        def watch_network_dhcp_reservations(new_reservations, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if self.dhcp_reservations != reservations:
-                for reservation in reservations:
-                    if reservation not in self.dhcp_reservations:
-                        # Add new reservation file
-                        filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
-                        ipaddr = zkhandler.readdata(
-                            self.zk_conn,
-                            '/networks/{}/dhcp_reservations/{}/ipaddr'.format(
-                                self.vni,
-                                reservation
-                            )
-                        )
-                        entry = '{},{}'.format(reservation, ipaddr)
-                        outfile = open(filename, 'w')
-                        outfile.write(entry)
-                        outfile.close()
+            if self.dhcp_reservations != new_reservations:
+                old_reservations = self.dhcp_reservations
+                self.dhcp_reservations = new_reservations
+                self.updateDHCPReservations(old_reservations, new_reservations)
 
-                for reservation in self.dhcp_reservations:
-                    if reservation not in reservations:
-                        filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
-                        # Remove old reservation file
-                        try:
-                            os.remove(filename)
-                            self.dhcp_server_daemon.signal('hup')
-                        except:
-                            pass
+        @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules'.format(self.vni))
+        def watch_network_firewall_rules(new_rules, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
 
-                self.dhcp_reservations = reservations
+            if self.firewall_rules != new_rules:
+                old_rules = self.firewall_rules
+                self.firewall_rules = new_rules
+                self.updateFirewallRules(old_rules, new_rules)
+
+        self.createNetwork()
+        self.createFirewall()
 
     def getvni(self):
         return self.vni
+
+    def updateDHCPReservations(self, old_reservations_list, new_reservations_list):
+        for reservation in new_reservations_list:
+            if reservation not in old_reservations_list:
+                # Add new reservation file
+                filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
+                ipaddr = zkhandler.readdata(
+                    self.zk_conn,
+                    '/networks/{}/dhcp_reservations/{}/ipaddr'.format(
+                        self.vni,
+                        reservation
+                    )
+                )
+                entry = '{},{}'.format(reservation, ipaddr)
+                outfile = open(filename, 'w')
+                outfile.write(entry)
+                outfile.close()
+
+        for reservation in old_reservations_list:
+            if reservation not in new_reservations_list:
+                # Remove old reservation file
+                filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
+                try:
+                    os.remove(filename)
+                    self.dhcp_server_daemon.signal('hup')
+                except:
+                    pass
+
+    def updateFirewallRules(self, old_rules_list, new_rules_list):
+        for rule in new_rules_list:
+            if rule not in old_rules_list:
+                # Add new rule entry
+                pass
+
+        for rule in old_rules_list:
+            if rule not in new_rules_list:
+                pass
 
     def createNetwork(self):
         ansiiprint.echo(
@@ -218,6 +246,23 @@ class VXNetworkInstance():
             )
         )
 
+    def createFirewall(self):
+        nftables_network_rules = """# Rules for network {chainname}
+add chain inet filter {chainname}
+add rule inet filter {chainname} counter
+# Jump from forward chain to this chain when matching netaddr
+add rule inet filter forward ip saddr {netaddr} counter jump {chainname}
+add rule inet filter forward ip daddr {netaddr} counter jump {chainname}
+""".format(
+            netaddr=self.ip_network,
+            chainname=self.vxlan_nic
+        )
+        print(nftables_network_rules)
+        with open(self.nftables_netconf_filename, 'w') as nfbasefile:
+            nfbasefile.write(dedent(nftables_network_rules))
+            open(self.nftables_update_filename, 'a').close()
+        pass
+
     def createGatewayAddress(self):
         if self.this_router.getnetworkstate() == 'primary':
             ansiiprint.echo(
@@ -229,6 +274,12 @@ class VXNetworkInstance():
                 '',
                 'o'
             )
+            print('ip address add {}/{} dev {}'.format(
+                                self.ip_gateway,
+                                self.ip_cidrnetmask,
+                                self.bridge_nic
+                            ))
+
             common.run_os_command(
                 'ip address add {}/{} dev {}'.format(
                     self.ip_gateway,
@@ -330,6 +381,11 @@ class VXNetworkInstance():
             )
         )
 
+    def removeFirewall(self):
+        os.remove(self.nftables_netconf_filename)
+        open(self.nftables_update_filename, 'a').close()
+        pass
+
     def removeGatewayAddress(self):
         ansiiprint.echo(
             'Removing gateway {} from interface {} (VNI {})'.format(
@@ -358,4 +414,4 @@ class VXNetworkInstance():
                 '',
                 'o'
             )
-            self.dhcp_server_daemon.signal('int')
+            self.dhcp_server_daemon.signal('term')

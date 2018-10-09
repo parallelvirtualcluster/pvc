@@ -236,6 +236,11 @@ class RouterInstance():
         ansiiprint.echo('{}Secondary router:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.secondary_router_list)), '', 'c')
         ansiiprint.echo('{}Inactive routers:{} {}'.format(ansiiprint.bold(), ansiiprint.end(), ' '.join(self.inactive_router_list)), '', 'c')
 
+        # Reload firewall rules if needed
+        if os.path.isfile('{}/update'.format(self.config['nftables_rules_dir'])):
+            common.reload_firewall_rules(self.config['nftables_rules_dir'])
+            os.remove('{}/update'.format(self.config['nftables_rules_dir']))
+
 #
 # Fence thread entry function
 #

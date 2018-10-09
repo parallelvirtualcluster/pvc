@@ -44,8 +44,13 @@ print(ansiiprint.bold() + "pvcrd - Parallel Virtual Cluster router daemon" + ans
 # Set sysctl to enable routing before we do anything else
 common.run_os_command('sysctl net.ipv4.ip_forward=1')
 common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
+common.run_os_command('sysctl net.ipv4.conf.all.rp_filter=0')
+common.run_os_command('sysctl net.ipv4.conf.default.rp_filter=0')
+common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
 common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
 common.run_os_command('sysctl net.ipv6.ip_forward=1')
+common.run_os_command('sysctl net.ipv6.conf.all.rp_filter=0')
+common.run_os_command('sysctl net.ipv6.conf.default.rp_filter=0')
 common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
 common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
 
@@ -107,6 +112,10 @@ def readConfig(pvcrd_config_file, myhostname):
 
 # Get config
 config = readConfig(pvcrd_config_file, myhostname)
+
+# Add some static config elements
+config['nftables_rules_dir'] = '/var/lib/pvc/nftables'
+config['dnsmasq_hosts_dir'] = '/var/lib/pvc/dnsmasq'
 
 # Set up our VNI interface
 vni_dev = config['vni_dev']
@@ -231,6 +240,45 @@ s_network = dict()
 router_list = []
 network_list = []
 
+# Create our config dirs
+common.run_os_command(
+    '/bin/mkdir --parents {}/networks'.format(
+        config['nftables_rules_dir']
+     )
+)
+common.run_os_command(
+    '/bin/mkdir --parents {}/static'.format(
+        config['nftables_rules_dir']
+     )
+)
+common.run_os_command(
+    '/bin/mkdir --parents {}'.format(
+        config['dnsmasq_hosts_dir']
+     )
+)
+
+# Set up the basic features of the nftables firewall
+nftables_base_rules = """# Base rules
+flush ruleset
+add table inet filter
+add chain inet filter forward {{ type filter hook forward priority 0; }}
+include "{rulesdir}/static/*"
+include "{rulesdir}/networks/*"
+""".format(
+    rulesdir=config['nftables_rules_dir']
+)
+
+# Write the basic firewall config
+print(nftables_base_rules)
+nftables_base_filename = '{}/base.nft'.format(config['nftables_rules_dir'])
+nftables_update_filename = '{}/update'.format(config['nftables_rules_dir'])
+with open(nftables_base_filename, 'w') as nfbasefile:
+    nfbasefile.write(nftables_base_rules)
+    open(nftables_update_filename, 'a').close()
+
+#
+# Router instances
+#
 @zk_conn.ChildrenWatch('/routers')
 def updaterouters(new_router_list):
     global router_list
@@ -246,6 +294,9 @@ def updaterouters(new_router_list):
 this_router = t_router[myhostname]
 update_zookeeper = this_router.update_zookeeper
 
+#
+# Network instances
+#
 @zk_conn.ChildrenWatch('/networks')
 def updatenetworks(new_network_list):
     global network_list
@@ -260,6 +311,7 @@ def updatenetworks(new_network_list):
             if this_router.network_state == 'primary':
                 s_network[network].stopDHCPServer()
                 s_network[network].removeGatewayAddress()
+            s_network[network].removeFirewall()
             s_network[network].removeNetwork()
             del(s_network[network])
     network_list = new_network_list
