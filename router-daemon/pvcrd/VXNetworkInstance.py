@@ -247,15 +247,26 @@ class VXNetworkInstance():
         )
 
     def createFirewall(self):
-        nftables_network_rules = """# Rules for network {chainname}
-add chain inet filter {chainname}
-add rule inet filter {chainname} counter
-# Jump from forward chain to this chain when matching netaddr
-add rule inet filter forward ip saddr {netaddr} counter jump {chainname}
-add rule inet filter forward ip daddr {netaddr} counter jump {chainname}
+        nftables_network_rules = """# Rules for network {vxlannic}
+add chain inet filter {vxlannic}-in
+add chain inet filter {vxlannic}-out
+add rule inet filter {vxlannic}-in counter
+add rule inet filter {vxlannic}-out counter
+# Jump from forward chain to this chain when matching net
+add rule inet filter forward ip daddr {netaddr} counter jump {vxlannic}-in
+add rule inet filter forward ip saddr {netaddr} counter jump {vxlannic}-out
+# Allow ICMP traffic into the router from network
+add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
+# Allow DNS and DHCP traffic into the router from network
+add rule inet filter input tcp dport 53 meta iifname {bridgenic} counter accept
+add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
+add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
+# Block traffic into the router from network
+add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
             netaddr=self.ip_network,
-            chainname=self.vxlan_nic
+            vxlannic=self.vxlan_nic,
+            bridgenic=self.bridge_nic
         )
         print(nftables_network_rules)
         with open(self.nftables_netconf_filename, 'w') as nfbasefile:
@@ -326,6 +337,9 @@ add rule inet filter forward ip daddr {netaddr} counter jump {chainname}
                 '--expand-hosts',
                 '--domain={}'.format(self.domain),
                 '--local=/{}/'.format(self.domain),
+                '--auth-zone={}'.format(self.domain),
+#                '--auth-peer=127.0.0.1,{}'.format(self.ip_gateway),
+                '--auth-sec-servers=127.0.0.1,[::1],{}'.format(self.ip_gateway),
                 '--listen-address={}'.format(self.ip_gateway),
                 '--bind-interfaces',
                 '--leasefile-ro',
@@ -333,6 +347,7 @@ add rule inet filter forward ip daddr {netaddr} counter jump {chainname}
                 '--dhcp-range={},{},4h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-lease-max=99',
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
+                '--log-queries=extra',
                 '--log-facility=DAEMON',
                 '--keep-in-foreground'
             ]

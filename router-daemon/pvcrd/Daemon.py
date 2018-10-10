@@ -260,8 +260,11 @@ common.run_os_command(
 # Set up the basic features of the nftables firewall
 nftables_base_rules = """# Base rules
 flush ruleset
+# Add the filter table and chains
 add table inet filter
 add chain inet filter forward {{ type filter hook forward priority 0; }}
+add chain inet filter input {{ type filter hook input priority 0; }}
+# Include static rules and network rules
 include "{rulesdir}/static/*"
 include "{rulesdir}/networks/*"
 """.format(

@@ -14,7 +14,10 @@ import re
 #
 def get_zookeeper_key():
     # Get the interface from environment (passed by dnsmasq)
-    interface = os.environ['DNSMASQ_INTERFACE']
+    try:
+        interface = os.environ['DNSMASQ_INTERFACE']
+    except:
+        exit(1)
     # Get the ID of the interface (the digits)
     network_vni = re.findall('\d+', interface)[0]
     # Create the key
