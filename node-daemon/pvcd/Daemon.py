@@ -531,7 +531,7 @@ def update_networks(new_network_list):
     for network in network_list:
         if not network in new_network_list:
             # Stop primary functionality
-            if this_router.router_state == 'primary':
+            if this_node.router_state == 'primary':
                 d_network[network].stopDHCPServer()
                 d_network[network].removeGatewayAddress()
             # Stop general functionality
