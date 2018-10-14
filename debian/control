@@ -8,7 +8,7 @@ X-Python3-Version: >= 3.2
 
 Package: pvc-daemon
 Architecture: all
-Depends: python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, ipmitool, libvirt-daemon-system, arping, bridge-utils, dnsmasq
+Depends: python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, ipmitool, libvirt-daemon-system, arping, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-sqlite3
 Suggests: pvc-client-cli
 Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
