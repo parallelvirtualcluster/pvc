@@ -436,7 +436,7 @@ class NodeInstance():
         self.logger.out(
             '{bold}Domains:{nobold} {domcount}  '
             '{bold}Networks:{nobold} {netcount}  '
-            '{bold}Allocated memory [MiB]:{nobold} {allocmem}  '
+            '{bold}VM memory [MiB]:{nobold} {allocmem}  '
             '{bold}Free memory [MiB]:{nobold} {freemem}  '
             '{bold}Used memory [MiB]:{nobold} {usedmem}  '
             '{bold}Load:{nobold} {load}'.format(
