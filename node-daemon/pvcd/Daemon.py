@@ -226,19 +226,23 @@ logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
 
 # Enable routing functions
 common.run_os_command('sysctl net.ipv4.ip_forward=1')
+common.run_os_command('sysctl net.ipv6.ip_forward=1')
+
+# Send redirects
 common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
 common.run_os_command('sysctl net.ipv4.conf.default.send_redirects=1')
-common.run_os_command('sysctl net.ipv4.conf.all.rp_filter=0')
-common.run_os_command('sysctl net.ipv4.conf.default.rp_filter=0')
-common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
-common.run_os_command('sysctl net.ipv4.conf.default.accept_source_route=1')
-common.run_os_command('sysctl net.ipv6.ip_forward=1')
-common.run_os_command('sysctl net.ipv6.conf.all.rp_filter=0')
-common.run_os_command('sysctl net.ipv6.conf.default.rp_filter=0')
 common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
 common.run_os_command('sysctl net.ipv6.conf.default.send_redirects=1')
+
+# Accept source routes
+common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
+common.run_os_command('sysctl net.ipv4.conf.default.accept_source_route=1')
 common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
 common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
+
+# Disable RP filtering on the VNI dev interface (to allow traffic pivoting from primary)
+common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['vni_dev']))
+common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_dev']))
 
 ###############################################################################
 # PHASE 2 - Determine coordinator mode and start Zookeeper on coordinators
