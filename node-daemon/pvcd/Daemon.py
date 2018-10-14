@@ -221,6 +221,26 @@ logger.out('  Kernel: {}'.format(staticdata[1]))
 logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
 
 ###############################################################################
+# PHASE 1d - Prepare sysctl for pvcd
+###############################################################################
+
+# Enable routing functions
+common.run_os_command('sysctl net.ipv4.ip_forward=1')
+common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
+common.run_os_command('sysctl net.ipv4.conf.default.send_redirects=1')
+common.run_os_command('sysctl net.ipv4.conf.all.rp_filter=0')
+common.run_os_command('sysctl net.ipv4.conf.default.rp_filter=0')
+common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
+common.run_os_command('sysctl net.ipv4.conf.default.accept_source_route=1')
+common.run_os_command('sysctl net.ipv6.ip_forward=1')
+common.run_os_command('sysctl net.ipv6.conf.all.rp_filter=0')
+common.run_os_command('sysctl net.ipv6.conf.default.rp_filter=0')
+common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
+common.run_os_command('sysctl net.ipv6.conf.default.send_redirects=1')
+common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
+common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
+
+###############################################################################
 # PHASE 2 - Determine coordinator mode and start Zookeeper on coordinators
 ###############################################################################
 
