@@ -269,7 +269,6 @@ add rule inet filter input meta iifname {bridgenic} counter drop
             vxlannic=self.vxlan_nic,
             bridgenic=self.bridge_nic
         )
-        print(nftables_network_rules)
         with open(self.nftables_netconf_filename, 'w') as nfbasefile:
             nfbasefile.write(dedent(nftables_network_rules))
             open(self.nftables_update_filename, 'a').close()
@@ -285,12 +284,6 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
-            print('ip address add {}/{} dev {}'.format(
-                                self.ip_gateway,
-                                self.ip_cidrnetmask,
-                                self.bridge_nic
-                            ))
-
             common.run_os_command(
                 'ip address add {}/{} dev {}'.format(
                     self.ip_gateway,
@@ -324,7 +317,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
             # Recreate the environment we need for dnsmasq
             pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
             dhcp_environment = {
-                'DNSMASQ_INTERFACE': self.bridge_nic,
+                'DNSMASQ_BRIDGE_INTERFACE': self.bridge_nic,
                 'PVCD_CONFIG_FILE': pvcd_config_file
             }
             # Define the dnsmasq config
@@ -337,7 +330,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--domain={}'.format(self.domain),
                 '--local=/{}/'.format(self.domain),
                 '--auth-zone={}'.format(self.domain),
-#                '--auth-peer=127.0.0.1,{}'.format(self.ip_gateway),
+                '--auth-peer=127.0.0.1,{}'.format(self.ip_gateway),
                 '--auth-sec-servers=127.0.0.1,[::1],{}'.format(self.ip_gateway),
                 '--listen-address={}'.format(self.ip_gateway),
                 '--bind-interfaces',
@@ -347,7 +340,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--dhcp-lease-max=99',
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--log-queries=extra',
-                '--log-facility=DAEMON',
+                '--log-facility={}/dnsmasq.log'.format(self.config['dnsmasq_log_directory']),
                 '--keep-in-foreground'
             ]
             # Start the dnsmasq process in a thread

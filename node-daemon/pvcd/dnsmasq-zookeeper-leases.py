@@ -15,7 +15,7 @@ import re
 def get_zookeeper_key():
     # Get the interface from environment (passed by dnsmasq)
     try:
-        interface = os.environ['DNSMASQ_INTERFACE']
+        interface = os.environ['DNSMASQ_BRIDGE_INTERFACE']
     except:
         exit(1)
     # Get the ID of the interface (the digits)

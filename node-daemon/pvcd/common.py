@@ -47,7 +47,6 @@ class OSDaemon(object):
 
 def run_os_daemon(command_string, environment=None):
     command = command_string.split()
-    print(' '.join(command))
     daemon = OSDaemon(command, environment)
     return daemon
 
