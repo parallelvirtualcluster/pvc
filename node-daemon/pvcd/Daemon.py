@@ -478,6 +478,12 @@ with open(nftables_base_filename, 'w') as nfbasefile:
     open(nftables_update_filename, 'a').close()
 
 ###############################################################################
+# PHASE 7d - Ensure DNSMASQ is not running
+###############################################################################
+
+common.run_os_command('systemctl stop dnsmasq.service')
+
+###############################################################################
 # PHASE 8 - Set up our objects
 ###############################################################################
 
