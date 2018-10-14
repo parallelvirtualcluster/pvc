@@ -1,4 +1,0 @@
-network-daemon/pvcnd.py usr/share/pvc
-network-daemon/pvcnd.service lib/systemd/system
-network-daemon/pvcnd.conf.sample etc/pvc
-network-daemon/pvcnd usr/share/pvc

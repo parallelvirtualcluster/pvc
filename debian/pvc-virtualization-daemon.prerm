@@ -1,5 +1,0 @@
-#!/bin/sh
-
-# Disable the service
-systemctl disable pvcvd.service
-

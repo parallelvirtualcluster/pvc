@@ -1,4 +1,0 @@
-router-daemon/pvcrd.py usr/share/pvc
-router-daemon/pvcrd.service lib/systemd/system
-router-daemon/pvcrd.conf.sample etc/pvc
-router-daemon/pvcrd usr/share/pvc

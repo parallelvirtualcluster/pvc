@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Enable the service
+systemctl enable /lib/systemd/system/pvcd.service
+
+if systemctl is-active --quiet pvcd.service; then
+    echo "The PVC node daemon has not been restarted; this is up to the administrator."
+else
+    echo "The PVC node daemon has not been started; create a config file at /etc/pvc/pvcd.conf then start it."
+fi

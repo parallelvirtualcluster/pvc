@@ -1,0 +1,16 @@
+# Parallel Virtual Cluster virtualization daemon unit file
+[Unit]
+Description = Parallel Virtual Cluster node daemon
+After = network-online.target libvirtd.service zookeeper.service
+
+[Service]
+Type = simple
+WorkingDirectory = /usr/share/pvc
+Environment = PYTHONUNBUFFERED=true
+Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcd.conf
+ExecStart = /usr/share/pvc/pvcd.py
+KillSignal = SIGINT
+Restart = on-failure
+
+[Install]
+WantedBy = multi-user.target

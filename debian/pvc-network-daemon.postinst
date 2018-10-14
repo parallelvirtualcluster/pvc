@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# Enable the servive
-systemctl enable /lib/systemd/system/pvcnd.service
-
-echo "The PVC network daemon has not been started. Create a config file at /etc/pvc/pvcnd.conf then start it."

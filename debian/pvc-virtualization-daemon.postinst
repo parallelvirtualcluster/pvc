@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# Enable the servive
-systemctl enable /lib/systemd/system/pvcvd.service
-
-echo "The PVC virtualization daemon has not been started. Create a config file at /etc/pvc/pvcvd.conf then start it."

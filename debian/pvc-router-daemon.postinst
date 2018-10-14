@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# Enable the servive
-systemctl enable /lib/systemd/system/pvcrd.service
-
-echo "The PVC router daemon has not been started. Create a config file at /etc/pvc/pvcrd.conf then start it."

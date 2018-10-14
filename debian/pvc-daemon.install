@@ -1,0 +1,4 @@
+node-daemon/pvcd.py usr/share/pvc
+node-daemon/pvcd.service lib/systemd/system
+node-daemon/pvcd.conf.sample etc/pvc
+node-daemon/pvcd usr/share/pvc

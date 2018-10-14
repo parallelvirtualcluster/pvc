@@ -1,3 +1,10 @@
+pvc (0.4-0) unstable; urgency=medium
+
+  * Unification of all daemons into node daemon
+  * Numerous client tweaks
+
+ -- Joshua Boniface <joshua@boniface.me>  Sat, 13 Oct 2018 10:40:14 -0400
+
 pvc (0.3-1) unstable; urgency=medium
 
   * Code and package reorganization pending additional daemons
