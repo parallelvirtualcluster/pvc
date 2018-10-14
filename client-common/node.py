@@ -81,7 +81,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('{}Hypervisor Node information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('{}Node information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
     ainformation.append('')
     # Basic information
     ainformation.append('{}Name:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_name))
