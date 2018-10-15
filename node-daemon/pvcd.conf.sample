@@ -38,6 +38,9 @@
 #    storage_dev: the lower-level network device to bind storage traffic to
 #    storage_dev_ip: the IP address (in CIDR format) of the lower-level network device, used by
 #                    Ceph for storage traffic (both monitor and OSD).
+#    upstream_dev: the lower-level network device to bind coordinator upstream traffic to
+#    upstream_dev_ip: the IP address (in CIDR format) of the upstream network device, used by
+#                     the system for upstream traffic flow.
 #    ipmi_hostname: the IPMI hostname for fencing (defaults to <shortname>-lom.<domain>)
 #    ipmi_username: username to connect to IPMI
 #    ipmi_password: password to connect to IPMI
@@ -61,6 +64,8 @@ vni_dev = ens4
 vni_dev_ip = 10.255.0.1/24
 storage_dev = ens4
 storage_dev_ip = 10.254.0.1/24
+upstream_dev = ens2
+upstream_dev_ip = 10.101.0.31/24
 ipmi_username = admin
 ipmi_password = Passw0rd
 ipmi_hostname = pvc-hv1-lom

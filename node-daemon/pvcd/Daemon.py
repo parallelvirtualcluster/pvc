@@ -124,6 +124,8 @@ config_values = [
     'vni_dev_ip',
     'storage_dev',
     'storage_dev_ip',
+    'upstream_dev',
+    'upstream_dev_ip',
     'ipmi_hostname',
     'ipmi_username',
     'ipmi_password'
@@ -389,7 +391,7 @@ else:
     zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
 
 ###############################################################################
-# PHASE 6 - Create local IP addresses for VNI and Storage networks
+# PHASE 6 - Create local IP addresses for static networks
 ###############################################################################
 
 # VNI configuration
@@ -399,12 +401,20 @@ logger.out('Setting up VNI network on interface {} with IP {}'.format(vni_dev, v
 common.run_os_command('ip link set {} up'.format(vni_dev))
 common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, vni_dev))
 
-# Storage configurationm
+# Storage configuration
 storage_dev = config['storage_dev']
 storage_dev_ip = config['storage_dev_ip']
 logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
 common.run_os_command('ip link set {} up'.format(storage_dev))
 common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
+
+# Upstream configuration
+if config['daemon_mode'] == 'coordinator':
+    upstream_dev = config['upstream_dev']
+    upstream_dev_ip = config['upstream_dev_ip']
+    logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
+    common.run_os_command('ip link set {} up'.format(upstream_dev))
+    common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
 
 ###############################################################################
 # PHASE 7a - Ensure Libvirt is running on the local host
