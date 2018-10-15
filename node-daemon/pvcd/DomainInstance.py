@@ -32,7 +32,7 @@ import kazoo.client
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 
-class DomainInstance:
+class DomainInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
         # Passed-in variables on creation

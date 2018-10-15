@@ -33,7 +33,7 @@ import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 import pvcd.common as common
 
-class NodeInstance():
+class NodeInstance(object):
     # Initialization function
     def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain):
         # Passed-in variables on creation

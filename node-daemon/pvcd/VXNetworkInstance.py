@@ -28,7 +28,7 @@ import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 import pvcd.common as common
 
-class VXNetworkInstance():
+class VXNetworkInstance(object):
     # Initialization function
     def __init__ (self, vni, zk_conn, config, logger, this_node):
         self.vni = vni
