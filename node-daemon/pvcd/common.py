@@ -29,14 +29,23 @@ import time
 import pvcd.log as log
 
 class OSDaemon(object):
-    def __init__(self, command, environment):
+    def __init__(self, command_string, environment, logfile):
+        command = command_string.split()
+        # Set stdout to be a logfile if set
+        if logfile:
+            stdout = open(logfile, 'a')
+        else:
+            stdout = subprocess.PIPE
+
+        # Invoke the process
         self.proc = subprocess.Popen(
             command,
             env=environment,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=stdout,
+            stderr=stdout,
         )
 
+    # Signal the process
     def signal(self, sent_signal):
         signal_map = {
             'hup': signal.SIGHUP,
@@ -45,9 +54,8 @@ class OSDaemon(object):
         }
         self.proc.send_signal(signal_map[sent_signal])
 
-def run_os_daemon(command_string, environment=None):
-    command = command_string.split()
-    daemon = OSDaemon(command, environment)
+def run_os_daemon(command_string, environment=None, logfile=None):
+    daemon = OSDaemon(command_string, environment, logfile)
     return daemon
 
 # Run a oneshot command, optionally without blocking
