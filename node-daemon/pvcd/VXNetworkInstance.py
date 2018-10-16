@@ -333,6 +333,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--auth-zone={}'.format(self.domain),
                 '--auth-peer=127.0.0.1,{}'.format(self.ip_gateway),
                 '--auth-sec-servers=127.0.0.1,[::1],{}'.format(self.ip_gateway),
+                '--auth-soa=1,pvc@localhost,10,10',
                 '--listen-address={}'.format(self.ip_gateway),
                 '--bind-interfaces',
                 '--leasefile-ro',
@@ -418,4 +419,6 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
+            self.dhcp_server_daemon.signal('int')
+            time.sleep(0.2)
             self.dhcp_server_daemon.signal('term')

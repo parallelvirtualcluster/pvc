@@ -157,7 +157,6 @@ class DNSAggregatorInstance(object):
             '--loglevel=3',
             '--master=no',
             '--slave=yes',
-            '--slave-cycle-interval=5',
             '--version-string=powerdns',
             '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),
             '--launch=gsqlite3',
@@ -180,4 +179,6 @@ class DNSAggregatorInstance(object):
                 'Stopping PowerDNS zone aggregator',
                 state='o'
             )
+            self.dns_server_daemon.signal('int')
+            time.sleep(0.2)
             self.dns_server_daemon.signal('term')
