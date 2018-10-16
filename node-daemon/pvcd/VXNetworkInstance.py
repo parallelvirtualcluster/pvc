@@ -324,7 +324,6 @@ add rule inet filter input meta iifname {bridgenic} counter drop
             dhcp_configuration = [
                 '--domain-needed',
                 '--bogus-priv',
-#                '--no-resolv',
                 '--no-hosts',
                 '--filterwin2k',
                 '--expand-hosts',
@@ -338,10 +337,10 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--bind-interfaces',
                 '--leasefile-ro',
                 '--dhcp-script=/usr/share/pvc/pvcd/dnsmasq-zookeeper-leases.py',
-                '--dhcp-range={},{},4h'.format(self.dhcp_start, self.dhcp_end),
+                '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
+                '--log-facility=-',
                 '--log-queries=extra',
-                '--log-facility={}/dnsmasq.log'.format(self.config['dnsmasq_log_directory']),
                 '--keep-in-foreground'
             ]
             # Start the dnsmasq process in a thread
@@ -349,7 +348,8 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '/usr/sbin/dnsmasq {}'.format(
                     ' '.join(dhcp_configuration)
                 ),
-                environment=dhcp_environment
+                environment=dhcp_environment,
+                logfile='{}/dnsmasq-{}.log'.format(self.config['dnsmasq_log_directory'], self.vni)
             )
 
     def removeNetwork(self):

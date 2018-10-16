@@ -44,6 +44,7 @@ import pvcd.common as common
 import pvcd.DomainInstance as DomainInstance
 import pvcd.NodeInstance as NodeInstance
 import pvcd.VXNetworkInstance as VXNetworkInstance
+import pvcd.DNSAggregatorInstance as DNSAggregatorInstance
 
 ###############################################################################
 # PVCD - node daemon startup program
@@ -506,6 +507,12 @@ node_list = []
 network_list = []
 domain_list = []
 
+# Create an instance of the DNS Aggregator if we're a coordinator
+if config['daemon_mode'] == 'coordinator':
+    dns_aggregator = DNSAggregatorInstance.DNSAggregatorInstance(zk_conn, config, logger, d_network)
+else:
+    dns_aggregator = None
+
 # Node objects
 @zk_conn.ChildrenWatch('/nodes')
 def update_nodes(new_node_list):
@@ -514,7 +521,7 @@ def update_nodes(new_node_list):
     # Add any missing nodes to the list
     for node in new_node_list:
         if not node in node_list:
-            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain)
+            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator)
 
     # Remove any deleted nodes from the list
     for node in node_list:
@@ -542,6 +549,7 @@ def update_networks(new_network_list):
     for network in new_network_list:
         if not network in network_list:
             d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
+            dns_aggregator.add_client_network(network)
             # Start primary functionality
             if this_node.router_state == 'primary':
                 d_network[network].createGatewayAddress()
@@ -557,9 +565,14 @@ def update_networks(new_network_list):
             # Stop general functionality
             d_network[network].removeFirewall()
             d_network[network].removeNetwork()
+            dns_aggregator.remove_client_network(network)
             # Delete the object
             del(d_network[network])
 
+#    if config['daemon_mode'] == 'coordinator':
+#        # Update the DNS aggregator
+#        dns_aggregator.update_network_list(d_network)
+            
     # Update and print new list
     network_list = new_network_list
     logger.out('{}Network list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(network_list)), state='i')

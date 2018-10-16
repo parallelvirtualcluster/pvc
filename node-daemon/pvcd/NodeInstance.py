@@ -35,7 +35,7 @@ import pvcd.common as common
 
 class NodeInstance(object):
     # Initialization function
-    def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain):
+    def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator):
         # Passed-in variables on creation
         self.name = name
         self.this_node = this_node
@@ -55,6 +55,7 @@ class NodeInstance(object):
         self.d_node = d_node
         self.d_network = d_network
         self.d_domain = d_domain
+        self.dns_aggregator = dns_aggregator
         # Printable lists
         self.active_node_list = []
         self.flushed_node_list = []
@@ -289,17 +290,25 @@ class NodeInstance(object):
     def become_secondary(self):
         self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
-        time.sleep(0.5)
+        time.sleep(1)
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGatewayAddress()
+        self.dns_aggregator.stop_aggregator()
 
     def become_primary(self):
         self.logger.out('Setting router {} to primary state.'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+        self.dns_aggregator.start_aggregator()
+        time.sleep(0.5)
+        # Start up the gateways and DHCP servers
         for network in self.d_network:
             self.d_network[network].createGatewayAddress()
             self.d_network[network].startDHCPServer()
+        time.sleep(0.5)
+        # Handle AXFRs after to avoid slowdowns
+        for network in self.d_network: 
+            self.dns_aggregator.get_axfr(network)
 
     # Flush all VMs on the host
     def flush(self):
