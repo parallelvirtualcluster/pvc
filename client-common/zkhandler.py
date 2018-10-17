@@ -43,13 +43,11 @@ def writedata(zk_conn, kv):
     # Proceed one KV pair at a time
     for key in sorted(kv):
         data = kv[key]
-        if not data:
-            data = ''
 
         # Check if this key already exists or not
         if not zk_conn.exists(key):
             # We're creating a new key
-            zk_transaction.create(key, data.encode('ascii'))
+            zk_transaction.create(key, str(data).encode('ascii'))
         else:
             # We're updating a key with version validation
             orig_data = zk_conn.get(key)
@@ -59,7 +57,7 @@ def writedata(zk_conn, kv):
             new_version = version + 1
 
             # Update the data
-            zk_transaction.set_data(key, data.encode('ascii'))
+            zk_transaction.set_data(key, str(data).encode('ascii'))
 
             # Set up the check
             try:
