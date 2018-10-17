@@ -31,6 +31,13 @@
 #                               flush action; can be "mem", "load", "vcpus", or "vms" (defaults
 #                               to "mem"); the best choice based on this field is selected for
 #                               each VM to be migrated
+#    vni_floating_ip: the IP address (in CIDR format) for the floating IP on the VNI network,
+#                     used to provide a consistent view of the dynamic primary node to other
+#                     machines in the VNI network, e.g. for slaving DNS or sending in routes.
+#    upstream_floating_ip: the IP address (in CIDR format) for the floating IP on the upstream
+#                          network, used to provide a consistent view of the dynamic primary
+#                          node to machines in the upstream network, e.g. for slaving DNS or
+#                          sending in routes.
 # The following values are required for each node specifically (usually node-unique):
 #    vni_dev: the lower-level network device to bind VNI traffic to
 #    vni_dev_ip: the IP address (in CIDR format) of the lower-level network device, used by frr
@@ -58,6 +65,8 @@ suicide_intervals = 0
 successful_fence = migrate
 failed_fence = none
 migration_target_selector = mem
+vni_floating_ip = 10.255.0.254/24
+upstream_floating_ip = 10.101.0.30/24
 
 [pvc-hv1]
 vni_dev = ens4

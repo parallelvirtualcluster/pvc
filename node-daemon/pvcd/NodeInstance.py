@@ -69,6 +69,11 @@ class NodeInstance(object):
         self.memfree = 0
         self.memalloc = 0
         self.vcpualloc = 0
+        # Floating upstreams
+        self.vni_dev = self.config['vni_dev']
+        self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
+        self.upstream_dev = self.config['upstream_dev']
+        self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
         # Flags
         self.inflush = False
 
@@ -295,10 +300,12 @@ class NodeInstance(object):
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGatewayAddress()
         self.dns_aggregator.stop_aggregator()
+        self.removeFloatingAddresses()
 
     def become_primary(self):
         self.logger.out('Setting router {} to primary state.'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+        self.createFloatingAddresses()
         self.dns_aggregator.start_aggregator()
         time.sleep(0.5)
         # Start up the gateways and DHCP servers
@@ -309,6 +316,88 @@ class NodeInstance(object):
         # Handle AXFRs after to avoid slowdowns
         for network in self.d_network: 
             self.dns_aggregator.get_axfr(network)
+
+    def createFloatingAddresses(self):
+        # VNI floating IP
+        self.logger.out(
+            'Creating floating management IP {}/{} on interface {}'.format(
+                self.vni_ipaddr,
+                self.vni_cidrnetmask,
+                self.vni_dev
+            ),
+            state='o'
+        )
+        common.run_os_command(
+            'ip address add {}/{} dev {}'.format(
+                self.vni_ipaddr,
+                self.vni_cidrnetmask,
+                self.vni_dev
+            )
+        )
+        common.run_os_command(
+            'arping -A -c2 -I {} {}'.format(
+                self.vni_dev,
+                self.vni_ipaddr
+            ),
+            background=True
+        )
+        # Upstream floating IP
+        self.logger.out(
+            'Creating floating upstream IP {}/{} on interface {}'.format(
+                self.upstream_ipaddr,
+                self.upstream_cidrnetmask,
+                self.upstream_dev
+            ),
+            state='o'
+        )
+        common.run_os_command(
+            'ip address add {}/{} dev {}'.format(
+                self.upstream_ipaddr,
+                self.upstream_cidrnetmask,
+                self.upstream_dev
+            )
+        )
+        common.run_os_command(
+            'arping -A -c2 -I {} {}'.format(
+                self.upstream_dev,
+                self.upstream_ipaddr
+            ),
+            background=True
+        )
+
+    def removeFloatingAddresses(self):
+        # VNI floating IP
+        self.logger.out(
+            'Removing floating management IP {}/{} from interface {}'.format(
+                self.vni_ipaddr,
+                self.vni_cidrnetmask,
+                self.vni_dev
+            ),
+            state='o'
+        )
+        common.run_os_command(
+            'ip address delete {}/{} dev {}'.format(
+                self.vni_ipaddr,
+                self.vni_cidrnetmask,
+                self.vni_dev
+            )
+        )
+        # Upstream floating IP
+        self.logger.out(
+            'Removing floating upstream IP {}/{} from interface {}'.format(
+                self.upstream_ipaddr,
+                self.upstream_cidrnetmask,
+                self.upstream_dev
+            ),
+            state='o'
+        )
+        common.run_os_command(
+            'ip address delete {}/{} dev {}'.format(
+                self.upstream_ipaddr,
+                self.upstream_cidrnetmask,
+                self.upstream_dev
+            )
+        )
 
     # Flush all VMs on the host
     def flush(self):

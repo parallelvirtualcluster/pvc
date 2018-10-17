@@ -22,6 +22,7 @@
 
 import os
 import sys
+import time
 from textwrap import dedent
 
 import pvcd.log as log
@@ -153,7 +154,8 @@ class VXNetworkInstance(object):
             if self.dhcp_reservations != new_reservations:
                 old_reservations = self.dhcp_reservations
                 self.dhcp_reservations = new_reservations
-                self.updateDHCPReservations(old_reservations, new_reservations)
+                if self.this_node.router_state == 'primary':
+                    self.updateDHCPReservations(old_reservations, new_reservations)
 
         @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules'.format(self.vni))
         def watch_network_firewall_rules(new_rules, event=''):
@@ -165,7 +167,8 @@ class VXNetworkInstance(object):
             if self.firewall_rules != new_rules:
                 old_rules = self.firewall_rules
                 self.firewall_rules = new_rules
-                self.updateFirewallRules(old_rules, new_rules)
+                if self.this_node.router_state == 'primary':
+                    self.updateFirewallRules(old_rules, new_rules)
 
         self.createNetwork()
         self.createFirewall()
@@ -204,10 +207,12 @@ class VXNetworkInstance(object):
         for rule in new_rules_list:
             if rule not in old_rules_list:
                 # Add new rule entry
+                print(rule)
                 pass
 
         for rule in old_rules_list:
             if rule not in new_rules_list:
+                print(rule)
                 pass
 
     def createNetwork(self):
@@ -337,7 +342,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--listen-address={}'.format(self.ip_gateway),
                 '--bind-interfaces',
                 '--leasefile-ro',
-                '--dhcp-script=/usr/share/pvc/pvcd/dnsmasq-zookeeper-leases.py',
+                '--dhcp-script=./pvcd/dnsmasq-zookeeper-leases.py',
                 '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--log-facility=-',
@@ -419,6 +424,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
-            self.dhcp_server_daemon.signal('int')
-            time.sleep(0.2)
+            # Terminate, then kill
             self.dhcp_server_daemon.signal('term')
+            time.sleep(0.2)
+            self.dhcp_server_daemon.signal('kill')

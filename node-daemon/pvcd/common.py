@@ -50,7 +50,8 @@ class OSDaemon(object):
         signal_map = {
             'hup': signal.SIGHUP,
             'int': signal.SIGINT,
-            'term': signal.SIGTERM
+            'term': signal.SIGTERM,
+            'kill': signal.SIGKILL
         }
         self.proc.send_signal(signal_map[sent_signal])
 

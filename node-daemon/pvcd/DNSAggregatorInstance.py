@@ -40,7 +40,12 @@ class DNSAggregatorInstance(object):
         self.logger = logger
         self.d_network = d_network
 
-        self.active = False
+        # Floating upstreams
+        self.vni_dev = self.config['vni_dev']
+        self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
+        self.upstream_dev = self.config['upstream_dev']
+        self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
+
         self.database_file = self.config['pdns_dynamic_directory'] + '/pdns-aggregator.sqlite3'
 
         self.dns_server_daemon = None
@@ -98,7 +103,7 @@ class DNSAggregatorInstance(object):
 
         if write_domain:
             sql_curs.execute(
-                'insert into domains (name, master, type, account) values (?, ?, "SLAVE", "internal")',
+                'insert into domains (name, master, type, account) values (?, ?, "MASTER", "internal")',
                 (network_domain, network_gateway)
             )
             sql_conn.commit()
@@ -146,22 +151,30 @@ class DNSAggregatorInstance(object):
         )
         # Define the PowerDNS config
         dns_configuration = [
+            # Option                            # Explanation
             '--no-config',
-            '--daemon=no',
-            '--disable-syslog=yes',
-            '--disable-axfr=no',
-            '--guardian=yes',
-            '--local-address=0.0.0.0',
-            '--local-port=10053',
-            '--log-dns-details=on',
-            '--loglevel=3',
-            '--master=no',
-            '--slave=yes',
-            '--version-string=powerdns',
+            '--daemon=no',                      # Start directly
+            '--guardian=yes',                   # Use a guardian
+            '--disable-syslog=yes',             # Log only to stdout (which is then captured)
+            '--disable-axfr=no',                # Allow AXFRs
+            '--allow-axfr-ips=0.0.0.0/0',       # Allow AXFRs to anywhere
+            '--also-notify=10.101.0.60',        # Notify upstreams
+            '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),
+                                                # Listen on floating IPs
+            '--local-port=10053',               # On port 10053
+            '--log-dns-details=on',             # Log details
+            '--loglevel=3',                     # Log info
+            '--master=yes',                     # Enable master mode
+            '--slave=yes',                      # Enable slave mode
+            '--slave-renotify=yes',             # Renotify out for our slaved zones
+            '--version-string=powerdns',        # Set the version string
+            '--default-soa-name=dns.pvc.local', # Override dnsmasq's invalid name
             '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),
-            '--launch=gsqlite3',
+                                                # Standard socket directory
+            '--launch=gsqlite3',                # Use the sqlite3 backend
             '--gsqlite3-database={}'.format(self.database_file),
-            '--gsqlite3-dnssec=no'
+                                                # Database file
+            '--gsqlite3-dnssec=no'              # Don't do DNSSEC here
         ]
         # Start the pdns process in a thread
         self.dns_server_daemon = common.run_os_daemon(

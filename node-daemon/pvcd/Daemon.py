@@ -123,10 +123,12 @@ config_values = [
     'migration_target_selector',
     'vni_dev',
     'vni_dev_ip',
+    'vni_floating_ip',
     'storage_dev',
     'storage_dev_ip',
     'upstream_dev',
     'upstream_dev_ip',
+    'upstream_floating_ip',
     'ipmi_hostname',
     'ipmi_username',
     'ipmi_password'
@@ -549,9 +551,9 @@ def update_networks(new_network_list):
     for network in new_network_list:
         if not network in network_list:
             d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
-            dns_aggregator.add_client_network(network)
             # Start primary functionality
             if this_node.router_state == 'primary':
+                dns_aggregator.add_client_network(network)
                 d_network[network].createGatewayAddress()
                 d_network[network].startDHCPServer()
 
@@ -562,10 +564,10 @@ def update_networks(new_network_list):
             if this_node.router_state == 'primary':
                 d_network[network].stopDHCPServer()
                 d_network[network].removeGatewayAddress()
+                dns_aggregator.remove_client_network(network)
             # Stop general functionality
             d_network[network].removeFirewall()
             d_network[network].removeNetwork()
-            dns_aggregator.remove_client_network(network)
             # Delete the object
             del(d_network[network])
 
