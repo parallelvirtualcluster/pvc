@@ -102,17 +102,27 @@ def getNetworkDescription(zk_conn, network):
 
 def getNetworkDHCPLeases(zk_conn, vni):
     # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp_leases
-    dhcp_leases = zk_conn.get_children('/networks/{}/dhcp_leases'.format(vni))
+    dhcp_leases = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp_leases'.format(vni))
     return sorted(dhcp_leases)
 
 def getNetworkDHCPReservations(zk_conn, vni):
     # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp_reservations
-    dhcp_reservations = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(vni))
+    dhcp_reservations = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp_reservations'.format(vni))
     return sorted(dhcp_reservations)
 
-def getNetworkFirewallRules(zk_conn, vni):
-    firewall_rules = zk_conn.get_children('/networks/{}/firewall_rules'.format(vni))
-    return None
+def getNetworkACLs(zk_conn, vni, direction):
+    # Get the (sorted) list of active ACLs
+    unordered_acl_list = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules/{}'.format(vni, direction))
+    ordered_acls = {}
+    full_acl_list = []
+    for acl in unordered_acl_list:
+        order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, acl))
+        ordered_acls[order] = acl
+
+    for order in sorted(ordered_acls.keys()):
+        full_acl_list.append(ordered_acls[order])
+
+    return full_acl_list
 
 def getNetworkInformation(zk_conn, vni):
     description = zkhandler.readdata(zk_conn, '/networks/{}'.format(vni))
@@ -138,6 +148,12 @@ def getDHCPReservationInformation(zk_conn, vni, mac_address):
     ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(vni, mac_address))
     timestamp = 'static'
     return hostname, ip_address, mac_address, timestamp
+
+def getACLInformation(zk_conn, vni, direction, description):
+    order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, description))
+    rule = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, description))
+    return order, description, rule
+
 
 def formatNetworkInformation(zk_conn, vni, long_output):
     description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
@@ -317,7 +333,6 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
             hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPReservationInformation(zk_conn, vni, dhcp_lease)
         else:
             hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPLeaseInformation(zk_conn, vni, dhcp_lease)
-       
 
     # Determine optimal column widths
     lease_hostname_length = 13
@@ -328,11 +343,11 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
         _lease_hostname_length = len(hostname[dhcp_lease]) + 1
         if _lease_hostname_length > lease_hostname_length:
             lease_hostname_length = _lease_hostname_length
-        # ip_network column
+        # ip_address column
         _lease_ip_address_length = len(ip_address[dhcp_lease]) + 1
         if _lease_ip_address_length > lease_ip_address_length:
             lease_ip_address_length = _lease_ip_address_length
-        # ip_gateway column
+        # mac_address column
         _lease_mac_address_length = len(mac_address[dhcp_lease]) + 1
         if _lease_mac_address_length > lease_mac_address_length:
             lease_mac_address_length = _lease_mac_address_length
@@ -379,6 +394,70 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     output_string = dhcp_lease_list_output_header + '\n' + '\n'.join(sorted(dhcp_lease_list_output))
     return output_string
 
+def formatACLList(zk_conn, vni, direction, acl_list):
+    acl_list_output = []
+    order = {}
+    description = {}
+    rule = {}
+
+    # Gather information for printing
+    for acl in acl_list:
+            order[acl], description[acl], rule[acl] = getACLInformation(zk_conn, vni, direction, acl)
+
+    # Determine optimal column widths
+    acl_order_length = 6
+    acl_description_length = 12
+    acl_rule_length = 5
+    for acl in acl_list:
+        # order column
+        _acl_order_length = len(order[acl]) + 1
+        if _acl_order_length > acl_order_length:
+            acl_order_length = _acl_order_length
+        # description column
+        _acl_description_length = len(description[acl]) + 1
+        if _acl_description_length > acl_description_length:
+            acl_description_length = _acl_description_length
+        # rule column
+        _acl_rule_length = len(rule[acl]) + 1
+        if _acl_rule_length > acl_rule_length:
+            acl_rule_length = _acl_rule_length
+
+    # Format the string (header)
+    acl_list_output_header = '{bold}\
+{acl_order: <{acl_order_length}} \
+{acl_description: <{acl_description_length}} \
+{acl_rule: <{acl_rule_length}} \
+{end_bold}'.format(
+        bold=ansiiprint.bold(),
+        end_bold=ansiiprint.end(),
+        acl_order_length=acl_order_length,
+        acl_description_length=acl_description_length,
+        acl_rule_length=acl_rule_length,
+        acl_order='Order',
+        acl_description='Description',
+        acl_rule='Rule',
+    )
+
+    for acl in acl_list:
+        acl_list_output.append('{bold}\
+{acl_order: <{acl_order_length}} \
+{acl_description: <{acl_description_length}} \
+{acl_rule: <{acl_rule_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                acl_order_length=acl_order_length,
+                acl_description_length=acl_description_length,
+                acl_rule_length=acl_rule_length,
+                acl_order=order[acl],
+                acl_description=description[acl],
+                acl_rule=rule[acl],
+            )
+        )
+
+    output_string = acl_list_output_header + '\n' + '\n'.join(sorted(acl_list_output))
+    return output_string
+
 def isValidMAC(macaddr):
     allowed = re.compile(r"""
                          (
@@ -409,15 +488,16 @@ def isValidIP(ipaddr):
 # Direct functions
 #
 def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
-    if description == '':
-        description = vni
-
     if dhcp_flag and ( not dhcp_start or not dhcp_end ):
         return False, 'ERROR: DHCP start and end addresses are required for a DHCP-enabled network.'
 
-    # Check if a network with this VNI already exists
+    # Check if a network with this VNI or description already exists
     if zk_conn.exists('/networks/{}'.format(vni)):
         return False, 'ERROR: A network with VNI {} already exists!'.format(vni)
+    for network in zkhandler.listchildren(zk_conn, '/networks'):
+        network_description = zkhandler.readdata(zk_conn, '/networks/{}'.format(network))
+        if network_description == description:
+            return False, 'ERROR: A network with description {} already exists!'.format(description)
 
     # Add the new network to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -425,12 +505,14 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
         '/networks/{}/domain'.format(vni): domain,
         '/networks/{}/ip_network'.format(vni): ip_network,
         '/networks/{}/ip_gateway'.format(vni): ip_gateway,
-        '/networks/{}/dhcp_flag'.format(vni): str(dhcp_flag),
+        '/networks/{}/dhcp_flag'.format(vni): dhcp_flag,
         '/networks/{}/dhcp_start'.format(vni): dhcp_start,
         '/networks/{}/dhcp_end'.format(vni): dhcp_end,
         '/networks/{}/dhcp_leases'.format(vni): '',
         '/networks/{}/dhcp_reservations'.format(vni): '',
-        '/networks/{}/firewall_rules'.format(vni): ''
+        '/networks/{}/firewall_rules'.format(vni): '',
+        '/networks/{}/firewall_rules/in'.format(vni): '',
+        '/networks/{}/firewall_rules/out'.format(vni): ''
     })
 
     return True, 'Network "{}" added successfully!'.format(description)
@@ -448,7 +530,7 @@ def modify_network(zk_conn, vni, **parameters):
     if parameters['ip_gateway'] != None:
         zk_data.update({'/networks/{}/ip_gateway'.format(vni): parameters['ip_gateway']})
     if parameters['dhcp_flag'] != None:
-        zk_data.update({'/networks/{}/dhcp_flag'.format(vni): str(parameters['dhcp_flag'])})
+        zk_data.update({'/networks/{}/dhcp_flag'.format(vni): parameters['dhcp_flag']})
     if parameters['dhcp_start'] != None:
         zk_data.update({'/networks/{}/dhcp_start'.format(vni): parameters['dhcp_start']})
     if parameters['dhcp_end'] != None:
@@ -513,7 +595,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     match_description = ''
 
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
-    dhcp_reservations_list = zk_conn.get_children('/networks/{}/dhcp_reservations'.format(net_vni))
+    dhcp_reservations_list = getNetworkDHCPReservations(zk_conn, net_vni)
     for macaddr in dhcp_reservations_list:
         hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/hostname'.format(net_vni, macaddr))
         ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddr))
@@ -530,6 +612,105 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
         return False, 'ERROR: Failed to write to Zookeeper!'
 
     return True, 'DHCP reservation "{}" removed successfully!'.format(match_description)
+
+def add_acl(zk_conn, network, direction, description, rule, order):
+    # Validate and obtain standard passed value
+    net_vni = getNetworkVNI(zk_conn, network)
+    if net_vni == None:
+        return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
+
+    # Change direction to something more usable
+    if direction:
+        direction = "in"
+    else:
+        direction = "out"
+
+    if zk_conn.exists('/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description)):
+        return False, 'ERROR: A rule with description "{}" already exists!'.format(description)
+
+    # Handle reordering
+    full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    acl_list_length = len(full_acl_list)
+    # Set order to len
+    if order == None or int(order) > acl_list_length:
+        order = acl_list_length
+    # Convert passed-in order to an integer
+    else:
+        order = int(order)
+      
+    # Insert into the array at order-1
+    full_acl_list.insert(order, description)
+
+    # Update the existing ordering
+    updated_orders = {}
+    for idx, acl in enumerate(full_acl_list):
+        # We haven't added ourselves yet
+        if acl == description:
+            continue
+
+        updated_orders[
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl)
+        ] = idx
+
+    if updated_orders:
+        zkhandler.writedata(zk_conn, updated_orders)
+
+    # Add the new rule
+    try:
+        zkhandler.writedata(zk_conn, {
+            '/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description): '',
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, description): order,
+            '/networks/{}/firewall_rules/{}/{}/rule'.format(net_vni, direction, description): rule
+        })
+    except Exception as e:
+        return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
+
+    return True, 'Firewall rule "{}" added successfully!'.format(description)
+
+def remove_acl(zk_conn, network, rule, direction):
+    # Validate and obtain standard passed value
+    net_vni = getNetworkVNI(zk_conn, network)
+    if net_vni == None:
+        return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
+
+    # Change direction to something more usable
+    if direction:
+        direction = "in"
+    else:
+        direction = "out"
+
+    match_description = ''
+
+    # Check if the ACL matches a description currently in the database
+    acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    for acl in acl_list:
+        if acl == rule:
+            match_description = acl
+    
+    if not match_description:
+        return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(rule)
+
+    # Remove the entry from zookeeper
+    try:
+        zk_conn.delete('/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, match_description), recursive=True)
+    except Exception as e:
+        return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
+
+    # Update the existing ordering
+    full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    updated_orders = {}
+    for idx, acl in enumerate(full_acl_list):
+        updated_orders[
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl)
+        ] = idx
+
+    if updated_orders:
+        try:
+            zkhandler.writedata(zk_conn, updated_orders)
+        except Exception as e:
+            return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
+
+    return True, 'Firewall rule "{}" removed successfully!'.format(match_description)
 
 def get_info(zk_conn, network, long_output):
     # Validate and obtain alternate passed value
@@ -615,11 +796,45 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
 
     return True, ''
 
-def get_list_firewall_rules(zk_conn, network):
+def get_list_acl(zk_conn, network, limit, direction):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if net_vni == None:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    firewall_rules = getNetworkFirewallRules(zk_conn, net_vni)
-    return firewall_rules
+    # Change direction to something more usable
+    if direction:
+        direction = "in"
+    else:
+        direction = "out"
+
+    acl_list = []
+    full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+
+    if limit:
+        try:
+            # Implcitly assume fuzzy limits
+            if re.match('\^.*', limit) == None:
+                limit = '.*' + limit
+            if re.match('.*\$', limit) == None:
+                limit = limit + '.*'
+        except Exception as e:
+            return False, 'Regex Error: {}'.format(e)
+
+    for idx, acl in enumerate(full_acl_list):
+        valid_acl = False
+        if limit:
+            if re.match(limit, acl) != None:
+                valid_acl = True
+            if re.match(limit, str(idx)) != None:
+                valid_acl = True
+        else:
+            valid_acl = True
+
+        if valid_acl:
+            acl_list.append(acl)
+
+    output_string = formatACLList(zk_conn, net_vni, direction, acl_list)
+    click.echo(output_string)
+
+    return True, ''

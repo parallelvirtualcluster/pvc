@@ -531,8 +531,8 @@ def cli_network():
 @click.command(name='add', short_help='Add a new virtual network to the cluster.')
 @click.option(
     '-d', '--description', 'description',
-    default="",
-    help='Description of the network; should not contain whitespace.'
+    required=True,
+    help='Description of the network; must be unique and not contain whitespace and must be unique.'
 )
 @click.option(
     '-n', '--domain', 'domain',
@@ -552,7 +552,8 @@ def cli_network():
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
-    default=False,
+    required=True,
+    default=None,
     help='Enable/disable DHCP for clients on subnet.'
 )
 @click.option(
@@ -587,7 +588,7 @@ def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_st
 @click.option(
     '-d', '--description', 'description',
     default=None,
-    help='Description of the network; should not contain whitespace.'
+    help='Description of the network; must be unique and not contain whitespace.'
 )
 @click.option(
     '-n', '--domain', 'domain',
@@ -606,8 +607,8 @@ def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_st
 )
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
-    default=None,
     is_flag=True,
+    default=None,
     help='Enable/disable DHCP for clients on subnet.'
 )
 @click.option(
@@ -803,7 +804,103 @@ def net_acl():
     """
     pass
 
+###############################################################################
+# pvc network acl add
+###############################################################################
+@click.command(name='add', short_help='Add firewall ACL.')
+@click.option(
+    '--in/--out', 'direction',
+    is_flag=True,
+    required=True,
+    default=None,
+    help='Inbound or outbound ruleset.'
+)
+@click.option(
+    '-d', '--description', 'description',
+    required=True,
+    help='Description of the ACL; must be unique and not contain whitespace.'
+)
+@click.option(
+    '-r', '--rule', 'rule',
+    required=True,
+    help='NFT firewall rule.'
+)
+@click.option(
+    '-o', '--order', 'order',
+    default=None,
+    help='Order of rule in the chain (see "list"); defaults to last.'
+)
+@click.argument(
+    'net'
+)
+def net_acl_add(net, direction, description, rule, order):
+    """
+    Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET can be either a VNI or description.
 
+    NOTE: All client networks are default-allow in both directions; deny rules MUST be added here at the end of the sequence for a default-deny setup.
+
+    NOTE: Ordering places the rule at the specified ID, not before it; the old rule of that ID and all subsequent rules will be moved down.
+
+    Example:
+
+    pvc network acl add 1001 --in --rule "tcp dport 22 ct state new accept" --description "ssh-in" --order 3
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.add_acl(zk_conn, net, direction, description, rule, order)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network acl remove
+###############################################################################
+@click.command(name='remove', short_help='Remove firewall ACL.')
+@click.option(
+    '--in/--out', 'direction',
+    is_flag=True,
+    required=True,
+    default=None,
+    help='Inbound or outbound rule set.'
+)
+@click.argument(
+    'net'
+)
+@click.argument(
+    'rule',
+)
+def net_acl_remove(net, rule, direction):
+    """
+    Remove an NFT firewall rule RULE from network NET; RULE can be either a sequence order identifier or description; NET can be either a VNI or description."
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.remove_acl(zk_conn, net, rule, direction)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc network acl list
+###############################################################################
+@click.command(name='list', short_help='List firewall ACLs.')
+@click.option(
+    '--in/--out', 'direction',
+    is_flag=True,
+    required=True,
+    default=None,
+    help='Inbound or outbound rule set.'
+)
+@click.argument(
+    'net'
+)
+@click.argument(
+    'limit', default=None, required=False
+)
+def net_acl_list(net, limit, direction):
+    """
+    List all NFT firewall rules in network NET; optionally only match elements matching description regex LIMIT; NET can be either a VNI or description.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_network.get_list_acl(zk_conn, net, limit, direction)
+    cleanup(retcode, retmsg, zk_conn)
 
 
 
@@ -908,6 +1005,10 @@ net_dhcp.add_command(net_dhcp_static)
 net_dhcp_static.add_command(net_dhcp_static_add)
 net_dhcp_static.add_command(net_dhcp_static_remove)
 net_dhcp_static.add_command(net_dhcp_static_list)
+
+net_acl.add_command(net_acl_add)
+net_acl.add_command(net_acl_remove)
+net_acl.add_command(net_acl_list)
 
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
