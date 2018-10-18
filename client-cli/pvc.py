@@ -883,9 +883,9 @@ def net_acl_remove(net, rule, direction):
 @click.option(
     '--in/--out', 'direction',
     is_flag=True,
-    required=True,
+    required=False,
     default=None,
-    help='Inbound or outbound rule set.'
+    help='Inbound or outbound rule set only.'
 )
 @click.argument(
     'net'

@@ -43,8 +43,8 @@ class VXNetworkInstance(object):
         self.description = None
         self.domain = None
         self.ip_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_gateway'.format(self.vni))
-        self.ip_network = None
-        self.ip_cidrnetmask = None
+        self.ip_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni))
+        self.ip_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni)).split('/')[-1]
         self.dhcp_flag = zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp_flag'.format(self.vni))
         self.dhcp_start = None
         self.dhcp_end = None
@@ -52,13 +52,36 @@ class VXNetworkInstance(object):
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
 
-        self.nftables_update_filename = '{}/update'.format(config['nft_dynamic_directory'])
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
 
         self.dhcp_server_daemon = None
         self.dnsmasq_hostsdir = '{}/{}'.format(config['dnsmasq_dynamic_directory'], self.vni)
         self.dhcp_reservations = []
+
+        self.firewall_rules_base = """# Rules for network {vxlannic}
+add chain inet filter {vxlannic}-in
+add chain inet filter {vxlannic}-out
+add rule inet filter {vxlannic}-in counter
+add rule inet filter {vxlannic}-out counter
+# Jump from forward chain to this chain when matching net
+add rule inet filter forward ip daddr {netaddr} counter jump {vxlannic}-in
+add rule inet filter forward ip saddr {netaddr} counter jump {vxlannic}-out
+# Allow ICMP traffic into the router from network
+add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
+# Allow DNS and DHCP traffic into the router from network
+add rule inet filter input tcp dport 53 meta iifname {bridgenic} counter accept
+add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
+add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
+# Block traffic into the router from network
+add rule inet filter input meta iifname {bridgenic} counter drop
+""".format(
+            netaddr=self.ip_network,
+            vxlannic=self.vxlan_nic,
+            bridgenic=self.bridge_nic
+        )
+        self.firewall_rules_in = zkhandler.listchildren(self.zk_conn, '/networks/{}/firewall_rules/in'.format(self.vni))
+        self.firewall_rules_out = zkhandler.listchildren(self.zk_conn, '/networks/{}/firewall_rules/out'.format(self.vni))
 
         # Zookeper handlers for changed states
         @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
@@ -157,18 +180,29 @@ class VXNetworkInstance(object):
                 if self.this_node.router_state == 'primary':
                     self.updateDHCPReservations(old_reservations, new_reservations)
 
-        @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules'.format(self.vni))
+        @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/in'.format(self.vni))
         def watch_network_firewall_rules(new_rules, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if self.firewall_rules != new_rules:
-                old_rules = self.firewall_rules
-                self.firewall_rules = new_rules
-                if self.this_node.router_state == 'primary':
-                    self.updateFirewallRules(old_rules, new_rules)
+            # Don't run on the first pass
+            if self.firewall_rules_in != new_rules:
+                self.firewall_rules_in = new_rules
+                self.updateFirewallRules()
+
+        @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/out'.format(self.vni))
+        def watch_network_firewall_rules(new_rules, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            # Don't run on the first pass
+            if self.firewall_rules_out != new_rules:
+                self.firewall_rules_out = new_rules
+                self.updateFirewallRules()
 
         self.createNetwork()
         self.createFirewall()
@@ -203,17 +237,47 @@ class VXNetworkInstance(object):
                 except:
                     pass
 
-    def updateFirewallRules(self, old_rules_list, new_rules_list):
-        for rule in new_rules_list:
-            if rule not in old_rules_list:
-                # Add new rule entry
-                print(rule)
-                pass
+    def updateFirewallRules(self):
+        self.logger.out(
+            'Updating firewall rules',
+            prefix='VNI {}'.format(self.vni),
+            state='o'
+        )
+        ordered_acls_in = {}
+        ordered_acls_out = {}
+        sorted_acl_list = {'in': [], 'out': []}
+        full_ordered_rules = []
 
-        for rule in old_rules_list:
-            if rule not in new_rules_list:
-                print(rule)
-                pass
+        for acl in self.firewall_rules_in:
+            order = zkhandler.readdata(self.zk_conn, '/networks/{}/firewall_rules/in/{}/order'.format(self.vni, acl))
+            ordered_acls_in[order] = acl
+        for acl in self.firewall_rules_out:
+            order = zkhandler.readdata(self.zk_conn, '/networks/{}/firewall_rules/out/{}/order'.format(self.vni, acl))
+            ordered_acls_out[order] = acl
+    
+        for order in sorted(ordered_acls_in.keys()):
+            sorted_acl_list['in'].append(ordered_acls_in[order])
+        for order in sorted(ordered_acls_out.keys()):
+            sorted_acl_list['out'].append(ordered_acls_out[order])
+   
+        for direction in 'in', 'out': 
+            for acl in sorted_acl_list[direction]:
+                rule_prefix = "add rule inet filter vxlan{}-{} counter".format(self.vni, direction)
+                rule_data = zkhandler.readdata(self.zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(self.vni, direction, acl))
+                rule = '{} {}'.format(rule_prefix, rule_data)
+                full_ordered_rules.append(rule)
+
+        output = "{}\n# User rules\n{}\n".format(
+                     self.firewall_rules_base,
+                     '\n'.join(full_ordered_rules)
+                 )
+
+        with open(self.nftables_netconf_filename, 'w') as nfnetfile:
+            nfnetfile.write(dedent(output))
+
+        # Reload firewall rules
+        nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
+        common.reload_firewall_rules(self.logger, nftables_base_filename)
 
     def createNetwork(self):
         self.logger.out(
@@ -253,31 +317,8 @@ class VXNetworkInstance(object):
         )
 
     def createFirewall(self):
-        nftables_network_rules = """# Rules for network {vxlannic}
-add chain inet filter {vxlannic}-in
-add chain inet filter {vxlannic}-out
-add rule inet filter {vxlannic}-in counter
-add rule inet filter {vxlannic}-out counter
-# Jump from forward chain to this chain when matching net
-add rule inet filter forward ip daddr {netaddr} counter jump {vxlannic}-in
-add rule inet filter forward ip saddr {netaddr} counter jump {vxlannic}-out
-# Allow ICMP traffic into the router from network
-add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
-# Allow DNS and DHCP traffic into the router from network
-add rule inet filter input tcp dport 53 meta iifname {bridgenic} counter accept
-add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
-add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
-# Block traffic into the router from network
-add rule inet filter input meta iifname {bridgenic} counter drop
-""".format(
-            netaddr=self.ip_network,
-            vxlannic=self.vxlan_nic,
-            bridgenic=self.bridge_nic
-        )
-        with open(self.nftables_netconf_filename, 'w') as nfbasefile:
-            nfbasefile.write(dedent(nftables_network_rules))
-            open(self.nftables_update_filename, 'a').close()
-        pass
+        # For future use
+        self.updateFirewallRules()
 
     def createGatewayAddress(self):
         if self.this_node.router_state == 'primary':
@@ -342,11 +383,10 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--listen-address={}'.format(self.ip_gateway),
                 '--bind-interfaces',
                 '--leasefile-ro',
-                '--dhcp-script=./pvcd/dnsmasq-zookeeper-leases.py',
+                '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--log-facility=-',
-                '--log-queries=extra',
                 '--keep-in-foreground'
             ]
             # Start the dnsmasq process in a thread
@@ -394,9 +434,20 @@ add rule inet filter input meta iifname {bridgenic} counter drop
         )
 
     def removeFirewall(self):
-        os.remove(self.nftables_netconf_filename)
-        open(self.nftables_update_filename, 'a').close()
-        pass
+        self.logger.out(
+            'Removing firewall rules',
+            prefix='VNI {}'.format(self.vni),
+            state='o'
+        )
+
+        try:
+            os.remove(self.nftables_netconf_filename)
+        except:
+            pass
+
+        # Reload firewall rules
+        nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
+        common.reload_firewall_rules(self.logger, nftables_base_filename)
 
     def removeGatewayAddress(self):
         self.logger.out(

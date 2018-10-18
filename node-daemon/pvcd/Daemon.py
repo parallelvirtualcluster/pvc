@@ -484,11 +484,9 @@ include "{rulesdir}/networks/*"
 
 # Write the basic firewall config
 nftables_base_filename = '{}/base.nft'.format(config['nft_dynamic_directory'])
-nftables_update_filename = '{}/update'.format(config['nft_dynamic_directory'])
 with open(nftables_base_filename, 'w') as nfbasefile:
     nfbasefile.write(nftables_base_rules)
-    # Notify a reload of the firewall rules on next keepalive update
-    open(nftables_update_filename, 'a').close()
+common.reload_firewall_rules(logger, nftables_base_filename)
 
 ###############################################################################
 # PHASE 7d - Ensure DNSMASQ is not running

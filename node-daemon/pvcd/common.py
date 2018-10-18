@@ -83,9 +83,8 @@ def run_os_command(command_string, background=False, environment=None):
         return command_output.returncode, command_output.stdout.decode('ascii'), command_output.stderr.decode('ascii')
 
 # Reload the firewall rules of the system
-def reload_firewall_rules(rules_dir):
-    log.echo('Updating firewall rules', '', 'o')
-    rules_file = '{}/base.nft'.format(rules_dir)
+def reload_firewall_rules(logger, rules_file):
+    logger.out('Reloading firewall configuration', state='o')
     retcode, stdout, stderr = run_os_command('/usr/sbin/nft -f {}'.format(rules_file))
     if retcode != 0:
-        log.echo('Failed to reload rules: {}'.format(stderr), '', 'e')
+        logger.out('Failed to reload configuration: {}'.format(stderr), state='e')

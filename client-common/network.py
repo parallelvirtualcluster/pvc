@@ -110,17 +110,23 @@ def getNetworkDHCPReservations(zk_conn, vni):
     dhcp_reservations = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp_reservations'.format(vni))
     return sorted(dhcp_reservations)
 
-def getNetworkACLs(zk_conn, vni, direction):
+def getNetworkACLs(zk_conn, vni, _direction):
     # Get the (sorted) list of active ACLs
-    unordered_acl_list = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules/{}'.format(vni, direction))
-    ordered_acls = {}
-    full_acl_list = []
-    for acl in unordered_acl_list:
-        order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, acl))
-        ordered_acls[order] = acl
+    if _direction == 'both':
+        directions = ['in', 'out']
+    else:
+        directions = [_direction]
 
-    for order in sorted(ordered_acls.keys()):
-        full_acl_list.append(ordered_acls[order])
+    full_acl_list = []
+    for direction in directions:
+        unordered_acl_list = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules/{}'.format(vni, direction))
+        ordered_acls = {}
+        for acl in unordered_acl_list:
+            order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, acl))
+            ordered_acls[order] = acl
+
+        for order in sorted(ordered_acls.keys()):
+            full_acl_list.append({'direction': direction, 'description': ordered_acls[order]})
 
     return full_acl_list
 
@@ -153,7 +159,6 @@ def getACLInformation(zk_conn, vni, direction, description):
     order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, description))
     rule = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, description))
     return order, description, rule
-
 
 def formatNetworkInformation(zk_conn, vni, long_output):
     description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
@@ -394,36 +399,46 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     output_string = dhcp_lease_list_output_header + '\n' + '\n'.join(sorted(dhcp_lease_list_output))
     return output_string
 
-def formatACLList(zk_conn, vni, direction, acl_list):
+def formatACLList(zk_conn, vni, _direction, acl_list):
     acl_list_output = []
+    direction = {}
     order = {}
     description = {}
     rule = {}
 
+    if _direction is None:
+        directions = ['in', 'out']
+    else:
+        directions = [_direction]
+
     # Gather information for printing
     for acl in acl_list:
-            order[acl], description[acl], rule[acl] = getACLInformation(zk_conn, vni, direction, acl)
+        acld = acl['description']
+        order[acld], description[acld], rule[acld] = getACLInformation(zk_conn, vni, acl['direction'], acl['description'])
+        direction[acld] = acl['direction']
 
     # Determine optimal column widths
     acl_order_length = 6
     acl_description_length = 12
     acl_rule_length = 5
     for acl in acl_list:
+        acld = acl['description']
         # order column
-        _acl_order_length = len(order[acl]) + 1
+        _acl_order_length = len(order[acld]) + 1
         if _acl_order_length > acl_order_length:
             acl_order_length = _acl_order_length
         # description column
-        _acl_description_length = len(description[acl]) + 1
+        _acl_description_length = len(description[acld]) + 1
         if _acl_description_length > acl_description_length:
             acl_description_length = _acl_description_length
         # rule column
-        _acl_rule_length = len(rule[acl]) + 1
+        _acl_rule_length = len(rule[acld]) + 1
         if _acl_rule_length > acl_rule_length:
             acl_rule_length = _acl_rule_length
 
     # Format the string (header)
     acl_list_output_header = '{bold}\
+{acl_direction: <10} \
 {acl_order: <{acl_order_length}} \
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
@@ -433,13 +448,16 @@ def formatACLList(zk_conn, vni, direction, acl_list):
         acl_order_length=acl_order_length,
         acl_description_length=acl_description_length,
         acl_rule_length=acl_rule_length,
+        acl_direction='Direction',
         acl_order='Order',
         acl_description='Description',
         acl_rule='Rule',
     )
 
     for acl in acl_list:
+        acld = acl['description']
         acl_list_output.append('{bold}\
+{acl_direction: <10} \
 {acl_order: <{acl_order_length}} \
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
@@ -449,9 +467,10 @@ def formatACLList(zk_conn, vni, direction, acl_list):
                 acl_order_length=acl_order_length,
                 acl_description_length=acl_description_length,
                 acl_rule_length=acl_rule_length,
-                acl_order=order[acl],
-                acl_description=description[acl],
-                acl_rule=rule[acl],
+                acl_direction=direction[acld],
+                acl_order=order[acld],
+                acl_description=description[acld],
+                acl_rule=rule[acld],
             )
         )
 
@@ -639,21 +658,23 @@ def add_acl(zk_conn, network, direction, description, rule, order):
         order = int(order)
       
     # Insert into the array at order-1
-    full_acl_list.insert(order, description)
+    full_acl_list.insert(order, {'direction': direction, 'description': description})
 
     # Update the existing ordering
     updated_orders = {}
     for idx, acl in enumerate(full_acl_list):
-        # We haven't added ourselves yet
-        if acl == description:
+        if acl['description'] == description:
             continue
 
         updated_orders[
-            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl)
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl['description'])
         ] = idx
 
     if updated_orders:
-        zkhandler.writedata(zk_conn, updated_orders)
+        try:
+            zkhandler.writedata(zk_conn, updated_orders)
+        except Exception as e:
+            return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
     # Add the new rule
     try:
@@ -684,8 +705,8 @@ def remove_acl(zk_conn, network, rule, direction):
     # Check if the ACL matches a description currently in the database
     acl_list = getNetworkACLs(zk_conn, net_vni, direction)
     for acl in acl_list:
-        if acl == rule:
-            match_description = acl
+        if acl['description'] == rule:
+            match_description = acl['description']
     
     if not match_description:
         return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(rule)
@@ -697,11 +718,11 @@ def remove_acl(zk_conn, network, rule, direction):
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
     # Update the existing ordering
-    full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    updated_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
     updated_orders = {}
-    for idx, acl in enumerate(full_acl_list):
+    for idx, acl in enumerate(updated_acl_list):
         updated_orders[
-            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl)
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl['description'])
         ] = idx
 
     if updated_orders:
@@ -803,9 +824,11 @@ def get_list_acl(zk_conn, network, limit, direction):
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Change direction to something more usable
-    if direction:
+    if direction is None:
+        direction = "both"
+    elif direction is True:
         direction = "in"
-    else:
+    elif direction is False:
         direction = "out"
 
     acl_list = []
@@ -821,12 +844,10 @@ def get_list_acl(zk_conn, network, limit, direction):
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
 
-    for idx, acl in enumerate(full_acl_list):
+    for acl in full_acl_list:
         valid_acl = False
         if limit:
-            if re.match(limit, acl) != None:
-                valid_acl = True
-            if re.match(limit, str(idx)) != None:
+            if re.match(limit, acl['description']) != None:
                 valid_acl = True
         else:
             valid_acl = True

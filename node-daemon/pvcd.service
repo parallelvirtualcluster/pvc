@@ -10,7 +10,7 @@ Environment = PYTHONUNBUFFERED=true
 Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcd.conf
 ExecStart = /usr/share/pvc/pvcd.py
 KillSignal = SIGINT
-Restart = on-failure
+Restart = never
 
 [Install]
 WantedBy = multi-user.target

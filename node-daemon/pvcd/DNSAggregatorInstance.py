@@ -124,7 +124,6 @@ class DNSAggregatorInstance(object):
         # Connect to the database
         sql_conn = sqlite3.connect(self.database_file)
         sql_curs = sql_conn.cursor()
-        print(network_domain)
         sql_curs.execute(
             'delete from domains where name=?',
             (network_domain,)
@@ -141,7 +140,13 @@ class DNSAggregatorInstance(object):
             prefix='DNS aggregator',
             state='o'
         )
-        common.run_os_command('/usr/bin/pdns_control --socket-dir={} retrieve {}'.format(self.config['pdns_dynamic_directory'], self.d_network[network].domain))
+        common.run_os_command(
+            '/usr/bin/pdns_control --socket-dir={} retrieve {}'.format(
+                self.config['pdns_dynamic_directory'],
+                self.d_network[network].domain
+            ),
+            background=True
+        )
 
     # Start up the PowerDNS instance
     def start_aggregator(self):
@@ -192,6 +197,7 @@ class DNSAggregatorInstance(object):
                 'Stopping PowerDNS zone aggregator',
                 state='o'
             )
-            self.dns_server_daemon.signal('int')
-            time.sleep(0.2)
+            # Terminate, then kill
             self.dns_server_daemon.signal('term')
+            time.sleep(0.2)
+            self.dns_server_daemon.signal('kill')

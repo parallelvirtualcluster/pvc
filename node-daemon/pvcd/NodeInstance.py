@@ -529,26 +529,6 @@ class NodeInstance(object):
         # Close the Libvirt connection
         lv_conn.close()
 
-        # Display node information to the terminal
-        self.logger.out('{}{} keepalive{}'.format(self.logger.fmt_purple, self.name, self.logger.fmt_end), state='t')
-        self.logger.out(
-            '{bold}Domains:{nobold} {domcount}  '
-            '{bold}Networks:{nobold} {netcount}  '
-            '{bold}VM memory [MiB]:{nobold} {allocmem}  '
-            '{bold}Free memory [MiB]:{nobold} {freemem}  '
-            '{bold}Used memory [MiB]:{nobold} {usedmem}  '
-            '{bold}Load:{nobold} {load}'.format(
-                bold=self.logger.fmt_bold,
-                nobold=self.logger.fmt_end,
-                domcount=self.domains_count,
-                freemem=self.memfree,
-                usedmem=self.memused,
-                load=self.cpuload,
-                allocmem=self.memalloc,
-                netcount=self.networks_count
-            ),
-        )
-
         # Update our local node lists
         for node_name in self.d_node:
             try:
@@ -609,6 +589,26 @@ class NodeInstance(object):
             for node in secondary_node_list:
                 if node in self.inactive_node_list:
                     secondary_node_list.remove(node)
+
+        # Display node information to the terminal
+        self.logger.out('{}{} keepalive{}'.format(self.logger.fmt_purple, self.name, self.logger.fmt_end), state='t')
+        self.logger.out(
+            '{bold}Domains:{nobold} {domcount}  '
+            '{bold}Networks:{nobold} {netcount}  '
+            '{bold}VM memory [MiB]:{nobold} {allocmem}  '
+            '{bold}Free memory [MiB]:{nobold} {freemem}  '
+            '{bold}Used memory [MiB]:{nobold} {usedmem}  '
+            '{bold}Load:{nobold} {load}'.format(
+                bold=self.logger.fmt_bold,
+                nobold=self.logger.fmt_end,
+                domcount=self.domains_count,
+                freemem=self.memfree,
+                usedmem=self.memused,
+                load=self.cpuload,
+                allocmem=self.memalloc,
+                netcount=self.networks_count
+            ),
+        )
 
         # Display cluster information to the terminal
         self.logger.out('{}Cluster status{}'.format(self.logger.fmt_purple, self.logger.fmt_end), state='t')
