@@ -21,7 +21,7 @@
 ###############################################################################
 
 import kazoo.client
-import client_lib.ansiiprint as ansiiprint
+import client_lib.ansiprint as ansiprint
 
 # Exists function
 def exists(zk_conn, key):

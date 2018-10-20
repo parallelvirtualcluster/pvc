@@ -33,7 +33,7 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import client_lib.ansiiprint as ansiiprint
+import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 
@@ -64,39 +64,39 @@ def getInformationFromXML(zk_conn, uuid, long_output):
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('{}Virtual machine information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}UUID:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), duuid))
-    ainformation.append('{}Name:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dname))
-    ainformation.append('{}Description:{}        {}'.format(ansiiprint.purple(), ansiiprint.end(), ddescription))
-    ainformation.append('{}Memory (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dmemory))
-    ainformation.append('{}vCPUs:{}              {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcpu))
-    ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), dvcputopo))
+    ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), duuid))
+    ainformation.append('{}Name:{}               {}'.format(ansiprint.purple(), ansiprint.end(), dname))
+    ainformation.append('{}Description:{}        {}'.format(ansiprint.purple(), ansiprint.end(), ddescription))
+    ainformation.append('{}Memory (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), dmemory))
+    ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), dvcpu))
+    ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), dvcputopo))
 
     if long_output == True:
         # Virtualization information
         ainformation.append('')
-        ainformation.append('{}Emulator:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), demulator))
-        ainformation.append('{}Type:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), dtype))
-        ainformation.append('{}Arch:{}               {}'.format(ansiiprint.purple(), ansiiprint.end(), darch))
-        ainformation.append('{}Machine:{}            {}'.format(ansiiprint.purple(), ansiiprint.end(), dmachine))
-        ainformation.append('{}Features:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), ' '.join(dfeatures)))
+        ainformation.append('{}Emulator:{}           {}'.format(ansiprint.purple(), ansiprint.end(), demulator))
+        ainformation.append('{}Type:{}               {}'.format(ansiprint.purple(), ansiprint.end(), dtype))
+        ainformation.append('{}Arch:{}               {}'.format(ansiprint.purple(), ansiprint.end(), darch))
+        ainformation.append('{}Machine:{}            {}'.format(ansiprint.purple(), ansiprint.end(), dmachine))
+        ainformation.append('{}Features:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ' '.join(dfeatures)))
 
     # PVC cluster information
     ainformation.append('')
     dstate_colour = {
-        'start': ansiiprint.green(),
-        'restart': ansiiprint.yellow(),
-        'shutdown': ansiiprint.yellow(),
-        'stop': ansiiprint.red(),
-        'failed': ansiiprint.red(),
-        'migrate': ansiiprint.blue(),
-        'unmigrate': ansiiprint.blue()
+        'start': ansiprint.green(),
+        'restart': ansiprint.yellow(),
+        'shutdown': ansiprint.yellow(),
+        'stop': ansiprint.red(),
+        'failed': ansiprint.red(),
+        'migrate': ansiprint.blue(),
+        'unmigrate': ansiprint.blue()
     }
-    ainformation.append('{}State:{}              {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dstate_colour[dstate], dstate, ansiiprint.end()))
-    ainformation.append('{}Current Node:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), dnode))
-    ainformation.append('{}Previous Node:{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), dlastnode))
+    ainformation.append('{}State:{}              {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dstate_colour[dstate], dstate, ansiprint.end()))
+    ainformation.append('{}Current Node:{}       {}'.format(ansiprint.purple(), ansiprint.end(), dnode))
+    ainformation.append('{}Previous Node:{}      {}'.format(ansiprint.purple(), ansiprint.end(), dlastnode))
 
     # Network list
     net_list = []
@@ -105,11 +105,11 @@ def getInformationFromXML(zk_conn, uuid, long_output):
         net_vni = re.findall(r'\d+', net['source'])[0]
         net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
         if not net_exists:
-            net_list.append(ansiiprint.red() + net_vni + ansiiprint.end() + ' [invalid]')
+            net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
         else:
             net_list.append(net_vni)
     ainformation.append('')
-    ainformation.append('{}Networks:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), ', '.join(net_list)))
+    ainformation.append('{}Networks:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(net_list)))
 
     if long_output == True:
         # Disk list
@@ -119,16 +119,16 @@ def getInformationFromXML(zk_conn, uuid, long_output):
             _name_length = len(disk['name']) + 1
             if _name_length > name_length:
                 name_length = _name_length
-        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus{4}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), 'Name', ansiiprint.end(), width=name_length))
+        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus{4}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), 'Name', ansiprint.end(), width=name_length))
         for disk in ddisks:
             ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(ddisks.index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
         ainformation.append('')
-        ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for net in dnets:
             ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(dnets.index(net), net['type'], net['source'], net['model'], net['mac']))
         # Controller list
         ainformation.append('')
-        ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiiprint.purple(), ansiiprint.end(), ansiiprint.bold(), ansiiprint.end()))
+        ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for controller in dcontrollers:
             ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(dcontrollers.index(controller), controller['type'], controller['model']))
 
@@ -476,7 +476,7 @@ def get_info(zk_conn, domain, long_output):
     failedreason = zk_conn.get('/domains/{}/failedreason'.format(dom_uuid))[0].decode('ascii')
     if failedreason != '':
         click.echo('')
-        click.echo('{}Failure reason:{}     {}'.format(ansiiprint.purple(), ansiiprint.end(), failedreason))
+        click.echo('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), failedreason))
 
     click.echo('')
 
@@ -596,8 +596,8 @@ def get_list(zk_conn, node, limit):
             vm_node_length=vm_node_length,
             vm_nets_length=vm_nets_length,
             vm_migrated_length=vm_migrated_length,
-            bold=ansiiprint.bold(),
-            end_bold=ansiiprint.end(),
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
             vm_state_colour='',
             end_colour='',
             vm_name='Name',
@@ -614,26 +614,26 @@ def get_list(zk_conn, node, limit):
     # Format the string (elements)
     for vm in vm_list:
         if vm_state[vm] == 'start':
-            vm_state_colour = ansiiprint.green()
+            vm_state_colour = ansiprint.green()
         elif vm_state[vm] == 'restart':
-            vm_state_colour = ansiiprint.yellow()
+            vm_state_colour = ansiprint.yellow()
         elif vm_state[vm] == 'shutdown':
-            vm_state_colour = ansiiprint.yellow()
+            vm_state_colour = ansiprint.yellow()
         elif vm_state[vm] == 'stop':
-            vm_state_colour = ansiiprint.red()
+            vm_state_colour = ansiprint.red()
         elif vm_state[vm] == 'failed':
-            vm_state_colour = ansiiprint.red()
+            vm_state_colour = ansiprint.red()
         else:
-            vm_state_colour = ansiiprint.blue()
+            vm_state_colour = ansiprint.blue()
 
         # Handle colouring for an invalid network config
         net_list = []
-        vm_nets_colour = ansiiprint.end()
+        vm_nets_colour = ansiprint.end()
         for net in vm_nets[vm]:
             net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net))
             net_list.append(net)
             if not net_exists:
-                vm_nets_colour = ansiiprint.red()
+                vm_nets_colour = ansiprint.red()
         vm_nets[vm] = ','.join(net_list)
 
         vm_list_output.append(
@@ -651,7 +651,7 @@ def get_list(zk_conn, node, limit):
                 end_bold='',
                 vm_state_colour=vm_state_colour,
                 vm_nets_colour=vm_nets_colour,
-                end_colour=ansiiprint.end(),
+                end_colour=ansiprint.end(),
                 vm_name=vm_name[vm],
                 vm_uuid=vm_uuid[vm],
                 vm_state=vm_state[vm],

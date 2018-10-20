@@ -34,7 +34,7 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import client_lib.ansiiprint as ansiiprint
+import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 
@@ -164,30 +164,30 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
 
     if dhcp_flag == "True":
-        dhcp_flag_colour = ansiiprint.green()
+        dhcp_flag_colour = ansiprint.green()
     else:
-        dhcp_flag_colour = ansiiprint.blue()
-    colour_off = ansiiprint.end()
+        dhcp_flag_colour = ansiprint.blue()
+    colour_off = ansiprint.end()
 
     # Format a nice output: do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('{}Virtual network information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('{}Virtual network information:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}VNI:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), vni))
-    ainformation.append('{}Description:{}   {}'.format(ansiiprint.purple(), ansiiprint.end(), description))
-    ainformation.append('{}Domain:{}        {}'.format(ansiiprint.purple(), ansiiprint.end(), domain))
-    ainformation.append('{}IP network:{}    {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_network))
-    ainformation.append('{}IP gateway:{}    {}'.format(ansiiprint.purple(), ansiiprint.end(), ip_gateway))
-    ainformation.append('{}DHCP enabled:{}  {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
+    ainformation.append('{}VNI:{}           {}'.format(ansiprint.purple(), ansiprint.end(), vni))
+    ainformation.append('{}Description:{}   {}'.format(ansiprint.purple(), ansiprint.end(), description))
+    ainformation.append('{}Domain:{}        {}'.format(ansiprint.purple(), ansiprint.end(), domain))
+    ainformation.append('{}IP network:{}    {}'.format(ansiprint.purple(), ansiprint.end(), ip_network))
+    ainformation.append('{}IP gateway:{}    {}'.format(ansiprint.purple(), ansiprint.end(), ip_gateway))
+    ainformation.append('{}DHCP enabled:{}  {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
     if dhcp_flag == "True":
-        ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiiprint.purple(), ansiiprint.end(), dhcp_start, dhcp_end))
+        ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiprint.purple(), ansiprint.end(), dhcp_start, dhcp_end))
 
     if long_output:
         dhcp_reservations_list = getNetworkDHCPReservations(zk_conn, vni)
         if dhcp_reservations_list:
             ainformation.append('')
-            ainformation.append('{}Client DHCP reservations:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+            ainformation.append('{}Client DHCP reservations:{}'.format(ansiprint.bold(), ansiprint.end()))
             ainformation.append('')
             # Only show static reservations in the detailed information
             dhcp_reservations_string = formatDHCPLeaseList(zk_conn, vni, dhcp_reservations_list, reservations=True)
@@ -197,7 +197,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
         firewall_rules = zk_conn.get_children('/networks/{}/firewall_rules'.format(vni))
         if firewall_rules:
             ainformation.append('')
-            ainformation.append('{}Network firewall rules:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+            ainformation.append('{}Network firewall rules:{}'.format(ansiprint.bold(), ansiprint.end()))
             ainformation.append('')
             formatted_firewall_rules = get_list_firewall_rules(zk_conn, vni)
 
@@ -216,7 +216,7 @@ def formatNetworkList(zk_conn, net_list):
     dhcp_start = {}
     dhcp_end = {}
     dhcp_range = {}
-    colour_off = ansiiprint.end()
+    colour_off = ansiprint.end()
 
     # Gather information for printing
     for net in net_list:
@@ -224,10 +224,10 @@ def formatNetworkList(zk_conn, net_list):
         description[net], domain[net], ip_network[net], ip_gateway[net], dhcp_flag[net], dhcp_start[net], dhcp_end[net] = getNetworkInformation(zk_conn, net)
 
         if dhcp_flag[net] == "True":
-            dhcp_flag_colour[net] = ansiiprint.green()
+            dhcp_flag_colour[net] = ansiprint.green()
             dhcp_range[net] = '{} - {}'.format(dhcp_start[net], dhcp_end[net])
         else:
-            dhcp_flag_colour[net] = ansiiprint.blue()
+            dhcp_flag_colour[net] = ansiprint.blue()
             dhcp_range[net] = 'N/A'
 
     # Determine optimal column widths
@@ -274,8 +274,8 @@ def formatNetworkList(zk_conn, net_list):
 {net_dhcp_flag: <6} \
 {net_dhcp_range: <{net_dhcp_range_length}} \
 {end_bold}'.format(
-        bold=ansiiprint.bold(),
-        end_bold=ansiiprint.end(),
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
         net_vni_length=net_vni_length,
         net_description_length=net_description_length,
         net_domain_length=net_domain_length,
@@ -364,8 +364,8 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
-        bold=ansiiprint.bold(),
-        end_bold=ansiiprint.end(),
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
         lease_hostname_length=lease_hostname_length,
         lease_ip_address_length=lease_ip_address_length,
         lease_mac_address_length=lease_mac_address_length,
@@ -443,8 +443,8 @@ def formatACLList(zk_conn, vni, _direction, acl_list):
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
-        bold=ansiiprint.bold(),
-        end_bold=ansiiprint.end(),
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
         acl_order_length=acl_order_length,
         acl_description_length=acl_description_length,
         acl_rule_length=acl_rule_length,

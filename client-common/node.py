@@ -34,7 +34,7 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
-import client_lib.ansiiprint as ansiiprint
+import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 import client_lib.vm as pvc_vm
@@ -57,50 +57,50 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
 
     if node_daemon_state == 'run':
-        daemon_state_colour = ansiiprint.green()
+        daemon_state_colour = ansiprint.green()
     elif node_daemon_state == 'stop':
-        daemon_state_colour = ansiiprint.red()
+        daemon_state_colour = ansiprint.red()
     elif node_daemon_state == 'init':
-        daemon_state_colour = ansiiprint.yellow()
+        daemon_state_colour = ansiprint.yellow()
     elif node_daemon_state == 'dead':
-        daemon_state_colour = ansiiprint.red() + ansiiprint.bold()
+        daemon_state_colour = ansiprint.red() + ansiprint.bold()
     else:
-        daemon_state_colour = ansiiprint.blue()
+        daemon_state_colour = ansiprint.blue()
 
     if node_router_state == 'primary':
-        router_state_colour = ansiiprint.green()
+        router_state_colour = ansiprint.green()
     elif node_router_state == 'secondary':
-        router_state_colour = ansiiprint.blue()
+        router_state_colour = ansiprint.blue()
     else:
-        router_state_colour = ansiiprint.purple()
+        router_state_colour = ansiprint.purple()
 
     if node_domain_state == 'ready':
-        domain_state_colour = ansiiprint.green()
+        domain_state_colour = ansiprint.green()
     else:
-        domain_state_colour = ansiiprint.blue()
+        domain_state_colour = ansiprint.blue()
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
-    ainformation.append('{}Node information:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+    ainformation.append('{}Node information:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}Name:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_name))
-    ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), daemon_state_colour, node_daemon_state, ansiiprint.end()))
-    ainformation.append('{}Router State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), router_state_colour, node_router_state, ansiiprint.end()))
-    ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiiprint.purple(), ansiiprint.end(), domain_state_colour, node_domain_state, ansiiprint.end()))
-    ainformation.append('{}Active VM Count:{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), node_domains_count))
+    ainformation.append('{}Name:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_name))
+    ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), daemon_state_colour, node_daemon_state, ansiprint.end()))
+    ainformation.append('{}Router State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), router_state_colour, node_router_state, ansiprint.end()))
+    ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), domain_state_colour, node_domain_state, ansiprint.end()))
+    ainformation.append('{}Active VM Count:{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_domains_count))
     if long_output == True:
         ainformation.append('')
-        ainformation.append('{}Architecture:{}         {}'.format(ansiiprint.purple(), ansiiprint.end(), node_arch))
-        ainformation.append('{}Operating System:{}     {}'.format(ansiiprint.purple(), ansiiprint.end(), node_os))
-        ainformation.append('{}Kernel Version:{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_kernel))
+        ainformation.append('{}Architecture:{}         {}'.format(ansiprint.purple(), ansiprint.end(), node_arch))
+        ainformation.append('{}Operating System:{}     {}'.format(ansiprint.purple(), ansiprint.end(), node_os))
+        ainformation.append('{}Kernel Version:{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_kernel))
     ainformation.append('')
-    ainformation.append('{}CPUs:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_cpu_count))
-    ainformation.append('{}Load:{}                 {}'.format(ansiiprint.purple(), ansiiprint.end(), node_load))
-    ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_total))
-    ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_used))
-    ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_free))
-    ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiiprint.purple(), ansiiprint.end(), node_mem_allocated))
+    ainformation.append('{}CPUs:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_cpu_count))
+    ainformation.append('{}Load:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_load))
+    ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_mem_total))
+    ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_mem_used))
+    ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_mem_free))
+    ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiprint.purple(), ansiprint.end(), node_mem_allocated))
 
     # Join it all together
     information = '\n'.join(ainformation)
@@ -203,7 +203,7 @@ def get_info(zk_conn, node, long_output):
 
     if long_output == True:
         click.echo('')
-        click.echo('{}Virtual machines on node:{}'.format(ansiiprint.bold(), ansiiprint.end()))
+        click.echo('{}Virtual machines on node:{}'.format(ansiprint.bold(), ansiprint.end()))
         click.echo('')
         # List all VMs on this node
         pvc_vm.get_list(zk_conn, node, None)
@@ -293,8 +293,8 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             daemon_state_length=daemon_state_length,
             router_state_length=router_state_length,
             domain_state_length=domain_state_length,
-            bold=ansiiprint.bold(),
-            end_bold=ansiiprint.end(),
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
             daemon_state_colour='',
             router_state_colour='',
             domain_state_colour='',
@@ -316,30 +316,30 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
     # Format the string (elements)
     for node_name in node_list:
         if node_daemon_state[node_name] == 'run':
-            daemon_state_colour = ansiiprint.green()
+            daemon_state_colour = ansiprint.green()
         elif node_daemon_state[node_name] == 'stop':
-            daemon_state_colour = ansiiprint.red()
+            daemon_state_colour = ansiprint.red()
         elif node_daemon_state[node_name] == 'init':
-            daemon_state_colour = ansiiprint.yellow()
+            daemon_state_colour = ansiprint.yellow()
         elif node_daemon_state[node_name] == 'dead':
-            daemon_state_colour = ansiiprint.red() + ansiiprint.bold()
+            daemon_state_colour = ansiprint.red() + ansiprint.bold()
         else:
-            daemon_state_colour = ansiiprint.blue()
+            daemon_state_colour = ansiprint.blue()
 
         if node_router_state[node_name] == 'primary':
-            router_state_colour = ansiiprint.green()
+            router_state_colour = ansiprint.green()
         elif node_router_state[node_name] == 'secondary':
-            router_state_colour = ansiiprint.blue()
+            router_state_colour = ansiprint.blue()
         else:
-            router_state_colour = ansiiprint.purple()
+            router_state_colour = ansiprint.purple()
 
         if node_mem_allocated[node_name] != 0 and node_mem_allocated[node_name] >= node_mem_total[node_name]:
             node_domain_state[node_name] = 'overprov'
-            domain_state_colour = ansiiprint.yellow()
+            domain_state_colour = ansiprint.yellow()
         elif node_domain_state[node_name] == 'ready':
-            domain_state_colour = ansiiprint.green()
+            domain_state_colour = ansiprint.green()
         else:
-            domain_state_colour = ansiiprint.blue()
+            domain_state_colour = ansiprint.blue()
 
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}}  \
@@ -355,7 +355,7 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
                 daemon_state_colour=daemon_state_colour,
                 router_state_colour=router_state_colour,
                 domain_state_colour=domain_state_colour,
-                end_colour=ansiiprint.end(),
+                end_colour=ansiprint.end(),
                 node_name=node_name,
                 node_daemon_state=node_daemon_state[node_name],
                 node_router_state=node_router_state[node_name],
