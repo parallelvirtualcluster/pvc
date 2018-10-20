@@ -23,6 +23,14 @@
 import kazoo.client
 import client_lib.ansiiprint as ansiiprint
 
+# Exists function
+def exists(zk_conn, key):
+    stat = zk_conn.exists(key)
+    if stat is None:
+        return False
+    else:
+        return True
+
 # Child list function
 def listchildren(zk_conn, key):
     children = zk_conn.get_children(key)

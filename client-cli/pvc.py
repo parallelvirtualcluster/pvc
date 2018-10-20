@@ -509,6 +509,8 @@ def vm_info(domain, long_output):
 def vm_list(node, limit):
     """
     List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
+
+    NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)

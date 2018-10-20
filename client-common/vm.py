@@ -103,7 +103,11 @@ def getInformationFromXML(zk_conn, uuid, long_output):
     for net in dnets:
         # Split out just the numerical (VNI) part of the brXXXX name
         net_vni = re.findall(r'\d+', net['source'])[0]
-        net_list.append(net_vni)
+        net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
+        if not net_exists:
+            net_list.append(ansiiprint.red() + net_vni + ansiiprint.end() + ' [invalid]')
+        else:
+            net_list.append(net_vni)
     ainformation.append('')
     ainformation.append('{}Networks:{}           {}'.format(ansiiprint.purple(), ansiiprint.end(), ', '.join(net_list)))
 
@@ -547,12 +551,11 @@ def get_list(zk_conn, node, limit):
             vm_xml = common.getDomainXML(zk_conn, vm)
             vm_uuid[vm], vm_name[vm], vm_description[vm], vm_memory[vm], vm_vcpu[vm], vm_vcputopo = common.getDomainMainDetails(vm_xml)
             dnets = common.getDomainNetworks(vm_xml)
-            net_list = []
+            vm_nets[vm] = []
             for net in dnets:
                 # Split out just the numerical (VNI) part of the brXXXX name
                 net_vni = re.findall(r'\d+', net['source'])[0]
-                net_list.append(net_vni)
-            vm_nets[vm] = ','.join(net_list)
+                vm_nets[vm].append(net_vni)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
 
@@ -572,7 +575,8 @@ def get_list(zk_conn, node, limit):
         if _vm_node_length > vm_node_length:
             vm_node_length = _vm_node_length
         # vm_nets column
-        _vm_nets_length = len(vm_nets[vm]) + 1
+        # Strip off any ANSII chars
+        _vm_nets_length = len(','.join(vm_nets[vm])) + 1
         if _vm_nets_length > vm_nets_length:
             vm_nets_length = _vm_nets_length
         # vm_migrated column
@@ -622,10 +626,20 @@ def get_list(zk_conn, node, limit):
         else:
             vm_state_colour = ansiiprint.blue()
 
+        # Handle colouring for an invalid network config
+        net_list = []
+        vm_nets_colour = ansiiprint.end()
+        for net in vm_nets[vm]:
+            net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net))
+            net_list.append(net)
+            if not net_exists:
+                vm_nets_colour = ansiiprint.red()
+        vm_nets[vm] = ','.join(net_list)
+
         vm_list_output.append(
             '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
 {vm_state_colour}{vm_state: <8}{end_colour} \
-{vm_networks: <{vm_nets_length}} \
+{vm_nets_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
 {vm_memory: <10} {vm_vcpu: <6} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
@@ -636,6 +650,7 @@ def get_list(zk_conn, node, limit):
                 bold='',
                 end_bold='',
                 vm_state_colour=vm_state_colour,
+                vm_nets_colour=vm_nets_colour,
                 end_colour=ansiiprint.end(),
                 vm_name=vm_name[vm],
                 vm_uuid=vm_uuid[vm],
