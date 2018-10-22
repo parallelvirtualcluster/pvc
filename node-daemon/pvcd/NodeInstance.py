@@ -138,40 +138,6 @@ class NodeInstance(object):
                     if self.domain_state == 'unflush' and self.inflush == False:
                         self.unflush()
 
-        @self.zk_conn.DataWatch('/primary_node')
-        def watch_primary_node(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
-
-            try:
-                data = data.decode('ascii')
-            except AttributeError:
-                data = 'none'
-
-            if data != self.primary_node:
-                if self.daemon_mode == 'coordinator':
-                    # We're a coordinator so we care about networking
-                    if data == 'none':
-                        # Toggle state management of routing functions
-                        if self.name == self.this_node:
-                            if self.daemon_state == 'run' and self.router_state != 'primary':
-                                # Contend for primary
-                                self.logger.out('Contending for primary routing state', state='i')
-                                zkhandler.writedata(self.zk_conn, {'/primary_node': self.name })
-                    elif data == self.this_node:
-                        if self.name == self.this_node:
-                            zkhandler.writedata(self.zk_conn, { '/nodes/{}/routerstate'.format(self.name): 'primary' })
-                            self.primary_node = data
-                    else:
-                        if self.name == self.this_node:
-                            zkhandler.writedata(self.zk_conn, { '/nodes/{}/routerstate'.format(self.name): 'secondary' })
-                            self.primary_node = data
-                else:
-                    self.primary_node = data
-                    
-
         @self.zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_node_memfree(data, stat, event=''):
             if event and event.type == 'DELETED':

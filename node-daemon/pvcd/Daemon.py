@@ -540,6 +540,28 @@ def update_nodes(new_node_list):
 # Alias for our local node (passed to network and domain objects)
 this_node = d_node[myhostname]
 
+# Primary node
+@zk_conn.DataWatch('/primary_node')
+def update_primart(new_primary, stat, event=''):
+    try:
+        new_primary = new_primary.decode('ascii')
+    except AttributeError:
+        new_primary = 'none'
+
+    if new_primary != this_node.primary_node:
+        if config['daemon_mode'] == 'coordinator':
+            # We're a coordinator and there is no primary
+            if new_primary == 'none':
+                if this_node.daemon_state == 'run' and this_node.router_state != 'primary':
+                    logger.out('Contending for primary routing state', state='i')
+                    zkhandler.writedata(zk_conn, {'/primary_node': myhostname})
+            elif new_primary == myhostname:
+                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'primary'})
+            else:
+                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'secondary'})
+        for node in d_node:
+            d_node[node].primary_node = new_primary
+
 # Network objects
 @zk_conn.ChildrenWatch('/networks')
 def update_networks(new_network_list):
