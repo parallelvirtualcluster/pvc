@@ -22,7 +22,10 @@
 
 import uuid
 import lxml
+import math
 import kazoo.client
+
+import client_lib.zkhandler as zkhandler
 
 ###############################################################################
 # Supplemental functions
@@ -224,33 +227,29 @@ def findTargetNode(zk_conn, search_field, dom_uuid):
         return findTargetNodeVMs(zk_conn, dom_uuid)
     return None
 
-# via free memory (relative to allocated memory)
+# via allocated memory
 def findTargetNodeMem(zk_conn, dom_uuid):
-    most_allocfree = 0
+    least_alloc = math.inf
     target_node = None
 
     node_list = getNodes(zk_conn, dom_uuid)
     for node in node_list:
-        memalloc = int(zk_conn.get('/nodes/{}/memalloc'.format(node))[0].decode('ascii'))
-        memused = int(zk_conn.get('/nodes/{}/memused'.format(node))[0].decode('ascii'))
-        memfree = int(zk_conn.get('/nodes/{}/memfree'.format(node))[0].decode('ascii'))
-        memtotal = memused + memfree
-        allocfree = memtotal - memalloc
+        alloc = float(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
 
-        if allocfree > most_allocfree:
-            most_allocfree = allocfree
+        if alloc < least_alloc:
+            least_alloc = alloc
             target_node = node
 
     return target_node
 
 # via load average
 def findTargetNodeLoad(zk_conn, dom_uuid):
-    least_load = 9999
+    least_load = math.inf
     target_node = None
 
     node_list = getNodes(zk_conn, dom_uuid)
     for node in node_list:
-        load = float(zk_conn.get('/nodes/{}/cpuload'.format(node))[0].decode('ascii'))
+        load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node)))
 
         if load < least_load:
             least_load = load
@@ -260,12 +259,12 @@ def findTargetNodeLoad(zk_conn, dom_uuid):
 
 # via total vCPUs
 def findTargetNodeVCPUs(zk_conn, dom_uuid):
-    least_vcpus = 9999
+    least_vcpus = math.inf
     target_node = None
 
     node_list = getNodes(zk_conn, dom_uuid)
     for node in node_list:
-        vcpus = int(zk_conn.get('/nodes/{}/vcpualloc'.format(node))[0].decode('ascii'))
+        vcpus = float(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
 
         if vcpus < least_vcpus:
             least_vcpus = vcpus
@@ -275,12 +274,12 @@ def findTargetNodeVCPUs(zk_conn, dom_uuid):
 
 # via total VMs
 def findTargetNodeVMs(zk_conn, dom_uuid):
-    least_vms = 9999
+    least_vms = math.inf
     target_node = None
 
     node_list = getNodes(zk_conn, dom_uuid)
     for node in node_list:
-        vms = int(zk_conn.get('/nodes/{}/domainscount'.format(node))[0].decode('ascii'))
+        vms = float(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
 
         if vms < least_vms:
             least_vms = vms
