@@ -264,7 +264,7 @@ def get_list(zk_conn, limit):
     node_name_length = 5
     daemon_state_length = 7
     router_state_length = 7
-    domain_state_length = 9
+    domain_state_length = 8
     for node_name in node_list:
         # node_name column
         _node_name_length = len(node_name) + 1
