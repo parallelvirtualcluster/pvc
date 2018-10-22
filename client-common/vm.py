@@ -414,7 +414,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate):
         return False, ''
 
     if target_node == None:
-        target_node = findTargetNode(zk_conn, selector, dom_uuid)
+        target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
