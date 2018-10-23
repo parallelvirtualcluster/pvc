@@ -20,6 +20,7 @@
 #
 ###############################################################################
 
+# Version string for startup output
 version = '0.4'
 
 import kazoo.client
@@ -35,10 +36,12 @@ import uuid
 import time
 import re
 import configparser
+import threading
 import apscheduler.schedulers.background
 
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
+import pvcd.fencing as fencing
 import pvcd.common as common
 
 import pvcd.DomainInstance as DomainInstance
@@ -319,15 +322,18 @@ def cleanup():
 
     logger.out('Terminating pvcd and cleaning up', state='s')
 
-    # Set stop state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
-
     # Force into secondary network state if needed
     if this_node.name == this_node.primary_node:
         zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
 
     # Wait for things to flush
-    time.sleep(3)
+    time.sleep(2)
+
+    # Set stop state in Zookeeper
+    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
+
+    # Forcibly terminate dnsmasq because it gets stuck sometimes
+    common.run_os_command('killall dnsmasq')
 
     # Close the Zookeeper connection
     try:
@@ -631,14 +637,154 @@ def update_domains(new_domain_list):
 # PHASE 9 - Run the daemon
 ###############################################################################
 
-# Set up our update function
-update_zookeeper = this_node.update_zookeeper
+# Zookeeper keepalive update function
+def update_zookeeper():
+    # Get past state and update if needed
+    past_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(this_node.name))
+    if past_state != 'run':
+        this_node.daemon_state = 'run'
+        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(this_node.name): 'run' })
+    else:
+        this_node.daemon_state = 'run'
+
+    # Ensure the primary key is properly set
+    if this_node.router_state == 'primary':
+        if zkhandler.readdata(zk_conn, '/primary_node') != this_node.name:
+            zkhandler.writedata(zk_conn, {'/primary_node': this_node.name})
+
+    # Toggle state management of dead VMs to restart them
+    memalloc = 0
+    vcpualloc = 0
+    for domain, instance in this_node.d_domain.items():
+        if domain in this_node.domain_list:
+            # Add the allocated memory to our memalloc value
+            memalloc += instance.getmemory()
+            vcpualloc += instance.getvcpus()
+            if instance.getstate() == 'start' and instance.getnode() == this_node.name:
+                if instance.getdom() != None:
+                    try:
+                        if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+                            raise
+                    except Exception as e:
+                        # Toggle a state "change"
+                        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
+
+    # Connect to libvirt
+    libvirt_name = "qemu:///system"
+    lv_conn = libvirt.open(libvirt_name)
+    if lv_conn == None:
+        logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
+        return
+
+    # Ensure that any running VMs are readded to the domain_list
+    running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
+    for domain in running_domains:
+        domain_uuid = domain.UUIDString()
+        if domain_uuid not in this_node.domain_list:
+            this_node.domain_list.append(domain_uuid)
+
+    # Set our information in zookeeper
+    #this_node.name = lv_conn.getHostname()
+    this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
+    this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
+    this_node.memalloc = memalloc
+    this_node.vcpualloc = vcpualloc
+    this_node.cpuload = os.getloadavg()[0]
+    this_node.domains_count = len(lv_conn.listDomainsID())
+    keepalive_time = int(time.time())
+    try:
+        zkhandler.writedata(zk_conn, {
+            '/nodes/{}/memused'.format(this_node.name): str(this_node.memused),
+            '/nodes/{}/memfree'.format(this_node.name): str(this_node.memfree),
+            '/nodes/{}/memalloc'.format(this_node.name): str(this_node.memalloc),
+            '/nodes/{}/vcpualloc'.format(this_node.name): str(this_node.vcpualloc),
+            '/nodes/{}/cpuload'.format(this_node.name): str(this_node.cpuload),
+            '/nodes/{}/networkscount'.format(this_node.name): str(this_node.networks_count),
+            '/nodes/{}/domainscount'.format(this_node.name): str(this_node.domains_count),
+            '/nodes/{}/runningdomains'.format(this_node.name): ' '.join(this_node.domain_list),
+            '/nodes/{}/keepalive'.format(this_node.name): str(keepalive_time)
+        })
+    except:
+        logger.out('Failed to set keepalive data', state='e')
+        return
+
+    # Close the Libvirt connection
+    lv_conn.close()
+
+    # Update our local node lists
+    flushed_node_list = []
+    active_node_list = []
+    inactive_node_list = []
+    for node_name in d_node:
+        try:
+            node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
+            node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
+            node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
+        except:
+            node_daemon_state = 'unknown'
+            node_domain_state = 'unknown'
+            node_keepalive = 0
+
+        # Handle deadtime and fencng if needed
+        # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
+        # out-of-date while in 'start' state)
+        node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
+        if node_keepalive < node_deadtime and node_daemon_state == 'run':
+            logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
+            zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
+            fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
+            fence_thread.start()
+
+        # Update the arrays
+        if node_domain_state == 'flushed':
+            flushed_node_list.append(node_name)
+        else:
+            if node_daemon_state == 'run':
+                active_node_list.append(node_name)
+            else:
+                inactive_node_list.append(node_name)
+   
+    # List of the non-primary coordinators
+    secondary_node_list = this_node.config['coordinators'].split(',')
+    if secondary_node_list:
+        secondary_node_list.remove(this_node.primary_node)
+        for node in secondary_node_list:
+            if node in inactive_node_list:
+                secondary_node_list.remove(node)
+
+    # Display node information to the terminal
+    logger.out('{}{} keepalive{}'.format(logger.fmt_purple, this_node.name, logger.fmt_end), state='t')
+    logger.out(
+        '{bold}Domains:{nobold} {domcount}  '
+        '{bold}Networks:{nobold} {netcount}  '
+        '{bold}VM memory [MiB]:{nobold} {allocmem}  '
+        '{bold}Free memory [MiB]:{nobold} {freemem}  '
+        '{bold}Used memory [MiB]:{nobold} {usedmem}  '
+        '{bold}Load:{nobold} {load}'.format(
+            bold=logger.fmt_bold,
+            nobold=logger.fmt_end,
+            domcount=this_node.domains_count,
+            freemem=this_node.memfree,
+            usedmem=this_node.memused,
+            load=this_node.cpuload,
+            allocmem=this_node.memalloc,
+            netcount=this_node.networks_count
+        ),
+    )
+
+    # Display cluster information to the terminal
+    logger.out('{}Cluster status{}'.format(logger.fmt_purple, logger.fmt_end), state='t')
+    logger.out('{}Primary coordinator:{} {}'.format(logger.fmt_bold, logger.fmt_end, this_node.primary_node))
+    logger.out('{}Secondary coordinators:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(secondary_node_list)))
+    logger.out('{}Active hypervisors:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(active_node_list)))
+    logger.out('{}Flushed hypervisors:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(flushed_node_list)))
+    logger.out('{}Inactive nodes:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(inactive_node_list)))
 
 # Start keepalive thread and immediately update Zookeeper
 startKeepaliveTimer()
 update_zookeeper()
 
-# Tick loop
+# Tick loop; does nothing since everything else is async
 while True:
     try:
         time.sleep(1)
