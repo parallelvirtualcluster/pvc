@@ -94,7 +94,6 @@ def migrateFromFencedNode(zk_conn, node_name, logger):
 # Perform an IPMI fence
 #
 def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
-    ipmi_command = ['/usr/bin/ipmitool', '-I', 'lanplus', '-H', ipmi_hostname, '-U', ipmi_user, '-P', ipmi_password, 'chassis', 'power', 'reset']
     ipmi_command = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
         ipmi_hostname, ipmi_user, ipmi_password
     )
