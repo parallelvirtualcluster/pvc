@@ -294,8 +294,10 @@ def zk_listener(state):
             stopKeepaliveTimer()
 
         while True:
+            _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
             try:
-                zk_conn.start()
+                _zk_conn.start()
+                zk_conn = _zk_conn
                 break
             except:
                 time.sleep(1)
