@@ -59,6 +59,13 @@ class VXNetworkInstance(object):
         self.dnsmasq_hostsdir = '{}/{}'.format(config['dnsmasq_dynamic_directory'], self.vni)
         self.dhcp_reservations = []
 
+        # Create the network hostsdir
+        common.run_os_command(
+            '/bin/mkdir --parents {}'.format(
+                self.dnsmasq_hostsdir
+            )
+        )
+
         self.firewall_rules_base = """# Rules for network {vxlannic}
 add chain inet filter {vxlannic}-in
 add chain inet filter {vxlannic}-out
@@ -223,9 +230,9 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                     )
                 )
                 entry = '{},{}'.format(reservation, ipaddr)
-                outfile = open(filename, 'w')
-                outfile.write(entry)
-                outfile.close()
+                # Write the entry
+                with open(filename, 'w') as outfile:
+                    outfile.write(entry)
 
         for reservation in old_reservations_list:
             if reservation not in new_reservations_list:
@@ -354,12 +361,6 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
-            # Create the network hostsdir
-            common.run_os_command(
-                '/bin/mkdir --parents {}'.format(
-                    self.dnsmasq_hostsdir
-                )
-            )
             # Recreate the environment we need for dnsmasq
             pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
             dhcp_environment = {
@@ -386,6 +387,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
+                '--dhcp-option=option:ntp-server,224.0.0.1',
                 '--log-facility=-',
                 '--keep-in-foreground'
             ]
