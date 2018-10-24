@@ -387,7 +387,7 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
-                '--dhcp-option=option:ntp-server,224.0.0.1',
+                '--dhcp-option=option:ntp-server,{}'.format(self.ip_gateway),
                 '--log-facility=-',
                 '--keep-in-foreground'
             ]
