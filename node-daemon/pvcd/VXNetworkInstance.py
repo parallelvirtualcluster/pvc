@@ -76,10 +76,11 @@ add rule inet filter forward ip daddr {netaddr} counter jump {vxlannic}-in
 add rule inet filter forward ip saddr {netaddr} counter jump {vxlannic}-out
 # Allow ICMP traffic into the router from network
 add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
-# Allow DNS and DHCP traffic into the router from network
+# Allow DNS, DHCP, and NTP traffic into the router from network
 add rule inet filter input tcp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
+add rule inet filter input udp dport 123 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
