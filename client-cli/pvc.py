@@ -931,6 +931,7 @@ def init_cluster():
         zk_conn.delete('/domains', recursive=True)
         zk_conn.delete('/nodes', recursive=True)
         zk_conn.delete('/primary_node', recursive=True)
+        zk_conn.delete('/ceph', recursive=True)
     except:
         pass
 
@@ -940,6 +941,7 @@ def init_cluster():
     transaction.create('/domains', ''.encode('ascii'))
     transaction.create('/nodes', ''.encode('ascii'))
     transaction.create('/primary_node', 'none'.encode('ascii'))
+    transaction.create('/ceph', ''.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
@@ -953,7 +955,7 @@ def init_cluster():
 ###############################################################################
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option(
-    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default='{}:2181'.format(myhostname), show_default=True,
+    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default=None,
     help='Zookeeper connection string.'
 )
 def cli(_zk_host):
@@ -963,7 +965,25 @@ def cli(_zk_host):
     Environment variables:
 
       "PVC_ZOOKEEPER": Set the cluster Zookeeper address instead of using "--zookeeper".
+
+    If no PVC_ZOOKEEPER/--zookeeper is specified, attempts to load coordinators list from /etc/pvc/pvcd.conf.
     """
+
+    # If no zk_host was passed, try to read from /etc/pvc/pvcd.conf; otherwise fail
+    if _zk_host is None:
+        import configparser
+
+        try:
+            config_file = '/etc/pvc/pvcd.conf'
+            o_config = configparser.ConfigParser()
+            o_config.read(config_file)
+            _zk_host = o_config['default']['coordinators']
+        except:
+            _zk_host = None
+
+    if _zk_host is None:
+        print('ERROR: Must specify a PVC_ZOOKEEPER value or have a coordinator set configured in /etc/pvc/pvcd.conf.')
+        exit(1)
 
     global zk_host
     zk_host = _zk_host
