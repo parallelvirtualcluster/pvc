@@ -103,7 +103,7 @@ class DNSAggregatorInstance(object):
 
         if write_domain:
             sql_curs.execute(
-                'insert into domains (name, master, type, account) values (?, ?, "MASTER", "internal")',
+                'insert into domains (name, master, type, account) values (?, ?, "SLAVE", "internal")',
                 (network_domain, network_gateway)
             )
             sql_conn.commit()
