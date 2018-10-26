@@ -264,6 +264,7 @@ class NodeInstance(object):
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGatewayAddress()
+            self.dns_aggregator.remove_client_network(network)
         self.dns_aggregator.stop_aggregator()
         self.removeFloatingAddresses()
 
@@ -275,6 +276,7 @@ class NodeInstance(object):
         time.sleep(0.5)
         # Start up the gateways and DHCP servers
         for network in self.d_network:
+            self.dns_aggregator.add_client_network(network)
             self.d_network[network].createGatewayAddress()
             self.d_network[network].startDHCPServer()
         time.sleep(0.5)

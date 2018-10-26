@@ -326,10 +326,13 @@ def cleanup():
 
     # Force into secondary network state if needed
     if this_node.name == this_node.primary_node:
-        zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
+        zkhandler.writedata(zk_conn, {
+            '/nodes/{}/routerstate'.format(myhostname): 'secondary',
+            '/primary_node': 'none'
+        })
 
     # Wait for things to flush
-    time.sleep(2)
+    time.sleep(3)
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
@@ -343,6 +346,8 @@ def cleanup():
         zk_conn.close()
     except:
         pass
+
+    logger.out('Exiting pvc daemon', state='s')
 
 # Handle exit gracefully
 atexit.register(cleanup)
