@@ -326,13 +326,18 @@ def cleanup():
 
     # Force into secondary network state if needed
     if this_node.name == this_node.primary_node:
+        is_primary = True
         zkhandler.writedata(zk_conn, {
             '/nodes/{}/routerstate'.format(myhostname): 'secondary',
             '/primary_node': 'none'
         })
+    else:
+        is_primary = False
 
     # Wait for things to flush
-    time.sleep(3)
+    if is_primary:
+        logger.out('Waiting for primary migration', state='s')
+        time.sleep(3)
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
@@ -347,7 +352,7 @@ def cleanup():
     except:
         pass
 
-    logger.out('Exiting pvc daemon', state='s')
+    logger.out('Terminated pvc daemon', state='s')
 
 # Handle exit gracefully
 atexit.register(cleanup)
@@ -401,9 +406,9 @@ else:
 # Check that the primary key exists, and create it with us as master if not
 current_primary = zkhandler.readdata(zk_conn, '/primary_node')
 if current_primary and current_primary != 'none':
-    logger.out('Current primary node is "{}{}{}".'.format(logger.fmt_blue, current_primary, logger.fmt_end), state='i')
+    logger.out('Current primary node is {}{}{}.'.format(logger.fmt_blue, current_primary, logger.fmt_end), state='i')
 else:
-    logger.out('No primary node key found; creating with us as primary.', state='i')
+    logger.out('No primary node found; creating with us as primary.', state='i')
     zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
 
 ###############################################################################
@@ -742,23 +747,6 @@ def update_zookeeper():
             fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
             fence_thread.start()
 
-        # Update the arrays
-        if node_domain_state == 'flushed':
-            flushed_node_list.append(node_name)
-        else:
-            if node_daemon_state == 'run':
-                active_node_list.append(node_name)
-            else:
-                inactive_node_list.append(node_name)
-   
-    # List of the non-primary coordinators
-    secondary_node_list = this_node.config['coordinators'].split(',')
-    if secondary_node_list:
-        secondary_node_list.remove(this_node.primary_node)
-        for node in secondary_node_list:
-            if node in inactive_node_list:
-                secondary_node_list.remove(node)
-
     # Display node information to the terminal
     logger.out('{}{} keepalive{}'.format(logger.fmt_purple, this_node.name, logger.fmt_end), state='t')
     logger.out(
@@ -778,14 +766,6 @@ def update_zookeeper():
             netcount=this_node.networks_count
         ),
     )
-
-    # Display cluster information to the terminal
-    logger.out('{}Cluster status{}'.format(logger.fmt_purple, logger.fmt_end), state='t')
-    logger.out('{}Primary coordinator:{} {}'.format(logger.fmt_bold, logger.fmt_end, this_node.primary_node))
-    logger.out('{}Secondary coordinators:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(secondary_node_list)))
-    logger.out('{}Active hypervisors:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(active_node_list)))
-    logger.out('{}Flushed hypervisors:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(flushed_node_list)))
-    logger.out('{}Inactive nodes:{} {}'.format(logger.fmt_bold, logger.fmt_end, ' '.join(inactive_node_list)))
 
 # Start keepalive thread and immediately update Zookeeper
 startKeepaliveTimer()
