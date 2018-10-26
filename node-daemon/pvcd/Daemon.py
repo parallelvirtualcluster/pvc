@@ -89,7 +89,7 @@ def stopKeepaliveTimer():
 
 # Get the config file variable from the environment
 try:
-    pvcvd_config_file = os.environ['PVCD_CONFIG_FILE']
+    pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
 except:
     print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcd.')
     exit(1)
@@ -138,11 +138,11 @@ config_values = [
 ]
 
 # Read and parse the config file
-def readConfig(pvcvd_config_file, myhostname):
-    print('Loading configuration from file "{}"'.format(pvcvd_config_file))
+def readConfig(pvcd_config_file, myhostname):
+    print('Loading configuration from file "{}"'.format(pvcd_config_file))
 
     o_config = configparser.ConfigParser()
-    o_config.read(pvcvd_config_file)
+    o_config.read(pvcd_config_file)
     config = {}
 
     try:
@@ -171,7 +171,7 @@ def readConfig(pvcvd_config_file, myhostname):
     return config
 
 # Get the config object from readConfig()
-config = readConfig(pvcvd_config_file, myhostname)
+config = readConfig(pvcd_config_file, myhostname)
 
 ###############################################################################
 # PHASE 1b - Prepare filesystem directories
@@ -202,7 +202,7 @@ config['dnsmasq_log_directory'] = config['log_directory'] + '/dnsmasq'
 config['pdns_log_directory'] = config['log_directory'] + '/pdns'
 config['nft_log_directory'] = config['log_directory'] + '/nft'
 
-# Create our dynamic directories if they don't exist
+# Create our log directories if they don't exist
 if not os.path.exists(config['log_directory']):
     os.makedirs(config['log_directory'])
     os.makedirs(config['dnsmasq_log_directory'])
