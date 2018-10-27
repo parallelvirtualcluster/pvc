@@ -194,7 +194,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
             for line in dhcp_reservations_string.split('\n'):
                 ainformation.append(line)
 
-        firewall_rules = zkhandler.list_children(zk_conn, '/networks/{}/firewall_rules'.format(vni))
+        firewall_rules = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules'.format(vni))
         if firewall_rules:
             ainformation.append('')
             ainformation.append('{}Network firewall rules:{}'.format(ansiprint.bold(), ansiprint.end()))
@@ -743,7 +743,7 @@ def get_info(zk_conn, network, long_output):
 
 def get_list(zk_conn, limit):
     net_list = []
-    full_net_list = zkhandler.list_children(zk_conn, '/networks')
+    full_net_list = zkhandler.listchildren(zk_conn, '/networks')
 
     for net in full_net_list:
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))

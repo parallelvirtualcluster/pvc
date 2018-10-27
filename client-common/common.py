@@ -205,7 +205,7 @@ def getPrimaryNode(zk_conn):
 #
 def getNodes(zk_conn, dom_uuid):
     valid_node_list = []
-    full_node_list = zkhandler.list_children(zk_conn, '/nodes')
+    full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
 
     try:
         current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
