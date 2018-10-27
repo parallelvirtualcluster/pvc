@@ -701,6 +701,7 @@ def update_zookeeper():
 
     # Set ceph health information in zookeeper (primary only)
     if this_node.router_state == 'primary':
+        # Get status info
         retcode, stdout, stderr = common.run_os_command('ceph status')
         ceph_status = stdout
         try:
@@ -710,6 +711,16 @@ def update_zookeeper():
         except:
             logger.out('Failed to set Ceph status data', state='e')
             return
+
+    # Get cluster health
+    retcode, stdout, stderr = common.run_os_command('ceph health')
+    ceph_health = stdout.rstrip()
+    if ceph_health == 'HEALTH_OK':
+        ceph_health_colour = logger.fmt_green
+    elif ceph_health == 'HEALTH_WARN':
+        ceph_health_colour = logger.fmt_yellow
+    else:
+        ceph_health_colour = logger.fmt_red
 
     # Set our information in zookeeper
     #this_node.name = lv_conn.getHostname()
@@ -764,16 +775,23 @@ def update_zookeeper():
             fence_thread.start()
 
     # Display node information to the terminal
-    logger.out('{}{} keepalive{}'.format(logger.fmt_purple, this_node.name, logger.fmt_end), state='t')
     logger.out(
-        '{bold}Domains:{nobold} {domcount}  '
-        '{bold}Networks:{nobold} {netcount}  '
-        '{bold}VM memory [MiB]:{nobold} {allocmem}  '
-        '{bold}Free memory [MiB]:{nobold} {freemem}  '
-        '{bold}Used memory [MiB]:{nobold} {usedmem}  '
-        '{bold}Load:{nobold} {load}'.format(
+        '{}{} keepalive{}'.format(
+            logger.fmt_purple,
+            myhostname,
+            logger.fmt_end
+        ),
+        state='t'
+    )
+    logger.out(
+        '{bold}Domains:{nofmt} {domcount}  '
+        '{bold}Networks:{nofmt} {netcount}  '
+        '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
+        '{bold}Free memory [MiB]:{nofmt} {freemem}  '
+        '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
+        '{bold}Load:{nofmt} {load}'.format(
             bold=logger.fmt_bold,
-            nobold=logger.fmt_end,
+            nofmt=logger.fmt_end,
             domcount=this_node.domains_count,
             freemem=this_node.memfree,
             usedmem=this_node.memused,
@@ -782,6 +800,15 @@ def update_zookeeper():
             netcount=this_node.networks_count
         ),
     )
+    logger.out(
+        '{bold}Ceph health status:{nofmt} {health_colour}{health}{nofmt}'.format(
+            bold=logger.fmt_bold,
+            health_colour=ceph_health_colour,
+            nofmt=logger.fmt_end,
+            health=ceph_health
+        ),
+    )
+
 
 # Start keepalive thread and immediately update Zookeeper
 startKeepaliveTimer()
