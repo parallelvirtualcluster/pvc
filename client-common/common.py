@@ -298,4 +298,3 @@ def findTargetNodeVMs(zk_conn, dom_uuid):
             target_node = node
 
     return target_node
-
