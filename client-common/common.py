@@ -41,7 +41,6 @@ def validateUUID(dom_uuid):
     except:
         return False
 
-
 #
 # Connect and disconnect from Zookeeper
 #
@@ -176,16 +175,30 @@ def verifyNode(zk_conn, node):
         return True
     except:
         return False
-#
-# Verify router is valid in cluster
-#
-def verifyRouter(zk_conn, router):
-    try:
-        zk_conn.get('/routers/{}'.format(router))
-        return True
-    except:
-        return False
 
+#
+# Get the primary coordinator node
+#
+def getPrimaryNode(zk_conn):
+    failcount = 0
+    while True:
+        try:
+            primary_node = zkhandler.readdata(zk_conn, '/primary_node')
+        except:
+            primary_node == 'none'
+
+        if primary_node == 'none':
+            raise
+            time.sleep(1)
+            failcount += 1
+            continue
+        else:
+            break
+
+        if failcount > 2:
+            return None
+
+    return primary_node
 
 #
 # Get the list of valid target nodes
