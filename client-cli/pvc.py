@@ -33,6 +33,7 @@ import client_lib.common as pvc_common
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
+import client_lib.ceph as pvc_ceph
 
 myhostname = socket.gethostname()
 zk_host = ''
@@ -904,6 +905,48 @@ def net_acl_list(net, limit, direction):
     retcode, retmsg = pvc_network.get_list_acl(zk_conn, net, limit, direction)
     cleanup(retcode, retmsg, zk_conn)
 
+###############################################################################
+# pvc ceph
+###############################################################################
+@click.group(name='ceph', short_help='Manage the PVC Ceph storage cluster.', context_settings=CONTEXT_SETTINGS)
+def cli_ceph():
+    """
+    Manage the Ceph storage of the PVC cluster.
+    """
+    pass
+
+###############################################################################
+# pvc ceph status
+###############################################################################
+@click.command(name='status', short_help='Show storage cluster status.')
+def ceph_status():
+    """
+    Show detailed status of the storage cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.get_status(zk_conn)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph osd
+###############################################################################
+@click.group(name='osd', short_help='Manage OSDs in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+def ceph_osd():
+    """
+    Manage the Ceph OSDs of the PVC cluster.
+    """
+    pass
+
+###############################################################################
+# pvc ceph pool
+###############################################################################
+@click.group(name='pool', short_help='Manage RBD pools in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+def ceph_pool():
+    """
+    Manage the Ceph RBD pools of the PVC cluster.
+    """
+    pass
 
 
 ###############################################################################
@@ -937,11 +980,13 @@ def init_cluster():
 
     # Create the root keys
     transaction = zk_conn.transaction()
-    transaction.create('/networks', ''.encode('ascii'))
-    transaction.create('/domains', ''.encode('ascii'))
     transaction.create('/nodes', ''.encode('ascii'))
     transaction.create('/primary_node', 'none'.encode('ascii'))
+    transaction.create('/domains', ''.encode('ascii'))
+    transaction.create('/networks', ''.encode('ascii'))
     transaction.create('/ceph', ''.encode('ascii'))
+    transaction.create('/ceph/osds', ''.encode('ascii'))
+    transaction.create('/ceph/pools', ''.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
@@ -1032,9 +1077,28 @@ net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
 
+#ceph_osd.add_command(ceph_osd_add)
+#ceph_osd.add_command(ceph_osd_remove)
+#ceph_osd.add_command(ceph_osd_in)
+#ceph_osd.add_command(ceph_osd_out)
+#ceph_osd.add_command(ceph_osd_set)
+#ceph_osd.add_command(ceph_osd_unset)
+#ceph_osd.add_command(ceph_osd_info)
+#ceph_osd.add_command(ceph_osd_list)
+
+#ceph_pool.add_command(ceph_pool_add)
+#ceph_pool.add_command(ceph_pool_remove)
+#ceph_pool.add_command(ceph_pool_info)
+#ceph_pool.add_command(ceph_pool_list)
+
+cli_ceph.add_command(ceph_status)
+cli_ceph.add_command(ceph_osd)
+cli_ceph.add_command(ceph_pool)
+
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
+cli.add_command(cli_ceph)
 cli.add_command(init_cluster)
 
 #

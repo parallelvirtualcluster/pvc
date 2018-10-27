@@ -24,10 +24,6 @@ import uuid
 import lxml
 import math
 import kazoo.client
-import paramiko
-import hashlib
-import dns.resolver
-import dns.flags
 
 import client_lib.zkhandler as zkhandler
 
@@ -305,6 +301,11 @@ def findTargetNodeVMs(zk_conn, dom_uuid):
 
 # Connect to the primary host and run a command
 def runRemoteCommand(node, command, become=False):
+    import paramiko
+    import hashlib
+    import dns.resolver
+    import dns.flags
+
     # Support doing SSHFP checks
     class DnssecPolicy(paramiko.client.MissingHostKeyPolicy):
         def missing_host_key(self, client, hostname, key):
