@@ -17,7 +17,7 @@ Description: Parallel Virtual Cluster virtualization daemon (Python 3)
 
 Package: pvc-client-common
 Architecture: all
-Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml
+Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml, python3-paramiko
 Description: Parallel Virtual Cluster common client libraries (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
  .
