@@ -408,8 +408,9 @@ current_primary = zkhandler.readdata(zk_conn, '/primary_node')
 if current_primary and current_primary != 'none':
     logger.out('Current primary node is {}{}{}.'.format(logger.fmt_blue, current_primary, logger.fmt_end), state='i')
 else:
-    logger.out('No primary node found; creating with us as primary.', state='i')
-    zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
+    if config['daemon_mode'] == 'coordinator':
+        logger.out('No primary node found; creating with us as primary.', state='i')
+        zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
 
 ###############################################################################
 # PHASE 6 - Create local IP addresses for static networks
@@ -697,6 +698,18 @@ def update_zookeeper():
         domain_uuid = domain.UUIDString()
         if domain_uuid not in this_node.domain_list:
             this_node.domain_list.append(domain_uuid)
+
+    # Set ceph health information in zookeeper (primary only)
+    if this_node.router_state == 'primary':
+        retcode, stdout, stderr = common.run_os_command('ceph status')
+        ceph_status = stdout
+        try:
+            zkhandler.writedata(zk_conn, {
+                '/ceph': str(ceph_status)
+            })
+        except:
+            logger.out('Failed to set Ceph status data', state='e')
+            return
 
     # Set our information in zookeeper
     #this_node.name = lv_conn.getHostname()
