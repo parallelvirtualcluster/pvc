@@ -58,7 +58,7 @@ def stopZKConnection(zk_conn):
 #
 def getDomainXML(zk_conn, dom_uuid):
     try:
-        xml = zk_conn.get('/domains/%s/xml' % dom_uuid)[0].decode('ascii')
+        xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
     except:
         return None
     
@@ -171,7 +171,7 @@ def getDomainControllers(parsed_xml):
 #
 def verifyNode(zk_conn, node):
     try:
-        zk_conn.get('/nodes/{}'.format(node))
+        zkhandler.readdata('/nodes/{}'.format(node))
         return True
     except:
         return False
@@ -205,16 +205,16 @@ def getPrimaryNode(zk_conn):
 #
 def getNodes(zk_conn, dom_uuid):
     valid_node_list = []
-    full_node_list = zk_conn.get_children('/nodes')
+    full_node_list = zkhandler.list_children(zk_conn, '/nodes')
 
     try:
-        current_node = zk_conn.get('/domains/{}/node'.format(dom_uuid))[0].decode('ascii')
+        current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
     except:
         current_node = None
 
     for node in full_node_list:
-        daemon_state = zk_conn.get('/nodes/{}/daemonstate'.format(node))[0].decode('ascii')
-        domain_state = zk_conn.get('/nodes/{}/domainstate'.format(node))[0].decode('ascii')
+        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
+        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
 
         if node == current_node:
             continue

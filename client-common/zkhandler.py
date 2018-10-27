@@ -36,6 +36,13 @@ def listchildren(zk_conn, key):
     children = zk_conn.get_children(key)
     return children
 
+# Delete key function
+def deletekey(zk_conn, key, recursive=True):
+    try:
+        zk_conn.delete(key, recursive=recursive)
+    except:
+        pass
+
 # Data read function
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)

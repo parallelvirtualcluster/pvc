@@ -43,9 +43,9 @@ import client_lib.common as common
 def getInformationFromXML(zk_conn, uuid, long_output):
     # Obtain the contents of the XML from Zookeeper
     try:
-        dstate = zk_conn.get('/domains/{}/state'.format(uuid))[0].decode('ascii')
-        dnode = zk_conn.get('/domains/{}/node'.format(uuid))[0].decode('ascii')
-        dlastnode = zk_conn.get('/domains/{}/lastnode'.format(uuid))[0].decode('ascii')
+        dstate = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(uuid))
+        dnode = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(uuid))
+        dlastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
     except:
         return None
 
@@ -142,11 +142,11 @@ def getInformationFromXML(zk_conn, uuid, long_output):
 #
 def getClusterDomainList(zk_conn):
     # Get a list of UUIDs by listing the children of /domains
-    uuid_list = zk_conn.get_children('/domains')
+    uuid_list = zkhandler.listchildren(zk_conn, '/domains')
     name_list = []
     # For each UUID, get the corresponding name from the data
     for uuid in uuid_list:
-        name_list.append(zk_conn.get('/domains/%s' % uuid)[0].decode('ascii'))
+        name_list.append(zkhandler.readdata(zk_conn, '/domains/%s' % uuid))
     return uuid_list, name_list
 
 def searchClusterByUUID(zk_conn, uuid):
@@ -216,14 +216,14 @@ def define_vm(zk_conn, config_data, target_node, selector):
     common.verifyNode(zk_conn, target_node)
 
     # Add the new domain to Zookeeper
-    transaction = zk_conn.transaction()
-    transaction.create('/domains/{}'.format(dom_uuid), dom_name.encode('ascii'))
-    transaction.create('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
-    transaction.create('/domains/{}/node'.format(dom_uuid), target_node.encode('ascii'))
-    transaction.create('/domains/{}/lastnode'.format(dom_uuid), ''.encode('ascii'))
-    transaction.create('/domains/{}/failedreason'.format(dom_uuid), ''.encode('ascii'))
-    transaction.create('/domains/{}/xml'.format(dom_uuid), config_data.encode('ascii'))
-    results = transaction.commit()
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}'.format(dom_uuid): dom_name,
+        '/domains/{}/state'.format(dom_uuid): 'stop',
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): '',
+        '/domains/{}/failedreason'.format(dom_uuid): '',
+        '/domains/{}/xml'.format(dom_uuid): config_data
+    })
 
     return True, ''
 
@@ -234,12 +234,13 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_name = getDomainName(zk_conn, domain)
 
     # Add the modified config to Zookeeper
-    transaction = zk_conn.transaction()
-    transaction.set_data('/domains/{}'.format(dom_uuid), dom_name.encode('ascii'))
-    transaction.set_data('/domains/{}/xml'.format(dom_uuid), new_vm_config.encode('ascii'))
+    zk_data = {
+        '/domains/{}'.format(dom_uuid): dom_name,
+        '/domains/{}/xml'.format(dom_uuid): new_vm_config
+    }
     if restart == True:
-        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'restart'.encode('ascii'))
-    results = transaction.commit()
+        zk_data.update({'/domains/{}/state'.format(dom_uuid): 'restart'})
+    zkhandler.writedata(zk_conn, zk_data)
 
     return True, ''
 
@@ -252,13 +253,11 @@ def undefine_vm(zk_conn, domain):
 
     # Shut down the VM
     try:
-        current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+        current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
         if current_vm_state != 'stop':
             click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
             # Set the domain into stop mode
-            transaction = zk_conn.transaction()
-            transaction.set_data('/domains/{}/state'.format(dom_uuid), 'stop'.encode('ascii'))
-            transaction.commit()
+            zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
             # Wait for 3 seconds to allow state to flow to all nodes
             click.echo('Waiting for cluster to update.')
@@ -269,7 +268,7 @@ def undefine_vm(zk_conn, domain):
     # Gracefully terminate the class instances
     try:
         click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
-        zk_conn.set('/domains/{}/state'.format(dom_uuid), 'delete'.encode('ascii'))
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
         time.sleep(5)
     except:
         pass
@@ -277,7 +276,7 @@ def undefine_vm(zk_conn, domain):
     # Delete the configurations
     try:
         click.echo('Undefining VM "{}".'.format(dom_uuid))
-        zk_conn.delete('/domains/{}'.format(dom_uuid), recursive=True)
+        zkhandler.deletekey(zk_conn, '/domains/{}')
     except:
         pass
 
@@ -292,7 +291,7 @@ def start_vm(zk_conn, domain):
 
     # Set the VM to start
     click.echo('Starting VM "{}".'.format(dom_uuid))
-    zk_conn.set('/domains/%s/state' % dom_uuid, 'start'.encode('ascii'))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'start'})
 
     return True, ''
 
@@ -304,14 +303,14 @@ def restart_vm(zk_conn, domain):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
 
     # Set the VM to start
     click.echo('Restarting VM "{}".'.format(dom_uuid))
-    zk_conn.set('/domains/%s/state' % dom_uuid, 'restart'.encode('ascii'))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
 
     return True, ''
 
@@ -322,14 +321,14 @@ def shutdown_vm(zk_conn, domain):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
 
     # Set the VM to shutdown
     click.echo('Shutting down VM "{}".'.format(dom_uuid))
-    zk_conn.set('/domains/%s/state' % dom_uuid, 'shutdown'.encode('ascii'))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown'})
 
     return True, ''
 
@@ -341,14 +340,14 @@ def stop_vm(zk_conn, domain):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
 
     # Set the VM to start
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
-    zk_conn.set('/domains/%s/state' % dom_uuid, 'stop'.encode('ascii'))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
     return True, ''
 
@@ -359,7 +358,7 @@ def move_vm(zk_conn, domain, target_node, selector):
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    current_node = zk_conn.get('/domains/{}/node'.format(dom_uuid))[0].decode('ascii')
+    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
     if target_node == None:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
@@ -371,20 +370,20 @@ def move_vm(zk_conn, domain, target_node, selector):
         # Verify node is valid
         common.verifyNode(zk_conn, target_node)
 
-    current_vm_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state == 'start':
         click.echo('Permanently migrating VM "{}" to node "{}".'.format(dom_uuid, target_node))
-        transaction = zk_conn.transaction()
-        transaction.set_data('/domains/{}/state'.format(dom_uuid), 'migrate'.encode('ascii'))
-        transaction.set_data('/domains/{}/node'.format(dom_uuid), target_node.encode('ascii'))
-        transaction.set_data('/domains/{}/lastnode'.format(dom_uuid), ''.encode('ascii'))
-        transaction.commit()
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/state'.format(dom_uuid): 'migrate',
+            '/domains/{}/node'.format(dom_uuid): target_node,
+            '/domains/{}/lastnode'.format(dom_uuid): ''
+        })
     else:
         click.echo('Permanently moving VM "{}" to node "{}".'.format(dom_uuid, target_node))
-        transaction = zk_conn.transaction()
-        transaction.set_data('/domains/{}/node'.format(dom_uuid), target_node.encode('ascii'))
-        transaction.set_data('/domains/{}/lastnode'.format(dom_uuid), ''.encode('ascii'))
-        transaction.commit()
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/node'.format(dom_uuid): target_node,
+            '/domains/{}/lastnode'.format(dom_uuid): ''
+        })
 
     return True, ''
 
@@ -396,14 +395,14 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         target_state = 'start'
     else:
         target_state = 'migrate'
 
-    current_node = zk_conn.get('/domains/{}/node'.format(dom_uuid))[0].decode('ascii')
-    last_node = zk_conn.get('/domains/{}/lastnode'.format(dom_uuid))[0].decode('ascii')
+    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
+    last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 
     if last_node != '' and force_migrate != True:
         click.echo('ERROR: VM "{}" has been previously migrated.'.format(dom_uuid))
@@ -424,11 +423,11 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate):
         common.verifyNode(zk_conn, target_node)
 
     click.echo('Migrating VM "{}" to node "{}".'.format(dom_uuid, target_node))
-    transaction = zk_conn.transaction()
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), target_state.encode('ascii'))
-    transaction.set_data('/domains/{}/node'.format(dom_uuid), target_node.encode('ascii'))
-    transaction.set_data('/domains/{}/lastnode'.format(dom_uuid), current_node.encode('ascii'))
-    transaction.commit()
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}/state'.format(dom_uuid): 'migrate',
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): current_node
+    })
 
     return True, ''
 
@@ -440,24 +439,24 @@ def unmigrate_vm(zk_conn, domain):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
-    current_state = zk_conn.get('/domains/{}/state'.format(dom_uuid))[0].decode('ascii')
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         target_state = 'start'
     else:
         target_state = 'migrate'
 
-    target_node = zk_conn.get('/domains/{}/lastnode'.format(dom_uuid))[0].decode('ascii')
+    target_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 
     if target_node == '':
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" has not been previously migrated.'.format(dom_uuid)
 
     click.echo('Unmigrating VM "{}" back to node "{}".'.format(dom_uuid, target_node))
-    transaction = zk_conn.transaction()
-    transaction.set_data('/domains/{}/state'.format(dom_uuid), target_state.encode('ascii'))
-    transaction.set_data('/domains/{}/node'.format(dom_uuid), target_node.encode('ascii'))
-    transaction.set_data('/domains/{}/lastnode'.format(dom_uuid), ''.encode('ascii'))
-    transaction.commit()
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}/state'.format(dom_uuid): target_state,
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): ''
+    })
 
     return True, ''
 
@@ -473,7 +472,7 @@ def get_info(zk_conn, domain, long_output):
     click.echo(information)
 
     # Get a failure reason if applicable
-    failedreason = zk_conn.get('/domains/{}/failedreason'.format(dom_uuid))[0].decode('ascii')
+    failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(dom_uuid))
     if failedreason != '':
         click.echo('')
         click.echo('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), failedreason))
@@ -487,7 +486,7 @@ def get_list(zk_conn, node, limit):
         # Verify node is valid
         common.verifyNode(zk_conn, node)
 
-    full_vm_list = zk_conn.get_children('/domains')
+    full_vm_list = zkhandler.listchildren(zk_conn, '/domains')
     vm_list = []
     vm_list_output = []
 
@@ -540,8 +539,8 @@ def get_list(zk_conn, node, limit):
 
     # Gather information for printing
     for vm in vm_list:
-        vm_state[vm] = zk_conn.get('/domains/{}/state'.format(vm))[0].decode('ascii')
-        vm_lastnode = zk_conn.get('/domains/{}/lastnode'.format(vm))[0].decode('ascii')
+        vm_state[vm] = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(vm))
+        vm_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(vm))
         if vm_lastnode != '':
             vm_migrated[vm] = 'from {}'.format(vm_lastnode)
         else:

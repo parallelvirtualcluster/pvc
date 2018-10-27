@@ -215,7 +215,7 @@ def get_info(zk_conn, node, long_output):
 def get_list(zk_conn, limit):
     # Match our limit
     node_list = []
-    full_node_list = zk_conn.get_children('/nodes')
+    full_node_list = zkhandler.list_children(zk_conn, '/nodes')
     for node in full_node_list:
         if limit != None:
             try:

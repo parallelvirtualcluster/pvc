@@ -43,11 +43,11 @@ import client_lib.common as common
 #
 def getClusterNetworkList(zk_conn):
     # Get a list of VNIs by listing the children of /networks
-    vni_list = zk_conn.get_children('/networks')
+    vni_list = zkhandler.readdata(zk_conn, '/networks')
     description_list = []
     # For each VNI, get the corresponding description from the data
     for vni in vni_list:
-        description_list.append(zk_conn.get('/networks/{}'.format(vni))[0].decode('ascii'))
+        description_list.append(zkhandler.readdata(zk_conn, '/networks/{}'))
     return vni_list, description_list
 
 def searchClusterByVNI(zk_conn, vni):
@@ -194,7 +194,7 @@ def formatNetworkInformation(zk_conn, vni, long_output):
             for line in dhcp_reservations_string.split('\n'):
                 ainformation.append(line)
 
-        firewall_rules = zk_conn.get_children('/networks/{}/firewall_rules'.format(vni))
+        firewall_rules = zkhandler.list_children(zk_conn, '/networks/{}/firewall_rules'.format(vni))
         if firewall_rules:
             ainformation.append('')
             ainformation.append('{}Network firewall rules:{}'.format(ansiprint.bold(), ansiprint.end()))
@@ -511,7 +511,7 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
         return False, 'ERROR: DHCP start and end addresses are required for a DHCP-enabled network.'
 
     # Check if a network with this VNI or description already exists
-    if zk_conn.exists('/networks/{}'.format(vni)):
+    if zkhandler.exists(zk_conn, '/networks/{}'.format(vni)):
         return False, 'ERROR: A network with VNI {} already exists!'.format(vni)
     for network in zkhandler.listchildren(zk_conn, '/networks'):
         network_description = zkhandler.readdata(zk_conn, '/networks/{}'.format(network))
@@ -538,7 +538,6 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
 
 def modify_network(zk_conn, vni, **parameters):
     # Add the new network to Zookeeper
-    transaction = zk_conn.transaction()
     zk_data = {}
     if parameters['description'] != None:
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
@@ -567,10 +566,7 @@ def remove_network(zk_conn, network):
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Delete the configuration
-    try:
-        zk_conn.delete('/networks/{}'.format(vni), recursive=True)
-    except:
-        pass
+    zkhandler.deletekey(zk_conn, '/networks/{}'.format(vni))
 
     return True, 'Network "{}" removed successfully!'.format(description)
 
@@ -590,7 +586,7 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
     if not isValidIP(ipaddress):
         return False, 'ERROR: IP address "{}" is not valid!'.format(macaddress)
 
-    if zk_conn.exists('/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddress)):
+    if zkhandler.exists(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddress)):
         return False, 'ERROR: A reservation with MAC "{}" already exists!'.format(macaddress)
 
     # Add the new static lease to ZK
@@ -626,7 +622,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
 
     # Remove the entry from zookeeper
     try:
-        zk_conn.delete('/networks/{}/dhcp_reservations/{}'.format(net_vni, match_description), recursive=True)
+        zkhandler.deletekey(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(net_vni, match_description))
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
@@ -644,7 +640,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
     else:
         direction = "out"
 
-    if zk_conn.exists('/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description)):
+    if zkhandler.exists(zk_conn, '/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description)):
         return False, 'ERROR: A rule with description "{}" already exists!'.format(description)
 
     # Handle reordering
@@ -713,7 +709,7 @@ def remove_acl(zk_conn, network, rule, direction):
 
     # Remove the entry from zookeeper
     try:
-        zk_conn.delete('/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, match_description), recursive=True)
+        zkhandler.deletekey(zk_conn, '/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, match_description))
     except Exception as e:
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
@@ -747,7 +743,7 @@ def get_info(zk_conn, network, long_output):
 
 def get_list(zk_conn, limit):
     net_list = []
-    full_net_list = zk_conn.get_children('/networks')
+    full_net_list = zkhandler.list_children(zk_conn, '/networks')
 
     for net in full_net_list:
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
