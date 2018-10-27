@@ -24,6 +24,10 @@ import uuid
 import lxml
 import math
 import kazoo.client
+import paramiko
+import hashlib
+import dns.resolver
+import dns.flags
 
 import client_lib.zkhandler as zkhandler
 
@@ -298,3 +302,30 @@ def findTargetNodeVMs(zk_conn, dom_uuid):
             target_node = node
 
     return target_node
+
+# Connect to the primary host and run a command
+def runRemoteCommand(node, command, become=False):
+    # Support doing SSHFP checks
+    class DnssecPolicy(paramiko.client.MissingHostKeyPolicy):
+        def missing_host_key(self, client, hostname, key):
+            sshfp_expect = hashlib.sha1(key.asbytes()).hexdigest()
+            ans = dns.resolver.query(hostname, 'SSHFP')
+            if not ans.response.flags & dns.flags.DO:
+                raise AssertionError('Answer is not DNSSEC signed')
+            for answer in ans.response.answer:
+                for item in answer.items:
+                    if sshfp_expect in item.to_text():
+                        client._log(paramiko.common.DEBUG, 'Found {} in SSHFP for host {}'.format(key.get_name(), hostname))
+                        return
+            raise AssertionError('SSHFP not published in DNS')
+
+    if become:
+        command = 'sudo ' + command
+
+    ssh_client = paramiko.client.SSHClient()
+    ssh_client.load_system_host_keys()
+    ssh_client.set_missing_host_key_policy(DnssecPolicy())
+    #ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.connect(node)
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    return stdout.read().decode('ascii').rstrip(), stderr.read().decode('ascii').rstrip()
