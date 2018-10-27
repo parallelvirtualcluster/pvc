@@ -325,7 +325,7 @@ def cleanup():
     logger.out('Terminating pvcd and cleaning up', state='s')
 
     # Force into secondary network state if needed
-    if this_node.name == this_node.primary_node:
+    if zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(myhostname)) == 'primary':
         is_primary = True
         zkhandler.writedata(zk_conn, {
             '/nodes/{}/routerstate'.format(myhostname): 'secondary',
@@ -577,6 +577,9 @@ def update_primart(new_primary, stat, event=''):
                 zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'primary'})
             else:
                 zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'secondary'})
+        else:
+            zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'client'})
+
         for node in d_node:
             d_node[node].primary_node = new_primary
 
