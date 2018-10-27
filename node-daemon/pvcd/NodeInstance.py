@@ -294,20 +294,7 @@ class NodeInstance(object):
             ),
             state='o'
         )
-        common.run_os_command(
-            'ip address add {}/{} dev {}'.format(
-                self.vni_ipaddr,
-                self.vni_cidrnetmask,
-                self.vni_dev
-            )
-        )
-        common.run_os_command(
-            'arping -A -c2 -I {} {}'.format(
-                self.vni_dev,
-                self.vni_ipaddr
-            ),
-            background=True
-        )
+        common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, self.vni_dev)
         # Upstream floating IP
         self.logger.out(
             'Creating floating upstream IP {}/{} on interface {}'.format(
@@ -317,20 +304,7 @@ class NodeInstance(object):
             ),
             state='o'
         )
-        common.run_os_command(
-            'ip address add {}/{} dev {}'.format(
-                self.upstream_ipaddr,
-                self.upstream_cidrnetmask,
-                self.upstream_dev
-            )
-        )
-        common.run_os_command(
-            'arping -A -c2 -I {} {}'.format(
-                self.upstream_dev,
-                self.upstream_ipaddr
-            ),
-            background=True
-        )
+        common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, self.upstream_dev)
 
     def removeFloatingAddresses(self):
         # VNI floating IP
@@ -342,13 +316,7 @@ class NodeInstance(object):
             ),
             state='o'
         )
-        common.run_os_command(
-            'ip address delete {}/{} dev {}'.format(
-                self.vni_ipaddr,
-                self.vni_cidrnetmask,
-                self.vni_dev
-            )
-        )
+        common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, self.vni_dev)
         # Upstream floating IP
         self.logger.out(
             'Removing floating upstream IP {}/{} from interface {}'.format(
@@ -358,13 +326,7 @@ class NodeInstance(object):
             ),
             state='o'
         )
-        common.run_os_command(
-            'ip address delete {}/{} dev {}'.format(
-                self.upstream_ipaddr,
-                self.upstream_cidrnetmask,
-                self.upstream_dev
-            )
-        )
+        common.removeIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, self.upstream_dev)
 
     # Flush all VMs on the host
     def flush(self):

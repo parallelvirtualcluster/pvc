@@ -88,3 +88,30 @@ def reload_firewall_rules(logger, rules_file):
     retcode, stdout, stderr = run_os_command('/usr/sbin/nft -f {}'.format(rules_file))
     if retcode != 0:
         logger.out('Failed to reload configuration: {}'.format(stderr), state='e')
+
+# Create IP address
+def createIPAddress(ipaddr, cidrnetmask, dev):
+    run_os_command(
+        'ip address add {}/{} dev {}'.format(
+            ipaddr,
+            cidrnetmask,
+            dev
+        )
+    )
+    run_os_command(
+        'arping -A -c2 -I {} {}'.format(
+            dev,
+            ipaddr
+        ),
+        background=True
+    )
+
+# Remove IP address
+def removeIPAddress(ipaddr, cidrnetmask, dev):
+    run_os_command(
+        'ip address delete {}/{} dev {}'.format(
+            ipaddr,
+            cidrnetmask,
+            dev
+        )
+    )

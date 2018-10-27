@@ -331,27 +331,15 @@ add rule inet filter input meta iifname {bridgenic} counter drop
     def createGatewayAddress(self):
         if self.this_node.router_state == 'primary':
             self.logger.out(
-                'Creating gateway {} on interface {}'.format(
+                'Creating gateway {}/{} on interface {}'.format(
                     self.ip_gateway,
+                    self.ip_cidrnetmask,
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
-            common.run_os_command(
-                'ip address add {}/{} dev {}'.format(
-                    self.ip_gateway,
-                    self.ip_cidrnetmask,
-                    self.bridge_nic
-                )
-            )
-            common.run_os_command(
-                'arping -A -c2 -I {} {}'.format(
-                    self.bridge_nic,
-                    self.ip_gateway
-                ),
-                background=True
-            )
+            common.createIPAddress(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic)
 
     def startDHCPServer(self):
         if self.this_node.router_state == 'primary':
@@ -454,20 +442,15 @@ add rule inet filter input meta iifname {bridgenic} counter drop
 
     def removeGatewayAddress(self):
         self.logger.out(
-            'Removing gateway {} from interface {}'.format(
+            'Removing gateway {}/{} from interface {}'.format(
                 self.ip_gateway,
+                self.ip_cidrnetmask,
                 self.bridge_nic
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
         )
-        common.run_os_command(
-            'ip address delete {}/{} dev {}'.format(
-                self.ip_gateway,
-                self.ip_cidrnetmask,
-                self.bridge_nic
-            )
-        )
+        common.removeIPAddress(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic)
 
     def stopDHCPServer(self):
         if self.dhcp_server_daemon:
