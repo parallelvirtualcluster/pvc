@@ -43,11 +43,11 @@ import client_lib.common as common
 #
 def getClusterNetworkList(zk_conn):
     # Get a list of VNIs by listing the children of /networks
-    vni_list = zkhandler.readdata(zk_conn, '/networks')
+    vni_list = zkhandler.listchildren(zk_conn, '/networks')
     description_list = []
     # For each VNI, get the corresponding description from the data
     for vni in vni_list:
-        description_list.append(zkhandler.readdata(zk_conn, '/networks/{}'))
+        description_list.append(zkhandler.readdata(zk_conn, '/networks/{}'.format(vni)))
     return vni_list, description_list
 
 def searchClusterByVNI(zk_conn, vni):
