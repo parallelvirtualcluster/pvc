@@ -939,6 +939,41 @@ def ceph_osd():
     pass
 
 ###############################################################################
+# pvc ceph osd add
+###############################################################################
+@click.command(name='add', short_help='Add new OSD.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'device'
+)
+def ceph_osd_add(node, device):
+    """
+    Add a new Ceph OSD on node NODE with block device DEVICE to the cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.add_osd(zk_conn, node, device)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph osd remove
+###############################################################################
+@click.command(name='remove', short_help='Remove OSD.')
+@click.argument(
+    'osdid'
+)
+def ceph_osd_remove(node, device):
+    """
+    Remove a Ceph OSD with ID OSDID from the cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.remove_osd(zk_conn, osdid)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc ceph pool
 ###############################################################################
 @click.group(name='pool', short_help='Manage RBD pools in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
@@ -1077,7 +1112,7 @@ net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
 
-#ceph_osd.add_command(ceph_osd_add)
+ceph_osd.add_command(ceph_osd_add)
 #ceph_osd.add_command(ceph_osd_remove)
 #ceph_osd.add_command(ceph_osd_in)
 #ceph_osd.add_command(ceph_osd_out)

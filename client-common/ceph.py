@@ -53,3 +53,19 @@ def get_status(zk_conn):
     click.echo(status_data)
     click.echo('')
     return True, ''
+
+def add_osd(zk_conn, node, device):
+    if not common.verifyNode(zk_conn, node):
+        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
+
+    # Tell the cluster to create a new OSD for the host
+    new_osd_string = 'new {},{}'.format(node, device) 
+    zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': new_osd_string})
+    click.echo('Created new OSD with block device {} on node {}.'.format(device, node))
+    return True, ''
+
+def remove_osd(zk_conn, osd_id):
+    remove_osd_string = 'remove {}'.format(osd_id)
+    zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': remove_osd_string})
+    click.echo('Remove OSD {} from the cluster.'.format(osd_id))
+    return True, ''
