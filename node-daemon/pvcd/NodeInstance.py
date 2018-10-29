@@ -62,7 +62,6 @@ class NodeInstance(object):
         self.network_list = []
         self.domain_list = []
         # Node resources
-        self.networks_count = 0
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
@@ -212,21 +211,6 @@ class NodeInstance(object):
             if data != self.domain_list:
                 self.domain_list = data
 
-        @self.zk_conn.DataWatch('/nodes/{}/networkscount'.format(self.name))
-        def watch_node_networkscount(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
-
-            try:
-                data = data.decode('ascii')
-            except AttributeError:
-                data = 0
-
-            if data != self.networks_count:
-                self.networks_count = data
-    
         @self.zk_conn.DataWatch('/nodes/{}/domainscount'.format(self.name))
         def watch_node_domainscount(data, stat, event=''):
             if event and event.type == 'DELETED':

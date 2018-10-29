@@ -80,7 +80,16 @@ def run_os_command(command_string, background=False, environment=None):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        return command_output.returncode, command_output.stdout.decode('ascii'), command_output.stderr.decode('ascii')
+        retcode = command_output.returncode
+        try:
+            stdout = command_output.stdout.decode('ascii')
+        except:
+            stdout = ''
+        try:
+            stderr = command_output.stderr.decode('ascii')
+        except:
+            stderr = ''
+        return retcode, stdout, stderr
 
 # Reload the firewall rules of the system
 def reload_firewall_rules(logger, rules_file):

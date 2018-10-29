@@ -37,6 +37,7 @@ import time
 import re
 import configparser
 import threading
+import json
 import apscheduler.schedulers.background
 
 import pvcd.log as log
@@ -48,6 +49,7 @@ import pvcd.DomainInstance as DomainInstance
 import pvcd.NodeInstance as NodeInstance
 import pvcd.VXNetworkInstance as VXNetworkInstance
 import pvcd.DNSAggregatorInstance as DNSAggregatorInstance
+import pvcd.CephInstance as CephInstance
 
 ###############################################################################
 # PVCD - node daemon startup program
@@ -522,9 +524,11 @@ logger.out('Setting up objects', state='i')
 d_node = dict()
 d_network = dict()
 d_domain = dict()
+d_osd = dict()
 node_list = []
 network_list = []
 domain_list = []
+osd_list = []
 
 # Create an instance of the DNS Aggregator if we're a coordinator
 if config['daemon_mode'] == 'coordinator':
@@ -561,7 +565,7 @@ this_node = d_node[myhostname]
 
 # Primary node
 @zk_conn.DataWatch('/primary_node')
-def update_primart(new_primary, stat, event=''):
+def update_primary(new_primary, stat, event=''):
     try:
         new_primary = new_primary.decode('ascii')
     except AttributeError:
@@ -633,7 +637,7 @@ def update_domains(new_domain_list):
     # Add any missing domains to the list
     for domain in new_domain_list:
         if not domain in domain_list:
-            d_domain[domain] = DomainInstance.DomainInstance(domain, zk_conn, config, logger, this_node);
+            d_domain[domain] = DomainInstance.DomainInstance(domain, zk_conn, config, logger, this_node)
 
     # Remove any deleted domains from the list
     for domain in domain_list:
@@ -648,6 +652,60 @@ def update_domains(new_domain_list):
     # Update node objects' list
     for node in d_node:
         d_node[node].update_domain_list(d_domain)
+
+# Ceph OSD provisioning key
+@zk_conn.DataWatch('/ceph/osd_cmd')
+def osd_cmd(data, stat, event=''):
+    if data:
+        data = data.decode('ascii')
+    else:
+        data = ''
+
+    if data:
+        # Get the command and args
+        command, args = data.split()
+
+        # Adding a new OSD
+        if command == 'add':
+            node, device = args.split(',')
+            if node == this_node.name:
+                # Clean up the command queue
+                zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
+                # Add the OSD
+                CephInstance.add_osd(zk_conn, logger, node, device)
+        # Removing an OSD
+        elif command == 'remove':
+            osd_id = args
+
+            # Verify osd_id is in the list
+            if not d_osd[osd_id]:
+                return True
+
+            if d_osd[osd_id].node == this_node.name:
+                # Clean up the command queue
+                zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
+                # Remove the OSD
+                CephInstance.remove_osd(zk_conn, logger, osd_id, d_osd[osd_id])
+
+# OSD objects
+@zk_conn.ChildrenWatch('/ceph/osds')
+def update_osds(new_osd_list):
+    global osd_list, d_osd
+
+    # Add any missing OSDs to the list
+    for osd in new_osd_list:
+        if not osd in osd_list:
+            d_osd[osd] = CephInstance.CephOSDInstance(zk_conn, this_node, osd)
+
+    # Remove any deleted OSDs from the list
+    for osd in osd_list:
+        if not osd in new_osd_list:
+            # Delete the object
+            del(d_osd[osd])
+
+    # Update and print new list
+    osd_list = new_osd_list
+    logger.out('{}OSD list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(osd_list)), state='i')
 
 ###############################################################################
 # PHASE 9 - Run the daemon
@@ -667,6 +725,93 @@ def update_zookeeper():
     if this_node.router_state == 'primary':
         if zkhandler.readdata(zk_conn, '/primary_node') != this_node.name:
             zkhandler.writedata(zk_conn, {'/primary_node': this_node.name})
+
+    # Get Ceph cluster health (for local printing)
+    retcode, stdout, stderr = common.run_os_command('ceph health')
+    ceph_health = stdout.rstrip()
+    if 'HEALTH_OK' in ceph_health:
+        ceph_health_colour = logger.fmt_green
+    elif 'HEALTH_WARN' in ceph_health:
+        ceph_health_colour = logger.fmt_yellow
+    else:
+        ceph_health_colour = logger.fmt_red
+
+    # Set ceph health information in zookeeper (primary only)
+    if this_node.router_state == 'primary':
+        # Get status info
+        retcode, stdout, stderr = common.run_os_command('ceph status')
+        ceph_status = stdout
+        try:
+            zkhandler.writedata(zk_conn, {
+                '/ceph': str(ceph_status)
+            })
+        except:
+            logger.out('Failed to set Ceph status data', state='e')
+            return
+
+    # Get data from Ceph OSDs
+    # Parse the dump data
+    osd_dump = dict()
+    retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json')
+    osd_dump_raw = json.loads(stdout)['osds']
+    for osd in osd_dump_raw:
+        osd_dump.update({
+            str(osd['osd']): {
+                'uuid': osd['uuid'],
+                'up': osd['up'],
+                'in': osd['in'],
+                'weight': osd['weight'],
+                'primary_affinity': osd['primary_affinity']
+            }
+        })
+    # Parse the status data
+    osd_status = dict()
+    retcode, stdout, stderr = common.run_os_command('ceph osd status')
+    for line in stderr.split('\n'):
+        # Strip off colour
+        line = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line)
+        # Split it for parsing
+        line = line.split()
+        if len(line) > 1 and line[1].isdigit():
+            # This is an OSD line so parse it
+            osd_id = line[1]
+            host = line[3].split('.')[0]
+            used = line[5]
+            avail = line[7]
+            wr_ops = line[9]
+            wr_data = line[11]
+            rd_ops = line[13]
+            rd_data = line[15]
+            state = line[17]
+            osd_status.update({
+#            osd_stats.update({
+                str(osd_id): { 
+                    'host': host,
+                    'used': used,
+                    'avail': avail,
+                    'wr_ops': wr_ops,
+                    'wr_data': wr_data,
+                    'rd_ops': rd_ops,
+                    'rd_data': rd_data,
+                    'state': state 
+                }
+            })
+    # Merge them together into a single meaningful dict
+    osd_stats = dict()
+    for osd in osd_list:
+        this_dump = osd_dump[osd]
+        this_dump.update(osd_status[osd])
+        osd_stats[osd] = this_dump
+
+    # Trigger updates for each OSD on this node
+    osds_this_host = 0
+    for osd in osd_list:
+        if d_osd[osd].node == myhostname:
+            zkhandler.writedata(zk_conn, {
+                '/ceph/osds/{}/stats'.format(osd): str(osd_stats[osd])
+            })
+            osds_this_host += 1
+
 
     # Toggle state management of dead VMs to restart them
     memalloc = 0
@@ -699,29 +844,6 @@ def update_zookeeper():
         if domain_uuid not in this_node.domain_list:
             this_node.domain_list.append(domain_uuid)
 
-    # Set ceph health information in zookeeper (primary only)
-    if this_node.router_state == 'primary':
-        # Get status info
-        retcode, stdout, stderr = common.run_os_command('ceph status')
-        ceph_status = stdout
-        try:
-            zkhandler.writedata(zk_conn, {
-                '/ceph': str(ceph_status)
-            })
-        except:
-            logger.out('Failed to set Ceph status data', state='e')
-            return
-
-    # Get cluster health
-    retcode, stdout, stderr = common.run_os_command('ceph health')
-    ceph_health = stdout.rstrip()
-    if ceph_health == 'HEALTH_OK':
-        ceph_health_colour = logger.fmt_green
-    elif ceph_health == 'HEALTH_WARN':
-        ceph_health_colour = logger.fmt_yellow
-    else:
-        ceph_health_colour = logger.fmt_red
-
     # Set our information in zookeeper
     #this_node.name = lv_conn.getHostname()
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
@@ -738,7 +860,6 @@ def update_zookeeper():
             '/nodes/{}/memalloc'.format(this_node.name): str(this_node.memalloc),
             '/nodes/{}/vcpualloc'.format(this_node.name): str(this_node.vcpualloc),
             '/nodes/{}/cpuload'.format(this_node.name): str(this_node.cpuload),
-            '/nodes/{}/networkscount'.format(this_node.name): str(this_node.networks_count),
             '/nodes/{}/domainscount'.format(this_node.name): str(this_node.domains_count),
             '/nodes/{}/runningdomains'.format(this_node.name): ' '.join(this_node.domain_list),
             '/nodes/{}/keepalive'.format(this_node.name): str(keepalive_time)
@@ -797,15 +918,19 @@ def update_zookeeper():
             usedmem=this_node.memused,
             load=this_node.cpuload,
             allocmem=this_node.memalloc,
-            netcount=this_node.networks_count
+            netcount=len(network_list)
         ),
     )
     logger.out(
-        '{bold}Ceph health status:{nofmt} {health_colour}{health}{nofmt}'.format(
+        '{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  '
+        '{bold}Total OSDs:{nofmt} {total_osds}  '
+        '{bold}Host OSDs:{nofmt} {host_osds}'.format(
             bold=logger.fmt_bold,
             health_colour=ceph_health_colour,
             nofmt=logger.fmt_end,
-            health=ceph_health
+            health=ceph_health,
+            total_osds=len(osd_list),
+            host_osds=osds_this_host
         ),
     )
 

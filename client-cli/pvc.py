@@ -964,7 +964,7 @@ def ceph_osd_add(node, device):
 @click.argument(
     'osdid'
 )
-def ceph_osd_remove(node, device):
+def ceph_osd_remove(osdid):
     """
     Remove a Ceph OSD with ID OSDID from the cluster.
     """
@@ -1113,7 +1113,7 @@ net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
 
 ceph_osd.add_command(ceph_osd_add)
-#ceph_osd.add_command(ceph_osd_remove)
+ceph_osd.add_command(ceph_osd_remove)
 #ceph_osd.add_command(ceph_osd_in)
 #ceph_osd.add_command(ceph_osd_out)
 #ceph_osd.add_command(ceph_osd_set)
