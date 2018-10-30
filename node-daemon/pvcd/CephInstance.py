@@ -42,7 +42,7 @@ class CephOSDInstance(object):
         self.stats = dict()
 
         @self.zk_conn.DataWatch('/ceph/osds/{}/node'.format(self.osd_id))
-        def watch_osd_host(data, stat, event=''):
+        def watch_osd_node(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -56,23 +56,8 @@ class CephOSDInstance(object):
             if data != self.node:
                 self.node = data
 
-        @self.zk_conn.DataWatch('/ceph/osds/{}/size'.format(self.osd_id))
-        def watch_osd_host(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
-
-            try:
-                data = data.decode('ascii')
-            except AttributeError:
-                data = ''
-
-            if data != self.size:
-                self.size = data
-
         @self.zk_conn.DataWatch('/ceph/osds/{}/stats'.format(self.osd_id))
-        def watch_osd_host(data, stat, event=''):
+        def watch_osd_stats(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -84,10 +69,10 @@ class CephOSDInstance(object):
                 data = ''
 
             if data != self.stats:
-                self.stats.update(ast.literal_eval(data))
+                self.stats = dict(ast.literal_eval(data))
 
 def add_osd(zk_conn, logger, node, device):
-    # We are ready to create a new OSD on this host
+    # We are ready to create a new OSD on this node
     logger.out('Creating new OSD disk', state='i')
     try:
         # 1. Create an OSD; we do this so we know what ID will be gen'd

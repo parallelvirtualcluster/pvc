@@ -259,9 +259,9 @@ common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_d
 ###############################################################################
 
 # What is the list of coordinator hosts
-coordinator_hosts = config['coordinators'].split(',')
+coordinator_nodes = config['coordinators'].split(',')
 
-if myhostname in coordinator_hosts:
+if myhostname in coordinator_nodes:
     # We are indeed a coordinator host
     config['daemon_mode'] = 'coordinator'
     # Start the zookeeper service using systemctl
@@ -278,7 +278,7 @@ else:
 # Start the connection to the coordinators
 zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
 try:
-    logger.out('Connecting to Zookeeper cluster hosts {}'.format(config['coordinators']), state='i')
+    logger.out('Connecting to Zookeeper cluster nodes {}'.format(config['coordinators']), state='i')
     # Start connection
     zk_conn.start()
 except Exception as e:
@@ -775,7 +775,7 @@ def update_zookeeper():
         if len(line) > 1 and line[1].isdigit():
             # This is an OSD line so parse it
             osd_id = line[1]
-            host = line[3].split('.')[0]
+            node = line[3].split('.')[0]
             used = line[5]
             avail = line[7]
             wr_ops = line[9]
@@ -786,7 +786,7 @@ def update_zookeeper():
             osd_status.update({
 #            osd_stats.update({
                 str(osd_id): { 
-                    'host': host,
+                    'node': node,
                     'used': used,
                     'avail': avail,
                     'wr_ops': wr_ops,
@@ -804,13 +804,13 @@ def update_zookeeper():
         osd_stats[osd] = this_dump
 
     # Trigger updates for each OSD on this node
-    osds_this_host = 0
+    osds_this_node = 0
     for osd in osd_list:
         if d_osd[osd].node == myhostname:
             zkhandler.writedata(zk_conn, {
                 '/ceph/osds/{}/stats'.format(osd): str(osd_stats[osd])
             })
-            osds_this_host += 1
+            osds_this_node += 1
 
 
     # Toggle state management of dead VMs to restart them
@@ -924,13 +924,13 @@ def update_zookeeper():
     logger.out(
         '{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  '
         '{bold}Total OSDs:{nofmt} {total_osds}  '
-        '{bold}Host OSDs:{nofmt} {host_osds}'.format(
+        '{bold}Node OSDs:{nofmt} {node_osds}'.format(
             bold=logger.fmt_bold,
             health_colour=ceph_health_colour,
             nofmt=logger.fmt_end,
             health=ceph_health,
             total_osds=len(osd_list),
-            host_osds=osds_this_host
+            node_osds=osds_this_node
         ),
     )
 
