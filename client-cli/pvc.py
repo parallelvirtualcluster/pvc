@@ -974,6 +974,22 @@ def ceph_osd_remove(osdid):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc ceph osd list
+###############################################################################
+@click.command(name='list', short_help='List cluster OSDs.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def ceph_osd_list(limit):
+    """
+    List all Ceph OSDs in the cluster; optinally only match elements matching ID regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.get_list_osd(zk_conn, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc ceph pool
 ###############################################################################
 @click.group(name='pool', short_help='Manage RBD pools in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
@@ -1119,7 +1135,7 @@ ceph_osd.add_command(ceph_osd_remove)
 #ceph_osd.add_command(ceph_osd_set)
 #ceph_osd.add_command(ceph_osd_unset)
 #ceph_osd.add_command(ceph_osd_info)
-#ceph_osd.add_command(ceph_osd_list)
+ceph_osd.add_command(ceph_osd_list)
 
 #ceph_pool.add_command(ceph_pool_add)
 #ceph_pool.add_command(ceph_pool_remove)
