@@ -272,6 +272,7 @@ def add_osd(zk_conn, node, device):
             success = True
         else:
             success = False
+        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
             
     if success:
         return True, 'Created new OSD with block device {} on node {}.'.format(device, node)
@@ -295,6 +296,7 @@ def remove_osd(zk_conn, osd_id):
             success = True
         else:
             success = False
+        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
 
     if success:
         return True, 'Removed OSD {} from the cluster.'.format(osd_id)
