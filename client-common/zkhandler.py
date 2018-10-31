@@ -21,6 +21,8 @@
 ###############################################################################
 
 import kazoo.client
+import uuid
+
 import client_lib.ansiprint as ansiprint
 
 # Exists function
@@ -38,10 +40,7 @@ def listchildren(zk_conn, key):
 
 # Delete key function
 def deletekey(zk_conn, key, recursive=True):
-    try:
-        zk_conn.delete(key, recursive=recursive)
-    except:
-        pass
+    zk_conn.delete(key, recursive=recursive)
 
 # Data read function
 def readdata(zk_conn, key):
@@ -88,3 +87,14 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+# Write lock function
+def writelock(zk_conn, key):
+    lock_id = str(uuid.uuid1())
+    lock = zk_conn.WriteLock('{}'.format(key), lock_id)
+    return lock
+
+# Read lock function
+def readlock(zk_conn, key):
+    lock_id = str(uuid.uuid1())
+    lock = zk_conn.ReadLock('{}'.format(key), lock_id)
+    return lock

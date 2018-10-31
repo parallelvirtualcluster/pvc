@@ -23,6 +23,7 @@
 import re
 import click
 import ast
+import time
 
 import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
@@ -90,7 +91,14 @@ def formatOSDList(zk_conn, osd_list):
         osd_stats = getOSDInformation(zk_conn, osd)
 
         # Set the parent node and length
-        osd_node[osd] = osd_stats['node']
+        try:
+            osd_node[osd] = osd_stats['node']
+            # If this happens, the node hasn't checked in fully yet, so just ignore it
+            if osd_node[osd] == '|':
+                continue
+        except KeyError:
+            continue
+
         _osd_node_length = len(osd_node[osd]) + 1
         if _osd_node_length > osd_node_length:
             osd_node_length = _osd_node_length
@@ -247,20 +255,51 @@ def get_status(zk_conn):
     return True, ''
 
 def add_osd(zk_conn, node, device):
+    # Verify the target node exists
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
     # Tell the cluster to create a new OSD for the host
     add_osd_string = 'add {},{}'.format(node, device) 
     zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': add_osd_string})
-    click.echo('Created new OSD with block device {} on node {}.'.format(device, node))
-    return True, ''
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/osd_cmd')
+    with lock:
+        result = zkhandler.readdata(zk_conn, '/ceph/osd_cmd').split()[0]
+        if result == 'success-add':
+            success = True
+        else:
+            success = False
+            
+    if success:
+        return True, 'Created new OSD with block device {} on node {}.'.format(device, node)
+    else:
+        return False, 'Failed to create new OSD; check node logs for details.'
 
 def remove_osd(zk_conn, osd_id):
+    if not common.verifyOSD(zk_conn, osd_id):
+        return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
+
+    # Tell the cluster to remove an OSD
     remove_osd_string = 'remove {}'.format(osd_id)
     zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': remove_osd_string})
-    click.echo('Removed OSD with ID {} from the cluster.'.format(osd_id))
-    return True, ''
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/osd_cmd')
+    with lock:
+        result = zkhandler.readdata(zk_conn, '/ceph/osd_cmd').split()[0]
+        if result == 'success-remove':
+            success = True
+        else:
+            success = False
+
+    if success:
+        return True, 'Removed OSD {} from the cluster.'.format(osd_id)
+    else:
+        return False, 'Failed to remove OSD; check node logs for details.'
 
 def get_list_osd(zk_conn, limit):
     osd_list = []

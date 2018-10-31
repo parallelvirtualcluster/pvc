@@ -308,7 +308,7 @@ def zk_listener(state):
 
         # Start keepalive thread
         if update_timer:
-            update_timer = createKeepaliveTimer()
+            update_timer = startKeepaliveTimer()
     else:
         pass
 zk_conn.add_listener(zk_listener)
@@ -669,23 +669,38 @@ def osd_cmd(data, stat, event=''):
         if command == 'add':
             node, device = args.split(',')
             if node == this_node.name:
-                # Clean up the command queue
-                zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
-                # Add the OSD
-                CephInstance.add_osd(zk_conn, logger, node, device)
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/osd_cmd')
+                with lock:
+                    # Add the OSD
+                    result = CephInstance.add_osd(zk_conn, logger, node, device)
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': 'failure-{}'.format(data)})
         # Removing an OSD
         elif command == 'remove':
             osd_id = args
 
             # Verify osd_id is in the list
-            if not d_osd[osd_id]:
-                return True
-
-            if d_osd[osd_id].node == this_node.name:
-                # Clean up the command queue
-                zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': ''})
-                # Remove the OSD
-                CephInstance.remove_osd(zk_conn, logger, osd_id, d_osd[osd_id])
+            if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/osd_cmd')
+                with lock:
+                    # Remove the OSD
+                    result = CephInstance.remove_osd(zk_conn, logger, osd_id, d_osd[osd_id])
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/osd_cmd': 'failure-{}'.format(data)})
 
 # OSD objects
 @zk_conn.ChildrenWatch('/ceph/osds')
@@ -784,7 +799,6 @@ def update_zookeeper():
             rd_data = line[15]
             state = line[17]
             osd_status.update({
-#            osd_stats.update({
                 str(osd_id): { 
                     'node': node,
                     'used': used,
@@ -808,7 +822,7 @@ def update_zookeeper():
     for osd in osd_list:
         if d_osd[osd].node == myhostname:
             zkhandler.writedata(zk_conn, {
-                '/ceph/osds/{}/stats'.format(osd): str(osd_stats[osd])
+                '/ceph/osds/{}/stats'.format(osd): str(json.dumps(osd_stats[osd]))
             })
             osds_this_node += 1
 

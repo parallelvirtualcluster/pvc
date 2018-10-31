@@ -21,7 +21,9 @@
 ###############################################################################
 
 import kazoo.client
-import pvcd.log as log
+import uuid
+
+#import pvcd.log as log
 
 # Child list function
 def listchildren(zk_conn, key):
@@ -29,8 +31,8 @@ def listchildren(zk_conn, key):
     return children
 
 # Key deletion function
-def delete(zk_conn, key):
-    zk_conn.delete(key, recursive=True)
+def deletekey(zk_conn, key, recursive=True):
+    zk_conn.delete(key, recursive=recursive)
 
 # Data read function
 def readdata(zk_conn, key):
@@ -53,7 +55,7 @@ def writedata(zk_conn, kv):
         # Check if this key already exists or not
         if not zk_conn.exists(key):
             # We're creating a new key
-            zk_transaction.create(key, data.encode('ascii'))
+            zk_transaction.create(key, str(data).encode('ascii'))
         else:
             # We're updating a key with version validation
             orig_data = zk_conn.get(key)
@@ -63,7 +65,7 @@ def writedata(zk_conn, kv):
             new_version = version + 1
 
             # Update the data
-            zk_transaction.set_data(key, data.encode('ascii'))
+            zk_transaction.set_data(key, str(data).encode('ascii'))
 
             # Set up the check
             try:
@@ -79,3 +81,14 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+# Write lock function
+def writelock(zk_conn, key):
+    lock_id = str(uuid.uuid1())
+    lock = zk_conn.WriteLock('{}'.format(key), lock_id)
+    return lock
+
+# Read lock function
+def readlock(zk_conn, key):
+    lock_id = str(uuid.uuid1())
+    lock = zk_conn.ReadLock('{}'.format(key), lock_id)
+    return lock
