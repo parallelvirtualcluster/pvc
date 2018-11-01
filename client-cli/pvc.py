@@ -912,6 +912,8 @@ def net_acl_list(net, limit, direction):
 def cli_ceph():
     """
     Manage the Ceph storage of the PVC cluster.
+
+    NOTE: The PVC Ceph interface is limited to the most common tasks. Any other administrative tasks must be performed on a node directly.
     """
     pass
 
@@ -998,6 +1000,61 @@ def ceph_pool():
     Manage the Ceph RBD pools of the PVC cluster.
     """
     pass
+
+###############################################################################
+# pvc ceph pool add
+###############################################################################
+@click.command(name='add', short_help='Add new RBD pool.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'pgs'
+)
+def ceph_pool_add(name, pgs):
+    """
+    Add a new Ceph RBD pool with name NAME and PGS placement groups.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph pool remove
+###############################################################################
+@click.command(name='remove', short_help='Remove RBD pool.')
+@click.argument(
+    'name'
+)
+@click.option('--yes', is_flag=True,
+              expose_value=False,
+              prompt='DANGER: This command will destroy this pool and all volumes. Do you want to continue?'
+)
+def ceph_pool_remove(name):
+    """
+    Remove a Ceph RBD pool with name NAME and all volumes on it.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph pool list
+###############################################################################
+@click.command(name='list', short_help='List cluster RBD pools.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def ceph_pool_list(limit):
+    """
+    List all Ceph RBD pools in the cluster; optinally only match elements matching name regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.get_list_pool(zk_conn, limit)
+    cleanup(retcode, retmsg, zk_conn)
 
 
 ###############################################################################
@@ -1134,13 +1191,11 @@ ceph_osd.add_command(ceph_osd_remove)
 #ceph_osd.add_command(ceph_osd_out)
 #ceph_osd.add_command(ceph_osd_set)
 #ceph_osd.add_command(ceph_osd_unset)
-#ceph_osd.add_command(ceph_osd_info)
 ceph_osd.add_command(ceph_osd_list)
 
-#ceph_pool.add_command(ceph_pool_add)
-#ceph_pool.add_command(ceph_pool_remove)
-#ceph_pool.add_command(ceph_pool_info)
-#ceph_pool.add_command(ceph_pool_list)
+ceph_pool.add_command(ceph_pool_add)
+ceph_pool.add_command(ceph_pool_remove)
+ceph_pool.add_command(ceph_pool_list)
 
 cli_ceph.add_command(ceph_status)
 cli_ceph.add_command(ceph_osd)

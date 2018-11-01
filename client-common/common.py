@@ -176,15 +176,6 @@ def verifyNode(zk_conn, node):
         return False
 
 #
-# Verify OSD is valid in cluster
-#
-def verifyOSD(zk_conn, osd_id):
-    if zkhandler.exists(zk_conn, '/ceph/osds/{}'.format(osd_id)):
-        return True
-    else:
-        return False
-
-#
 # Get the primary coordinator node
 #
 def getPrimaryNode(zk_conn):

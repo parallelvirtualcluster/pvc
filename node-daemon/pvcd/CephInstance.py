@@ -30,10 +30,6 @@ import pvcd.zkhandler as zkhandler
 import pvcd.fencing as fencing
 import pvcd.common as common
 
-class CephInstance(object):
-    def __init__(self):
-        pass
-
 class CephOSDInstance(object):
     def __init__(self, zk_conn, this_node, osd_id):
         self.zk_conn = zk_conn
@@ -149,6 +145,7 @@ def add_osd(zk_conn, logger, node, device):
         zkhandler.writedata(zk_conn, {
             '/ceph/osds/{}'.format(osd_id): '',
             '/ceph/osds/{}/node'.format(osd_id): node,
+            '/ceph/osds/{}/device'.format(osd_id): device,
             '/ceph/osds/{}/stats'.format(osd_id): '{}'
         })
 
@@ -186,7 +183,6 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             for osd in dump_string:
                 if str(osd['osd']) == osd_id:
                     osd_string = osd
-            print(osd_string)
             num_pgs = osd_string['num_pgs']
             if num_pgs > 0:
                time.sleep(5)
@@ -245,6 +241,99 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         logger.out('Failed to purge OSD disk with ID {}: {}'.format(osd_id, e), state='e')
         return False
 
-class CephPool(object):
-    def __init__(self):
-        pass
+class CephPoolInstance(object):
+    def __init__(self, zk_conn, this_node, name):
+        self.zk_conn = zk_conn
+        self.this_node = this_node
+        self.name = name
+        self.pgs = ''
+        self.stats = dict()
+
+        @self.zk_conn.DataWatch('/ceph/pools/{}/pgs'.format(self.name))
+        def watch_pool_node(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = ''
+
+            if data and data != self.pgs:
+                self.pgs = data
+
+        @self.zk_conn.DataWatch('/ceph/pools/{}/stats'.format(self.name))
+        def watch_pool_stats(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = ''
+
+            if data and data != self.stats:
+                self.stats = json.loads(data)
+
+def add_pool(zk_conn, logger, name, pgs):
+    # We are ready to create a new pool on this node
+    logger.out('Creating new RBD pool {}'.format(name), state='i')
+    try:
+        # 1. Create the pool
+        retcode, stdout, stderr = common.run_os_command('ceph osd pool create {} {} replicated'.format(name, pgs))
+        if retcode:
+            print('ceph osd pool create')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 2. Enable RBD application
+        retcode, stdout, stderr = common.run_os_command('ceph osd pool application enable {} rbd'.format(name))
+        if retcode:
+            print('ceph osd pool application enable')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 3. Add the new pool to ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/pools/{}'.format(name): '',
+            '/ceph/pools/{}/pgs'.format(name): pgs,
+            '/ceph/pools/{}/stats'.format(name): '{}'
+        })
+
+        # Log it
+        logger.out('Created new RBD pool {}'.format(name), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to create new RBD pool {}: {}'.format(name, e), state='e')
+        return False
+
+def remove_pool(zk_conn, logger, name):
+    # We are ready to create a new pool on this node
+    logger.out('Removing RBD pool {}'.format(name), state='i')
+    try:
+        # Delete pool from ZK
+        zkhandler.deletekey(zk_conn, '/ceph/pools/{}'.format(name))
+
+        # Remove the pool
+        retcode, stdout, stderr = common.run_os_command('ceph osd pool rm {pool} {pool} --yes-i-really-really-mean-it'.format(pool=name))
+        if retcode:
+            print('ceph osd pool rm')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Removed RBD pool {}'.format(name), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to remove RBD pool {}: {}'.format(name, e), state='e')
+        return False
+
