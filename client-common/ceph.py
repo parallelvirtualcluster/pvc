@@ -41,6 +41,13 @@ def verifyOSD(zk_conn, osd_id):
     else:
         return False
 
+# Verify Pool is valid in cluster
+def verifyPool(zk_conn, name):
+    if zkhandler.exists(zk_conn, '/ceph/pools/{}'.format(name)):
+        return True
+    else:
+        return False
+
 # Verify OSD path is valid in cluster
 def verifyOSDBlock(zk_conn, node, device):
     for osd in zkhandler.listchildren(zk_conn, '/ceph/osds'):
@@ -651,6 +658,9 @@ def add_pool(zk_conn, name, pgs):
     return success, message
 
 def remove_pool(zk_conn, name):
+    if not verifyPool(zk_conn, name):
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
+
     # Tell the cluster to create a new pool
     remove_pool_string = 'pool_remove {}'.format(name) 
     zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_pool_string})
