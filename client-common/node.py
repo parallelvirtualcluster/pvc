@@ -240,9 +240,9 @@ def get_list(zk_conn, limit):
     node_mem_used = {}
     node_mem_free = {}
     node_mem_total = {}
+    node_mem_allocated = {}
     node_domains_count = {}
     node_running_domains = {}
-    node_mem_allocated = {}
     node_load = {}
 
     # Gather information for printing
@@ -264,7 +264,14 @@ def get_list(zk_conn, limit):
     node_name_length = 5
     daemon_state_length = 7
     router_state_length = 7
-    domain_state_length = 8
+    domain_state_length = 7
+    domains_count_length = 4
+    cpu_count_length = 5
+    load_length = 5
+    mem_total_length = 6
+    mem_used_length = 5
+    mem_free_length = 5
+    mem_alloc_length = 4
     for node_name in node_list:
         # node_name column
         _node_name_length = len(node_name) + 1
@@ -282,17 +289,52 @@ def get_list(zk_conn, limit):
         _domain_state_length = len(node_domain_state[node_name]) + 1
         if _domain_state_length > domain_state_length:
             domain_state_length = _domain_state_length
+        # domains_count column
+        _domains_count_length = len(node_domains_count[node_name]) + 1
+        if _domains_count_length > domains_count_length:
+            domains_count_length = _domains_count_length
+        # cpu_count column
+        _cpu_count_length = len(node_cpu_count[node_name]) + 1
+        if _cpu_count_length > cpu_count_length:
+            cpu_count_length = _cpu_count_length
+        # load column
+        _load_length = len(node_load[node_name]) + 1
+        if _load_length > load_length:
+            load_length = _load_length
+        # mem_total column
+        _mem_total_length = len(str(node_mem_total[node_name])) + 1
+        if _mem_total_length > mem_total_length:
+            mem_total_length = _mem_total_length
+        # mem_used column
+        _mem_used_length = len(str(node_mem_used[node_name])) + 1
+        if _mem_used_length > mem_used_length:
+            mem_used_length = _mem_used_length
+        # mem_free column
+        _mem_free_length = len(str(node_mem_free[node_name])) + 1
+        if _mem_free_length > mem_free_length:
+            mem_free_length = _mem_free_length
+        # mem_alloc column
+        _mem_alloc_length = len(str(node_mem_allocated[node_name])) + 1
+        if _mem_alloc_length > mem_alloc_length:
+            mem_alloc_length = _mem_alloc_length
 
     # Format the string (header)
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}} \
 St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
-Res: {node_domains_count: <4} {node_cpu_count: <5} {node_load: <5} \
-Mem (M): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+Res: {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
+Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
             node_name_length=node_name_length,
             daemon_state_length=daemon_state_length,
             router_state_length=router_state_length,
             domain_state_length=domain_state_length,
+            domains_count_length=domains_count_length,
+            cpu_count_length=cpu_count_length,
+            load_length=load_length,
+            mem_total_length=mem_total_length,
+            mem_used_length=mem_used_length,
+            mem_free_length=mem_free_length,
+            mem_alloc_length=mem_alloc_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             daemon_state_colour='',
@@ -344,12 +386,19 @@ Mem (M): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}} \
     {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
-     {node_domains_count: <4} {node_cpu_count: <5} {node_load: <5} \
-         {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+     {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
+         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
                 node_name_length=node_name_length,
                 daemon_state_length=daemon_state_length,
                 router_state_length=router_state_length,
                 domain_state_length=domain_state_length,
+                domains_count_length=domains_count_length,
+                cpu_count_length=cpu_count_length,
+                load_length=load_length,
+                mem_total_length=mem_total_length,
+                mem_used_length=mem_used_length,
+                mem_free_length=mem_free_length,
+                mem_alloc_length=mem_alloc_length,
                 bold='',
                 end_bold='',
                 daemon_state_colour=daemon_state_colour,

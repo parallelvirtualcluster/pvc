@@ -120,7 +120,7 @@ def getNetworkACLs(zk_conn, vni, _direction):
     full_acl_list = []
     for direction in directions:
         unordered_acl_list = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules/{}'.format(vni, direction))
-        ordered_acls = {}
+        ordered_acls = dict()
         for acl in unordered_acl_list:
             order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, acl))
             ordered_acls[order] = acl
@@ -207,15 +207,15 @@ def formatNetworkInformation(zk_conn, vni, long_output):
 
 def formatNetworkList(zk_conn, net_list):
     net_list_output = []
-    description = {}
-    domain = {}
-    ip_network = {}
-    ip_gateway = {}
-    dhcp_flag = {}
-    dhcp_flag_colour = {}
-    dhcp_start = {}
-    dhcp_end = {}
-    dhcp_range = {}
+    description = dict()
+    domain = dict()
+    ip_network = dict()
+    ip_gateway = dict()
+    dhcp_flag = dict()
+    dhcp_flag_colour = dict()
+    dhcp_start = dict()
+    dhcp_end = dict()
+    dhcp_range = dict()
     colour_off = ansiprint.end()
 
     # Gather information for printing
@@ -237,6 +237,7 @@ def formatNetworkList(zk_conn, net_list):
     net_domain_length = 8
     net_ip_network_length = 12
     net_ip_gateway_length = 9
+    net_dhcp_flag_length = 5
     net_dhcp_range_length = 12
     for net in net_list:
         # vni column
@@ -259,6 +260,10 @@ def formatNetworkList(zk_conn, net_list):
         _net_ip_gateway_length = len(ip_gateway[net]) + 1
         if _net_ip_gateway_length > net_ip_gateway_length:
             net_ip_gateway_length = _net_ip_gateway_length
+        # dhcp_flag column
+        _net_dhcp_flag_length = len(dhcp_flag[net]) + 1
+        if _net_dhcp_flag_length > net_dhcp_flag_length:
+            net_dhcp_flag_length = _net_dhcp_flag_length
         # dhcp_range column
         _net_dhcp_range_length = len(dhcp_range[net]) + 1
         if _net_dhcp_range_length > net_dhcp_range_length:
@@ -271,7 +276,7 @@ def formatNetworkList(zk_conn, net_list):
 {net_domain: <{net_domain_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{net_dhcp_flag: <6} \
+{net_dhcp_flag: <{net_dhcp_flag_length}} \
 {net_dhcp_range: <{net_dhcp_range_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
@@ -281,6 +286,7 @@ def formatNetworkList(zk_conn, net_list):
         net_domain_length=net_domain_length,
         net_ip_network_length=net_ip_network_length,
         net_ip_gateway_length=net_ip_gateway_length,
+        net_dhcp_flag_length=net_dhcp_flag_length,
         net_dhcp_range_length=net_dhcp_range_length,
         net_vni='VNI',
         net_description='Description',
@@ -299,7 +305,7 @@ def formatNetworkList(zk_conn, net_list):
 {net_domain: <{net_domain_length}} \
 {net_ip_network: <{net_ip_network_length}} \
 {net_ip_gateway: <{net_ip_gateway_length}} \
-{dhcp_flag_colour}{net_dhcp_flag: <6}{colour_off} \
+{dhcp_flag_colour}{net_dhcp_flag: <{net_dhcp_flag_length}}{colour_off} \
 {net_dhcp_range: <{net_dhcp_range_length}} \
 {end_bold}'.format(
                 bold='',
@@ -309,6 +315,7 @@ def formatNetworkList(zk_conn, net_list):
                 net_domain_length=net_domain_length,
                 net_ip_network_length=net_ip_network_length,
                 net_ip_gateway_length=net_ip_gateway_length,
+                net_dhcp_flag_length=net_dhcp_flag_length,
                 net_dhcp_range_length=net_dhcp_range_length,
                 net_vni=net,
                 net_description=description[net],
@@ -327,10 +334,10 @@ def formatNetworkList(zk_conn, net_list):
 
 def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     dhcp_lease_list_output = []
-    hostname = {}
-    ip_address = {}
-    mac_address = {}
-    timestamp = {}
+    hostname = dict()
+    ip_address = dict()
+    mac_address = dict()
+    timestamp = dict()
 
     # Gather information for printing
     for dhcp_lease in dhcp_leases_list:
@@ -340,9 +347,10 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
             hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPLeaseInformation(zk_conn, vni, dhcp_lease)
 
     # Determine optimal column widths
-    lease_hostname_length = 13
+    lease_hostname_length = 9
     lease_ip_address_length = 11
     lease_mac_address_length = 13
+    lease_timestamp_length = 13
     for dhcp_lease in dhcp_leases_list:
         # hostname column
         _lease_hostname_length = len(hostname[dhcp_lease]) + 1
@@ -369,7 +377,7 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
         lease_hostname_length=lease_hostname_length,
         lease_ip_address_length=lease_ip_address_length,
         lease_mac_address_length=lease_mac_address_length,
-        lease_timestamp_length=12,
+        lease_timestamp_length=lease_timestamp_length,
         lease_hostname='Hostname',
         lease_ip_address='IP Address',
         lease_mac_address='MAC Address',
@@ -401,10 +409,10 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
 
 def formatACLList(zk_conn, vni, _direction, acl_list):
     acl_list_output = []
-    direction = {}
-    order = {}
-    description = {}
-    rule = {}
+    direction = dict()
+    order = dict()
+    description = dict()
+    rule = dict()
 
     if _direction is None:
         directions = ['in', 'out']
@@ -418,6 +426,7 @@ def formatACLList(zk_conn, vni, _direction, acl_list):
         direction[acld] = acl['direction']
 
     # Determine optimal column widths
+    acl_direction_length = 10
     acl_order_length = 6
     acl_description_length = 12
     acl_rule_length = 5
@@ -438,13 +447,14 @@ def formatACLList(zk_conn, vni, _direction, acl_list):
 
     # Format the string (header)
     acl_list_output_header = '{bold}\
-{acl_direction: <10} \
+{acl_direction: <{acl_direction_length}} \
 {acl_order: <{acl_order_length}} \
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
+        acl_direction_length=acl_direction_length,
         acl_order_length=acl_order_length,
         acl_description_length=acl_description_length,
         acl_rule_length=acl_rule_length,
@@ -457,13 +467,14 @@ def formatACLList(zk_conn, vni, _direction, acl_list):
     for acl in acl_list:
         acld = acl['description']
         acl_list_output.append('{bold}\
-{acl_direction: <10} \
+{acl_direction: <{acl_direction_length}} \
 {acl_order: <{acl_order_length}} \
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
+                acl_direction_length=acl_direction_length,
                 acl_order_length=acl_order_length,
                 acl_description_length=acl_description_length,
                 acl_rule_length=acl_rule_length,
@@ -538,7 +549,7 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
 
 def modify_network(zk_conn, vni, **parameters):
     # Add the new network to Zookeeper
-    zk_data = {}
+    zk_data = dict()
     if parameters['description'] != None:
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
     if parameters['domain'] != None:
@@ -657,7 +668,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
     full_acl_list.insert(order, {'direction': direction, 'description': description})
 
     # Update the existing ordering
-    updated_orders = {}
+    updated_orders = dict()
     for idx, acl in enumerate(full_acl_list):
         if acl['description'] == description:
             continue
@@ -715,7 +726,7 @@ def remove_acl(zk_conn, network, rule, direction):
 
     # Update the existing ordering
     updated_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
-    updated_orders = {}
+    updated_orders = dict()
     for idx, acl in enumerate(updated_acl_list):
         updated_orders[
             '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl['description'])

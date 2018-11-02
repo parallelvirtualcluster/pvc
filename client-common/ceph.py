@@ -259,7 +259,7 @@ Sp: {osd_used: <{osd_used_length}} \
 {osd_var: <{osd_var_length}} \
 Rd: {osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
-Wt: {osd_wrops: <{osd_wrops_length}} \
+Wr: {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),

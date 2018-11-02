@@ -561,23 +561,30 @@ def get_list(zk_conn, node, limit):
     # Determine optimal column widths
     # Dynamic columns: node_name, node, migrated
     vm_name_length = 5
-    vm_node_length = 8
+    vm_uuid_length = 37
+    vm_state_length = 6
     vm_nets_length = 9
+    vm_ram_length = 8
+    vm_vcpu_length = 6
+    vm_node_length = 8
     vm_migrated_length = 10
     for vm in vm_list:
         # vm_name column
         _vm_name_length = len(vm_name[vm]) + 1
         if _vm_name_length > vm_name_length:
             vm_name_length = _vm_name_length
+        # vm_state column
+        _vm_state_length = len(vm_state[vm]) + 1
+        if _vm_state_length > vm_state_length:
+            vm_state_length = _vm_state_length
+        # vm_nets column
+        _vm_nets_length = len(','.join(vm_nets[vm])) + 1
+        if _vm_nets_length > vm_nets_length:
+            vm_nets_length = _vm_nets_length
         # vm_node column
         _vm_node_length = len(vm_node[vm]) + 1
         if _vm_node_length > vm_node_length:
             vm_node_length = _vm_node_length
-        # vm_nets column
-        # Strip off any ANSII chars
-        _vm_nets_length = len(','.join(vm_nets[vm])) + 1
-        if _vm_nets_length > vm_nets_length:
-            vm_nets_length = _vm_nets_length
         # vm_migrated column
         _vm_migrated_length = len(vm_migrated[vm]) + 1
         if _vm_migrated_length > vm_migrated_length:
@@ -585,15 +592,19 @@ def get_list(zk_conn, node, limit):
 
     # Format the string (header)
     vm_list_output.append(
-        '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
-{vm_state_colour}{vm_state: <8}{end_colour} \
+        '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
+{vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_networks: <{vm_nets_length}} \
-{vm_memory: <8} {vm_vcpu: <6} \
+{vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
             vm_name_length=vm_name_length,
-            vm_node_length=vm_node_length,
+            vm_uuid_length=vm_uuid_length,
+            vm_state_length=vm_state_length,
             vm_nets_length=vm_nets_length,
+            vm_ram_length=vm_ram_length,
+            vm_vcpu_length=vm_vcpu_length,
+            vm_node_length=vm_node_length,
             vm_migrated_length=vm_migrated_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
@@ -636,15 +647,19 @@ def get_list(zk_conn, node, limit):
         vm_nets[vm] = ','.join(net_list)
 
         vm_list_output.append(
-            '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
-{vm_state_colour}{vm_state: <8}{end_colour} \
+            '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
+{vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_nets_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
-{vm_memory: <8} {vm_vcpu: <6} \
+{vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
                 vm_name_length=vm_name_length,
-                vm_node_length=vm_node_length,
+                vm_uuid_length=vm_uuid_length,
+                vm_state_length=vm_state_length,
                 vm_nets_length=vm_nets_length,
+                vm_ram_length=vm_ram_length,
+                vm_vcpu_length=vm_vcpu_length,
+                vm_node_length=vm_node_length,
                 vm_migrated_length=vm_migrated_length,
                 bold='',
                 end_bold='',
