@@ -669,13 +669,13 @@ def cmd(data, stat, event=''):
 
         # Adding a new OSD
         if command == 'osd_add':
-            node, device = args.split(',')
+            node, device, weight = args.split(',')
             if node == this_node.name:
                 # Lock the command queue
                 lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
                 with lock:
                     # Add the OSD
-                    result = CephInstance.add_osd(zk_conn, logger, node, device)
+                    result = CephInstance.add_osd(zk_conn, logger, node, device, weight)
                     # Command succeeded
                     if result:
                         # Update the command queue
@@ -967,6 +967,7 @@ def update_zookeeper():
                 'utilization': osd['utilization'],
                 'var': osd['var'],
                 'pgs': osd['pgs'],
+                'kb': osd['kb'],
             }
         })
     # Parse the status data

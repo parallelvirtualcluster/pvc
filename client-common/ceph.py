@@ -57,6 +57,31 @@ def verifyOSDBlock(zk_conn, node, device):
             return osd
     return None
 
+# Format byte sizes in human-readable units
+def format_bytes(databytes):
+    unit_matrix = {
+        'K': 1024,
+        'M': 1024*1024,
+        'G': 1024*1024*1024,
+        'T': 1024*1024*1024*1024,
+        'P': 1024*1024*1024*1024*1024
+    }
+    databytes_formatted = ''
+    if databytes > 9999:
+        for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
+            new_bytes = int(math.ceil(databytes / unit_matrix[unit]))
+            # Round up if 5 or more digits
+            if new_bytes > 9999:
+                # We can jump down another level
+                continue
+            else:
+                # We're at the end, display with this size
+                databytes_formatted = '{}{}'.format(new_bytes, unit)
+    else:
+        databytes_formatted = '{}B'.format(databytes)
+
+    return databytes_formatted
+
 #
 # Cluster search functions
 #
@@ -69,6 +94,10 @@ def getOSDInformation(zk_conn, osd_id):
     # Parse the stats data
     osd_stats_raw = zkhandler.readdata(zk_conn, '/ceph/osds/{}/stats'.format(osd_id))
     osd_stats = dict(json.loads(osd_stats_raw))
+    # Deal with the size
+    databytes = osd_stats['kb'] * 1024
+    databytes_formatted = format_bytes(databytes)
+    osd_stats['size'] = databytes_formatted
     return osd_stats
 
 def getCephOSDs(zk_conn):
@@ -83,6 +112,7 @@ def formatOSDList(zk_conn, osd_list):
     osd_up_colour = dict()
     osd_in = dict()
     osd_in_colour = dict()
+    osd_size = dict()
     osd_weight = dict()
     osd_pgs = dict()
     osd_node = dict()
@@ -94,12 +124,11 @@ def formatOSDList(zk_conn, osd_list):
     osd_wrdata = dict()
     osd_rdops = dict()
     osd_rddata = dict()
-    osd_state = dict()
-    osd_state_colour = dict()
 
     osd_id_length = 3
     osd_up_length = 4
     osd_in_length = 4
+    osd_size_length = 5
     osd_weight_length = 7
     osd_pgs_length = 4
     osd_node_length = 5
@@ -149,6 +178,12 @@ def formatOSDList(zk_conn, osd_list):
         else:
             osd_in[osd] = 'No'
             osd_in_colour[osd] = ansiprint.red()
+
+        # Set the size and length
+        osd_size[osd] = osd_stats['size']
+        _osd_size_length = len(str(osd_size[osd])) + 1
+        if _osd_size_length > osd_size_length:
+            osd_size_length = _osd_size_length
 
         # Set the weight and length
         osd_weight[osd] = osd_stats['weight']
@@ -206,6 +241,7 @@ def formatOSDList(zk_conn, osd_list):
 {osd_node: <{osd_node_length}} \
 {osd_up: <{osd_up_length}} \
 {osd_in: <{osd_in_length}} \
+{osd_size: <{osd_size_length}} \
 {osd_weight: <{osd_weight_length}} \
 {osd_pgs: <{osd_pgs_length}} \
 Space: {osd_used: <{osd_used_length}} \
@@ -223,6 +259,7 @@ Read: {osd_rdops: <{osd_rdops_length}} \
             osd_node_length=osd_node_length,
             osd_up_length=osd_up_length,
             osd_in_length=osd_in_length,
+            osd_size_length=osd_size_length,
             osd_weight_length=osd_weight_length,
             osd_pgs_length=osd_pgs_length,
             osd_used_length=osd_used_length,
@@ -237,6 +274,7 @@ Read: {osd_rdops: <{osd_rdops_length}} \
             osd_node='Node',
             osd_up='Up',
             osd_in='In',
+            osd_size='Size',
             osd_weight='Weight',
             osd_pgs='PGs',
             osd_used='Used',
@@ -256,6 +294,7 @@ Read: {osd_rdops: <{osd_rdops_length}} \
 {osd_node: <{osd_node_length}} \
 {osd_up_colour}{osd_up: <{osd_up_length}}{end_colour} \
 {osd_in_colour}{osd_in: <{osd_in_length}}{end_colour} \
+{osd_size: <{osd_size_length}} \
 {osd_weight: <{osd_weight_length}} \
 {osd_pgs: <{osd_pgs_length}} \
        {osd_used: <{osd_used_length}} \
@@ -274,6 +313,7 @@ Read: {osd_rdops: <{osd_rdops_length}} \
                 osd_node_length=osd_node_length,
                 osd_up_length=osd_up_length,
                 osd_in_length=osd_in_length,
+                osd_size_length=osd_size_length,
                 osd_weight_length=osd_weight_length,
                 osd_pgs_length=osd_pgs_length,
                 osd_used_length=osd_used_length,
@@ -290,6 +330,7 @@ Read: {osd_rdops: <{osd_rdops_length}} \
                 osd_up=osd_up[osd],
                 osd_in_colour=osd_in_colour[osd],
                 osd_in=osd_in[osd],
+                osd_size=osd_size[osd],
                 osd_weight=osd_weight[osd],
                 osd_pgs=osd_pgs[osd],
                 osd_used=osd_used[osd],
@@ -316,29 +357,9 @@ def getPoolInformation(zk_conn, name):
     pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(name))
     pool_stats = dict(json.loads(pool_stats_raw))
     # Deal with the size issues
-    size_matrix = {
-        'b': 1,
-        'K': 1024,
-        'M': 1024*1024,
-        'G': 1024*1024*1024,
-        'T': 1024*1024*1024*1024,
-        'P': 1024*1024*1024*1024*1024
-    }
     for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
         databytes = pool_stats[datatype]
-        databytes_formatted = ''
-        if databytes > 9999:
-            for unit in sorted(size_matrix, key=size_matrix.get, reverse=True):
-                new_bytes = int(math.ceil(databytes / size_matrix[unit]))
-                # Round up if 5 or more digits
-                if new_bytes > 9999:
-                    # We can jump down another level
-                    continue
-                else:
-                    # We're at the end, display with this size
-                    databytes_formatted = '{}{}'.format(new_bytes, unit)
-        else:
-            databytes_formatted = '{}B'.format(databytes)
+        databytes_formatted = format_bytes(databytes)
         new_name = datatype.replace('bytes', 'formatted')
         pool_stats[new_name] = databytes_formatted
     return pool_stats
@@ -543,7 +564,7 @@ def get_status(zk_conn):
     click.echo('')
     return True, ''
 
-def add_osd(zk_conn, node, device):
+def add_osd(zk_conn, node, device, weight):
     # Verify the target node exists
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -554,7 +575,7 @@ def add_osd(zk_conn, node, device):
         return False, 'ERROR: Block device {} on node {} is used by OSD {}'.format(device, node, block_osd)
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = 'osd_add {},{}'.format(node, device) 
+    add_osd_string = 'osd_add {},{},{}'.format(node, device, weight) 
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)

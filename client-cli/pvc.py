@@ -950,13 +950,18 @@ def ceph_osd():
 @click.argument(
     'device'
 )
-def ceph_osd_add(node, device):
+@click.option(
+    '-w', '--weight', 'weight',
+    default=1.0, show_default=True,
+    help='Weight of the OSD within the CRUSH map.'
+)
+def ceph_osd_add(node, device, weight):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE to the cluster.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_osd(zk_conn, node, device)
+    retcode, retmsg = pvc_ceph.add_osd(zk_conn, node, device, weight)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

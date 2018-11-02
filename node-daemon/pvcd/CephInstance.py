@@ -69,7 +69,7 @@ class CephOSDInstance(object):
             if data and data != self.stats:
                 self.stats = json.loads(data)
 
-def add_osd(zk_conn, logger, node, device):
+def add_osd(zk_conn, logger, node, device, weight):
     # We are ready to create a new OSD on this node
     logger.out('Creating new OSD disk', state='i')
     try:
@@ -117,8 +117,9 @@ def add_osd(zk_conn, logger, node, device):
 
         # 5. Add it to the crush map
         retcode, stdout, stderr = common.run_os_command(
-            'ceph osd crush add osd.{osdid} 1.0 root=default host={node}'.format(
+            'ceph osd crush add osd.{osdid} {weight} root=default host={node}'.format(
                 osdid=osd_id,
+                weight=weight,
                 node=node
             )
         )
