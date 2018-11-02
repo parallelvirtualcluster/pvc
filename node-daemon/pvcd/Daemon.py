@@ -707,6 +707,89 @@ def cmd(data, stat, event=''):
                         zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
                     # Wait 0.5 seconds before we free the lock, to ensure the client hits the lock
                     time.sleep(0.5)
+        # Online an OSD
+        elif command == 'osd_in':
+            osd_id = args
+
+            # Verify osd_id is in the list
+            if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+                with lock:
+                    # Online the OSD
+                    result = CephInstance.in_osd(zk_conn, logger, osd_id)
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                    # Wait 0.5 seconds before we free the lock, to ensure the client hits the lock
+                    time.sleep(0.5)
+        # Offline an OSD
+        elif command == 'osd_out':
+            osd_id = args
+
+            # Verify osd_id is in the list
+            if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+                with lock:
+                    # Offline the OSD
+                    result = CephInstance.out_osd(zk_conn, logger, osd_id)
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                    # Wait 0.5 seconds before we free the lock, to ensure the client hits the lock
+                    time.sleep(0.5)
+        # Set a property
+        elif command == 'osd_set':
+            option = args
+
+            if this_node.router_state == 'primary':
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+                with lock:
+                    # Set the property
+                    result = CephInstance.set_property(zk_conn, logger, option)
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                    # Wait 0.5 seconds before we free the lock, to ensure the client hits the lock
+                    time.sleep(0.5)
+        # Unset a property
+        elif command == 'osd_unset':
+            option = args
+
+            if this_node.router_state == 'primary':
+                # Lock the command queue
+                lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+                with lock:
+                    # Unset the property
+                    result = CephInstance.unset_property(zk_conn, logger, option)
+                    # Command succeeded
+                    if result:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                    # Command failed
+                    else:
+                        # Update the command queue
+                        zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                    # Wait 0.5 seconds before we free the lock, to ensure the client hits the lock
+                    time.sleep(0.5)
+
         # Adding a new pool
         if command == 'pool_add':
             name, pgs = args.split(',')

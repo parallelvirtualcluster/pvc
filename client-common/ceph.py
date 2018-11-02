@@ -603,6 +603,108 @@ def remove_osd(zk_conn, osd_id):
     zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
     return success, message
 
+def in_osd(zk_conn, osd_id):
+    if not verifyOSD(zk_conn, osd_id):
+        return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
+
+    # Tell the cluster to online an OSD
+    in_osd_string = 'osd_in {}'.format(osd_id)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': in_osd_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-osd_in':
+                message = 'Set OSD {} online in the cluster.'.format(osd_id)
+                success = True
+            else:
+                message = 'ERROR: Failed to set OSD online; check node logs for details.'
+                success = False
+        except:
+            success = False
+            message = 'ERROR Command ignored by node.'
+
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    return success, message
+
+def out_osd(zk_conn, osd_id):
+    if not verifyOSD(zk_conn, osd_id):
+        return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
+
+    # Tell the cluster to offline an OSD
+    out_osd_string = 'osd_out {}'.format(osd_id)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': out_osd_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-osd_out':
+                message = 'Set OSD {} offline in the cluster.'.format(osd_id)
+                success = True
+            else:
+                message = 'ERROR: Failed to set OSD offline; check node logs for details.'
+                success = False
+        except:
+            success = False
+            message = 'ERROR Command ignored by node.'
+
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    return success, message
+
+def set_osd(zk_conn, option):
+    # Tell the cluster to set an OSD property
+    set_osd_string = 'osd_set {}'.format(option)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': set_osd_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-osd_set':
+                message = 'Set OSD property {} on the cluster.'.format(option)
+                success = True
+            else:
+                message = 'ERROR: Failed to set OSD property; check node logs for details.'
+                success = False
+        except:
+            success = False
+            message = 'ERROR Command ignored by node.'
+
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    return success, message
+
+def unset_osd(zk_conn, option):
+    # Tell the cluster to unset an OSD property
+    unset_osd_string = 'osd_unset {}'.format(option)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': unset_osd_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-osd_unset':
+                message = 'Unset OSD property {} on the cluster.'.format(option)
+                success = True
+            else:
+                message = 'ERROR: Failed to unset OSD property; check node logs for details.'
+                success = False
+        except:
+            success = False
+            message = 'ERROR Command ignored by node.'
+
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    return success, message
+
 def get_list_osd(zk_conn, limit):
     osd_list = []
     full_osd_list = getCephOSDs(zk_conn)

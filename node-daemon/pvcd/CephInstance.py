@@ -241,6 +241,86 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         logger.out('Failed to purge OSD disk with ID {}: {}'.format(osd_id, e), state='e')
         return False
 
+def in_osd(zk_conn, logger, osd_id):
+    # We are ready to create a new pool on this node
+    logger.out('Setting OSD {} in'.format(osd_id), state='i')
+    try:
+        # 1. Set it in
+        retcode, stdout, stderr = common.run_os_command('ceph osd in {}'.format(osd_id))
+        if retcode:
+            print('ceph osd in')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Set OSD {} in'.format(osd_id), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to set OSD {} in: {}'.format(osd_id, e), state='e')
+        return False
+
+def out_osd(zk_conn, logger, osd_id):
+    # We are ready to create a new pool on this node
+    logger.out('Settoutg OSD {} out'.format(osd_id), state='i')
+    try:
+        # 1. Set it out
+        retcode, stdout, stderr = common.run_os_command('ceph osd out {}'.format(osd_id))
+        if retcode:
+            proutt('ceph osd out')
+            proutt(stdout)
+            proutt(stderr)
+            raise
+
+        # Log it
+        logger.out('Set OSD {} out'.format(osd_id), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to set OSD {} out: {}'.format(osd_id, e), state='e')
+        return False
+
+def set_property(zk_conn, logger, option):
+    # We are ready to create a new pool on this node
+    logger.out('Setting OSD property {}'.format(option), state='i')
+    try:
+        # 1. Set it in
+        retcode, stdout, stderr = common.run_os_command('ceph osd set {}'.format(option))
+        if retcode:
+            prsett('ceph osd set')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Set OSD property {}'.format(option), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to set OSD property {}: {}'.format(option, e), state='e')
+        return False
+
+def unset_property(zk_conn, logger, option):
+    # We are ready to create a new pool on this node
+    logger.out('Unsetting OSD property {}'.format(option), state='i')
+    try:
+        # 1. Set it in
+        retcode, stdout, stderr = common.run_os_command('ceph osd unset {}'.format(option))
+        if retcode:
+            prunsett('ceph osd unset')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Unset OSD property {}'.format(option), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to unset OSD property {}: {}'.format(option, e), state='e')
+        return False
+
 class CephPoolInstance(object):
     def __init__(self, zk_conn, this_node, name):
         self.zk_conn = zk_conn

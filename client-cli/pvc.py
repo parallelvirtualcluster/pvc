@@ -976,6 +976,78 @@ def ceph_osd_remove(osdid):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc ceph osd in
+###############################################################################
+@click.command(name='in', short_help='Online OSD.')
+@click.argument(
+    'osdid'
+)
+def ceph_osd_in(osdid):
+    """
+    Set a Ceph OSD with ID OSDID online in the cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.in_osd(zk_conn, osdid)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph osd out
+###############################################################################
+@click.command(name='out', short_help='Offline OSD.')
+@click.argument(
+    'osdid'
+)
+def ceph_osd_out(osdid):
+    """
+    Set a Ceph OSD with ID OSDID offline in the cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.out_osd(zk_conn, osdid)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph osd set
+###############################################################################
+@click.command(name='set', short_help='Set property.')
+@click.argument(
+    'osd_property'
+)
+def ceph_osd_set(osd_property):
+    """
+    Set a Ceph OSD property OSD_PROPERTY on the cluster.
+
+    Valid properties are:
+
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.set_osd(zk_conn, osd_property)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph osd unset
+###############################################################################
+@click.command(name='unset', short_help='Unset property.')
+@click.argument(
+    'osd_property'
+)
+def ceph_osd_unset(osd_property):
+    """
+    Unset a Ceph OSD property OSD_PROPERTY on the cluster.
+
+    Valid properties are:
+
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.unset_osd(zk_conn, osd_property)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc ceph osd list
 ###############################################################################
 @click.command(name='list', short_help='List cluster OSDs.')
@@ -1187,10 +1259,10 @@ net_acl.add_command(net_acl_list)
 
 ceph_osd.add_command(ceph_osd_add)
 ceph_osd.add_command(ceph_osd_remove)
-#ceph_osd.add_command(ceph_osd_in)
-#ceph_osd.add_command(ceph_osd_out)
-#ceph_osd.add_command(ceph_osd_set)
-#ceph_osd.add_command(ceph_osd_unset)
+ceph_osd.add_command(ceph_osd_in)
+ceph_osd.add_command(ceph_osd_out)
+ceph_osd.add_command(ceph_osd_set)
+ceph_osd.add_command(ceph_osd_unset)
 ceph_osd.add_command(ceph_osd_list)
 
 ceph_pool.add_command(ceph_pool_add)
