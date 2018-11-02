@@ -70,7 +70,7 @@ def getInformationFromXML(zk_conn, uuid, long_output):
     ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), duuid))
     ainformation.append('{}Name:{}               {}'.format(ansiprint.purple(), ansiprint.end(), dname))
     ainformation.append('{}Description:{}        {}'.format(ansiprint.purple(), ansiprint.end(), ddescription))
-    ainformation.append('{}Memory (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), dmemory))
+    ainformation.append('{}Memory (M):{}         {}'.format(ansiprint.purple(), ansiprint.end(), dmemory))
     ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), dvcpu))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), dvcputopo))
 
@@ -560,7 +560,7 @@ def get_list(zk_conn, node, limit):
 
     # Determine optimal column widths
     # Dynamic columns: node_name, node, migrated
-    vm_name_length = 10
+    vm_name_length = 5
     vm_node_length = 8
     vm_nets_length = 9
     vm_migrated_length = 10
@@ -588,7 +588,7 @@ def get_list(zk_conn, node, limit):
         '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
 {vm_state_colour}{vm_state: <8}{end_colour} \
 {vm_networks: <{vm_nets_length}} \
-{vm_memory: <10} {vm_vcpu: <6} \
+{vm_memory: <8} {vm_vcpu: <6} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
             vm_name_length=vm_name_length,
@@ -603,7 +603,7 @@ def get_list(zk_conn, node, limit):
             vm_uuid='UUID',
             vm_state='State',
             vm_networks='Networks',
-            vm_memory='RAM (MiB)',
+            vm_memory='RAM (M)',
             vm_vcpu='vCPUs',
             vm_node='Node',
             vm_migrated='Migrated'
@@ -639,7 +639,7 @@ def get_list(zk_conn, node, limit):
             '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <37} \
 {vm_state_colour}{vm_state: <8}{end_colour} \
 {vm_nets_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
-{vm_memory: <10} {vm_vcpu: <6} \
+{vm_memory: <8} {vm_vcpu: <6} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
                 vm_name_length=vm_name_length,

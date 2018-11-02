@@ -285,10 +285,10 @@ def get_list(zk_conn, limit):
 
     # Format the string (header)
     node_list_output.append(
-        '{bold}{node_name: <{node_name_length}}  \
-State: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour}  \
-Resources: {node_domains_count: <4} {node_cpu_count: <5} {node_load: <6}  \
-RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+        '{bold}{node_name: <{node_name_length}} \
+St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+Res: {node_domains_count: <4} {node_cpu_count: <5} {node_load: <5} \
+Mem (M): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
             node_name_length=node_name_length,
             daemon_state_length=daemon_state_length,
             router_state_length=router_state_length,
@@ -342,10 +342,10 @@ RAM (MiB): {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_me
             domain_state_colour = ansiprint.blue()
 
         node_list_output.append(
-            '{bold}{node_name: <{node_name_length}}  \
-       {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour}  \
-           {node_domains_count: <4} {node_cpu_count: <5} {node_load: <6}  \
-           {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
+            '{bold}{node_name: <{node_name_length}} \
+    {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+     {node_domains_count: <4} {node_cpu_count: <5} {node_load: <5} \
+         {node_mem_total: <6} {node_mem_used: <6} {node_mem_free: <6} {node_mem_allocated: <6}{end_bold}'.format(
                 node_name_length=node_name_length,
                 daemon_state_length=daemon_state_length,
                 router_state_length=router_state_length,

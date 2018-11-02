@@ -487,13 +487,13 @@ def formatPoolList(zk_conn, pool_list):
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
 {pool_size: <{pool_size_length}} \
-Objects: {pool_objects: <{pool_objects_length}} \
+Obj: {pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-Read: {pool_read_ops: <{pool_read_ops_length}} \
+Rd: {pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
-Write: {pool_write_ops: <{pool_write_ops_length}} \
+Wr: {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
@@ -528,13 +528,13 @@ Write: {pool_write_ops: <{pool_write_ops_length}} \
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
 {pool_size: <{pool_size_length}} \
-         {pool_objects: <{pool_objects_length}} \
+     {pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-      {pool_read_ops: <{pool_read_ops_length}} \
+    {pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
-       {pool_write_ops: <{pool_write_ops_length}} \
+    {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
                 bold=ansiprint.bold(),
