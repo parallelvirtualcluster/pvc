@@ -953,7 +953,6 @@ def update_zookeeper():
                 'uuid': osd['uuid'],
                 'up': osd['up'],
                 'in': osd['in'],
-                'weight': osd['weight'],
                 'primary_affinity': osd['primary_affinity']
             }
         })
@@ -968,6 +967,8 @@ def update_zookeeper():
                 'var': osd['var'],
                 'pgs': osd['pgs'],
                 'kb': osd['kb'],
+                'weight': osd['crush_weight'],
+                'reweight': osd['reweight'],
             }
         })
     # Parse the status data

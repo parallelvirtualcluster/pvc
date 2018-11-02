@@ -114,6 +114,7 @@ def formatOSDList(zk_conn, osd_list):
     osd_in_colour = dict()
     osd_size = dict()
     osd_weight = dict()
+    osd_reweight = dict()
     osd_pgs = dict()
     osd_node = dict()
     osd_used = dict()
@@ -129,7 +130,8 @@ def formatOSDList(zk_conn, osd_list):
     osd_up_length = 4
     osd_in_length = 4
     osd_size_length = 5
-    osd_weight_length = 7
+    osd_weight_length = 3
+    osd_reweight_length = 5
     osd_pgs_length = 4
     osd_node_length = 5
     osd_used_length = 5
@@ -191,6 +193,12 @@ def formatOSDList(zk_conn, osd_list):
         if _osd_weight_length > osd_weight_length:
             osd_weight_length = _osd_weight_length
 
+        # Set the reweight and length
+        osd_reweight[osd] = osd_stats['reweight']
+        _osd_reweight_length = len(str(osd_reweight[osd])) + 1
+        if _osd_reweight_length > osd_reweight_length:
+            osd_reweight_length = _osd_reweight_length
+
         # Set the pgs and length
         osd_pgs[osd] = osd_stats['pgs']
         _osd_pgs_length = len(str(osd_pgs[osd])) + 1
@@ -242,16 +250,17 @@ def formatOSDList(zk_conn, osd_list):
 {osd_up: <{osd_up_length}} \
 {osd_in: <{osd_in_length}} \
 {osd_size: <{osd_size_length}} \
-{osd_weight: <{osd_weight_length}} \
 {osd_pgs: <{osd_pgs_length}} \
-Space: {osd_used: <{osd_used_length}} \
+{osd_weight: <{osd_weight_length}} \
+{osd_reweight: <{osd_reweight_length}} \
+Sp: {osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
 {osd_var: <{osd_var_length}} \
-Write: {osd_wrops: <{osd_wrops_length}} \
-{osd_wrdata: <{osd_wrdata_length}} \
-Read: {osd_rdops: <{osd_rdops_length}} \
+Rd: {osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
+Wt: {osd_wrops: <{osd_wrops_length}} \
+{osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
@@ -260,8 +269,9 @@ Read: {osd_rdops: <{osd_rdops_length}} \
             osd_up_length=osd_up_length,
             osd_in_length=osd_in_length,
             osd_size_length=osd_size_length,
-            osd_weight_length=osd_weight_length,
             osd_pgs_length=osd_pgs_length,
+            osd_weight_length=osd_weight_length,
+            osd_reweight_length=osd_reweight_length,
             osd_used_length=osd_used_length,
             osd_free_length=osd_free_length,
             osd_util_length=osd_util_length,
@@ -275,8 +285,9 @@ Read: {osd_rdops: <{osd_rdops_length}} \
             osd_up='Up',
             osd_in='In',
             osd_size='Size',
-            osd_weight='Weight',
             osd_pgs='PGs',
+            osd_weight='Wt',
+            osd_reweight='ReWt',
             osd_used='Used',
             osd_free='Free',
             osd_util='Util%',
@@ -295,16 +306,17 @@ Read: {osd_rdops: <{osd_rdops_length}} \
 {osd_up_colour}{osd_up: <{osd_up_length}}{end_colour} \
 {osd_in_colour}{osd_in: <{osd_in_length}}{end_colour} \
 {osd_size: <{osd_size_length}} \
-{osd_weight: <{osd_weight_length}} \
 {osd_pgs: <{osd_pgs_length}} \
-       {osd_used: <{osd_used_length}} \
+{osd_weight: <{osd_weight_length}} \
+{osd_reweight: <{osd_reweight_length}} \
+    {osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
 {osd_var: <{osd_var_length}} \
-       {osd_wrops: <{osd_wrops_length}} \
-{osd_wrdata: <{osd_wrdata_length}} \
-      {osd_rdops: <{osd_rdops_length}} \
+    {osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
+    {osd_wrops: <{osd_wrops_length}} \
+{osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
@@ -314,8 +326,9 @@ Read: {osd_rdops: <{osd_rdops_length}} \
                 osd_up_length=osd_up_length,
                 osd_in_length=osd_in_length,
                 osd_size_length=osd_size_length,
-                osd_weight_length=osd_weight_length,
                 osd_pgs_length=osd_pgs_length,
+                osd_weight_length=osd_weight_length,
+                osd_reweight_length=osd_reweight_length,
                 osd_used_length=osd_used_length,
                 osd_free_length=osd_free_length,
                 osd_util_length=osd_util_length,
@@ -331,8 +344,9 @@ Read: {osd_rdops: <{osd_rdops_length}} \
                 osd_in_colour=osd_in_colour[osd],
                 osd_in=osd_in[osd],
                 osd_size=osd_size[osd],
-                osd_weight=osd_weight[osd],
                 osd_pgs=osd_pgs[osd],
+                osd_weight=osd_weight[osd],
+                osd_reweight=osd_reweight[osd],
                 osd_used=osd_used[osd],
                 osd_free=osd_free[osd],
                 osd_util=osd_util[osd],
@@ -477,10 +491,10 @@ Objects: {pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-Write: {pool_write_ops: <{pool_write_ops_length}} \
-{pool_write_data: <{pool_write_data_length}} \
 Read: {pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
+Write: {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
@@ -518,10 +532,10 @@ Read: {pool_read_ops: <{pool_read_ops_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-       {pool_write_ops: <{pool_write_ops_length}} \
-{pool_write_data: <{pool_write_data_length}} \
       {pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
+       {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
