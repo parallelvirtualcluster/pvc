@@ -133,27 +133,30 @@ def getNetworkACLs(zk_conn, vni, _direction):
 def getNetworkInformation(zk_conn, vni):
     description = zkhandler.readdata(zk_conn, '/networks/{}'.format(vni))
     domain = zkhandler.readdata(zk_conn, '/networks/{}/domain'.format(vni))
-    ip_network = zkhandler.readdata(zk_conn, '/networks/{}/ip_network'.format(vni))
-    ip_gateway = zkhandler.readdata(zk_conn, '/networks/{}/ip_gateway'.format(vni))
-    dhcp_flag = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_flag'.format(vni))
-    dhcp_start = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_start'.format(vni))
-    dhcp_end = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_end'.format(vni))
-    return description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end
+    ip6_network = zkhandler.readdata(zk_conn, '/networks/{}/ip6_network'.format(vni))
+    ip6_gateway = zkhandler.readdata(zk_conn, '/networks/{}/ip6_gateway'.format(vni))
+    dhcp6_flag = zkhandler.readdata(zk_conn, '/networks/{}/dhcp6_flag'.format(vni))
+    ip4_network = zkhandler.readdata(zk_conn, '/networks/{}/ip4_network'.format(vni))
+    ip4_gateway = zkhandler.readdata(zk_conn, '/networks/{}/ip4_gateway'.format(vni))
+    dhcp4_flag = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_flag'.format(vni))
+    dhcp4_start = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_start'.format(vni))
+    dhcp4_end = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_end'.format(vni))
+    return description, domain, ip6_network, ip6_gateway, dhcp6_flag, ip4_network, ip4_gateway, dhcp4_flag, dhcp4_start, dhcp4_end
 
 def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, mac_address))
-    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, mac_address))
+    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, mac_address))
     try:
         timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/expiry'.format(vni, mac_address))
     except:
         timestamp = 'static'
-    return hostname, ip_address, mac_address, timestamp
+    return hostname, ip4_address, mac_address, timestamp
 
 def getDHCPReservationInformation(zk_conn, vni, mac_address):
     hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/hostname'.format(vni, mac_address))
-    ip_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(vni, mac_address))
+    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(vni, mac_address))
     timestamp = 'static'
-    return hostname, ip_address, mac_address, timestamp
+    return hostname, ip4_address, mac_address, timestamp
 
 def getACLInformation(zk_conn, vni, direction, description):
     order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, description))
@@ -161,12 +164,16 @@ def getACLInformation(zk_conn, vni, direction, description):
     return order, description, rule
 
 def formatNetworkInformation(zk_conn, vni, long_output):
-    description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end = getNetworkInformation(zk_conn, vni)
+    description, domain, ip6_network, ip6_gateway, dhcp6_flag, ip4_network, ip4_gateway, dhcp4_flag, dhcp4_start, dhcp4_end = getNetworkInformation(zk_conn, vni)
 
-    if dhcp_flag == "True":
-        dhcp_flag_colour = ansiprint.green()
+    if dhcp6_flag == "True":
+        dhcp6_flag_colour = ansiprint.green()
     else:
-        dhcp_flag_colour = ansiprint.blue()
+        dhcp6_flag_colour = ansiprint.blue()
+    if dhcp4_flag == "True":
+        dhcp4_flag_colour = ansiprint.green()
+    else:
+        dhcp4_flag_colour = ansiprint.blue()
     colour_off = ansiprint.end()
 
     # Format a nice output: do this line-by-line then concat the elements at the end
@@ -174,24 +181,31 @@ def formatNetworkInformation(zk_conn, vni, long_output):
     ainformation.append('{}Virtual network information:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}VNI:{}           {}'.format(ansiprint.purple(), ansiprint.end(), vni))
-    ainformation.append('{}Description:{}   {}'.format(ansiprint.purple(), ansiprint.end(), description))
-    ainformation.append('{}Domain:{}        {}'.format(ansiprint.purple(), ansiprint.end(), domain))
-    ainformation.append('{}IP network:{}    {}'.format(ansiprint.purple(), ansiprint.end(), ip_network))
-    ainformation.append('{}IP gateway:{}    {}'.format(ansiprint.purple(), ansiprint.end(), ip_gateway))
-    ainformation.append('{}DHCP enabled:{}  {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dhcp_flag_colour, dhcp_flag, colour_off))
-    if dhcp_flag == "True":
-        ainformation.append('{}DHCP range:{}    {} - {}'.format(ansiprint.purple(), ansiprint.end(), dhcp_start, dhcp_end))
+    ainformation.append('{}VNI:{}            {}'.format(ansiprint.purple(), ansiprint.end(), vni))
+    ainformation.append('{}Description:{}    {}'.format(ansiprint.purple(), ansiprint.end(), description))
+    ainformation.append('{}Domain:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain))
+    if ip6_network != "None":
+        ainformation.append('')
+        ainformation.append('{}IPv6 network:{}   {}'.format(ansiprint.purple(), ansiprint.end(), ip6_network))
+        ainformation.append('{}IPv6 gateway:{}   {}'.format(ansiprint.purple(), ansiprint.end(), ip6_gateway))
+        ainformation.append('{}DHCPv6 enabled:{} {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dhcp6_flag_colour, dhcp6_flag, colour_off))
+    if ip4_network != "None":
+        ainformation.append('')
+        ainformation.append('{}IPv4 network:{}   {}'.format(ansiprint.purple(), ansiprint.end(), ip4_network))
+        ainformation.append('{}IPv4 gateway:{}   {}'.format(ansiprint.purple(), ansiprint.end(), ip4_gateway))
+        ainformation.append('{}DHCPv4 enabled:{} {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dhcp4_flag_colour, dhcp4_flag, colour_off))
+    if dhcp4_flag == "True":
+        ainformation.append('{}DHCPv4 range:{}   {} - {}'.format(ansiprint.purple(), ansiprint.end(), dhcp4_start, dhcp4_end))
 
     if long_output:
-        dhcp_reservations_list = getNetworkDHCPReservations(zk_conn, vni)
-        if dhcp_reservations_list:
+        dhcp4_reservations_list = getNetworkDHCPReservations(zk_conn, vni)
+        if dhcp4_reservations_list:
             ainformation.append('')
-            ainformation.append('{}Client DHCP reservations:{}'.format(ansiprint.bold(), ansiprint.end()))
+            ainformation.append('{}Client DHCPv4 reservations:{}'.format(ansiprint.bold(), ansiprint.end()))
             ainformation.append('')
             # Only show static reservations in the detailed information
-            dhcp_reservations_string = formatDHCPLeaseList(zk_conn, vni, dhcp_reservations_list, reservations=True)
-            for line in dhcp_reservations_string.split('\n'):
+            dhcp4_reservations_string = formatDHCPLeaseList(zk_conn, vni, dhcp4_reservations_list, reservations=True)
+            for line in dhcp4_reservations_string.split('\n'):
                 ainformation.append(line)
 
         firewall_rules = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules'.format(vni))
@@ -209,36 +223,63 @@ def formatNetworkList(zk_conn, net_list):
     net_list_output = []
     description = dict()
     domain = dict()
-    ip_network = dict()
-    ip_gateway = dict()
-    dhcp_flag = dict()
-    dhcp_flag_colour = dict()
-    dhcp_start = dict()
-    dhcp_end = dict()
-    dhcp_range = dict()
+    v6_flag = dict()
+    v6_flag_colour = dict()
+    ip6_network = dict()
+    ip6_gateway = dict()
+    dhcp6_flag = dict()
+    dhcp6_flag_colour = dict()
+    v4_flag = dict()
+    v4_flag_colour = dict()
+    ip4_network = dict()
+    ip4_gateway = dict()
+    dhcp4_flag = dict()
+    dhcp4_flag_colour = dict()
+    dhcp4_start = dict()
+    dhcp4_end = dict()
+    dhcp4_range = dict()
     colour_off = ansiprint.end()
 
     # Gather information for printing
     for net in net_list:
         # get info
-        description[net], domain[net], ip_network[net], ip_gateway[net], dhcp_flag[net], dhcp_start[net], dhcp_end[net] = getNetworkInformation(zk_conn, net)
+        description[net], domain[net], ip6_network[net], ip6_gateway[net], dhcp6_flag[net], ip4_network[net], ip4_gateway[net], dhcp4_flag[net], dhcp4_start[net], dhcp4_end[net] = getNetworkInformation(zk_conn, net)
 
-        if dhcp_flag[net] == "True":
-            dhcp_flag_colour[net] = ansiprint.green()
-            dhcp_range[net] = '{} - {}'.format(dhcp_start[net], dhcp_end[net])
+        if ip4_network[net] != "None":
+            v4_flag_colour[net] = ansiprint.green()
+            v4_flag[net] = 'True'
         else:
-            dhcp_flag_colour[net] = ansiprint.blue()
-            dhcp_range[net] = 'N/A'
+            v4_flag_colour[net] = ansiprint.blue()
+            v4_flag[net] = 'False'
+
+        if ip6_network[net] != "None":
+            v6_flag_colour[net] = ansiprint.green()
+            v6_flag[net] = 'True'
+        else:
+            v6_flag_colour[net] = ansiprint.blue()
+            v6_flag[net] = 'False'
+
+        if dhcp6_flag[net] == "True":
+            dhcp6_flag_colour[net] = ansiprint.green()
+        else:
+            dhcp6_flag_colour[net] = ansiprint.blue()
+
+        if dhcp4_flag[net] == "True":
+            dhcp4_flag_colour[net] = ansiprint.green()
+            dhcp4_range[net] = '{} - {}'.format(dhcp4_start[net], dhcp4_end[net])
+        else:
+            dhcp4_flag_colour[net] = ansiprint.blue()
+            dhcp4_range[net] = 'N/A'
 
     # Determine optimal column widths
     # Dynamic columns: node_name, hypervisor, migrated
     net_vni_length = 5
     net_description_length = 13
     net_domain_length = 8
-    net_ip_network_length = 12
-    net_ip_gateway_length = 9
-    net_dhcp_flag_length = 5
-    net_dhcp_range_length = 12
+    net_v6_flag_length = 6
+    net_dhcp6_flag_length = 7
+    net_v4_flag_length = 6
+    net_dhcp4_flag_length = 7
     for net in net_list:
         # vni column
         _net_vni_length = len(net) + 1
@@ -252,49 +293,33 @@ def formatNetworkList(zk_conn, net_list):
         _net_domain_length = len(domain[net]) + 1
         if _net_domain_length > net_domain_length:
             net_domain_length = _net_domain_length
-        # ip_network column
-        _net_ip_network_length = len(ip_network[net]) + 1
-        if _net_ip_network_length > net_ip_network_length:
-            net_ip_network_length = _net_ip_network_length
-        # ip_gateway column
-        _net_ip_gateway_length = len(ip_gateway[net]) + 1
-        if _net_ip_gateway_length > net_ip_gateway_length:
-            net_ip_gateway_length = _net_ip_gateway_length
-        # dhcp_flag column
-        _net_dhcp_flag_length = len(dhcp_flag[net]) + 1
-        if _net_dhcp_flag_length > net_dhcp_flag_length:
-            net_dhcp_flag_length = _net_dhcp_flag_length
-        # dhcp_range column
-        _net_dhcp_range_length = len(dhcp_range[net]) + 1
-        if _net_dhcp_range_length > net_dhcp_range_length:
-            net_dhcp_range_length = _net_dhcp_range_length
 
     # Format the string (header)
     net_list_output_header = '{bold}\
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
-{net_domain: <{net_domain_length}} \
-{net_ip_network: <{net_ip_network_length}} \
-{net_ip_gateway: <{net_ip_gateway_length}} \
-{net_dhcp_flag: <{net_dhcp_flag_length}} \
-{net_dhcp_range: <{net_dhcp_range_length}} \
+{net_domain: <{net_domain_length}}  \
+{net_v6_flag: <{net_v6_flag_length}} \
+{net_dhcp6_flag: <{net_dhcp6_flag_length}} \
+{net_v4_flag: <{net_v4_flag_length}} \
+{net_dhcp4_flag: <{net_dhcp4_flag_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         net_vni_length=net_vni_length,
         net_description_length=net_description_length,
         net_domain_length=net_domain_length,
-        net_ip_network_length=net_ip_network_length,
-        net_ip_gateway_length=net_ip_gateway_length,
-        net_dhcp_flag_length=net_dhcp_flag_length,
-        net_dhcp_range_length=net_dhcp_range_length,
+        net_v6_flag_length=net_v6_flag_length,
+        net_dhcp6_flag_length=net_dhcp6_flag_length,
+        net_v4_flag_length=net_v4_flag_length,
+        net_dhcp4_flag_length=net_dhcp4_flag_length,
         net_vni='VNI',
         net_description='Description',
         net_domain='Domain',
-        net_ip_network='Network',
-        net_ip_gateway='Gateway',
-        net_dhcp_flag='DHCP',
-        net_dhcp_range='Range',
+        net_v6_flag='IPv6',
+        net_dhcp6_flag='DHCPv6',
+        net_v4_flag='IPv4',
+        net_dhcp4_flag='DHCPv4',
     )
 
     for net in net_list:
@@ -302,29 +327,32 @@ def formatNetworkList(zk_conn, net_list):
             '{bold}\
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
-{net_domain: <{net_domain_length}} \
-{net_ip_network: <{net_ip_network_length}} \
-{net_ip_gateway: <{net_ip_gateway_length}} \
-{dhcp_flag_colour}{net_dhcp_flag: <{net_dhcp_flag_length}}{colour_off} \
-{net_dhcp_range: <{net_dhcp_range_length}} \
+{net_domain: <{net_domain_length}}  \
+{v6_flag_colour}{net_v6_flag: <{net_v6_flag_length}}{colour_off} \
+{dhcp6_flag_colour}{net_dhcp6_flag: <{net_dhcp6_flag_length}}{colour_off} \
+{v4_flag_colour}{net_v4_flag: <{net_v4_flag_length}}{colour_off} \
+{dhcp4_flag_colour}{net_dhcp4_flag: <{net_dhcp4_flag_length}}{colour_off} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
                 net_vni_length=net_vni_length,
                 net_description_length=net_description_length,
                 net_domain_length=net_domain_length,
-                net_ip_network_length=net_ip_network_length,
-                net_ip_gateway_length=net_ip_gateway_length,
-                net_dhcp_flag_length=net_dhcp_flag_length,
-                net_dhcp_range_length=net_dhcp_range_length,
+                net_v6_flag_length=net_v6_flag_length,
+                net_dhcp6_flag_length=net_dhcp6_flag_length,
+                net_v4_flag_length=net_v4_flag_length,
+                net_dhcp4_flag_length=net_dhcp4_flag_length,
                 net_vni=net,
                 net_description=description[net],
                 net_domain=domain[net],
-                net_ip_network=ip_network[net],
-                net_ip_gateway=ip_gateway[net],
-                net_dhcp_flag=dhcp_flag[net],
-                net_dhcp_range=dhcp_range[net],
-                dhcp_flag_colour=dhcp_flag_colour[net],
+                net_v6_flag=v6_flag[net],
+                v6_flag_colour=v6_flag_colour[net],
+                net_dhcp6_flag=dhcp6_flag[net],
+                dhcp6_flag_colour=dhcp6_flag_colour[net],
+                net_v4_flag=v4_flag[net],
+                v4_flag_colour=v4_flag_colour[net],
+                net_dhcp4_flag=dhcp4_flag[net],
+                dhcp4_flag_colour=dhcp4_flag_colour[net],
                 colour_off=colour_off
             )
         )
@@ -335,20 +363,20 @@ def formatNetworkList(zk_conn, net_list):
 def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     dhcp_lease_list_output = []
     hostname = dict()
-    ip_address = dict()
+    ip4_address = dict()
     mac_address = dict()
     timestamp = dict()
 
     # Gather information for printing
     for dhcp_lease in dhcp_leases_list:
         if reservations:
-            hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPReservationInformation(zk_conn, vni, dhcp_lease)
+            hostname[dhcp_lease], ip4_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPReservationInformation(zk_conn, vni, dhcp_lease)
         else:
-            hostname[dhcp_lease], ip_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPLeaseInformation(zk_conn, vni, dhcp_lease)
+            hostname[dhcp_lease], ip4_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPLeaseInformation(zk_conn, vni, dhcp_lease)
 
     # Determine optimal column widths
     lease_hostname_length = 9
-    lease_ip_address_length = 11
+    lease_ip4_address_length = 11
     lease_mac_address_length = 13
     lease_timestamp_length = 13
     for dhcp_lease in dhcp_leases_list:
@@ -356,10 +384,10 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
         _lease_hostname_length = len(hostname[dhcp_lease]) + 1
         if _lease_hostname_length > lease_hostname_length:
             lease_hostname_length = _lease_hostname_length
-        # ip_address column
-        _lease_ip_address_length = len(ip_address[dhcp_lease]) + 1
-        if _lease_ip_address_length > lease_ip_address_length:
-            lease_ip_address_length = _lease_ip_address_length
+        # ip4_address column
+        _lease_ip4_address_length = len(ip4_address[dhcp_lease]) + 1
+        if _lease_ip4_address_length > lease_ip4_address_length:
+            lease_ip4_address_length = _lease_ip4_address_length
         # mac_address column
         _lease_mac_address_length = len(mac_address[dhcp_lease]) + 1
         if _lease_mac_address_length > lease_mac_address_length:
@@ -368,18 +396,18 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     # Format the string (header)
     dhcp_lease_list_output_header = '{bold}\
 {lease_hostname: <{lease_hostname_length}} \
-{lease_ip_address: <{lease_ip_address_length}} \
+{lease_ip4_address: <{lease_ip4_address_length}} \
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         lease_hostname_length=lease_hostname_length,
-        lease_ip_address_length=lease_ip_address_length,
+        lease_ip4_address_length=lease_ip4_address_length,
         lease_mac_address_length=lease_mac_address_length,
         lease_timestamp_length=lease_timestamp_length,
         lease_hostname='Hostname',
-        lease_ip_address='IP Address',
+        lease_ip4_address='IP Address',
         lease_mac_address='MAC Address',
         lease_timestamp='Timestamp'
     )
@@ -387,18 +415,18 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     for dhcp_lease in dhcp_leases_list:
         dhcp_lease_list_output.append('{bold}\
 {lease_hostname: <{lease_hostname_length}} \
-{lease_ip_address: <{lease_ip_address_length}} \
+{lease_ip4_address: <{lease_ip4_address_length}} \
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
                 lease_hostname_length=lease_hostname_length,
-                lease_ip_address_length=lease_ip_address_length,
+                lease_ip4_address_length=lease_ip4_address_length,
                 lease_mac_address_length=lease_mac_address_length,
                 lease_timestamp_length=12,
                 lease_hostname=hostname[dhcp_lease],
-                lease_ip_address=ip_address[dhcp_lease],
+                lease_ip4_address=ip4_address[dhcp_lease],
                 lease_mac_address=mac_address[dhcp_lease],
                 lease_timestamp=timestamp[dhcp_lease]
             )
@@ -502,9 +530,9 @@ def isValidMAC(macaddr):
         return True
 
 def isValidIP(ipaddr):
-    ip_blocks = str(ipaddr).split(".")
-    if len(ip_blocks) == 4:
-        for block in ip_blocks:
+    ip4_blocks = str(ipaddr).split(".")
+    if len(ip4_blocks) == 4:
+        for block in ip4_blocks:
             # Check if number is digit, if not checked before calling this function
             if not block.isdigit():
                  return False
@@ -517,9 +545,12 @@ def isValidIP(ipaddr):
 #
 # Direct functions
 #
-def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
-    if dhcp_flag and ( not dhcp_start or not dhcp_end ):
-        return False, 'ERROR: DHCP start and end addresses are required for a DHCP-enabled network.'
+def add_network(zk_conn, vni, description, domain,
+                ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                dhcp4_flag, dhcp4_start, dhcp4_end):
+    # Ensure start and end DHCP ranges are set if the flag is set
+    if dhcp4_flag and ( not dhcp4_start or not dhcp4_end ):
+        return False, 'ERROR: DHCPv4 start and end addresses are required for a DHCPv4-enabled network.'
 
     # Check if a network with this VNI or description already exists
     if zkhandler.exists(zk_conn, '/networks/{}'.format(vni)):
@@ -529,17 +560,29 @@ def add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_
         if network_description == description:
             return False, 'ERROR: A network with description {} already exists!'.format(description)
 
+    # We're generating the default gateway to be ip6_network::1/YY
+    if ip6_network:
+        dhcp6_flag = 'True'
+        if not ip6_gateway:
+            ip6_netpart, ip6_maskpart = ip6_network.split('/')
+            ip6_gateway = '{}1/{}'.format(ip6_netpart, ip6_maskpart)
+    else:
+        dhcp6_flag = 'False'
+
     # Add the new network to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/networks/{}'.format(vni): description,
         '/networks/{}/domain'.format(vni): domain,
-        '/networks/{}/ip_network'.format(vni): ip_network,
-        '/networks/{}/ip_gateway'.format(vni): ip_gateway,
-        '/networks/{}/dhcp_flag'.format(vni): dhcp_flag,
-        '/networks/{}/dhcp_start'.format(vni): dhcp_start,
-        '/networks/{}/dhcp_end'.format(vni): dhcp_end,
-        '/networks/{}/dhcp_leases'.format(vni): '',
-        '/networks/{}/dhcp_reservations'.format(vni): '',
+        '/networks/{}/ip6_network'.format(vni): ip6_network,
+        '/networks/{}/ip6_gateway'.format(vni): ip6_gateway,
+        '/networks/{}/dhcp6_flag'.format(vni): dhcp6_flag,
+        '/networks/{}/ip4_network'.format(vni): ip4_network,
+        '/networks/{}/ip4_gateway'.format(vni): ip4_gateway,
+        '/networks/{}/dhcp4_flag'.format(vni): dhcp4_flag,
+        '/networks/{}/dhcp4_start'.format(vni): dhcp4_start,
+        '/networks/{}/dhcp4_end'.format(vni): dhcp4_end,
+        '/networks/{}/dhcp4_leases'.format(vni): '',
+        '/networks/{}/dhcp4_reservations'.format(vni): '',
         '/networks/{}/firewall_rules'.format(vni): '',
         '/networks/{}/firewall_rules/in'.format(vni): '',
         '/networks/{}/firewall_rules/out'.format(vni): ''
@@ -554,10 +597,18 @@ def modify_network(zk_conn, vni, **parameters):
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
     if parameters['domain'] != None:
         zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
-    if parameters['ip_network'] != None:
-        zk_data.update({'/networks/{}/ip_network'.format(vni): parameters['ip_network']})
-    if parameters['ip_gateway'] != None:
-        zk_data.update({'/networks/{}/ip_gateway'.format(vni): parameters['ip_gateway']})
+    if parameters['ip4_network'] != None:
+        zk_data.update({'/networks/{}/ip4_network'.format(vni): parameters['ip4_network']})
+    if parameters['ip4_gateway'] != None:
+        zk_data.update({'/networks/{}/ip4_gateway'.format(vni): parameters['ip4_gateway']})
+    if parameters['ip6_network'] != None:
+        zk_data.update({'/networks/{}/ip6_network'.format(vni): parameters['ip6_network']})
+        if parameters['ip6_network'] != '':
+            zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'True'})
+        else:
+            zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'False'})
+    if parameters['ip6_gateway'] != None:
+        zk_data.update({'/networks/{}/ip6_gateway'.format(vni): parameters['ip6_gateway']})
     if parameters['dhcp_flag'] != None:
         zk_data.update({'/networks/{}/dhcp_flag'.format(vni): parameters['dhcp_flag']})
     if parameters['dhcp_start'] != None:

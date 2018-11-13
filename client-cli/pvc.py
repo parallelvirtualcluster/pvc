@@ -535,7 +535,7 @@ def cli_network():
 @click.option(
     '-d', '--description', 'description',
     required=True,
-    help='Description of the network; must be unique and not contain whitespace and must be unique.'
+    help='Description of the network; must be unique and not contain whitespace.'
 )
 @click.option(
     '-n', '--domain', 'domain',
@@ -544,44 +544,60 @@ def cli_network():
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
-    required=True,
-    help='CIDR-format network address for subnet.'
+    default=None,
+    help='CIDR-format IPv4 network address for subnet.'
+)
+@click.option(
+    '-i6', '--ipnet6', 'ip6_network',
+    default=None,
+    help='CIDR-format IPv6 network address for subnet; should be /64 or larger ending "::/YY".'
 )
 @click.option(
     '-g', '--gateway', 'ip_gateway',
-    required=True,
-    help='Default gateway address for subnet.'
+    default=None,
+    help='Default IPv4 gateway address for subnet.'
+)
+@click.option(
+    '-g6', '--gateway6', 'ip6_gateway',
+    default=None,
+    help='Default IPv6 gateway address for subnet.  [default: "X::1"]'
 )
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
-    required=True,
     default=None,
-    help='Enable/disable DHCP for clients on subnet.'
+    help='Enable/disable IPv4 DHCP for clients on subnet.'
 )
 @click.option(
     '--dhcp-start', 'dhcp_start',
     default=None,
-    help='DHCP range start address.'
+    help='IPv4 DHCP range start address.'
 )
 @click.option(
     '--dhcp-end', 'dhcp_end',
     default=None,
-    help='DHCP range end address.'
+    help='IPv4 DHCP range end address.'
 )
 @click.argument(
     'vni'
 )
-def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_add(vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
     Example:
     pvc network add 1001 --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
+
+    IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
     """
 
+    if not ip_network and not ip6_network:
+        click.echo('Usage: pvc network add [OPTIONS] VNI')
+        click.echo()
+        click.echo('Error: At least one of "-i" / "--ipnet" or "-i6" / "--ipnet6" must be specified.')
+
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -601,12 +617,22 @@ def net_add(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_st
 @click.option(
     '-i', '--ipnet', 'ip_network',
     default=None,
-    help='CIDR-format network address for subnet.'
+    help='CIDR-format IPv4 network address for subnet.'
+)
+@click.option(
+    '-i6', '--ipnet6', 'ip6_network',
+    default=None,
+    help='CIDR-format IPv6 network address for subnet.'
 )
 @click.option(
     '-g', '--gateway', 'ip_gateway',
     default=None,
-    help='Default gateway address for subnet.'
+    help='Default IPv4 gateway address for subnet.'
+)
+@click.option(
+    '-g6', '--gateway6', 'ip6_gateway',
+    default=None,
+    help='Default IPv6 gateway address for subnet.'
 )
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
@@ -698,10 +724,10 @@ def net_list(limit):
 ###############################################################################
 # pvc network dhcp
 ###############################################################################
-@click.group(name='dhcp', short_help='Manage DHCP leases in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
+@click.group(name='dhcp', short_help='Manage IPv4 DHCP leases in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
 def net_dhcp():
     """
-    Manage host DHCP leases of a VXLAN network in the PVC cluster.
+    Manage host IPv4 DHCP leases of a VXLAN network in the PVC cluster.
     """
     pass
 
