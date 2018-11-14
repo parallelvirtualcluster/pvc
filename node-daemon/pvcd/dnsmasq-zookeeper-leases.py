@@ -21,7 +21,7 @@ def get_zookeeper_key():
     # Get the ID of the interface (the digits)
     network_vni = re.findall('\d+', interface)[0]
     # Create the key
-    zookeeper_key = '/networks/{}/dhcp_leases'.format(network_vni)
+    zookeeper_key = '/networks/{}/dhcp4_leases'.format(network_vni)
     return zookeeper_key
 
 def get_lease_expiry():

@@ -615,7 +615,7 @@ def net_add(vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_g
     help='Domain name of the network.'
 )
 @click.option(
-    '-i', '--ipnet', 'ip_network',
+    '-i', '--ipnet', 'ip4_network',
     default=None,
     help='CIDR-format IPv4 network address for subnet.'
 )
@@ -625,7 +625,7 @@ def net_add(vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_g
     help='CIDR-format IPv6 network address for subnet.'
 )
 @click.option(
-    '-g', '--gateway', 'ip_gateway',
+    '-g', '--gateway', 'ip4_gateway',
     default=None,
     help='Default IPv4 gateway address for subnet.'
 )
@@ -653,7 +653,7 @@ def net_add(vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_g
 @click.argument(
     'vni'
 )
-def net_modify(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_modify(vni, description, domain, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
@@ -662,7 +662,7 @@ def net_modify(vni, description, domain, ip_network, ip_gateway, dhcp_flag, dhcp
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, ip_network=ip_network, ip_gateway=ip_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
+    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, ip6_network=ip6_network, ip6_gateway=ip6_gateway, ip4_network=ip4_network, ip4_gateway=ip4_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

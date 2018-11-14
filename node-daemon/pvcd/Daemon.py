@@ -602,7 +602,7 @@ def update_networks(new_network_list):
             # Start primary functionality
             if this_node.router_state == 'primary':
                 dns_aggregator.add_client_network(network)
-                d_network[network].createGatewayAddress()
+                d_network[network].createGateways()
                 d_network[network].startDHCPServer()
 
     # Remove any deleted networks from the list
@@ -611,7 +611,7 @@ def update_networks(new_network_list):
             # Stop primary functionality
             if this_node.router_state == 'primary':
                 d_network[network].stopDHCPServer()
-                d_network[network].removeGatewayAddress()
+                d_network[network].removeGateways()
                 dns_aggregator.remove_client_network(network)
             # Stop general functionality
             d_network[network].removeFirewall()

@@ -565,7 +565,7 @@ def add_network(zk_conn, vni, description, domain,
         dhcp6_flag = 'True'
         if not ip6_gateway:
             ip6_netpart, ip6_maskpart = ip6_network.split('/')
-            ip6_gateway = '{}1/{}'.format(ip6_netpart, ip6_maskpart)
+            ip6_gateway = '{}1'.format(ip6_netpart)
     else:
         dhcp6_flag = 'False'
 
@@ -609,6 +609,13 @@ def modify_network(zk_conn, vni, **parameters):
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'False'})
     if parameters['ip6_gateway'] != None:
         zk_data.update({'/networks/{}/ip6_gateway'.format(vni): parameters['ip6_gateway']})
+    else:
+        # If we're changing the network, but don't also specify the gateway,
+        # generate a new one automatically
+        if parameters['ip6_network'] != None:
+            ip6_netpart, ip6_maskpart = parameters['ip6_network'].split('/')
+            ip6_gateway = '{}1'.format(ip6_netpart)
+            zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
     if parameters['dhcp_flag'] != None:
         zk_data.update({'/networks/{}/dhcp_flag'.format(vni): parameters['dhcp_flag']})
     if parameters['dhcp_start'] != None:

@@ -247,7 +247,8 @@ class NodeInstance(object):
         time.sleep(1)
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
-            self.d_network[network].removeGatewayAddress()
+            self.d_network[network].removeGateway4Address()
+            self.d_network[network].removeGateway6Address()
             self.dns_aggregator.remove_client_network(network)
         self.dns_aggregator.stop_aggregator()
         self.removeFloatingAddresses()
@@ -261,7 +262,8 @@ class NodeInstance(object):
         # Start up the gateways and DHCP servers
         for network in self.d_network:
             self.dns_aggregator.add_client_network(network)
-            self.d_network[network].createGatewayAddress()
+            self.d_network[network].createGateway4Address()
+            self.d_network[network].createGateway6Address()
             self.d_network[network].startDHCPServer()
         time.sleep(0.5)
         # Handle AXFRs after to avoid slowdowns

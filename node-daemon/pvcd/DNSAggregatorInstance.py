@@ -78,7 +78,10 @@ class DNSAggregatorInstance(object):
     # Add a new network to the aggregator database
     def add_client_network(self, network):
         network_domain = self.d_network[network].domain
-        network_gateway = self.d_network[network].ip_gateway
+        if self.d_network[network].ip4_gateway != 'None':
+            network_gateway = self.d_network[network].ip4_gateway
+        else:
+            network_gateway = self.d_network[network].ip6_gateway
 
         self.logger.out(
             'Adding entry for client domain {}'.format(

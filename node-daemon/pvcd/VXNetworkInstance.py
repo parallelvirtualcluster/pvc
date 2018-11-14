@@ -42,12 +42,16 @@ class VXNetworkInstance(object):
         self.old_description = None
         self.description = None
         self.domain = None
-        self.ip_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_gateway'.format(self.vni))
-        self.ip_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni))
-        self.ip_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip_network'.format(self.vni)).split('/')[-1]
-        self.dhcp_flag = zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp_flag'.format(self.vni))
-        self.dhcp_start = None
-        self.dhcp_end = None
+        self.ip6_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_gateway'.format(self.vni))
+        self.ip6_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni))
+        self.ip6_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni)).split('/')[-1]
+        self.dhcp6_flag = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp6_flag'.format(self.vni)) == 'True' )
+        self.ip4_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_gateway'.format(self.vni))
+        self.ip4_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_network'.format(self.vni))
+        self.ip4_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_network'.format(self.vni)).split('/')[-1]
+        self.dhcp4_flag = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_flag'.format(self.vni)) == 'True' )
+        self.dhcp4_start = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_start'.format(self.vni)) == 'True' )
+        self.dhcp4_end = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_end'.format(self.vni)) == 'True' )
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
@@ -71,9 +75,6 @@ add chain inet filter {vxlannic}-in
 add chain inet filter {vxlannic}-out
 add rule inet filter {vxlannic}-in counter
 add rule inet filter {vxlannic}-out counter
-# Jump from forward chain to this chain when matching net
-add rule inet filter forward ip daddr {netaddr} counter jump {vxlannic}-in
-add rule inet filter forward ip saddr {netaddr} counter jump {vxlannic}-out
 # Allow ICMP traffic into the router from network
 add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
 # Allow DNS, DHCP, and NTP traffic into the router from network
@@ -84,10 +85,25 @@ add rule inet filter input udp dport 123 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
-            netaddr=self.ip_network,
             vxlannic=self.vxlan_nic,
             bridgenic=self.bridge_nic
         )
+
+        self.firewall_rules_v4 = """# Jump from forward chain to this chain when matching net (IPv4)
+add rule inet filter forward ip daddr {netaddr4} counter jump {vxlannic}-in
+add rule inet filter forward ip saddr {netaddr4} counter jump {vxlannic}-out
+""".format(
+            netaddr4=self.ip4_network,
+            vxlannic=self.vxlan_nic,
+        )
+        self.firewall_rules_v6 = """# Jump from forward chain to this chain when matching net (IPv4)
+add rule inet filter forward ip6 daddr {netaddr6} counter jump {vxlannic}-in
+add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
+""".format(
+            netaddr6=self.ip6_network,
+            vxlannic=self.vxlan_nic,
+        )
+
         self.firewall_rules_in = zkhandler.listchildren(self.zk_conn, '/networks/{}/firewall_rules/in'.format(self.vni))
         self.firewall_rules_out = zkhandler.listchildren(self.zk_conn, '/networks/{}/firewall_rules/out'.format(self.vni))
 
@@ -114,66 +130,107 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 domain = data.decode('ascii')
                 self.domain = domain
 
-        @self.zk_conn.DataWatch('/networks/{}/ip_network'.format(self.vni))
-        def watch_network_ip_network(data, stat, event=''):
+        @self.zk_conn.DataWatch('/networks/{}/ip6_network'.format(self.vni))
+        def watch_network_ip6_network(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.ip_network != data.decode('ascii'):
-                ip_network = data.decode('ascii')
-                self.ip_network = ip_network
-                self.ip_cidrnetmask = ip_network.split('/')[-1]
+            if data and self.ip6_network != data.decode('ascii'):
+                ip6_network = data.decode('ascii')
+                self.ip6_network = ip6_network
+                self.ip6_cidrnetmask = ip6_network.split('/')[-1]
 
-        @self.zk_conn.DataWatch('/networks/{}/ip_gateway'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/ip6_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.ip_gateway != data.decode('ascii'):
-                orig_gateway = self.ip_gateway
-                self.ip_gateway = data.decode('ascii')
+            if data and self.ip6_gateway != data.decode('ascii'):
+                orig_gateway = self.ip6_gateway
+                self.ip6_gateway = data.decode('ascii')
                 if self.this_node.router_state == 'primary':
                     if orig_gateway:
-                        self.removeGatewayAddress()
-                    self.createGatewayAddress()
+                        self.removeGateway6Address()
+                    self.createGateway6Address()
 
-        @self.zk_conn.DataWatch('/networks/{}/dhcp_flag'.format(self.vni))
+        @self.zk_conn.DataWatch('/networks/{}/dhcp6_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.dhcp_flag != data.decode('ascii'):
-                self.dhcp_flag = ( data.decode('ascii') == 'True' )
-                if self.dhcp_flag and self.this_node.router_state == 'primary':
+            if data and self.dhcp6_flag != ( data.decode('ascii') == 'True' ):
+                self.dhcp6_flag = ( data.decode('ascii') == 'True' )
+                if self.dhcp6_flag and not self.dhcp_server_daemon and self.this_node.router_state == 'primary':
                     self.startDHCPServer()
-                elif self.this_node.router_state == 'primary':
+                elif self.dhcp_server_daemon and not self.dhcp4_flag and self.this_node.router_state == 'primary':
                     self.stopDHCPServer()
 
-        @self.zk_conn.DataWatch('/networks/{}/dhcp_start'.format(self.vni))
-        def watch_network_dhcp_start(data, stat, event=''):
+        @self.zk_conn.DataWatch('/networks/{}/ip4_network'.format(self.vni))
+        def watch_network_ip4_network(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.dhcp_start != data.decode('ascii'):
-                self.dhcp_start = data.decode('ascii')
+            if data and self.ip4_network != data.decode('ascii'):
+                ip4_network = data.decode('ascii')
+                self.ip4_network = ip4_network
+                self.ip4_cidrnetmask = ip4_network.split('/')[-1]
 
-        @self.zk_conn.DataWatch('/networks/{}/dhcp_end'.format(self.vni))
-        def watch_network_dhcp_end(data, stat, event=''):
+        @self.zk_conn.DataWatch('/networks/{}/ip4_gateway'.format(self.vni))
+        def watch_network_gateway(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.dhcp_end != data.decode('ascii'):
-                self.dhcp_end = data.decode('ascii')
+            if data and self.ip4_gateway != data.decode('ascii'):
+                orig_gateway = self.ip4_gateway
+                self.ip4_gateway = data.decode('ascii')
+                if self.this_node.router_state == 'primary':
+                    if orig_gateway:
+                        self.removeGateway4Address()
+                    self.createGateway4Address()
+
+        @self.zk_conn.DataWatch('/networks/{}/dhcp4_flag'.format(self.vni))
+        def watch_network_dhcp_status(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.dhcp4_flag != ( data.decode('ascii') == 'True' ):
+                self.dhcp4_flag = ( data.decode('ascii') == 'True' )
+                if self.dhcp4_flag and not self.dhcp_server_daemon and self.this_node.router_state == 'primary':
+                    self.startDHCPServer()
+                elif self.dhcp_server_daemon and not self.dhcp6_flag and self.this_node.router_state == 'primary':
+                    self.stopDHCPServer()
+
+        @self.zk_conn.DataWatch('/networks/{}/dhcp4_start'.format(self.vni))
+        def watch_network_dhcp4_start(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.dhcp4_start != data.decode('ascii'):
+                self.dhcp4_start = data.decode('ascii')
+
+        @self.zk_conn.DataWatch('/networks/{}/dhcp4_end'.format(self.vni))
+        def watch_network_dhcp4_end(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.dhcp4_end != data.decode('ascii'):
+                self.dhcp4_end = data.decode('ascii')
 
         @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
         def watch_network_dhcp_reservations(new_reservations, event=''):
@@ -246,6 +303,9 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                     pass
 
     def updateFirewallRules(self):
+        if not self.ip4_network:
+            return
+
         self.logger.out(
             'Updating firewall rules',
             prefix='VNI {}'.format(self.vni),
@@ -275,8 +335,14 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 rule = '{} {}'.format(rule_prefix, rule_data)
                 full_ordered_rules.append(rule)
 
+        firewall_rules = self.firewall_rules_base
+        if self.ip6_gateway != 'None':
+            firewall_rules += self.firewall_rules_v6
+        if self.ip4_gateway != 'None':
+            firewall_rules += self.firewall_rules_v4
+
         output = "{}\n# User rules\n{}\n".format(
-                     self.firewall_rules_base,
+                     firewall_rules,
                      '\n'.join(full_ordered_rules)
                  )
 
@@ -328,18 +394,37 @@ add rule inet filter input meta iifname {bridgenic} counter drop
         # For future use
         self.updateFirewallRules()
 
-    def createGatewayAddress(self):
+    def createGateways(self):
+        if self.ip6_gateway != 'None':
+            self.createGateway6Address()
+        if self.ip4_gateway != 'None':
+            self.createGateway4Address()
+
+    def createGateway6Address(self):
         if self.this_node.router_state == 'primary':
             self.logger.out(
                 'Creating gateway {}/{} on interface {}'.format(
-                    self.ip_gateway,
-                    self.ip_cidrnetmask,
+                    self.ip6_gateway,
+                    self.ip6_cidrnetmask,
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
-            common.createIPAddress(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic)
+            common.createIPAddress(self.ip6_gateway, self.ip6_cidrnetmask, self.bridge_nic)
+
+    def createGateway4Address(self):
+        if self.this_node.router_state == 'primary':
+            self.logger.out(
+                'Creating gateway {}/{} on interface {}'.format(
+                    self.ip4_gateway,
+                    self.ip4_cidrnetmask,
+                    self.bridge_nic
+                ),
+                prefix='VNI {}'.format(self.vni),
+                state='o'
+            )
+            common.createIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
     def startDHCPServer(self):
         if self.this_node.router_state == 'primary':
@@ -357,30 +442,49 @@ add rule inet filter input meta iifname {bridgenic} counter drop
                 'PVCD_CONFIG_FILE': pvcd_config_file
             }
             # Define the dnsmasq config
-            dhcp_configuration = [
+            dhcp_configuration_base = [
                 '--domain-needed',
                 '--bogus-priv',
                 '--no-hosts',
+                '--dhcp-authoritative',
                 '--filterwin2k',
                 '--expand-hosts',
                 '--domain-needed',
                 '--domain={}'.format(self.domain),
                 '--local=/{}/'.format(self.domain),
                 '--auth-zone={}'.format(self.domain),
-                '--auth-peer=127.0.0.1,{}'.format(self.ip_gateway),
-                '--auth-sec-servers=127.0.0.1,[::1],{}'.format(self.ip_gateway),
-                '--auth-soa=1,pvc@localhost,10,10',
-                '--listen-address={}'.format(self.ip_gateway),
-                '--bind-interfaces',
-                '--leasefile-ro',
-                '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
-                '--dhcp-range={},{},48h'.format(self.dhcp_start, self.dhcp_end),
-                '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
-                '--dhcp-option=option:ntp-server,{}'.format(self.ip_gateway),
                 '--log-facility=-',
-                '--keep-in-foreground'
+                '--keep-in-foreground',
+                '--leasefile-ro',
+                '--auth-soa=1,pvc@localhost,10,10',
+                '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
+                '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
+                '--bind-interfaces',
+                '--interface={}'.format(self.bridge_nic),
+                '--except-interface=lo',
             ]
+            dhcp_configuration_v4 = [
+                '--listen-address={}'.format(self.ip4_gateway),
+                '--auth-peer={}'.format(self.ip4_gateway),
+                '--auth-sec-servers={}'.format(self.ip4_gateway),
+                '--dhcp-option=option:ntp-server,{}'.format(self.ip4_gateway),
+                '--dhcp-range={},{},48h'.format(self.dhcp4_start, self.dhcp4_end),
+            ]
+            dhcp_configuration_v6 = [
+                '--listen-address={}'.format(self.ip6_gateway),
+                '--auth-peer={}'.format(self.ip6_gateway),
+                '--auth-sec-servers={}'.format(self.ip6_gateway),
+                '--dhcp-option=option6:ntp-server,{}'.format(self.ip6_gateway),
+                '--dhcp-range=net:{nic},::,constructor:{nic},ra-stateless,ra-names'.format(nic=self.bridge_nic),
+                '--enable-ra',
+            ]
+            dhcp_configuration = dhcp_configuration_base
+            if self.dhcp4_flag:
+                dhcp_configuration += dhcp_configuration_v4 
+            if self.dhcp6_flag:
+                dhcp_configuration += dhcp_configuration_v6
             # Start the dnsmasq process in a thread
+            print('/usr/sbin/dnsmasq {}'.format(' '.join(dhcp_configuration)))
             self.dhcp_server_daemon = common.run_os_daemon(
                 '/usr/sbin/dnsmasq {}'.format(
                     ' '.join(dhcp_configuration)
@@ -440,17 +544,35 @@ add rule inet filter input meta iifname {bridgenic} counter drop
         nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
         common.reload_firewall_rules(self.logger, nftables_base_filename)
 
-    def removeGatewayAddress(self):
+    def removeGateways(self):
+        if self.ip6_gateway != 'None':
+            self.removeGateway6Address()
+        if self.ip4_gateway != 'None':
+            self.removeGateway4Address()
+
+    def removeGateway6Address(self):
         self.logger.out(
             'Removing gateway {}/{} from interface {}'.format(
-                self.ip_gateway,
-                self.ip_cidrnetmask,
+                self.ip6_gateway,
+                self.ip6_cidrnetmask,
                 self.bridge_nic
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
         )
-        common.removeIPAddress(self.ip_gateway, self.ip_cidrnetmask, self.bridge_nic)
+        common.removeIPAddress(self.ip6_gateway, self.ip6_cidrnetmask, self.bridge_nic)
+
+    def removeGateway4Address(self):
+        self.logger.out(
+            'Removing gateway {}/{} from interface {}'.format(
+                self.ip4_gateway,
+                self.ip4_cidrnetmask,
+                self.bridge_nic
+            ),
+            prefix='VNI {}'.format(self.vni),
+            state='o'
+        )
+        common.removeIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
     def stopDHCPServer(self):
         if self.dhcp_server_daemon:
@@ -465,3 +587,4 @@ add rule inet filter input meta iifname {bridgenic} counter drop
             self.dhcp_server_daemon.signal('term')
             time.sleep(0.2)
             self.dhcp_server_daemon.signal('kill')
+            self.dhcp_server_daemon = None
