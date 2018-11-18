@@ -62,13 +62,11 @@ class DNSAggregatorInstance(object):
         self.dns_server_daemon.stop()
 
     def add_network(self, network):
-        print("adding {}".format(network))
         self.dns_networks[network] =  DNSNetworkInstance(self.config, self.logger, self.mysql_conn, network)
         self.dns_networks[network].add_network()
         self.dns_axfr_daemon.update_networks(self.dns_networks)
 
     def remove_network(self, network):
-        print("removing {}".format(network))
         if self.dns_networks[network]:
             self.dns_networks[network].remove_network()
             del self.dns_networks[network]
@@ -289,7 +287,6 @@ class AXFRDaemonInstance(object):
                     dnsmasq_ip = network.ip6_gateway
 
                 # Get an AXFR from the dnsmasq instance and list of records
-                print('{} {}'.format(dnsmasq_ip, domain))
                 try:
                     z = dns.zone.from_xfr(dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0))
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
@@ -343,9 +340,6 @@ class AXFRDaemonInstance(object):
                 records_new.sort()
                 records_old.sort()
 
-                print('New: {}'.format(records_new))
-                print('Old: {}'.format(records_old))
-
                 # Find the differences between the lists
                 # Basic check one: are they completely equal
                 if records_new != records_old:
@@ -375,7 +369,6 @@ class AXFRDaemonInstance(object):
 
                     changed = False
                     if len(remove_records) > 0:
-                        print(remove_records)
                         # Remove the invalid old records
                         for record_id in remove_records:
                             mysql_curs = self.mysql_conn.cursor()
@@ -386,7 +379,6 @@ class AXFRDaemonInstance(object):
                             changed = True
 
                     if len(in_new_not_in_old) > 0:
-                        print(in_new_not_in_old)
                         # Add the new records
                         for record in in_new_not_in_old:
                             # [NAME, TTL, 'IN', TYPE, DATA]
@@ -409,7 +401,6 @@ class AXFRDaemonInstance(object):
                             (domain_id,)
                         )
                         soa_record = list(mysql_curs.fetchone())[0].split()
-                        print(soa_record)
                         current_serial = int(soa_record[2])
                         new_serial = current_serial + 1
                         soa_record[2] = str(new_serial)
