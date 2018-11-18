@@ -71,11 +71,13 @@ import pvcd.CephInstance as CephInstance
 
 # Create timer to update this node in Zookeeper
 def startKeepaliveTimer():
-    global update_timer
+    # Create our timer object
+    update_timer = apscheduler.schedulers.background.BackgroundScheduler()
     interval = int(config['keepalive_interval'])
     logger.out('Starting keepalive timer ({} second interval)'.format(interval), state='s')
     update_timer.add_job(update_zookeeper, 'interval', seconds=interval)
     update_timer.start()
+    return update_timer
 
 def stopKeepaliveTimer():
     global update_timer
@@ -110,9 +112,6 @@ staticdata.append(str(psutil.cpu_count()))
 staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
-
-# Create our timer object
-update_timer = apscheduler.schedulers.background.BackgroundScheduler()
 
 # Config values dictionary
 config_values = [
@@ -288,12 +287,18 @@ except Exception as e:
 # Handle zookeeper failures
 def zk_listener(state):
     global zk_conn, update_timer
-    if state == kazoo.client.KazooState.SUSPENDED:
-        logger.out('Connection to Zookeeper lost; retrying', state='w')
+    if state == kazoo.client.KazooState.CONNECTED:
+        logger.out('Connection to Zookeeper restarted', state='o')
 
+        # Start keepalive thread
+        if update_timer:
+            update_timer = startKeepaliveTimer()
+    else:
         # Stop keepalive thread
         if update_timer:
             stopKeepaliveTimer()
+
+        logger.out('Connection to Zookeeper lost; retrying', state='w')
 
         while True:
             _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
@@ -303,14 +308,6 @@ def zk_listener(state):
                 break
             except:
                 time.sleep(1)
-    elif state == kazoo.client.KazooState.CONNECTED:
-        logger.out('Connection to Zookeeper restarted', state='o')
-
-        # Start keepalive thread
-        if update_timer:
-            update_timer = startKeepaliveTimer()
-    else:
-        pass
 zk_conn.add_listener(zk_listener)
 
 ###############################################################################
@@ -422,14 +419,14 @@ else:
 vni_dev = config['vni_dev']
 vni_dev_ip = config['vni_dev_ip']
 logger.out('Setting up VNI network on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
-common.run_os_command('ip link set {} up'.format(vni_dev))
+common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
 common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, vni_dev))
 
 # Storage configuration
 storage_dev = config['storage_dev']
 storage_dev_ip = config['storage_dev_ip']
 logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
-common.run_os_command('ip link set {} up'.format(storage_dev))
+common.run_os_command('ip link set {} mtu 9000 up'.format(storage_dev))
 common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
 
 # Upstream configuration
@@ -899,6 +896,11 @@ def update_zookeeper():
     else:
         ceph_health_colour = logger.fmt_red
 
+    # DNS aggregator retransfer
+    if this_node.router_state == 'primary':
+        for network in d_network: 
+            dns_aggregator.get_axfr(network)
+
     # Set ceph health information in zookeeper (primary only)
     if this_node.router_state == 'primary':
         # Get status info
@@ -1145,7 +1147,7 @@ def update_zookeeper():
 
 
 # Start keepalive thread and immediately update Zookeeper
-startKeepaliveTimer()
+update_timer = startKeepaliveTimer()
 update_zookeeper()
 
 # Tick loop; does nothing since everything else is async

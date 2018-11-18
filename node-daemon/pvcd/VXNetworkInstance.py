@@ -77,11 +77,13 @@ add rule inet filter {vxlannic}-in counter
 add rule inet filter {vxlannic}-out counter
 # Allow ICMP traffic into the router from network
 add rule inet filter input ip protocol icmp meta iifname {bridgenic} counter accept
+add rule inet filter input ip6 nexthdr icmpv6 meta iifname {bridgenic} counter accept
 # Allow DNS, DHCP, and NTP traffic into the router from network
 add rule inet filter input tcp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 123 meta iifname {bridgenic} counter accept
+add rule inet filter input ip6 nexthdr udp udp dport 547 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
@@ -151,11 +153,15 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.ip6_gateway != data.decode('ascii'):
                 orig_gateway = self.ip6_gateway
-                self.ip6_gateway = data.decode('ascii')
                 if self.this_node.router_state == 'primary':
                     if orig_gateway:
                         self.removeGateway6Address()
+                self.ip6_gateway = data.decode('ascii')
+                if self.this_node.router_state == 'primary':
                     self.createGateway6Address()
+                    if self.dhcp_server_daemon:
+                        self.stopDHCPServer()
+                        self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp6_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
@@ -192,11 +198,15 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.ip4_gateway != data.decode('ascii'):
                 orig_gateway = self.ip4_gateway
-                self.ip4_gateway = data.decode('ascii')
                 if self.this_node.router_state == 'primary':
                     if orig_gateway:
                         self.removeGateway4Address()
+                self.ip4_gateway = data.decode('ascii')
+                if self.this_node.router_state == 'primary':
                     self.createGateway4Address()
+                    if self.dhcp_server_daemon:
+                        self.stopDHCPServer()
+                        self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp4_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
@@ -380,12 +390,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
         common.run_os_command(
-            'ip link set {} up'.format(
+            'ip link set {} mtu 8800 up'.format(
                 self.vxlan_nic
             )
         )
         common.run_os_command(
-            'ip link set {} up'.format(
+            'ip link set {} mtu 8800 up'.format(
                 self.bridge_nic
             )
         )
@@ -435,13 +445,15 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 prefix='VNI {}'.format(self.vni),
                 state='o'
             )
+
             # Recreate the environment we need for dnsmasq
             pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
             dhcp_environment = {
                 'DNSMASQ_BRIDGE_INTERFACE': self.bridge_nic,
                 'PVCD_CONFIG_FILE': pvcd_config_file
             }
-            # Define the dnsmasq config
+
+            # Define the dnsmasq config fragments
             dhcp_configuration_base = [
                 '--domain-needed',
                 '--bogus-priv',
@@ -454,9 +466,10 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--local=/{}/'.format(self.domain),
                 '--auth-zone={}'.format(self.domain),
                 '--log-facility=-',
+                '--log-dhcp',
                 '--keep-in-foreground',
                 '--leasefile-ro',
-                '--auth-soa=1,pvc@localhost,10,10',
+#                '--auth-soa=1,pvc@localhost,10,10',
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--bind-interfaces',
@@ -474,15 +487,28 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--listen-address={}'.format(self.ip6_gateway),
                 '--auth-peer={}'.format(self.ip6_gateway),
                 '--auth-sec-servers={}'.format(self.ip6_gateway),
-                '--dhcp-option=option6:ntp-server,{}'.format(self.ip6_gateway),
+                '--dhcp-option=option6:dns-server,{}'.format(self.ip6_gateway),
+                '--dhcp-option=option6:sntp-server,{}'.format(self.ip6_gateway),
+            ]
+            dhcp_configuration_v6_dualstack = [
                 '--dhcp-range=net:{nic},::,constructor:{nic},ra-stateless,ra-names'.format(nic=self.bridge_nic),
                 '--enable-ra',
             ]
+            dhcp_configuration_v6_only = [
+                '--dhcp-range=net:{nic},::2,::ffff:ffff:ffff:ffff,constructor:{nic},64,24h'.format(nic=self.bridge_nic),
+            ]
+
+            # Assemble the DHCP configuration
             dhcp_configuration = dhcp_configuration_base
             if self.dhcp4_flag:
                 dhcp_configuration += dhcp_configuration_v4 
             if self.dhcp6_flag:
                 dhcp_configuration += dhcp_configuration_v6
+                if self.dhcp4_flag:
+                    dhcp_configuration += dhcp_configuration_v6_dualstack
+                else:
+                    dhcp_configuration += dhcp_configuration_v6_only
+
             # Start the dnsmasq process in a thread
             print('/usr/sbin/dnsmasq {}'.format(' '.join(dhcp_configuration)))
             self.dhcp_server_daemon = common.run_os_daemon(

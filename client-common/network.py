@@ -101,14 +101,14 @@ def getNetworkDescription(zk_conn, network):
     return net_description
 
 def getNetworkDHCPLeases(zk_conn, vni):
-    # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp_leases
-    dhcp_leases = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp_leases'.format(vni))
-    return sorted(dhcp_leases)
+    # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp4_leases
+    dhcp4_leases = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp4_leases'.format(vni))
+    return sorted(dhcp4_leases)
 
 def getNetworkDHCPReservations(zk_conn, vni):
-    # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp_reservations
-    dhcp_reservations = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp_reservations'.format(vni))
-    return sorted(dhcp_reservations)
+    # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp4_reservations
+    dhcp4_reservations = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp4_reservations'.format(vni))
+    return sorted(dhcp4_reservations)
 
 def getNetworkACLs(zk_conn, vni, _direction):
     # Get the (sorted) list of active ACLs
@@ -144,17 +144,17 @@ def getNetworkInformation(zk_conn, vni):
     return description, domain, ip6_network, ip6_gateway, dhcp6_flag, ip4_network, ip4_gateway, dhcp4_flag, dhcp4_start, dhcp4_end
 
 def getDHCPLeaseInformation(zk_conn, vni, mac_address):
-    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/hostname'.format(vni, mac_address))
-    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/ipaddr'.format(vni, mac_address))
+    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/hostname'.format(vni, mac_address))
+    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/ipaddr'.format(vni, mac_address))
     try:
-        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_leases/{}/expiry'.format(vni, mac_address))
+        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/expiry'.format(vni, mac_address))
     except:
         timestamp = 'static'
     return hostname, ip4_address, mac_address, timestamp
 
 def getDHCPReservationInformation(zk_conn, vni, mac_address):
-    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/hostname'.format(vni, mac_address))
-    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(vni, mac_address))
+    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/hostname'.format(vni, mac_address))
+    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(vni, mac_address))
     timestamp = 'static'
     return hostname, ip4_address, mac_address, timestamp
 
@@ -360,7 +360,7 @@ def formatNetworkList(zk_conn, net_list):
     output_string = net_list_output_header + '\n' + '\n'.join(sorted(net_list_output))
     return output_string
 
-def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
+def formatDHCPLeaseList(zk_conn, vni, dhcp4_leases_list, reservations=False):
     dhcp_lease_list_output = []
     hostname = dict()
     ip4_address = dict()
@@ -368,7 +368,7 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     timestamp = dict()
 
     # Gather information for printing
-    for dhcp_lease in dhcp_leases_list:
+    for dhcp_lease in dhcp4_leases_list:
         if reservations:
             hostname[dhcp_lease], ip4_address[dhcp_lease], mac_address[dhcp_lease], timestamp[dhcp_lease] = getDHCPReservationInformation(zk_conn, vni, dhcp_lease)
         else:
@@ -379,7 +379,7 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
     lease_ip4_address_length = 11
     lease_mac_address_length = 13
     lease_timestamp_length = 13
-    for dhcp_lease in dhcp_leases_list:
+    for dhcp_lease in dhcp4_leases_list:
         # hostname column
         _lease_hostname_length = len(hostname[dhcp_lease]) + 1
         if _lease_hostname_length > lease_hostname_length:
@@ -412,7 +412,7 @@ def formatDHCPLeaseList(zk_conn, vni, dhcp_leases_list, reservations=False):
         lease_timestamp='Timestamp'
     )
 
-    for dhcp_lease in dhcp_leases_list:
+    for dhcp_lease in dhcp4_leases_list:
         dhcp_lease_list_output.append('{bold}\
 {lease_hostname: <{lease_hostname_length}} \
 {lease_ip4_address: <{lease_ip4_address_length}} \
@@ -655,15 +655,15 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
     if not isValidIP(ipaddress):
         return False, 'ERROR: IP address "{}" is not valid!'.format(macaddress)
 
-    if zkhandler.exists(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddress)):
+    if zkhandler.exists(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(net_vni, macaddress)):
         return False, 'ERROR: A reservation with MAC "{}" already exists!'.format(macaddress)
 
     # Add the new static lease to ZK
     try:
         zkhandler.writedata(zk_conn, {
-            '/networks/{}/dhcp_reservations/{}'.format(net_vni, macaddress): 'static',
-            '/networks/{}/dhcp_reservations/{}/hostname'.format(net_vni, macaddress): hostname,
-            '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddress): ipaddress
+            '/networks/{}/dhcp4_reservations/{}'.format(net_vni, macaddress): 'static',
+            '/networks/{}/dhcp4_reservations/{}/hostname'.format(net_vni, macaddress): hostname,
+            '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(net_vni, macaddress): ipaddress
         })
     except Exception as e:
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
@@ -679,10 +679,10 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     match_description = ''
 
     # Check if the reservation matches a description, a mac, or an IP address currently in the database
-    dhcp_reservations_list = getNetworkDHCPReservations(zk_conn, net_vni)
-    for macaddr in dhcp_reservations_list:
-        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/hostname'.format(net_vni, macaddr))
-        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp_reservations/{}/ipaddr'.format(net_vni, macaddr))
+    dhcp4_reservations_list = getNetworkDHCPReservations(zk_conn, net_vni)
+    for macaddr in dhcp4_reservations_list:
+        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/hostname'.format(net_vni, macaddr))
+        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(net_vni, macaddr))
         if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
     
@@ -691,7 +691,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
 
     # Remove the entry from zookeeper
     try:
-        zkhandler.deletekey(zk_conn, '/networks/{}/dhcp_reservations/{}'.format(net_vni, match_description))
+        zkhandler.deletekey(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(net_vni, match_description))
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
