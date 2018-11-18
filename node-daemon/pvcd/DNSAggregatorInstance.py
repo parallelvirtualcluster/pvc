@@ -363,8 +363,8 @@ class AXFRDaemonInstance(object):
                         # Go through the new elements
                         for newrecord in in_new_not_in_old:
                             splitnewrecord = newrecord.split()
-                            # If there's a name match with different content, remove the old one
-                            if splitrecord[0] == splitnewrecord[0]:
+                            # If there's a name and type match with different content, remove the old one
+                            if splitrecord[0] == splitnewrecord[0] and splitrecord[3] == splitnewrecord[3]:
                                 remove_records.append(record_id)
 
                     changed = False

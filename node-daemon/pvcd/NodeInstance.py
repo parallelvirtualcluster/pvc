@@ -245,11 +245,11 @@ class NodeInstance(object):
         self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
         time.sleep(1)
-        self.dns_aggregator.stop_aggregator()
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGateways()
         self.removeFloatingAddresses()
+        self.dns_aggregator.stop_aggregator()
 
     def become_primary(self):
         self.logger.out('Setting router {} to primary state.'.format(self.name), state='i')

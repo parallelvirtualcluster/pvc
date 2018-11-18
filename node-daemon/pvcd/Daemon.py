@@ -604,7 +604,8 @@ def update_networks(new_network_list):
         if not network in network_list:
             d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
             print(network)
-            dns_aggregator.add_network(d_network[network])
+            if config['daemon_mode'] == 'coordinator':
+                dns_aggregator.add_network(d_network[network])
             # Start primary functionality
             if this_node.router_state == 'primary':
                 d_network[network].createGateways()
