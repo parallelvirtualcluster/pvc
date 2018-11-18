@@ -102,9 +102,13 @@ def getInformationFromXML(zk_conn, uuid, long_output):
     net_list = []
     for net in dnets:
         # Split out just the numerical (VNI) part of the brXXXX name
-        net_vni = re.findall(r'\d+', net['source'])[0]
+        net_vnis = re.findall(r'\d+', net['source'])
+        if net_vnis:
+            net_vni = net_vnis[0]
+        else:
+            net_vni = re.sub('br', '', net['source'])
         net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
-        if not net_exists:
+        if not net_exists and net_vni != 'cluster':
             net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
         else:
             net_list.append(net_vni)
@@ -553,7 +557,11 @@ def get_list(zk_conn, node, limit):
             vm_nets[vm] = []
             for net in dnets:
                 # Split out just the numerical (VNI) part of the brXXXX name
-                net_vni = re.findall(r'\d+', net['source'])[0]
+                net_vnis = re.findall(r'\d+', net['source'])
+                if net_vnis:
+                    net_vni = net_vnis[0]
+                else:
+                    net_vni = re.sub('br', '', net['source'])
                 vm_nets[vm].append(net_vni)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
@@ -642,7 +650,7 @@ def get_list(zk_conn, node, limit):
         for net in vm_nets[vm]:
             net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net))
             net_list.append(net)
-            if not net_exists:
+            if not net_exists and net != 'cluster':
                 vm_nets_colour = ansiprint.red()
         vm_nets[vm] = ','.join(net_list)
 
