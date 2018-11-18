@@ -7,14 +7,16 @@
 # nodename section and coordinators list, can be used as-is on a Debian system.
 #
 # The following values are required for each node or in a default section:
-#    coordinators: A CSV list of the short hostnames of the coordinator nodes; these nodes become
+#    coordinators: a CSV list of the short hostnames of the coordinator nodes; these nodes become
 #                  members of the Zookeeper cluster, can act as routers, and perform additional
 #                  special functions in a cluster; ideally there are 3 coordinators, though 5
 #                  coordinators are supported
-#    dynamic_directory: The ramdisk directory for PVC to store its dynamic configurations,
+#    cluster_domain: the node cluster domain, set during bootstrap
+#    storage_domain: the node storage domain, set during bootstrap
+#    dynamic_directory: the ramdisk directory for PVC to store its dynamic configurations,
 #                       usually under /run or /var/run
-#    log_directory: The logging directory, usually under /var/log
-#    file_logging = Whether to log daemon to a file (pvc.log under log_directory) in addition to
+#    log_directory: the logging directory, usually under /var/log
+#    file_logging = whether to log daemon to a file (pvc.log under log_directory) in addition to
 #                   normal stdout printing
 #    keepalive_interval: the interval between keepalives and for dead node timeout (defaults to 5)
 #    fence_intervals: the number of keepalive_intervals without Zookeeper contact before this node
@@ -31,6 +33,15 @@
 #                               flush action; can be "mem", "load", "vcpus", or "vms" (defaults
 #                               to "mem"); the best choice based on this field is selected for
 #                               each VM to be migrated
+#    pdns_mysql_host: the host address (usually "localhost") of the PowerDNS zone aggregator
+#                     backend database
+#    pdns_mysql_port: the port (usually "3306") of the PowerDNS zone aggregator backend database
+#    pdns_mysql_dbname: the database name (usually "pvcdns") of the PowerDNS zone aggregator
+#                       backend database
+#    pdns_mysql_user: the client username (usually "pvcdns") of the PowerDNS zone aggregator
+#                     backend database
+#    pdns_mysql_password: the client user password (randomly generated at cluster bootstrap)
+#                         of the PowerDNS zone aggregator backend database
 #    vni_floating_ip: the IP address (in CIDR format) for the floating IP on the VNI network,
 #                     used to provide a consistent view of the dynamic primary node to other
 #                     machines in the VNI network, e.g. for slaving DNS or sending in routes.
@@ -56,6 +67,8 @@
 
 [default]
 coordinators = pvc-hv1,pvc-hv2,pvc-hv3
+cluster_domain = i.bonilan.net
+storage_domain = sx.bonilan.net
 dynamic_directory = /run/pvc
 log_directory = /var/log/pvc
 file_logging = True
@@ -65,6 +78,11 @@ suicide_intervals = 0
 successful_fence = migrate
 failed_fence = none
 migration_target_selector = mem
+pdns_mysql_host = localhost
+pdns_mysql_port = 3306
+pdns_mysql_dbname = pvcdns
+pdns_mysql_user = pvcdns
+pdns_mysql_password = pvcdns
 vni_floating_ip = 10.255.0.254/24
 upstream_floating_ip = 10.101.0.30/24
 

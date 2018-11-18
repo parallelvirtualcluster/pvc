@@ -116,6 +116,8 @@ staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout
 # Config values dictionary
 config_values = [
     'coordinators',
+    'cluster_domain',
+    'storage_domain',
     'dynamic_directory',
     'log_directory',
     'file_logging',
@@ -125,6 +127,11 @@ config_values = [
     'successful_fence',
     'failed_fence',
     'migration_target_selector',
+    'pdns_mysql_host',# = 'localhost'
+    'pdns_mysql_port',# = 3306
+    'pdns_mysql_dbname',# = 'pvcdns'
+    'pdns_mysql_user',# = 'pvcdns'
+    'pdns_mysql_password',# = 'pvcdns'
     'vni_dev',
     'vni_dev_ip',
     'vni_floating_ip',
@@ -531,7 +538,7 @@ pool_list = []
 
 # Create an instance of the DNS Aggregator if we're a coordinator
 if config['daemon_mode'] == 'coordinator':
-    dns_aggregator = DNSAggregatorInstance.DNSAggregatorInstance(zk_conn, config, logger, d_network)
+    dns_aggregator = DNSAggregatorInstance.DNSAggregatorInstance(zk_conn, config, logger)
 else:
     dns_aggregator = None
 
@@ -596,9 +603,10 @@ def update_networks(new_network_list):
     for network in new_network_list:
         if not network in network_list:
             d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
+            print(network)
+            dns_aggregator.add_network(d_network[network])
             # Start primary functionality
             if this_node.router_state == 'primary':
-                dns_aggregator.add_client_network(network)
                 d_network[network].createGateways()
                 d_network[network].startDHCPServer()
 
@@ -609,7 +617,7 @@ def update_networks(new_network_list):
             if this_node.router_state == 'primary':
                 d_network[network].stopDHCPServer()
                 d_network[network].removeGateways()
-                dns_aggregator.remove_client_network(network)
+                dns_aggregator.remove_network(d_network[network])
             # Stop general functionality
             d_network[network].removeFirewall()
             d_network[network].removeNetwork()
@@ -895,11 +903,6 @@ def update_zookeeper():
         ceph_health_colour = logger.fmt_yellow
     else:
         ceph_health_colour = logger.fmt_red
-
-    # DNS aggregator retransfer
-    if this_node.router_state == 'primary':
-        for network in d_network: 
-            dns_aggregator.get_axfr(network)
 
     # Set ceph health information in zookeeper (primary only)
     if this_node.router_state == 'primary':
