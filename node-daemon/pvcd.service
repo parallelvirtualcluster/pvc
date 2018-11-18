@@ -1,7 +1,7 @@
 # Parallel Virtual Cluster node daemon unit file
 [Unit]
 Description = Parallel Virtual Cluster node daemon
-After = network-online.target libvirtd.service zookeeper.service
+After = network-online.target libvirtd.service zookeeper.service mariadb.service
 
 [Service]
 Type = simple
