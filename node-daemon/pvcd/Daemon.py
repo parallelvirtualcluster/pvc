@@ -444,6 +444,12 @@ if config['daemon_mode'] == 'coordinator':
     common.run_os_command('ip link set {} up'.format(upstream_dev))
     common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
 
+# Cluster bridge configuration
+logger.out('Setting up cluster network bridge on interface {}'.format(vni_dev), state='i')
+common.run_os_command('brctl addbr brcluster')
+common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
+common.run_os_command('ip link set brcluster mtu 9000 up')
+
 ###############################################################################
 # PHASE 7a - Ensure Libvirt is running on the local host
 ###############################################################################
