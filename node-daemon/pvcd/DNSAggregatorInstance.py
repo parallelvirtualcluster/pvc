@@ -291,7 +291,7 @@ class AXFRDaemonInstance(object):
                     z = dns.zone.from_xfr(dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0))
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
                 except OSError as e:
-                    print(e)
+                    print('{} ({})'.format(e, domain))
                     continue
 
                 # Fix the formatting because it's useless
