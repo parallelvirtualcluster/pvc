@@ -425,12 +425,20 @@ else:
 # VNI configuration
 vni_dev = config['vni_dev']
 vni_dev_ip = config['vni_dev_ip']
-logger.out('Setting up VNI network on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+logger.out('Setting up VNI network interface {}'.format(vni_dev, vni_dev_ip), state='i')
 common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
-common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, vni_dev))
+
+# Cluster bridge configuration
+logger.out('Setting up cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+common.run_os_command('brctl addbr brcluster')
+common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
+common.run_os_command('ip link set brcluster mtu 9000 up')
+common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, 'brcluster'))
 
 # Storage configuration
 storage_dev = config['storage_dev']
+if storage_dev == vni_dev:
+    storage_dev = 'brcluster'
 storage_dev_ip = config['storage_dev_ip']
 logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
 common.run_os_command('ip link set {} mtu 9000 up'.format(storage_dev))
@@ -443,12 +451,6 @@ if config['daemon_mode'] == 'coordinator':
     logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
     common.run_os_command('ip link set {} up'.format(upstream_dev))
     common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
-
-# Cluster bridge configuration
-logger.out('Setting up cluster network bridge on interface {}'.format(vni_dev), state='i')
-common.run_os_command('brctl addbr brcluster')
-common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
-common.run_os_command('ip link set brcluster mtu 9000 up')
 
 ###############################################################################
 # PHASE 7a - Ensure Libvirt is running on the local host
