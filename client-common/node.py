@@ -41,7 +41,7 @@ import client_lib.vm as pvc_vm
 
 def getInformationFromNode(zk_conn, node_name, long_output):
     node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-    node_router_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node_name))
+    node_coordinator_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node_name))
     node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
     node_static_data = zkhandler.readdata(zk_conn, '/nodes/{}/staticdata'.format(node_name)).split()
     node_cpu_count = node_static_data[0]
@@ -67,12 +67,12 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     else:
         daemon_state_colour = ansiprint.blue()
 
-    if node_router_state == 'primary':
-        router_state_colour = ansiprint.green()
-    elif node_router_state == 'secondary':
-        router_state_colour = ansiprint.blue()
+    if node_coordinator_state == 'primary':
+        coordinator_state_colour = ansiprint.green()
+    elif node_coordinator_state == 'secondary':
+        coordinator_state_colour = ansiprint.blue()
     else:
-        router_state_colour = ansiprint.purple()
+        coordinator_state_colour = ansiprint.purple()
 
     if node_domain_state == 'ready':
         domain_state_colour = ansiprint.green()
@@ -86,7 +86,7 @@ def getInformationFromNode(zk_conn, node_name, long_output):
     # Basic information
     ainformation.append('{}Name:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_name))
     ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), daemon_state_colour, node_daemon_state, ansiprint.end()))
-    ainformation.append('{}Router State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), router_state_colour, node_router_state, ansiprint.end()))
+    ainformation.append('{}Coordinator State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), coordinator_state_colour, node_coordinator_state, ansiprint.end()))
     ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), domain_state_colour, node_domain_state, ansiprint.end()))
     ainformation.append('{}Active VM Count:{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_domains_count))
     if long_output == True:
@@ -234,7 +234,7 @@ def get_list(zk_conn, limit):
 
     node_list_output = []
     node_daemon_state = {}
-    node_router_state = {}
+    node_coordinator_state = {}
     node_domain_state = {}
     node_cpu_count = {}
     node_mem_used = {}
@@ -248,7 +248,7 @@ def get_list(zk_conn, limit):
     # Gather information for printing
     for node_name in node_list:
         node_daemon_state[node_name] = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-        node_router_state[node_name] = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node_name))
+        node_coordinator_state[node_name] = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node_name))
         node_domain_state[node_name] = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
         node_cpu_count[node_name] = zkhandler.readdata(zk_conn, '/nodes/{}/staticdata'.format(node_name)).split()[0]
         node_mem_allocated[node_name] = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node_name)))
@@ -263,7 +263,7 @@ def get_list(zk_conn, limit):
     # Dynamic columns: node_name, daemon_state, network_state, domain_state, load
     node_name_length = 5
     daemon_state_length = 7
-    router_state_length = 7
+    coordinator_state_length = 12
     domain_state_length = 7
     domains_count_length = 4
     cpu_count_length = 5
@@ -281,10 +281,10 @@ def get_list(zk_conn, limit):
         _daemon_state_length = len(node_daemon_state[node_name]) + 1
         if _daemon_state_length > daemon_state_length:
             daemon_state_length = _daemon_state_length
-        # router_state column
-        _router_state_length = len(node_router_state[node_name]) + 1
-        if _router_state_length > router_state_length:
-            router_state_length = _router_state_length
+        # coordinator_state column
+        _coordinator_state_length = len(node_coordinator_state[node_name]) + 1
+        if _coordinator_state_length > coordinator_state_length:
+            coordinator_state_length = _coordinator_state_length
         # domain_state column
         _domain_state_length = len(node_domain_state[node_name]) + 1
         if _domain_state_length > domain_state_length:
@@ -321,12 +321,12 @@ def get_list(zk_conn, limit):
     # Format the string (header)
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}} \
-St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
 Res: {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
 Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
             node_name_length=node_name_length,
             daemon_state_length=daemon_state_length,
-            router_state_length=router_state_length,
+            coordinator_state_length=coordinator_state_length,
             domain_state_length=domain_state_length,
             domains_count_length=domains_count_length,
             cpu_count_length=cpu_count_length,
@@ -338,12 +338,12 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             daemon_state_colour='',
-            router_state_colour='',
+            coordinator_state_colour='',
             domain_state_colour='',
             end_colour='',
             node_name='Name',
             node_daemon_state='Daemon',
-            node_router_state='Router',
+            node_coordinator_state='Coordinator',
             node_domain_state='Domain',
             node_domains_count='VMs',
             node_cpu_count='CPUs',
@@ -368,12 +368,12 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
         else:
             daemon_state_colour = ansiprint.blue()
 
-        if node_router_state[node_name] == 'primary':
-            router_state_colour = ansiprint.green()
-        elif node_router_state[node_name] == 'secondary':
-            router_state_colour = ansiprint.blue()
+        if node_coordinator_state[node_name] == 'primary':
+            coordinator_state_colour = ansiprint.green()
+        elif node_coordinator_state[node_name] == 'secondary':
+            coordinator_state_colour = ansiprint.blue()
         else:
-            router_state_colour = ansiprint.purple()
+            coordinator_state_colour = ansiprint.purple()
 
         if node_mem_allocated[node_name] != 0 and node_mem_allocated[node_name] >= node_mem_total[node_name]:
             node_domain_state[node_name] = 'overprov'
@@ -385,12 +385,12 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
 
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}} \
-    {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {router_state_colour}{node_router_state: <{router_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+    {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
      {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
          {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
                 node_name_length=node_name_length,
                 daemon_state_length=daemon_state_length,
-                router_state_length=router_state_length,
+                coordinator_state_length=coordinator_state_length,
                 domain_state_length=domain_state_length,
                 domains_count_length=domains_count_length,
                 cpu_count_length=cpu_count_length,
@@ -402,12 +402,12 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 bold='',
                 end_bold='',
                 daemon_state_colour=daemon_state_colour,
-                router_state_colour=router_state_colour,
+                coordinator_state_colour=coordinator_state_colour,
                 domain_state_colour=domain_state_colour,
                 end_colour=ansiprint.end(),
                 node_name=node_name,
                 node_daemon_state=node_daemon_state[node_name],
-                node_router_state=node_router_state[node_name],
+                node_coordinator_state=node_coordinator_state[node_name],
                 node_domain_state=node_domain_state[node_name],
                 node_domains_count=node_domains_count[node_name],
                 node_cpu_count=node_cpu_count[node_name],
