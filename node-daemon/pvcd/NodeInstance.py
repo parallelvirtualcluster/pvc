@@ -41,8 +41,6 @@ class NodeInstance(object):
         self.zk_conn = zk_conn
         self.config = config
         self.logger = logger
-        # The IPMI hostname for fencing
-        self.ipmi_hostname = self.config['ipmi_hostname']
         # Which node is primary
         self.primary_node = None
         # States

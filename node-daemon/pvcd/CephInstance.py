@@ -27,7 +27,6 @@ import psutil
 
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
-import pvcd.fencing as fencing
 import pvcd.common as common
 
 class CephOSDInstance(object):
