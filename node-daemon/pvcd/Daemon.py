@@ -633,10 +633,6 @@ def update_networks(new_network_list):
             # Delete the object
             del(d_network[network])
 
-#    if config['daemon_mode'] == 'coordinator':
-#        # Update the DNS aggregator
-#        dns_aggregator.update_network_list(d_network)
-            
     # Update and print new list
     network_list = new_network_list
     logger.out('{}Network list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(network_list)), state='i')
