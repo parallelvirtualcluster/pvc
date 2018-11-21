@@ -487,12 +487,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--listen-address={}'.format(self.ip6_gateway),
                 '--auth-peer={}'.format(self.ip6_gateway),
                 '--auth-sec-servers={}'.format(self.ip6_gateway),
-                '--dhcp-option=option6:dns-server,{}'.format(self.ip6_gateway),
-                '--dhcp-option=option6:sntp-server,{}'.format(self.ip6_gateway),
+                '--dhcp-option=option6:dns-server,[{}]'.format(self.ip6_gateway),
+                '--dhcp-option=option6:sntp-server,[{}]'.format(self.ip6_gateway),
+                '--enable-ra',
             ]
             dhcp_configuration_v6_dualstack = [
                 '--dhcp-range=net:{nic},::,constructor:{nic},ra-stateless,ra-names'.format(nic=self.bridge_nic),
-                '--enable-ra',
             ]
             dhcp_configuration_v6_only = [
                 '--dhcp-range=net:{nic},::2,::ffff:ffff:ffff:ffff,constructor:{nic},64,24h'.format(nic=self.bridge_nic),
