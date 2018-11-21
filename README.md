@@ -33,7 +33,7 @@ Free Software is important. Without the ability to study, modify, and change our
 
 #### Be Opinionated and Efficient and Pick The Best Software
 
-Choice is good, until we become paralized by it. PVC aims to make a lot of decisions on software components, as well as how components interact and the overall architecture, for you, based on current best practices, so you can get on with your life. PVC aims to make good design choices based on modern methodologies and not held back by legacy debt, while still providing enough configuration flexbility to support almost any administrators' workload. PVC uses only the best, reliable, and consistent Free Software to operate, and is built on the rock-solid foundation of Debian GNU/Linux, living the first motto through the second.
+Choice is good, until we become paralized by it, so don't try to be everything for everyone at the expense of good design. PVC aims to make a lot of decisions on software components, as well as how components interact and the overall architecture, for you, based on current best practices, so you can get on with your life. PVC aims to make good design choices based on solid, modern technologies, not held back by legacy debt, while still providing enough configuration flexbility to support almost any administrators' workload.
 
 #### Be Scalable and Redundant but Not Hyperscale
 
