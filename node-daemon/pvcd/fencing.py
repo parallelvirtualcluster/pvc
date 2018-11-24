@@ -80,6 +80,9 @@ def migrateFromFencedNode(zk_conn, node_name, logger):
     for dom_uuid in dead_node_running_domains:
         target_node = findTargetHypervisor(zk_conn, 'mem', dom_uuid)
 
+        logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
+        # TO BE IMPLEMENTED once RBD pools are integrated properly
+
         logger.out('Moving VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
         zkhandler.writedata(zk_conn, {
             '/domains/{}/state'.format(dom_uuid): 'start',
@@ -94,11 +97,29 @@ def migrateFromFencedNode(zk_conn, node_name, logger):
 # Perform an IPMI fence
 #
 def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
-    ipmi_command = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
+    # Forcibly reboot the node
+    ipmi_command_reset = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
         ipmi_hostname, ipmi_user, ipmi_password
     )
-    ipmi_command_retcode, ipmi_command_stdout, ipmi_command_stderr = common.run_os_command(ipmi_command)
-    if ipmi_command_retcode == 0:
+    ipmi_reset_retcode, ipmi_reset_stdout, ipmi_reset_stderr = common.run_os_command(ipmi_command_reset)
+
+    time.sleep(0.5)
+
+    # Ensure the node is powered on
+    ipmi_command_status = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power status'.format(
+        ipmi_hostname, ipmi_user, ipmi_password
+    )
+    ipmi_status_retcode, ipmi_status_stdout, ipmi_status_stderr = common.run_os_command(ipmi_command_status)
+
+    # Trigger a power start if needed
+    if ipmi_status_stdout != "Chassis Power is on":
+        ipmi_command_start = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power start'.format(
+            ipmi_hostname, ipmi_user, ipmi_password
+        )
+        ipmi_start_retcode, ipmi_start_stdout, ipmi_start_stderr = common.run_os_command(ipmi_command_start)
+
+    # Declare success or failure
+    if ipmi_reset_retcode == 0:
         logger.out('Successfully rebooted dead node', state='o')
         return True
     else:
