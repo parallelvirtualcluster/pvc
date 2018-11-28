@@ -399,6 +399,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.bridge_nic
             )
         )
+        common.run_os_command(
+            # Disable IPv6 DAD on bridge NICs
+            'sysctl net.ipv6.conf.{}.accept_dad=0'.format(
+                self.bridge_nic
+            )
+        )
 
     def createFirewall(self):
         # For future use
