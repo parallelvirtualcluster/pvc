@@ -23,7 +23,7 @@
 # Version string for startup output
 version = '0.4'
 # Debugging output mode
-debug = True
+debug = False
 
 import kazoo.client
 import libvirt
