@@ -674,7 +674,7 @@ def cmd(data, stat, event=''):
         data = ''
 
     if data:
-        CephInstance.run_command(data)
+        CephInstance.run_command(zk_conn, data, d_osd)
 
 # OSD objects
 @zk_conn.ChildrenWatch('/ceph/osds')

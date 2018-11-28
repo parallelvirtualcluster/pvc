@@ -417,7 +417,7 @@ def remove_pool(zk_conn, logger, name):
         logger.out('Failed to remove RBD pool {}: {}'.format(name, e), state='e')
         return False
 
-def run_command(zk_conn, command):
+def run_command(zk_conn, data, d_osd):
     # Get the command and args
     command, args = data.split()
 
@@ -550,7 +550,7 @@ def run_command(zk_conn, command):
                 time.sleep(1)
 
     # Adding a new pool
-    if command == 'pool_add':
+    elif command == 'pool_add':
         name, pgs = args.split(',')
 
         if this_node.router_state == 'primary':
