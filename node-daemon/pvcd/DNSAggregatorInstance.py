@@ -288,10 +288,11 @@ class AXFRDaemonInstance(object):
 
                 # Get an AXFR from the dnsmasq instance and list of records
                 try:
-                    z = dns.zone.from_xfr(dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0))
+                    axfr = dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0)
+                    z = dns.zone.from_xfr(axfr)
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
                 except OSError as e:
-                    print('{} ({})'.format(e, domain))
+                    print('{} {} ({})'.format(e, dnsmasq_ip, domain))
                     continue
 
                 # Fix the formatting because it's useless
