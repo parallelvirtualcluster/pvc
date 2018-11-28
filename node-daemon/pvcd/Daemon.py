@@ -942,7 +942,7 @@ def update_zookeeper():
             node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
             if node_keepalive < node_deadtime and node_daemon_state == 'run':
                 logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
-                zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate')
+                zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
                 with zk_lock:
                     # Ensures that, if we lost the lock race and come out of waiting,
                     # we won't try to trigger our own fence thread.
