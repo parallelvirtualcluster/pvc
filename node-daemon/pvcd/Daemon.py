@@ -22,6 +22,8 @@
 
 # Version string for startup output
 version = '0.4'
+# Debugging output mode
+debug = True
 
 import kazoo.client
 import libvirt
@@ -475,8 +477,9 @@ except Exception as e:
 # PHASE 7b - Ensure Ceph is running on the local host
 ###############################################################################
 
-# if coordinator, start ceph-mon
-# if hypervisor or coodinator, start ceph-osds
+if config['daemon_mode'] == 'coordinator':
+    common.run_os_command('systemctl start ceph-mon@{}'.format(myhostname))
+    common.run_os_command('systemctl start ceph-mgr@{}'.format(myhostname))
 
 ###############################################################################
 # PHASE 7c - Ensure NFT is running on the local host
@@ -723,6 +726,8 @@ def update_pools(new_pool_list):
 # Zookeeper keepalive update function
 def update_zookeeper():
     # Get past state and update if needed
+    if debug:
+        print("Get past state and update if needed")
     past_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(this_node.name))
     if past_state != 'run':
         this_node.daemon_state = 'run'
@@ -731,11 +736,15 @@ def update_zookeeper():
         this_node.daemon_state = 'run'
 
     # Ensure the primary key is properly set
+    if debug:
+        print("Ensure the primary key is properly set")
     if this_node.router_state == 'primary':
         if zkhandler.readdata(zk_conn, '/primary_node') != this_node.name:
             zkhandler.writedata(zk_conn, {'/primary_node': this_node.name})
 
     # Get Ceph cluster health (for local printing)
+    if debug:
+        print("Get Ceph cluster health (for local printing)")
     retcode, stdout, stderr = common.run_os_command('ceph health')
     ceph_health = stdout.rstrip()
     if 'HEALTH_OK' in ceph_health:
@@ -747,6 +756,8 @@ def update_zookeeper():
 
     # Set ceph health information in zookeeper (primary only)
     if this_node.router_state == 'primary':
+        if debug:
+            print("Set ceph health information in zookeeper (primary only)")
         # Get status info
         retcode, stdout, stderr = common.run_os_command('ceph status')
         ceph_status = stdout
@@ -760,6 +771,8 @@ def update_zookeeper():
 
     # Set pool information in zookeeper (primary only)
     if this_node.router_state == 'primary':
+        if debug:
+            print("Set pool information in zookeeper (primary only)")
         # Get pool info
         pool_df = dict()
         retcode, stdout, stderr = common.run_os_command('rados df --format json')
@@ -789,6 +802,8 @@ def update_zookeeper():
             })
     
     # Get data from Ceph OSDs
+    if debug:
+        print("Get data from Ceph OSDs")
     # Parse the dump data
     osd_dump = dict()
     retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json')
@@ -857,6 +872,8 @@ def update_zookeeper():
         osd_stats[osd] = this_dump
 
     # Trigger updates for each OSD on this node
+    if debug:
+        print("Trigger updates for each OSD on this node")
     osds_this_node = 0
     for osd in osd_list:
         if d_osd[osd].node == myhostname:
@@ -867,6 +884,8 @@ def update_zookeeper():
 
 
     # Toggle state management of dead VMs to restart them
+    if debug:
+        print("Toggle state management of dead VMs to restart them")
     memalloc = 0
     vcpualloc = 0
     for domain, instance in this_node.d_domain.items():
@@ -884,6 +903,8 @@ def update_zookeeper():
                         zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
 
     # Connect to libvirt
+    if debug:
+        print("Connect to libvirt")
     libvirt_name = "qemu:///system"
     lv_conn = libvirt.open(libvirt_name)
     if lv_conn == None:
@@ -891,6 +912,8 @@ def update_zookeeper():
         return
 
     # Ensure that any running VMs are readded to the domain_list
+    if debug:
+        print("Ensure that any running VMs are readded to the domain_list")
     running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
     for domain in running_domains:
         domain_uuid = domain.UUIDString()
@@ -898,6 +921,8 @@ def update_zookeeper():
             this_node.domain_list.append(domain_uuid)
 
     # Set our information in zookeeper
+    if debug:
+        print("Set our information in zookeeper")
     #this_node.name = lv_conn.getHostname()
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
     this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
@@ -925,6 +950,8 @@ def update_zookeeper():
     lv_conn.close()
 
     # Look for dead nodes and fence them
+    if debug:
+        print("Look for dead nodes and fence them")
     if config['daemon_mode'] == 'coordinator':
         for node_name in d_node:
             try:
@@ -946,7 +973,7 @@ def update_zookeeper():
                 with zk_lock:
                     # Ensures that, if we lost the lock race and come out of waiting,
                     # we won't try to trigger our own fence thread.
-                    if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate') != 'dead':
+                    if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name)) != 'dead':
                         fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
                         fence_thread.start()
                     # Write the updated data after we start the fence thread
