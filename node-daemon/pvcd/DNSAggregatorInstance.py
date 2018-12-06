@@ -286,7 +286,9 @@ class AXFRDaemonInstance(object):
                 else:
                     dnsmasq_ip = network.ip6_gateway
 
+                #
                 # Get an AXFR from the dnsmasq instance and list of records
+                #
                 try:
                     axfr = dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0)
                     z = dns.zone.from_xfr(axfr)
@@ -312,7 +314,9 @@ class AXFRDaemonInstance(object):
                         entry = '{} {} IN {} {}'.format(name, record[1], record[3], ' '.join(record[4:]))
                         records_new.append(entry)
 
+                #
                 # Get the current zone from the database
+                #
                 mysql_curs = self.mysql_conn.cursor()
                 mysql_curs.execute(
                     'SELECT id FROM domains WHERE name=%s',
