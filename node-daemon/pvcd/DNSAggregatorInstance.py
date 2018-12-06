@@ -293,7 +293,7 @@ class AXFRDaemonInstance(object):
                     axfr = dns.query.xfr(dnsmasq_ip, domain, lifetime=5.0)
                     z = dns.zone.from_xfr(axfr)
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
-                except OSError as e:
+                except Exception as e:
                     print('{} {} ({})'.format(e, dnsmasq_ip, domain))
                     continue
 
@@ -334,8 +334,8 @@ class AXFRDaemonInstance(object):
                 records_old = list()
                 records_old_ids = list()
                 for record in results:
-                    # Skip the SOA and NS records
-                    if record[3] == 'SOA' or record[3] == 'NS':
+                    # Skip the non-A
+                    if record[3] != 'A' or record[3] != 'AAAA':
                         continue
                     # Assemble a list element in the same format as the AXFR data
                     entry = '{} {} IN {} {}'.format(record[2], record[5], record[3], record[4])
