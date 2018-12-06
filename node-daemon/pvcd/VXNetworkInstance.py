@@ -475,7 +475,6 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--log-dhcp',
                 '--keep-in-foreground',
                 '--leasefile-ro',
-#                '--auth-soa=1,pvc@localhost,10,10',
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--bind-interfaces',
@@ -485,6 +484,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             dhcp_configuration_v4 = [
                 '--listen-address={}'.format(self.ip4_gateway),
                 '--auth-peer={}'.format(self.ip4_gateway),
+                '--auth-server={}'.format(self.ip4_gateway),
                 '--auth-sec-servers={}'.format(self.ip4_gateway),
                 '--dhcp-option=option:ntp-server,{}'.format(self.ip4_gateway),
                 '--dhcp-range={},{},48h'.format(self.dhcp4_start, self.dhcp4_end),
@@ -501,6 +501,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--dhcp-range=net:{nic},::,constructor:{nic},ra-stateless,ra-names'.format(nic=self.bridge_nic),
             ]
             dhcp_configuration_v6_only = [
+                '--auth-server={}'.format(self.ip6_gateway),
                 '--dhcp-range=net:{nic},::2,::ffff:ffff:ffff:ffff,constructor:{nic},64,24h'.format(nic=self.bridge_nic),
             ]
 
