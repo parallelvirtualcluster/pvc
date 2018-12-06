@@ -250,7 +250,7 @@ class NodeInstance(object):
         self.dns_aggregator.stop_aggregator()
 
     def become_primary(self):
-        self.logger.out('Setting router {} to primary state.'.format(self.name), state='i')
+        self.logger.out('Setting router {} to primary state'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
         self.createFloatingAddresses()
         # Start up the gateways and DHCP servers
