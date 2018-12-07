@@ -113,7 +113,7 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
 
     # Trigger a power start if needed
     if ipmi_status_stdout != "Chassis Power is on":
-        ipmi_command_start = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power start'.format(
+        ipmi_command_start = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power on'.format(
             ipmi_hostname, ipmi_user, ipmi_password
         )
         ipmi_start_retcode, ipmi_start_stdout, ipmi_start_stderr = common.run_os_command(ipmi_command_start)
