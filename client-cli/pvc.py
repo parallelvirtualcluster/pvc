@@ -34,6 +34,7 @@ import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
+import client_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname()
 zk_host = ''
@@ -187,6 +188,56 @@ def cli_vm():
     Manage the state of a virtual machine in the PVC cluster.
     """
     pass
+
+###############################################################################
+# pvc vm add
+###############################################################################
+@click.command(name='add', short_help='Add a new virtual machine to the provisioning queue.')
+@click.option(
+    '--node', 'target_node',
+    help='Home node for this domain; autodetect if unspecified.'
+)
+@click.option(
+    '--cluster', 'is_cluster',
+    is_flag=True,
+    help='Create a cluster VM.'
+)
+@click.option(
+    '--system-template', 'system_template',
+    required=True,
+    help='System resource template for this domain.'
+)
+@click.option(
+    '--network-template', 'network_template',
+    required=True,
+    help='Network resource template for this domain.'
+)
+@click.option(
+    '--storage-template', 'storage_template',
+    required=True,
+    help='Storage resource template for this domain.'
+)
+@click.argument(
+    'vmname'
+)
+def vm_add(vmname, target_node, is_cluster, system_template, network_template, storage_template):
+    """
+    Add a new VM VMNAME to the provisioning queue.
+
+    Note: Cluster VMs are those which will only run on Coordinator hosts. Usually, these VMs will use the 'cluster' network template, or possibly a custom template including the upstream network as well. Use these sparingly, as they are designed primarily for cluster control or upstream bridge VMs.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_provisioner.add_vm(
+        zk_conn,
+        vmname=vmname,
+        target_node=target_node,
+        is_cluster=is_cluster,
+        system_template=system_template,
+        network_template=network_template,
+        storage_template=storage_template
+    )
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc vm define
@@ -1163,47 +1214,15 @@ def ceph_pool_list(limit):
 ###############################################################################
 # pvc init
 ###############################################################################
+
 @click.command(name='init', short_help='Initialize a new cluster.')
-@click.option('--yes', is_flag=True,
-              expose_value=False,
-              prompt='DANGER: This command will destroy any existing cluster data. Do you want to continue?')
 def init_cluster():
     """
-    Perform initialization of Zookeeper to act as a PVC cluster.
-
-    DANGER: This command will overwrite any existing cluster data and provision a new cluster at the specified Zookeeper connection string. Do not run this against a cluster unless you are sure this is what you want.
+    Perform initialization of a new PVC cluster.
     """
 
-    click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
-
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-
-    # Destroy the existing data
-    try:
-        zk_conn.delete('/networks', recursive=True)
-        zk_conn.delete('/domains', recursive=True)
-        zk_conn.delete('/nodes', recursive=True)
-        zk_conn.delete('/primary_node', recursive=True)
-        zk_conn.delete('/ceph', recursive=True)
-    except:
-        pass
-
-    # Create the root keys
-    transaction = zk_conn.transaction()
-    transaction.create('/nodes', ''.encode('ascii'))
-    transaction.create('/primary_node', 'none'.encode('ascii'))
-    transaction.create('/domains', ''.encode('ascii'))
-    transaction.create('/networks', ''.encode('ascii'))
-    transaction.create('/ceph', ''.encode('ascii'))
-    transaction.create('/ceph/osds', ''.encode('ascii'))
-    transaction.create('/ceph/pools', ''.encode('ascii'))
-    transaction.commit()
-
-    # Close the Zookeeper connection
-    pvc_common.stopZKConnection(zk_conn)
-
-    click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
+    import pvc_init
+    pvc_init.run()
 
 
 ###############################################################################
@@ -1256,6 +1275,7 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
+cli_vm.add_command(vm_add)
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
