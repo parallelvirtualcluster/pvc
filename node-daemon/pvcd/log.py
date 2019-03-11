@@ -45,6 +45,8 @@ class Logger(object):
             # We open the logfile for the duration of our session, but have a hup function
             self.writer = open(self.logfile, 'a', buffering=1)
             self.last_colour = self.fmt_cyan
+        else:
+            self.last_colour = ""
     
     # Provide a hup function to close and reopen the writer
     def hup(self):

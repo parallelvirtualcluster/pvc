@@ -6,6 +6,8 @@
 %:
 	dh $@
 
+override_dh_auto_clean:
+	find . -name "__pycache__" -exec rm -r {} \; || true
 
 # If you need to rebuild the Sphinx documentation
 # Add spinxdoc to the dh --with line

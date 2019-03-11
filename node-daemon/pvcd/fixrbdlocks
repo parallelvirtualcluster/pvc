@@ -1,0 +1,13 @@
+#!/bin/bash
+
+for disk in $( sudo rbd list ${BLSE_STORAGE_POOL_VM} | grep "^${vm}" ); do
+	echo -e "  Disk: $disk"
+	locks="$( sudo rbd lock list ${BLSE_STORAGE_POOL_VM}/${disk} | grep '^client' )"
+	echo "${locks}"
+	if [[ -n "${locks}" ]]; then
+		echo -e "   LOCK FOUND! Clearing."
+		locker="$( awk '{ print $1 }' <<<"${locks}" )"
+		id="$( awk '{ print $2" "$3 }' <<<"${locks}" )"
+		sudo rbd lock remove ${BLSE_STORAGE_POOL_VM}/${disk} "${id}" "${locker}"
+	fi
+done

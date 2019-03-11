@@ -66,10 +66,18 @@ class NodeInstance(object):
         self.memalloc = 0
         self.vcpualloc = 0
         # Floating upstreams
-        self.vni_dev = self.config['vni_dev']
-        self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
-        self.upstream_dev = self.config['upstream_dev']
-        self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
+        if self.config['enable_networking']:
+            self.vni_dev = self.config['vni_dev']
+            self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
+            self.upstream_dev = self.config['upstream_dev']
+            self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
+        else:
+            self.vni_dev = None
+            self.vni_ipaddr = None
+            self.vni_cidrnetmask = None
+            self.upstream_dev = None
+            self.upstream_ipaddr = None
+            self.upstream_cidrnetmask = None
         # Flags
         self.inflush = False
 
@@ -240,25 +248,27 @@ class NodeInstance(object):
 
     # Routing primary/secondary states
     def become_secondary(self):
-        self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
-        self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
-        time.sleep(1)
-        for network in self.d_network:
-            self.d_network[network].stopDHCPServer()
-            self.d_network[network].removeGateways()
-        self.removeFloatingAddresses()
-        self.dns_aggregator.stop_aggregator()
+        if self.config['enable_networking']:
+            self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
+            self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+            time.sleep(1)
+            for network in self.d_network:
+                self.d_network[network].stopDHCPServer()
+                self.d_network[network].removeGateways()
+            self.removeFloatingAddresses()
+            self.dns_aggregator.stop_aggregator()
 
     def become_primary(self):
-        self.logger.out('Setting router {} to primary state'.format(self.name), state='i')
-        self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
-        self.createFloatingAddresses()
-        # Start up the gateways and DHCP servers
-        for network in self.d_network:
-            self.d_network[network].createGateways()
-            self.d_network[network].startDHCPServer()
-        time.sleep(0.5)
-        self.dns_aggregator.start_aggregator()
+        if self.config['enable_networking']:
+            self.logger.out('Setting router {} to primary state'.format(self.name), state='i')
+            self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+            self.createFloatingAddresses()
+            # Start up the gateways and DHCP servers
+            for network in self.d_network:
+                self.d_network[network].createGateways()
+                self.d_network[network].startDHCPServer()
+            time.sleep(0.5)
+            self.dns_aggregator.start_aggregator()
 
     def createFloatingAddresses(self):
         # VNI floating IP

@@ -11,6 +11,15 @@
 pvc:
   # node: The (short) hostname of the node, set during provisioning
   node: pvc-hv1
+  # functions: The daemon functions to enable
+  functions:
+    # enable_hypervisor: Enable or disable hypervisor functionality
+    # This should never be False except in very advanced usecases
+    enable_hypervisor: True
+    # enable_networking: Enable or disable virtual networking and routing functionality
+    enable_networking: True
+    # enable_storage: Enable or disable Ceph storage management functionality
+    enable_storage: True
   # cluster: Cluster-level configuration
   cluster:
     # coordinators: The list of cluster coordinator hostnames
@@ -19,6 +28,7 @@ pvc:
       - pvc-hv2
       - pvc-hv3
     # networks: Cluster-level network configuration
+    # OPTIONAL if enable_networking: False
     networks:
       # upstream: Upstream routed network for in- and out-bound upstream networking
       upstream:
@@ -43,8 +53,9 @@ pvc:
         # network: Cluster storage network block
         network: "10.254.0.0/24"
         # floating_ip: Cluster storage floating IP address for the primary coordinator
-        floating_ip: "10.255.0.254/24"
+        floating_ip: "10.254.0.254/24"
   # coordinator: Coordinator-specific configuration
+  # OPTIONAL if enable_networking: False
   coordinator:
     # dns: DNS aggregator subsystem
     dns:
@@ -105,6 +116,7 @@ pvc:
         # stdout_logging: Enable or disable logging to stdout (i.e. journald)
         stdout_logging: True
       # networking: PVC networking configuration
+      # OPTIONAL if enable_networking: False
       networking:
         # devices: Interface devices configuration
         devices:
