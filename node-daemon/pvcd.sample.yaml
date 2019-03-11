@@ -1,0 +1,124 @@
+# pvcd cluster configuration file example
+#
+# This configuration file specifies details for this node in PVC. Multiple node
+# blocks can be added but only the one matching the current system nodename will
+# be used by the local daemon. Default values are not supported; the values in
+# this sample configuration are considered defaults and, with adjustment of the
+# nodename section and coordinators list, can be used as-is on a Debian system.
+#
+# Copy this example to /etc/pvc/pvcd.conf and edit to your needs
+
+pvc:
+  # node: The (short) hostname of the node, set during provisioning
+  node: pvc-hv1
+  # cluster: Cluster-level configuration
+  cluster:
+    # coordinators: The list of cluster coordinator hostnames
+    coordinators:
+      - pvc-hv1
+      - pvc-hv2
+      - pvc-hv3
+    # networks: Cluster-level network configuration
+    networks:
+      # upstream: Upstream routed network for in- and out-bound upstream networking
+      upstream:
+        # domain: Upstream domain name, may be None
+        domain: "mydomain.net"
+        # network: Upstream network block
+        network: "1.1.1.0/24"
+        # floating_ip: Upstream floating IP address for the primary coordinator
+        floating_ip: "1.1.1.10/24"
+      # cluster: Cluster internal network for node communication and client virtual networks
+      cluster:
+        # domain: Cluster internal domain name
+        domain: "pvc.local"
+        # network: Cluster internal network block
+        network: "10.255.0.0/24"
+        # floating_ip: Cluster internal floating IP address for the primary coordinator
+        floating_ip: "10.255.0.254/24"
+      # storage: Cluster internal network for storage traffic
+      storage:
+        # domain: Cluster storage domain name
+        domain: "pvc.storage"
+        # network: Cluster storage network block
+        network: "10.254.0.0/24"
+        # floating_ip: Cluster storage floating IP address for the primary coordinator
+        floating_ip: "10.255.0.254/24"
+  # coordinator: Coordinator-specific configuration
+  coordinator:
+    # dns: DNS aggregator subsystem
+    dns:
+      # database: MySQL Galera database configuration
+      database:
+        # host: MySQL hostname, invariably 'localhost'
+        host: localhost
+        # port: MySQL port, invariably 'localhost'
+        port: 3306
+        # name: MySQL database name, invariably 'pvcdns'
+        name: pvcdns
+        # user: MySQL username, invariable 'pvcdns'
+        user: pvcdns
+        # pass: MySQL user password, randomly generated
+        pass: pvcdns
+  # system: Local PVC instance configuration
+  system:
+    # fencing: Node fencing configuration
+    fencing:
+      # intervals: Intervals for fencing determination
+      intervals:
+        # keepalive_interval: Number of seconds between keepalive/status updates
+        keepalive_interval: 5
+        # fence_intervals: Number of keepalive_intervals to declare a node dead and fence it
+        fence_intervals: 6
+        # suicide_intervals: Numer of keepalive_intervals before a node considers itself dead and self-fences, 0 to disable 
+        suicide_intervals: 0
+      # actions: Actions to take after a fence trigger
+      actions:
+        # successful_fence: Action to take after successfully fencing a node, options: migrate, None
+        successful_fence: migrate
+        # failed_fence: Action to take after failing to fence a node, options: migrate, None
+        failed_fence: None
+      # ipmi: Local system IPMI options
+      ipmi:
+        # host: Hostname/IP of the local system's IPMI interface, must be reachable
+        host: pvc-hv1-lom
+        # user: Local system IPMI username
+        user: admin
+        # pass: Local system IPMI password
+        pass: Passw0rd
+    # migration: Migration option configuration
+    migration:
+      # target_selector: Criteria to select the ideal migration target, options: mem, load, vcpus, vms
+      target_selector: mem
+    # configuration: Local system configurations
+    configuration:
+      # directories: PVC system directories
+      directories:
+        # dynamic_directory: Temporary in-memory directory for active configurations
+        dynamic_directory: "/run/pvc"
+        # log_directory: Logging directory
+        log_directory: "/var/log/pvc"
+      # logging: PVC logging configuration
+      logging:
+        # file_logging: Enable or disable logging to files under log_directory
+        file_logging: True
+        # stdout_logging: Enable or disable logging to stdout (i.e. journald)
+        stdout_logging: True
+      # networking: PVC networking configuration
+      networking:
+        # devices: Interface devices configuration
+        devices:
+          # upstream: Upstream physical interface device
+          upstream: ens4
+          # cluster: Cluster (VNIC) physical interface device
+          cluster: ens4
+          # storage: Storage (Ceph) physical interface device
+          storage: ens4
+        # addresses: Special network addresses; by-id denotes "address octet equals host number", e.g. .3 for host3
+        addresses:
+          # upstream: Network address for upstream network, options: None, by-id, <static>/<mask>
+          upstream: None
+          # cluster: Network address for cluster network, options: by-id, <static>/<mask>
+          cluster: by-id
+          # storage: Network address for storage network, options: by-id, <static>/<mask>
+          storage: by-id
