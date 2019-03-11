@@ -1222,7 +1222,8 @@ def init_cluster():
     """
 
     import pvc_init
-    pvc_init.run()
+#    pvc_init.run()
+    pvc_init.init_zookeeper(zk_host)
 
 
 ###############################################################################
