@@ -496,7 +496,7 @@ def get_info(zk_conn, domain, long_output):
 
     return True, ''
 
-def get_list(zk_conn, node, limit):
+def get_list(zk_conn, node, limit, raw):
     if node != None:
         # Verify node is valid
         common.verifyNode(zk_conn, node)
@@ -551,6 +551,10 @@ def get_list(zk_conn, node, limit):
             else:
                 if vm_node[vm] == node:
                     vm_list.append(vm)
+
+    if raw:
+        click.echo('\n'.join(vm_list))
+        return True, ''
 
     # Gather information for printing
     for vm in vm_list:
