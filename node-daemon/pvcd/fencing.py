@@ -60,7 +60,7 @@ def fenceNode(node_name, zk_conn, config, logger):
     time.sleep(3)
 
     # Force into secondary network state if needed
-    if node_name in config['coordinators'].split(','):
+    if node_name in config['coordinators']:
         zkhandler.writedata(zk_conn, { '/nodes/{}/routerstate'.format(node_name): 'secondary' })
         if zkhandler.readdata(zk_conn, '/primary_node') == node_name:
             zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
