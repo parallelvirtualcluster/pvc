@@ -520,7 +520,7 @@ def get_list(zk_conn, node, limit, raw):
 
         # Check we don't match the limit
         name = zkhandler.readdata(zk_conn, '/domains/{}'.format(vm))
-        vm_list_names.append(name)
+        vm_node[vm] = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(vm))
         if limit != None:
             try:
                 # Implcitly assume fuzzy limits
