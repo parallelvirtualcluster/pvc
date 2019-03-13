@@ -1276,7 +1276,8 @@ def cli(_zk_host):
     if _zk_host is None:
         try:
             cfgfile = '/etc/pvc/pvcd.yaml'
-            o_config = yaml.load(cfgfile)
+            with open(cfgfile) as cfgf:
+                o_config = yaml.load(cfgf)
             _zk_host = o_config['pvc']['cluster']['coordinators']
         except:
             _zk_host = None
