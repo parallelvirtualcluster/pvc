@@ -515,20 +515,25 @@ def get_list(zk_conn, node, limit, raw):
     vm_vcpu = {}
     vm_nets = {}
 
+    # Set our limit to a sensible regex
+    if limit != None:
+        try:
+            # Implcitly assume fuzzy limits
+            if re.match('\^.*', limit) == None:
+                limit = '.*' + limit
+            if re.match('.*\$', limit) == None:
+                limit = limit + '.*'
+        except Exception as e:
+            return False, 'Regex Error: {}'.format(e)
+
     # If we're limited, remove other nodes' VMs
     for vm in full_vm_list:
-
         # Check we don't match the limit
         name = zkhandler.readdata(zk_conn, '/domains/{}'.format(vm))
         vm_node[vm] = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(vm))
+        # Handle limiting
         if limit != None:
             try:
-                # Implcitly assume fuzzy limits
-                if re.match('\^.*', limit) == None:
-                    limit = '.*' + limit
-                if re.match('.*\$', limit) == None:
-                    limit = limit + '.*'
-
                 if re.match(limit, vm) != None:
                     if node == None:
                         vm_list.append(vm)
