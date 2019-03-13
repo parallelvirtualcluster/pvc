@@ -552,11 +552,6 @@ def get_list(zk_conn, node, limit, raw):
                 if vm_node[vm] == node:
                     vm_list.append(vm)
 
-    if raw:
-        for vm in vm_list:
-            click.echo(vm_name[vm])
-        return True, ''
-
     # Gather information for printing
     for vm in vm_list:
         vm_state[vm] = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(vm))
@@ -581,6 +576,11 @@ def get_list(zk_conn, node, limit, raw):
                 vm_nets[vm].append(net_vni)
         except AttributeError:
             click.echo('Error: Domain {} does not exist.'.format(domain))
+
+    if raw:
+        for vm in vm_list:
+            click.echo(vm_name[vm])
+        return True, ''
 
     # Determine optimal column widths
     # Dynamic columns: node_name, node, migrated
