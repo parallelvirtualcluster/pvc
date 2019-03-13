@@ -503,7 +503,6 @@ def get_list(zk_conn, node, limit, raw):
 
     full_vm_list = zkhandler.listchildren(zk_conn, '/domains')
     vm_list = []
-    vm_list_names = []
     vm_list_output = []
 
     vm_node = {}
@@ -522,7 +521,6 @@ def get_list(zk_conn, node, limit, raw):
         # Check we don't match the limit
         name = zkhandler.readdata(zk_conn, '/domains/{}'.format(vm))
         vm_list_names.append(name)
-        vm_node[vm] = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(vm))
         if limit != None:
             try:
                 # Implcitly assume fuzzy limits
@@ -555,7 +553,8 @@ def get_list(zk_conn, node, limit, raw):
                     vm_list.append(vm)
 
     if raw:
-        click.echo('\n'.join(vm_list_names))
+        for vm in vm_list:
+            click.echo(vm_name[vm])
         return True, ''
 
     # Gather information for printing
