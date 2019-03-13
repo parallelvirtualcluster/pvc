@@ -248,6 +248,17 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
 
     return True, ''
 
+def dump_vm(zk_conn, domain):
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if dom_uuid == None:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Gram the domain XML and dump it to stdout
+    vm_xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
+    click.echo(vm_xml)
+
+    return True, ''
+
 def undefine_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)

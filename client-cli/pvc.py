@@ -386,6 +386,28 @@ def vm_undefine(domain):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc vm dump
+###############################################################################
+@click.command(name='dump', short_help='Dump a virtual machine XML to stdout.')
+@click.argument(
+    'domain'
+)
+def vm_dump(domain):
+    """
+    Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
+    """
+
+    # Ensure at least one search method is set
+    if domain == None:
+        click.echo("ERROR: You must specify either a name or UUID value.")
+        exit(1)
+
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.dump_vm(zk_conn, domain)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc vm start
 ###############################################################################
 @click.command(name='start', short_help='Start up a defined virtual machine.')
@@ -1280,6 +1302,7 @@ cli_vm.add_command(vm_add)
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
+cli_vm.add_command(vm_dump)
 cli_vm.add_command(vm_start)
 cli_vm.add_command(vm_restart)
 cli_vm.add_command(vm_shutdown)
