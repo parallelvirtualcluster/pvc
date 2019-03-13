@@ -28,6 +28,7 @@ import subprocess
 import difflib
 import re
 import colorama
+import yaml
 
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
@@ -1268,23 +1269,20 @@ def cli(_zk_host):
 
       "PVC_ZOOKEEPER": Set the cluster Zookeeper address instead of using "--zookeeper".
 
-    If no PVC_ZOOKEEPER/--zookeeper is specified, attempts to load coordinators list from /etc/pvc/pvcd.conf.
+    If no PVC_ZOOKEEPER/--zookeeper is specified, attempts to load coordinators list from /etc/pvc/pvcd.yaml.
     """
 
-    # If no zk_host was passed, try to read from /etc/pvc/pvcd.conf; otherwise fail
+    # If no zk_host was passed, try to read from /etc/pvc/pvcd.yaml; otherwise fail
     if _zk_host is None:
-        import configparser
-
         try:
-            config_file = '/etc/pvc/pvcd.conf'
-            o_config = configparser.ConfigParser()
-            o_config.read(config_file)
-            _zk_host = o_config['default']['coordinators']
+            cfgfile = '/etc/pvc/pvcd.yaml'
+            o_config = yaml.load(cfgfile)
+            _zk_host = o_config['pvc']['cluster']['coordinators']
         except:
             _zk_host = None
 
     if _zk_host is None:
-        print('ERROR: Must specify a PVC_ZOOKEEPER value or have a coordinator set configured in /etc/pvc/pvcd.conf.')
+        print('ERROR: Must specify a PVC_ZOOKEEPER value or have a coordinator set configured in /etc/pvc/pvcd.yaml.')
         exit(1)
 
     global zk_host

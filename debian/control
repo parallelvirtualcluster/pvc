@@ -25,7 +25,7 @@ Description: Parallel Virtual Cluster common client libraries (Python 3)
 
 Package: pvc-client-cli
 Architecture: all
-Depends: pvc-client-common
+Depends: pvc-client-common, python3-yaml
 Description: Parallel Virtual Cluster client (Python 3)
  The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
  .
