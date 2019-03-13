@@ -9,7 +9,7 @@ WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcd.yaml
 ExecStart = /usr/share/pvc/pvcd.py
-Restart = never
+Restart = on-failure
 
 [Install]
 WantedBy = multi-user.target
