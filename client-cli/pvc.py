@@ -195,7 +195,7 @@ def cli_vm():
 ###############################################################################
 @click.command(name='add', short_help='Add a new virtual machine to the provisioning queue.')
 @click.option(
-    '--node', 'target_node',
+    '--target', 'target_node',
     help='Home node for this domain; autodetect if unspecified.'
 )
 @click.option(
@@ -245,7 +245,7 @@ def vm_add(vmname, target_node, is_cluster, system_template, network_template, s
 ###############################################################################
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
-    '-n', '--node', 'target_node',
+    '-t', '--target', 'target_node',
     help='Home node for this domain; autodetect if unspecified.'
 )
 @click.option(
@@ -484,7 +484,7 @@ def vm_stop(domain):
 	'domain'
 )
 @click.option(
-    '-n', '--node', 'target_node', default=None,
+    '-t', '--target', 'target_node', default=None,
     help='Target node to migrate to; autodetect if unspecified.'
 )
 @click.option(
@@ -510,7 +510,7 @@ def vm_move(domain, target_node, selector):
     'domain'
 )
 @click.option(
-    '-n', '--node', 'target_node', default=None,
+    '-t', '--target', 'target_node', default=None,
     help='Target node to migrate to; autodetect if unspecified.'
 )
 @click.option(
@@ -578,14 +578,14 @@ def vm_info(domain, long_output):
     'limit', default=None, required=False
 )
 @click.option(
-    '-n', '--node', 'node', default=None,
-    help='Limit list to this node.'
+    '-t', '--target', 'target_node', default=None,
+    help='Limit list to specified node.'
 )
 @click.option(
     '-r', '--raw', 'raw', is_flag=True, default=False,
     help='Display the raw list of VM names.'
 )
-def vm_list(node, limit, raw):
+def vm_list(target_node, limit, raw):
     """
     List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
 
@@ -593,7 +593,7 @@ def vm_list(node, limit, raw):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.get_list(zk_conn, node, limit, raw)
+    retcode, retmsg = pvc_vm.get_list(zk_conn, target_node, limit, raw)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
