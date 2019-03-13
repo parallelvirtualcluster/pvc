@@ -578,8 +578,9 @@ def get_list(zk_conn, node, limit, raw):
             click.echo('Error: Domain {} does not exist.'.format(domain))
 
     if raw:
-        for vm in vm_list:
-            click.echo(vm_name[vm])
+        print(vm_name)
+        for vm in sorted(vm_name.values()):
+            click.echo(vm)
         return True, ''
 
     # Determine optimal column widths
