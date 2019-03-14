@@ -264,7 +264,7 @@ def get_list(zk_conn, limit):
     node_name_length = 5
     daemon_state_length = 7
     coordinator_state_length = 12
-    domain_state_length = 7
+    domain_state_length = 8
     domains_count_length = 4
     cpu_count_length = 5
     load_length = 5
