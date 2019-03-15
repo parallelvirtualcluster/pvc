@@ -291,7 +291,7 @@ def undefine_vm(zk_conn, domain):
     # Delete the configurations
     try:
         click.echo('Undefining VM "{}".'.format(dom_uuid))
-        zkhandler.deletekey(zk_conn, '/domains/{}')
+        zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
     except:
         pass
 
