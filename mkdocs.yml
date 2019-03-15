@@ -1,0 +1,5 @@
+site_name: Parallel Virtual Cluster documentation
+theme: readthedocs
+markdown_extensions:
+  - toc:
+      permalink: yes

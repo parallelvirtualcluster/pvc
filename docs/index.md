@@ -14,5 +14,3 @@ PVC is a suite of Python 3 tools to manage virtualized clusters. It provides a f
 It is designed to be an administrator-friendly but extremely powerful and rich modern private cloud system, but without the feature bloat and complexity of tools like OpenStack. With PVC, an administrator can provision, manage, and update a cluster of dozens or more hypervisors running thousands of VMs using a simple CLI tool, HTTP API, or web interface. PVC is based entirely on Debian GNU/Linux and Free-and-Open-Source tools, providing the glue to bootstrap, provision and manage the cluster, then getting out of the administrators' way.
 
 Your cloud, the best way; just add physical servers.
-
-[See the documentation here](https://parallelvirtualcluster.readthedocs.io/en/latest/)
