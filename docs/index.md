@@ -1,8 +1,12 @@
 # PVC - The Parallel Virtual Cluster suite
 
-[![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
-
-![Logo](https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png)
+<p align="center">
+<img alt="Logo banner" src="https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png"/>
+<br/><br/>
+<a href="https://github.com/joshuaboniface/pvc"><img alt="Release" src="https://img.shields.io/github/release/joshuaboniface/pvc.svg"/></a>
+<a href="https://git.bonifacelabs.ca/bonifacelabs/pvc/pipelines"><img alt="Pipeline Status" src="https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg"/></a>
+<a href="https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
+</p>
 
 PVC is a suite of Python 3 tools to manage virtualized clusters. It provides a fully-functional private cloud based on four key principles:
 
