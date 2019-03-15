@@ -616,8 +616,14 @@ def cli_network():
     help='Description of the network; must be unique and not contain whitespace.'
 )
 @click.option(
-    '-n', '--domain', 'domain',
+    '-p', '--type', 'nettype',
     required=True,
+    type=click.Choice(['managed', 'bridged']),
+    help='Network type; managed networks control IP addressing; bridged networks are simple vLAN bridges. All subsequent options are unused for bridged networks.'
+)
+@click.option(
+    '-n', '--domain', 'domain',
+    default=None,
     help='Domain name of the network.'
 )
 @click.option(
@@ -643,7 +649,7 @@ def cli_network():
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
-    default=None,
+    default=False,
     help='Enable/disable IPv4 DHCP for clients on subnet.'
 )
 @click.option(
@@ -659,23 +665,29 @@ def cli_network():
 @click.argument(
     'vni'
 )
-def net_add(vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
-    Example:
-    pvc network add 1001 --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
+    Examples:
+
+    pvc network add 101 --type bridged
+
+      > Creates vLAN 101 and a simple bridge on the VNI dev interface.
+    
+    pvc network add 1001 --type managed --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
+
+      > Creates a VXLAN with ID 1001 on the VNI dev interface, with IPv4 managed networking.
 
     IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
     """
 
-    if not ip_network and not ip6_network:
-        click.echo('Usage: pvc network add [OPTIONS] VNI')
-        click.echo()
+    if nettype == 'managed' and not ip_network and not ip6_network:
         click.echo('Error: At least one of "-i" / "--ipnet" or "-i6" / "--ipnet6" must be specified.')
+        exit(1)
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

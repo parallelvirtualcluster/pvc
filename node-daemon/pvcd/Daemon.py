@@ -689,24 +689,24 @@ if enable_networking:
         for network in new_network_list:
             if not network in network_list:
                 d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
-                print(network)
-                if config['daemon_mode'] == 'coordinator':
+                if config['daemon_mode'] == 'coordinator' and d_network[network].nettype == 'managed':
                     dns_aggregator.add_network(d_network[network])
                 # Start primary functionality
-                if this_node.router_state == 'primary':
+                if this_node.router_state == 'primary' and d_network[network].nettype == 'managed':
                     d_network[network].createGateways()
                     d_network[network].startDHCPServer()
 
         # Remove any deleted networks from the list
         for network in network_list:
             if not network in new_network_list:
-                # Stop primary functionality
-                if this_node.router_state == 'primary':
-                    d_network[network].stopDHCPServer()
-                    d_network[network].removeGateways()
-                    dns_aggregator.remove_network(d_network[network])
-                # Stop general functionality
-                d_network[network].removeFirewall()
+                if d_network[network].nettype == 'managed':
+                    # Stop primary functionality
+                    if this_node.router_state == 'primary':
+                        d_network[network].stopDHCPServer()
+                        d_network[network].removeGateways()
+                        dns_aggregator.remove_network(d_network[network])
+                    # Stop general functionality
+                    d_network[network].removeFirewall()
                 d_network[network].removeNetwork()
                 # Delete the object
                 del(d_network[network])

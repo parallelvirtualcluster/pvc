@@ -39,6 +39,53 @@ class VXNetworkInstance(object):
         self.this_node = this_node
         self.vni_dev = config['vni_dev']
 
+        self.nettype = zkhandler.readdata(self.zk_conn, '/networks/{}/nettype'.format(self.vni))
+        if self.nettype == 'bridged':
+            self.logger.out(
+                'Creating new bridged network',
+                prefix='VNI {}'.format(self.vni),
+                state='o'
+            )
+            self.init_bridged()
+        elif self.nettype == 'managed':
+            self.logger.out(
+                'Creating new managed network',
+                prefix='VNI {}'.format(self.vni),
+                state='o'
+            )
+            self.init_managed()
+        else:
+            self.logger.out(
+                'Invalid network type {}'.format(self.nettype),
+                prefix='VNI {}'.format(self.vni),
+                state='o'
+            )
+            pass
+
+    # Initialize a bridged network
+    def init_bridged(self):
+        self.old_description = None
+        self.description = None
+
+        self.vlan_nic = 'vlan{}'.format(self.vni)
+        self.bridge_nic = 'br{}'.format(self.vni)
+
+        # Zookeper handlers for changed states
+        @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
+        def watch_network_description(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.description != data.decode('ascii'):
+                self.old_description = self.description
+                self.description = data.decode('ascii')
+
+        self.createNetworkBridged()
+
+    # Initialize a managed network
+    def init_managed(self):
         self.old_description = None
         self.description = None
         self.domain = None
@@ -56,11 +103,11 @@ class VXNetworkInstance(object):
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'br{}'.format(self.vni)
 
-        self.nftables_netconf_filename = '{}/networks/{}.nft'.format(config['nft_dynamic_directory'], self.vni)
+        self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
 
         self.dhcp_server_daemon = None
-        self.dnsmasq_hostsdir = '{}/{}'.format(config['dnsmasq_dynamic_directory'], self.vni)
+        self.dnsmasq_hostsdir = '{}/{}'.format(self.config['dnsmasq_dynamic_directory'], self.vni)
         self.dhcp_reservations = []
 
         # Create the network hostsdir
@@ -279,7 +326,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.firewall_rules_out = new_rules
                 self.updateFirewallRules()
 
-        self.createNetwork()
+        self.createNetworkManaged()
         self.createFirewall()
 
     def getvni(self):
@@ -363,7 +410,52 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
         common.reload_firewall_rules(self.logger, nftables_base_filename)
 
-    def createNetwork(self):
+    # Create bridged network configuration
+    def createNetworkBridged(self):
+        self.logger.out(
+            'Creating VLAN device on interface {}'.format(
+                self.vni_dev
+            ),
+            prefix='VNI {}'.format(self.vni),
+            state='o'
+        )
+        common.run_os_command(
+            'ip link add link {} name {} type vlan id {}'.format(
+                self.vni_dev,
+                self.vlan_nic,
+                self.vni
+            )
+        )
+        common.run_os_command(
+            'brctl addbr {}'.format(
+                self.bridge_nic
+            )
+        )
+        common.run_os_command(
+            'brctl addif {} {}'.format(
+                self.bridge_nic,
+                self.vlan_nic
+            )
+        )
+        common.run_os_command(
+            'ip link set {} mtu 8800 up'.format(
+                self.vlan_nic
+            )
+        )
+        common.run_os_command(
+            'ip link set {} mtu 8800 up'.format(
+                self.bridge_nic
+            )
+        )
+        common.run_os_command(
+            # Disable IPv6 DAD on bridge NICs
+            'sysctl net.ipv6.conf.{}.accept_dad=0'.format(
+                self.bridge_nic
+            )
+        )
+
+    # Create managed network configuration
+    def createNetworkManaged(self):
         self.logger.out(
             'Creating VXLAN device on interface {}'.format(
                 self.vni_dev
@@ -526,7 +618,51 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 logfile='{}/dnsmasq-{}.log'.format(self.config['dnsmasq_log_directory'], self.vni)
             )
 
+    # Remove network
     def removeNetwork(self):
+        if self.nettype == 'bridged':
+            self.removeNetworkBridged()
+        elif self.nettype == 'managed':
+            self.removeNetworkManaged()
+
+    # Remove bridged network configuration
+    def removeNetworkBridged(self):
+        self.logger.out(
+            'Removing VNI device on interface {}'.format(
+                self.vni_dev
+            ),
+            prefix='VNI {}'.format(self.vni),
+            state='o'
+        )
+        common.run_os_command(
+            'ip link set {} down'.format(
+                self.bridge_nic
+            )
+        )
+        common.run_os_command(
+            'ip link set {} down'.format(
+                self.vlan_nic
+            )
+        )
+        common.run_os_command(
+            'brctl delif {} {}'.format(
+                self.bridge_nic,
+                self.vlan_nic
+            )
+        )
+        common.run_os_command(
+            'brctl delbr {}'.format(
+                self.bridge_nic
+            )
+        )
+        common.run_os_command(
+            'ip link delete {}'.format(
+                self.vlan_nic
+            )
+        )
+
+    # Remove managed network configuration
+    def removeNetworkManaged(self):
         self.logger.out(
             'Removing VNI device on interface {}'.format(
                 self.vni_dev
