@@ -1,6 +1,6 @@
 # PVC - The Parallel Virtual Cluster suite
 
-[![pipeline status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/commits/master)
+[![Pipeline Status](https://git.bonifacelabs.ca/bonifacelabs/pvc/badges/master/pipeline.svg)](https://git.bonifacelabs.ca/bonifacelabs/pvc/pipelines) [![Documentation Status](https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest)](https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest)
 
 ![Logo](https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png)
 
