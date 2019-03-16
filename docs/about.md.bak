@@ -2,17 +2,17 @@
 
 ## Philosophical Overview
 
-The current state of the private cloud as of 2019 is very weak. On the one hand are the traditional tools, which let you manage a KVM cluster using scripts but requiring large amounts of administrator work and manual configuration based off very rough best practices. On the other hand are the "cloud infrastructure" tools, which are either massive and unwieldy, complex, and in some cases costly, or simply don't fit the traditional niche of virtualized servers.
+The current state of the private cloud as of 2019 is very weak. On the one hand are the traditional tools, which let you manage a KVM cluster using scripts but requiring large amounts of administrator work and manual configuration based off very rough best practices. On the other hand are the "cloud infrastructure" tools, which are either massive and unweildy, complex, and in some cases costly, or simply don't fit the traditional niche of virtualized servers.
 
 PVC aims to be a middle option - all the features of a modern cloud, such as software-defined storage and networking, full high-availability at every layer, and software-based management via APIs, combined with a very shallow learning curve and minimal complexity for the administrator on the CLI or WebUI, all while being completely Free Software-based. It adheres to four main principles, which we will outline in some detail below.
 
 #### Be Free Software Forever (or Bust)
 
-Free Software is important. Without the ability to study, modify, and change our software, we are beholden to other, often corporate, actors and their motives. PVC commits to being Free Software in the strictest sense, licensed under the GNU GPL 3.0 (or later), and promising now and forever to not charge a cent for a single feature - no "open core paid addons" philosophy, and no tricks. What you see is always what you get, and you are always free to modify PVC to fit your needs and contribute back to the community.
+Free Software is important. Without the ability to study, modify, and change our software, we are beholden to other, often corporate, actors and their motives. PVC commits to being Free Software in the strictest sense, licenced under the GNU GPL 3.0 (or later), and promising now and forever to not charge a cent for a single feature - no "open core paid addons" philosophy, and no tricks. What you see is always what you get, and you are always free to modify PVC to fit your needs and contribute back to the community.
 
 #### Be Opinionated and Efficient and Pick The Best Software
 
-Choice is good, until we become paralyzed by it, so don't try to be everything for everyone at the expense of good design. PVC aims to make a lot of decisions on software components, as well as how components interact and the overall architecture, for you, based on current best practices, so you can get on with your life. PVC aims to make good design choices based on solid, modern technologies, not held back by legacy debt, while still providing enough configuration flexibility to support almost any administrators' workload.
+Choice is good, until we become paralized by it, so don't try to be everything for everyone at the expense of good design. PVC aims to make a lot of decisions on software components, as well as how components interact and the overall architecture, for you, based on current best practices, so you can get on with your life. PVC aims to make good design choices based on solid, modern technologies, not held back by legacy debt, while still providing enough configuration flexbility to support almost any administrators' workload.
 
 #### Be Scalable and Redundant but Not Hyperscale
 
@@ -20,27 +20,27 @@ A cluster that can only scale to two nodes is not scalable. PVC aims to be scala
 
 #### Be Simple To Use, Configure, and Maintain
 
-Administrator time is valuable, and every minute you spend babysitting pets or learning the intricacies of an overly-complex "Cloud" platform is time you could better spend learning, growing, and evolving your other systems. PVC aims to always be simple for an administrator to use, at every stage from bootstrapping, scaling, and day-to-day administration. At the same time, it aims to be extremely powerful, backed by solid infrastructure design that gives you the best possible system without compromising flexibility. Set up your cluster in a day; grow it for years; manage it in seconds.
+Administrator time is valuable, and every minute you spend babysitting pets or learning the intracicies of an overly-complex "Cloud" platform is time you could better spend learning, growing, and evolving your other systems. PVC aims to always be simple for an administrator to use, at every stage from bootstrapping, scaling, and day-to-day administration. At the same time, it aims to be extremely powerful, backed by solid infrastructure design that gives you the best possible system without compromising flexibility. Set up your cluster in a day; grow it for years; manage it in seconds.
 
 ## Architecture overview
 
 PVC is based on a semi-decentralized design with a dynamic number of fully-functional nodes. Each node in the cluster is capable, based on the configuration, of handling any cluster tasks if needed. However in a normal deployment, the first 3 or 5 servers act as cluster "coordinators", taking on a number of management roles, while other nodes connect to the coordinators for state and information. One coordinator provides additional "primary" functionality, such as DHCP services, DNS aggregation, and client network gateways/routing, and this role can pass dynamically between coordinators based on administrator intervention or automated cluster events.
 
-The coordinator nodes host a number of services, configured at bootstrap time, that are not infinitely scalable across all nodes. These include a Zookeeper cluster for state management, MariaDB+Galera SQL cluster for DNS, and various processes supporting the primary node. Coordinators can be replaced, added, or removed by the administrator, though by default any additional nodes are configured as non-coordinators, allowing the cluster to scale out to 100 or more hypervisors while still keeping the databases manageable. Noticeably compared to other cloud cluster products, these functions do not require ever more additional servers to support, and are all built in to the main PVC daemon functionality or a small set of "cluster" VMs which are installed by default at bootstrap.
+The coordinator nodes host a number of services, configured at bootstrap time, that are not infinitely scalable across all nodes. These include a Zookeeper cluster for state mangement, MariaDB+Galera SQL cluster for DNS, and various processes supporting the primary node. Coordinators can be replaced, added, or removed by the administrator, though by default any additional nodes are configured as non-coordinators, allowing the cluster to scale out to 100 or more hypervisors while still keeping the databases manageable. Noticeably compared to other cloud cluster products, these functions do not require ever more additional servers to support, and are all built in to the main PVC daemon functionality or a small set of "cluster" VMs which are installed by default at bootstrap.
 
 The primary database is Zookeeper, which is used to provide the distributed and coordinated state used by the PVC cluster to determine what resources exist, where they live, and when they should run. The Zookeeper cluster is created on the initial coordinators at bootstrap time, and can scale out onto more coordinators later as required.
 
 The secondary database is MariaDB with the Galera multi-master functionality. This database primarily supports DNS aggregation services, providing a unified view of the cluster and its clients in DNS without additional administrator intervention. Some additional information about the provisioning state is kept in the database as an intermediate to being stored in Zookeeper.
 
-PVC handles both storage and networking as software configurations defined dynamically based on data in the Zookeeper database. It makes use of BGP EVPN to provide limitless, virtual layer 2 networks for clients in the cluster, and networks are isolated by NFT firewalls, with optional DHCP and IPv6 support in client networks. Storage is provided by Ceph for redundant, replicated block devices, which scales along with the cluster in both performance and size.
+PVC handles both storage and networking as software configurations defined dynamically based on data in the Zookeeper database. It makes use of BGP EVPN to provide limitless, virtual layer 2 networks for clients in the cluster, and networks are isolated by NFT firewalls, with optional DHCP and IPv6 support in client networks. Storage is provided by Ceph for reundant, replicated block devices, which scales along with the cluster in both performance and size.
 
 ### Physical Infrastructure
 
-PVC requires only a very simple physical infrastructure: 1, 3, or more physical servers connected via Ethernet on two flat L2 networks. More complicated topologies are supported during the bootstrapping phase but the simplest configuration should be sufficient for most simple, basic clusters or for learning.
+PVC requires only a very simple physical infrastructure: 1, 3, or more physical servers connected via Ethernet on two flat L2 networks. More complicated topogies are supported during the bootstrapping phase but the simplest configuration should be sufficient for most simple, basic clusters or for learning.
 
 Each node requires a single L2 network which provides the client and storage interconnections for the cluster. These roles are separated into two distinct L3 networks, allowing them to be split onto different L2 networks if desired. These networks live entirely within the cluster and must not be shared outside the cluster or with other systems. The standard configuration is an RFC1918 /24 network for each role to provide plenty of room for nodes and the supporting cluster VMs, while being scalable up to ~100 hypervisors. A special floating IP is designated in the cluster network to provide a single point of interface to the primary coordinator.
 
-Each coordinator node, but optionally all nodes, requires a second L2 network which provides upstream routing into the cluster. In the simplest configuration, only the coordinators are present in this network and share routes to client networks and receive outside traffic to the client networks through it. PVC provides no NAT support and no explicit firewalling in from this network, so any external gateway interfaces should connect into the PVC cluster via this intermediate network for security purposes. A special floating IP is designated in the upstream network to provide a single point of interface to the primary coordinator, most importantly for static routing.
+Each coordinator node, but optionally all nodes, requires a second L2 network which provides upstream routing into the cluster. In the simplest configuration, only the coordinators are present in this network and share routes to client networks and receive outside traffic to the client networks through it. PVC provides no NAT support and no explcit firewalling in from this network, so any external gateway interfaces should connect into the PVC cluster via this intermediate network for security purposes. A specifal floating IP is designated in the upstream network to provide a single point of interface to the primary coordinator, most importantly for static routing.
 
 The physical hardware of the nodes depends on the target workload. Generally, at least 32GB RAM and 8 CPU cores (excluding SMT threads) is the minimum for a single node, but extremely small configurations are possible, if very limited. Note that the Ceph storage disks, PVC daemons, and, on coordinator nodes, databases and Ceph monitors, all require additional RAM and CPU power on top of the requirements of virtualized guests, so ensure that each node is tall enough for your workload and then scale out for redundancy.
 
@@ -48,7 +48,7 @@ All Ceph storage disks should be SSDs for optimal performance and scalability. E
 
 Network traffic can be small to extremely high depending especially on storage requirements and cluster size. As mentioned above, the storage network is separate from the cluster network in L3, allowing it to be isolated onto a faster L2 network if required. 1GbE is the bare minimum for small clusters, or the client network on midsize clusters, but 10GbE is recommended for any clusters larger than 3 nodes for at least the storage network. Larger clusters may require separate 10GbE client and storage networks, LCAP, or more advanced configurations to provide optimal throughput for storage, all of which can be configured at bootstrap or reconfigured as the cluster grows with minimal interruption.
 
-PVC features fencing of nodes, and they should be accessible via an IPMI lights-out management interface to allow broken nodes to be removed from service automatically by the cluster. Running without fencing is not inherently dangerous, but has a higher chance of stalling services if nodes fail and do not properly take themselves out of service. The IPMI interfaces can be in the cluster network, or in another network reachable by the nodes via the upstream network.
+PVC features fencing of nodes, and they should be accessible via an IPMI lights-out management interface to allow broken nodes to be removed from service automtaically by the cluster. Running without fencing is not inherently dangerous, but has a higher chance of stalling services if nodes fail and do not properly take themselves out of service. The IPMI interfaces can be in the cluster network, or in another network reachable by the nodes via the upstream network.
 
 ### Software infrastructure
 
@@ -105,17 +105,17 @@ PVC provides three main administrator interfaces and a supplemental option:
 
 ### CLI
 
-The CLI interface (`pvc`, package `pvc-cli-client`) is used to bootstrap the cluster and is able to perform all administrative tasks. The client requires direct access to the Zookeeper cluster to operate, but is usable on any client machine; initialization however requires a Debian-based GNU/Linux system for optimal administrative ease.
+The CLI interface (`pvc`, package `pvc-cli-client`) is used to bootstrap the cluster and is able to perform all administrative tasks. The client requires direct access to the Zookeeper cluster to operate, but is usable on any client machine; initalization however requires a Debian-based GNU/Linux system for optimal administrative ease.
 
 Once the other administrative interfaces are provisioned, the CLI is not required, but is installed by default on all nodes in the cluster to facilitate on-machine troubleshooting and maintenance.
 
 ### HTTP API
 
-The HTTP API interface (`pvcapi`, package `pvc-api-client`) is configured by default on a special set of cluster-aware VMs, and provides a feature-complete implementation of the CLI interface via standard HTTP commands. The API allows building advanced configuration utilities integrating PVC without the overhead of the CLI. The HTTP API is optional and installation can be disabled during clutter initialization.
+The HTTP API interface (`pvcapi`, package `pvc-api-client`) is configured by default on a special set of cluster-aware VMs, and provides a feature-complete implementation of the CLI interface via standard HTTP commands. The API allows building advanced configuration utilities integrating PVC without the overhead of the CLI. The HTTP API is optional and installation can be disabled during cluter initalization.
 
 ### WebUI
 
-The HTTP Web user interface (`pvcweb`, package `pvc-web-client`) is configured by default on the cluster-aware VMs running the HTTP API, and provides a stripped-down web interface for a number of common administrative tasks, as well as reporting and monitoring functionality. Like the HTTP API, the WebUI is optional and installation can be disabled during cluster initialization.
+The HTTP Web user interface (`pvcweb`, package `pvc-web-client`) is configured by default on the cluster-aware VMs running the HTTP API, and provides a stripped-down web interface for a number of common administrative tasks, as well as reporting and monitoring functionality. Like the HTTP API, the WebUI is optional and installation can be disabled during cluster initalization.
 
 ### Direct Python bindings
 
