@@ -1,5 +1,15 @@
 # About the Parallel Virtual Cluster suite
 
+## Changelog
+
+#### v0.4
+
+Full implementation of virtual management and virtual networking functionality. Partial implementation of storage functionality.
+
+#### v0.3
+
+Basic implementation of virtual management functionality.
+
 ## Philosophical Overview
 
 The current state of the private cloud as of 2019 is very weak. On the one hand are the traditional tools, which let you manage a KVM cluster using scripts but requiring large amounts of administrator work and manual configuration based off very rough best practices. On the other hand are the "cloud infrastructure" tools, which are either massive and unwieldy, complex, and in some cases costly, or simply don't fit the traditional niche of virtualized servers.
@@ -54,7 +64,7 @@ PVC features fencing of nodes, and they should be accessible via an IPMI lights-
 
 The PVC server-side infrastructure consists of a single daemon, `pvcd`, which manages each node based on state information from the Zookeeper database. All nodes are capable of running virtual machines, Ceph storage OSDs, and passing traffic to virtual machines via client L2 networks.
 
-A subset of the nodes are designated to act as "coordinator" hosts for the cluster. Usually, 3 or 5 nodes are designated as coordinators; 3 is ideal for small deployments (<30 hypervisors) while 5 allow for much larger scaling, and larger odd numbers of coordinators are possible for very large cluster. These coordinators run additional functions for the cluster beyond VMs and storage, mainly:
+A subset of the nodes are designated to act as "coordinator" hosts for the cluster. Usually, 3 or 5 nodes are designated as coordinators; 3 is ideal for small deployments (<30 hypervisors) while 5 allow for much larger scaling, and larger odd numbers of coordinators are possible for very large clusters. These coordinators run additional functions for the cluster beyond VMs and storage, mainly:
 
 * running Zookeeper itself, acting as the central database for the cluster.
 * running FRRouting in BGP server mode, performing route reflector and upstream routing functionality.
@@ -62,7 +72,7 @@ A subset of the nodes are designated to act as "coordinator" hosts for the clust
 * acting as cluster network gateways, DHCP, and DNS servers.
 * acting as provisioning servers for nodes and VMs.
 
-A single coordinator elects itself "primary" to perform this duty at startup, and passes it off on shutdown; this can be modified manually by the administrator. The primary coordinator handles provisioning and cluster network functionality (gateway, DHCP, DNS) for the whole cluster, which the "secondary" coordinators can take over automatically if needed. While this architecture can suffer from tromboning when there is a larger inter-network traffic flow, it preserves a consistent and simple layer-2 model inside each client network for administrative simplicity.
+A single coordinator elects itself "primary" to perform this duty at startup, and passes it off on shutdown; this can be modified manually by the administrator. The primary coordinator handles provisioning and cluster network functionality (gateway, DHCP, DNS) for the whole cluster, which the "secondary" coordinators can take over automatically if needed. While this architecture can suffer from tromboning when there is a large inter-network traffic flow, it preserves a consistent and simple layer-2 model inside each client network for administrative simplicity.
 
 New nodes can be added dynamically; once running, the cluster supports the PXE booting of additional hypervisors which are then self-configured and added to the cluster via the provisioning framework. This framework also allows for the quick deployment of VMs based off Ceph-stored images and templates.
 
