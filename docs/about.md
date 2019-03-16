@@ -4,9 +4,7 @@
 
 The current state of the private cloud as of 2019 is very weak. On the one hand are the traditional tools, which let you manage a KVM cluster using scripts but requiring large amounts of administrator work and manual configuration based off very rough best practices. On the other hand are the "cloud infrastructure" tools, which are either massive and unweildy, complex, and in some cases costly, or simply don't fit the traditional niche of virtualized servers.
 
-PVC aims to be a middle option - all the features of a modern cloud, such as software-defined storage and networking, full high-availability at every layer, and software-based management via APIs, combined with a very shallow learning curve and minimal complexity for the administrator on the CLI or WebUI, all while being completely Free Software-based. It adheres to these four main principles, which we will outline in some detail below.
-
-If these principals sound like something you want out of your cloud solution, give PVC a try!
+PVC aims to be a middle option - all the features of a modern cloud, such as software-defined storage and networking, full high-availability at every layer, and software-based management via APIs, combined with a very shallow learning curve and minimal complexity for the administrator on the CLI or WebUI, all while being completely Free Software-based. It adheres to four main principles, which we will outline in some detail below.
 
 #### Be Free Software Forever (or Bust)
 
