@@ -28,7 +28,7 @@ A single-host cluster is possible for testing, however it is not recommended for
 
 1. Install the PVC packages generated in the previous section. Use `apt -f install` to correct dependency issues. The `pvcd` service will fail to start; this is expected.
 
-1. Configure the `/etc/pvc/pvcd.yaml` configuration, using the template available at `/etc/pvc/pvcd.sample.yaml`. An example configuration for a virtual manager only cluster's first host would be:
+1. Create the `/etc/pvc/pvcd.yaml` daemon configuration file, using the template available at `/etc/pvc/pvcd.sample.yaml`. An example configuration for a virtual manager only cluster's first host would be:
 
         ---
         pvc:
@@ -120,3 +120,28 @@ A single-host cluster is possible for testing, however it is not recommended for
         Networks:           101 [invalid]
 
 Congratulations, you have deployed a simple PVC cluster! Add any further VMs or nodes you require using the same procedure, though additional nodes do not need to be in the `coordinators:` list.
+
+### With virtual networking support
+
+In addition to a virtual manager only setup, PVC v0.4 supports a setup with virtual networking support as well. This configuration enables management of both simple bridged and managed networking within the cluster, and requires additional setup steps.
+
+1. Perform the first 4 steps of the previous section.
+
+1. Deploy a MariaDB Galera cluster among the coordinators. Follow the [PowerDNS guide](https://doc.powerdns.com/md/authoritative/backend-generic-mysql/#default-schema) to create a PowerDNS authoritative database schema on the cluster.
+
+1. Configure the `/etc/pvc/pvcd.yaml` file based on the `/etc/pvc/pvcd.sample.yaml` file, this time not removing any major sections. Fill in the required values for the MySQL DNS database, the various interfaces and networks, and set `enable_networking: True`.
+
+1. Proceed with the remainder of the previous section.
+
+1. Configure networks with the `pvc network` CLI utility:
+
+        $ pvc network add 1001 -p bridged -d test-net-1
+        Network "test-net-1" added successfully!
+        $ pvc network add 1002 -p managed -d test-net-2 -i 10.200.0.0/24 -g 10.200.0.1
+        Network "test-net-2" added successfully!
+        $ pvc network list
+        VNI   Description  Type     Domain  IPv6   DHCPv6  IPv4   DHCPv4  
+        1001  test1        bridged  None    False  False   False  False  
+        1002  test2        managed  test2   False  False   True   False  
+
+1. Configure any static ACLs, enable DHCP, or perform other network management functions using the CLI utility. See `pvc network -h` for the high-level commands available.
