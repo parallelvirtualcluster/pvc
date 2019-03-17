@@ -365,7 +365,7 @@ if enable_networking:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
 
 ###############################################################################
-# PHASE 3 - Determine coordinator mode and start Zookeeper on coordinators
+# PHASE 3a - Determine coordinator mode
 ###############################################################################
 
 # What is the list of coordinator hosts
@@ -375,11 +375,36 @@ if myhostname in coordinator_nodes:
     # We are indeed a coordinator host
     config['daemon_mode'] = 'coordinator'
     # Start the zookeeper service using systemctl
-    logger.out('Node is a ' + logger.fmt_blue + 'coordinator' + logger.fmt_end +'; starting Zookeeper daemon', state='i')
-    common.run_os_command('systemctl start zookeeper.service')
-    time.sleep(1)
+    logger.out('Node is a ' + logger.fmt_blue + 'coordinator' + logger.fmt_end, state='i')
 else:
     config['daemon_mode'] = 'hypervisor'
+
+###############################################################################
+# PHASE 3b - Start system daemons
+###############################################################################
+if config['daemon_mode'] == 'coordinator':
+    logger.out('Starting Zookeeper daemon', state='i')
+    common.run_os_command('systemctl start zookeeper.service')
+
+if enable_hypervisor:
+    logger.out('Starting Libvirt daemon', state='i')
+    common.run_os_command('systemctl start libvirtd.service')
+
+if enable_networking:
+    if config['daemon_mode'] == 'coordinator':
+        logger.out('Starting MariaDB daemon', state='i')
+        common.run_os_command('systemctl start mariadb.service')
+        logger.out('Starting FRRouting daemon', state='i')
+        common.run_os_command('systemctl start frr.service')
+
+if enable_storage:
+    if config['daemon_mode'] == 'coordinator':
+        logger.out('Starting Ceph monitor daemon', state='i')
+        common.run_os_command('systemctl start ceph-mon@{}'.format(myhostname))
+        logger.out('Starting Ceph manager daemon', state='i')
+        common.run_os_command('systemctl start ceph-mgr@{}'.format(myhostname))
+
+time.sleep(1)
 
 ###############################################################################
 # PHASE 4 - Attempt to connect to the coordinators and start zookeeper client
@@ -527,15 +552,10 @@ else:
         zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
 
 ###############################################################################
-# PHASE 7a - Ensure Libvirt is running on the local host
+# PHASE 7 - Ensure Libvirt is working
 ###############################################################################
 
 if enable_hypervisor:
-    # Start the zookeeper service using systemctl
-    logger.out('Starting Libvirt daemon', state='i')
-    common.run_os_command('systemctl start libvirtd.service')
-    time.sleep(1)
-
     # Check that libvirtd is listening TCP
     libvirt_check_name = "qemu+tcp://127.0.0.1:16509/system"
     logger.out('Connecting to Libvirt daemon at {}'.format(libvirt_check_name), state='i')
@@ -545,15 +565,6 @@ if enable_hypervisor:
     except Exception as e:
         logger.out('ERROR: Failed to connect to Libvirt daemon: {}'.format(e), state='e')
         exit(1)
-
-###############################################################################
-# PHASE 7b - Ensure Ceph is running on the local host
-###############################################################################
-
-if enable_storage:
-    if config['daemon_mode'] == 'coordinator':
-        common.run_os_command('systemctl start ceph-mon@{}'.format(myhostname))
-        common.run_os_command('systemctl start ceph-mgr@{}'.format(myhostname))
 
 ###############################################################################
 # PHASE 7c - Ensure NFT is running on the local host
