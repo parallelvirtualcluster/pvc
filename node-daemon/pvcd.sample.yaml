@@ -38,6 +38,8 @@ pvc:
         network: "1.1.1.0/24"
         # floating_ip: Upstream floating IP address for the primary coordinator
         floating_ip: "1.1.1.10/24"
+        # gateway: Upstream static default gateway, if applicable
+        gateway: "1.1.1.1"
       # cluster: Cluster internal network for node communication and client virtual networks
       cluster:
         # domain: Cluster internal domain name

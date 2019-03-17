@@ -170,6 +170,7 @@ def readConfig(pvcd_config_file, myhostname):
                 'upstream_domain': o_config['pvc']['cluster']['networks']['upstream']['domain'],
                 'upstream_floating_ip': o_config['pvc']['cluster']['networks']['upstream']['floating_ip'],
                 'upstream_network': o_config['pvc']['cluster']['networks']['upstream']['network'],
+                'upstream_gateway': o_config['pvc']['cluster']['gateways']['upstream']['gateway'],
                 'pdns_mysql_host': o_config['pvc']['coordinator']['dns']['database']['host'],
                 'pdns_mysql_port': o_config['pvc']['coordinator']['dns']['database']['port'],
                 'pdns_mysql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
@@ -515,12 +516,15 @@ if enable_networking:
     common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
 
     # Upstream configuration
-    if config['daemon_mode'] == 'coordinator':
+    if config['upstream_dev']:
         upstream_dev = config['upstream_dev']
         upstream_dev_ip = config['upstream_dev_ip']
+        upstream_dev_gateway = config['upstream_gateway']
         logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
         common.run_os_command('ip link set {} up'.format(upstream_dev))
         common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
+        if upstream_dev_dateway:
+            common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
 
 ###############################################################################
 # PHASE 7a - Ensure Libvirt is running on the local host
