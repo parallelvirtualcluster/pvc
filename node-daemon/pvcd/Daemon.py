@@ -208,7 +208,7 @@ def readConfig(pvcd_config_file, myhostname):
                 # The NodeID starts at 1, but indexes start at 0
                 address_id = int(mynodeid) - 1
                 # Grab the nth address from the network
-                config[address_key] = list(network.hosts())[address_id]
+                config[address_key] = '{}/{}'.format(list(network.hosts())[address_id], network.prefixlen)
     
             # Verify that the floating IP is valid
     
