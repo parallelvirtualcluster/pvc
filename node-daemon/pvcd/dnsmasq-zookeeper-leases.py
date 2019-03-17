@@ -20,10 +20,10 @@
 #
 ###############################################################################
 import argparse
-import configparser
 import os, sys
 import kazoo.client
 import re
+import yaml
 
 #
 # Variables
@@ -35,7 +35,8 @@ def get_zookeeper_key():
     # Get the interface from environment (passed by dnsmasq)
     try:
         interface = os.environ['DNSMASQ_BRIDGE_INTERFACE']
-    except:
+    except Exception as e:
+        print('ERROR: DNSMASQ_BRIDGE_INTERFACE environment variable not found: {}'.format(e), file=sys.stderr)
         exit(1)
     # Get the ID of the interface (the digits)
     network_vni = re.findall('\d+', interface)[0]
@@ -63,23 +64,20 @@ def connect_zookeeper():
         pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
     except:
         # Default place
-        pvcd_config_file = '/etc/pvc/pvcd.conf'
+        pvcd_config_file = '/etc/pvc/pvcd.yaml'
 
-    o_config = configparser.ConfigParser()
-    o_config.read(pvcd_config_file)
-
-    try:
-        zk_host = o_config['default']['coordinators']
-    except:
+    with open(pvcd_config_file, 'r') as cfgfile:
         try:
-            zk_host = o_config[socket.gethostname()]['coordinators']
-        except:
+            o_config = yaml.load(cfgfile)
+        except Exception as e:
+            print('ERROR: Failed to parse configuration file: {}'.format(e), file=sys.stderr)
             exit(1)
 
-    zk_conn = kazoo.client.KazooClient(hosts=zk_host)
     try:
+        zk_conn = kazoo.client.KazooClient(hosts=o_config['pvc']['cluster']['coordinators'])
         zk_conn.start()
-    except:
+    except Exception as e:
+        print('ERROR: Failed to connect to Zookeeper: {}'.format(e), file=sys.stderr)
         exit(1)
 
     return zk_conn
