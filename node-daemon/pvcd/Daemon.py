@@ -170,7 +170,7 @@ def readConfig(pvcd_config_file, myhostname):
                 'upstream_domain': o_config['pvc']['cluster']['networks']['upstream']['domain'],
                 'upstream_floating_ip': o_config['pvc']['cluster']['networks']['upstream']['floating_ip'],
                 'upstream_network': o_config['pvc']['cluster']['networks']['upstream']['network'],
-                'upstream_gateway': o_config['pvc']['cluster']['gateways']['upstream']['gateway'],
+                'upstream_gateway': o_config['pvc']['cluster']['networks']['upstream']['gateway'],
                 'pdns_mysql_host': o_config['pvc']['coordinator']['dns']['database']['host'],
                 'pdns_mysql_port': o_config['pvc']['coordinator']['dns']['database']['port'],
                 'pdns_mysql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
