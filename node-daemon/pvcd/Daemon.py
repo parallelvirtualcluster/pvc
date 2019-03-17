@@ -327,7 +327,45 @@ if enable_networking:
     common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_dev']))
 
 ###############################################################################
-# PHASE 2 - Determine coordinator mode and start Zookeeper on coordinators
+# PHASE 2 - Create local IP addresses for static networks
+###############################################################################
+
+if enable_networking:
+    # VNI configuration
+    vni_dev = config['vni_dev']
+    vni_dev_ip = config['vni_dev_ip']
+    logger.out('Setting up VNI network interface {}'.format(vni_dev, vni_dev_ip), state='i')
+    common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
+
+    # Cluster bridge configuration
+    logger.out('Setting up cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+    common.run_os_command('brctl addbr brcluster')
+    common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
+    common.run_os_command('ip link set brcluster mtu 9000 up')
+    common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, 'brcluster'))
+
+    # Storage configuration
+    storage_dev = config['storage_dev']
+    if storage_dev == vni_dev:
+        storage_dev = 'brcluster'
+    storage_dev_ip = config['storage_dev_ip']
+    logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
+    common.run_os_command('ip link set {} mtu 9000 up'.format(storage_dev))
+    common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
+
+    # Upstream configuration
+    if config['upstream_dev']:
+        upstream_dev = config['upstream_dev']
+        upstream_dev_ip = config['upstream_dev_ip']
+        upstream_dev_gateway = config['upstream_gateway']
+        logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
+        common.run_os_command('ip link set {} up'.format(upstream_dev))
+        common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
+        if upstream_dev_gateway:
+            common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
+
+###############################################################################
+# PHASE 3 - Determine coordinator mode and start Zookeeper on coordinators
 ###############################################################################
 
 # What is the list of coordinator hosts
@@ -344,7 +382,7 @@ else:
     config['daemon_mode'] = 'hypervisor'
 
 ###############################################################################
-# PHASE 3 - Attempt to connect to the coordinators and start zookeeper client
+# PHASE 4 - Attempt to connect to the coordinators and start zookeeper client
 ###############################################################################
 
 # Start the connection to the coordinators
@@ -384,7 +422,7 @@ def zk_listener(state):
 zk_conn.add_listener(zk_listener)
 
 ###############################################################################
-# PHASE 4 - Gracefully handle termination
+# PHASE 5 - Gracefully handle termination
 ###############################################################################
 
 # Cleanup function
@@ -440,7 +478,7 @@ signal.signal(signal.SIGINT, term)
 signal.signal(signal.SIGQUIT, term)
 
 ###############################################################################
-# PHASE 5 - Prepare host in Zookeeper
+# PHASE 6 - Prepare host in Zookeeper
 ###############################################################################
 
 # Check if our node exists in Zookeeper, and create it if not
@@ -487,44 +525,6 @@ else:
     if config['daemon_mode'] == 'coordinator':
         logger.out('No primary node found; creating with us as primary.', state='i')
         zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
-
-###############################################################################
-# PHASE 6 - Create local IP addresses for static networks
-###############################################################################
-
-if enable_networking:
-    # VNI configuration
-    vni_dev = config['vni_dev']
-    vni_dev_ip = config['vni_dev_ip']
-    logger.out('Setting up VNI network interface {}'.format(vni_dev, vni_dev_ip), state='i')
-    common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
-
-    # Cluster bridge configuration
-    logger.out('Setting up cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
-    common.run_os_command('brctl addbr brcluster')
-    common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
-    common.run_os_command('ip link set brcluster mtu 9000 up')
-    common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, 'brcluster'))
-
-    # Storage configuration
-    storage_dev = config['storage_dev']
-    if storage_dev == vni_dev:
-        storage_dev = 'brcluster'
-    storage_dev_ip = config['storage_dev_ip']
-    logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
-    common.run_os_command('ip link set {} mtu 9000 up'.format(storage_dev))
-    common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
-
-    # Upstream configuration
-    if config['upstream_dev']:
-        upstream_dev = config['upstream_dev']
-        upstream_dev_ip = config['upstream_dev_ip']
-        upstream_dev_gateway = config['upstream_gateway']
-        logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
-        common.run_os_command('ip link set {} up'.format(upstream_dev))
-        common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
-        if upstream_dev_gateway:
-            common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
 
 ###############################################################################
 # PHASE 7a - Ensure Libvirt is running on the local host
