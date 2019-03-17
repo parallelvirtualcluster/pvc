@@ -81,6 +81,7 @@ def startKeepaliveTimer():
     logger.out('Starting keepalive timer ({} second interval)'.format(interval), state='s')
     update_timer.add_job(update_zookeeper, 'interval', seconds=interval)
     update_timer.start()
+    update_zookeeper()
     return update_timer
 
 def stopKeepaliveTimer():
@@ -1119,9 +1120,8 @@ def update_zookeeper():
         )
 
 
-# Start keepalive thread and immediately update Zookeeper
+# Start keepalive thread
 update_timer = startKeepaliveTimer()
-update_zookeeper()
 
 # Tick loop; does nothing since everything else is async
 while True:
