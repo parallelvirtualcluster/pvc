@@ -356,9 +356,6 @@ def stop_vm(zk_conn, domain):
 
     # Get state and verify we're OK to proceed
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
-    if current_state != 'start':
-        common.stopZKConnection(zk_conn)
-        return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
 
     # Set the VM to start
     click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
