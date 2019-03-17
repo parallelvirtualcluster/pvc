@@ -35,7 +35,7 @@ import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
-import client_lib.provisioner as pvc_provisioner
+#import client_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname()
 zk_host = ''
