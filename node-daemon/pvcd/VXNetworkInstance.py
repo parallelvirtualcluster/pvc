@@ -716,10 +716,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         common.reload_firewall_rules(self.logger, nftables_base_filename)
 
     def removeGateways(self):
-        if self.ip6_gateway != 'None':
-            self.removeGateway6Address()
-        if self.ip4_gateway != 'None':
-            self.removeGateway4Address()
+        if self.nettype == 'managed':
+            if self.ip6_gateway != 'None':
+                self.removeGateway6Address()
+            if self.ip4_gateway != 'None':
+                self.removeGateway4Address()
 
     def removeGateway6Address(self):
         self.logger.out(
