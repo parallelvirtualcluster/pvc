@@ -537,7 +537,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             common.createIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
     def startDHCPServer(self):
-        if self.this_node.router_state == 'primary':
+        if self.this_node.router_state == 'primary' and self.nettype == 'managed':
             self.logger.out(
                 'Starting dnsmasq DHCP server on interface {}'.format(
                     self.bridge_nic
@@ -746,7 +746,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         common.removeIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
     def stopDHCPServer(self):
-        if self.dhcp_server_daemon:
+        if self.nettype == 'managed' and self.dhcp_server_daemon:
             self.logger.out(
                 'Stopping dnsmasq DHCP server on interface {}'.format(
                     self.bridge_nic
