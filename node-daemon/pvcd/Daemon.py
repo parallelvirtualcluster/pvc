@@ -523,7 +523,7 @@ if enable_networking:
         logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
         common.run_os_command('ip link set {} up'.format(upstream_dev))
         common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
-        if upstream_dev_dateway:
+        if upstream_dev_gateway:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
 
 ###############################################################################
