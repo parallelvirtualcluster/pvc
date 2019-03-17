@@ -499,14 +499,16 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
 
     def createFirewall(self):
-        # For future use
-        self.updateFirewallRules()
+        if self.nettype == 'managed':
+            # For future use
+            self.updateFirewallRules()
 
     def createGateways(self):
-        if self.ip6_gateway != 'None':
-            self.createGateway6Address()
-        if self.ip4_gateway != 'None':
-            self.createGateway4Address()
+        if self.nettype == 'managed':
+            if self.ip6_gateway != 'None':
+                self.createGateway6Address()
+            if self.ip4_gateway != 'None':
+                self.createGateway4Address()
 
     def createGateway6Address(self):
         if self.this_node.router_state == 'primary':
