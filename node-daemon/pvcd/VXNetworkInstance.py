@@ -68,7 +68,7 @@ class VXNetworkInstance(object):
         self.description = None
 
         self.vlan_nic = 'vlan{}'.format(self.vni)
-        self.bridge_nic = 'br{}'.format(self.vni)
+        self.bridge_nic = 'vmbr{}'.format(self.vni)
 
         # Zookeper handlers for changed states
         @self.zk_conn.DataWatch('/networks/{}'.format(self.vni))
@@ -101,7 +101,7 @@ class VXNetworkInstance(object):
         self.dhcp4_end = ( zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_end'.format(self.vni)) == 'True' )
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
-        self.bridge_nic = 'br{}'.format(self.vni)
+        self.bridge_nic = 'vmbr{}'.format(self.vni)
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
