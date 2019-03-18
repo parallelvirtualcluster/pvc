@@ -303,32 +303,7 @@ logger.out('  Kernel: {}'.format(staticdata[1]))
 logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
 
 ###############################################################################
-# PHASE 1d - Prepare sysctl for pvcd
-###############################################################################
-
-if enable_networking:
-    # Enable routing functions
-    common.run_os_command('sysctl net.ipv4.ip_forward=1')
-    common.run_os_command('sysctl net.ipv6.ip_forward=1')
-    
-    # Send redirects
-    common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
-    common.run_os_command('sysctl net.ipv4.conf.default.send_redirects=1')
-    common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
-    common.run_os_command('sysctl net.ipv6.conf.default.send_redirects=1')
-    
-    # Accept source routes
-    common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
-    common.run_os_command('sysctl net.ipv4.conf.default.accept_source_route=1')
-    common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
-    common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
-    
-    # Disable RP filtering on the VNI dev interface (to allow traffic pivoting from primary)
-    common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['vni_dev']))
-    common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_dev']))
-
-###############################################################################
-# PHASE 2 - Create local IP addresses for static networks
+# PHASE 2a - Create local IP addresses for static networks
 ###############################################################################
 
 if enable_networking:
@@ -364,6 +339,33 @@ if enable_networking:
         common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
         if upstream_dev_gateway:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
+
+###############################################################################
+# PHASE 2b - Prepare sysctl for pvcd
+###############################################################################
+
+if enable_networking:
+    # Enable routing functions
+    common.run_os_command('sysctl net.ipv4.ip_forward=1')
+    common.run_os_command('sysctl net.ipv6.ip_forward=1')
+    
+    # Send redirects
+    common.run_os_command('sysctl net.ipv4.conf.all.send_redirects=1')
+    common.run_os_command('sysctl net.ipv4.conf.default.send_redirects=1')
+    common.run_os_command('sysctl net.ipv6.conf.all.send_redirects=1')
+    common.run_os_command('sysctl net.ipv6.conf.default.send_redirects=1')
+    
+    # Accept source routes
+    common.run_os_command('sysctl net.ipv4.conf.all.accept_source_route=1')
+    common.run_os_command('sysctl net.ipv4.conf.default.accept_source_route=1')
+    common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
+    common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
+    
+    # Disable RP filtering on the VNI dev and bridge interfaces (to allow traffic pivoting)
+    common.run_os_command('sysctl net.ipv4.conf.all.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv4.conf.brcluster.rp_filter=0')
+    common.run_os_command('sysctl net.ipv6.conf.all.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv6.conf.brcluster.rp_filter=0')
 
 ###############################################################################
 # PHASE 3a - Determine coordinator mode
