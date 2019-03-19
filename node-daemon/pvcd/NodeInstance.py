@@ -276,11 +276,11 @@ class NodeInstance(object):
             'Creating floating management IP {}/{} on interface {}'.format(
                 self.vni_ipaddr,
                 self.vni_cidrnetmask,
-                self.vni_dev
+                'brcluster'
             ),
             state='o'
         )
-        common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, self.vni_dev)
+        common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
         # Upstream floating IP
         self.logger.out(
             'Creating floating upstream IP {}/{} on interface {}'.format(
@@ -298,11 +298,11 @@ class NodeInstance(object):
             'Removing floating management IP {}/{} from interface {}'.format(
                 self.vni_ipaddr,
                 self.vni_cidrnetmask,
-                self.vni_dev
+                'brcluster'
             ),
             state='o'
         )
-        common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, self.vni_dev)
+        common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
         # Upstream floating IP
         self.logger.out(
             'Removing floating upstream IP {}/{} from interface {}'.format(
