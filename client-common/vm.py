@@ -494,10 +494,15 @@ def get_info(zk_conn, domain, long_output):
 
     return True, ''
 
-def get_list(zk_conn, node, limit, raw):
+def get_list(zk_conn, node, state, limit, raw):
     if node != None:
         # Verify node is valid
         common.verifyNode(zk_conn, node)
+
+    if state != None:
+        valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'failed', 'migrate', 'unmigrate' ]
+        if not state in valid_states:
+            return False, 'VM state "{}" is not valid.'.format(state)
 
     full_vm_list = zkhandler.listchildren(zk_conn, '/domains')
     vm_list = []
@@ -529,35 +534,35 @@ def get_list(zk_conn, node, limit, raw):
         # Check we don't match the limit
         name = zkhandler.readdata(zk_conn, '/domains/{}'.format(vm))
         vm_node[vm] = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(vm))
+        vm_state[vm] = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(vm))
         # Handle limiting
         if limit != None:
             try:
                 if re.match(limit, vm) != None:
-                    if node == None:
+                    if node == None and state == None:
                         vm_list.append(vm)
                     else:
-                        if vm_node[vm] == node:
+                        if vm_node[vm] == node or vm_state[vm] == state:
                             vm_list.append(vm)
 
                 if re.match(limit, name) != None:
-                    if node == None:
+                    if node == None and state == None:
                         vm_list.append(vm)
                     else:
-                        if vm_node[vm] == node:
+                        if vm_node[vm] == node or vm_state[vm] == state:
                             vm_list.append(vm)
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
             # Check node to avoid unneeded ZK calls
-            if node == None:
+            if node == None and state == None:
                 vm_list.append(vm)
             else:
-                if vm_node[vm] == node:
+                if vm_node[vm] == node or vm_state[vm] == state:
                     vm_list.append(vm)
 
     # Gather information for printing
     for vm in vm_list:
-        vm_state[vm] = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(vm))
         vm_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(vm))
         if vm_lastnode != '':
             vm_migrated[vm] = 'from {}'.format(vm_lastnode)

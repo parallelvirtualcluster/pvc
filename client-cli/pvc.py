@@ -579,13 +579,17 @@ def vm_info(domain, long_output):
 )
 @click.option(
     '-t', '--target', 'target_node', default=None,
-    help='Limit list to specified node.'
+    help='Limit list to VMs on the specified node.'
+)
+@click.option(
+    '-s', '--state', 'target_state', default=None,
+    help='Limit list to VMs in the specified state.'
 )
 @click.option(
     '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw list of VM names.'
+    help='Display the raw list of VM names only.'
 )
-def vm_list(target_node, limit, raw):
+def vm_list(target_node, target_state, limit, raw):
     """
     List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
 
@@ -593,7 +597,7 @@ def vm_list(target_node, limit, raw):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.get_list(zk_conn, target_node, limit, raw)
+    retcode, retmsg = pvc_vm.get_list(zk_conn, target_node, target_state, limit, raw)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
