@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcd.py - PVC client command-line interface
+# pvc.py - PVC client command-line interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
