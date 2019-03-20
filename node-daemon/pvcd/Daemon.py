@@ -362,9 +362,11 @@ if enable_networking:
     common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
     
     # Disable RP filtering on the VNI dev and bridge interfaces (to allow traffic pivoting)
-    common.run_os_command('sysctl net.ipv4.conf.all.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['upstream_dev']))
     common.run_os_command('sysctl net.ipv4.conf.brcluster.rp_filter=0')
-    common.run_os_command('sysctl net.ipv6.conf.all.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_dev']))
+    common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['upstream_dev']))
     common.run_os_command('sysctl net.ipv6.conf.brcluster.rp_filter=0')
 
 ###############################################################################
