@@ -453,7 +453,8 @@ def unmigrate_vm(zk_conn, domain):
     # Get state and verify we're OK to proceed
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
-        target_state = 'start'
+        # If the current state isn't start, preserve it; we're not doing live migration
+        target_state = current_state
     else:
         target_state = 'migrate'
 
