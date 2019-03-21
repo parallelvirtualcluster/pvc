@@ -122,14 +122,14 @@ def secondary_node(zk_conn, node):
     # Get current state
     current_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node))
     if current_state == 'primary':
-        click.echo('Setting node {} in secondary router mode.'.format(node))
+        retmsg = 'Setting node {} in secondary router mode.'.format(node)
         zkhandler.writedata(zk_conn, {
             '/primary_node': 'none'
         })
     else:
-        click.echo('Node {} is already in secondary router mode.'.format(node))
+        return False, 'Node {} is already in secondary router mode.'.format(node)
 
-    return True, ''
+    return True, retmsg
 
 def primary_node(zk_conn, node):
     # Verify node is valid
@@ -144,21 +144,26 @@ def primary_node(zk_conn, node):
     # Get current state
     current_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node))
     if current_state == 'secondary':
-        click.echo('Setting node {} in primary router mode.'.format(node))
+        retmsg = 'Setting node {} in primary router mode.'.format(node)
         zkhandler.writedata(zk_conn, {
             '/primary_node': node
         })
     else:
-        click.echo('Node {} is already in primary router mode.'.format(node))
+        return False, 'Node {} is already in primary router mode.'.format(node)
 
-    return True, ''
+    return True, retmsg
 
 def flush_node(zk_conn, node, wait):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
-    click.echo('Flushing hypervisor {} of running VMs.'.format(node))
+    retmsg = 'Flushing hypervisor {} of running VMs.'.format(node)
+
+    # Wait cannot be triggered from the API
+    if wait:
+        click.echo(retmsg)
+        retmsg = ""
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -172,21 +177,21 @@ def flush_node(zk_conn, node, wait):
             if node_state == "flushed":
                 break
 
-    return True, ''
+    return True, retmsg
 
 def ready_node(zk_conn, node):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
-    click.echo('Restoring hypervisor {} to active service.'.format(node))
+    retmsg = 'Restoring hypervisor {} to active service.'.format(node)
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/nodes/{}/domainstate'.format(node): 'unflush'
     })
 
-    return True, ''
+    return True, retmsg
 
 def get_info(zk_conn, node, long_output):
     # Verify node is valid
