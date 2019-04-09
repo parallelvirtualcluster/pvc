@@ -42,8 +42,9 @@ zk_host = ''
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
-def cleanup(retcode, retmsg, zk_conn):
-    pvc_common.stopZKConnection(zk_conn)
+def cleanup(retcode, retmsg, zk_conn=None):
+    if zk_conn:
+        pvc_common.stopZKConnection(zk_conn)
     if retcode == True:
         if retmsg != '':
             click.echo(retmsg)
