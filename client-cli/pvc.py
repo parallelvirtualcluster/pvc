@@ -298,12 +298,12 @@ def vm_modify(domain, config, editor, restart):
 
     zk_conn = pvc_common.startZKConnection(zk_host)
 
-    if editor == True:
-        dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
-        if dom_uuid == None:
-            cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-        dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
+    dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
+    if dom_uuid == None:
+        cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+    dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
 
+    if editor == True:
         # Grab the current config
         current_vm_config = zk_conn.get('/domains/{}/xml'.format(dom_uuid))[0].decode('ascii')
 
