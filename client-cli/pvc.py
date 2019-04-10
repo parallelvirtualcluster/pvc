@@ -358,9 +358,9 @@ def vm_modify(domain, config, editor, restart):
         config.close()
 
         if restart:
-            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config))
+            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config.name))
         else:
-            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config))
+            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config.name))
 
     retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart, new_vm_config)
     cleanup(retcode, retmsg, zk_conn)
