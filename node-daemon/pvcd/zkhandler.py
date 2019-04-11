@@ -37,7 +37,7 @@ def deletekey(zk_conn, key, recursive=True):
 # Data read function
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)
-    data = data_raw[0].decode('ascii')
+    data = data_raw[0].decode('utf8')
     meta = data_raw[1]
     return data
 
@@ -55,7 +55,7 @@ def writedata(zk_conn, kv):
         # Check if this key already exists or not
         if not zk_conn.exists(key):
             # We're creating a new key
-            zk_transaction.create(key, str(data).encode('ascii'))
+            zk_transaction.create(key, str(data).encode('utf8'))
         else:
             # We're updating a key with version validation
             orig_data = zk_conn.get(key)
@@ -65,7 +65,7 @@ def writedata(zk_conn, kv):
             new_version = version + 1
 
             # Update the data
-            zk_transaction.set_data(key, str(data).encode('ascii'))
+            zk_transaction.set_data(key, str(data).encode('utf8'))
 
             # Set up the check
             try:

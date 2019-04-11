@@ -141,8 +141,10 @@ def readConfig(pvcd_config_file, myhostname):
             'enable_storage': o_config['pvc']['functions']['enable_storage'],
             'dynamic_directory': o_config['pvc']['system']['configuration']['directories']['dynamic_directory'],
             'log_directory': o_config['pvc']['system']['configuration']['directories']['log_directory'],
+            'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
             'file_logging': o_config['pvc']['system']['configuration']['logging']['file_logging'],
             'stdout_logging': o_config['pvc']['system']['configuration']['logging']['stdout_logging'],
+            'console_log_lines': o_config['pvc']['system']['configuration']['logging']['console_log_lines'],
             'keepalive_interval': o_config['pvc']['system']['fencing']['intervals']['keepalive_interval'],
             'fence_intervals': o_config['pvc']['system']['fencing']['intervals']['fence_intervals'],
             'suicide_intervals': o_config['pvc']['system']['fencing']['intervals']['suicide_intervals'],
@@ -457,12 +459,28 @@ zk_conn.add_listener(zk_listener)
 
 # Cleanup function
 def cleanup():
-    global zk_conn, update_timer
+    logger.out('Terminating pvcd and cleaning up', state='s')
+
+    global zk_conn, update_timer, d_domains
 
     # Stop keepalive thread
-    stopKeepaliveTimer()
+    try:
+        stopKeepaliveTimer()
+    except NameError:
+        pass
+    except AttributeError:
+        pass
 
-    logger.out('Terminating pvcd and cleaning up', state='s')
+    # Stop console logging on all VMs
+    logger.out('Stopping domain console watchers', state='s')
+    for domain in d_domain:
+        if d_domain[domain].getnode() == myhostname:
+            try:
+                d_domain[domain].console_log_instance.stop()
+            except NameError as e:
+                pass
+            except AttributeError as e:
+                pass
 
     # Force into secondary network state if needed
     if zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(myhostname)) == 'primary':
@@ -471,12 +489,7 @@ def cleanup():
             '/nodes/{}/routerstate'.format(myhostname): 'secondary',
             '/primary_node': 'none'
         })
-    else:
-        is_primary = False
-
-    # Wait for things to flush
-    if is_primary:
-        logger.out('Waiting for primary migration', state='s')
+        logger.out('Waiting 3 seconds for primary migration', state='s')
         time.sleep(3)
 
     # Set stop state in Zookeeper
@@ -493,14 +506,11 @@ def cleanup():
         pass
 
     logger.out('Terminated pvc daemon', state='s')
-
-# Handle exit gracefully
-atexit.register(cleanup)
+    sys.exit(0)
 
 # Termination function
 def term(signum='', frame=''):
-    # Exit
-    sys.exit(0)
+    cleanup()
 
 # Handle signals gracefully
 signal.signal(signal.SIGTERM, term)
