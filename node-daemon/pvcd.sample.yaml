@@ -111,12 +111,16 @@ pvc:
         dynamic_directory: "/run/pvc"
         # log_directory: Logging directory
         log_directory: "/var/log/pvc"
+        # console_log_directory: Libvirt console logging directory
+        console_log_directory: "/var/log/libvirt"
       # logging: PVC logging configuration
       logging:
         # file_logging: Enable or disable logging to files under log_directory
         file_logging: True
         # stdout_logging: Enable or disable logging to stdout (i.e. journald)
         stdout_logging: True
+        # console_log_lines: Number of console log lines to store in Zookeeper per VM
+        console_log_lines: 1000
       # networking: PVC networking configuration
       # OPTIONAL if enable_networking: False
       networking:

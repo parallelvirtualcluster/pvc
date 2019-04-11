@@ -32,11 +32,14 @@ import kazoo.client
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 
+import pvcd.DomainConsoleWatcherInstance as DomainConsoleWatcherInstance
+
 class DomainInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
         # Passed-in variables on creation
         self.domuuid = domuuid
+        self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
         self.zk_conn = zk_conn
         self.config = config
         self.logger = logger
@@ -52,7 +55,11 @@ class DomainInstance(object):
         self.inshutdown = False
         self.instop = False
 
+        # Libvirt domuuid
         self.dom = self.lookupByUUID(self.domuuid)
+
+        # Log watcher instance
+        self.console_log_instance = DomainConsoleWatcherInstance.DomainConsoleWatcherInstance(self.domuuid, self.domname, self.zk_conn, self.config, self.logger, self.this_node)
 
         # Watch for changes to the state field in Zookeeper
         @self.zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))
@@ -68,6 +75,7 @@ class DomainInstance(object):
             # Otherwise perform a management command
             else:
                 self.manage_vm_state()
+
 
     # Get data functions
     def getstate(self):
@@ -118,6 +126,9 @@ class DomainInstance(object):
 
     # Start up the VM
     def start_vm(self):
+        # Start the log watcher
+        self.console_log_instance.start()
+
         self.logger.out('Starting VM', state='i', prefix='Domain {}:'.format(self.domuuid))
         self.instart = True
 
@@ -157,6 +168,7 @@ class DomainInstance(object):
                 self.dom = None
 
         lv_conn.close()
+
         self.instart = False
   
     # Restart the VM
@@ -193,6 +205,9 @@ class DomainInstance(object):
         self.dom = None
         self.instop = False
 
+        # Stop the log watcher
+        self.console_log_instance.stop()
+
     # Stop the VM forcibly
     def stop_vm(self):
         self.logger.out('Forcibly stopping VM', state='i', prefix='Domain {}:'.format(self.domuuid))
@@ -210,6 +225,9 @@ class DomainInstance(object):
         self.dom = None
         self.instop = False
     
+        # Stop the log watcher
+        self.console_log_instance.stop()
+
     # Shutdown the VM gracefully
     def shutdown_vm(self):
         self.logger.out('Gracefully stopping VM', state='i', prefix='Domain {}:'.format(self.domuuid))
@@ -238,6 +256,9 @@ class DomainInstance(object):
         self.dom = None
         self.inshutdown = False
 
+        # Stop the log watcher
+        self.console_log_instance.stop()
+
     def live_migrate_vm(self, dest_node):
         try:
             dest_lv_conn = libvirt.open('qemu+tcp://{}/system'.format(self.node))
@@ -245,7 +266,7 @@ class DomainInstance(object):
                 raise
         except:
             self.logger.out('Failed to open connection to qemu+tcp://{}/system; aborting migration.'.format(self.node), state='e', prefix='Domain {}:'.format(self.domuuid))
-            return 1
+            return False
 
         try:
             target_dom = self.dom.migrate(dest_lv_conn, libvirt.VIR_MIGRATE_LIVE, None, None, 0)
@@ -255,10 +276,10 @@ class DomainInstance(object):
 
         except:
             dest_lv_conn.close()
-            return 1
+            return False
 
         dest_lv_conn.close()
-        return 0
+        return True
 
     # Migrate the VM to a target host
     def migrate_vm(self):
@@ -268,9 +289,9 @@ class DomainInstance(object):
         try:
             migrate_ret = self.live_migrate_vm(self.node)
         except:
-            migrate_ret = 0
+            migrate_ret = True
 
-        if migrate_ret != 0:
+        if not migrate_ret:
             self.logger.out('Could not live migrate VM; shutting down to migrate instead', state='e', prefix='Domain {}:'.format(self.domuuid))
             self.shutdown_vm()
             time.sleep(1)
@@ -281,8 +302,14 @@ class DomainInstance(object):
         zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
         self.inmigrate = False
 
+        # Stop the log watcher
+        self.console_log_instance.stop()
+
     # Receive the migration from another host (wait until VM is running)
     def receive_migrate(self):
+        # Start the log watcher
+        self.console_log_instance.start()
+
         self.inreceive = True
         self.logger.out('Receiving migration', state='i', prefix='Domain {}:'.format(self.domuuid))
         while True:
@@ -360,10 +387,16 @@ class DomainInstance(object):
                 if running == libvirt.VIR_DOMAIN_RUNNING:
                     # VM is already running and should be
                     if self.state == "start":
+                        # Start the log watcher
+                        self.console_log_instance.start()
+                        # Add domain to running list
                         self.addDomainToList()
                     # VM is already running and should be but stuck in migrate state
                     elif self.state == "migrate":
+                        # Start the log watcher
+                        self.console_log_instance.start()
                         zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                        # Add domain to running list
                         self.addDomainToList()
                     # VM should be restarted
                     elif self.state == "restart":
@@ -377,9 +410,11 @@ class DomainInstance(object):
                 else:
                     # VM should be started
                     if self.state == "start":
+                        # Start the domain
                         self.start_vm()
                     # VM should be migrated to this node
                     elif self.state == "migrate":
+                        # Receive the migration
                         self.receive_migrate()
                     # VM should be restarted (i.e. started since it isn't running)
                     if self.state == "restart":
@@ -387,9 +422,13 @@ class DomainInstance(object):
                     # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
                         self.removeDomainFromList()
+                        # Stop the log watcher
+                        self.console_log_instance.stop()
                     # VM should be stoped; ensure it's gone from this node's domain_list
                     elif self.state == "stop":
                         self.removeDomainFromList()
+                        # Stop the log watcher
+                        self.console_log_instance.stop()
                         
             else:
                 # Conditional pass three - Is this VM currently running on this node

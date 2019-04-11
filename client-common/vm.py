@@ -33,6 +33,8 @@ import lxml.objectify
 import configparser
 import kazoo.client
 
+from collections import deque
+
 import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
 import client_lib.common as common
@@ -226,6 +228,7 @@ def define_vm(zk_conn, config_data, target_node, selector):
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
         '/domains/{}/failedreason'.format(dom_uuid): '',
+        '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
 
@@ -233,7 +236,7 @@ def define_vm(zk_conn, config_data, target_node, selector):
 
 def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
     dom_name = getDomainName(zk_conn, domain)
 
@@ -250,7 +253,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
 
 def dump_vm(zk_conn, domain):
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Gram the domain XML and dump it to stdout
@@ -262,7 +265,7 @@ def dump_vm(zk_conn, domain):
 def undefine_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -300,7 +303,7 @@ def undefine_vm(zk_conn, domain):
 def start_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -313,7 +316,7 @@ def start_vm(zk_conn, domain):
 def restart_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -332,7 +335,7 @@ def restart_vm(zk_conn, domain):
 def shutdown_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
@@ -350,7 +353,7 @@ def shutdown_vm(zk_conn, domain):
 def stop_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -366,7 +369,7 @@ def stop_vm(zk_conn, domain):
 def move_vm(zk_conn, domain, target_node, selector):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -402,7 +405,7 @@ def move_vm(zk_conn, domain, target_node, selector):
 def migrate_vm(zk_conn, domain, target_node, selector, force_migrate):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -446,7 +449,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate):
 def unmigrate_vm(zk_conn, domain):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -476,7 +479,7 @@ def unmigrate_vm(zk_conn, domain):
 def get_info(zk_conn, domain, long_output):
     # Validate and obtain alternate passed value
     dom_uuid = getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
@@ -491,6 +494,71 @@ def get_info(zk_conn, domain, long_output):
         click.echo('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), failedreason))
 
     click.echo('')
+
+    return True, ''
+
+def get_console_log(zk_conn, domain, lines=1000):
+    # Validate and obtain alternate passed value
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Get the data from ZK
+    console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+
+    # Shrink the log buffer to length lines
+    shrunk_log = console_log.split('\n')[-lines:]
+    loglines = '\n'.join(shrunk_log)
+
+    # Show it in the pager (less)
+    try:
+        pager = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
+        pager.communicate(input=loglines.encode('utf8'))
+    except FileNotFoundError:
+        return False, 'ERROR: The "less" pager is required to view console logs.'
+
+    return True, ''
+
+def follow_console_log(zk_conn, domain, lines=10):
+    # Validate and obtain alternate passed value
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Get the initial data from ZK
+    console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+
+    # Shrink the log buffer to length lines
+    shrunk_log = console_log.split('\n')[-lines:]
+    loglines = '\n'.join(shrunk_log)
+
+    # Print the initial data and begin following
+    print(loglines, end='')
+
+    while True:
+        # Grab the next line set
+        new_console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+        # Split the new and old log strings into constitutent lines
+        old_console_loglines = console_log.split('\n')
+        new_console_loglines = new_console_log.split('\n')
+        # Set the console log to the new log value for the next iteration
+        console_log = new_console_log
+        # Remove the lines from the old log until we hit the first line of the new log; this
+        # ensures that the old log is a string that we can remove from the new log entirely
+        for index, line in enumerate(old_console_loglines, start=0):
+            if line == new_console_loglines[0]:
+                del old_console_loglines[0:index]
+                break
+        # Rejoin the log lines into strings
+        old_console_log = '\n'.join(old_console_loglines)
+        new_console_log = '\n'.join(new_console_loglines)
+        # Remove the old lines from the new log
+        diff_console_log = new_console_log.replace(old_console_log, "")
+        # If there's a difference, print it out
+        if diff_console_log != "":
+            print(diff_console_log, end='')
+        # Wait a second
+        time.sleep(1)
 
     return True, ''
 

@@ -572,6 +572,37 @@ def vm_info(domain, long_output):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc vm log
+###############################################################################
+@click.command(name='log', short_help='Show console logs of a VM object.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-l', '--lines', 'lines', default=1000, show_default=True,
+    help='Display this many log lines from the end of the log buffer.'
+)
+@click.option(
+    '-f', '--follow', 'follow', is_flag=True, default=False,
+    help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
+)
+def vm_log(domain, lines, follow):
+    """
+	Show console logs of virtual machine DOMAIN on its current node in the 'less' pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
+    """
+
+	# Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    if follow:
+        # Handle the "new" default of the follow
+        if lines == 1000:
+            lines = 10
+        retcode, retmsg = pvc_vm.follow_console_log(zk_conn, domain, lines)
+    else:
+        retcode, retmsg = pvc_vm.get_console_log(zk_conn, domain, lines)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc vm list
 ###############################################################################
 @click.command(name='list', short_help='List all VM objects.')
@@ -1331,6 +1362,7 @@ cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
 cli_vm.add_command(vm_info)
+cli_vm.add_command(vm_log)
 cli_vm.add_command(vm_list)
 
 cli_network.add_command(net_add)
