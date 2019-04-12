@@ -21,6 +21,7 @@
 ###############################################################################
 
 import flask
+import json
 
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
@@ -44,18 +45,20 @@ def api_node():
     """
     Manage the state of a node in the PVC cluster
     """
-    return "Manage the state of a node in the PVC cluster", 209
+    return "Manage the state of a node in the PVC cluster.\n", 209
 
 @pvcapi.route('/api/v1/node/secondary', methods=['POST'])
 def api_node_secondary():
     """
     Take NODE out of primary router mode.
     """
-    # Mandatory args
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    # Get data from flask
+    data = json.loads(flask.request.data.decode('utf8'))
+    # Get node
+    if 'node' in data:
+        node = data['node']
     else:
-        return "Error: No node provided. Please specify a node.", 510
+        return "Error: No node provided. Please specify a node.\n", 510
 
     zk_conn = pvc_common.startZKConnection(zk_host) 
     retflag, retmsg = pvc_node.secondary_node(zk_conn, node)
@@ -75,11 +78,13 @@ def api_node_primary():
     """
     Set NODE to primary router mode.
     """
-    # Mandatory args
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    # Get data from flask
+    data = json.loads(flask.request.data.decode('utf8'))
+    # Get node
+    if 'node' in data:
+        node = data['node']
     else:
-        return "Error: No node provided. Please specify a node.", 510
+        return "Error: No node provided. Please specify a node.\n", 510
 
     zk_conn = pvc_common.startZKConnection(zk_host) 
     retflag, retmsg = pvc_node.primary_node(zk_conn, node)
@@ -94,9 +99,60 @@ def api_node_primary():
     }
     return flask.jsonify(output), retcode
 
-#@pvcapi.route('/api/v1/node/flush', methods=['POST'])
-#@pvcapi.route('/api/v1/node/unflush', methods=['POST'])
-#@pvcapi.route('/api/v1/node/ready', methods=['POST'])
+@pvcapi.route('/api/v1/node/flush', methods=['POST'])
+def api_node_flush():
+    """
+    Flush NODE of running VMs.
+    """
+    # Get data from flask
+    data = json.loads(flask.request.data.decode('utf8'))
+    # Get node
+    if 'node' in data:
+        node = data['node']
+    else:
+        return "Error: No node provided. Please specify a node.\n", 510
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_node.flush_node(zk_conn, node, False)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg,
+    }
+    return flask.jsonify(output), retcode
+
+@pvcapi.route('/api/v1/node/unflush', methods=['POST'])
+@pvcapi.route('/api/v1/node/ready', methods=['POST'])
+def api_node_ready():
+    """
+    Restore NODE to active service.
+    """
+    # Get data from flask
+    data = json.loads(flask.request.data.decode('utf8'))
+    # Get node
+    if 'node' in data:
+        node = data['node']
+    else:
+        return "Error: No node provided. Please specify a node.\n", 510
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_node.ready_node(zk_conn, node)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg,
+    }
+    return flask.jsonify(output), retcode
+
+
 #@pvcapi.route('/api/v1/node/info', methods=['GET'])
 #@pvcapi.route('/api/v1/node/list', methods=['GET'])
 # VM endpoints
