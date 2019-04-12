@@ -46,7 +46,7 @@ def api_node():
     """
     return "Manage the state of a node in the PVC cluster", 209
 
-@pvcapi.route('/api/v1/node/secondary', methods=['GET'])
+@pvcapi.route('/api/v1/node/secondary', methods=['POST'])
 def api_node_secondary():
     """
     Take NODE out of primary router mode.
@@ -70,7 +70,7 @@ def api_node_secondary():
     }
     return flask.jsonify(output), retcode
 
-@pvcapi.route('/api/v1/node/primary', methods=['GET'])
+@pvcapi.route('/api/v1/node/primary', methods=['POST'])
 def api_node_primary():
     """
     Set NODE to primary router mode.
@@ -94,56 +94,58 @@ def api_node_primary():
     }
     return flask.jsonify(output), retcode
 
-#@pvcapi.route('/api/v1/node/flush', methods=['GET'])
-#@pvcapi.route('/api/v1/node/unflush', methods=['GET'])
-#@pvcapi.route('/api/v1/node/ready', methods=['GET'])
+#@pvcapi.route('/api/v1/node/flush', methods=['POST'])
+#@pvcapi.route('/api/v1/node/unflush', methods=['POST'])
+#@pvcapi.route('/api/v1/node/ready', methods=['POST'])
 #@pvcapi.route('/api/v1/node/info', methods=['GET'])
 #@pvcapi.route('/api/v1/node/list', methods=['GET'])
+# VM endpoints
 #@pvcapi.route('/api/v1/vm', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/add', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/define', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/modify', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/undefine', methods=['GET'])
+#@pvcapi.route('/api/v1/vm/add', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/define', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/modify', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/undefine', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/dump', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/start', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/restart', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/shutdown', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/stop', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/move', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/migrate', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/unmigrate', methods=['GET'])
+#@pvcapi.route('/api/v1/vm/start', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/restart', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/shutdown', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/stop', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/move', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/migrate', methods=['POST'])
+#@pvcapi.route('/api/v1/vm/unmigrate', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/info', methods=['GET'])
 #@pvcapi.route('/api/v1/vm/list', methods=['GET'])
+# Network endpoints
 #@pvcapi.route('/api/v1/network', methods=['GET'])
-#@pvcapi.route('/api/v1/network/add', methods=['GET'])
-#@pvcapi.route('/api/v1/network/modify', methods=['GET'])
-#@pvcapi.route('/api/v1/network/remove', methods=['GET'])
+#@pvcapi.route('/api/v1/network/add', methods=['POST'])
+#@pvcapi.route('/api/v1/network/modify', methods=['POST'])
+#@pvcapi.route('/api/v1/network/remove', methods=['POST'])
 #@pvcapi.route('/api/v1/network/info', methods=['GET'])
 #@pvcapi.route('/api/v1/network/list', methods=['GET'])
 #@pvcapi.route('/api/v1/network/dhcp', methods=['GET'])
 #@pvcapi.route('/api/v1/network/dhcp/list', methods=['GET'])
 #@pvcapi.route('/api/v1/network/dhcp/static', methods=['GET'])
-#@pvcapi.route('/api/v1/network/dhcp/static/add', methods=['GET'])
-#@pvcapi.route('/api/v1/network/dhcp/static/remove', methods=['GET'])
+#@pvcapi.route('/api/v1/network/dhcp/static/add', methods=['POST'])
+#@pvcapi.route('/api/v1/network/dhcp/static/remove', methods=['POST'])
 #@pvcapi.route('/api/v1/network/dhcp/static/list', methods=['GET'])
 #@pvcapi.route('/api/v1/network/acl', methods=['GET'])
-#@pvcapi.route('/api/v1/network/acl/add', methods=['GET'])
-#@pvcapi.route('/api/v1/network/acl/remove', methods=['GET'])
+#@pvcapi.route('/api/v1/network/acl/add', methods=['POST'])
+#@pvcapi.route('/api/v1/network/acl/remove', methods=['POST'])
 #@pvcapi.route('/api/v1/network/acl/list', methods=['GET'])
 # Ceph endpoints
 #@pvcapi.route('/api/v1/ceph', methods=['GET'])
 #@pvcapi.route('/api/v1/ceph/status', methods=['GET'])
 #@pvcapi.route('/api/v1/ceph/osd', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/add', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/remove', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/in', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/out', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/set', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/osd/unset', methods=['GET'])
+#@pvcapi.route('/api/v1/ceph/osd/add', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/osd/remove', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/osd/in', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/osd/out', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/osd/set', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/osd/unset', methods=['POST'])
 #@pvcapi.route('/api/v1/ceph/osd/list', methods=['GET'])
 #@pvcapi.route('/api/v1/ceph/pool', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/pool/add', methods=['GET'])
-#@pvcapi.route('/api/v1/ceph/pool/remove', methods=['GET'])
+#@pvcapi.route('/api/v1/ceph/pool/add', methods=['POST'])
+#@pvcapi.route('/api/v1/ceph/pool/remove', methods=['POST'])
 #@pvcapi.route('/api/v1/ceph/pool/list', methods=['GET'])
 
 pvcapi.run()
