@@ -185,6 +185,7 @@ class DomainInstance(object):
             return
     
         self.shutdown_vm()
+        time.sleep(1)
         self.start_vm()
         self.addDomainToList()
 
