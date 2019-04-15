@@ -1033,6 +1033,7 @@ def update_zookeeper():
     if debug:
         print("Set our information in zookeeper")
     #this_node.name = lv_conn.getHostname()
+    this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
     this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
     this_node.memalloc = memalloc
@@ -1045,6 +1046,7 @@ def update_zookeeper():
     keepalive_time = int(time.time())
     try:
         zkhandler.writedata(zk_conn, {
+            '/nodes/{}/memtotal'.format(this_node.name): str(this_node.memtotal),
             '/nodes/{}/memused'.format(this_node.name): str(this_node.memused),
             '/nodes/{}/memfree'.format(this_node.name): str(this_node.memfree),
             '/nodes/{}/memalloc'.format(this_node.name): str(this_node.memalloc),
