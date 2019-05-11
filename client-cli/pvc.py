@@ -30,6 +30,7 @@ import re
 import colorama
 import yaml
 
+import client_lib.ansiprint as ansiprint
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
@@ -162,8 +163,16 @@ def node_info(node, long_output):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.get_info(zk_conn, node, long_output)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_node.get_info(zk_conn, node)
+    if retcode:
+        pvc_node.format_info(zk_conn, retdata, long_output)
+        if long_output:
+            click.echo('{}Virtual machines on node:{}'.format(ansiprint.bold(), ansiprint.end()))
+            click.echo('')
+            pvc_vm.get_list(zk_conn, node, None, None, None)
+            click.echo('')
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc node list
@@ -178,8 +187,11 @@ def node_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.get_list(zk_conn, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_node.get_list(zk_conn, limit)
+    if retcode:
+        pvc_node.format_list(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc vm
