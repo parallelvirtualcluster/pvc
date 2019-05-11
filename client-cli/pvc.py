@@ -124,26 +124,34 @@ def node_flush(node, wait):
 @click.argument(
     'node', default=myhostname
 )
-def node_ready(node):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migrations to complete before returning.'
+)
+def node_ready(node, wait):
     """
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.ready_node(zk_conn, node)
+    retcode, retmsg = pvc_node.ready_node(zk_conn, node, wait)
     cleanup(retcode, retmsg, zk_conn)
 
 @click.command(name='unflush', short_help='Restore node to service.')
 @click.argument(
     'node', default=myhostname
 )
-def node_unflush(node):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migrations to complete before returning.'
+)
+def node_unflush(node, wait):
     """
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.ready_node(zk_conn, node)
+    retcode, retmsg = pvc_node.ready_node(zk_conn, node, wait)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

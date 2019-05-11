@@ -164,7 +164,7 @@ def flush_node(zk_conn, node, wait):
 
     return True, retmsg
 
-def ready_node(zk_conn, node):
+def ready_node(zk_conn, node, wait):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
