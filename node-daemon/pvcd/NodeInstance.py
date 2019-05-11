@@ -140,7 +140,9 @@ class NodeInstance(object):
                         flush_thread = threading.Thread(target=self.flush, args=(), kwargs={})
                         flush_thread.start()
                     if self.domain_state == 'unflush' and self.inflush == False:
-                        self.unflush()
+                        # Do unflushing in a thread so it doesn't block the migrates in
+                        flush_thread = threading.Thread(target=self.unflush, args=(), kwargs={})
+                        flush_thread.start()
 
         @self.zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))
         def watch_node_memfree(data, stat, event=''):
@@ -348,11 +350,8 @@ class NodeInstance(object):
                 })
 
                 # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
-                while True:
+                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
                     time.sleep(1)
-                    vm_current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid))
-                    if vm_current_state == "start":
-                        break
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
@@ -393,6 +392,10 @@ class NodeInstance(object):
                 '/domains/{}/node'.format(dom_uuid): self.name,
                 '/domains/{}/lastnode'.format(dom_uuid): ''
             })
+
+            # Wait for the VM to migrate back
+            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
+                time.sleep(1)
 
         self.inflush = False
 
