@@ -287,11 +287,7 @@ class DomainInstance(object):
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}:'.format(self.domuuid))
 
-        try:
-            migrate_ret = self.live_migrate_vm(self.node)
-        except:
-            migrate_ret = True
-
+        migrate_ret = self.live_migrate_vm(self.node)
         if not migrate_ret:
             self.logger.out('Could not live migrate VM; shutting down to migrate instead', state='e', prefix='Domain {}:'.format(self.domuuid))
             self.shutdown_vm()
