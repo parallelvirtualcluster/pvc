@@ -650,6 +650,8 @@ def init_zookeeper(zk_host):
     transaction.create('/ceph', ''.encode('ascii'))
     transaction.create('/ceph/osds', ''.encode('ascii'))
     transaction.create('/ceph/pools', ''.encode('ascii'))
+    transaction.create('/locks', ''.encode('ascii'))
+    transaction.create('/locks/flush_lock', 'False'.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection

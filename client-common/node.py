@@ -134,24 +134,33 @@ def flush_node(zk_conn, node, wait):
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
-    retmsg = 'Flushing hypervisor {} of running VMs.'.format(node)
-
+    if zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
+        retmsg = 'Flushing hypervisor {} of running VMs. A flush lock currently exists; flush will continue once the lock is freed.'.format(node)
+        lock_wait = True
+    else:
+        retmsg = 'Flushing hypervisor {} of running VMs.'.format(node)
+        lock_wait = False
+        
     # Wait cannot be triggered from the API
     if wait:
         click.echo(retmsg)
         retmsg = ""
+        if lock_wait:
+            time.sleep(1)
+            while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
+                time.sleep(1)
+            click.echo('Previous flush completed. Proceeding with flush.')
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/nodes/{}/domainstate'.format(node): 'flush'
     })
 
-    if wait == True:
-        while True:
+    # Wait cannot be triggered from the API
+    if wait:
+        time.sleep(1)
+        while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
             time.sleep(1)
-            node_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
-            if node_state == "flushed":
-                break
 
     return True, retmsg
 
