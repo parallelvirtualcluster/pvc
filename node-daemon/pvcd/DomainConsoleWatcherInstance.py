@@ -73,10 +73,11 @@ class DomainConsoleWatcherInstance(object):
 
     # Stop execution thread
     def stop(self):
-        self.logger.out('Stopping VM log parser', state='i', prefix='Domain {}:'.format(self.domuuid))
-        self.thread_stopper.set()
-        # Do one final flush
-        self.update()
+        if self.thread and self.thread.isAlive():
+            self.logger.out('Stopping VM log parser', state='i', prefix='Domain {}:'.format(self.domuuid))
+            self.thread_stopper.set()
+            # Do one final flush
+            self.update()
 
     # Main entrypoint
     def run(self):
