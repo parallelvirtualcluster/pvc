@@ -375,7 +375,6 @@ class NodeInstance(object):
 
         self.inflush = True
         self.logger.out('Restoring node {} to active service.'.format(self.name), state='i')
-        zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
         fixed_domain_list = self.d_domain.copy()
         for dom_uuid in fixed_domain_list:
             try:
@@ -397,6 +396,7 @@ class NodeInstance(object):
             while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
                 time.sleep(1)
 
+        zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
         self.inflush = False
 
         # Release the flush lock
