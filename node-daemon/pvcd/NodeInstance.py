@@ -364,6 +364,16 @@ class NodeInstance(object):
         })
 
     def unflush(self):
+        # Wait indefinitely for the flush_lock to be freed
+        time.sleep(0.5)
+        while zkhandler.readdata(self.zk_conn, '/locks/flush_lock') == 'True':
+            time.sleep(2)
+
+        # Acquire the flush lock
+        zkhandler.writedata(self.zk_conn, {
+            '/locks/flush_lock': 'True'
+        })
+
         self.inflush = True
         self.logger.out('Restoring node {} to active service.'.format(self.name), state='i')
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
@@ -385,6 +395,11 @@ class NodeInstance(object):
             })
 
         self.inflush = False
+
+        # Release the flush lock
+        zkhandler.writedata(self.zk_conn, {
+            '/locks/flush_lock': 'False'
+        })
 
 #
 # Find a migration target

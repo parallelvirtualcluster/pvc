@@ -169,12 +169,33 @@ def ready_node(zk_conn, node):
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
-    retmsg = 'Restoring hypervisor {} to active service.'.format(node)
+    if zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
+        retmsg = 'Restoring hypervisor {} to active service. A flush lock currently exists; unflush will continue once the lock is freed.'.format(node)
+        lock_wait = True
+    else:
+        retmsg = 'Restoring hypervisor {} to active service.'.format(node)
+        lock_wait = False
+        
+    # Wait cannot be triggered from the API
+    if wait:
+        click.echo(retmsg)
+        retmsg = ""
+        if lock_wait:
+            time.sleep(1)
+            while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
+                time.sleep(1)
+            click.echo('Previous flush completed. Proceeding with unflush.')
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/nodes/{}/domainstate'.format(node): 'unflush'
     })
+
+    # Wait cannot be triggered from the API
+    if wait:
+        time.sleep(1)
+        while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
+            time.sleep(1)
 
     return True, retmsg
 
