@@ -316,6 +316,17 @@ class NodeInstance(object):
 
     # Flush all VMs on the host
     def flush(self):
+        # Wait indefinitely for the flush_lock to be freed
+        time.sleep(0.5)
+        while zkhandler.readdata(self.zk_conn, '/locks/flush_lock') == 'True':
+            time.sleep(2)
+
+        # Acquire the flush lock
+        zkhandler.writedata(self.zk_conn, {
+            '/locks/flush_lock'.format(node): 'True'
+        })
+
+        # Begin flush
         self.inflush = True
         self.logger.out('Flushing node "{}" of running VMs'.format(self.name), state='i')
         self.logger.out('Domain list: {}'.format(', '.join(self.domain_list)))
@@ -346,6 +357,11 @@ class NodeInstance(object):
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
         self.inflush = False
+
+        # Release the flush lock
+        zkhandler.writedata(self.zk_conn, {
+            '/locks/flush_lock'.format(node): 'False'
+        })
 
     def unflush(self):
         self.inflush = True

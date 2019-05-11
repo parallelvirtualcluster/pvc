@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvc.py - PVC client command-line interface
+# pvcd.py - PVC client command-line interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -20,6 +20,20 @@
 #
 ###############################################################################
 
+import flask
+
+app = flask.Flask(__name__)
+app.config["DEBUG"] = True
+
+
+@app.route('/', methods=['GET'])
+def home():
+    return "<h1>Distant Reading Archive</h1><p>This site is a prototype API for distant reading of science fiction novels.</p>"
+
+app.run()
+
+exit(0)
+
 import socket
 import click
 import tempfile
@@ -30,7 +44,6 @@ import re
 import colorama
 import yaml
 
-import client_lib.ansiprint as ansiprint
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
@@ -43,9 +56,8 @@ zk_host = ''
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
-def cleanup(retcode, retmsg, zk_conn=None):
-    if zk_conn:
-        pvc_common.stopZKConnection(zk_conn)
+def cleanup(retcode, retmsg, zk_conn):
+    pvc_common.stopZKConnection(zk_conn)
     if retcode == True:
         if retmsg != '':
             click.echo(retmsg)
@@ -163,16 +175,8 @@ def node_info(node, long_output):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_node.get_info(zk_conn, node)
-    if retcode:
-        pvc_node.format_info(zk_conn, retdata, long_output)
-        if long_output:
-            click.echo('{}Virtual machines on node:{}'.format(ansiprint.bold(), ansiprint.end()))
-            click.echo('')
-            pvc_vm.get_list(zk_conn, node, None, None, None)
-            click.echo('')
-        retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    retcode, retmsg = pvc_node.get_info(zk_conn, node, long_output)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc node list
@@ -187,11 +191,8 @@ def node_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_node.get_list(zk_conn, limit)
-    if retcode:
-        pvc_node.format_list(retdata)
-        retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    retcode, retmsg = pvc_node.get_list(zk_conn, limit)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc vm
@@ -310,12 +311,12 @@ def vm_modify(domain, config, editor, restart):
 
     zk_conn = pvc_common.startZKConnection(zk_host)
 
-    dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
-        cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-    dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
-
     if editor == True:
+        dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
+        if dom_uuid == None:
+            cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
+
         # Grab the current config
         current_vm_config = zk_conn.get('/domains/{}/xml'.format(dom_uuid))[0].decode('ascii')
 
@@ -370,9 +371,9 @@ def vm_modify(domain, config, editor, restart):
         config.close()
 
         if restart:
-            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config.name))
+            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config))
         else:
-            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config.name))
+            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config))
 
     retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart, new_vm_config)
     cleanup(retcode, retmsg, zk_conn)
@@ -581,37 +582,6 @@ def vm_info(domain, long_output):
 	# Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_vm.get_info(zk_conn, domain, long_output)
-    cleanup(retcode, retmsg, zk_conn)
-
-###############################################################################
-# pvc vm log
-###############################################################################
-@click.command(name='log', short_help='Show console logs of a VM object.')
-@click.argument(
-    'domain'
-)
-@click.option(
-    '-l', '--lines', 'lines', default=1000, show_default=True,
-    help='Display this many log lines from the end of the log buffer.'
-)
-@click.option(
-    '-f', '--follow', 'follow', is_flag=True, default=False,
-    help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
-)
-def vm_log(domain, lines, follow):
-    """
-	Show console logs of virtual machine DOMAIN on its current node in the 'less' pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
-    """
-
-	# Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    if follow:
-        # Handle the "new" default of the follow
-        if lines == 1000:
-            lines = 10
-        retcode, retmsg = pvc_vm.follow_console_log(zk_conn, domain, lines)
-    else:
-        retcode, retmsg = pvc_vm.get_console_log(zk_conn, domain, lines)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -1374,7 +1344,6 @@ cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
 cli_vm.add_command(vm_info)
-cli_vm.add_command(vm_log)
 cli_vm.add_command(vm_list)
 
 cli_network.add_command(net_add)

@@ -530,28 +530,29 @@ if zk_conn.exists('/nodes/{}'.format(myhostname)):
 else:
     logger.out("Node is " + logger.fmt_red + "absent" + logger.fmt_end + " in Zookeeper; adding new node", state='i')
     keepalive_time = int(time.time())
-    transaction = zk_conn.transaction()
-    transaction.create('/nodes/{}'.format(myhostname), config['daemon_mode'].encode('ascii'))
+    zkhander.writedata(zk_conn, {
+        '/nodes/{}'.format(myhostname): config['daemon_mode'].encode('ascii'),
     # Basic state information
-    transaction.create('/nodes/{}/daemonmode'.format(myhostname), config['daemon_mode'].encode('ascii'))
-    transaction.create('/nodes/{}/daemonstate'.format(myhostname), 'init'.encode('ascii'))
-    transaction.create('/nodes/{}/routerstate'.format(myhostname), 'client'.encode('ascii'))
-    transaction.create('/nodes/{}/domainstate'.format(myhostname), 'flushed'.encode('ascii'))
-    transaction.create('/nodes/{}/staticdata'.format(myhostname), ' '.join(staticdata).encode('ascii'))
-    transaction.create('/nodes/{}/memfree'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/memused'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/memalloc'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/vcpualloc'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/cpuload'.format(myhostname), '0.0'.encode('ascii'))
-    transaction.create('/nodes/{}/networkscount'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/domainscount'.format(myhostname), '0'.encode('ascii'))
-    transaction.create('/nodes/{}/runningdomains'.format(myhostname), ''.encode('ascii'))
+        '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'].encode('ascii'),
+        '/nodes/{}/daemonstate'.format(myhostname): 'init'.encode('ascii'),
+        '/nodes/{}/routerstate'.format(myhostname): 'client'.encode('ascii'),
+        '/nodes/{}/domainstate'.format(myhostname): 'flushed'.encode('ascii'),
+        '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata).encode('ascii'),
+        '/nodes/{}/memtotal'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/memfree'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/memused'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/memalloc'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/vcpualloc'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/cpuload'.format(myhostname): '0.0'.encode('ascii'),
+        '/nodes/{}/networkscount'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/domainscount'.format(myhostname): '0'.encode('ascii'),
+        '/nodes/{}/runningdomains'.format(myhostname): ''.encode('ascii'),
     # Keepalives and fencing information
-    transaction.create('/nodes/{}/keepalive'.format(myhostname), str(keepalive_time).encode('ascii'))
-    transaction.create('/nodes/{}/ipmihostname'.format(myhostname), config['ipmi_hostname'].encode('ascii'))
-    transaction.create('/nodes/{}/ipmiusername'.format(myhostname), config['ipmi_username'].encode('ascii'))
-    transaction.create('/nodes/{}/ipmipassword'.format(myhostname), config['ipmi_password'].encode('ascii'))
-    transaction.commit()
+        '/nodes/{}/keepalive'.format(myhostname): str(keepalive_time).encode('ascii'),
+        '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'].encode('ascii'),
+        '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'].encode('ascii'),
+        '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password'].encode('ascii')
+    })
 
 # Check that the primary key exists, and create it with us as master if not
 try:
@@ -1032,6 +1033,7 @@ def update_zookeeper():
     if debug:
         print("Set our information in zookeeper")
     #this_node.name = lv_conn.getHostname()
+    this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
     this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
     this_node.memalloc = memalloc
@@ -1044,6 +1046,7 @@ def update_zookeeper():
     keepalive_time = int(time.time())
     try:
         zkhandler.writedata(zk_conn, {
+            '/nodes/{}/memtotal'.format(this_node.name): str(this_node.memtotal),
             '/nodes/{}/memused'.format(this_node.name): str(this_node.memused),
             '/nodes/{}/memfree'.format(this_node.name): str(this_node.memfree),
             '/nodes/{}/memalloc'.format(this_node.name): str(this_node.memalloc),
