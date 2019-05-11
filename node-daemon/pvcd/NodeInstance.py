@@ -323,7 +323,7 @@ class NodeInstance(object):
 
         # Acquire the flush lock
         zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock'.format(node): 'True'
+            '/locks/flush_lock': 'True'
         })
 
         # Begin flush
@@ -360,7 +360,7 @@ class NodeInstance(object):
 
         # Release the flush lock
         zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock'.format(node): 'False'
+            '/locks/flush_lock': 'False'
         })
 
     def unflush(self):
