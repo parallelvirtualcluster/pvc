@@ -174,11 +174,11 @@ def readConfig(pvcd_config_file, myhostname):
                 'upstream_floating_ip': o_config['pvc']['cluster']['networks']['upstream']['floating_ip'],
                 'upstream_network': o_config['pvc']['cluster']['networks']['upstream']['network'],
                 'upstream_gateway': o_config['pvc']['cluster']['networks']['upstream']['gateway'],
-                'pdns_mysql_host': o_config['pvc']['coordinator']['dns']['database']['host'],
-                'pdns_mysql_port': o_config['pvc']['coordinator']['dns']['database']['port'],
-                'pdns_mysql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
-                'pdns_mysql_user': o_config['pvc']['coordinator']['dns']['database']['user'],
-                'pdns_mysql_password': o_config['pvc']['coordinator']['dns']['database']['pass'],
+                'pdns_postgresql_host': o_config['pvc']['coordinator']['dns']['database']['host'],
+                'pdns_postgresql_port': o_config['pvc']['coordinator']['dns']['database']['port'],
+                'pdns_postgresql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
+                'pdns_postgresql_user': o_config['pvc']['coordinator']['dns']['database']['user'],
+                'pdns_postgresql_password': o_config['pvc']['coordinator']['dns']['database']['pass'],
                 'vni_dev': o_config['pvc']['system']['configuration']['networking']['devices']['cluster'],
                 'vni_dev_ip': o_config['pvc']['system']['configuration']['networking']['addresses']['cluster'],
                 'storage_dev': o_config['pvc']['system']['configuration']['networking']['devices']['storage'],
@@ -399,8 +399,8 @@ if enable_hypervisor:
 
 if enable_networking:
     if config['daemon_mode'] == 'coordinator':
-        logger.out('Starting MariaDB daemon', state='i')
-        common.run_os_command('systemctl start mariadb.service')
+        logger.out('Starting Patroni daemon', state='i')
+        common.run_os_command('systemctl start patroni.service')
         logger.out('Starting FRRouting daemon', state='i')
         common.run_os_command('systemctl start frr.service')
 

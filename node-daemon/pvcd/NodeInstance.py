@@ -269,7 +269,26 @@ class NodeInstance(object):
             for network in self.d_network:
                 self.d_network[network].createGateways()
                 self.d_network[network].startDHCPServer()
-            time.sleep(0.5)
+            time.sleep(1)
+            # Force Patroni to switch to the local instance
+            self.logger.out('Setting Patroni leader to this node', state='i')
+            retcode, stdout, stderr = common.run_os_command(
+                """
+                patronictl
+                    -c /etc/patroni/config.yml
+                    -d zookeeper://localhost:2181
+                    switchover
+                    --candidate {}
+                    --force
+                    pvcdns
+                """.format(self.name)
+            )
+            if stdout:
+                self.logger.out('Successfully switched Patroni leader\n{}'.format(stdout), state='o')
+            else:
+                self.logger.out('Failed to switch Patroni leader\n{}'.format(stderr), state='e')
+            time.sleep(1)
+            # Start the DNS aggregator instance
             self.dns_aggregator.start_aggregator()
 
     def createFloatingAddresses(self):

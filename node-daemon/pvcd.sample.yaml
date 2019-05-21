@@ -61,17 +61,17 @@ pvc:
   coordinator:
     # dns: DNS aggregator subsystem
     dns:
-      # database: MySQL Galera database configuration
+      # database: Patroni PostgreSQL database configuration
       database:
-        # host: MySQL hostname, invariably 'localhost'
+        # host: PostgreSQL hostname, invariably 'localhost'
         host: localhost
-        # port: MySQL port, invariably 'localhost'
-        port: 3306
-        # name: MySQL database name, invariably 'pvcdns'
+        # port: PostgreSQL port, invariably 'localhost'
+        port: 5432
+        # name: PostgreSQL database name, invariably 'pvcdns'
         name: pvcdns
-        # user: MySQL username, invariable 'pvcdns'
+        # user: PostgreSQL username, invariable 'pvcdns'
         user: pvcdns
-        # pass: MySQL user password, randomly generated
+        # pass: PostgreSQL user password, randomly generated
         pass: pvcdns
   # system: Local PVC instance configuration
   system:
