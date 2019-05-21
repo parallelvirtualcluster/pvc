@@ -52,9 +52,6 @@ def getInformationFromXML(zk_conn, uuid):
     domain_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
     domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
 
-    if domain_lastnode == '':
-        domain_lastnode = 'N/A'
-
     parsed_xml = common.getDomainXML(zk_conn, uuid)
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = common.getDomainMainDetails(parsed_xml)
