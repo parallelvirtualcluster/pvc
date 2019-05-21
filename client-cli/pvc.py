@@ -173,7 +173,7 @@ def node_info(node, long_output):
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retdata = pvc_node.get_info(zk_conn, node)
     if retcode:
-        pvc_node.format_info(zk_conn, retdata, long_output)
+        pvc_node.format_info(retdata, long_output)
         if long_output:
             click.echo('{}Virtual machines on node:{}'.format(ansiprint.bold(), ansiprint.end()))
             click.echo('')
@@ -404,7 +404,7 @@ def vm_undefine(domain):
 
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.undefine_vm(zk_conn, domain)
+    retcode, retmsg = pvc_vm.undefine_vm(zk_conn, domain, is_cli=True)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -550,7 +550,7 @@ def vm_migrate(domain, target_node, selector, force_migrate):
 
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_node, selector, force_migrate)
+    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=True)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -586,10 +586,13 @@ def vm_info(domain, long_output):
 	Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-	# Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.get_info(zk_conn, domain, long_output)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_vm.get_info(zk_conn, domain)
+    if retcode:
+        pvc_vm.format_info(zk_conn, retdata, long_output)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
+
 
 ###############################################################################
 # pvc vm log
@@ -649,8 +652,11 @@ def vm_list(target_node, target_state, limit, raw):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.get_list(zk_conn, target_node, target_state, limit, raw)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_vm.get_list(zk_conn, target_node, target_state, limit)
+    if retcode:
+        pvc_vm.format_list(zk_conn, retdata, raw)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc network

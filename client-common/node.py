@@ -207,7 +207,7 @@ def get_info(zk_conn, node):
     # Get information about node in a pretty format
     node_information = getInformationFromNode(zk_conn, node)
     if node_information == None:
-        return False, 'ERROR: Could not find a node matching that name.'
+        return False, 'ERROR: Could not get information about node "{}".'.format(node)
 
     return True, node_information
 
@@ -262,7 +262,7 @@ def getOutputColours(node_information):
 
     return daemon_state_colour, coordinator_state_colour, domain_state_colour
 
-def format_info(zk_conn, node_information, long_output):
+def format_info(node_information, long_output):
     daemon_state_colour, coordinator_state_colour, domain_state_colour = getOutputColours(node_information)
 
     # Format a nice output; do this line-by-line then concat the elements at the end
