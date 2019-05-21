@@ -658,7 +658,7 @@ def format_info(zk_conn, domain_information, long_output):
 def format_list(zk_conn, vm_list, raw):
     # Handle raw mode since it just lists the names
     if raw:
-        for vm in sorted(vm_name.values()):
+        for vm in sorted(item['name'] for item in vm_list):
             click.echo(vm)
         return True, ''
 
