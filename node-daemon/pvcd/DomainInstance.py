@@ -39,15 +39,17 @@ class DomainInstance(object):
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
         # Passed-in variables on creation
         self.domuuid = domuuid
-        self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
         self.zk_conn = zk_conn
         self.config = config
         self.logger = logger
         self.this_node = this_node
 
+        # Get data from zookeeper
+        self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
+        self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
+        self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+
         # These will all be set later
-        self.node = None
-        self.state = None
         self.instart = False
         self.inrestart = False
         self.inmigrate = False
@@ -185,7 +187,7 @@ class DomainInstance(object):
             return
     
         self.shutdown_vm()
-        time.sleep(1)
+        time.sleep(0.2)
         self.start_vm()
         self.addDomainToList()
 
@@ -291,10 +293,8 @@ class DomainInstance(object):
         if not migrate_ret:
             self.logger.out('Could not live migrate VM; shutting down to migrate instead', state='e', prefix='Domain {}:'.format(self.domuuid))
             self.shutdown_vm()
-            time.sleep(1)
         else:
             self.removeDomainFromList()
-            time.sleep(1)
 
         zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
         self.inmigrate = False
@@ -310,7 +310,7 @@ class DomainInstance(object):
         self.inreceive = True
         self.logger.out('Receiving migration', state='i', prefix='Domain {}:'.format(self.domuuid))
         while True:
-            time.sleep(0.5)
+            time.sleep(1)
             self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
             self.dom = self.lookupByUUID(self.domuuid)
 
@@ -343,10 +343,7 @@ class DomainInstance(object):
     # Main function to manage a VM (taking only self)
     #
     def manage_vm_state(self):
-        # Give ourselves a bit of leeway time
-        time.sleep(0.2)
-
-        # Get the current values from zookeeper (don't rely on the watch)
+        # Update the current values from zookeeper
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
 
@@ -442,8 +439,11 @@ class DomainInstance(object):
     # 1. Takes a text UUID and handles converting it to bytes
     # 2. Try's it and returns a sensible value if not
     def lookupByUUID(self, tuuid):
+        # Don't do anything if the VM shouldn't live on this node
+        if self.node != self.this_node.name:
+            return None
+
         lv_conn = None
-        dom = None
         libvirt_name = "qemu:///system"
     
         # Convert the text UUID to bytes
@@ -455,14 +455,14 @@ class DomainInstance(object):
             lv_conn = libvirt.open(libvirt_name)
             if lv_conn == None:
                 self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}:'.format(self.domuuid))
-                return dom
+                return None
         
             # Lookup the UUID
             dom = lv_conn.lookupByUUID(buuid)
     
         # Fail
         except:
-            pass
+            dom = None
     
         # After everything
         finally:
