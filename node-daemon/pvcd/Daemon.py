@@ -316,7 +316,7 @@ if enable_networking:
     common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
 
     # Cluster bridge configuration
-    logger.out('Setting up cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+    logger.out('Setting up Cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
     common.run_os_command('brctl addbr brcluster')
     common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
     common.run_os_command('ip link set brcluster mtu 9000 up')
