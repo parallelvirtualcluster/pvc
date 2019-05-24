@@ -9,7 +9,6 @@ Type = oneshot
 WorkingDirectory = /usr/share/pvc
 ExecStart = /usr/bin/pvc node unflush
 ExecStop = /usr/bin/pvc node flush
-Restart = never
 
 [Install]
 WantedBy = pvcd.target
