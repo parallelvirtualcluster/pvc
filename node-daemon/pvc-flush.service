@@ -9,6 +9,7 @@ PartOf = pvcd.target
 Type = oneshot
 RemainAfterExit = true
 WorkingDirectory = /usr/share/pvc
+ExecPreStart = /bin/sleep 10
 ExecStart = /usr/bin/pvc node unflush
 ExecStop = /usr/bin/pvc node flush --wait
 
