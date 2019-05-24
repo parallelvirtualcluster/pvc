@@ -253,7 +253,7 @@ class NodeInstance(object):
         if self.config['enable_networking']:
             self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
             self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
-            time.sleep(1)
+            time.sleep(2)
             for network in self.d_network:
                 self.d_network[network].stopDHCPServer()
                 self.d_network[network].removeGateways()
