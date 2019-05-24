@@ -459,9 +459,12 @@ zk_conn.add_listener(zk_listener)
 
 # Cleanup function
 def cleanup():
-    logger.out('Terminating pvcd and cleaning up', state='s')
-
     global zk_conn, update_timer, d_domains
+
+    logger.out('Performing final keepalive update', state='s')
+    update_zookeeper()
+
+    logger.out('Terminating pvcd and cleaning up', state='s')
 
     # Stop keepalive thread
     try:
