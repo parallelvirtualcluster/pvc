@@ -1,4 +1,6 @@
 node-daemon/pvcd.py usr/share/pvc
-node-daemon/pvcd.service lib/systemd/system
 node-daemon/pvcd.sample.yaml etc/pvc
 node-daemon/pvcd usr/share/pvc
+node-daemon/pvcd.target lib/systemd/system
+node-daemon/pvcd.service lib/systemd/system
+node-daemon/pvc-flush.service lib/systemd/system

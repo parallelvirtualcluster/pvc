@@ -1,4 +1,6 @@
 #!/bin/sh
 
-# Disable the service
+# Disable the services
+systemctl disable pvc-flush.service
 systemctl disable pvcd.service
+systemctl disable pvcd.target
