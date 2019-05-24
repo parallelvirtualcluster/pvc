@@ -6,12 +6,12 @@ systemctl enable /lib/systemd/system/pvcd.target
 
 # Inform administrator of the autoflush daemon if it is not enabled
 if ! systemctl is-active --quiet pvc-flush.service; then
-    echo "The PVC autoflush daemon (pvc-flush.service) is not enabled by default; enable it to perform automatic flush/unflush actions on host shutdown/startup."
+    echo "NOTE: The PVC autoflush daemon (pvc-flush.service) is not enabled by default; enable it to perform automatic flush/unflush actions on host shutdown/startup."
 fi
 
 # Inform administrator of the service restart/startup not occurring automatically
 if systemctl is-active --quiet pvcd.service; then
-    echo "The PVC node daemon (pvcd.service) has not been restarted; this is up to the administrator."
+    echo "NOTE: The PVC node daemon (pvcd.service) has not been restarted; this is up to the administrator."
 else
-    echo "The PVC node daemon (pvcd.service) has not been started; create a config file at /etc/pvc/pvcd.yaml then start it."
+    echo "NOTE: The PVC node daemon (pvcd.service) has not been started; create a config file at /etc/pvc/pvcd.yaml then start it."
 fi
