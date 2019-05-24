@@ -38,7 +38,7 @@ import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
 #import client_lib.provisioner as pvc_provisioner
 
-myhostname = socket.gethostname()
+myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
