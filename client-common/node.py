@@ -146,9 +146,9 @@ def flush_node(zk_conn, node, wait):
         click.echo(retmsg)
         retmsg = ""
         if lock_wait:
-            time.sleep(1)
+            time.sleep(2)
             while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
-                time.sleep(1)
+                time.sleep(2)
             click.echo('Previous flush completed. Proceeding with flush.')
 
     # Add the new domain to Zookeeper
@@ -158,9 +158,9 @@ def flush_node(zk_conn, node, wait):
 
     # Wait cannot be triggered from the API
     if wait:
-        time.sleep(1)
+        time.sleep(2)
         while zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
-            time.sleep(1)
+            time.sleep(2)
 
     return True, retmsg
 
