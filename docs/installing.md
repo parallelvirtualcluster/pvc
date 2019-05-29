@@ -20,25 +20,25 @@ The repository contains the required elements to build Debian packages for PVC. 
 
 ## Base System Setup
 
-PVC requires Debian GNU/Linux 10.X ("Buster") or later, using `systemd`, to operate correctly. Before proceeding with the manual or Ansible setup, you must have prepared a cluster of the required number of initial hosts.
+PVC requires Debian GNU/Linux 10.X ("Buster") or later, using `systemd`, to operate correctly. Before proceeding with the manual or Ansible setup, you must have prepared a set of initial hosts with the base system.
 
-1. Using the Debian GNU/Linux 10.X installer, prepare 1, 3, or 5 physical hosts. This initial set will act as coordinators for the cluster, after which more nodes can be added. Name the hosts "<name>1", "<name>", etc.; "name" can be anything you wish, though "node", "hv", or "pvc" are most descriptive.
+1. Using the Debian GNU/Linux 10.X installer or a method of your choice, prepare 1, 3, or 5 physical hosts. This initial set will act as coordinators for the cluster, after which more nodes can be added. Name the hosts "[name]1", "[name]", etc.; "name" can be anything you wish, though "node", "hv", or "pvc" are most descriptive.
 
 1. Create an SSH configuration and sudo-capable user for login on each node. Key-based authentication is strongly recommended to avoid entering passwords later.
 
 1. Configure the systems with a basic network interface conforming to the [network requirements](/architecture/networking). Normally, the PVC "upstream" network will be used to configure and bootstrap the nodes, however you can use another network should you wish. For a simple deployment, an access vLAN with a single IP is sufficient. Bonding/failover is optional but recommended.
 
-1. Configure DNS or `/etc/hosts` entries for all nodes so that they may resolve each others' FQDNs.
+1. Configure DNS or `/etc/hosts` entries for all nodes so that they may resolve each others' FQDNs. This is especially important for the Ansible installation method since the `ansible_fqdn` value is used extensively.
 
 1. Ensure you can log in to the systems, that they can access the Internet, and that the user can execute arbitrary commands with `sudo`.
 
 ## Ansible
 
-PVC includes an Ansible role and set of playbooks for deploying PVC nodes. Using this role automates the manual deployments steps and ends with a working set of initial coordinator nodes. It can then also be used to deploy subsequent nodes as well or update the cluster configuration. By default, the Ansible role makes use of the official PVC Debian repository, though you may use an alternate repository or locally-built `.deb` files via configuration options.
+PVC includes a set of Ansible roles and playbooks for deploying PVC nodes. Using these automates the manual deployments steps and ends with a working set of initial coordinator nodes. It can then also be used to deploy subsequent nodes as well or update the cluster configuration. By default, the Ansible role makes use of the official PVC Debian repository, though you may use an alternate repository or locally-built `.deb` files via configuration options.
 
 1. Configure a set of `group_vars` and a host inventory for the role, based on the `defaults/example.yml` configuration. This example includes all possible options on a simple 3-node coordinator set in the most simple possible deployment. Modify the hostnames, IP addresses, passwords, and other such information as required for your deployment. Refer to the [Ansible role configuration documentation](/ansible/configuration) for a detailed breakdown of the various options.
 
-1. Execute the `bootstrap.yml` playbook against the set of initial coordinators deployed in the last section. The playbook operates in parallel mode for the initial section to configure the base resources.
+1. Execute the `bootstrap.yml` playbook against the set of initial coordinators deployed in the last section. The playbook operates in parallel mode for the initial section to configure the base resources, then squentially to configure the actual PVC daemon and bring up the cluster.
 
 1. The `bootstrap.yml` playbook will reboot the nodes at the appropriate times. Once they return to service, the PVC cluster will be ready to use or modify further.
 
@@ -151,7 +151,7 @@ In addition to a virtual manager only setup, PVC v0.4 supports a setup with virt
 
 1. Perform the first 4 steps of the previous section.
 
-1. Deploy a MariaDB Galera cluster among the coordinators. Follow the [PowerDNS guide](https://doc.powerdns.com/md/authoritative/backend-generic-mysql/#default-schema) to create a PowerDNS authoritative database schema on the cluster.
+1. Deploy a Patroni PostgreSQL cluster among the coordinators. Follow the [PowerDNS guide](https://doc.powerdns.com/md/authoritative/backend-generic-pgsql/#default-schema) to create a PowerDNS authoritative database schema on the cluster.
 
 1. Configure the `/etc/pvc/pvcd.yaml` file based on the `/etc/pvc/pvcd.sample.yaml` file, this time not removing any major sections. Fill in the required values for the MySQL DNS database, the various interfaces and networks, and set `enable_networking: True`.
 
