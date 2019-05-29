@@ -22,7 +22,7 @@ The repository contains the required elements to build Debian packages for PVC. 
 
 PVC requires Debian GNU/Linux 10.X ("Buster") or later, using `systemd`, to operate correctly. Before proceeding with the manual or Ansible setup, you must have prepared a set of initial hosts with the base system.
 
-1. Using the Debian GNU/Linux 10.X installer or a method of your choice, prepare 1, 3, or 5 physical hosts. This initial set will act as coordinators for the cluster, after which more nodes can be added. Name the hosts "[name]1", "[name]", etc.; "name" can be anything you wish, though "node", "hv", or "pvc" are most descriptive.
+1. Using the Debian GNU/Linux 10.X installer or a method of your choice, prepare 1, 3, or 5 physical hosts. This initial set will act as coordinators for the cluster, after which more nodes can be added. Name the hosts "[name]1", "[name]2", etc.; "name" can be anything you wish, though "node", "hv", or "pvc" are most descriptive.
 
 1. Create an SSH configuration and sudo-capable user for login on each node. Key-based authentication is strongly recommended to avoid entering passwords later.
 
