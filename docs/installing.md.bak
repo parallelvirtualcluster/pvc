@@ -1,54 +1,30 @@
-# Installing and using the Parallel Virtual Cluster suite
+## Installing and using the Parallel Virtual Cluster suite
 
-### Changelog
-
-#### 0.4
-
-* PVC supports manual or Ansible bootstrapping of nodes
-
-* PVC supports both virtual-manager-only and virtual-manager+networking operating modes
+Note: This document describes PVC v0.4. This version of PVC implements the core functionality, with the virtual machine manager and virtual networking being fully implemented and functional. Future versions will finish implementation of virtual storage, bootstrapping, provisioning, and the API interface.
 
 ## Building
 
-The repository contains the required elements to build Debian packages for PVC. It is not handled like a normal Python package but instead the debs contain the raw files placed in Debianized places.
+The repository contains the required elements to build Debian packages for PVC. It is not handled like a normal Python package but instead the debs contain the raw files placed in Debianized places. Only Debian Buster (10.X) is supported as the cluster base operating system.
 
 1. Run `build-deb.sh`; you will need `dpkg-buildpackage` installed.
 
-1. The output packages for the node daemon and clients will be located in the parent directory.
+1. The output files for each daemon and client will be located in the parent directory.
 
-1. Copy the `.deb` files to the target systems or add them to a custom repository accessible to the future nodes.
+1. Copy the `.deb` files to the target systems.
 
-## Base System Setup
-
-PVC requires Debian GNU/Linux 10.X ("Buster") or later, using `systemd`, to operate correctly. Before proceeding with the manual or Ansible setup, you must have prepared a cluster of the required number of initial hosts.
-
-1. Using the Debian GNU/Linux 10.X installer, prepare 1, 3, or 5 physical hosts. This initial set will act as coordinators for the cluster, after which more nodes can be added. Name the hosts "<name>1", "<name>", etc.; "name" can be anything you wish, though "node", "hv", or "pvc" are most descriptive.
-
-1. Create an SSH configuration and sudo-capable user for login on each node. Key-based authentication is strongly recommended to avoid entering passwords later.
-
-1. Configure the systems with a basic network interface conforming to the [network requirements](/architecture/networking). Normally, the PVC "upstream" network will be used to configure and bootstrap the nodes, however you can use another network should you wish. For a simple deployment, an access vLAN with a single IP is sufficient. Bonding/failover is optional but recommended.
-
-1. Configure DNS or `/etc/hosts` entries for all nodes so that they may resolve each others' FQDNs.
-
-1. Ensure you can log in to the systems, that they can access the Internet, and that the user can execute arbitrary commands with `sudo`.
-
-## Ansible
-
-PVC includes an Ansible role and set of playbooks for deploying PVC nodes. Using this role automates the manual deployments steps and ends with a working set of initial coordinator nodes. It can then also be used to deploy subsequent nodes as well or update the cluster configuration. By default, the Ansible role makes use of the official PVC Debian repository, though you may use an alternate repository or locally-built `.deb` files via configuration options.
-
-1. Configure a set of `group_vars` and a host inventory for the role, based on the `defaults/example.yml` configuration. This example includes all possible options on a simple 3-node coordinator set in the most simple possible deployment. Modify the hostnames, IP addresses, passwords, and other such information as required for your deployment. Refer to the [Ansible role configuration documentation](/ansible/configuration) for a detailed breakdown of the various options.
-
-1. Execute the `bootstrap.yml` playbook against the set of initial coordinators deployed in the last section. The playbook operates in parallel mode for the initial section to configure the base resources.
-
-1. The `bootstrap.yml` playbook will reboot the nodes at the appropriate times. Once they return to service, the PVC cluster will be ready to use or modify further.
-
-1. To perform future updates to the cluster configuration, such as adding additional nodes or changing configuration variables, execute the `update.yml` playbook instead. This playbook is very similar to the `bootstrap.yml` playbook but with tweaks to prevent unneccessary disruption to the core cluster.
-
-## Manual
+## Installing
 
 ### Virtual Manager only
 
+PVC v0.4 requires manual setup of the base OS and Zookeeper cluster on the target systems. Future versions will include full bootstrapping support. This set of instructions covers setting up a virtual manager only system, requiring all networking and storage to be configured by the administrator. Future versions will enable these functions by default.
+
+A single-host cluster is possible for testing, however it is not recommended for production deployments due to the lack of redundancy. For a single-host cluster, follow the steps below but only on a single machine.
+
+1. Deploy Debian Buster to 3, or more, physical servers. Ensure the servers are configured and connected based on the [documentation](/about.md#physical-infrastructure).
+
 1. On the first 3 physical servers, deploy Zookeeper (Debian packages `zookeeper` and `zookeeperd`) in a cluster configuration. After this, Zookeeper should be available on port `2181` on all 3 nodes.
+
+1. Set up virtual storage and networking as required.
 
 1. Install the PVC packages generated in the previous section. Use `apt -f install` to correct dependency issues. The `pvcd` service will fail to start; this is expected.
 
