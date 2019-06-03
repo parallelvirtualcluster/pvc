@@ -51,6 +51,7 @@ def getInformationFromNode(zk_conn, node_name):
     node_kernel = node_static_data[1]
     node_os = node_static_data[2]
     node_arch = node_static_data[3]
+    node_vcpu_allocated = zkhandler.readdata(zk_conn, 'nodes/{}/vcpualloc'.format(node_name))
     node_mem_total = int(zkhandler.readdata(zk_conn, '/nodes/{}/memtotal'.format(node_name)))
     node_mem_allocated = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node_name)))
     node_mem_used = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node_name)))
@@ -72,6 +73,10 @@ def getInformationFromNode(zk_conn, node_name):
         'load': node_load,
         'domains_count': node_domains_count,
         'running_domains': node_running_domains,
+        'vcpu': {
+            'total': node_cpu_count,
+            'allocated': node_vcpu_allocated
+        },
         'memory': {
             'total': node_mem_total,
             'allocated': node_mem_allocated,
@@ -279,7 +284,8 @@ def format_info(node_information, long_output):
         ainformation.append('{}Operating System:{}     {}'.format(ansiprint.purple(), ansiprint.end(), node_information['os']))
         ainformation.append('{}Kernel Version:{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['kernel']))
     ainformation.append('')
-    ainformation.append('{}CPUs:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_information['cpu_count']))
+    ainformation.append('{}Host CPUs:{}            {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['total']))
+    ainformation.append('{}vCPUs:{}                {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['allocated']))
     ainformation.append('{}Load:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_information['load']))
     ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['total']))
     ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['used']))
@@ -301,7 +307,7 @@ def format_list(node_list):
     coordinator_state_length = 12
     domain_state_length = 8
     domains_count_length = 4
-    cpu_count_length = 5
+    cpu_count_length = 6
     load_length = 5
     mem_total_length = 6
     mem_used_length = 5
@@ -381,7 +387,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             node_coordinator_state='Coordinator',
             node_domain_state='Domain',
             node_domains_count='VMs',
-            node_cpu_count='CPUs',
+            node_cpu_count='vCPUs',
             node_load='Load',
             node_mem_total='Total',
             node_mem_used='Used',
@@ -420,7 +426,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 node_coordinator_state=node_information['coordinator_state'],
                 node_domain_state=node_information['domain_state'],
                 node_domains_count=node_information['domains_count'],
-                node_cpu_count=node_information['cpu_count'],
+                node_cpu_count=node_information['vcpu']['allocated'],
                 node_load=node_information['load'],
                 node_mem_total=node_information['memory']['total'],
                 node_mem_used=node_information['memory']['used'],
