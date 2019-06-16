@@ -533,7 +533,7 @@ if zk_conn.exists('/nodes/{}'.format(myhostname)):
 else:
     logger.out("Node is " + logger.fmt_red + "absent" + logger.fmt_end + " in Zookeeper; adding new node", state='i')
     keepalive_time = int(time.time())
-    zkhander.writedata(zk_conn, {
+    zkhandler.writedata(zk_conn, {
         '/nodes/{}'.format(myhostname): config['daemon_mode'].encode('ascii'),
     # Basic state information
         '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'].encode('ascii'),
