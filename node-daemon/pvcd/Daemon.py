@@ -411,7 +411,8 @@ if enable_storage:
         logger.out('Starting Ceph manager daemon', state='i')
         common.run_os_command('systemctl start ceph-mgr@{}'.format(myhostname))
 
-time.sleep(1)
+logger.out('Waiting 5s for daemons to start', state='s')
+time.sleep(5)
 
 ###############################################################################
 # PHASE 4 - Attempt to connect to the coordinators and start zookeeper client
