@@ -126,25 +126,25 @@ pvc:
       networking:
         # upstream: Upstream physical interface device
         upstream:
-          # name: Upstream interface name
-          name: ens4
+          # device: Upstream interface device name
+          device: ens4
           # mtu: Upstream interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Network address for upstream network, options: None, by-id, <static>/<mask>
+          # address: Upstream interface IP address, options: None, by-id, <static>/<mask>
           address: None
         # cluster: Cluster (VNIC) physical interface device
         cluster:
-          # name: Cluster (VNIC) interface name
-          name: ens4
+          # device: Cluster (VNIC) interface device name
+          device: ens4
           # mtu: Cluster (VNIC) interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Network address for cluster network, options: by-id, <static>/<mask>
+          # address: Cluster (VNIC) interface IP address, options: None, by-id, <static>/<mask>
           address: by-id
         # storage: Storage (Ceph OSD) physical interface device
         storage:
-          # name: Storace (Ceph OSD) interface name
-          name: ens4
+          # device: Storage (Ceph OSD) interface device name
+          device: ens4
           # mtu: Storage (Ceph OSD) interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Network address for storage network, options: by-id, <static>/<mask>
+          # address: Storage (Ceph OSD) interface IP address, options: None, by-id, <static>/<mask>
           address: by-id
