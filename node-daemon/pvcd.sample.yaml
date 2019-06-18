@@ -119,6 +119,8 @@ pvc:
         file_logging: True
         # stdout_logging: Enable or disable logging to stdout (i.e. journald)
         stdout_logging: True
+        # log_keepalives: Enable or disable keepalive logging
+        log_keepalives: True
         # console_log_lines: Number of console log lines to store in Zookeeper per VM
         console_log_lines: 1000
       # networking: PVC networking configuration

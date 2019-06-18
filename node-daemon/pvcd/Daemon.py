@@ -144,6 +144,7 @@ def readConfig(pvcd_config_file, myhostname):
             'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
             'file_logging': o_config['pvc']['system']['configuration']['logging']['file_logging'],
             'stdout_logging': o_config['pvc']['system']['configuration']['logging']['stdout_logging'],
+            'log_keepalives': o_config['pvc']['system']['configuration']['logging']['log_keepalives'],
             'console_log_lines': o_config['pvc']['system']['configuration']['logging']['console_log_lines'],
             'keepalive_interval': o_config['pvc']['system']['fencing']['intervals']['keepalive_interval'],
             'fence_intervals': o_config['pvc']['system']['fencing']['intervals']['fence_intervals'],
@@ -1120,46 +1121,47 @@ def update_zookeeper():
                     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
     # Display node information to the terminal
-    logger.out(
-        '{}{} keepalive{}'.format(
-            logger.fmt_purple,
-            myhostname,
-            logger.fmt_end
-        ),
-        state='t'
-    )
-    logger.out(
-        '{bold}Domains:{nofmt} {domcount}  '
-        '{bold}Networks:{nofmt} {netcount}  '
-        '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
-        '{bold}Free memory [MiB]:{nofmt} {freemem}  '
-        '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
-        '{bold}Load:{nofmt} {load}'.format(
-            bold=logger.fmt_bold,
-            nofmt=logger.fmt_end,
-            domcount=this_node.domains_count,
-            freemem=this_node.memfree,
-            usedmem=this_node.memused,
-            load=this_node.cpuload,
-            allocmem=this_node.memalloc,
-            netcount=len(network_list)
-        ),
-    )
-    if enable_storage:
+    if config['log_keepalives']:
         logger.out(
-            '{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  '
-            '{bold}Total OSDs:{nofmt} {total_osds}  '
-            '{bold}Node OSDs:{nofmt} {node_osds}  '
-            '{bold}Pools:{nofmt} {total_pools}  '.format(
+            '{}{} keepalive{}'.format(
+                logger.fmt_purple,
+                myhostname,
+                logger.fmt_end
+            ),
+            state='t'
+        )
+        logger.out(
+            '{bold}Domains:{nofmt} {domcount}  '
+            '{bold}Networks:{nofmt} {netcount}  '
+            '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
+            '{bold}Free memory [MiB]:{nofmt} {freemem}  '
+            '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
+            '{bold}Load:{nofmt} {load}'.format(
                 bold=logger.fmt_bold,
-                health_colour=ceph_health_colour,
                 nofmt=logger.fmt_end,
-                health=ceph_health,
-                total_osds=len(osd_list),
-                node_osds=osds_this_node,
-                total_pools=len(pool_list)
+                domcount=this_node.domains_count,
+                freemem=this_node.memfree,
+                usedmem=this_node.memused,
+                load=this_node.cpuload,
+                allocmem=this_node.memalloc,
+                netcount=len(network_list)
             ),
         )
+        if enable_storage:
+            logger.out(
+                '{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  '
+                '{bold}Total OSDs:{nofmt} {total_osds}  '
+                '{bold}Node OSDs:{nofmt} {node_osds}  '
+                '{bold}Pools:{nofmt} {total_pools}  '.format(
+                    bold=logger.fmt_bold,
+                    health_colour=ceph_health_colour,
+                    nofmt=logger.fmt_end,
+                    health=ceph_health,
+                    total_osds=len(osd_list),
+                    node_osds=osds_this_node,
+                    total_pools=len(pool_list)
+                ),
+            )
 
 
 # Start keepalive thread
