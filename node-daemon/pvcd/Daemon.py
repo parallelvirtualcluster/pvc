@@ -791,12 +791,9 @@ if enable_storage:
     @zk_conn.DataWatch('/ceph/cmd')
     def cmd(data, stat, event=''):
         if data:
-            data = data.decode('ascii')
+            CephInstance.run_command(zk_conn, data.decode('ascii'), d_osd)
         else:
-            data = ''
-
-        if data:
-            CephInstance.run_command(zk_conn, data, d_osd)
+            logger.out('Invalid data in Ceph command pipeline', state='e')
 
     # OSD objects
     @zk_conn.ChildrenWatch('/ceph/osds')
@@ -928,6 +925,8 @@ def update_zookeeper():
         osd_dump = dict()
         retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json')
         osd_dump_raw = json.loads(stdout)['osds']
+        if debug:
+            print("Loop through OSD dump")
         for osd in osd_dump_raw:
             osd_dump.update({
                 str(osd['osd']): {
@@ -938,9 +937,13 @@ def update_zookeeper():
                 }
             })
         # Parse the df data
+        if debug:
+            print("Parse the OSD df data")
         osd_df = dict()
         retcode, stdout, stderr = common.run_os_command('ceph osd df --format json')
         osd_df_raw = json.loads(stdout)['nodes']
+        if debug:
+            print("Loop through OSD df")
         for osd in osd_df_raw:
             osd_df.update({
                 str(osd['id']): {
@@ -953,8 +956,12 @@ def update_zookeeper():
                 }
             })
         # Parse the status data
+        if debug:
+            print("Parse the OSD status data")
         osd_status = dict()
         retcode, stdout, stderr = common.run_os_command('ceph osd status')
+        if debug:
+            print("Loop through OSD status data")
         for line in stderr.split('\n'):
             # Strip off colour
             line = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line)
@@ -984,6 +991,8 @@ def update_zookeeper():
                     }
                 })
         # Merge them together into a single meaningful dict
+        if debug:
+            print("Merge OSD data together")
         osd_stats = dict()
         for osd in osd_list:
             this_dump = osd_dump[osd]
