@@ -38,6 +38,7 @@ class VXNetworkInstance(object):
         self.logger = logger
         self.this_node = this_node
         self.vni_dev = config['vni_dev']
+        self.vni_mtu = config['vni_mtu']
 
         self.nettype = zkhandler.readdata(self.zk_conn, '/networks/{}/nettype'.format(self.vni))
         if self.nettype == 'bridged':
@@ -438,7 +439,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
 
-        vx_mtu = self.config.vni_mtu
+        vx_mtu = self.vni_mtu
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
                 self.vlan_nic,
@@ -486,7 +487,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
 
-        vx_mtu = self.config.vni_mtu - 50
+        vx_mtu = self.vni_mtu - 50
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
                 self.vxlan_nic,
