@@ -792,7 +792,7 @@ if enable_storage:
     @zk_conn.DataWatch('/ceph/cmd')
     def cmd(data, stat, event=''):
         if data:
-            CephInstance.run_command(zk_conn, this_node, data.decode('ascii'), d_osd)
+            CephInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'), d_osd)
 
     # OSD objects
     @zk_conn.ChildrenWatch('/ceph/osds')

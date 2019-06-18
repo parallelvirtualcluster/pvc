@@ -417,7 +417,7 @@ def remove_pool(zk_conn, logger, name):
         logger.out('Failed to remove RBD pool {}: {}'.format(name, e), state='e')
         return False
 
-def run_command(zk_conn, this_node, data, d_osd):
+def run_command(zk_conn, logger, this_node, data, d_osd):
     # Get the command and args
     command, args = data.split()
 
