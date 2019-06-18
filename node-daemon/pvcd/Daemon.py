@@ -542,27 +542,27 @@ else:
     logger.out("Node is " + logger.fmt_red + "absent" + logger.fmt_end + " in Zookeeper; adding new node", state='i')
     keepalive_time = int(time.time())
     zkhandler.writedata(zk_conn, {
-        '/nodes/{}'.format(myhostname): config['daemon_mode'].encode('ascii'),
+        '/nodes/{}'.format(myhostname): config['daemon_mode'],
     # Basic state information
-        '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'].encode('ascii'),
-        '/nodes/{}/daemonstate'.format(myhostname): 'init'.encode('ascii'),
-        '/nodes/{}/routerstate'.format(myhostname): 'client'.encode('ascii'),
-        '/nodes/{}/domainstate'.format(myhostname): 'flushed'.encode('ascii'),
-        '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata).encode('ascii'),
-        '/nodes/{}/memtotal'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/memfree'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/memused'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/memalloc'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/vcpualloc'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/cpuload'.format(myhostname): '0.0'.encode('ascii'),
-        '/nodes/{}/networkscount'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/domainscount'.format(myhostname): '0'.encode('ascii'),
-        '/nodes/{}/runningdomains'.format(myhostname): ''.encode('ascii'),
+        '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'],
+        '/nodes/{}/daemonstate'.format(myhostname): 'init',
+        '/nodes/{}/routerstate'.format(myhostname): 'client',
+        '/nodes/{}/domainstate'.format(myhostname): 'flushed',
+        '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata),
+        '/nodes/{}/memtotal'.format(myhostname): '0',
+        '/nodes/{}/memfree'.format(myhostname): '0',
+        '/nodes/{}/memused'.format(myhostname): '0',
+        '/nodes/{}/memalloc'.format(myhostname): '0',
+        '/nodes/{}/vcpualloc'.format(myhostname): '0',
+        '/nodes/{}/cpuload'.format(myhostname): '0.0',
+        '/nodes/{}/networkscount'.format(myhostname): '0',
+        '/nodes/{}/domainscount'.format(myhostname): '0',
+        '/nodes/{}/runningdomains'.format(myhostname): '',
     # Keepalives and fencing information
-        '/nodes/{}/keepalive'.format(myhostname): str(keepalive_time).encode('ascii'),
-        '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'].encode('ascii'),
-        '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'].encode('ascii'),
-        '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password'].encode('ascii')
+        '/nodes/{}/keepalive'.format(myhostname): str(keepalive_time),
+        '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'],
+        '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'],
+        '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password']
     })
 
 # Check that the primary key exists, and create it with us as master if not
