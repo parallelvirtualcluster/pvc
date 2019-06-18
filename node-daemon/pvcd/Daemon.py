@@ -792,8 +792,6 @@ if enable_storage:
     def cmd(data, stat, event=''):
         if data:
             CephInstance.run_command(zk_conn, data.decode('ascii'), d_osd)
-        else:
-            logger.out('Invalid data in Ceph command pipeline', state='e')
 
     # OSD objects
     @zk_conn.ChildrenWatch('/ceph/osds')
