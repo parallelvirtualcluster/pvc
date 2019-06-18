@@ -145,6 +145,8 @@ def readConfig(pvcd_config_file, myhostname):
             'file_logging': o_config['pvc']['system']['configuration']['logging']['file_logging'],
             'stdout_logging': o_config['pvc']['system']['configuration']['logging']['stdout_logging'],
             'log_keepalives': o_config['pvc']['system']['configuration']['logging']['log_keepalives'],
+            'log_keepalive_cluster_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_cluster_details'],
+            'log_keepalive_storage_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_storage_details'],
             'console_log_lines': o_config['pvc']['system']['configuration']['logging']['console_log_lines'],
             'keepalive_interval': o_config['pvc']['system']['fencing']['intervals']['keepalive_interval'],
             'fence_intervals': o_config['pvc']['system']['fencing']['intervals']['fence_intervals'],
@@ -1130,24 +1132,25 @@ def update_zookeeper():
             ),
             state='t'
         )
-        logger.out(
-            '{bold}Domains:{nofmt} {domcount}  '
-            '{bold}Networks:{nofmt} {netcount}  '
-            '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
-            '{bold}Free memory [MiB]:{nofmt} {freemem}  '
-            '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
-            '{bold}Load:{nofmt} {load}'.format(
-                bold=logger.fmt_bold,
-                nofmt=logger.fmt_end,
-                domcount=this_node.domains_count,
-                freemem=this_node.memfree,
-                usedmem=this_node.memused,
-                load=this_node.cpuload,
-                allocmem=this_node.memalloc,
-                netcount=len(network_list)
-            ),
-        )
-        if enable_storage:
+        if config['log_keepalive_cluster_details']:
+            logger.out(
+                '{bold}Domains:{nofmt} {domcount}  '
+                '{bold}Networks:{nofmt} {netcount}  '
+                '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
+                '{bold}Free memory [MiB]:{nofmt} {freemem}  '
+                '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
+                '{bold}Load:{nofmt} {load}'.format(
+                    bold=logger.fmt_bold,
+                    nofmt=logger.fmt_end,
+                    domcount=this_node.domains_count,
+                    freemem=this_node.memfree,
+                    usedmem=this_node.memused,
+                    load=this_node.cpuload,
+                    allocmem=this_node.memalloc,
+                    netcount=len(network_list)
+                ),
+            )
+        if enable_storage and config['log_keepalive_storage_details']:
             logger.out(
                 '{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  '
                 '{bold}Total OSDs:{nofmt} {total_osds}  '

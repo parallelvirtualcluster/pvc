@@ -121,6 +121,10 @@ pvc:
         stdout_logging: True
         # log_keepalives: Enable or disable keepalive logging
         log_keepalives: True
+        # log_keepalive_cluster_details: Enable or disable node status logging during keepalive
+        log_keepalive_cluster_details: True
+        # log_keepalive_storage_details: Enable or disable node storage logging during keepalive
+        log_keepalive_storage_details: True
         # console_log_lines: Number of console log lines to store in Zookeeper per VM
         console_log_lines: 1000
       # networking: PVC networking configuration
