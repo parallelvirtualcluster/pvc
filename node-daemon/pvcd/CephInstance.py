@@ -417,14 +417,14 @@ def remove_pool(zk_conn, logger, name):
         logger.out('Failed to remove RBD pool {}: {}'.format(name, e), state='e')
         return False
 
-def run_command(zk_conn, data, d_osd):
+def run_command(zk_conn, this_node, data, d_osd):
     # Get the command and args
     command, args = data.split()
 
     # Adding a new OSD
     if command == 'osd_add':
         node, device, weight = args.split(',')
-        if node == self.this_node.name:
+        if node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -446,7 +446,7 @@ def run_command(zk_conn, data, d_osd):
         osd_id = args
 
         # Verify osd_id is in the list
-        if d_osd[osd_id] and d_osd[osd_id].node == self.this_node.name:
+        if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -468,7 +468,7 @@ def run_command(zk_conn, data, d_osd):
         osd_id = args
 
         # Verify osd_id is in the list
-        if d_osd[osd_id] and d_osd[osd_id].node == self.this_node.name:
+        if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -490,7 +490,7 @@ def run_command(zk_conn, data, d_osd):
         osd_id = args
 
         # Verify osd_id is in the list
-        if d_osd[osd_id] and d_osd[osd_id].node == self.this_node.name:
+        if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -511,7 +511,7 @@ def run_command(zk_conn, data, d_osd):
     elif command == 'osd_set':
         option = args
 
-        if self.this_node.router_state == 'primary':
+        if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -532,7 +532,7 @@ def run_command(zk_conn, data, d_osd):
     elif command == 'osd_unset':
         option = args
 
-        if self.this_node.router_state == 'primary':
+        if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -553,7 +553,7 @@ def run_command(zk_conn, data, d_osd):
     elif command == 'pool_add':
         name, pgs = args.split(',')
 
-        if self.this_node.router_state == 'primary':
+        if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
@@ -574,7 +574,7 @@ def run_command(zk_conn, data, d_osd):
     elif command == 'pool_remove':
         name = args
 
-        if self.this_node.router_state == 'primary':
+        if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
             with zk_lock:
