@@ -437,14 +437,18 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.vlan_nic
             )
         )
+
+        vx_mtu = self.config.vni_mtu
         common.run_os_command(
-            'ip link set {} mtu 8800 up'.format(
-                self.vlan_nic
+            'ip link set {} mtu {} up'.format(
+                self.vlan_nic,
+                vx_mtu
             )
         )
         common.run_os_command(
-            'ip link set {} mtu 8800 up'.format(
-                self.bridge_nic
+            'ip link set {} mtu {} up'.format(
+                self.bridge_nic,
+                vx_mtu
             )
         )
         common.run_os_command(
@@ -481,14 +485,18 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.vxlan_nic
             )
         )
+
+        vx_mtu = self.config.vni_mtu - 50
         common.run_os_command(
-            'ip link set {} mtu 8800 up'.format(
-                self.vxlan_nic
+            'ip link set {} mtu {} up'.format(
+                self.vxlan_nic,
+                vx_mtu
             )
         )
         common.run_os_command(
-            'ip link set {} mtu 8800 up'.format(
-                self.bridge_nic
+            'ip link set {} mtu {} up'.format(
+                self.bridge_nic,
+                vx_mtu
             )
         )
         common.run_os_command(

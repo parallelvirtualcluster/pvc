@@ -179,11 +179,14 @@ def readConfig(pvcd_config_file, myhostname):
                 'pdns_postgresql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
                 'pdns_postgresql_user': o_config['pvc']['coordinator']['dns']['database']['user'],
                 'pdns_postgresql_password': o_config['pvc']['coordinator']['dns']['database']['pass'],
-                'vni_dev': o_config['pvc']['system']['configuration']['networking']['devices']['cluster'],
+                'vni_dev': o_config['pvc']['system']['configuration']['networking']['devices']['cluster']['name'],
+                'vni_mtu': o_config['pvc']['system']['configuration']['networking']['devices']['cluster']['mtu'],
                 'vni_dev_ip': o_config['pvc']['system']['configuration']['networking']['addresses']['cluster'],
-                'storage_dev': o_config['pvc']['system']['configuration']['networking']['devices']['storage'],
+                'storage_dev': o_config['pvc']['system']['configuration']['networking']['devices']['storage']['name'],
+                'storage_mtu': o_config['pvc']['system']['configuration']['networking']['devices']['storage']['mtu'],
                 'storage_dev_ip': o_config['pvc']['system']['configuration']['networking']['addresses']['storage'],
-                'upstream_dev': o_config['pvc']['system']['configuration']['networking']['devices']['upstream'],
+                'upstream_dev': o_config['pvc']['system']['configuration']['networking']['devices']['upstream']['name'],
+                'upstream_mtu': o_config['pvc']['system']['configuration']['networking']['devices']['upstream']['mtu'],
                 'upstream_dev_ip': o_config['pvc']['system']['configuration']['networking']['addresses']['upstream'],
             }
         except Exception as e:
@@ -311,33 +314,37 @@ logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
 if enable_networking:
     # VNI configuration
     vni_dev = config['vni_dev']
+    vni_mtu = config['vni_mtu']
     vni_dev_ip = config['vni_dev_ip']
     logger.out('Setting up VNI network interface {}'.format(vni_dev, vni_dev_ip), state='i')
-    common.run_os_command('ip link set {} mtu 9000 up'.format(vni_dev))
+    common.run_os_command('ip link set {} mtu {} up'.format(vni_dev, vni_mtu))
 
     # Cluster bridge configuration
     logger.out('Setting up Cluster network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
     common.run_os_command('brctl addbr brcluster')
     common.run_os_command('brctl addif brcluster {}'.format(vni_dev))
-    common.run_os_command('ip link set brcluster mtu 9000 up')
+    common.run_os_command('ip link set brcluster mtu {} up'.format(vni_mtu))
     common.run_os_command('ip address add {} dev {}'.format(vni_dev_ip, 'brcluster'))
 
     # Storage configuration
     storage_dev = config['storage_dev']
+    storage_mtu = config['storage_mtu']
     if storage_dev == vni_dev:
         storage_dev = 'brcluster'
+        storage_mtu = vni_mtu
     storage_dev_ip = config['storage_dev_ip']
     logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
-    common.run_os_command('ip link set {} mtu 9000 up'.format(storage_dev))
+    common.run_os_command('ip link set {} mtu {} up'.format(storage_dev, storage_mtu))
     common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
 
     # Upstream configuration
     if config['upstream_dev']:
         upstream_dev = config['upstream_dev']
+        upstream_mtu = config['upstream_mtu']
         upstream_dev_ip = config['upstream_dev_ip']
         upstream_dev_gateway = config['upstream_gateway']
         logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
-        common.run_os_command('ip link set {} up'.format(upstream_dev))
+        common.run_os_command('ip link set {} mtu {} up'.format(upstream_dev, upstream_mtu))
         common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
         if upstream_dev_gateway:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
