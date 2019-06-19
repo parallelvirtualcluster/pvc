@@ -1267,7 +1267,7 @@ def get_list_snapshot(zk_conn, pool, volume, limit):
     for snapshot in full_snapshot_list:
         valid_snapshot = False
         if limit:
-            if re.match(limit, snapshot['snapshot_id']) != None:
+            if re.match(limit, snapshot) != None:
                 valid_snapshot = True
         else:
             valid_snapshot = True
