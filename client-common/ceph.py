@@ -791,7 +791,12 @@ def add_pool(zk_conn, name, pgs):
             message = 'ERROR: Command ignored by node.'
             success = False
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(3)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def remove_pool(zk_conn, name):
@@ -818,7 +823,12 @@ def remove_pool(zk_conn, name):
             message = 'ERROR: Command ignored by node: {}'.format(e)
             success = False
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(3)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def get_list_pool(zk_conn, limit):
