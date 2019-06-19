@@ -1377,12 +1377,14 @@ def ceph_volume_remove(pool, name):
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volumes.')
 @click.argument(
-    'pool', default='all', required=False
-)
-@click.argument(
     'limit', default=None, required=False
 )
-def ceph_volume_list(pool, limit):
+@click.option(
+    '-p', '--pool', 'pool',
+    default='all', show_default=True,
+    help='Show volumes from this pool only.'
+)
+def ceph_volume_list(limit, pool):
     """
     List all Ceph RBD volumes in the cluster or in pool POOL; optionally only match elements matching name regex LIMIT.
     """
