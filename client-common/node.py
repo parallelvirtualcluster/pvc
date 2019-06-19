@@ -102,7 +102,7 @@ def secondary_node(zk_conn, node):
 
     # Ensure node is in run daemonstate
     daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
-    if daemon_mode != 'run':
+    if daemon_state != 'run':
         return False, 'ERROR: Node "{}" is not active'.format(node)
 
     # Get current state
@@ -129,7 +129,7 @@ def primary_node(zk_conn, node):
 
     # Ensure node is in run daemonstate
     daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
-    if daemon_mode != 'run':
+    if daemon_state != 'run':
         return False, 'ERROR: Node "{}" is not active'.format(node)
 
     # Get current state
