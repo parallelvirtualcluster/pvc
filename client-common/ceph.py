@@ -1384,7 +1384,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
         return False, 'ERROR: No snapshot with name "{}" is present of volume {} on pool {}.'.format(name, volume, pool)
 
     # Tell the cluster to create a new snapshot
-    remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume name) 
+    remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume, name) 
     zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)

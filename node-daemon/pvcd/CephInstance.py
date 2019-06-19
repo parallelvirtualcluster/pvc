@@ -235,17 +235,13 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             if not is_osd_up:
                 break
 
-        # 4. Delete OSD from ZK
-        logger.out('Deleting OSD disk with ID {} from Zookeeper'.format(osd_id), state='i')
-        zkhandler.deletekey(zk_conn, '/ceph/osds/{}'.format(osd_id))
-
-        # 5. Determine the block devices
+        # 4. Determine the block devices
         retcode, stdout, stderr = common.run_os_command('readlink /var/lib/ceph/osd/ceph-{}/block'.format(osd_id))
         vg_name = stdout.split('/')[-2] # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
         retcode, stdout, stderr = common.run_os_command('vgs --separator , --noheadings -o pv_name {}'.format(vg_name))
         pv_block = stdout.strip()
 
-        # 6. Zap the volumes
+        # 5. Zap the volumes
         logger.out('Zapping OSD disk with ID {} on {}'.format(osd_id, pv_block), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph-volume lvm zap --destroy {}'.format(pv_block))
         if retcode:
@@ -254,7 +250,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             print(stderr)
             raise
         
-        # 7. Purge the OSD from Ceph
+        # 6. Purge the OSD from Ceph
         logger.out('Purging OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph osd purge {} --yes-i-really-mean-it'.format(osd_id))
         if retcode:
@@ -262,6 +258,10 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             print(stdout)
             print(stderr)
             raise
+
+        # 7. Delete OSD from ZK
+        logger.out('Deleting OSD disk with ID {} from Zookeeper'.format(osd_id), state='i')
+        zkhandler.deletekey(zk_conn, '/ceph/osds/{}'.format(osd_id))
 
         # Log it
         logger.out('Removed OSD disk with ID {}'.format(osd_id), state='o')
@@ -414,6 +414,8 @@ def add_pool(zk_conn, logger, name, pgs):
             '/ceph/pools/{}'.format(name): '',
             '/ceph/pools/{}/pgs'.format(name): pgs,
             '/ceph/pools/{}/stats'.format(name): '{}'
+            '/ceph/volumes/{}'.format(name): '',
+            '/ceph/snapshots/{}'.format(name): '',
         })
 
         # Log it
@@ -428,9 +430,6 @@ def remove_pool(zk_conn, logger, name):
     # We are ready to create a new pool on this node
     logger.out('Removing RBD pool {}'.format(name), state='i')
     try:
-        # Delete pool from ZK
-        zkhandler.deletekey(zk_conn, '/ceph/pools/{}'.format(name))
-
         # Remove the pool
         retcode, stdout, stderr = common.run_os_command('ceph osd pool rm {pool} {pool} --yes-i-really-really-mean-it'.format(pool=name))
         if retcode:
@@ -438,6 +437,11 @@ def remove_pool(zk_conn, logger, name):
             print(stdout)
             print(stderr)
             raise
+
+        # Delete pool from ZK
+        zkhandler.deletekey(zk_conn, '/ceph/pools/{}'.format(name))
+        zkhandler.deletekey(zk_conn, '/ceph/volumes/{}'.format(name))
+        zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}'.format(name))
 
         # Log it
         logger.out('Removed RBD pool {}'.format(name), state='o')
@@ -490,7 +494,7 @@ def add_volume(zk_conn, logger, pool, name, size):
     # We are ready to create a new volume on this node
     logger.out('Creating new RBD volume {} on pool {}'.format(name, pool), state='i')
     try:
-        # 1. Create the volume
+        # Create the volume
         sizeMiB = size * 1024
         retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(sizeMiB, pool, name))
         if retcode:
@@ -499,11 +503,12 @@ def add_volume(zk_conn, logger, pool, name, size):
             print(stderr)
             raise
 
-        # 2. Add the new volume to ZK
+        # Add the new volume to ZK
         zkhandler.writedata(zk_conn, {
             '/ceph/volumes/{}/{}'.format(pool, name): '',
             '/ceph/volumes/{}/{}/size'.format(pool, name): size,
             '/ceph/volumes/{}/{}/stats'.format(pool, name): '{}'
+            '/ceph/snapshots/{}/{}'.format(pool, name): '',
         })
 
         # Log it
@@ -518,9 +523,6 @@ def remove_volume(zk_conn, logger, pool, name):
     # We are ready to create a new volume on this node
     logger.out('Removing RBD volume {} from pool {}'.format(name, pool), state='i')
     try:
-        # Delete volume from ZK
-        zkhandler.deletekey(zk_conn, '/ceph/volumes/{}/{}'.format(pool, name))
-
         # Remove the volume
         retcode, stdout, stderr = common.run_os_command('rbd rm {}/{}'.format(pool, name))
         if retcode:
@@ -528,6 +530,10 @@ def remove_volume(zk_conn, logger, pool, name):
             print(stdout)
             print(stderr)
             raise
+
+        # Delete volume from ZK
+        zkhandler.deletekey(zk_conn, '/ceph/volumes/{}/{}'.format(pool, name))
+        zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}'.format(pool, name))
 
         # Log it
         logger.out('Removed RBD volume {} from pool {}'.format(name, pool), state='o')

@@ -1317,6 +1317,16 @@ def ceph_pool_list(limit):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc ceph volume
+###############################################################################
+@click.group(name='volume', short_help='Manage RBD volumes in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+def ceph_volume():
+    """
+    Manage the Ceph RBD volumes of the PVC cluster.
+    """
+    pass
+
+###############################################################################
 # pvc ceph volume add
 ###############################################################################
 @click.command(name='add', short_help='Add new RBD volume.')
@@ -1382,6 +1392,16 @@ def ceph_volume_list(pool, limit):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc ceph volume snapshot
+###############################################################################
+@click.group(name='snapshot', short_help='Manage RBD volume snapshots in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+def ceph_volume_snapshot():
+    """
+    Manage the Ceph RBD volume snapshots of the PVC cluster.
+    """
+    pass
+
+###############################################################################
 # pvc ceph volume snapshot add
 ###############################################################################
 @click.command(name='add', short_help='Add new RBD volume snapshot.')
@@ -1394,7 +1414,7 @@ def ceph_volume_list(pool, limit):
 @click.argument(
     'name'
 )
-def ceph_snapshot_add(pool, volume, name):
+def ceph_volume_snapshot_add(pool, volume, name):
     """
     Add a snapshot of Ceph RBD volume VOLUME with name NAME.
     """
@@ -1416,7 +1436,7 @@ def ceph_snapshot_add(pool, volume, name):
 @click.argument(
     'name'
 )
-def ceph_volume_remove(pool, volume, name):
+def ceph_volume_snapshot_remove(pool, volume, name):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
     """
@@ -1443,7 +1463,7 @@ def ceph_volume_remove(pool, volume, name):
 @click.argument(
     'limit', default=None, required=False
 )
-def ceph_volume_list(pool, volume, limit):
+def ceph_volume_snapshot_list(pool, volume, limit):
     """
     List all Ceph RBD volume snapshots, in the cluster or in pool POOL, for all volumes or volume VOLUME; optionally only match elements matching name regex LIMIT.
     """
