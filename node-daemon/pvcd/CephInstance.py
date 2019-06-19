@@ -413,7 +413,7 @@ def add_pool(zk_conn, logger, name, pgs):
         zkhandler.writedata(zk_conn, {
             '/ceph/pools/{}'.format(name): '',
             '/ceph/pools/{}/pgs'.format(name): pgs,
-            '/ceph/pools/{}/stats'.format(name): '{}'
+            '/ceph/pools/{}/stats'.format(name): '{}',
             '/ceph/volumes/{}'.format(name): '',
             '/ceph/snapshots/{}'.format(name): '',
         })
@@ -495,7 +495,8 @@ def add_volume(zk_conn, logger, pool, name, size):
     logger.out('Creating new RBD volume {} on pool {}'.format(name, pool), state='i')
     try:
         # Create the volume
-        sizeMiB = size * 1024
+        sizeMiB = int(size) * 1024
+        print(sizeMiB)
         retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(sizeMiB, pool, name))
         if retcode:
             print('rbd create')
@@ -507,7 +508,7 @@ def add_volume(zk_conn, logger, pool, name, size):
         zkhandler.writedata(zk_conn, {
             '/ceph/volumes/{}/{}'.format(pool, name): '',
             '/ceph/volumes/{}/{}/size'.format(pool, name): size,
-            '/ceph/volumes/{}/{}/stats'.format(pool, name): '{}'
+            '/ceph/volumes/{}/{}/stats'.format(pool, name): '{}',
             '/ceph/snapshots/{}/{}'.format(pool, name): '',
         })
 
