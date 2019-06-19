@@ -1283,17 +1283,17 @@ def ceph_pool_add(name, pgs):
     'name'
 )
 @click.option('--yes', is_flag=True,
-              expose_value=False,
               prompt='DANGER: This command will destroy this pool and all volumes. Do you want to continue?'
 )
-def ceph_pool_remove(name):
+def ceph_pool_remove(name, yes):
     """
     Remove a Ceph RBD pool with name NAME and all volumes on it.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
-    cleanup(retcode, retmsg, zk_conn)
+    if yes:
+        zk_conn = pvc_common.startZKConnection(zk_host)
+        retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+        cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc ceph pool list
