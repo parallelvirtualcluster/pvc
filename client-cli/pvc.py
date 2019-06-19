@@ -1443,7 +1443,7 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     Remove a Ceph RBD volume with name NAME from pool POOL.
     """
 
-    click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
+    click.echo('DANGER: This will completely remove snapshot {} from volume {}/{} and all data contained in it.'.format(name, pool, volume))
     choice = input('Are you sure you want to do this? (y/N) ')
     if choice == 'y' or choice == 'Y':
         zk_conn = pvc_common.startZKConnection(zk_host)

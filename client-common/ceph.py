@@ -729,14 +729,16 @@ def getCephSnapshots(zk_conn, pool, volume):
     snapshot_list = list()
     volume_list = list()
 
-    if volume == 'all':
-        volume_list = getCephVolumes(zk_conn, pool)
-    else:
-        volume_list = [ '{}/{}'.format(pool, volume) ]
+    volume_list = getCephVolumes(zk_conn, pool)
+    if volume != 'all':
+        for volume_entry in volume_list:
+            volume_pool, volume_name = volume_entry.split('/')
+            if volume_name == volume:
+                volume_list = [ '{}/{}'.format(volume_pool, volume_name) ]
 
-    for volume_name in volume_list:
-        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_name)):
-            snapshot_list.append('{}@{}'.format(volume_name, snapshot_name))
+    for volume_entry in volume_list:
+        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
+            snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
 
     return snapshot_list
 
@@ -1161,6 +1163,9 @@ def remove_volume(zk_conn, pool, name):
 
 def get_list_volume(zk_conn, pool, limit):
     volume_list = []
+    if pool != 'all' and not verifyPool(zk_conn, name):
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
+
     full_volume_list = getCephVolumes(zk_conn, pool)
 
     if limit:
@@ -1252,6 +1257,12 @@ def remove_snapshot(zk_conn, pool, volume, name):
 
 def get_list_snapshot(zk_conn, pool, volume, limit):
     snapshot_list = []
+    if pool != 'all' and not verifyPool(zk_conn, pool):
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(pool)
+
+    if volume != 'all' and not verifyPool(zk_conn, volume):
+        return False, 'ERROR: No volume with name "{}" is present in the cluster.'.format(volume)
+
     full_snapshot_list = getCephSnapshots(zk_conn, pool, volume)
 
     if limit:
