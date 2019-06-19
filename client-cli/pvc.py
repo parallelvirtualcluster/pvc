@@ -1471,7 +1471,7 @@ def ceph_volume_snapshot_list(pool, volume, limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_list_snapshot(zk_conn, pool, snapshot, limit)
+    retcode, retmsg = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
     cleanup(retcode, retmsg, zk_conn)
 
 

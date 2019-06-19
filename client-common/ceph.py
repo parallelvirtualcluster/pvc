@@ -725,189 +725,79 @@ def formatVolumeList(zk_conn, volume_list):
     output_string = volume_list_output_header + '\n' + '\n'.join(sorted(volume_list_output))
     return output_string
 
-def getCephSnapshots(zk_conn):
-    snapshot_list = zkhandler.listchildren(zk_conn, '/ceph/snapshots')
+def getCephSnapshots(zk_conn, pool, volume):
+    snapshot_list = list()
+    volume_list = list()
+
+    if volume == 'all':
+        volume_list = getCephVolumes(zk_conn, pool)
+    else:
+        volume_list = [ '{}/{}'.format(pool, volume) ]
+
+    for volume_name in volume_list:
+        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_name)):
+            snapshot_list.append('{}@{}'.format(volume_name, snapshot_name))
+
     return snapshot_list
 
 def formatSnapshotList(zk_conn, snapshot_list):
     snapshot_list_output = []
 
-    snapshot_id = dict()
-    snapshot_size = dict()
-    snapshot_num_objects = dict()
-    snapshot_num_clones = dict()
-    snapshot_num_copies = dict()
-    snapshot_num_degraded = dict()
-    snapshot_read_ops = dict()
-    snapshot_read_data = dict()
-    snapshot_write_ops = dict()
-    snapshot_write_data = dict()
-
     snapshot_name_length = 5
-    snapshot_id_length = 3
-    snapshot_size_length = 5
-    snapshot_num_objects_length = 6
-    snapshot_num_clones_length = 7
-    snapshot_num_copies_length = 7
-    snapshot_num_degraded_length = 9
-    snapshot_read_ops_length = 4
-    snapshot_read_data_length = 5
-    snapshot_write_ops_length = 4
-    snapshot_write_data_length = 5
+    snapshot_volume_length = 7
+    snapshot_pool_length = 5
 
     for snapshot in snapshot_list:
+        snapshot_pool, snapshot_detail = snapshot.split('/')
+        snapshot_volume, snapshot_name = snapshot_detail.split('@')
+
         # Set the Snapshot name length
-        _snapshot_name_length = len(snapshot) + 1
+        _snapshot_name_length = len(snapshot_name) + 1
         if _snapshot_name_length > snapshot_name_length:
             snapshot_name_length = _snapshot_name_length
 
-        # Get stats
-        snapshot_stats = getSnapshotInformation(zk_conn, snapshot)
+        # Set the Snapshot volume length
+        _snapshot_volume_length = len(snapshot_volume) + 1
+        if _snapshot_volume_length > snapshot_volume_length:
+            snapshot_volume_length = _snapshot_volume_length
 
-        # Set the parent node and length
-        try:
-            snapshot_id[snapshot] = snapshot_stats['id']
-            # If this happens, the node hasn't checked in fully yet, so just ignore it
-            if not snapshot_id[snapshot]:
-                continue
-        except KeyError:
-            continue
-
-        # Set the id and length
-        snapshot_id[snapshot] = snapshot_stats['id']
-        _snapshot_id_length = len(str(snapshot_id[snapshot])) + 1
-        if _snapshot_id_length > snapshot_id_length:
-            snapshot_id_length = _snapshot_id_length
-
-        # Set the size and length
-        snapshot_size[snapshot] = snapshot_stats['size_formatted']
-        _snapshot_size_length = len(str(snapshot_size[snapshot])) + 1
-        if _snapshot_size_length > snapshot_size_length:
-            snapshot_size_length = _snapshot_size_length
-
-        # Set the num_objects and length
-        snapshot_num_objects[snapshot] = snapshot_stats['num_objects']
-        _snapshot_num_objects_length = len(str(snapshot_num_objects[snapshot])) + 1
-        if _snapshot_num_objects_length > snapshot_num_objects_length:
-            snapshot_num_objects_length = _snapshot_num_objects_length
-
-        # Set the num_clones and length
-        snapshot_num_clones[snapshot] = snapshot_stats['num_object_clones']
-        _snapshot_num_clones_length = len(str(snapshot_num_clones[snapshot])) + 1
-        if _snapshot_num_clones_length > snapshot_num_clones_length:
-            snapshot_num_clones_length = _snapshot_num_clones_length
-
-        # Set the num_copies and length
-        snapshot_num_copies[snapshot] = snapshot_stats['num_object_copies']
-        _snapshot_num_copies_length = len(str(snapshot_num_copies[snapshot])) + 1
-        if _snapshot_num_copies_length > snapshot_num_copies_length:
-            snapshot_num_copies_length = _snapshot_num_copies_length
-
-        # Set the num_degraded and length
-        snapshot_num_degraded[snapshot] = snapshot_stats['num_objects_degraded']
-        _snapshot_num_degraded_length = len(str(snapshot_num_degraded[snapshot])) + 1
-        if _snapshot_num_degraded_length > snapshot_num_degraded_length:
-            snapshot_num_degraded_length = _snapshot_num_degraded_length
-
-        # Set the write IOPS/data and length
-        snapshot_write_ops[snapshot] = snapshot_stats['write_ops']
-        _snapshot_write_ops_length = len(str(snapshot_write_ops[snapshot])) + 1
-        if _snapshot_write_ops_length > snapshot_write_ops_length:
-            snapshot_write_ops_length = _snapshot_write_ops_length
-        snapshot_write_data[snapshot] = snapshot_stats['write_formatted']
-        _snapshot_write_data_length = len(snapshot_write_data[snapshot]) + 1
-        if _snapshot_write_data_length > snapshot_write_data_length:
-            snapshot_write_data_length = _snapshot_write_data_length
-
-        # Set the read IOPS/data and length
-        snapshot_read_ops[snapshot] = snapshot_stats['read_ops']
-        _snapshot_read_ops_length = len(str(snapshot_read_ops[snapshot])) + 1
-        if _snapshot_read_ops_length > snapshot_read_ops_length:
-            snapshot_read_ops_length = _snapshot_read_ops_length
-        snapshot_read_data[snapshot] = snapshot_stats['read_formatted']
-        _snapshot_read_data_length = len(snapshot_read_data[snapshot]) + 1
-        if _snapshot_read_data_length > snapshot_read_data_length:
-            snapshot_read_data_length = _snapshot_read_data_length
+        # Set the Snapshot pool length
+        _snapshot_pool_length = len(snapshot_pool) + 1
+        if _snapshot_pool_length > snapshot_pool_length:
+            snapshot_pool_length = _snapshot_pool_length
 
     # Format the output header
     snapshot_list_output_header = '{bold}\
-{snapshot_id: <{snapshot_id_length}} \
 {snapshot_name: <{snapshot_name_length}} \
-{snapshot_size: <{snapshot_size_length}} \
-Obj: {snapshot_objects: <{snapshot_objects_length}} \
-{snapshot_clones: <{snapshot_clones_length}} \
-{snapshot_copies: <{snapshot_copies_length}} \
-{snapshot_degraded: <{snapshot_degraded_length}} \
-Rd: {snapshot_read_ops: <{snapshot_read_ops_length}} \
-{snapshot_read_data: <{snapshot_read_data_length}} \
-Wr: {snapshot_write_ops: <{snapshot_write_ops_length}} \
-{snapshot_write_data: <{snapshot_write_data_length}} \
+{snapshot_volume: <{snapshot_volume_length}} \
+{snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            snapshot_id_length=snapshot_id_length,
             snapshot_name_length=snapshot_name_length,
-            snapshot_size_length=snapshot_size_length,
-            snapshot_objects_length=snapshot_num_objects_length,
-            snapshot_clones_length=snapshot_num_clones_length,
-            snapshot_copies_length=snapshot_num_copies_length,
-            snapshot_degraded_length=snapshot_num_degraded_length,
-            snapshot_write_ops_length=snapshot_write_ops_length,
-            snapshot_write_data_length=snapshot_write_data_length,
-            snapshot_read_ops_length=snapshot_read_ops_length,
-            snapshot_read_data_length=snapshot_read_data_length,
-            snapshot_id='ID',
+            snapshot_volume_length=snapshot_volume_length,
+            snapshot_pool_length=snapshot_pool_length,
             snapshot_name='Name',
-            snapshot_size='Used',
-            snapshot_objects='Count',
-            snapshot_clones='Clones',
-            snapshot_copies='Copies',
-            snapshot_degraded='Degraded',
-            snapshot_write_ops='OPS',
-            snapshot_write_data='Data',
-            snapshot_read_ops='OPS',
-            snapshot_read_data='Data'
+            snapshot_volume='Volume',
+            snapshot_pool='Pool',
         )
 
     for snapshot in snapshot_list:
-        # Format the output header
+        snapshot_pool, snapshot_detail = snapshot.split('/')
+        snapshot_volume, snapshot_name = snapshot_detail.split('@')
         snapshot_list_output.append('{bold}\
-{snapshot_id: <{snapshot_id_length}} \
 {snapshot_name: <{snapshot_name_length}} \
-{snapshot_size: <{snapshot_size_length}} \
-     {snapshot_objects: <{snapshot_objects_length}} \
-{snapshot_clones: <{snapshot_clones_length}} \
-{snapshot_copies: <{snapshot_copies_length}} \
-{snapshot_degraded: <{snapshot_degraded_length}} \
-    {snapshot_read_ops: <{snapshot_read_ops_length}} \
-{snapshot_read_data: <{snapshot_read_data_length}} \
-    {snapshot_write_ops: <{snapshot_write_ops_length}} \
-{snapshot_write_data: <{snapshot_write_data_length}} \
+{snapshot_volume: <{snapshot_volume_length}} \
+{snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
-                snapshot_id_length=snapshot_id_length,
                 snapshot_name_length=snapshot_name_length,
-                snapshot_size_length=snapshot_size_length,
-                snapshot_objects_length=snapshot_num_objects_length,
-                snapshot_clones_length=snapshot_num_clones_length,
-                snapshot_copies_length=snapshot_num_copies_length,
-                snapshot_degraded_length=snapshot_num_degraded_length,
-                snapshot_write_ops_length=snapshot_write_ops_length,
-                snapshot_write_data_length=snapshot_write_data_length,
-                snapshot_read_ops_length=snapshot_read_ops_length,
-                snapshot_read_data_length=snapshot_read_data_length,
-                snapshot_id=snapshot_id[snapshot],
-                snapshot_name=snapshot,
-                snapshot_size=snapshot_size[snapshot],
-                snapshot_objects=snapshot_num_objects[snapshot],
-                snapshot_clones=snapshot_num_clones[snapshot],
-                snapshot_copies=snapshot_num_copies[snapshot],
-                snapshot_degraded=snapshot_num_degraded[snapshot],
-                snapshot_write_ops=snapshot_write_ops[snapshot],
-                snapshot_write_data=snapshot_write_data[snapshot],
-                snapshot_read_ops=snapshot_read_ops[snapshot],
-                snapshot_read_data=snapshot_read_data[snapshot]
+                snapshot_volume_length=snapshot_volume_length,
+                snapshot_pool_length=snapshot_pool_length,
+                snapshot_name=snapshot_name,
+                snapshot_volume=snapshot_volume,
+                snapshot_pool=snapshot_pool,
             )
         )
    
