@@ -256,6 +256,8 @@ def getOutputColours(node_information):
         daemon_state_colour = ansiprint.green()
     elif node_information['daemon_state'] == 'stop':
         daemon_state_colour = ansiprint.red()
+    elif node_information['daemon_state'] == 'shutdown':
+        daemon_state_colour = ansiprint.yellow()
     elif node_information['daemon_state'] == 'init':
         daemon_state_colour = ansiprint.yellow()
     elif node_information['daemon_state'] == 'dead':
