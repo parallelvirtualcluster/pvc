@@ -457,23 +457,7 @@ class CephVolumeInstance(object):
         self.this_node = this_node
         self.pool = pool
         self.name = name
-        self.size = ''
         self.stats = dict()
-
-        @self.zk_conn.DataWatch('/ceph/volumes/{}/{}/size'.format(self.pool, self.name))
-        def watch_volume_node(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
-
-            try:
-                data = data.decode('ascii')
-            except AttributeError:
-                data = ''
-
-            if data and data != self.size:
-                self.size = data
 
         @self.zk_conn.DataWatch('/ceph/volumes/{}/{}/stats'.format(self.pool, self.name))
         def watch_volume_stats(data, stat, event=''):
@@ -511,7 +495,6 @@ def add_volume(zk_conn, logger, pool, name, size):
         # Add the new volume to ZK
         zkhandler.writedata(zk_conn, {
             '/ceph/volumes/{}/{}'.format(pool, name): '',
-            '/ceph/volumes/{}/{}/size'.format(pool, name): size,
             '/ceph/volumes/{}/{}/stats'.format(pool, name): volstats,
             '/ceph/snapshots/{}/{}'.format(pool, name): '',
         })
