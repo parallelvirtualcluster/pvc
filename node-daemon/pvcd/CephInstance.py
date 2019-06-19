@@ -484,8 +484,7 @@ def add_volume(zk_conn, logger, pool, name, size):
     try:
         # Create the volume
         sizeMiB = int(size) * 1024
-        print(sizeMiB)
-        retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(sizeMiB, pool, name))
+        retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(sizeMiB, pool, name))
         if retcode:
             print('rbd create')
             print(stdout)
