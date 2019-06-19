@@ -100,6 +100,11 @@ def secondary_node(zk_conn, node):
     if daemon_mode == 'hypervisor':
         return False, 'ERROR: Cannot change router mode on non-coordinator node "{}"'.format(node)
 
+    # Ensure node is in run daemonstate
+    daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
+    if daemon_mode != 'run':
+        return False, 'ERROR: Node "{}" is not active'.format(node)
+
     # Get current state
     current_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node))
     if current_state == 'primary':
@@ -121,6 +126,11 @@ def primary_node(zk_conn, node):
     daemon_mode = zkhandler.readdata(zk_conn, '/nodes/{}/daemonmode'.format(node))
     if daemon_mode == 'hypervisor':
         return False, 'ERROR: Cannot change router mode on non-coordinator node "{}"'.format(node)
+
+    # Ensure node is in run daemonstate
+    daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
+    if daemon_mode != 'run':
+        return False, 'ERROR: Node "{}" is not active'.format(node)
 
     # Get current state
     current_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node))
