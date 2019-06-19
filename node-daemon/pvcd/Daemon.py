@@ -657,15 +657,13 @@ d_network = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
-d_volume = dict()
-d_snapshot = dict()
+d_volume = dict() # Dict of Dicts
 node_list = []
 network_list = []
 domain_list = []
 osd_list = []
 pool_list = []
-volume_list = []
-snapshot_list = []
+volume_list = dict() # Dict of Lists
 
 if enable_networking:
     # Create an instance of the DNS Aggregator if we're a coordinator
@@ -829,6 +827,8 @@ if enable_storage:
         for pool in new_pool_list:
             if not pool in pool_list:
                 d_pool[pool] = CephInstance.CephPoolInstance(zk_conn, this_node, pool)
+                d_volume[pool] = dict()
+                volume_list[pool] = []
 
         # Remove any deleted Pools from the list
         for pool in pool_list:
@@ -840,26 +840,26 @@ if enable_storage:
         pool_list = new_pool_list
         logger.out('{}Pool list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(pool_list)), state='i')
 
-    # Volume objects
-    for pool in pool_list:
-        @zk_conn.ChildrenWatch('/ceph/volumes/{}'.format(pool))
-        def update_volumes(new_volume_list):
-            global volume_list, d_volume
-    
-            # Add any missing Volumes to the list
-            for volume in new_volume_list:
-                if not volume in volume_list:
-                    d_volume[volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
-    
-            # Remove any deleted Volumes from the list
-            for volume in volume_list:
-                if not volume in new_volume_list:
-                    # Delete the object
-                    del(d_volume[volume])
-    
-            # Update and print new list
-            volume_list = new_volume_list
-            logger.out('{}Volume list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(volume_list)), state='i')
+        # Volume objects in each pool
+        for pool in pool_list:
+            @zk_conn.ChildrenWatch('/ceph/volumes/{}'.format(pool))
+            def update_volumes(new_volume_list):
+                global volume_list, d_volume
+        
+                # Add any missing Volumes to the list
+                for volume in new_volume_list:
+                    if not volume in volume_list[pool]:
+                        d_volume[pool][volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
+        
+                # Remove any deleted Volumes from the list
+                for volume in volume_list[pool]:
+                    if not volume in new_volume_list:
+                        # Delete the object
+                        del(d_volume[pool][volume])
+
+                # Update and print new list
+                volume_list[pool] = new_volume_list
+                logger.out('{}Volume list [{pool}]:{} {plist}'.format(logger.fmt_blue, logger.fmt_end, pool=pool, plist=' '.join(volume_list[pool])), state='i')
 
 ###############################################################################
 # PHASE 9 - Run the daemon

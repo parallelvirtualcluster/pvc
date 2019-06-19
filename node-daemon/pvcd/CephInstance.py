@@ -504,11 +504,15 @@ def add_volume(zk_conn, logger, pool, name, size):
             print(stderr)
             raise
 
+        # Get volume stats
+        retcode, stdout, stderr = common.run_os_command('rbd info {}/{}'.format(pool, name))
+        volstats = stdout
+
         # Add the new volume to ZK
         zkhandler.writedata(zk_conn, {
             '/ceph/volumes/{}/{}'.format(pool, name): '',
             '/ceph/volumes/{}/{}/size'.format(pool, name): size,
-            '/ceph/volumes/{}/{}/stats'.format(pool, name): '{}',
+            '/ceph/volumes/{}/{}/stats'.format(pool, name): volstats,
             '/ceph/snapshots/{}/{}'.format(pool, name): '',
         })
 
@@ -857,7 +861,7 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
 
     # Removing a snapshot
     elif command == 'snapshot_remove':
-        pool, name, name = args.split(',')
+        pool, volume, name = args.split(',')
 
         if this_node.router_state == 'primary':
             # Lock the command queue

@@ -1445,7 +1445,7 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     choice = input('Are you sure you want to do this? (y/N) ')
     if choice == 'y' or choice == 'Y':
         zk_conn = pvc_common.startZKConnection(zk_host)
-        retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, name)
+        retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
         cleanup(retcode, retmsg, zk_conn)
     else:
         click.echo('Aborting.')
