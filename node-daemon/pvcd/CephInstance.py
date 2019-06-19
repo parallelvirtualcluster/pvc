@@ -102,10 +102,29 @@ def add_osd(zk_conn, logger, node, device, weight):
             print(stderr)
             raise
 
-        # 4. Activate the OSD
+        # 4a. Get OSD FSID
         retcode, stdout, stderr = common.run_os_command(
-            'ceph-volume lvm activate --bluestore {osdid}'.format(
-                osdid=osd_id
+            'ceph-volume lvm list {device}'.format(
+                osdid=osd_id,
+                device=device
+            )
+        )
+        for line in stdout.split('\n'):
+            if 'osd fsid' in line:
+                osd_fsid = line.split()[-1]
+                
+        if not osd_fsid:
+            print('ceph-volume lvm list')
+            print('Could not find OSD fsid in data:')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 4b. Activate the OSD
+        retcode, stdout, stderr = common.run_os_command(
+            'ceph-volume lvm activate --bluestore {osdid} {osdfsid}'.format(
+                osdid=osd_id,
+                osdfsid=osd_fsid
             )
         )
         if retcode:
