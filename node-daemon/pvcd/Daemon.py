@@ -913,11 +913,11 @@ def update_zookeeper():
                     }
                 })
 
-        # Trigger updates for each pool on this node
-        for pool in pool_list:
-            zkhandler.writedata(zk_conn, {
-                '/ceph/pools/{}/stats'.format(pool): str(json.dumps(pool_df[pool]))
-            })
+            # Trigger updates for each pool on this node
+            for pool in pool_list:
+                zkhandler.writedata(zk_conn, {
+                    '/ceph/pools/{}/stats'.format(pool): str(json.dumps(pool_df[pool]))
+                })
 
         # Only grab OSD stats if there are OSDs to grab (otherwise `ceph osd df` hangs)
         osds_this_node = 0
