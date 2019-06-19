@@ -1352,7 +1352,7 @@ def get_list_volume(zk_conn, pool, limit):
 
 def add_snapshot(zk_conn, pool, volume, name):
     # Tell the cluster to create a new snapshot
-    add_snapshot_string = 'snapshot_add {},{}'.format(pool. volume, name) 
+    add_snapshot_string = 'snapshot_add {},{},{}'.format(pool, volume, name) 
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
