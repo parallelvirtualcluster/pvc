@@ -243,7 +243,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         retcode, stdout, stderr = common.run_os_command('readlink /var/lib/ceph/osd/ceph-{}/block'.format(osd_id))
         vg_name = stdout.split('/')[-2] # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
         retcode, stdout, stderr = common.run_os_command('vgs --separator , --noheadings -o pv_name {}'.format(vg_name))
-        pv_block = stdout
+        pv_block = stdout.strip()
 
         # 6. Zap the volumes
         logger.out('Zapping OSD disk with ID {} on {}'.format(osd_id, pv_block), state='i')
