@@ -1386,7 +1386,7 @@ def ceph_volume_remove(pool, name):
 )
 def ceph_volume_list(limit, pool):
     """
-    List all Ceph RBD volumes in the cluster or in pool POOL; optionally only match elements matching name regex LIMIT.
+    List all Ceph RBD volumes in the cluster; optionally only match elements matching name regex LIMIT.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
@@ -1457,17 +1457,21 @@ def ceph_volume_snapshot_remove(pool, volume, name):
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volume shapshots.')
 @click.argument(
-    'pool', default='all', required=False
-)
-@click.argument(
-    'volume', default='all', required=False
-)
-@click.argument(
     'limit', default=None, required=False
+)
+@click.option(
+    '-p', '--pool', 'pool',
+    default='all', show_default=True,
+    help='Show snapshots from this pool only.'
+)
+@click.option(
+    '-p', '--volume', 'volume',
+    default='all', show_default=True,
+    help='Show snapshots from this volume only.'
 )
 def ceph_volume_snapshot_list(pool, volume, limit):
     """
-    List all Ceph RBD volume snapshots, in the cluster or in pool POOL, for all volumes or volume VOLUME; optionally only match elements matching name regex LIMIT.
+    List all Ceph RBD volume snapshots; optionally only match elements matching name regex LIMIT.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
