@@ -430,6 +430,10 @@ def remove_pool(zk_conn, logger, name):
     # We are ready to create a new pool on this node
     logger.out('Removing RBD pool {}'.format(name), state='i')
     try:
+        # Remove pool volumes first
+        for volume in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(name)):
+            remove_volume(zk_conn, logger, name, volume)
+
         # Remove the pool
         retcode, stdout, stderr = common.run_os_command('ceph osd pool rm {pool} {pool} --yes-i-really-really-mean-it'.format(pool=name))
         if retcode:
