@@ -1239,7 +1239,7 @@ def ceph_osd_unset(osd_property):
 )
 def ceph_osd_list(limit):
     """
-    List all Ceph OSDs in the cluster; optinally only match elements matching ID regex LIMIT.
+    List all Ceph OSDs in the cluster; optionally only match elements matching ID regex LIMIT.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
@@ -1309,12 +1309,163 @@ def ceph_pool_remove(name):
 )
 def ceph_pool_list(limit):
     """
-    List all Ceph RBD pools in the cluster; optinally only match elements matching name regex LIMIT.
+    List all Ceph RBD pools in the cluster; optionally only match elements matching name regex LIMIT.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_ceph.get_list_pool(zk_conn, limit)
     cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph volume add
+###############################################################################
+@click.command(name='add', short_help='Add new RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'size'
+)
+def ceph_volume_add(pool, name, size):
+    """
+    Add a new Ceph RBD volume with name NAME and size SIZE [GiB] to pool POOL.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.add_volume(zk_conn, pool, name, size)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph volume remove
+###############################################################################
+@click.command(name='remove', short_help='Remove RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+def ceph_volume_remove(pool, name):
+    """
+    Remove a Ceph RBD volume with name NAME from pool POOL.
+    """
+
+    click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
+    choice = input('Are you sure you want to do this? (y/N) ')
+    if choice == 'y' or choice == 'Y':
+        zk_conn = pvc_common.startZKConnection(zk_host)
+        retcode, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
+        cleanup(retcode, retmsg, zk_conn)
+    else:
+        click.echo('Aborting.')
+
+###############################################################################
+# pvc ceph volume list
+###############################################################################
+@click.command(name='list', short_help='List cluster RBD volumes.')
+@click.argument(
+    'pool', default='all', required=False
+)
+@click.argument(
+    'limit', default=None, required=False
+)
+def ceph_volume_list(pool, limit):
+    """
+    List all Ceph RBD volumes in the cluster or in pool POOL; optionally only match elements matching name regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.get_list_volume(zk_conn, pool, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph volume snapshot add
+###############################################################################
+@click.command(name='add', short_help='Add new RBD volume snapshot.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'volume'
+)
+@click.argument(
+    'name'
+)
+def ceph_snapshot_add(pool, volume, name):
+    """
+    Add a snapshot of Ceph RBD volume VOLUME with name NAME.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc ceph volume snapshot remove
+###############################################################################
+@click.command(name='remove', short_help='Remove RBD volume snapshot.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'volume'
+)
+@click.argument(
+    'name'
+)
+def ceph_volume_remove(pool, volume, name):
+    """
+    Remove a Ceph RBD volume with name NAME from pool POOL.
+    """
+
+    click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
+    choice = input('Are you sure you want to do this? (y/N) ')
+    if choice == 'y' or choice == 'Y':
+        zk_conn = pvc_common.startZKConnection(zk_host)
+        retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, name)
+        cleanup(retcode, retmsg, zk_conn)
+    else:
+        click.echo('Aborting.')
+
+###############################################################################
+# pvc ceph volume snapshot list
+###############################################################################
+@click.command(name='list', short_help='List cluster RBD volume shapshots.')
+@click.argument(
+    'pool', default='all', required=False
+)
+@click.argument(
+    'volume', default='all', required=False
+)
+@click.argument(
+    'limit', default=None, required=False
+)
+def ceph_volume_list(pool, volume, limit):
+    """
+    List all Ceph RBD volume snapshots, in the cluster or in pool POOL, for all volumes or volume VOLUME; optionally only match elements matching name regex LIMIT.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.get_list_snapshot(zk_conn, pool, snapshot, limit)
+    cleanup(retcode, retmsg, zk_conn)
+
+
+###############################################################################
+# pvc init
+###############################################################################
+
+@click.command(name='init', short_help='Initialize a new cluster.')
+def init_cluster():
+    """
+    Perform initialization of a new PVC cluster.
+    """
+
+    import pvc_init
+    pvc_init.init_zookeeper(zk_host)
+
 
 
 ###############################################################################
@@ -1426,9 +1577,19 @@ ceph_pool.add_command(ceph_pool_add)
 ceph_pool.add_command(ceph_pool_remove)
 ceph_pool.add_command(ceph_pool_list)
 
+ceph_volume.add_command(ceph_volume_add)
+ceph_volume.add_command(ceph_volume_remove)
+ceph_volume.add_command(ceph_volume_list)
+ceph_volume.add_command(ceph_volume_snapshot)
+
+ceph_volume_snapshot.add_command(ceph_volume_snapshot_add)
+ceph_volume_snapshot.add_command(ceph_volume_snapshot_remove)
+ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
+
 cli_ceph.add_command(ceph_status)
 cli_ceph.add_command(ceph_osd)
 cli_ceph.add_command(ceph_pool)
+cli_ceph.add_command(ceph_volume)
 
 cli.add_command(cli_node)
 cli.add_command(cli_vm)

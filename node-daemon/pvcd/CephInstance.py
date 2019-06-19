@@ -447,6 +447,170 @@ def remove_pool(zk_conn, logger, name):
         logger.out('Failed to remove RBD pool {}: {}'.format(name, e), state='e')
         return False
 
+class CephVolumeInstance(object):
+    def __init__(self, zk_conn, this_node, pool, name):
+        self.zk_conn = zk_conn
+        self.this_node = this_node
+        self.pool = pool
+        self.name = name
+        self.size = ''
+        self.stats = dict()
+
+        @self.zk_conn.DataWatch('/ceph/volumes/{}/{}/size'.format(self.pool, self.name))
+        def watch_volume_node(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = ''
+
+            if data and data != self.size:
+                self.size = data
+
+        @self.zk_conn.DataWatch('/ceph/volumes/{}/{}/stats'.format(self.pool, self.name))
+        def watch_volume_stats(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = ''
+
+            if data and data != self.stats:
+                self.stats = json.loads(data)
+
+def add_volume(zk_conn, logger, pool, name, size):
+    # We are ready to create a new volume on this node
+    logger.out('Creating new RBD volume {} on pool {}'.format(name, pool), state='i')
+    try:
+        # 1. Create the volume
+        sizeMiB = size * 1024
+        retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(sizeMiB, pool, name))
+        if retcode:
+            print('rbd create')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 2. Add the new volume to ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/volumes/{}/{}'.format(pool, name): '',
+            '/ceph/volumes/{}/{}/size'.format(pool, name): size,
+            '/ceph/volumes/{}/{}/stats'.format(pool, name): '{}'
+        })
+
+        # Log it
+        logger.out('Created new RBD volume {} on pool {}'.format(name, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to create new RBD volume {} on pool {}: {}'.format(name, pool, e), state='e')
+        return False
+
+def remove_volume(zk_conn, logger, pool, name):
+    # We are ready to create a new volume on this node
+    logger.out('Removing RBD volume {} from pool {}'.format(name, pool), state='i')
+    try:
+        # Delete volume from ZK
+        zkhandler.deletekey(zk_conn, '/ceph/volumes/{}/{}'.format(pool, name))
+
+        # Remove the volume
+        retcode, stdout, stderr = common.run_os_command('rbd rm {}/{}'.format(pool, name))
+        if retcode:
+            print('ceph osd volume rm')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Removed RBD volume {} from pool {}'.format(name, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to remove RBD volume {} from pool {}: {}'.format(name, pool, e), state='e')
+        return False
+
+class CephSnapshotInstance(object):
+    def __init__(self, zk_conn, this_node, name):
+        self.zk_conn = zk_conn
+        self.this_node = this_node
+        self.pool = pool
+        self.volume = volume
+        self.name = name
+        self.stats = dict()
+
+        @self.zk_conn.DataWatch('/ceph/snapshots/{}/{}/{}/stats'.format(self.pool, self.volume, self.name))
+        def watch_snapshot_stats(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode('ascii')
+            except AttributeError:
+                data = ''
+
+            if data and data != self.stats:
+                self.stats = json.loads(data)
+
+def add_snapshot(zk_conn, logger, pool, volume, name):
+    # We are ready to create a new snapshot on this node
+    logger.out('Creating new RBD snapshot {} of volume {} on pool {}'.format(name, volume, pool), state='i')
+    try:
+        # 1. Create the snapshot
+        retcode, stdout, stderr = common.run_os_command('rbd snap create {}/{}@{}'.format(pool, volume, name))
+        if retcode:
+            print('rbd snap create')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 2. Add the new snapshot to ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name): '',
+            '/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, name): '{}'
+        })
+
+        # Log it
+        logger.out('Created new RBD snapshot {} of volume {} on pool {}'.format(name, volume, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to create new RBD snapshot {} of volume {} on pool {}: {}'.format(name, volume, pool, e), state='e')
+        return False
+
+def remove_snapshot(zk_conn, logger, pool, volume, name):
+    # We are ready to create a new snapshot on this node
+    logger.out('Removing RBD snapshot {} of volume {} on pool {}'.format(name, volume, pool), state='i')
+    try:
+        # Delete snapshot from ZK
+        zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
+
+        # Remove the snapshot
+        retcode, stdout, stderr = common.run_os_command('rbd snap rm {}/{}@{}'.format(pool, volume, name))
+        if retcode:
+            print('rbd snap rm')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Log it
+        logger.out('Removed RBD snapshot {} of volume {} on pool {}'.format(name, volume, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to remove RBD snapshot {} of volume {} on pool {}: {}'.format(name, volume, pool, e), state='e')
+        return False
+
+# Primary command function
 def run_command(zk_conn, logger, this_node, data, d_osd):
     # Get the command and args
     command, args = data.split()
@@ -610,6 +774,90 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
             with zk_lock:
                 # Remove the pool
                 result = remove_pool(zk_conn, logger, name)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Adding a new volume
+    elif command == 'volume_add':
+        pool, name, size = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Add the volume
+                result = add_volume(zk_conn, logger, pool, name, size)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Removing a volume
+    elif command == 'volume_remove':
+        pool, name = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Remove the volume
+                result = remove_volume(zk_conn, logger, pool, name)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Adding a new snapshot
+    elif command == 'snapshot_add':
+        pool, volume, name = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Add the snapshot
+                result = add_snapshot(zk_conn, logger, pool, volume, name)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Removing a snapshot
+    elif command == 'snapshot_remove':
+        pool, name, name = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Remove the snapshot
+                result = remove_snapshot(zk_conn, logger, pool, volume, name)
                 # Command succeeded
                 if result:
                     # Update the command queue
