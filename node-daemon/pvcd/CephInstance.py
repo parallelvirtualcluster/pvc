@@ -90,6 +90,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 3. Create the OSD for real
+        logger.out('Preparing LVM for new OSD disk with ID {} on {}'.format(osd_id, device), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph-volume lvm prepare --bluestore --data {device}'.format(
                 osdid=osd_id,
@@ -103,6 +104,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 4a. Get OSD FSID
+        logger.out('Getting OSD FSID for ID {} on {}'.format(osd_id, device), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph-volume lvm list {device}'.format(
                 osdid=osd_id,
@@ -121,6 +123,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 4b. Activate the OSD
+        logger.out('Activating new OSD disk with ID {}'.format(osd_id, device), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph-volume lvm activate --bluestore {osdid} {osdfsid}'.format(
                 osdid=osd_id,
@@ -134,6 +137,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 5. Add it to the crush map
+        logger.out('Activating new OSD disk with ID {} to CRUSH map'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph osd crush add osd.{osdid} {weight} root=default host={node}'.format(
                 osdid=osd_id,
@@ -161,6 +165,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 7. Add the new OSD to the list
+        logger.out('Adding new OSD disk with ID {} to Zookeeper'.format(osd_id), state='i')
         zkhandler.writedata(zk_conn, {
             '/ceph/osds/{}'.format(osd_id): '',
             '/ceph/osds/{}/node'.format(osd_id): node,
@@ -187,6 +192,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             return True
             
         # 1. Set the OSD out so it will flush
+        logger.out('Setting out OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph osd out {}'.format(osd_id))
         if retcode:
             print('ceph osd out')
@@ -195,6 +201,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             raise
         
         # 2. Wait for the OSD to flush
+        logger.out('Flushing OSD disk with ID {}'.format(osd_id), state='i')
         osd_string = str()
         while True:
             retcode, stdout, stderr = common.run_os_command('ceph pg dump osds --format json')
@@ -209,6 +216,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
                break
 
         # 3. Stop the OSD process and wait for it to be terminated
+        logger.out('Stopping OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('systemctl stop ceph-osd@{}'.format(osd_id))
         if retcode:
             print('systemctl stop')
@@ -228,6 +236,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
                 break
 
         # 4. Delete OSD from ZK
+        logger.out('Deleting OSD disk with ID {} from Zookeeper'.format(osd_id), state='i')
         zkhandler.deletekey(zk_conn, '/ceph/osds/{}'.format(osd_id))
 
         # 5. Determine the block devices
@@ -237,6 +246,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         pv_block = stdout
 
         # 6. Zap the volumes
+        logger.out('Zapping OSD disk with ID {} on {}'.format(osd_id, pv_block), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph-volume lvm zap --destroy {}'.format(pv_block))
         if retcode:
             print('ceph-volume lvm zap')
@@ -245,6 +255,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             raise
         
         # 7. Purge the OSD from Ceph
+        logger.out('Purging OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph osd purge {} --yes-i-really-mean-it'.format(osd_id))
         if retcode:
             print('ceph osd purge')
@@ -253,7 +264,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             raise
 
         # Log it
-        logger.out('Purged OSD disk with ID {}'.format(osd_id), state='o')
+        logger.out('Removed OSD disk with ID {}'.format(osd_id), state='o')
         return True
     except Exception as e:
         # Log it
