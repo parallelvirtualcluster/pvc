@@ -809,13 +809,13 @@ def remove_pool(zk_conn, name):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-pool_remove':
-                message = 'Removed RBD pool {} and all volumes.'.format(name, pgs)
+                message = 'Removed RBD pool {} and all volumes.'.format(name)
                 success = True
             else:
                 message = 'ERROR: Failed to remove pool; check node logs for details.'
                 success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
+        except Exception as e:
+            message = 'ERROR: Command ignored by node: {}'.format(e)
             success = False
 
     zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
