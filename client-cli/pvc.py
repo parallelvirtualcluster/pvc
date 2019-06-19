@@ -1282,18 +1282,23 @@ def ceph_pool_add(name, pgs):
 @click.argument(
     'name'
 )
-@click.option('--yes', is_flag=True,
-              prompt='DANGER: This command will destroy this pool and all volumes. Do you want to continue?'
-)
-def ceph_pool_remove(name, yes):
+def ceph_pool_remove(name):
     """
     Remove a Ceph RBD pool with name NAME and all volumes on it.
     """
 
-    if yes:
-        zk_conn = pvc_common.startZKConnection(zk_host)
-        retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
-        cleanup(retcode, retmsg, zk_conn)
+    click.echo('DANGER: This will completely remove pool {} and all data contained in it.'.format(name))
+    choice = input('Are you sure you want to do this? (y/N) ')
+    if choice == 'y' or choice == 'Y':
+        pool_name_check = input('Please enter the pool name to confirm: ')
+        if pool_name_check == name:
+            zk_conn = pvc_common.startZKConnection(zk_host)
+            retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+            cleanup(retcode, retmsg, zk_conn)
+        else:
+            click.echo('Aborting.')
+    else:
+        click.echo('Aborting.')
 
 ###############################################################################
 # pvc ceph pool list
