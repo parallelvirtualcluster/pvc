@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 # ceph.py - PVC client function library, Ceph cluster fuctions
 # Part of the Parallel Virtual Cluster (PVC) system
@@ -582,194 +581,143 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
     return output_string
 
 def getCephVolumes(zk_conn, pool):
-
-    pool_list = list()
+    volume_list = list()
     if pool == 'all':
-        for pool in zkhandler.listchildren(zk_conn, '/ceph/pools'):
-            pool_list += zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool))
+        pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
     else:
-        pool_list += zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool))
-    return pool_list
+        pool_list = [ pool ]
+
+    for pool_name in pool_list:
+        for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
+            volume_list.append('{}/{}'.format(pool_name, volume_name))
+
+    return volume_list
+
+def getVolumeInformation(zk_conn, pool, name):
+    # Parse the stats data
+    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, name))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    # Format the size to something nicer
+    volume_stats['size'] = format_bytes(volume_stats['size'])
+    return volume_stats
 
 def formatVolumeList(zk_conn, volume_list):
     volume_list_output = []
 
-    volume_id = dict()
     volume_size = dict()
-    volume_num_objects = dict()
-    volume_num_clones = dict()
-    volume_num_copies = dict()
-    volume_num_degraded = dict()
-    volume_read_ops = dict()
-    volume_read_data = dict()
-    volume_write_ops = dict()
-    volume_write_data = dict()
+    volume_objects = dict()
+    volume_order = dict()
+    volume_format = dict()
+    volume_features = dict()
 
     volume_name_length = 5
-    volume_id_length = 3
+    volume_pool_length = 5
     volume_size_length = 5
-    volume_num_objects_length = 6
-    volume_num_clones_length = 7
-    volume_num_copies_length = 7
-    volume_num_degraded_length = 9
-    volume_read_ops_length = 4
-    volume_read_data_length = 5
-    volume_write_ops_length = 4
-    volume_write_data_length = 5
+    volume_objects_length = 8
+    volume_order_length = 6
+    volume_format_length = 7
+    volume_features_length = 10
 
     for volume in volume_list:
+        volume_pool, volume_name = volume.split('/')
+
         # Set the Volume name length
-        _volume_name_length = len(volume) + 1
+        _volume_name_length = len(volume_name) + 1
         if _volume_name_length > volume_name_length:
             volume_name_length = _volume_name_length
 
+        # Set the Volume pool length
+        _volume_pool_length = len(volume_pool) + 1
+        if _volume_pool_length > volume_pool_length:
+            volume_pool_length = _volume_pool_length
+
         # Get stats
-        volume_stats = getVolumeInformation(zk_conn, volume)
-
-        # Set the parent node and length
-        try:
-            volume_id[volume] = volume_stats['id']
-            # If this happens, the node hasn't checked in fully yet, so just ignore it
-            if not volume_id[volume]:
-                continue
-        except KeyError:
-            continue
-
-        # Set the id and length
-        volume_id[volume] = volume_stats['id']
-        _volume_id_length = len(str(volume_id[volume])) + 1
-        if _volume_id_length > volume_id_length:
-            volume_id_length = _volume_id_length
+        volume_stats = getVolumeInformation(zk_conn, volume_pool, volume_name)
 
         # Set the size and length
-        volume_size[volume] = volume_stats['size_formatted']
+        volume_size[volume] = volume_stats['size']
         _volume_size_length = len(str(volume_size[volume])) + 1
         if _volume_size_length > volume_size_length:
             volume_size_length = _volume_size_length
 
         # Set the num_objects and length
-        volume_num_objects[volume] = volume_stats['num_objects']
-        _volume_num_objects_length = len(str(volume_num_objects[volume])) + 1
-        if _volume_num_objects_length > volume_num_objects_length:
-            volume_num_objects_length = _volume_num_objects_length
+        volume_objects[volume] = volume_stats['objects']
+        _volume_objects_length = len(str(volume_objects[volume])) + 1
+        if _volume_objects_length > volume_objects_length:
+            volume_objects_length = _volume_objects_length
 
-        # Set the num_clones and length
-        volume_num_clones[volume] = volume_stats['num_object_clones']
-        _volume_num_clones_length = len(str(volume_num_clones[volume])) + 1
-        if _volume_num_clones_length > volume_num_clones_length:
-            volume_num_clones_length = _volume_num_clones_length
+        # Set the order and length
+        volume_order[volume] = volume_stats['order']
+        _volume_order_length = len(str(volume_order[volume])) + 1
+        if _volume_order_length > volume_order_length:
+            volume_order_length = _volume_order_length
 
-        # Set the num_copies and length
-        volume_num_copies[volume] = volume_stats['num_object_copies']
-        _volume_num_copies_length = len(str(volume_num_copies[volume])) + 1
-        if _volume_num_copies_length > volume_num_copies_length:
-            volume_num_copies_length = _volume_num_copies_length
+        # Set the format and length
+        volume_format[volume] = volume_stats['format']
+        _volume_format_length = len(str(volume_format[volume])) + 1
+        if _volume_format_length > volume_format_length:
+            volume_format_length = _volume_format_length
 
-        # Set the num_degraded and length
-        volume_num_degraded[volume] = volume_stats['num_objects_degraded']
-        _volume_num_degraded_length = len(str(volume_num_degraded[volume])) + 1
-        if _volume_num_degraded_length > volume_num_degraded_length:
-            volume_num_degraded_length = _volume_num_degraded_length
-
-        # Set the write IOPS/data and length
-        volume_write_ops[volume] = volume_stats['write_ops']
-        _volume_write_ops_length = len(str(volume_write_ops[volume])) + 1
-        if _volume_write_ops_length > volume_write_ops_length:
-            volume_write_ops_length = _volume_write_ops_length
-        volume_write_data[volume] = volume_stats['write_formatted']
-        _volume_write_data_length = len(volume_write_data[volume]) + 1
-        if _volume_write_data_length > volume_write_data_length:
-            volume_write_data_length = _volume_write_data_length
-
-        # Set the read IOPS/data and length
-        volume_read_ops[volume] = volume_stats['read_ops']
-        _volume_read_ops_length = len(str(volume_read_ops[volume])) + 1
-        if _volume_read_ops_length > volume_read_ops_length:
-            volume_read_ops_length = _volume_read_ops_length
-        volume_read_data[volume] = volume_stats['read_formatted']
-        _volume_read_data_length = len(volume_read_data[volume]) + 1
-        if _volume_read_data_length > volume_read_data_length:
-            volume_read_data_length = _volume_read_data_length
+        # Set the features and length
+        volume_features[volume] = ','.join(volume_stats['features'])
+        _volume_features_length = len(str(volume_features[volume])) + 1
+        if _volume_features_length > volume_features_length:
+            volume_features_length = _volume_features_length
 
     # Format the output header
     volume_list_output_header = '{bold}\
-{volume_id: <{volume_id_length}} \
 {volume_name: <{volume_name_length}} \
+{volume_pool: <{volume_pool_length}} \
 {volume_size: <{volume_size_length}} \
-Obj: {volume_objects: <{volume_objects_length}} \
-{volume_clones: <{volume_clones_length}} \
-{volume_copies: <{volume_copies_length}} \
-{volume_degraded: <{volume_degraded_length}} \
-Rd: {volume_read_ops: <{volume_read_ops_length}} \
-{volume_read_data: <{volume_read_data_length}} \
-Wr: {volume_write_ops: <{volume_write_ops_length}} \
-{volume_write_data: <{volume_write_data_length}} \
+{volume_objects: <{volume_objects_length}} \
+{volume_order: <{volume_order_length}} \
+{volume_format: <{volume_format_length}} \
+{volume_features: <{volume_features_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            volume_id_length=volume_id_length,
             volume_name_length=volume_name_length,
+            volume_pool_length=volume_pool_length,
             volume_size_length=volume_size_length,
-            volume_objects_length=volume_num_objects_length,
-            volume_clones_length=volume_num_clones_length,
-            volume_copies_length=volume_num_copies_length,
-            volume_degraded_length=volume_num_degraded_length,
-            volume_write_ops_length=volume_write_ops_length,
-            volume_write_data_length=volume_write_data_length,
-            volume_read_ops_length=volume_read_ops_length,
-            volume_read_data_length=volume_read_data_length,
-            volume_id='ID',
+            volume_objects_length=volume_objects_length,
+            volume_order_length=volume_order_length,
+            volume_format_length=volume_format_length,
+            volume_features_length=volume_features_length,
             volume_name='Name',
-            volume_size='Used',
-            volume_objects='Count',
-            volume_clones='Clones',
-            volume_copies='Copies',
-            volume_degraded='Degraded',
-            volume_write_ops='OPS',
-            volume_write_data='Data',
-            volume_read_ops='OPS',
-            volume_read_data='Data'
+            volume_pool='Pool',
+            volume_size='Size',
+            volume_objects='Objects',
+            volume_order='Order',
+            volume_format='Format',
+            volume_features='Features',
         )
 
     for volume in volume_list:
-        # Format the output header
         volume_list_output.append('{bold}\
-{volume_id: <{volume_id_length}} \
 {volume_name: <{volume_name_length}} \
+{volume_pool: <{volume_pool_length}} \
 {volume_size: <{volume_size_length}} \
-     {volume_objects: <{volume_objects_length}} \
-{volume_clones: <{volume_clones_length}} \
-{volume_copies: <{volume_copies_length}} \
-{volume_degraded: <{volume_degraded_length}} \
-    {volume_read_ops: <{volume_read_ops_length}} \
-{volume_read_data: <{volume_read_data_length}} \
-    {volume_write_ops: <{volume_write_ops_length}} \
-{volume_write_data: <{volume_write_data_length}} \
+{volume_objects: <{volume_objects_length}} \
+{volume_order: <{volume_order_length}} \
+{volume_format: <{volume_format_length}} \
+{volume_features: <{volume_features_length}} \
 {end_bold}'.format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
-                volume_id_length=volume_id_length,
                 volume_name_length=volume_name_length,
+                volume_pool_length=volume_pool_length,
                 volume_size_length=volume_size_length,
-                volume_objects_length=volume_num_objects_length,
-                volume_clones_length=volume_num_clones_length,
-                volume_copies_length=volume_num_copies_length,
-                volume_degraded_length=volume_num_degraded_length,
-                volume_write_ops_length=volume_write_ops_length,
-                volume_write_data_length=volume_write_data_length,
-                volume_read_ops_length=volume_read_ops_length,
-                volume_read_data_length=volume_read_data_length,
-                volume_id=volume_id[volume],
-                volume_name=volume,
+                volume_objects_length=volume_objects_length,
+                volume_order_length=volume_order_length,
+                volume_format_length=volume_format_length,
+                volume_features_length=volume_features_length,
+                volume_name=volume_name,
+                volume_pool=volume_pool,
                 volume_size=volume_size[volume],
-                volume_objects=volume_num_objects[volume],
-                volume_clones=volume_num_clones[volume],
-                volume_copies=volume_num_copies[volume],
-                volume_degraded=volume_num_degraded[volume],
-                volume_write_ops=volume_write_ops[volume],
-                volume_write_data=volume_write_data[volume],
-                volume_read_ops=volume_read_ops[volume],
-                volume_read_data=volume_read_data[volume]
+                volume_objects=volume_objects[volume],
+                volume_order=volume_order[volume],
+                volume_format=volume_format[volume],
+                volume_features=volume_features[volume],
             )
         )
    
@@ -1337,7 +1285,7 @@ def get_list_volume(zk_conn, pool, limit):
     for volume in full_volume_list:
         valid_volume = False
         if limit:
-            if re.match(limit, volume['volume_id']) != None:
+            if re.match(limit, volume) != None:
                 valid_volume = True
         else:
             valid_volume = True
