@@ -505,7 +505,7 @@ def add_volume(zk_conn, logger, pool, name, size):
             raise
 
         # Get volume stats
-        retcode, stdout, stderr = common.run_os_command('rbd info {}/{}'.format(pool, name))
+        retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
         volstats = stdout
 
         # Add the new volume to ZK
