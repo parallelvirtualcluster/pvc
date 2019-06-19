@@ -703,8 +703,8 @@ def formatVolumeList(zk_conn, volume_list):
 {volume_format: <{volume_format_length}} \
 {volume_features: <{volume_features_length}} \
 {end_bold}'.format(
-                bold=ansiprint.bold(),
-                end_bold=ansiprint.end(),
+                bold='',
+                end_bold='',
                 volume_name_length=volume_name_length,
                 volume_pool_length=volume_pool_length,
                 volume_size_length=volume_size_length,
@@ -790,8 +790,8 @@ def formatSnapshotList(zk_conn, snapshot_list):
 {snapshot_volume: <{snapshot_volume_length}} \
 {snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
-                bold=ansiprint.bold(),
-                end_bold=ansiprint.end(),
+                bold='',
+                end_bold='',
                 snapshot_name_length=snapshot_name_length,
                 snapshot_volume_length=snapshot_volume_length,
                 snapshot_pool_length=snapshot_pool_length,
