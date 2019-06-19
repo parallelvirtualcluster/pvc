@@ -657,6 +657,8 @@ d_network = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
+d_volume = dict()
+d_snapshot = dict()
 node_list = []
 network_list = []
 domain_list = []
@@ -839,44 +841,46 @@ if enable_storage:
         logger.out('{}Pool list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(pool_list)), state='i')
 
     # Volume objects
-    @zk_conn.ChildrenWatch('/ceph/volumes')
-    def update_volumes(new_volume_list):
-        global volume_list, d_volume
+    for pool in pool_list:
+        @zk_conn.ChildrenWatch('/ceph/volumes/{}'.format(pool))
+        def update_volumes(new_volume_list):
+            global volume_list, d_volume
+    
+            # Add any missing Volumes to the list
+            for volume in new_volume_list:
+                if not volume in volume_list:
+                    d_volume[volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
+    
+            # Remove any deleted Volumes from the list
+            for volume in volume_list:
+                if not volume in new_volume_list:
+                    # Delete the object
+                    del(d_volume[volume])
+    
+            # Update and print new list
+            volume_list = new_volume_list
+            logger.out('{}Volume list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(volume_list)), state='i')
 
-        # Add any missing Volumes to the list
-        for volume in new_volume_list:
-            if not volume in volume_list:
-                d_volume[volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, volume)
-
-        # Remove any deleted Volumes from the list
+        # Snapshot objects
         for volume in volume_list:
-            if not volume in new_volume_list:
-                # Delete the object
-                del(d_volume[volume])
-
-        # Update and print new list
-        volume_list = new_volume_list
-        logger.out('{}Volume list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(volume_list)), state='i')
-
-    # Snapshot objects
-    @zk_conn.ChildrenWatch('/ceph/snapshots')
-    def update_snapshots(new_snapshot_list):
-        global snapshot_list, d_snapshot
-
-        # Add any missing Snapshots to the list
-        for snapshot in new_snapshot_list:
-            if not snapshot in snapshot_list:
-                d_snapshot[snapshot] = CephInstance.CephSnapshotInstance(zk_conn, this_node, snapshot)
-
-        # Remove any deleted Snapshots from the list
-        for snapshot in snapshot_list:
-            if not snapshot in new_snapshot_list:
-                # Delete the object
-                del(d_snapshot[snapshot])
-
-        # Update and print new list
-        snapshot_list = new_snapshot_list
-        logger.out('{}Snapshot list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(snapshot_list)), state='i')
+            @zk_conn.ChildrenWatch('/ceph/snapshots/{}/{}'.format(pool, volume))
+            def update_snapshots(new_snapshot_list):
+                global snapshot_list, d_snapshot
+        
+                # Add any missing Snapshots to the list
+                for snapshot in new_snapshot_list:
+                    if not snapshot in snapshot_list:
+                        d_snapshot[snapshot] = CephInstance.CephSnapshotInstance(zk_conn, this_node, pool, volume, snapshot)
+        
+                # Remove any deleted Snapshots from the list
+                for snapshot in snapshot_list:
+                    if not snapshot in new_snapshot_list:
+                        # Delete the object
+                        del(d_snapshot[snapshot])
+        
+                # Update and print new list
+                snapshot_list = new_snapshot_list
+                logger.out('{}Snapshot list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(snapshot_list)), state='i')
 
 ###############################################################################
 # PHASE 9 - Run the daemon
