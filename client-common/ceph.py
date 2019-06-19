@@ -693,6 +693,7 @@ def formatVolumeList(zk_conn, volume_list):
         )
 
     for volume in volume_list:
+        volume_pool, volume_name = volume.split('/')
         volume_list_output.append('{bold}\
 {volume_name: <{volume_name_length}} \
 {volume_pool: <{volume_pool_length}} \
