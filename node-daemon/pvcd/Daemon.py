@@ -472,6 +472,9 @@ zk_conn.add_listener(zk_listener)
 def cleanup():
     global zk_conn, update_timer, d_domains
 
+    # Set stop state in Zookeeper
+    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
+
     logger.out('Performing final keepalive update', state='s')
     update_zookeeper()
 
