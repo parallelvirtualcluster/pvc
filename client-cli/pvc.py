@@ -1499,16 +1499,22 @@ def init_cluster():
 ###############################################################################
 
 @click.command(name='init', short_help='Initialize a new cluster.')
-def init_cluster():
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default_value=False,
+    help='Pre-confirm the initialization.'
+)
+def init_cluster(yes):
     """
     Perform initialization of a new PVC cluster.
     """
 
-    click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.'.format(name))
-    choice = input('Are you sure you want to do this? (y/N) ')
-    if choice == 'y' or choice == 'Y':
-        import pvc_init
-        pvc_init.init_zookeeper(zk_host)
+    if not yes:
+        click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.')
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice == 'y' or choice == 'Y':
+            import pvc_init
+            pvc_init.init_zookeeper(zk_host)
 
 
 ###############################################################################
