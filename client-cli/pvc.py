@@ -1504,8 +1504,11 @@ def init_cluster():
     Perform initialization of a new PVC cluster.
     """
 
-    import pvc_init
-    pvc_init.init_zookeeper(zk_host)
+    click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.'.format(name))
+    choice = input('Are you sure you want to do this? (y/N) ')
+    if choice == 'y' or choice == 'Y':
+        import pvc_init
+        pvc_init.init_zookeeper(zk_host)
 
 
 ###############################################################################
