@@ -859,7 +859,7 @@ def add_osd(zk_conn, node, device, weight):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
     with lock:
-        time.sleep(1)
+        time.sleep(3)
         zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
 
     return success, message
@@ -891,7 +891,7 @@ def remove_osd(zk_conn, osd_id):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
     with lock:
-        time.sleep(1)
+        time.sleep(3)
         zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
 
     return success, message
