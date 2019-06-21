@@ -1133,10 +1133,21 @@ def ceph_osd():
     default=1.0, show_default=True,
     help='Weight of the OSD within the CRUSH map.'
 )
-def ceph_osd_add(node, device, weight):
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default=False,
+    help='Pre-confirm the disk destruction.'
+)
+def ceph_osd_add(node, device, weight, yes):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE to the cluster.
     """
+
+    if not yes:
+        click.echo('DANGER: This will completely destroy all data on disk {}.'.format(device))
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice != 'y' and choice != 'Y':
+            exit(0)
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_ceph.add_osd(zk_conn, node, device, weight)
@@ -1149,10 +1160,21 @@ def ceph_osd_add(node, device, weight):
 @click.argument(
     'osdid'
 )
-def ceph_osd_remove(osdid):
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default=False,
+    help='Pre-confirm the removal.'
+)
+def ceph_osd_remove(osdid, yes):
     """
     Remove a Ceph OSD with ID OSDID from the cluster.
     """
+
+    if not yes:
+        click.echo('DANGER: This will completely remove OSD {} from cluster. OSDs will rebalance.'.format(osdid))
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice != 'y' and choice != 'Y':
+            exit(0)
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_ceph.remove_osd(zk_conn, osdid)
@@ -1282,23 +1304,27 @@ def ceph_pool_add(name, pgs):
 @click.argument(
     'name'
 )
-def ceph_pool_remove(name):
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default=False,
+    help='Pre-confirm the removal.'
+)
+def ceph_pool_remove(name, yes):
     """
     Remove a Ceph RBD pool with name NAME and all volumes on it.
     """
 
-    click.echo('DANGER: This will completely remove pool {} and all data contained in it.'.format(name))
-    choice = input('Are you sure you want to do this? (y/N) ')
-    if choice == 'y' or choice == 'Y':
-        pool_name_check = input('Please enter the pool name to confirm: ')
-        if pool_name_check == name:
-            zk_conn = pvc_common.startZKConnection(zk_host)
-            retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
-            cleanup(retcode, retmsg, zk_conn)
-        else:
-            click.echo('Aborting.')
-    else:
-        click.echo('Aborting.')
+    if not yes:
+        click.echo('DANGER: This will completely remove pool {} and all data contained in it.'.format(name))
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice != 'y' and choice != 'Y':
+            pool_name_check = input('Please enter the pool name to confirm: ')
+            if pool_name_check != name:
+                exit(0)
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc ceph pool list
@@ -1358,19 +1384,25 @@ def ceph_volume_add(pool, name, size):
 @click.argument(
     'name'
 )
-def ceph_volume_remove(pool, name):
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default=False,
+    help='Pre-confirm the removal.'
+)
+def ceph_volume_remove(pool, name, yes):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
     """
 
-    click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
-    choice = input('Are you sure you want to do this? (y/N) ')
-    if choice == 'y' or choice == 'Y':
-        zk_conn = pvc_common.startZKConnection(zk_host)
-        retcode, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
-        cleanup(retcode, retmsg, zk_conn)
-    else:
-        click.echo('Aborting.')
+    if not yes:
+        click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice != 'y' and choice != 'Y':
+            exit(0)
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc ceph volume list
@@ -1438,19 +1470,25 @@ def ceph_volume_snapshot_add(pool, volume, name):
 @click.argument(
     'name'
 )
-def ceph_volume_snapshot_remove(pool, volume, name):
+@click.option(
+    '--yes', 'yes',
+    is_flag=True, default=False,
+    help='Pre-confirm the removal.'
+)
+def ceph_volume_snapshot_remove(pool, volume, name, yes):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
     """
 
-    click.echo('DANGER: This will completely remove snapshot {} from volume {}/{} and all data contained in it.'.format(name, pool, volume))
-    choice = input('Are you sure you want to do this? (y/N) ')
-    if choice == 'y' or choice == 'Y':
-        zk_conn = pvc_common.startZKConnection(zk_host)
-        retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
-        cleanup(retcode, retmsg, zk_conn)
-    else:
-        click.echo('Aborting.')
+    if not yes:
+        click.echo('DANGER: This will completely remove snapshot {} from volume {}/{} and all data contained in it.'.format(name, pool, volume))
+        choice = input('Are you sure you want to do this? (y/N) ')
+        if choice != 'y' and choice != 'Y':
+            exit(0)
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
+    cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
 # pvc ceph volume snapshot list
@@ -1512,7 +1550,7 @@ def init_cluster(yes):
     if not yes:
         click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.')
         choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' or choice != 'Y':
+        if choice != 'y' and choice != 'Y':
             exit(0)
 
     import pvc_init

@@ -89,7 +89,16 @@ def add_osd(zk_conn, logger, node, device, weight):
             print(stderr)
             raise
 
-        # 3. Create the OSD for real
+        # 3a. Zap the disk to ensure it is ready to go
+        logger.out('Zapping disk {}'.format(device), state='i')
+        retcode, stdout, stderr = common.run_os_command('ceph-volume lvm zap --destroy {}'.format(device))
+        if retcode:
+            print('ceph-volume lvm zap')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 3b. Create the OSD for real
         logger.out('Preparing LVM for new OSD disk with ID {} on {}'.format(osd_id, device), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph-volume lvm prepare --bluestore --data {device}'.format(
