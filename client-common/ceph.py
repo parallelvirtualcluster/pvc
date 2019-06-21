@@ -401,8 +401,8 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
     {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
-                bold=ansiprint.bold(),
-                end_bold=ansiprint.end(),
+                bold='',
+                end_bold='',
                 end_colour=ansiprint.end(),
                 osd_id_length=osd_id_length,
                 osd_node_length=osd_node_length,
@@ -599,8 +599,8 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
     {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
-                bold=ansiprint.bold(),
-                end_bold=ansiprint.end(),
+                bold='',
+                end_bold='',
                 pool_id_length=pool_id_length,
                 pool_name_length=pool_name_length,
                 pool_size_length=pool_size_length,
