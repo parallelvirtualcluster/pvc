@@ -1512,9 +1512,11 @@ def init_cluster(yes):
     if not yes:
         click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.')
         choice = input('Are you sure you want to do this? (y/N) ')
-        if choice == 'y' or choice == 'Y':
-            import pvc_init
-            pvc_init.init_zookeeper(zk_host)
+        if choice != 'y' or choice != 'Y':
+            exit(0)
+
+    import pvc_init
+    pvc_init.init_zookeeper(zk_host)
 
 
 ###############################################################################
