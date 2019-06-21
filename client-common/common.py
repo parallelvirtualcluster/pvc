@@ -223,6 +223,10 @@ def getNodes(zk_conn, dom_uuid):
 
         valid_node_list.append(node)
 
+    if not valid_node_list:
+        # We found no valid nodes; possibly they're all flushed or all down. Return the entire list instead.
+        valid_node_list = full_node_list
+
     return valid_node_list
     
 #
