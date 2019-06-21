@@ -103,7 +103,7 @@ def format_bytes_fromhuman(datahuman):
 #
 # Cluster search functions
 #
-def getCephStatus():
+def getCephStatus(zk_conn):
     status_data = zkhandler.readdata(zk_conn, '/ceph').rstrip()
     primary_node = zkhandler.readdata(zk_conn, '/primary_node')
     return status_data, primary_node
@@ -820,7 +820,8 @@ def formatSnapshotList(zk_conn, snapshot_list):
 #
 # Direct functions
 #
-def get_status(zk_conn, status_data, primary_node):
+def get_status(zk_conn):
+    status_data, primary_node = getCephStatus(zk_conn)
     click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=primary_node))
     click.echo(status_data)
     click.echo('')
