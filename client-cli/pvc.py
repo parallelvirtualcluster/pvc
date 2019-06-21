@@ -1144,7 +1144,7 @@ def ceph_osd_add(node, device, weight, yes):
     """
 
     if not yes:
-        click.echo('DANGER: This will completely destroy all data on disk {}.'.format(device))
+        click.echo('DANGER: This will completely destroy all data on {} disk {}.'.format(node, device))
         choice = input('Are you sure you want to do this? (y/N) ')
         if choice != 'y' and choice != 'Y':
             exit(0)
