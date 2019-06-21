@@ -1341,7 +1341,7 @@ def ceph_volume():
 )
 def ceph_volume_add(pool, name, size):
     """
-    Add a new Ceph RBD volume with name NAME and size SIZE [GiB] to pool POOL.
+    Add a new Ceph RBD volume with name NAME and size SIZE [in human units, e.g. 1024M, 20G, etc.] to pool POOL.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)

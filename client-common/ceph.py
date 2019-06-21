@@ -70,34 +70,51 @@ def verifyOSDBlock(zk_conn, node, device):
             return osd
     return None
 
-# Format byte sizes in human-readable units
-def format_bytes(databytes):
-    unit_matrix = {
-        'K': 1024,
-        'M': 1024*1024,
-        'G': 1024*1024*1024,
-        'T': 1024*1024*1024*1024,
-        'P': 1024*1024*1024*1024*1024
-    }
-    databytes_formatted = ''
-    if databytes > 9999:
-        for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
-            new_bytes = int(math.ceil(databytes / unit_matrix[unit]))
-            # Round up if 5 or more digits
-            if new_bytes > 9999:
-                # We can jump down another level
-                continue
-            else:
-                # We're at the end, display with this size
-                databytes_formatted = '{}{}'.format(new_bytes, unit)
-    else:
-        databytes_formatted = '{}B'.format(databytes)
+# Format byte sizes to/from human-readable units
+unit_matrix = {
+    'B': 1,
+    'K': 1024,
+    'M': 1024*1024,
+    'G': 1024*1024*1024,
+    'T': 1024*1024*1024*1024,
+    'P': 1024*1024*1024*1024*1024
+}
+def format_bytes_tohuman(databytes):
+    datahuman = ''
+    for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
+        new_bytes = int(math.ceil(databytes / unit_matrix[unit]))
+        # Round up if 5 or more digits
+        if new_bytes > 9999:
+            # We can jump down another level
+            continue
+        else:
+            # We're at the end, display with this size
+            datahuman = '{}{}'.format(new_bytes, unit)
 
-    return databytes_formatted
+    return datahuman
+
+def format_bytes_fromhuman(datahuman):
+    databytes = ''
+    for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
+        new_bytes = int(math.ceil(datahuman * unit_matrix[unit]))
+        # Round up if 5 or more digits
+        if new_bytes < 9999:
+            # We can jump down another level
+            continue
+        else:
+            # We're at the end, display with this size
+            databytes = '{}{}'.format(new_bytes, unit)
+
+    return databytes
 
 #
 # Cluster search functions
 #
+def getCephStatus():
+    status_data = zkhandler.readdata(zk_conn, '/ceph').rstrip()
+    primary_node = zkhandler.readdata(zk_conn, '/primary_node')
+    return status_data, primary_node
+
 def getClusterOSDList(zk_conn):
     # Get a list of VNIs by listing the children of /networks
     osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
@@ -109,7 +126,7 @@ def getOSDInformation(zk_conn, osd_id):
     osd_stats = dict(json.loads(osd_stats_raw))
     # Deal with the size
     databytes = osd_stats['kb'] * 1024
-    databytes_formatted = format_bytes(databytes)
+    databytes_formatted = format_bytes_tohuman(databytes)
     osd_stats['size'] = databytes_formatted
     return osd_stats
 
@@ -117,6 +134,66 @@ def getCephOSDs(zk_conn):
     osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
     return osd_list
 
+def getClusterPoolList(zk_conn):
+    # Get a list of pools under /ceph/pools
+    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    return pool_list
+
+def getPoolInformation(zk_conn, name):
+    # Parse the stats data
+    pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(name))
+    pool_stats = dict(json.loads(pool_stats_raw))
+    # Deal with the size issues
+    for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
+        databytes = pool_stats[datatype]
+        databytes_formatted = format_bytes_tohuman(databytes)
+        new_name = datatype.replace('bytes', 'formatted')
+        pool_stats[new_name] = databytes_formatted
+    return pool_stats
+
+def getCephPools(zk_conn):
+    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    return pool_list
+
+def getCephVolumes(zk_conn, pool):
+    volume_list = list()
+    if pool == 'all':
+        pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    else:
+        pool_list = [ pool ]
+
+    for pool_name in pool_list:
+        for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
+            volume_list.append('{}/{}'.format(pool_name, volume_name))
+
+    return volume_list
+
+def getVolumeInformation(zk_conn, pool, name):
+    # Parse the stats data
+    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, name))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    # Format the size to something nicer
+    volume_stats['size'] = format_bytes_tohuman(volume_stats['size'])
+    return volume_stats
+
+def getCephSnapshots(zk_conn, pool, volume):
+    snapshot_list = list()
+    volume_list = list()
+
+    volume_list = getCephVolumes(zk_conn, pool)
+    if volume != 'all':
+        for volume_entry in volume_list:
+            volume_pool, volume_name = volume_entry.split('/')
+            if volume_name == volume:
+                volume_list = [ '{}/{}'.format(volume_pool, volume_name) ]
+
+    for volume_entry in volume_list:
+        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
+            snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
+
+    return snapshot_list
+
+# Formatting functions (for CLI client)
 def formatOSDList(zk_conn, osd_list):
     osd_list_output = []
 
@@ -374,27 +451,6 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
     output_string = osd_list_output_header + '\n' + '\n'.join(sorted(osd_list_output))
     return output_string
 
-def getClusterPoolList(zk_conn):
-    # Get a list of pools under /ceph/pools
-    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    return pool_list
-
-def getPoolInformation(zk_conn, name):
-    # Parse the stats data
-    pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(name))
-    pool_stats = dict(json.loads(pool_stats_raw))
-    # Deal with the size issues
-    for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
-        databytes = pool_stats[datatype]
-        databytes_formatted = format_bytes(databytes)
-        new_name = datatype.replace('bytes', 'formatted')
-        pool_stats[new_name] = databytes_formatted
-    return pool_stats
-
-def getCephPools(zk_conn):
-    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    return pool_list
-
 def formatPoolList(zk_conn, pool_list):
     pool_list_output = []
 
@@ -580,27 +636,6 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
     output_string = pool_list_output_header + '\n' + '\n'.join(sorted(pool_list_output))
     return output_string
 
-def getCephVolumes(zk_conn, pool):
-    volume_list = list()
-    if pool == 'all':
-        pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    else:
-        pool_list = [ pool ]
-
-    for pool_name in pool_list:
-        for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
-            volume_list.append('{}/{}'.format(pool_name, volume_name))
-
-    return volume_list
-
-def getVolumeInformation(zk_conn, pool, name):
-    # Parse the stats data
-    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, name))
-    volume_stats = dict(json.loads(volume_stats_raw))
-    # Format the size to something nicer
-    volume_stats['size'] = format_bytes(volume_stats['size'])
-    return volume_stats
-
 def formatVolumeList(zk_conn, volume_list):
     volume_list_output = []
 
@@ -725,23 +760,6 @@ def formatVolumeList(zk_conn, volume_list):
     output_string = volume_list_output_header + '\n' + '\n'.join(sorted(volume_list_output))
     return output_string
 
-def getCephSnapshots(zk_conn, pool, volume):
-    snapshot_list = list()
-    volume_list = list()
-
-    volume_list = getCephVolumes(zk_conn, pool)
-    if volume != 'all':
-        for volume_entry in volume_list:
-            volume_pool, volume_name = volume_entry.split('/')
-            if volume_name == volume:
-                volume_list = [ '{}/{}'.format(volume_pool, volume_name) ]
-
-    for volume_entry in volume_list:
-        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
-            snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
-
-    return snapshot_list
-
 def formatSnapshotList(zk_conn, snapshot_list):
     snapshot_list_output = []
 
@@ -809,9 +827,7 @@ def formatSnapshotList(zk_conn, snapshot_list):
 #
 # Direct functions
 #
-def get_status(zk_conn):
-    status_data = zkhandler.readdata(zk_conn, '/ceph').rstrip()
-    primary_node = zkhandler.readdata(zk_conn, '/primary_node')
+def get_status(zk_conn, status_data, primary_node):
     click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=primary_node))
     click.echo(status_data)
     click.echo('')
@@ -1127,7 +1143,8 @@ def get_list_pool(zk_conn, limit):
 
 def add_volume(zk_conn, pool, name, size):
     # Tell the cluster to create a new volume
-    add_volume_string = 'volume_add {},{},{}'.format(pool, name, size) 
+    databytes = format_bytes_fromhuman(size)
+    add_volume_string = 'volume_add {},{},{}'.format(pool, name, databytes)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -1137,7 +1154,7 @@ def add_volume(zk_conn, pool, name, size):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-volume_add':
-                message = 'Created new RBD volume {} of size {} GiB on pool {}.'.format(name, size, pool)
+                message = 'Created new RBD volume {} of size {} on pool {}.'.format(name, size, pool)
                 success = True
             else:
                 message = 'ERROR: Failed to create new volume; check node logs for details.'
