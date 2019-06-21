@@ -94,18 +94,11 @@ def format_bytes_tohuman(databytes):
     return datahuman
 
 def format_bytes_fromhuman(datahuman):
-    databytes = ''
-    for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
-        new_bytes = int(math.ceil(datahuman * unit_matrix[unit]))
-        # Round up if 5 or more digits
-        if new_bytes < 9999:
-            # We can jump down another level
-            continue
-        else:
-            # We're at the end, display with this size
-            databytes = '{}{}'.format(new_bytes, unit)
-
-    return databytes
+    # Trim off human-readable character
+    dataunit = datahuman[-1]
+    datasize = int(datahuman[:-1])
+    databytes = datasize * unit_matrix[dataunit]
+    return '{}B'.format(databytes)
 
 #
 # Cluster search functions
