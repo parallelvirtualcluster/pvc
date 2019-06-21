@@ -1501,7 +1501,7 @@ def init_cluster():
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
     '--yes', 'yes',
-    is_flag=True, default_value=False,
+    is_flag=True, default=False,
     help='Pre-confirm the initialization.'
 )
 def init_cluster(yes):
