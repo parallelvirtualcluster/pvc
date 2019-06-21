@@ -847,7 +847,12 @@ def add_osd(zk_conn, node, device, weight):
             message = 'ERROR: Command ignored by node.'
             success = False
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def remove_osd(zk_conn, osd_id):
@@ -874,7 +879,12 @@ def remove_osd(zk_conn, osd_id):
             success = False
             message = 'ERROR Command ignored by node.'
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def in_osd(zk_conn, osd_id):
@@ -901,7 +911,12 @@ def in_osd(zk_conn, osd_id):
             success = False
             message = 'ERROR Command ignored by node.'
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def out_osd(zk_conn, osd_id):
@@ -928,7 +943,12 @@ def out_osd(zk_conn, osd_id):
             success = False
             message = 'ERROR Command ignored by node.'
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def set_osd(zk_conn, option):
@@ -976,7 +996,12 @@ def unset_osd(zk_conn, option):
             success = False
             message = 'ERROR Command ignored by node.'
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
     return success, message
 
 def get_list_osd(zk_conn, limit):
