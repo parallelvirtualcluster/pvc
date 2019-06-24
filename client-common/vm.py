@@ -168,9 +168,11 @@ def define_vm(zk_conn, config_data, target_node, selector):
 
     if target_node == None:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
-
-    # Verify node is valid
-    common.verifyNode(zk_conn, target_node)
+    else:
+        # Verify node is valid
+        valid_node = common.verifyNode(zk_conn, target_node)
+        if not valid_node:
+            return False, "Specified node {} is invalid.".format(target_node)
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -328,12 +330,15 @@ def move_vm(zk_conn, domain, target_node, selector):
     if target_node == None:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
+        # Verify node is valid
+        valid_node = common.verifyNode(zk_conn, target_node)
+        if not valid_node:
+            return False, "Specified node {} is invalid.".format(target_node)
+
+        # Verify if node is current node
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(dom_uuid, current_node)
-
-        # Verify node is valid
-        common.verifyNode(zk_conn, target_node)
 
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state == 'start':
@@ -380,12 +385,15 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
     if target_node == None:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
+        # Verify node is valid
+        valid_node = common.verifyNode(zk_conn, target_node)
+        if not valid_node:
+            return False, "Specified node {} is invalid.".format(target_node)
+
+        # Verify if node is current node
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(dom_uuid, current_node)
-
-        # Verify node is valid
-        common.verifyNode(zk_conn, target_node)
 
     zkhandler.writedata(zk_conn, {
         '/domains/{}/state'.format(dom_uuid): 'migrate',
@@ -506,7 +514,9 @@ def get_info(zk_conn, domain):
 def get_list(zk_conn, node, state, limit):
     if node != None:
         # Verify node is valid
-        common.verifyNode(zk_conn, node)
+        valid_node = common.verifyNode(zk_conn, target_node)
+        if not valid_node:
+            return False, "Specified node {} is invalid.".format(target_node)
 
     if state != None:
         valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'failed', 'migrate', 'unmigrate' ]
