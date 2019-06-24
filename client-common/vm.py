@@ -653,6 +653,20 @@ def format_info(zk_conn, domain_information, long_output):
     click.echo('')
 
 def format_list(zk_conn, vm_list, raw):
+    # Function to strip the "br" off of nets and return a nicer list
+    def getNiceNetID(domain_information):
+        # Network list
+        net_list = []
+        for net in domain_information['networks']:
+            # Split out just the numerical (VNI) part of the brXXXX name
+            net_vnis = re.findall(r'\d+', net['source'])
+            if net_vnis:
+                net_vni = net_vnis[0]
+            else:
+                net_vni = re.sub('br', '', net['source'])
+            net_list.append(net_vni)
+        return net_list
+
     # Handle raw mode since it just lists the names
     if raw:
         for vm in sorted(item['name'] for item in vm_list):
@@ -672,16 +686,7 @@ def format_list(zk_conn, vm_list, raw):
     vm_node_length = 8
     vm_migrated_length = 10
     for domain_information in vm_list:
-        # Network list
-        net_list = []
-        for net in domain_information['networks']:
-            # Split out just the numerical (VNI) part of the brXXXX name
-            net_vnis = re.findall(r'\d+', net['source'])
-            if net_vnis:
-                net_vni = net_vnis[0]
-            else:
-                net_vni = re.sub('br', '', net['source'])
-            net_list.append(net_vni)
+        net_list = getNiceNetID(domain_information)
         # vm_name column
         _vm_name_length = len(domain_information['name']) + 1
         if _vm_name_length > vm_name_length:
@@ -750,17 +755,14 @@ def format_list(zk_conn, vm_list, raw):
             vm_state_colour = ansiprint.blue()
 
         # Handle colouring for an invalid network config
+        raw_net_list = getNiceNetID(domain_information)
         net_list = []
-        for net in domain_information['networks']:
-            # Split out just the numerical (VNI) part of the brXXXX name
-            net_vnis = re.findall(r'\d+', net['source'])
-            if net_vnis:
-                net_vni = net_vnis[0]
-            else:
-                net_vni = re.sub('br', '', net['source'])
+        for net_vni in raw_net_list:
             net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
             if not net_exists and net_vni != 'cluster':
                 net_list.append(ansiprint.red() + net_vni + ansiprint.end())
+                # Add 9 characters (the ANSI control chars) to the length so everything lines up
+                vm_nets_length += 9
             else:
                 net_list.append(net_vni)
 
