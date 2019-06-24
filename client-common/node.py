@@ -221,7 +221,7 @@ def get_info(zk_conn, node):
 
     # Get information about node in a pretty format
     node_information = getInformationFromNode(zk_conn, node)
-    if node_information == None:
+    if not node_information:
         return False, 'ERROR: Could not get information about node "{}".'.format(node)
 
     return True, node_information
@@ -231,15 +231,15 @@ def get_list(zk_conn, limit):
     node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
     for node in full_node_list:
-        if limit != None:
+        if limit:
             try:
                 # Implcitly assume fuzzy limits
-                if re.match('\^.*', limit) == None:
+                if not re.match('\^.*', limit):
                     limit = '.*' + limit
-                if re.match('.*\$', limit) == None:
+                if not re.match('.*\$', limit):
                     limit = limit + '.*'
 
-                if re.match(limit, node) != None:
+                if re.match(limit, node):
                     node_list.append(getInformationFromNode(zk_conn, node))
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)

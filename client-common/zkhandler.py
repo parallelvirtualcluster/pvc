@@ -28,10 +28,10 @@ import client_lib.ansiprint as ansiprint
 # Exists function
 def exists(zk_conn, key):
     stat = zk_conn.exists(key)
-    if stat is None:
-        return False
-    else:
+    if stat:
         return True
+    else:
+        return False
 
 # Child list function
 def listchildren(zk_conn, key):

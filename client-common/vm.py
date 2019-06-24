@@ -63,7 +63,7 @@ def getInformationFromXML(zk_conn, uuid):
     domain_disks = common.getDomainDisks(parsed_xml)
     domain_controllers = common.getDomainControllers(parsed_xml)
     
-    if domain_lastnode != '':
+    if domain_lastnode:
         domain_migrated = 'from {}'.format(domain_lastnode)
     else:
         domain_migrated = 'no'
@@ -166,7 +166,7 @@ def define_vm(zk_conn, config_data, target_node, selector):
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
 
-    if target_node == None:
+    if not target_node:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
         # Verify node is valid
@@ -327,7 +327,7 @@ def move_vm(zk_conn, domain, target_node, selector):
 
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
-    if target_node == None:
+    if not target_node:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
         # Verify node is valid
@@ -372,7 +372,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
     last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 
-    if last_node != '' and force_migrate != True:
+    if last_node and not force_migrate:
         if is_cli:
             click.echo('ERROR: VM "{}" has been previously migrated.'.format(dom_uuid))
             click.echo('> Last node: {}'.format(last_node))
@@ -382,7 +382,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
         else:
             return False, 'ERROR: VM "{}" has been previously migrated.'.format(dom_uuid)
 
-    if target_node == None:
+    if not target_node:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
     else:
         # Verify node is valid
@@ -490,7 +490,7 @@ def follow_console_log(zk_conn, domain, lines=10):
         # Remove the old lines from the new log
         diff_console_log = new_console_log.replace(old_console_log, "")
         # If there's a difference, print it out
-        if diff_console_log != "":
+        if diff_console_log:
             print(diff_console_log, end='')
         # Wait a second
         time.sleep(1)
@@ -506,19 +506,19 @@ def get_info(zk_conn, domain):
 
     # Gather information from XML config and print it
     domain_information = getInformationFromXML(zk_conn, dom_uuid)
-    if domain_information == None:
+    if not domain_information:
         return False, 'ERROR: Could not get information about VM "{}".'.format(domain)
 
     return True, domain_information
 
 def get_list(zk_conn, node, state, limit):
-    if node != None:
+    if node:
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
             return False, "Specified node {} is invalid.".format(target_node)
 
-    if state != None:
+    if state:
         valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'failed', 'migrate', 'unmigrate' ]
         if not state in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
@@ -527,12 +527,12 @@ def get_list(zk_conn, node, state, limit):
     vm_list = []
 
     # Set our limit to a sensible regex
-    if limit != None:
+    if limit:
         try:
             # Implcitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -546,17 +546,17 @@ def get_list(zk_conn, node, state, limit):
         vm_node[vm] = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(vm))
         vm_state[vm] = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(vm))
         # Handle limiting
-        if limit != None:
+        if limit:
             try:
-                if re.match(limit, vm) != None:
-                    if node == None and state == None:
+                if re.match(limit, vm):
+                    if not node and not state:
                         vm_list.append(getInformationFromXML(zk_conn, vm))
                     else:
                         if vm_node[vm] == node or vm_state[vm] == state:
                             vm_list.append(getInformationFromXML(zk_conn, vm))
 
-                if re.match(limit, name) != None:
-                    if node == None and state == None:
+                if re.match(limit, name):
+                    if not node and not state:
                         vm_list.append(getInformationFromXML(zk_conn, vm))
                     else:
                         if vm_node[vm] == node or vm_state[vm] == state:
@@ -565,7 +565,7 @@ def get_list(zk_conn, node, state, limit):
                 return False, 'Regex Error: {}'.format(e)
         else:
             # Check node to avoid unneeded ZK calls
-            if node == None and state == None:
+            if not node and not state:
                 vm_list.append(getInformationFromXML(zk_conn, vm))
             else:
                 if vm_node[vm] == node or vm_state[vm] == state:
@@ -614,7 +614,7 @@ def format_info(zk_conn, domain_information, long_output):
     ainformation.append('{}Previous Node:{}      {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['last_node']))
 
     # Get a failure reason if applicable
-    if domain_information['failed_reason'] != '':
+    if domain_information['failed_reason']:
         ainformation.append('')
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 

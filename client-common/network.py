@@ -453,10 +453,10 @@ def formatACLList(zk_conn, vni, _direction, acl_list):
     description = dict()
     rule = dict()
 
-    if _direction is None:
-        directions = ['in', 'out']
-    else:
+    if _direction:
         directions = [_direction]
+    else:
+        directions = ['in', 'out']
 
     # Gather information for printing
     for acl in acl_list:
@@ -535,10 +535,10 @@ def isValidMAC(macaddr):
                          """,
                          re.VERBOSE|re.IGNORECASE)
 
-    if allowed.match(macaddr) is None:
-        return False
-    else:
+    if allowed.match(macaddr):
         return True
+    else:
+        return False
 
 def isValidIP(ipaddr):
     ip4_blocks = str(ipaddr).split(".")
@@ -608,34 +608,34 @@ def add_network(zk_conn, vni, description, nettype,
 def modify_network(zk_conn, vni, **parameters):
     # Add the new network to Zookeeper
     zk_data = dict()
-    if parameters['description'] != None:
+    if parameters['description']:
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
-    if parameters['domain'] != None:
+    if parameters['domain']:
         zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
-    if parameters['ip4_network'] != None:
+    if parameters['ip4_network']:
         zk_data.update({'/networks/{}/ip4_network'.format(vni): parameters['ip4_network']})
-    if parameters['ip4_gateway'] != None:
+    if parameters['ip4_gateway']:
         zk_data.update({'/networks/{}/ip4_gateway'.format(vni): parameters['ip4_gateway']})
-    if parameters['ip6_network'] != None:
+    if parameters['ip6_network']:
         zk_data.update({'/networks/{}/ip6_network'.format(vni): parameters['ip6_network']})
-        if parameters['ip6_network'] != '':
+        if parameters['ip6_network']:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'True'})
         else:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'False'})
-    if parameters['ip6_gateway'] != None:
+    if parameters['ip6_gateway']:
         zk_data.update({'/networks/{}/ip6_gateway'.format(vni): parameters['ip6_gateway']})
     else:
         # If we're changing the network, but don't also specify the gateway,
         # generate a new one automatically
-        if parameters['ip6_network'] != None:
+        if parameters['ip6_network']:
             ip6_netpart, ip6_maskpart = parameters['ip6_network'].split('/')
             ip6_gateway = '{}1'.format(ip6_netpart)
             zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
-    if parameters['dhcp_flag'] != None:
+    if parameters['dhcp_flag']:
         zk_data.update({'/networks/{}/dhcp_flag'.format(vni): parameters['dhcp_flag']})
-    if parameters['dhcp_start'] != None:
+    if parameters['dhcp_start']:
         zk_data.update({'/networks/{}/dhcp_start'.format(vni): parameters['dhcp_start']})
-    if parameters['dhcp_end'] != None:
+    if parameters['dhcp_end']:
         zk_data.update({'/networks/{}/dhcp_end'.format(vni): parameters['dhcp_end']})
 
     zkhandler.writedata(zk_conn, zk_data)
@@ -658,7 +658,7 @@ def remove_network(zk_conn, network):
 def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Use lowercase MAC format exclusively
@@ -688,7 +688,7 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
 def remove_dhcp_reservation(zk_conn, network, reservation):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     match_description = ''
@@ -715,7 +715,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
 def add_acl(zk_conn, network, direction, description, rule, order):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Change direction to something more usable
@@ -731,7 +731,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
     full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
     acl_list_length = len(full_acl_list)
     # Set order to len
-    if order == None or int(order) > acl_list_length:
+    if not order or int(order) > acl_list_length:
         order = acl_list_length
     # Convert passed-in order to an integer
     else:
@@ -771,7 +771,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 def remove_acl(zk_conn, network, rule, direction):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Change direction to something more usable
@@ -816,7 +816,7 @@ def remove_acl(zk_conn, network, rule, direction):
 def get_info(zk_conn, network, long_output):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     information = formatNetworkInformation(zk_conn, net_vni, long_output)
@@ -831,17 +831,17 @@ def get_list(zk_conn, limit):
 
     for net in full_net_list:
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
-        if limit != None:
+        if limit:
             try:
                 # Implcitly assume fuzzy limits
-                if re.match('\^.*', limit) == None:
+                if not re.match('\^.*', limit):
                     limit = '.*' + limit
-                if re.match('.*\$', limit) == None:
+                if not re.match('.*\$', limit):
                     limit = limit + '.*'
 
-                if re.match(limit, net) != None:
+                if re.match(limit, net):
                     net_list.append(net)
-                if re.match(limit, description) != None:
+                if re.match(limit, description):
                     net_list.append(net)
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
@@ -856,7 +856,7 @@ def get_list(zk_conn, limit):
 def get_list_dhcp(zk_conn, network, limit, only_static=False):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     dhcp_list = []
@@ -871,9 +871,9 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
     if limit:
         try:
             # Implcitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -882,9 +882,9 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
     for lease in full_dhcp_list:
         valid_lease = False
         if limit:
-            if re.match(limit, lease) != None:
+            if re.match(limit, lease):
                 valid_lease = True
-            if re.match(limit, lease) != None:
+            if re.match(limit, lease):
                 valid_lease = True
         else:
             valid_lease = True
@@ -900,7 +900,7 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
 def get_list_acl(zk_conn, network, limit, direction):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
-    if net_vni == None:
+    if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Change direction to something more usable
@@ -917,9 +917,9 @@ def get_list_acl(zk_conn, network, limit, direction):
     if limit:
         try:
             # Implcitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -927,7 +927,7 @@ def get_list_acl(zk_conn, network, limit, direction):
     for acl in full_acl_list:
         valid_acl = False
         if limit:
-            if re.match(limit, acl['description']) != None:
+            if re.match(limit, acl['description']):
                 valid_acl = True
         else:
             valid_acl = True

@@ -1021,9 +1021,9 @@ def get_list_osd(zk_conn, limit):
     if limit:
         try:
             # Implicitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -1031,7 +1031,7 @@ def get_list_osd(zk_conn, limit):
     for osd in full_osd_list:
         valid_osd = False
         if limit:
-            if re.match(limit, osd['osd_id']) != None:
+            if re.match(limit, osd['osd_id']):
                 valid_osd = True
         else:
             valid_osd = True
@@ -1112,9 +1112,9 @@ def get_list_pool(zk_conn, limit):
     if limit:
         try:
             # Implicitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -1122,7 +1122,7 @@ def get_list_pool(zk_conn, limit):
     for pool in full_pool_list:
         valid_pool = False
         if limit:
-            if re.match(limit, pool['pool_id']) != None:
+            if re.match(limit, pool['pool_id']):
                 valid_pool = True
         else:
             valid_pool = True
@@ -1207,9 +1207,9 @@ def get_list_volume(zk_conn, pool, limit):
     if limit:
         try:
             # Implicitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -1217,7 +1217,7 @@ def get_list_volume(zk_conn, pool, limit):
     for volume in full_volume_list:
         valid_volume = False
         if limit:
-            if re.match(limit, volume) != None:
+            if re.match(limit, volume):
                 valid_volume = True
         else:
             valid_volume = True
@@ -1304,9 +1304,9 @@ def get_list_snapshot(zk_conn, pool, volume, limit):
     if limit:
         try:
             # Implicitly assume fuzzy limits
-            if re.match('\^.*', limit) == None:
+            if not re.match('\^.*', limit):
                 limit = '.*' + limit
-            if re.match('.*\$', limit) == None:
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -1314,7 +1314,7 @@ def get_list_snapshot(zk_conn, pool, volume, limit):
     for snapshot in full_snapshot_list:
         valid_snapshot = False
         if limit:
-            if re.match(limit, snapshot) != None:
+            if re.match(limit, snapshot):
                 valid_snapshot = True
         else:
             valid_snapshot = True
