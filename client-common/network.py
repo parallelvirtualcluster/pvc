@@ -580,6 +580,9 @@ def add_network(zk_conn, vni, description, nettype,
     else:
         dhcp6_flag = 'False'
 
+    if not domain:
+        domain = '{}.local'.format(description)
+
     # Add the new network to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/networks/{}'.format(vni): description,
