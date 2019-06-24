@@ -420,6 +420,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             prefix='VNI {}'.format(self.vni),
             state='o'
         )
+
+        # Create vLAN interface
         common.run_os_command(
             'ip link add link {} name {} type vlan id {}'.format(
                 self.vni_dev,
@@ -427,18 +429,14 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.vni
             )
         )
+        # Create bridge interface
         common.run_os_command(
             'brctl addbr {}'.format(
                 self.bridge_nic
             )
         )
-        common.run_os_command(
-            'brctl addif {} {}'.format(
-                self.bridge_nic,
-                self.vlan_nic
-            )
-        )
 
+        # Set MTU of vLAN and bridge NICs
         vx_mtu = self.vni_mtu
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
@@ -452,10 +450,26 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 vx_mtu
             )
         )
+
+        # Disable tx checksum offload on bridge interface (breaks DHCP on Debian < 9)
         common.run_os_command(
-            # Disable IPv6 DAD on bridge NICs
+            'ethtool -K {} tx off'.format(
+                self.bridge_nic
+            )
+        )
+
+        # Disable IPv6 DAD on bridge interface
+        common.run_os_command(
             'sysctl net.ipv6.conf.{}.accept_dad=0'.format(
                 self.bridge_nic
+            )
+        )
+
+        # Add vLAN interface to bridge interface
+        common.run_os_command(
+            'brctl addif {} {}'.format(
+                self.bridge_nic,
+                self.vlan_nic
             )
         )
 
@@ -468,6 +482,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             prefix='VNI {}'.format(self.vni),
             state='o'
         )
+
+        # Create VXLAN interface
         common.run_os_command(
             'ip link add {} type vxlan id {} dstport 4789 dev {}'.format(
                 self.vxlan_nic,
@@ -475,18 +491,14 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.vni_dev
             )
         )
+        # Create bridge interface
         common.run_os_command(
             'brctl addbr {}'.format(
                 self.bridge_nic
             )
         )
-        common.run_os_command(
-            'brctl addif {} {}'.format(
-                self.bridge_nic,
-                self.vxlan_nic
-            )
-        )
 
+        # Set MTU of VXLAN and bridge NICs
         vx_mtu = self.vni_mtu - 50
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
@@ -500,10 +512,26 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 vx_mtu
             )
         )
+
+        # Disable tx checksum offload on bridge interface (breaks DHCP on Debian < 9)
         common.run_os_command(
-            # Disable IPv6 DAD on bridge NICs
+            'ethtool -K {} tx off'.format(
+                self.bridge_nic
+            )
+        )
+
+        # Disable IPv6 DAD on bridge interface
+        common.run_os_command(
             'sysctl net.ipv6.conf.{}.accept_dad=0'.format(
                 self.bridge_nic
+            )
+        )
+
+        # Add VXLAN interface to bridge interface
+        common.run_os_command(
+            'brctl addif {} {}'.format(
+                self.bridge_nic,
+                self.vxlan_nic
             )
         )
 
