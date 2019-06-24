@@ -605,8 +605,8 @@ def format_info(zk_conn, domain_information, long_output):
 
     # Get a failure reason if applicable
     if domain_information['failed_reason'] != '':
-        click.echo('')
-        click.echo('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
+        ainformation.append('')
+        ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 
     # Network list
     net_list = []
@@ -638,8 +638,8 @@ def format_info(zk_conn, domain_information, long_output):
             ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(domain_information['disks'].index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
         ainformation.append('')
         ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
-        for net in domain_information['nets']:
-            ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(domain_information['nets'].index(net), net['type'], net['source'], net['model'], net['mac']))
+        for net in domain_information['networks']:
+            ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(domain_information['networks'].index(net), net['type'], net['source'], net['model'], net['mac']))
         # Controller list
         ainformation.append('')
         ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
