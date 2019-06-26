@@ -123,7 +123,7 @@ def add_osd(zk_conn, logger, node, device, weight):
         for line in stdout.split('\n'):
             if 'osd fsid' in line:
                 osd_fsid = line.split()[-1]
-                
+
         if not osd_fsid:
             print('ceph-volume lvm list')
             print('Could not find OSD fsid in data:')
@@ -199,7 +199,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         if not osd_id in osd_list:
             logger.out('Could not find OSD {} in the cluster'.format(osd_id), state='e')
             return True
-            
+
         # 1. Set the OSD out so it will flush
         logger.out('Setting out OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph osd out {}'.format(osd_id))
@@ -208,7 +208,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             print(stdout)
             print(stderr)
             raise
-        
+
         # 2. Wait for the OSD to flush
         logger.out('Flushing OSD disk with ID {}'.format(osd_id), state='i')
         osd_string = str()
@@ -258,7 +258,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
             print(stdout)
             print(stderr)
             raise
-        
+
         # 6. Purge the OSD from Ceph
         logger.out('Purging OSD disk with ID {}'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command('ceph osd purge {} --yes-i-really-mean-it'.format(osd_id))

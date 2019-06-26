@@ -135,7 +135,7 @@ class PowerDNSInstance(object):
                 'Successfully started PowerDNS zone aggregator',
                 state='o'
             )
-            
+
 
     def stop(self):
         if self.dns_server_daemon:
@@ -232,7 +232,7 @@ class DNSNetworkInstance(object):
                     """,
                     (domain_id, network_domain, ns_server, 'NS', 86400, 0)
                 )
-            
+
         self.sql_conn.commit()
         self.sql_conn.close()
         self.sql_conn = None
@@ -315,7 +315,7 @@ class AXFRDaemonInstance(object):
                self.config['pdns_postgresql_password']
             )
         )
-        
+
         # Start the thread
         self.thread.start() 
 
@@ -471,7 +471,7 @@ class AXFRDaemonInstance(object):
 
                         # Commit all the previous changes
                         self.sql_conn.commit()
-    
+
                         # Reload the domain
                         common.run_os_command(
                             '/usr/bin/pdns_control --socket-dir={} reload {}'.format(

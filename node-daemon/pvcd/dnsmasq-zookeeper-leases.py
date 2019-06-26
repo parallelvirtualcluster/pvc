@@ -106,7 +106,7 @@ def read_lease_database(zk_conn, zk_leases_key):
 
     # Output list
     print('\n'.join(output_list))
-        
+
 def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clientid):
     transaction = zk_conn.transaction()
     transaction.create('{}/{}'.format(zk_leases_key, macaddr), ''.encode('ascii'))

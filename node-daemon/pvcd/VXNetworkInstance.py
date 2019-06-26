@@ -380,12 +380,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         for acl in self.firewall_rules_out:
             order = zkhandler.readdata(self.zk_conn, '/networks/{}/firewall_rules/out/{}/order'.format(self.vni, acl))
             ordered_acls_out[order] = acl
-    
+
         for order in sorted(ordered_acls_in.keys()):
             sorted_acl_list['in'].append(ordered_acls_in[order])
         for order in sorted(ordered_acls_out.keys()):
             sorted_acl_list['out'].append(ordered_acls_out[order])
-   
+
         for direction in 'in', 'out': 
             for acl in sorted_acl_list[direction]:
                 rule_prefix = "add rule inet filter vxlan{}-{} counter".format(self.vni, direction)

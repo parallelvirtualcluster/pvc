@@ -141,7 +141,7 @@ class DomainInstance(object):
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}:'.format(self.domuuid))
             self.instart = False
             return
-   
+
         # Try to get the current state in case it's already running
         try:
             self.dom = self.lookupByUUID(self.domuuid)
@@ -172,7 +172,7 @@ class DomainInstance(object):
         lv_conn.close()
 
         self.instart = False
-  
+
     # Restart the VM
     def restart_vm(self):
         self.logger.out('Restarting VM', state='i', prefix='Domain {}:'.format(self.domuuid))
@@ -185,7 +185,7 @@ class DomainInstance(object):
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}:'.format(self.domuuid))
             self.inrestart = False
             return
-    
+
         self.shutdown_vm()
         time.sleep(0.2)
         self.start_vm()
@@ -227,7 +227,7 @@ class DomainInstance(object):
         self.logger.out('Successfully stopped VM', state='o', prefix='Domain {}:'.format(self.domuuid))
         self.dom = None
         self.instop = False
-    
+
         # Stop the log watcher
         self.console_log_instance.stop()
 
@@ -320,7 +320,7 @@ class DomainInstance(object):
             # Wait 1 second and increment the tick
             time.sleep(1)
             tick += 1
-            
+
             # Get zookeeper state and look for the VM in the local libvirt database
             self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
             self.dom = self.lookupByUUID(self.domuuid)
@@ -348,7 +348,7 @@ class DomainInstance(object):
                     live_receive = False
                     self.logger.out('Send failed on remote end', state='w', prefix='Domain {}:'.format(self.domuuid))
                     break
-                    
+
             # If we've already been waiting 90s for a receive
             # HARDCODE: 90s should be plenty of time for even extremely large VMs on reasonable networks
             if tick > 90:
@@ -365,7 +365,7 @@ class DomainInstance(object):
                 # Wait 1 second and increment the tick
                 time.sleep(1)
                 tick += 1
-            
+
                 # Get zookeeper state and look for the VM in the local libvirt database
                 self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
 
@@ -387,7 +387,7 @@ class DomainInstance(object):
                     })
                     self.logger.out('Shutdown timed out without state change', state='e', prefix='Domain {}:'.format(self.domuuid))
                     break
-        
+
         self.inreceive = False
 
     #
@@ -474,7 +474,7 @@ class DomainInstance(object):
                         self.removeDomainFromList()
                         # Stop the log watcher
                         self.console_log_instance.stop()
-                        
+
             else:
                 # Conditional pass three - Is this VM currently running on this node
                 if running == libvirt.VIR_DOMAIN_RUNNING:
@@ -499,10 +499,10 @@ class DomainInstance(object):
 
         lv_conn = None
         libvirt_name = "qemu:///system"
-    
+
         # Convert the text UUID to bytes
         buuid = uuid.UUID(tuuid).bytes
-    
+
         # Try
         try:
             # Open a libvirt connection
@@ -510,19 +510,19 @@ class DomainInstance(object):
             if lv_conn == None:
                 self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}:'.format(self.domuuid))
                 return None
-        
+
             # Lookup the UUID
             dom = lv_conn.lookupByUUID(buuid)
-    
+
         # Fail
         except:
             dom = None
-    
+
         # After everything
         finally:
             # Close the libvirt connection
             if lv_conn != None:
                 lv_conn.close()
-    
+
         # Return the dom object (or None)
         return dom

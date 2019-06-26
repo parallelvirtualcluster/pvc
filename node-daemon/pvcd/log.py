@@ -47,7 +47,7 @@ class Logger(object):
             self.last_colour = self.fmt_cyan
         else:
             self.last_colour = ""
-    
+
     # Provide a hup function to close and reopen the writer
     def hup(self):
         self.writer.close()
@@ -90,11 +90,11 @@ class Logger(object):
             date = ''
             colour = self.last_colour
             prompt = '>>> '
-    
+
         # Append space to prefix
         if prefix != '':
             prefix = prefix + ' - '
-    
+
         message = colour + prompt + endc + date + prefix + message
         print(message)
         if self.config['file_logging'] == 'True':

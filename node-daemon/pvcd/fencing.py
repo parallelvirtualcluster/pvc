@@ -63,7 +63,7 @@ def fenceNode(node_name, zk_conn, config, logger):
         zkhandler.writedata(zk_conn, { '/nodes/{}/routerstate'.format(node_name): 'secondary' })
         if zkhandler.readdata(zk_conn, '/primary_node') == node_name:
             zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
-        
+
     # If the fence succeeded and successful_fence is migrate
     if fence_status == True and config['successful_fence'] == 'migrate':
         migrateFromFencedNode(zk_conn, node_name, logger)

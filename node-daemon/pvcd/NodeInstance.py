@@ -158,7 +158,7 @@ class NodeInstance(object):
 
             if data != self.memfree:
                 self.memfree = data
-    
+
         @self.zk_conn.DataWatch('/nodes/{}/memused'.format(self.name))
         def watch_node_memused(data, stat, event=''):
             if event and event.type == 'DELETED':
@@ -173,7 +173,7 @@ class NodeInstance(object):
 
             if data != self.memused:
                 self.memused = data
-    
+
         @self.zk_conn.DataWatch('/nodes/{}/memalloc'.format(self.name))
         def watch_node_memalloc(data, stat, event=''):
             if event and event.type == 'DELETED':
@@ -188,7 +188,7 @@ class NodeInstance(object):
 
             if data != self.memalloc:
                 self.memalloc = data
-    
+
         @self.zk_conn.DataWatch('/nodes/{}/vcpualloc'.format(self.name))
         def watch_node_vcpualloc(data, stat, event=''):
             if event and event.type == 'DELETED':
@@ -203,7 +203,7 @@ class NodeInstance(object):
 
             if data != self.vcpualloc:
                 self.vcpualloc = data
-    
+
         @self.zk_conn.DataWatch('/nodes/{}/runningdomains'.format(self.name))
         def watch_node_runningdomains(data, stat, event=''):
             if event and event.type == 'DELETED':
@@ -233,7 +233,7 @@ class NodeInstance(object):
 
             if data != self.domains_count:
                 self.domains_count = data
-    
+
     # Update value functions
     def update_node_list(self, d_node):
         self.d_node = d_node
@@ -456,7 +456,7 @@ def getHypervisors(zk_conn, dom_uuid):
         valid_node_list.append(node)
 
     return valid_node_list
-    
+
 # via free memory (relative to allocated memory)
 def findTargetHypervisorMem(zk_conn, dom_uuid):
     most_allocfree = 0

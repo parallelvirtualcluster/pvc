@@ -848,12 +848,12 @@ if enable_storage:
             @zk_conn.ChildrenWatch('/ceph/volumes/{}'.format(pool))
             def update_volumes(new_volume_list):
                 global volume_list, d_volume
-        
+
                 # Add any missing Volumes to the list
                 for volume in new_volume_list:
                     if not volume in volume_list[pool]:
                         d_volume[pool][volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
-        
+
                 # Remove any deleted Volumes from the list
                 for volume in volume_list[pool]:
                     if not volume in new_volume_list:
