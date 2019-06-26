@@ -590,7 +590,7 @@ else:
 
 if enable_hypervisor:
     # Check that libvirtd is listening TCP
-    libvirt_check_name = "qemu+tcp://127.0.0.1:16509/system"
+    libvirt_check_name = "qemu+tcp://{}:16509/system".format(myhostname)
     logger.out('Connecting to Libvirt daemon at {}'.format(libvirt_check_name), state='i')
     try:
         lv_conn = libvirt.open(libvirt_check_name)
