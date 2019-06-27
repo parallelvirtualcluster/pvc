@@ -150,7 +150,9 @@ def flush_node(zk_conn, node, wait):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
     if zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
-        retmsg = 'Flushing hypervisor {} of running VMs. A flush lock currently exists; flush will continue once the lock is freed.'.format(node)
+        retmsg = 'A lock currently exists; use --wait to wait for it, or try again later.'.format(node)
+        if not wait:
+            return False, retmsg
         lock_wait = True
     else:
         retmsg = 'Flushing hypervisor {} of running VMs.'.format(node)
@@ -185,7 +187,9 @@ def ready_node(zk_conn, node, wait):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
     if zkhandler.readdata(zk_conn, '/locks/flush_lock') == 'True':
-        retmsg = 'Restoring hypervisor {} to active service. A flush lock currently exists; unflush will continue once the lock is freed.'.format(node)
+        retmsg = 'A lock currently exists; use --wait to wait for it, or try again later.'.format(node)
+        if not wait:
+            return False, retmsg
         lock_wait = True
     else:
         retmsg = 'Restoring hypervisor {} to active service.'.format(node)
