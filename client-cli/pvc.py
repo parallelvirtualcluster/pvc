@@ -388,13 +388,13 @@ def vm_modify(domain, config, editor, restart):
 ###############################################################################
 # pvc vm undefine
 ###############################################################################
-@click.command(name='undefine', short_help='Undefine and stop a virtual machine.')
+@click.command(name='undefine', short_help='Undefine a virtual machine.')
 @click.argument(
     'domain'
 )
 def vm_undefine(domain):
     """
-    Stop virtual machine DOMAIN and remove it from the cluster database. DOMAIN may be a UUID or name.
+    Stop virtual machine DOMAIN and remove it from the cluster database, preserving disks. DOMAIN may be a UUID or name.
     """
 
     # Ensure at least one search method is set
@@ -405,6 +405,28 @@ def vm_undefine(domain):
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_vm.undefine_vm(zk_conn, domain, is_cli=True)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc vm remove
+###############################################################################
+@click.command(name='remove', short_help='Remove a virtual machine.')
+@click.argument(
+    'domain'
+)
+def vm_remove(domain):
+    """
+    Stop virtual machine DOMAIN and remove it, along with all disks, from the cluster. DOMAIN may be a UUID or name.
+    """
+
+    # Ensure at least one search method is set
+    if domain == None:
+        click.echo("ERROR: You must specify either a name or UUID value.")
+        exit(1)
+
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.remove_vm(zk_conn, domain, is_cli=True)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -1609,6 +1631,7 @@ cli_vm.add_command(vm_add)
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
+cli_vm.add_command(vm_remove)
 cli_vm.add_command(vm_dump)
 cli_vm.add_command(vm_start)
 cli_vm.add_command(vm_restart)

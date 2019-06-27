@@ -39,6 +39,8 @@ import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 
+import client_lib.ceph as ceph
+
 #
 # XML information parsing functions
 #
@@ -94,7 +96,6 @@ def getInformationFromXML(zk_conn, uuid):
     return domain_information
 
 
-
 #
 # Cluster search functions
 #
@@ -136,7 +137,7 @@ def searchClusterByName(zk_conn, name):
     return uuid
 
 def getDomainUUID(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     if common.validateUUID(domain):
         dom_name = searchClusterByUUID(zk_conn, domain)
         dom_uuid = searchClusterByName(zk_conn, dom_name)
@@ -147,7 +148,7 @@ def getDomainUUID(zk_conn, domain):
     return dom_uuid
 
 def getDomainName(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     if common.validateUUID(domain):
         dom_name = searchClusterByUUID(zk_conn, domain)
         dom_uuid = searchClusterByName(zk_conn, dom_name)
@@ -156,6 +157,14 @@ def getDomainName(zk_conn, domain):
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     return dom_name
+
+def getDomainDisks(zk_conn, dom_uuid):
+    domain_information = getInformationFromXML(zk_conn, dom_uuid)
+    disk_list = []
+    for disk in domain_information['disks']:
+        disk_list.append(disk['name'])
+       
+    return disk_list
 
 #
 # Direct functions
@@ -214,50 +223,90 @@ def dump_vm(zk_conn, domain):
 
     return True, vm_xml
 
+def purge_vm(zk_conn, domain, is_cli=False):
+    """
+    Helper function for both undefine and remove VM to perform the shutdown, termination,
+    and configuration deletion.
+    """
+
 def undefine_vm(zk_conn, domain, is_cli=False):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Shut down the VM
-    try:
-        current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
-        if current_vm_state != 'stop':
-            if is_cli:
-                click.echo('Forcibly stopping VM "{}".'.format(dom_uuid))
-            # Set the domain into stop mode
-            zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
+    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(domain))
+    if current_vm_state != 'stop':
+        if is_cli:
+            click.echo('Forcibly stopping VM "{}".'.format(domain))
+        # Set the domain into stop mode
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
-            # Wait for 1 second to allow state to flow to all nodes
-            if is_cli:
-                click.echo('Waiting for cluster to update.')
-            time.sleep(2)
-    except:
-        pass
+        # Wait for 1 second to allow state to flow to all nodes
+        if is_cli:
+            click.echo('Waiting for cluster to update.')
+        time.sleep(2)
 
     # Gracefully terminate the class instances
-    try:
-        if is_cli:
-            click.echo('Deleting VM "{}" from nodes.'.format(dom_uuid))
-        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
-        time.sleep(2)
-    except:
-        pass
+    if is_cli:
+        click.echo('Deleting VM "{}" from nodes.'.format(domain))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
+    time.sleep(2)
 
     # Delete the configurations
-    try:
-        if is_cli:
-            click.echo('Undefining VM "{}".'.format(dom_uuid))
-        zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
-    except:
-        pass
+    if is_cli:
+        click.echo('Undefining VM "{}".'.format(domain))
+    zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
 
-    return True, 'Removed VM "{}" from the cluster.'.format(dom_uuid)
+    return True, 'Undefined VM "{}" from the cluster.'.format(domain)
+
+def remove_vm(zk_conn, domain, is_cli=False):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        common.stopZKConnection(zk_conn)
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    disk_list = getDomainDisks(zk_conn, dom_uuid)
+
+    # Shut down the VM
+    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
+    if current_vm_state != 'stop':
+        if is_cli:
+            click.echo('Forcibly stopping VM "{}".'.format(domain))
+        # Set the domain into stop mode
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
+
+        # Wait for 1 second to allow state to flow to all nodes
+        if is_cli:
+            click.echo('Waiting for cluster to update.')
+        time.sleep(2)
+
+    # Gracefully terminate the class instances
+    if is_cli:
+        click.echo('Deleting VM "{}" from nodes.'.format(domain))
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
+    time.sleep(2)
+
+    # Delete the configurations
+    if is_cli:
+        click.echo('Undefining VM "{}".'.format(domain))
+    zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
+
+    # Remove disks
+    for disk in disk_list:
+        # vmpool/vmname_volume
+        disk_pool, disk_name = disk.split('/')
+        retcode, message = ceph.remove_volume(zk_conn, disk_pool, disk_name)
+        if is_cli and message:
+            click.echo('{}'.format(message))
+
+    return True, 'Removed VM "{}" and disks from the cluster.'.format(domain)
 
 def start_vm(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -269,7 +318,7 @@ def start_vm(zk_conn, domain):
     return True, 'Starting VM "{}".'.format(dom_uuid)
 
 def restart_vm(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -287,7 +336,7 @@ def restart_vm(zk_conn, domain):
     return True, 'Restarting VM "{}".'.format(dom_uuid)
 
 def shutdown_vm(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
@@ -304,7 +353,7 @@ def shutdown_vm(zk_conn, domain):
     return True, 'Shutting down VM "{}".'.format(dom_uuid)
 
 def stop_vm(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -319,7 +368,7 @@ def stop_vm(zk_conn, domain):
     return True, 'Forcibly stopping VM "{}".'.format(dom_uuid)
 
 def move_vm(zk_conn, domain, target_node, selector):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -356,7 +405,7 @@ def move_vm(zk_conn, domain, target_node, selector):
     return True, 'Permanently migrating VM "{}" to node "{}".'.format(dom_uuid, target_node)
 
 def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=False):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -404,7 +453,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
     return True, 'Migrating VM "{}" to node "{}".'.format(dom_uuid, target_node)
 
 def unmigrate_vm(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
@@ -433,7 +482,7 @@ def unmigrate_vm(zk_conn, domain):
     return True, 'Unmigrating VM "{}" back to node "{}".'.format(dom_uuid, target_node)
 
 def get_console_log(zk_conn, domain, lines=1000):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
@@ -455,7 +504,7 @@ def get_console_log(zk_conn, domain, lines=1000):
     return True, ''
 
 def follow_console_log(zk_conn, domain, lines=10):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
@@ -498,7 +547,7 @@ def follow_console_log(zk_conn, domain, lines=10):
     return True, ''
 
 def get_info(zk_conn, domain):
-    # Validate and obtain alternate passed value
+    # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         common.stopZKConnection(zk_conn)
