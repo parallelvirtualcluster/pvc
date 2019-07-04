@@ -95,11 +95,11 @@ def getDomainMainDetails(parsed_xml):
 # Get long-format details
 #
 def getDomainExtraDetails(parsed_xml):
-    dtype = parsed_xml.os.type
-    darch = parsed_xml.os.type.attrib['arch']
-    dmachine = parsed_xml.os.type.attrib['machine']
-    dconsole = parsed_xml.devices.console.attrib['type']
-    demulator = parsed_xml.devices.emulator
+    dtype = str(parsed_xml.os.type)
+    darch = str(parsed_xml.os.type.attrib['arch'])
+    dmachine = str(parsed_xml.os.type.attrib['machine'])
+    dconsole = str(parsed_xml.devices.console.attrib['type'])
+    demulator = str(parsed_xml.devices.emulator)
 
     return dtype, darch, dmachine, dconsole, demulator
 
