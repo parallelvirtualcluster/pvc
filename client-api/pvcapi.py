@@ -52,11 +52,9 @@ def api_node_secondary():
     """
     Take NODE out of primary router mode.
     """
-    # Get data from flask
-    data = json.loads(flask.request.data.decode('utf8'))
     # Get node
-    if 'node' in data:
-        node = data['node']
+    if 'node' in flask.request.args:
+        node = flask.request.args['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -78,11 +76,9 @@ def api_node_primary():
     """
     Set NODE to primary router mode.
     """
-    # Get data from flask
-    data = json.loads(flask.request.data.decode('utf8'))
     # Get node
-    if 'node' in data:
-        node = data['node']
+    if 'node' in flask.request.args:
+        node = flask.request.args['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -104,11 +100,9 @@ def api_node_flush():
     """
     Flush NODE of running VMs.
     """
-    # Get data from flask
-    data = json.loads(flask.request.data.decode('utf8'))
     # Get node
-    if 'node' in data:
-        node = data['node']
+    if 'node' in flask.request.args:
+        node = flask.request.args['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -131,11 +125,9 @@ def api_node_ready():
     """
     Restore NODE to active service.
     """
-    # Get data from flask
-    data = json.loads(flask.request.data.decode('utf8'))
     # Get node
-    if 'node' in data:
-        node = data['node']
+    if 'node' in flask.request.args:
+        node = flask.request.args['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -152,11 +144,35 @@ def api_node_ready():
     }
     return flask.jsonify(output), retcode
 
+@pvcapi.route('/api/v1/node/list', methods=['GET'])
+def api_node_list():
+    """
+    Return a list of nodes with limit LIMIT.
+    """
+    # Get limit
+    if 'limit' in flask.request.args:
+        limit = flask.request.args['limit']
+    else:
+        limit = None
 
-#@pvcapi.route('/api/v1/node/info', methods=['GET'])
-#@pvcapi.route('/api/v1/node/list', methods=['GET'])
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retdata = pvc_node.get_list(zk_conn, limit)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
 # VM endpoints
-#@pvcapi.route('/api/v1/vm', methods=['GET'])
+@pvcapi.route('/api/v1/vm', methods=['GET'])
+def api_vm():
+    """
+    Manage the state of a VM in the PVC cluster
+    """
+    return "Manage the state of a VM in the PVC cluster.\n", 209
+
 #@pvcapi.route('/api/v1/vm/add', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/define', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/modify', methods=['POST'])
@@ -169,14 +185,44 @@ def api_node_ready():
 #@pvcapi.route('/api/v1/vm/move', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/migrate', methods=['POST'])
 #@pvcapi.route('/api/v1/vm/unmigrate', methods=['POST'])
-#@pvcapi.route('/api/v1/vm/info', methods=['GET'])
-#@pvcapi.route('/api/v1/vm/list', methods=['GET'])
+@pvcapi.route('/api/v1/vm/list', methods=['GET'])
+def api_vm_list():
+    """
+    Return a list of VMs with limit LIMIT.
+    """
+    # Get node limit
+    if 'node' in flask.request.args:
+        node = flask.request.args['node']
+    else:
+        node = None
+
+    # Get state limit
+    if 'state' in flask.request.args:
+        state = flask.request.args['state']
+    else:
+        state = None
+
+    # Get name limit
+    if 'limit' in flask.request.args:
+        limit = flask.request.args['limit']
+    else:
+        limit = None
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
 # Network endpoints
 #@pvcapi.route('/api/v1/network', methods=['GET'])
 #@pvcapi.route('/api/v1/network/add', methods=['POST'])
 #@pvcapi.route('/api/v1/network/modify', methods=['POST'])
 #@pvcapi.route('/api/v1/network/remove', methods=['POST'])
-#@pvcapi.route('/api/v1/network/info', methods=['GET'])
 #@pvcapi.route('/api/v1/network/list', methods=['GET'])
 #@pvcapi.route('/api/v1/network/dhcp', methods=['GET'])
 #@pvcapi.route('/api/v1/network/dhcp/list', methods=['GET'])
