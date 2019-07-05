@@ -101,13 +101,24 @@ def format_bytes_fromhuman(datahuman):
     return '{}B'.format(databytes)
 
 #
-# Cluster search functions
+# Status functions
 #
 def getCephStatus(zk_conn):
     status_data = zkhandler.readdata(zk_conn, '/ceph').rstrip()
     primary_node = zkhandler.readdata(zk_conn, '/primary_node')
     return status_data, primary_node
 
+def get_status(zk_conn):
+    status_data, primary_node = getCephStatus(zk_conn)
+    click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=primary_node))
+    click.echo(status_data)
+    click.echo('')
+    return True, ''
+
+
+#
+# OSD functions
+#
 def getClusterOSDList(zk_conn):
     # Get a list of VNIs by listing the children of /networks
     osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
@@ -127,66 +138,6 @@ def getCephOSDs(zk_conn):
     osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
     return osd_list
 
-def getClusterPoolList(zk_conn):
-    # Get a list of pools under /ceph/pools
-    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    return pool_list
-
-def getPoolInformation(zk_conn, name):
-    # Parse the stats data
-    pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(name))
-    pool_stats = dict(json.loads(pool_stats_raw))
-    # Deal with the size issues
-    for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
-        databytes = pool_stats[datatype]
-        databytes_formatted = format_bytes_tohuman(databytes)
-        new_name = datatype.replace('bytes', 'formatted')
-        pool_stats[new_name] = databytes_formatted
-    return pool_stats
-
-def getCephPools(zk_conn):
-    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    return pool_list
-
-def getCephVolumes(zk_conn, pool):
-    volume_list = list()
-    if pool == 'all':
-        pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
-    else:
-        pool_list = [ pool ]
-
-    for pool_name in pool_list:
-        for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
-            volume_list.append('{}/{}'.format(pool_name, volume_name))
-
-    return volume_list
-
-def getVolumeInformation(zk_conn, pool, name):
-    # Parse the stats data
-    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, name))
-    volume_stats = dict(json.loads(volume_stats_raw))
-    # Format the size to something nicer
-    volume_stats['size'] = format_bytes_tohuman(volume_stats['size'])
-    return volume_stats
-
-def getCephSnapshots(zk_conn, pool, volume):
-    snapshot_list = list()
-    volume_list = list()
-
-    volume_list = getCephVolumes(zk_conn, pool)
-    if volume != 'all':
-        for volume_entry in volume_list:
-            volume_pool, volume_name = volume_entry.split('/')
-            if volume_name == volume:
-                volume_list = [ '{}/{}'.format(volume_pool, volume_name) ]
-
-    for volume_entry in volume_list:
-        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
-            snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
-
-    return snapshot_list
-
-# Formatting functions (for CLI client)
 def formatOSDList(zk_conn, osd_list):
     osd_list_output = []
 
@@ -444,387 +395,34 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
     output_string = osd_list_output_header + '\n' + '\n'.join(sorted(osd_list_output))
     return output_string
 
-def formatPoolList(zk_conn, pool_list):
-    pool_list_output = []
+def get_list_osd(zk_conn, limit):
+    osd_list = []
+    full_osd_list = getCephOSDs(zk_conn)
 
-    pool_id = dict()
-    pool_size = dict()
-    pool_num_objects = dict()
-    pool_num_clones = dict()
-    pool_num_copies = dict()
-    pool_num_degraded = dict()
-    pool_read_ops = dict()
-    pool_read_data = dict()
-    pool_write_ops = dict()
-    pool_write_data = dict()
-
-    pool_name_length = 5
-    pool_id_length = 3
-    pool_size_length = 5
-    pool_num_objects_length = 6
-    pool_num_clones_length = 7
-    pool_num_copies_length = 7
-    pool_num_degraded_length = 9
-    pool_read_ops_length = 4
-    pool_read_data_length = 5
-    pool_write_ops_length = 4
-    pool_write_data_length = 5
-
-    for pool in pool_list:
-        # Set the Pool name length
-        _pool_name_length = len(pool) + 1
-        if _pool_name_length > pool_name_length:
-            pool_name_length = _pool_name_length
-
-        # Get stats
-        pool_stats = getPoolInformation(zk_conn, pool)
-
-        # Set the parent node and length
+    if limit:
         try:
-            pool_id[pool] = pool_stats['id']
-            # If this happens, the node hasn't checked in fully yet, so just ignore it
-            if not pool_id[pool]:
-                continue
-        except KeyError:
-            continue
+            # Implicitly assume fuzzy limits
+            if not re.match('\^.*', limit):
+                limit = '.*' + limit
+            if not re.match('.*\$', limit):
+                limit = limit + '.*'
+        except Exception as e:
+            return False, 'Regex Error: {}'.format(e)
 
-        # Set the id and length
-        pool_id[pool] = pool_stats['id']
-        _pool_id_length = len(str(pool_id[pool])) + 1
-        if _pool_id_length > pool_id_length:
-            pool_id_length = _pool_id_length
+    for osd in full_osd_list:
+        valid_osd = False
+        if limit:
+            if re.match(limit, osd['osd_id']):
+                valid_osd = True
+        else:
+            valid_osd = True
 
-        # Set the size and length
-        pool_size[pool] = pool_stats['size_formatted']
-        _pool_size_length = len(str(pool_size[pool])) + 1
-        if _pool_size_length > pool_size_length:
-            pool_size_length = _pool_size_length
+        if valid_osd:
+            osd_list.append(osd)
 
-        # Set the num_objects and length
-        pool_num_objects[pool] = pool_stats['num_objects']
-        _pool_num_objects_length = len(str(pool_num_objects[pool])) + 1
-        if _pool_num_objects_length > pool_num_objects_length:
-            pool_num_objects_length = _pool_num_objects_length
+    output_string = formatOSDList(zk_conn, osd_list)
+    click.echo(output_string)
 
-        # Set the num_clones and length
-        pool_num_clones[pool] = pool_stats['num_object_clones']
-        _pool_num_clones_length = len(str(pool_num_clones[pool])) + 1
-        if _pool_num_clones_length > pool_num_clones_length:
-            pool_num_clones_length = _pool_num_clones_length
-
-        # Set the num_copies and length
-        pool_num_copies[pool] = pool_stats['num_object_copies']
-        _pool_num_copies_length = len(str(pool_num_copies[pool])) + 1
-        if _pool_num_copies_length > pool_num_copies_length:
-            pool_num_copies_length = _pool_num_copies_length
-
-        # Set the num_degraded and length
-        pool_num_degraded[pool] = pool_stats['num_objects_degraded']
-        _pool_num_degraded_length = len(str(pool_num_degraded[pool])) + 1
-        if _pool_num_degraded_length > pool_num_degraded_length:
-            pool_num_degraded_length = _pool_num_degraded_length
-
-        # Set the write IOPS/data and length
-        pool_write_ops[pool] = pool_stats['write_ops']
-        _pool_write_ops_length = len(str(pool_write_ops[pool])) + 1
-        if _pool_write_ops_length > pool_write_ops_length:
-            pool_write_ops_length = _pool_write_ops_length
-        pool_write_data[pool] = pool_stats['write_formatted']
-        _pool_write_data_length = len(pool_write_data[pool]) + 1
-        if _pool_write_data_length > pool_write_data_length:
-            pool_write_data_length = _pool_write_data_length
-
-        # Set the read IOPS/data and length
-        pool_read_ops[pool] = pool_stats['read_ops']
-        _pool_read_ops_length = len(str(pool_read_ops[pool])) + 1
-        if _pool_read_ops_length > pool_read_ops_length:
-            pool_read_ops_length = _pool_read_ops_length
-        pool_read_data[pool] = pool_stats['read_formatted']
-        _pool_read_data_length = len(pool_read_data[pool]) + 1
-        if _pool_read_data_length > pool_read_data_length:
-            pool_read_data_length = _pool_read_data_length
-
-    # Format the output header
-    pool_list_output_header = '{bold}\
-{pool_id: <{pool_id_length}} \
-{pool_name: <{pool_name_length}} \
-{pool_size: <{pool_size_length}} \
-Obj: {pool_objects: <{pool_objects_length}} \
-{pool_clones: <{pool_clones_length}} \
-{pool_copies: <{pool_copies_length}} \
-{pool_degraded: <{pool_degraded_length}} \
-Rd: {pool_read_ops: <{pool_read_ops_length}} \
-{pool_read_data: <{pool_read_data_length}} \
-Wr: {pool_write_ops: <{pool_write_ops_length}} \
-{pool_write_data: <{pool_write_data_length}} \
-{end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            pool_id_length=pool_id_length,
-            pool_name_length=pool_name_length,
-            pool_size_length=pool_size_length,
-            pool_objects_length=pool_num_objects_length,
-            pool_clones_length=pool_num_clones_length,
-            pool_copies_length=pool_num_copies_length,
-            pool_degraded_length=pool_num_degraded_length,
-            pool_write_ops_length=pool_write_ops_length,
-            pool_write_data_length=pool_write_data_length,
-            pool_read_ops_length=pool_read_ops_length,
-            pool_read_data_length=pool_read_data_length,
-            pool_id='ID',
-            pool_name='Name',
-            pool_size='Used',
-            pool_objects='Count',
-            pool_clones='Clones',
-            pool_copies='Copies',
-            pool_degraded='Degraded',
-            pool_write_ops='OPS',
-            pool_write_data='Data',
-            pool_read_ops='OPS',
-            pool_read_data='Data'
-        )
-
-    for pool in pool_list:
-        # Format the output header
-        pool_list_output.append('{bold}\
-{pool_id: <{pool_id_length}} \
-{pool_name: <{pool_name_length}} \
-{pool_size: <{pool_size_length}} \
-     {pool_objects: <{pool_objects_length}} \
-{pool_clones: <{pool_clones_length}} \
-{pool_copies: <{pool_copies_length}} \
-{pool_degraded: <{pool_degraded_length}} \
-    {pool_read_ops: <{pool_read_ops_length}} \
-{pool_read_data: <{pool_read_data_length}} \
-    {pool_write_ops: <{pool_write_ops_length}} \
-{pool_write_data: <{pool_write_data_length}} \
-{end_bold}'.format(
-                bold='',
-                end_bold='',
-                pool_id_length=pool_id_length,
-                pool_name_length=pool_name_length,
-                pool_size_length=pool_size_length,
-                pool_objects_length=pool_num_objects_length,
-                pool_clones_length=pool_num_clones_length,
-                pool_copies_length=pool_num_copies_length,
-                pool_degraded_length=pool_num_degraded_length,
-                pool_write_ops_length=pool_write_ops_length,
-                pool_write_data_length=pool_write_data_length,
-                pool_read_ops_length=pool_read_ops_length,
-                pool_read_data_length=pool_read_data_length,
-                pool_id=pool_id[pool],
-                pool_name=pool,
-                pool_size=pool_size[pool],
-                pool_objects=pool_num_objects[pool],
-                pool_clones=pool_num_clones[pool],
-                pool_copies=pool_num_copies[pool],
-                pool_degraded=pool_num_degraded[pool],
-                pool_write_ops=pool_write_ops[pool],
-                pool_write_data=pool_write_data[pool],
-                pool_read_ops=pool_read_ops[pool],
-                pool_read_data=pool_read_data[pool]
-            )
-        )
-   
-    output_string = pool_list_output_header + '\n' + '\n'.join(sorted(pool_list_output))
-    return output_string
-
-def formatVolumeList(zk_conn, volume_list):
-    volume_list_output = []
-
-    volume_size = dict()
-    volume_objects = dict()
-    volume_order = dict()
-    volume_format = dict()
-    volume_features = dict()
-
-    volume_name_length = 5
-    volume_pool_length = 5
-    volume_size_length = 5
-    volume_objects_length = 8
-    volume_order_length = 6
-    volume_format_length = 7
-    volume_features_length = 10
-
-    for volume in volume_list:
-        volume_pool, volume_name = volume.split('/')
-
-        # Set the Volume name length
-        _volume_name_length = len(volume_name) + 1
-        if _volume_name_length > volume_name_length:
-            volume_name_length = _volume_name_length
-
-        # Set the Volume pool length
-        _volume_pool_length = len(volume_pool) + 1
-        if _volume_pool_length > volume_pool_length:
-            volume_pool_length = _volume_pool_length
-
-        # Get stats
-        volume_stats = getVolumeInformation(zk_conn, volume_pool, volume_name)
-
-        # Set the size and length
-        volume_size[volume] = volume_stats['size']
-        _volume_size_length = len(str(volume_size[volume])) + 1
-        if _volume_size_length > volume_size_length:
-            volume_size_length = _volume_size_length
-
-        # Set the num_objects and length
-        volume_objects[volume] = volume_stats['objects']
-        _volume_objects_length = len(str(volume_objects[volume])) + 1
-        if _volume_objects_length > volume_objects_length:
-            volume_objects_length = _volume_objects_length
-
-        # Set the order and length
-        volume_order[volume] = volume_stats['order']
-        _volume_order_length = len(str(volume_order[volume])) + 1
-        if _volume_order_length > volume_order_length:
-            volume_order_length = _volume_order_length
-
-        # Set the format and length
-        volume_format[volume] = volume_stats['format']
-        _volume_format_length = len(str(volume_format[volume])) + 1
-        if _volume_format_length > volume_format_length:
-            volume_format_length = _volume_format_length
-
-        # Set the features and length
-        volume_features[volume] = ','.join(volume_stats['features'])
-        _volume_features_length = len(str(volume_features[volume])) + 1
-        if _volume_features_length > volume_features_length:
-            volume_features_length = _volume_features_length
-
-    # Format the output header
-    volume_list_output_header = '{bold}\
-{volume_name: <{volume_name_length}} \
-{volume_pool: <{volume_pool_length}} \
-{volume_size: <{volume_size_length}} \
-{volume_objects: <{volume_objects_length}} \
-{volume_order: <{volume_order_length}} \
-{volume_format: <{volume_format_length}} \
-{volume_features: <{volume_features_length}} \
-{end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            volume_name_length=volume_name_length,
-            volume_pool_length=volume_pool_length,
-            volume_size_length=volume_size_length,
-            volume_objects_length=volume_objects_length,
-            volume_order_length=volume_order_length,
-            volume_format_length=volume_format_length,
-            volume_features_length=volume_features_length,
-            volume_name='Name',
-            volume_pool='Pool',
-            volume_size='Size',
-            volume_objects='Objects',
-            volume_order='Order',
-            volume_format='Format',
-            volume_features='Features',
-        )
-
-    for volume in volume_list:
-        volume_pool, volume_name = volume.split('/')
-        volume_list_output.append('{bold}\
-{volume_name: <{volume_name_length}} \
-{volume_pool: <{volume_pool_length}} \
-{volume_size: <{volume_size_length}} \
-{volume_objects: <{volume_objects_length}} \
-{volume_order: <{volume_order_length}} \
-{volume_format: <{volume_format_length}} \
-{volume_features: <{volume_features_length}} \
-{end_bold}'.format(
-                bold='',
-                end_bold='',
-                volume_name_length=volume_name_length,
-                volume_pool_length=volume_pool_length,
-                volume_size_length=volume_size_length,
-                volume_objects_length=volume_objects_length,
-                volume_order_length=volume_order_length,
-                volume_format_length=volume_format_length,
-                volume_features_length=volume_features_length,
-                volume_name=volume_name,
-                volume_pool=volume_pool,
-                volume_size=volume_size[volume],
-                volume_objects=volume_objects[volume],
-                volume_order=volume_order[volume],
-                volume_format=volume_format[volume],
-                volume_features=volume_features[volume],
-            )
-        )
-   
-    output_string = volume_list_output_header + '\n' + '\n'.join(sorted(volume_list_output))
-    return output_string
-
-def formatSnapshotList(zk_conn, snapshot_list):
-    snapshot_list_output = []
-
-    snapshot_name_length = 5
-    snapshot_volume_length = 7
-    snapshot_pool_length = 5
-
-    for snapshot in snapshot_list:
-        snapshot_pool, snapshot_detail = snapshot.split('/')
-        snapshot_volume, snapshot_name = snapshot_detail.split('@')
-
-        # Set the Snapshot name length
-        _snapshot_name_length = len(snapshot_name) + 1
-        if _snapshot_name_length > snapshot_name_length:
-            snapshot_name_length = _snapshot_name_length
-
-        # Set the Snapshot volume length
-        _snapshot_volume_length = len(snapshot_volume) + 1
-        if _snapshot_volume_length > snapshot_volume_length:
-            snapshot_volume_length = _snapshot_volume_length
-
-        # Set the Snapshot pool length
-        _snapshot_pool_length = len(snapshot_pool) + 1
-        if _snapshot_pool_length > snapshot_pool_length:
-            snapshot_pool_length = _snapshot_pool_length
-
-    # Format the output header
-    snapshot_list_output_header = '{bold}\
-{snapshot_name: <{snapshot_name_length}} \
-{snapshot_volume: <{snapshot_volume_length}} \
-{snapshot_pool: <{snapshot_pool_length}} \
-{end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            snapshot_name_length=snapshot_name_length,
-            snapshot_volume_length=snapshot_volume_length,
-            snapshot_pool_length=snapshot_pool_length,
-            snapshot_name='Name',
-            snapshot_volume='Volume',
-            snapshot_pool='Pool',
-        )
-
-    for snapshot in snapshot_list:
-        snapshot_pool, snapshot_detail = snapshot.split('/')
-        snapshot_volume, snapshot_name = snapshot_detail.split('@')
-        snapshot_list_output.append('{bold}\
-{snapshot_name: <{snapshot_name_length}} \
-{snapshot_volume: <{snapshot_volume_length}} \
-{snapshot_pool: <{snapshot_pool_length}} \
-{end_bold}'.format(
-                bold='',
-                end_bold='',
-                snapshot_name_length=snapshot_name_length,
-                snapshot_volume_length=snapshot_volume_length,
-                snapshot_pool_length=snapshot_pool_length,
-                snapshot_name=snapshot_name,
-                snapshot_volume=snapshot_volume,
-                snapshot_pool=snapshot_pool,
-            )
-        )
-   
-    output_string = snapshot_list_output_header + '\n' + '\n'.join(sorted(snapshot_list_output))
-    return output_string
-
-#
-# Direct functions
-#
-def get_status(zk_conn):
-    status_data, primary_node = getCephStatus(zk_conn)
-    click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=primary_node))
-    click.echo(status_data)
-    click.echo('')
     return True, ''
 
 def add_osd(zk_conn, node, device, weight):
@@ -1014,9 +612,221 @@ def unset_osd(zk_conn, option):
 
     return success, message
 
-def get_list_osd(zk_conn, limit):
-    osd_list = []
-    full_osd_list = getCephOSDs(zk_conn)
+
+
+
+#
+# Pool functions
+#
+def getClusterPoolList(zk_conn):
+    # Get a list of pools under /ceph/pools
+    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    return pool_list
+
+def getPoolInformation(zk_conn, name):
+    # Parse the stats data
+    pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(name))
+    pool_stats = dict(json.loads(pool_stats_raw))
+    # Deal with the size issues
+    for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
+        databytes = pool_stats[datatype]
+        databytes_formatted = format_bytes_tohuman(databytes)
+        new_name = datatype.replace('bytes', 'formatted')
+        pool_stats[new_name] = databytes_formatted
+    return pool_stats
+
+def getCephPools(zk_conn):
+    pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    return pool_list
+
+def formatPoolList(zk_conn, pool_list):
+    pool_list_output = []
+
+    pool_id = dict()
+    pool_size = dict()
+    pool_num_objects = dict()
+    pool_num_clones = dict()
+    pool_num_copies = dict()
+    pool_num_degraded = dict()
+    pool_read_ops = dict()
+    pool_read_data = dict()
+    pool_write_ops = dict()
+    pool_write_data = dict()
+
+    pool_name_length = 5
+    pool_id_length = 3
+    pool_size_length = 5
+    pool_num_objects_length = 6
+    pool_num_clones_length = 7
+    pool_num_copies_length = 7
+    pool_num_degraded_length = 9
+    pool_read_ops_length = 4
+    pool_read_data_length = 5
+    pool_write_ops_length = 4
+    pool_write_data_length = 5
+
+    for pool in pool_list:
+        # Set the Pool name length
+        _pool_name_length = len(pool) + 1
+        if _pool_name_length > pool_name_length:
+            pool_name_length = _pool_name_length
+
+        # Get stats
+        pool_stats = getPoolInformation(zk_conn, pool)
+
+        # Set the parent node and length
+        try:
+            pool_id[pool] = pool_stats['id']
+            # If this happens, the node hasn't checked in fully yet, so just ignore it
+            if not pool_id[pool]:
+                continue
+        except KeyError:
+            continue
+
+        # Set the id and length
+        pool_id[pool] = pool_stats['id']
+        _pool_id_length = len(str(pool_id[pool])) + 1
+        if _pool_id_length > pool_id_length:
+            pool_id_length = _pool_id_length
+
+        # Set the size and length
+        pool_size[pool] = pool_stats['size_formatted']
+        _pool_size_length = len(str(pool_size[pool])) + 1
+        if _pool_size_length > pool_size_length:
+            pool_size_length = _pool_size_length
+
+        # Set the num_objects and length
+        pool_num_objects[pool] = pool_stats['num_objects']
+        _pool_num_objects_length = len(str(pool_num_objects[pool])) + 1
+        if _pool_num_objects_length > pool_num_objects_length:
+            pool_num_objects_length = _pool_num_objects_length
+
+        # Set the num_clones and length
+        pool_num_clones[pool] = pool_stats['num_object_clones']
+        _pool_num_clones_length = len(str(pool_num_clones[pool])) + 1
+        if _pool_num_clones_length > pool_num_clones_length:
+            pool_num_clones_length = _pool_num_clones_length
+
+        # Set the num_copies and length
+        pool_num_copies[pool] = pool_stats['num_object_copies']
+        _pool_num_copies_length = len(str(pool_num_copies[pool])) + 1
+        if _pool_num_copies_length > pool_num_copies_length:
+            pool_num_copies_length = _pool_num_copies_length
+
+        # Set the num_degraded and length
+        pool_num_degraded[pool] = pool_stats['num_objects_degraded']
+        _pool_num_degraded_length = len(str(pool_num_degraded[pool])) + 1
+        if _pool_num_degraded_length > pool_num_degraded_length:
+            pool_num_degraded_length = _pool_num_degraded_length
+
+        # Set the write IOPS/data and length
+        pool_write_ops[pool] = pool_stats['write_ops']
+        _pool_write_ops_length = len(str(pool_write_ops[pool])) + 1
+        if _pool_write_ops_length > pool_write_ops_length:
+            pool_write_ops_length = _pool_write_ops_length
+        pool_write_data[pool] = pool_stats['write_formatted']
+        _pool_write_data_length = len(pool_write_data[pool]) + 1
+        if _pool_write_data_length > pool_write_data_length:
+            pool_write_data_length = _pool_write_data_length
+
+        # Set the read IOPS/data and length
+        pool_read_ops[pool] = pool_stats['read_ops']
+        _pool_read_ops_length = len(str(pool_read_ops[pool])) + 1
+        if _pool_read_ops_length > pool_read_ops_length:
+            pool_read_ops_length = _pool_read_ops_length
+        pool_read_data[pool] = pool_stats['read_formatted']
+        _pool_read_data_length = len(pool_read_data[pool]) + 1
+        if _pool_read_data_length > pool_read_data_length:
+            pool_read_data_length = _pool_read_data_length
+
+    # Format the output header
+    pool_list_output_header = '{bold}\
+{pool_id: <{pool_id_length}} \
+{pool_name: <{pool_name_length}} \
+{pool_size: <{pool_size_length}} \
+Obj: {pool_objects: <{pool_objects_length}} \
+{pool_clones: <{pool_clones_length}} \
+{pool_copies: <{pool_copies_length}} \
+{pool_degraded: <{pool_degraded_length}} \
+Rd: {pool_read_ops: <{pool_read_ops_length}} \
+{pool_read_data: <{pool_read_data_length}} \
+Wr: {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_data: <{pool_write_data_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            pool_id_length=pool_id_length,
+            pool_name_length=pool_name_length,
+            pool_size_length=pool_size_length,
+            pool_objects_length=pool_num_objects_length,
+            pool_clones_length=pool_num_clones_length,
+            pool_copies_length=pool_num_copies_length,
+            pool_degraded_length=pool_num_degraded_length,
+            pool_write_ops_length=pool_write_ops_length,
+            pool_write_data_length=pool_write_data_length,
+            pool_read_ops_length=pool_read_ops_length,
+            pool_read_data_length=pool_read_data_length,
+            pool_id='ID',
+            pool_name='Name',
+            pool_size='Used',
+            pool_objects='Count',
+            pool_clones='Clones',
+            pool_copies='Copies',
+            pool_degraded='Degraded',
+            pool_write_ops='OPS',
+            pool_write_data='Data',
+            pool_read_ops='OPS',
+            pool_read_data='Data'
+        )
+
+    for pool in pool_list:
+        # Format the output header
+        pool_list_output.append('{bold}\
+{pool_id: <{pool_id_length}} \
+{pool_name: <{pool_name_length}} \
+{pool_size: <{pool_size_length}} \
+     {pool_objects: <{pool_objects_length}} \
+{pool_clones: <{pool_clones_length}} \
+{pool_copies: <{pool_copies_length}} \
+{pool_degraded: <{pool_degraded_length}} \
+    {pool_read_ops: <{pool_read_ops_length}} \
+{pool_read_data: <{pool_read_data_length}} \
+    {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_data: <{pool_write_data_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                pool_id_length=pool_id_length,
+                pool_name_length=pool_name_length,
+                pool_size_length=pool_size_length,
+                pool_objects_length=pool_num_objects_length,
+                pool_clones_length=pool_num_clones_length,
+                pool_copies_length=pool_num_copies_length,
+                pool_degraded_length=pool_num_degraded_length,
+                pool_write_ops_length=pool_write_ops_length,
+                pool_write_data_length=pool_write_data_length,
+                pool_read_ops_length=pool_read_ops_length,
+                pool_read_data_length=pool_read_data_length,
+                pool_id=pool_id[pool],
+                pool_name=pool,
+                pool_size=pool_size[pool],
+                pool_objects=pool_num_objects[pool],
+                pool_clones=pool_num_clones[pool],
+                pool_copies=pool_num_copies[pool],
+                pool_degraded=pool_num_degraded[pool],
+                pool_write_ops=pool_write_ops[pool],
+                pool_write_data=pool_write_data[pool],
+                pool_read_ops=pool_read_ops[pool],
+                pool_read_data=pool_read_data[pool]
+            )
+        )
+   
+    output_string = pool_list_output_header + '\n' + '\n'.join(sorted(pool_list_output))
+    return output_string
+
+def get_list_pool(zk_conn, limit):
+    pool_list = []
+    full_pool_list = getCephPools(zk_conn)
 
     if limit:
         try:
@@ -1028,18 +838,18 @@ def get_list_osd(zk_conn, limit):
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
 
-    for osd in full_osd_list:
-        valid_osd = False
+    for pool in full_pool_list:
+        valid_pool = False
         if limit:
-            if re.match(limit, osd['osd_id']):
-                valid_osd = True
+            if re.match(limit, pool['pool_id']):
+                valid_pool = True
         else:
-            valid_osd = True
+            valid_pool = True
 
-        if valid_osd:
-            osd_list.append(osd)
+        if valid_pool:
+            pool_list.append(pool)
 
-    output_string = formatOSDList(zk_conn, osd_list)
+    output_string = formatPoolList(zk_conn, pool_list)
     click.echo(output_string)
 
     return True, ''
@@ -1105,9 +915,162 @@ def remove_pool(zk_conn, name):
 
     return success, message
 
-def get_list_pool(zk_conn, limit):
-    pool_list = []
-    full_pool_list = getCephPools(zk_conn)
+
+
+#
+# Volume functions
+#
+def getCephVolumes(zk_conn, pool):
+    volume_list = list()
+    if pool == 'all':
+        pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
+    else:
+        pool_list = [ pool ]
+
+    for pool_name in pool_list:
+        for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
+            volume_list.append('{}/{}'.format(pool_name, volume_name))
+
+    return volume_list
+
+def getVolumeInformation(zk_conn, pool, name):
+    # Parse the stats data
+    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, name))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    # Format the size to something nicer
+    volume_stats['size'] = format_bytes_tohuman(volume_stats['size'])
+    return volume_stats
+
+def formatVolumeList(zk_conn, volume_list):
+    volume_list_output = []
+
+    volume_size = dict()
+    volume_objects = dict()
+    volume_order = dict()
+    volume_format = dict()
+    volume_features = dict()
+
+    volume_name_length = 5
+    volume_pool_length = 5
+    volume_size_length = 5
+    volume_objects_length = 8
+    volume_order_length = 6
+    volume_format_length = 7
+    volume_features_length = 10
+
+    for volume in volume_list:
+        volume_pool, volume_name = volume.split('/')
+
+        # Set the Volume name length
+        _volume_name_length = len(volume_name) + 1
+        if _volume_name_length > volume_name_length:
+            volume_name_length = _volume_name_length
+
+        # Set the Volume pool length
+        _volume_pool_length = len(volume_pool) + 1
+        if _volume_pool_length > volume_pool_length:
+            volume_pool_length = _volume_pool_length
+
+        # Get stats
+        volume_stats = getVolumeInformation(zk_conn, volume_pool, volume_name)
+
+        # Set the size and length
+        volume_size[volume] = volume_stats['size']
+        _volume_size_length = len(str(volume_size[volume])) + 1
+        if _volume_size_length > volume_size_length:
+            volume_size_length = _volume_size_length
+
+        # Set the num_objects and length
+        volume_objects[volume] = volume_stats['objects']
+        _volume_objects_length = len(str(volume_objects[volume])) + 1
+        if _volume_objects_length > volume_objects_length:
+            volume_objects_length = _volume_objects_length
+
+        # Set the order and length
+        volume_order[volume] = volume_stats['order']
+        _volume_order_length = len(str(volume_order[volume])) + 1
+        if _volume_order_length > volume_order_length:
+            volume_order_length = _volume_order_length
+
+        # Set the format and length
+        volume_format[volume] = volume_stats['format']
+        _volume_format_length = len(str(volume_format[volume])) + 1
+        if _volume_format_length > volume_format_length:
+            volume_format_length = _volume_format_length
+
+        # Set the features and length
+        volume_features[volume] = ','.join(volume_stats['features'])
+        _volume_features_length = len(str(volume_features[volume])) + 1
+        if _volume_features_length > volume_features_length:
+            volume_features_length = _volume_features_length
+
+    # Format the output header
+    volume_list_output_header = '{bold}\
+{volume_name: <{volume_name_length}} \
+{volume_pool: <{volume_pool_length}} \
+{volume_size: <{volume_size_length}} \
+{volume_objects: <{volume_objects_length}} \
+{volume_order: <{volume_order_length}} \
+{volume_format: <{volume_format_length}} \
+{volume_features: <{volume_features_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            volume_name_length=volume_name_length,
+            volume_pool_length=volume_pool_length,
+            volume_size_length=volume_size_length,
+            volume_objects_length=volume_objects_length,
+            volume_order_length=volume_order_length,
+            volume_format_length=volume_format_length,
+            volume_features_length=volume_features_length,
+            volume_name='Name',
+            volume_pool='Pool',
+            volume_size='Size',
+            volume_objects='Objects',
+            volume_order='Order',
+            volume_format='Format',
+            volume_features='Features',
+        )
+
+    for volume in volume_list:
+        volume_pool, volume_name = volume.split('/')
+        volume_list_output.append('{bold}\
+{volume_name: <{volume_name_length}} \
+{volume_pool: <{volume_pool_length}} \
+{volume_size: <{volume_size_length}} \
+{volume_objects: <{volume_objects_length}} \
+{volume_order: <{volume_order_length}} \
+{volume_format: <{volume_format_length}} \
+{volume_features: <{volume_features_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                volume_name_length=volume_name_length,
+                volume_pool_length=volume_pool_length,
+                volume_size_length=volume_size_length,
+                volume_objects_length=volume_objects_length,
+                volume_order_length=volume_order_length,
+                volume_format_length=volume_format_length,
+                volume_features_length=volume_features_length,
+                volume_name=volume_name,
+                volume_pool=volume_pool,
+                volume_size=volume_size[volume],
+                volume_objects=volume_objects[volume],
+                volume_order=volume_order[volume],
+                volume_format=volume_format[volume],
+                volume_features=volume_features[volume],
+            )
+        )
+   
+    output_string = volume_list_output_header + '\n' + '\n'.join(sorted(volume_list_output))
+    return output_string
+
+def get_list_volume(zk_conn, pool, limit):
+    volume_list = []
+    if pool != 'all' and not verifyPool(zk_conn, name):
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
+
+    full_volume_list = getCephVolumes(zk_conn, pool)
 
     if limit:
         try:
@@ -1119,18 +1082,18 @@ def get_list_pool(zk_conn, limit):
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
 
-    for pool in full_pool_list:
-        valid_pool = False
+    for volume in full_volume_list:
+        valid_volume = False
         if limit:
-            if re.match(limit, pool['pool_id']):
-                valid_pool = True
+            if re.match(limit, volume):
+                valid_volume = True
         else:
-            valid_pool = True
+            valid_volume = True
 
-        if valid_pool:
-            pool_list.append(pool)
+        if valid_volume:
+            volume_list.append(volume)
 
-    output_string = formatPoolList(zk_conn, pool_list)
+    output_string = formatVolumeList(zk_conn, volume_list)
     click.echo(output_string)
 
     return True, ''
@@ -1197,12 +1160,102 @@ def remove_volume(zk_conn, pool, name):
 
     return success, message
 
-def get_list_volume(zk_conn, pool, limit):
-    volume_list = []
-    if pool != 'all' and not verifyPool(zk_conn, name):
-        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
 
-    full_volume_list = getCephVolumes(zk_conn, pool)
+
+#
+# Snapshot functions
+#
+
+def getCephSnapshots(zk_conn, pool, volume):
+    snapshot_list = list()
+    volume_list = list()
+
+    volume_list = getCephVolumes(zk_conn, pool)
+    if volume != 'all':
+        for volume_entry in volume_list:
+            volume_pool, volume_name = volume_entry.split('/')
+            if volume_name == volume:
+                volume_list = [ '{}/{}'.format(volume_pool, volume_name) ]
+
+    for volume_entry in volume_list:
+        for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
+            snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
+
+    return snapshot_list
+
+def formatSnapshotList(zk_conn, snapshot_list):
+    snapshot_list_output = []
+
+    snapshot_name_length = 5
+    snapshot_volume_length = 7
+    snapshot_pool_length = 5
+
+    for snapshot in snapshot_list:
+        snapshot_pool, snapshot_detail = snapshot.split('/')
+        snapshot_volume, snapshot_name = snapshot_detail.split('@')
+
+        # Set the Snapshot name length
+        _snapshot_name_length = len(snapshot_name) + 1
+        if _snapshot_name_length > snapshot_name_length:
+            snapshot_name_length = _snapshot_name_length
+
+        # Set the Snapshot volume length
+        _snapshot_volume_length = len(snapshot_volume) + 1
+        if _snapshot_volume_length > snapshot_volume_length:
+            snapshot_volume_length = _snapshot_volume_length
+
+        # Set the Snapshot pool length
+        _snapshot_pool_length = len(snapshot_pool) + 1
+        if _snapshot_pool_length > snapshot_pool_length:
+            snapshot_pool_length = _snapshot_pool_length
+
+    # Format the output header
+    snapshot_list_output_header = '{bold}\
+{snapshot_name: <{snapshot_name_length}} \
+{snapshot_volume: <{snapshot_volume_length}} \
+{snapshot_pool: <{snapshot_pool_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            snapshot_name_length=snapshot_name_length,
+            snapshot_volume_length=snapshot_volume_length,
+            snapshot_pool_length=snapshot_pool_length,
+            snapshot_name='Name',
+            snapshot_volume='Volume',
+            snapshot_pool='Pool',
+        )
+
+    for snapshot in snapshot_list:
+        snapshot_pool, snapshot_detail = snapshot.split('/')
+        snapshot_volume, snapshot_name = snapshot_detail.split('@')
+        snapshot_list_output.append('{bold}\
+{snapshot_name: <{snapshot_name_length}} \
+{snapshot_volume: <{snapshot_volume_length}} \
+{snapshot_pool: <{snapshot_pool_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                snapshot_name_length=snapshot_name_length,
+                snapshot_volume_length=snapshot_volume_length,
+                snapshot_pool_length=snapshot_pool_length,
+                snapshot_name=snapshot_name,
+                snapshot_volume=snapshot_volume,
+                snapshot_pool=snapshot_pool,
+            )
+        )
+   
+    output_string = snapshot_list_output_header + '\n' + '\n'.join(sorted(snapshot_list_output))
+    return output_string
+
+def get_list_snapshot(zk_conn, pool, volume, limit):
+    snapshot_list = []
+    if pool != 'all' and not verifyPool(zk_conn, pool):
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(pool)
+
+    if volume != 'all' and not verifyPool(zk_conn, volume):
+        return False, 'ERROR: No volume with name "{}" is present in the cluster.'.format(volume)
+
+    full_snapshot_list = getCephSnapshots(zk_conn, pool, volume)
 
     if limit:
         try:
@@ -1214,18 +1267,18 @@ def get_list_volume(zk_conn, pool, limit):
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
 
-    for volume in full_volume_list:
-        valid_volume = False
+    for snapshot in full_snapshot_list:
+        valid_snapshot = False
         if limit:
-            if re.match(limit, volume):
-                valid_volume = True
+            if re.match(limit, snapshot):
+                valid_snapshot = True
         else:
-            valid_volume = True
+            valid_snapshot = True
 
-        if valid_volume:
-            volume_list.append(volume)
+        if valid_snapshot:
+            snapshot_list.append(snapshot)
 
-    output_string = formatVolumeList(zk_conn, volume_list)
+    output_string = formatSnapshotList(zk_conn, snapshot_list)
     click.echo(output_string)
 
     return True, ''
@@ -1290,40 +1343,4 @@ def remove_snapshot(zk_conn, pool, volume, name):
         zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
 
     return success, message
-
-def get_list_snapshot(zk_conn, pool, volume, limit):
-    snapshot_list = []
-    if pool != 'all' and not verifyPool(zk_conn, pool):
-        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(pool)
-
-    if volume != 'all' and not verifyPool(zk_conn, volume):
-        return False, 'ERROR: No volume with name "{}" is present in the cluster.'.format(volume)
-
-    full_snapshot_list = getCephSnapshots(zk_conn, pool, volume)
-
-    if limit:
-        try:
-            # Implicitly assume fuzzy limits
-            if not re.match('\^.*', limit):
-                limit = '.*' + limit
-            if not re.match('.*\$', limit):
-                limit = limit + '.*'
-        except Exception as e:
-            return False, 'Regex Error: {}'.format(e)
-
-    for snapshot in full_snapshot_list:
-        valid_snapshot = False
-        if limit:
-            if re.match(limit, snapshot):
-                valid_snapshot = True
-        else:
-            valid_snapshot = True
-
-        if valid_snapshot:
-            snapshot_list.append(snapshot)
-
-    output_string = formatSnapshotList(zk_conn, snapshot_list)
-    click.echo(output_string)
-
-    return True, ''
 
