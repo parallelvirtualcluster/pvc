@@ -560,7 +560,7 @@ def get_info(zk_conn, domain):
 
     return True, domain_information
 
-def get_list(zk_conn, node, state, limit):
+def get_list(zk_conn, node, state, limit, is_fuzzy=True):
     if node:
         # Verify node is valid
         if not common.verifyNode(zk_conn, node):
@@ -575,7 +575,7 @@ def get_list(zk_conn, node, state, limit):
     vm_list = []
 
     # Set our limit to a sensible regex
-    if limit:
+    if limit and is_fuzzy:
         try:
             # Implcitly assume fuzzy limits
             if not re.match('\^.*', limit):

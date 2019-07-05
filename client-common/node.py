@@ -231,18 +231,19 @@ def get_info(zk_conn, node):
 
     return True, node_information
 
-def get_list(zk_conn, limit):
+def get_list(zk_conn, limit, is_fuzzy=True):
     node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
 
     for node in full_node_list:
         if limit:
             try:
-                # Implcitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implcitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
 
                 if re.match(limit, node):
                     node_list.append(getNodeInformation(zk_conn, node))

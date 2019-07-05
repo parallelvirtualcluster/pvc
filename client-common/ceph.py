@@ -348,18 +348,19 @@ def unset_osd(zk_conn, option):
 
     return success, message
 
-def get_list_osd(zk_conn, limit):
+def get_list_osd(zk_conn, limit, is_fuzzy=True):
     osd_list = []
     full_osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
 
     for osd in full_osd_list:
         if limit:
             try:
-                # Implicitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implicitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
 
                 if re.match(limit, osd):
                     osd_list.append(getOSDInformation(zk_conn, osd))
@@ -674,18 +675,19 @@ def remove_pool(zk_conn, name):
 
     return success, message
 
-def get_list_pool(zk_conn, limit):
+def get_list_pool(zk_conn, limit, is_fuzzy=True):
     pool_list = []
     full_pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
 
     for pool in full_pool_list:
         if limit:
             try:
-                # Implicitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implicitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
 
                 if re.match(limit, pool):
                     pool_list.append(getPoolInformation[zk_conn, pool])
@@ -942,7 +944,7 @@ def remove_volume(zk_conn, pool, name):
 
     return success, message
 
-def get_list_volume(zk_conn, pool, limit):
+def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []
     if pool and not verifyPool(zk_conn, name):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
@@ -953,11 +955,12 @@ def get_list_volume(zk_conn, pool, limit):
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                # Implicitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implicitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
     
                 if re.match(limit, volume):
                     volume_list.append(getVolumeInformation(zk_conn, pool_name, volume_name))
@@ -1158,7 +1161,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
 
     return success, message
 
-def get_list_snapshot(zk_conn, pool, volume, limit):
+def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
     snapshot_list = []
     if pool and not verifyPool(zk_conn, pool):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(pool)
@@ -1173,11 +1176,13 @@ def get_list_snapshot(zk_conn, pool, volume, limit):
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                # Implicitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implicitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
+
                 if re.match(limit, snapshot):
                     snapshot_list.append(getVolumeInformation(zk_conn, pool_name, volume_name, snapshot_name))
             except Exception as e:

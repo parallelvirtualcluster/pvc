@@ -491,7 +491,7 @@ def get_info(zk_conn, network):
 
     return True, network_information
 
-def get_list(zk_conn, limit):
+def get_list(zk_conn, limit, is_fuzzy=True):
     net_list = []
     full_net_list = zkhandler.listchildren(zk_conn, '/networks')
 
@@ -499,11 +499,12 @@ def get_list(zk_conn, limit):
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
         if limit:
             try:
-                # Implcitly assume fuzzy limits
-                if not re.match('\^.*', limit):
-                    limit = '.*' + limit
-                if not re.match('.*\$', limit):
-                    limit = limit + '.*'
+                if is_fuzzy:
+                    # Implcitly assume fuzzy limits
+                    if not re.match('\^.*', limit):
+                        limit = '.*' + limit
+                    if not re.match('.*\$', limit):
+                        limit = limit + '.*'
 
                 if re.match(limit, net):
                     net_list.append(getNetworkInformation(zk_conn, net))
@@ -517,7 +518,7 @@ def get_list(zk_conn, limit):
     #output_string = formatNetworkList(zk_conn, net_list)
     return True, net_list
 
-def get_list_dhcp(zk_conn, network, limit, only_static=False):
+def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if not net_vni:
@@ -532,7 +533,7 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
         full_dhcp_list = getNetworkDHCPLeases(zk_conn, net_vni)
         reservations = False
 
-    if limit:
+    if limit and is_fuzzy:
         try:
             # Implcitly assume fuzzy limits
             if not re.match('\^.*', limit):
@@ -559,7 +560,7 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False):
     #output_string = formatDHCPLeaseList(zk_conn, net_vni, dhcp_list, reservations=reservations)
     return True, dhcp_list
 
-def get_list_acl(zk_conn, network, limit, direction):
+def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if not net_vni:
@@ -576,7 +577,7 @@ def get_list_acl(zk_conn, network, limit, direction):
     acl_list = []
     full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
 
-    if limit:
+    if limit and is_fuzzy:
         try:
             # Implcitly assume fuzzy limits
             if not re.match('\^.*', limit):
