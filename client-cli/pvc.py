@@ -1460,7 +1460,7 @@ def ceph_volume_remove(pool, name, yes):
 )
 @click.option(
     '-p', '--pool', 'pool',
-    default='all', show_default=True,
+    default=None, show_default=True,
     help='Show volumes from this pool only.'
 )
 def ceph_volume_list(limit, pool):
@@ -1549,12 +1549,12 @@ def ceph_volume_snapshot_remove(pool, volume, name, yes):
 )
 @click.option(
     '-p', '--pool', 'pool',
-    default='all', show_default=True,
+    default=None, show_default=True,
     help='Show snapshots from this pool only.'
 )
 @click.option(
     '-p', '--volume', 'volume',
-    default='all', show_default=True,
+    default=None, show_default=True,
     help='Show snapshots from this volume only.'
 )
 def ceph_volume_snapshot_list(pool, volume, limit):
