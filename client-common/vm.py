@@ -563,9 +563,8 @@ def get_info(zk_conn, domain):
 def get_list(zk_conn, node, state, limit):
     if node:
         # Verify node is valid
-        valid_node = common.verifyNode(zk_conn, target_node)
-        if not valid_node:
-            return False, "Specified node {} is invalid.".format(target_node)
+        if not common.verifyNode(zk_conn, node):
+            return False, "Specified node {} is invalid.".format(node)
 
     if state:
         valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'failed', 'migrate', 'unmigrate' ]
