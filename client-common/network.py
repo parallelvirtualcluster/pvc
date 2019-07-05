@@ -706,25 +706,26 @@ def format_list(network_list):
 {net_v4_flag: <{net_v4_flag_length}} \
 {net_dhcp4_flag: <{net_dhcp4_flag_length}} \
 {end_bold}'.format(
-        bold=ansiprint.bold(),
-        end_bold=ansiprint.end(),
-        net_vni_length=net_vni_length,
-        net_description_length=net_description_length,
-        net_nettype_length=net_nettype_length,
-        net_domain_length=net_domain_length,
-        net_v6_flag_length=net_v6_flag_length,
-        net_dhcp6_flag_length=net_dhcp6_flag_length,
-        net_v4_flag_length=net_v4_flag_length,
-        net_dhcp4_flag_length=net_dhcp4_flag_length,
-        net_vni='VNI',
-        net_description='Description',
-        net_nettype='Type',
-        net_domain='Domain',
-        net_v6_flag='IPv6',
-        net_dhcp6_flag='DHCPv6',
-        net_v4_flag='IPv4',
-        net_dhcp4_flag='DHCPv4',
-    ))
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            net_vni_length=net_vni_length,
+            net_description_length=net_description_length,
+            net_nettype_length=net_nettype_length,
+            net_domain_length=net_domain_length,
+            net_v6_flag_length=net_v6_flag_length,
+            net_dhcp6_flag_length=net_dhcp6_flag_length,
+            net_v4_flag_length=net_v4_flag_length,
+            net_dhcp4_flag_length=net_dhcp4_flag_length,
+            net_vni='VNI',
+            net_description='Description',
+            net_nettype='Type',
+            net_domain='Domain',
+            net_v6_flag='IPv6',
+            net_dhcp6_flag='DHCPv6',
+            net_v4_flag='IPv4',
+            net_dhcp4_flag='DHCPv4',
+        )
+    )
 
     for network_information in network_list:
         v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour = getOutputColours(network_information)
@@ -811,17 +812,18 @@ def format_list_dhcp(dhcp_lease_list):
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
-        bold=ansiprint.bold(),
-        end_bold=ansiprint.end(),
-        lease_hostname_length=lease_hostname_length,
-        lease_ip4_address_length=lease_ip4_address_length,
-        lease_mac_address_length=lease_mac_address_length,
-        lease_timestamp_length=lease_timestamp_length,
-        lease_hostname='Hostname',
-        lease_ip4_address='IP Address',
-        lease_mac_address='MAC Address',
-        lease_timestamp='Timestamp'
-    ))
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            lease_hostname_length=lease_hostname_length,
+            lease_ip4_address_length=lease_ip4_address_length,
+            lease_mac_address_length=lease_mac_address_length,
+            lease_timestamp_length=lease_timestamp_length,
+            lease_hostname='Hostname',
+            lease_ip4_address='IP Address',
+            lease_mac_address='MAC Address',
+            lease_timestamp='Timestamp'
+        )
+    )
 
     for dhcp_lease_information in dhcp_lease_list:
         dhcp_lease_list_output.append('{bold}\
@@ -874,17 +876,18 @@ def format_list_acl(acl_list):
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
-        bold=ansiprint.bold(),
-        end_bold=ansiprint.end(),
-        acl_direction_length=acl_direction_length,
-        acl_order_length=acl_order_length,
-        acl_description_length=acl_description_length,
-        acl_rule_length=acl_rule_length,
-        acl_direction='Direction',
-        acl_order='Order',
-        acl_description='Description',
-        acl_rule='Rule',
-    ))
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            acl_direction_length=acl_direction_length,
+            acl_order_length=acl_order_length,
+            acl_description_length=acl_description_length,
+            acl_rule_length=acl_rule_length,
+            acl_direction='Direction',
+            acl_order='Order',
+            acl_description='Description',
+            acl_rule='Rule',
+        )
+    )
 
     for acl_information in acl_list:
         acl_list_output.append('{bold}\
