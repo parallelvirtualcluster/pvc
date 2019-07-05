@@ -112,13 +112,12 @@ def get_status(zk_conn):
         'primary_node': primary_node,
         'ceph_status': ceph_status
     }
-    return status_data
+    return True, status_data
     
 def format_status(status_data):
     click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=status_data['primary_node']))
     click.echo(status_data['ceph_status'])
     click.echo('')
-
 
 #
 # OSD functions

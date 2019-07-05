@@ -1144,7 +1144,7 @@ def ceph_status():
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retdata = pvc_ceph.get_status(zk_conn)
-    if retdata:
+    if retcode:
         pvc_ceph.format_status(retdata)
         retdata = ''
     cleanup(retcode, retdata, zk_conn)
