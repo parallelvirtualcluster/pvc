@@ -39,7 +39,7 @@ import client_lib.zkhandler as zkhandler
 import client_lib.common as common
 import client_lib.vm as pvc_vm
 
-def getInformationFromNode(zk_conn, node_name):
+def getNodeInformation(zk_conn, node_name):
     """
     Gather information about a node from the Zookeeper database and return a dict() containing it.
     """
@@ -84,7 +84,6 @@ def getInformationFromNode(zk_conn, node_name):
             'free': node_mem_free
         }
     }
-
     return node_information
 
 #
@@ -226,7 +225,7 @@ def get_info(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
     # Get information about node in a pretty format
-    node_information = getInformationFromNode(zk_conn, node)
+    node_information = getNodeInformation(zk_conn, node)
     if not node_information:
         return False, 'ERROR: Could not get information about node "{}".'.format(node)
 
@@ -246,11 +245,11 @@ def get_list(zk_conn, limit):
                     limit = limit + '.*'
 
                 if re.match(limit, node):
-                    node_list.append(getInformationFromNode(zk_conn, node))
+                    node_list.append(getNodeInformation(zk_conn, node))
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
-            node_list.append(getInformationFromNode(zk_conn, node))
+            node_list.append(getNodeInformation(zk_conn, node))
 
     return True, node_list
 
