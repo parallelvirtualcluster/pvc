@@ -54,8 +54,8 @@ def api_node_secondary():
     Take NODE out of primary router mode.
     """
     # Get node
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -78,8 +78,8 @@ def api_node_primary():
     Set NODE to primary router mode.
     """
     # Get node
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -102,8 +102,8 @@ def api_node_flush():
     Flush NODE of running VMs.
     """
     # Get node
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -127,8 +127,8 @@ def api_node_ready():
     Restore NODE to active service.
     """
     # Get node
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
     else:
         return "Error: No node provided. Please specify a node.\n", 510
 
@@ -151,8 +151,8 @@ def api_node_list():
     Return a list of nodes with limit LIMIT.
     """
     # Get limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -179,7 +179,7 @@ def api_vm():
 @pvcapi.route('/api/v1/vm/add', methods=['POST'])
 def api_vm_add():
     """
-    Add a VM to the PVC cluster.
+    Add a VM named NAME to the PVC cluster.
     """
     pass
 
@@ -266,20 +266,20 @@ def api_vm_list():
     Return a list of VMs with limit LIMIT.
     """
     # Get node limit
-    if 'node' in flask.request.args:
-        node = flask.request.args['node']
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
     else:
         node = None
 
     # Get state limit
-    if 'state' in flask.request.args:
-        state = flask.request.args['state']
+    if 'state' in flask.request.values:
+        state = flask.request.values['state']
     else:
         state = None
 
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -330,8 +330,8 @@ def api_net_list():
     Return a list of client networks with limit LIMIT.
     """
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -358,14 +358,14 @@ def api_net_dhcp_list():
     Return a list of DHCP leases in network NETWORK with limit LIMIT.
     """
     # Get network
-    if 'network' in flask.request.args:
-        network = flask.request.args['network']
+    if 'network' in flask.request.values:
+        network = flask.request.values['network']
     else:
         return "Error: No network provided. Please specify a network.\n", 510
 
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -406,14 +406,14 @@ def api_net_dhcp_static_list():
     Return a list of static DHCP leases in network NETWORK with limit LIMIT.
     """
     # Get network
-    if 'network' in flask.request.args:
-        network = flask.request.args['network']
+    if 'network' in flask.request.values:
+        network = flask.request.values['network']
     else:
         return "Error: No network provided. Please specify a network.\n", 510
 
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -454,20 +454,20 @@ def api_net_acl_list():
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
     # Get network
-    if 'network' in flask.request.args:
-        network = flask.request.args['network']
+    if 'network' in flask.request.values:
+        network = flask.request.values['network']
     else:
         return "Error: No network provided. Please specify a network.\n", 510
 
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
     # Get direction limit
-    if 'direction' in flask.request.args:
-        direction = flask.request.args['direction']
+    if 'direction' in flask.request.values:
+        direction = flask.request.values['direction']
         if not 'in' in direction or not 'out' in direction:
             return "Error: Direction must be either 'in' or 'out'.\n", 510
     else:
@@ -563,8 +563,8 @@ def api_ceph_osd_list():
     Get the list of OSDs in the Ceph storage cluster.
     """
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -605,8 +605,8 @@ def api_ceph_pool_list():
     Get the list of RBD pools in the Ceph storage cluster.
     """
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
@@ -647,14 +647,14 @@ def api_ceph_volume_list():
     Get the list of RBD volumes in the Ceph storage cluster.
     """
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
     # Get pool limit
-    if 'pool' in flask.request.args:
-        pool = flask.request.args['pool']
+    if 'pool' in flask.request.values:
+        pool = flask.request.values['pool']
     else:
         pool = 'all'
 
@@ -695,20 +695,20 @@ def api_ceph_volume_snapshot_list():
     Get the list of RBD volume snapshots in the Ceph storage cluster.
     """
     # Get name limit
-    if 'limit' in flask.request.args:
-        limit = flask.request.args['limit']
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
     else:
         limit = None
 
     # Get volume limit
-    if 'volume' in flask.request.args:
-        volume = flask.request.args['volume']
+    if 'volume' in flask.request.values:
+        volume = flask.request.values['volume']
     else:
         volume = 'all'
 
     # Get pool limit
-    if 'pool' in flask.request.args:
-        pool = flask.request.args['pool']
+    if 'pool' in flask.request.values:
+        pool = flask.request.values['pool']
     else:
         pool = 'all'
 
