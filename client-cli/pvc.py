@@ -876,8 +876,12 @@ def net_info(vni, long_output):
 
 	# Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_info(zk_conn, vni, long_output)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_network.get_info(zk_conn, vni)
+    if retcode:
+        pvc_network.format_info(retdata, long_output)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
+
 
 ###############################################################################
 # pvc network list
@@ -892,8 +896,11 @@ def net_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list(zk_conn, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_network.get_list(zk_conn, limit)
+    if retcode:
+        pvc_network.format_list(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc network dhcp
@@ -921,8 +928,11 @@ def net_dhcp_list(net, limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=False)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=False)
+    if retcode:
+        pvc_network.format_list_dhcp(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc network dhcp static
@@ -994,8 +1004,11 @@ def net_dhcp_static_list(net, limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=True)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=True)
+    if retcode:
+        pvc_network.format_list_dhcp(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc network acl
@@ -1102,8 +1115,11 @@ def net_acl_list(net, limit, direction):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.get_list_acl(zk_conn, net, limit, direction)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_network.get_list_acl(zk_conn, net, limit, direction)
+    if retcode:
+        pvc_network.format_list_acl(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc ceph
