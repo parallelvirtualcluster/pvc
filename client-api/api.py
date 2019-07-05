@@ -23,12 +23,6 @@
 import flask
 import json
 
-import client_lib.common as pvc_common
-import client_lib.node as pvc_node
-import client_lib.vm as pvc_vm
-import client_lib.network as pvc_network
-import client_lib.ceph as pvc_ceph
-
 import api_lib.pvcapi as pvcapi
 
 zk_host = "hv1:2181,hv2:2181,hv3:2181"
@@ -46,68 +40,51 @@ def api_root():
 @api.route('/api/v1/node', methods=['GET'])
 def api_node():
     """
-    Return a list of nodes.
+    Return a list of nodes with limit LIMIT.
     """
-    return pvcapi.node_list()
+    # Get name limit
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
+    else:
+        limit = None
 
-@api.route('/api/v1/node/<name>', methods=['GET'])
-def api_node_name(name):
-    """
-    Return information about node NAME.
-    """
-    return pvcapi.node_list(name)
+    return pvcapi.node_list(limit)
 
-@api.route('/api/v1/node/secondary', methods=['POST'])
-def api_node_secondary():
+@api.route('/api/v1/node/<node>', methods=['GET'])
+def api_node_info(node):
+    """
+    Return information about node NODE.
+    """
+    # Same as specifying /node?limit=NODE
+    return pvcapi.node_list(node)
+
+@api.route('/api/v1/node/<node>/secondary', methods=['POST'])
+def api_node_secondary(node):
     """
     Take NODE out of primary router mode.
     """
-    # Get node
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        return "Error: No node provided. Please specify a node.\n", 510
-
     return pvcapi.node_secondary(node)
 
-@api.route('/api/v1/node/primary', methods=['POST'])
-def api_node_primary():
+@api.route('/api/v1/node/<node>/primary', methods=['POST'])
+def api_node_primary(node):
     """
     Set NODE to primary router mode.
     """
-    # Get node
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        return "Error: No node provided. Please specify a node.\n", 510
-
     return pvcapi.node_primary(node)
 
-@api.route('/api/v1/node/flush', methods=['POST'])
-def api_node_flush():
+@api.route('/api/v1/node/<node>/flush', methods=['POST'])
+def api_node_flush(node):
     """
     Flush NODE of running VMs.
     """
-    # Get node
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        return "Error: No node provided. Please specify a node.\n", 510
-
     return pvcapi.node_flush(node)
 
-@api.route('/api/v1/node/unflush', methods=['POST'])
-@api.route('/api/v1/node/ready', methods=['POST'])
-def api_node_ready():
+@api.route('/api/v1/node/<node>/unflush', methods=['POST'])
+@api.route('/api/v1/node/<node>/ready', methods=['POST'])
+def api_node_ready(node):
     """
     Restore NODE to active service.
     """
-    # Get node
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        return "Error: No node provided. Please specify a node.\n", 510
-
     return pvcapi.node_ready(node)
 
 #
@@ -138,89 +115,159 @@ def api_vm():
 
     return pvcapi.vm_list(node, state, limit)
 
-@api.route('/api/v1/vm/add', methods=['POST'])
-def api_vm_add():
+@api.route('/api/v1/vm/<vm>', methods=['GET'])
+def api_vm_info(vm):
     """
-    Add a VM named NAME to the PVC cluster.
+    Get information about a virtual machine named VM.
     """
-    return pvcapi.vm_add()
+    # Same as specifying /vm?limit=VM
+    return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
 
-@api.route('/api/v1/vm/define', methods=['POST'])
-def api_vm_define():
-    """
-    Define a VM from Libvirt XML in the PVC cluster.
-    """
-    return pvcapi.vm_define()
+# TODO: #22
+#@api.route('/api/v1/vm/<vm>/add', methods=['POST'])
+#def api_vm_add(vm):
+#    """
+#    Add a virtual machine named VM.
+#    """
+#    return pvcapi.vm_add()
 
-@api.route('/api/v1/vm/modify', methods=['POST'])
-def api_vm_modify():
+@api.route('/api/v1/vm/<vm>/define', methods=['POST'])
+def api_vm_define(vm):
     """
-    Modify a VM Libvirt XML in the PVC cluster.
+    Define a virtual machine named VM from Libvirt XML. Send only the Libvirt XML as data.
     """
-    return pvcapi.vm_modify()
+    # Get XML from the POST body
+    libvirt_xml = flask.request.data
 
-@api.route('/api/v1/vm/undefine', methods=['POST'])
-def api_vm_undefine():
-    """
-    Undefine a VM from the PVC cluster.
-    """
-    return pvcapi.vm_undefine()
+    # Get node name
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
+    else:
+        node = None
 
-@api.route('/api/v1/vm/dump', methods=['GET'])
-def api_vm_dump():
-    """
-    Dump a VM Libvirt XML configuration.
-    """
-    return pvcapi.vm_dump()
+    # Get target selector
+    if 'selector' in flask.request.values:
+        selector = flask.request.values['selector']
+    else:
+        selector = None
 
-@api.route('/api/v1/vm/start', methods=['POST'])
-def api_vm_start():
-    """
-    Start a VM in the PVC cluster.
-    """
-    return pvcapi.vm_start()
+    return pvcapi.vm_define(vm, libvirt_xml, node, selector)
 
-@api.route('/api/v1/vm/restart', methods=['POST'])
-def api_vm_restart():
+@api.route('/api/v1/vm/<vm>/modify', methods=['POST'])
+def api_vm_modify(vm):
     """
-    Restart a VM in the PVC cluster.
+    Modify an existing virtual machine named VM from Libvirt XML.
     """
-    return pvcapi.vm_restart()
+    # Get XML from the POST body
+    libvirt_xml = flask.request.data
 
-@api.route('/api/v1/vm/shutdown', methods=['POST'])
-def api_vm_shutdown():
-    """
-    Shutdown a VM in the PVC cluster.
-    """
-    return pvcapi.vm_shutdown()
+    # Get node name
+    if 'flag_restart' in flask.request.values:
+        flag_restart = flask.request.values['flag_restart']
+    else:
+        flag_restart = None
 
-@api.route('/api/v1/vm/stop', methods=['POST'])
-def api_vm_stop():
-    """
-    Forcibly stop a VM in the PVC cluster.
-    """
-    return pvcapi.vm_stop()
+    return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
 
-@api.route('/api/v1/vm/move', methods=['POST'])
-def api_vm_move():
+@api.route('/api/v1/vm/<vm>/undefine', methods=['POST'])
+def api_vm_undefine(vm):
     """
-    Move a VM to another node.
+    Undefine a virtual machine named VM.
     """
-    return pvcapi.vm_move()
+    return pvcapi.vm_undefine(vm)
 
-@api.route('/api/v1/vm/migrate', methods=['POST'])
-def api_vm_migrate():
+@api.route('/api/v1/vm/<vm>/remove', methods=['POST'])
+def api_vm_remove(vm):
     """
-    Temporarily migrate a VM to another node.
+    Remove a virtual machine named VM including all disks.
     """
-    return pvcapi.vm_migrate()
+    return pvcapi.vm_remove(vm)
 
-@api.route('/api/v1/vm/unmigrate', methods=['POST'])
-def api_vm_unmigrate():
+@api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
+def api_vm_dump(vm):
     """
-    Unmigrate a migrated VM.
+    Dump the Libvirt XML configuration of a virtual machine named VM.
     """
-    return pvcapi.vm_unmigrate()
+    return pvcapi.vm_dump(vm)
+
+@api.route('/api/v1/vm/<vm>/start', methods=['POST'])
+def api_vm_start(vm):
+    """
+    Start a virtual machine named VM.
+    """
+    return pvcapi.vm_start(vm)
+
+@api.route('/api/v1/vm/<vm>/restart', methods=['POST'])
+def api_vm_restart(vm):
+    """
+    Restart a virtual machine named VM.
+    """
+    return pvcapi.vm_restart(vm)
+
+@api.route('/api/v1/vm/<vm>/shutdown', methods=['POST'])
+def api_vm_shutdown(vm):
+    """
+    Shutdown a virtual machine named VM.
+    """
+    return pvcapi.vm_shutdown(vm)
+
+@api.route('/api/v1/vm/<vm>/stop', methods=['POST'])
+def api_vm_stop(vm):
+    """
+    Forcibly stop a virtual machine named VM.
+    """
+    return pvcapi.vm_stop(vm)
+
+@api.route('/api/v1/vm/<vm>/move', methods=['POST'])
+def api_vm_move(vm):
+    """
+    Move a virtual machine named VM to another node.
+    """
+    # Get node name
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
+    else:
+        node = None
+
+    # Get target selector
+    if 'selector' in flask.request.values:
+        selector = flask.request.values['selector']
+    else:
+        selector = None
+
+    return pvcapi.vm_move(vm, node, selector)
+
+@api.route('/api/v1/vm/<vm>/migrate', methods=['POST'])
+def api_vm_migrate(vm):
+    """
+    Temporarily migrate a virtual machine named VM to another node.
+    """
+    # Get node name
+    if 'node' in flask.request.values:
+        node = flask.request.values['node']
+    else:
+        node = None
+
+    # Get target selector
+    if 'selector' in flask.request.values:
+        selector = flask.request.values['selector']
+    else:
+        selector = None
+
+    # Get target selector
+    if 'flag_force' in flask.request.values:
+        flag_force = True
+    else:
+        flag_force = False
+
+    return pvcapi.vm_migrate(vm, node, selector, flag_force)
+
+@api.route('/api/v1/vm/<vm>/unmigrate', methods=['POST'])
+def api_vm_unmigrate(vm):
+    """
+    Unmigrate a migrated virtual machine named VM.
+    """
+    return pvcapi.vm_move(vm)
 
 #
 # Network endpoints
@@ -228,7 +275,7 @@ def api_vm_unmigrate():
 @api.route('/api/v1/network', methods=['GET'])
 def api_net():
     """
-    Return a list of client networks with limit LIMIT.
+    Return a list of virtual client networks with limit LIMIT.
     """
     # Get name limit
     if 'limit' in flask.request.values:
@@ -238,38 +285,40 @@ def api_net():
 
     return pvcapi.net_list(limit)
 
-@api.route('/api/v1/network/add', methods=['POST'])
-def api_net_add():
+@api.route('/api/v1/network/<network>', methods=['GET'])
+def api_net_info(network):
     """
-    Add a virtual client network to the PVC cluster.
+    Get information about a virtual client network with description NETWORK.
+    """
+    # Same as specifying /network?limit=NETWORK
+    return pvcapi.net_list(network)
+
+@api.route('/api/v1/network/<network>/add', methods=['POST'])
+def api_net_add(network):
+    """
+    Add a virtual client network with description NETWORK.
     """
     return pvcapi.net_add()
 
-@api.route('/api/v1/network/modify', methods=['POST'])
-def api_net_modify():
+@api.route('/api/v1/network/<network>/modify', methods=['POST'])
+def api_net_modify(network):
     """
-    Modify a virtual client network in the PVC cluster.
+    Modify a virtual client network with description NETWORK.
     """
     return pvcapi.net_modify()
 
-@api.route('/api/v1/network/remove', methods=['POST'])
-def api_net_remove():
+@api.route('/api/v1/network/<network>/remove', methods=['POST'])
+def api_net_remove(network):
     """
-    Remove a virtual client network from the PVC cluster.
+    Remove a virtual client network with description NETWORK.
     """
     return pvcapi.net_remove()
 
-@api.route('/api/v1/network/dhcp', methods=['GET'])
-def api_net_dhcp():
+@api.route('/api/v1/network/<network>/dhcp', methods=['GET'])
+def api_net_dhcp(network):
     """
-    Return a list of DHCP leases in network NETWORK with limit LIMIT.
+    Return a list of DHCP leases in virtual client network with description NETWORK with limit LIMIT.
     """
-    # Get network
-    if 'network' in flask.request.values:
-        network = flask.request.values['network']
-    else:
-        return "Error: No network provided. Please specify a network.\n", 510
-
     # Get name limit
     if 'limit' in flask.request.values:
         limit = flask.request.values['limit']
@@ -284,31 +333,33 @@ def api_net_dhcp():
 
     return pvcapi.net_dhcp_list(network, limit. flag_static)
 
-@api.route('/api/v1/network/dhcp/add', methods=['POST'])
-def api_net_dhcp_add():
+@api.route('/api/v1/network/<network>/dhcp/<lease>', methods=['GET'])
+def api_net_dhcp_info(network, lease):
     """
-    Add a static DHCP lease to a virtual client network.
+    Get information about a DHCP lease for MAC address LEASE in virtual client network with description NETWORK.
+    """
+    # Same as specifying /network?limit=NETWORK
+    return pvcapi.net_dhcp_list(network, lease, False)
+
+@api.route('/api/v1/network/<network>/dhcp/<lease>/add', methods=['POST'])
+def api_net_dhcp_add(network, lease):
+    """
+    Add a static DHCP lease for MAC address LEASE to virtual client network with description NETWORK.
     """
     return pvcapi.net_dhcp_add()
 
-@api.route('/api/v1/network/dhcp/remove', methods=['POST'])
-def api_net_dhcp_remove():
+@api.route('/api/v1/network/<network>/dhcp/<lease>/remove', methods=['POST'])
+def api_net_dhcp_remove(network, lease):
     """
-    Remove a static DHCP lease from a virtual client network.
+    Remove a static DHCP lease for MAC address LEASE from virtual client network with description NETWORK.
     """
     return pvcapi.net_dhcp_remove()
 
-@api.route('/api/v1/network/acl', methods=['GET'])
-def api_net_acl():
+@api.route('/api/v1/network/<network>/acl', methods=['GET'])
+def api_net_acl(network):
     """
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
-    # Get network
-    if 'network' in flask.request.values:
-        network = flask.request.values['network']
-    else:
-        return "Error: No network provided. Please specify a network.\n", 510
-
     # Get name limit
     if 'limit' in flask.request.values:
         limit = flask.request.values['limit']
@@ -325,17 +376,25 @@ def api_net_acl():
 
     return pvcapi.net_acl_list(network, limit, direction)
 
-@api.route('/api/v1/network/acl/add', methods=['POST'])
-def api_net_acl_add():
+@api.route('/api/v1/network/<network>/acl/<acl>', methods=['GET'])
+def api_net_acl_info(network, acl):
     """
-    Add an ACL to a virtual client network.
+    Get information about a network access control entry with description ACL in virtual client network with description NETWORK.
+    """
+    # Same as specifying /network?limit=NETWORK
+    return pvcapi.net_acl_list(network, acl, None)
+
+@api.route('/api/v1/network/<network>/acl/<acl>/add', methods=['POST'])
+def api_net_acl_add(network, acl):
+    """
+    Add an access control list with description ACL to virtual client network with description NETWORK.
     """
     return pvcapi.net_acl_add()
 
-@api.route('/api/v1/network/acl/remove', methods=['POST'])
-def api_net_acl_remove():
+@api.route('/api/v1/network/<network>/acl/<acl>/remove', methods=['POST'])
+def api_net_acl_remove(network, acl):
     """
-    Remove an ACL from a virtual client network.
+    Remove an access control list with description ACL from virtual client network with description NETWORK.
     """
     return pvcapi.net_acl_remove()
 
@@ -362,34 +421,6 @@ def api_ceph_osd():
 
     return pvcapi.ceph_osd_list(limit)
 
-@api.route('/api/v1/ceph/osd/add', methods=['POST'])
-def api_ceph_osd_add():
-    """
-    Add a Ceph OSD to the PVC Ceph storage cluster.
-    """
-    return pvcapi.ceph_osd_add()
-
-@api.route('/api/v1/ceph/osd/remove', methods=['POST'])
-def api_ceph_osd_remove():
-    """
-    Remove a Ceph OSD from the PVC Ceph storage cluster.
-    """
-    return pvcapi.ceph_osd_remove()
-
-@api.route('/api/v1/ceph/osd/in', methods=['POST'])
-def api_ceph_osd_in():
-    """
-    Set in a Ceph OSD in the PVC Ceph storage cluster.
-    """
-    return pvcapi.ceph_osd_in()
-
-@api.route('/api/v1/ceph/osd/out', methods=['POST'])
-def api_ceph_osd_out():
-    """
-    Set out a Ceph OSD in the PVC Ceph storage cluster.
-    """
-    return pvcapi.ceph_osd_out()
-
 @api.route('/api/v1/ceph/osd/set', methods=['POST'])
 def api_ceph_osd_set():
     """
@@ -404,6 +435,42 @@ def api_ceph_osd_unset():
     """
     return pvcapi.ceph_osd_unset()
 
+@api.route('/api/v1/ceph/osd/<osd>', methods=['GET'])
+def api_ceph_osd_info(osd):
+    """
+    Get information about an OSD with ID OSD.
+    """
+    # Same as specifying /osd?limit=OSD
+    return pvcapi.ceph_osd_list(osd)
+
+@api.route('/api/v1/ceph/osd/<osd>/add', methods=['POST'])
+def api_ceph_osd_add(osd):
+    """
+    Add a Ceph OSD with ID OSD.
+    """
+    return pvcapi.ceph_osd_add()
+
+@api.route('/api/v1/ceph/osd/<osd>/remove', methods=['POST'])
+def api_ceph_osd_remove(osd):
+    """
+    Remove a Ceph OSD with ID OSD.
+    """
+    return pvcapi.ceph_osd_remove()
+
+@api.route('/api/v1/ceph/osd/<osd>/in', methods=['POST'])
+def api_ceph_osd_in(osd):
+    """
+    Set in a Ceph OSD with ID OSD.
+    """
+    return pvcapi.ceph_osd_in()
+
+@api.route('/api/v1/ceph/osd/<osd>/out', methods=['POST'])
+def api_ceph_osd_out(osd):
+    """
+    Set out a Ceph OSD with ID OSD.
+    """
+    return pvcapi.ceph_osd_out()
+
 @api.route('/api/v1/ceph/pool', methods=['GET'])
 def api_ceph_pool():
     """
@@ -417,17 +484,25 @@ def api_ceph_pool():
 
     return pvcapi.ceph_pool_list(limit)
 
-@api.route('/api/v1/ceph/pool/add', methods=['POST'])
-def api_ceph_pool_add():
+@api.route('/api/v1/ceph/pool/<pool>', methods=['GET'])
+def api_ceph_pool_info(pool):
     """
-    Add a Ceph RBD pool to the PVC Ceph storage cluster.
+    Get information about an RBD pool with name POOL.
+    """
+    # Same as specifying /pool?limit=POOL
+    return pvcapi.ceph_pool_list(pool)
+
+@api.route('/api/v1/ceph/pool/<pool>/add', methods=['POST'])
+def api_ceph_pool_add(pool):
+    """
+    Add a Ceph RBD pool with name POOL.
     """
     return pvcapi.ceph_pool_add()
 
-@api.route('/api/v1/ceph/pool/remove', methods=['POST'])
-def api_ceph_pool_remove():
+@api.route('/api/v1/ceph/pool/<pool>/remove', methods=['POST'])
+def api_ceph_pool_remove(pool):
     """
-    Remove a Ceph RBD pool to the PVC Ceph storage cluster.
+    Remove a Ceph RBD pool with name POOL.
     """
     return pvcapi.ceph_pool_remove()
 
@@ -436,31 +511,39 @@ def api_ceph_volume():
     """
     Get the list of RBD volumes in the Ceph storage cluster.
     """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
-
     # Get pool limit
     if 'pool' in flask.request.values:
         pool = flask.request.values['pool']
     else:
         pool = None
 
+    # Get name limit
+    if 'limit' in flask.request.values:
+        limit = flask.request.values['limit']
+    else:
+        limit = None
+
     return pvcapi.ceph_volume_list(pool, limit)
 
-@api.route('/api/v1/ceph/volume/add', methods=['POST'])
-def api_ceph_volume_add():
+@api.route('/api/v1/ceph/volume/<pool>/<volume>', methods=['GET'])
+def api_ceph_volume_info(pool, volume):
     """
-    Add a Ceph RBD volume to the PVC Ceph storage cluster.
+    Get information about an RBD volume with name VOLUME in RBD pool with name POOL.
+    """
+    # Same as specifying /volume?limit=VOLUME
+    return pvcapi.ceph_osd_list(pool, osd)
+
+@api.route('/api/v1/ceph/volume/<pool>/<volume>/add', methods=['POST'])
+def api_ceph_volume_add(pool, volume):
+    """
+    Add a Ceph RBD volume with name VOLUME to RBD pool with name POOL.
     """
     return pvcapi.ceph_volume_add()
 
-@api.route('/api/v1/ceph/volume/remove', methods=['POST'])
-def api_ceph_volume_remove():
+@api.route('/api/v1/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
+def api_ceph_volume_remove(pool, volume):
     """
-    Remove a Ceph RBD volume to the PVC Ceph storage cluster.
+    Remove a Ceph RBD volume with name VOLUME from RBD pool with name POOL.
     """
     return pvcapi.ceph_volume_remove()
 
@@ -489,17 +572,25 @@ def api_ceph_volume_snapshot():
 
     return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
 
-@api.route('/api/v1/ceph/volume/snapshot/add', methods=['POST'])
-def api_ceph_volume_snapshot_add():
+@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET'])
+def api_ceph_volume_snapshot_info(pool, volume, snapshot):
     """
-    Add a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
+    Get information about a snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
+    """
+    # Same as specifying /snapshot?limit=VOLUME
+    return pvcapi.ceph_snapshot_list(pool, volume, snapshot)
+
+@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add', methods=['POST'])
+def api_ceph_volume_snapshot_add(pool, volume, snapshot):
+    """
+    Add a Ceph RBD volume snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
     """
     return pvcapi.ceph_volume_snapshot_add()
 
-@api.route('/api/v1/ceph/volume/snapshot/remove', methods=['POST'])
-def api_ceph_volume_snapshot_remove():
+@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
+def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
     """
-    Remove a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
+    Remove a Ceph RBD volume snapshot with name SNAPSHOT from RBD volume with name VOLUME in RBD pool with name POOL.
     """
     return pvcapi.ceph_volume_snapshot_remove()
 

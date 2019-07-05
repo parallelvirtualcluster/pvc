@@ -61,7 +61,7 @@ def node_secondary(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg,
+        'message': retmsg.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -78,7 +78,7 @@ def node_primary(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg,
+        'message': retmsg.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -95,7 +95,7 @@ def node_flush(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg,
+        'message': retmsg.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -112,98 +112,240 @@ def node_ready(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg,
+        'message': retmsg.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
 #
 # VM functions
 #
-def vm_list(node=None, state=None, limit=None):
+def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit)
+    retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit, is_fuzzy)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VM not found.'
+            }
     else:
         retcode = 510
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def vm_add():
-    """
-    Add a VM named NAME to the PVC cluster.
-    """
-    return '', 200
+# TODO: #22
+#def vm_add():
+#    """
+#    Add a VM named NAME to the PVC cluster.
+#    """
+#    return '', 200
 
-def vm_define():
+def vm_define(name, xml, node, selector):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.define_vm(zk_conn, xml, node, selector)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_modify():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_modify(name, restart, xml):
     """
     Modify a VM Libvirt XML in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.modify_vm(zk_conn, name, restart, xml)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_undefine():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_undefine(name):
     """
     Undefine a VM from the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.undefine_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_dump():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_remove(name):
+    """
+    Remove a VM from the PVC cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.remove_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_dump(name):
     """
     Dump a VM Libvirt XML configuration.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retdata = pvc_vm.dump_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_start():
+    pvc_common.stopZKConnection(zk_conn)
+    return retdata, retcode
+
+def vm_start(name):
     """
     Start a VM in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.start_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_restart():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_restart(name):
     """
     Restart a VM in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.restart_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_shutdown():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_shutdown(name):
     """
     Shutdown a VM in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.shutdown_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_stop():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_stop(name):
     """
     Forcibly stop a VM in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.stop_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_move():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_move(name, node, selector):
     """
     Move a VM to another node.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.move_vm(zk_conn, name, node, selector)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_migrate():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_migrate(name, node, selector, flag_force):
     """
     Temporarily migrate a VM to another node.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.migrate_vm(zk_conn, name, node, selector, flag_force)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def vm_unmigrate():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_unmigrate(name):
     """
     Unmigrate a migrated VM.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_vm.unmigrate_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 #
 # Network functions
