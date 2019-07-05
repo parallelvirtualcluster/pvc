@@ -232,9 +232,9 @@ def get_info(zk_conn, node):
     return True, node_information
 
 def get_list(zk_conn, limit):
-    # Match our limit
     node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
+
     for node in full_node_list:
         if limit:
             try:
