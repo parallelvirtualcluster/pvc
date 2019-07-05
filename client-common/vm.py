@@ -315,7 +315,7 @@ def start_vm(zk_conn, domain):
     # Set the VM to start
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'start'})
 
-    return True, 'Starting VM "{}".'.format(dom_uuid)
+    return True, 'Starting VM "{}".'.format(domain)
 
 def restart_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -328,12 +328,12 @@ def restart_vm(zk_conn, domain):
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         common.stopZKConnection(zk_conn)
-        return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
+        return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
 
     # Set the VM to start
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
 
-    return True, 'Restarting VM "{}".'.format(dom_uuid)
+    return True, 'Restarting VM "{}".'.format(domain)
 
 def shutdown_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -345,12 +345,12 @@ def shutdown_vm(zk_conn, domain):
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         common.stopZKConnection(zk_conn)
-        return False, 'ERROR: VM "{}" is not in "start" state!'.format(dom_uuid)
+        return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
 
     # Set the VM to shutdown
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown'})
 
-    return True, 'Shutting down VM "{}".'.format(dom_uuid)
+    return True, 'Shutting down VM "{}".'.format(domain)
 
 def stop_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -365,7 +365,7 @@ def stop_vm(zk_conn, domain):
     # Set the VM to start
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
-    return True, 'Forcibly stopping VM "{}".'.format(dom_uuid)
+    return True, 'Forcibly stopping VM "{}".'.format(domain)
 
 def move_vm(zk_conn, domain, target_node, selector):
     # Validate that VM exists in cluster
@@ -387,7 +387,7 @@ def move_vm(zk_conn, domain, target_node, selector):
         # Verify if node is current node
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
-            return False, 'ERROR: VM "{}" is already running on node "{}".'.format(dom_uuid, current_node)
+            return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state == 'start':
@@ -402,7 +402,7 @@ def move_vm(zk_conn, domain, target_node, selector):
             '/domains/{}/lastnode'.format(dom_uuid): ''
         })
 
-    return True, 'Permanently migrating VM "{}" to node "{}".'.format(dom_uuid, target_node)
+    return True, 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
 
 def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=False):
     # Validate that VM exists in cluster
@@ -423,13 +423,13 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
 
     if last_node and not force_migrate:
         if is_cli:
-            click.echo('ERROR: VM "{}" has been previously migrated.'.format(dom_uuid))
+            click.echo('ERROR: VM "{}" has been previously migrated.'.format(domain))
             click.echo('> Last node: {}'.format(last_node))
             click.echo('> Current node: {}'.format(current_node))
             click.echo('Run `vm unmigrate` to restore the VM to its previous node, or use `--force` to override this check.')
             return False, ''
         else:
-            return False, 'ERROR: VM "{}" has been previously migrated.'.format(dom_uuid)
+            return False, 'ERROR: VM "{}" has been previously migrated.'.format(domain)
 
     if not target_node:
         target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
@@ -442,7 +442,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
         # Verify if node is current node
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
-            return False, 'ERROR: VM "{}" is already running on node "{}".'.format(dom_uuid, current_node)
+            return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
     zkhandler.writedata(zk_conn, {
         '/domains/{}/state'.format(dom_uuid): 'migrate',
@@ -450,7 +450,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
         '/domains/{}/lastnode'.format(dom_uuid): current_node
     })
 
-    return True, 'Migrating VM "{}" to node "{}".'.format(dom_uuid, target_node)
+    return True, 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
 
 def unmigrate_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -471,7 +471,7 @@ def unmigrate_vm(zk_conn, domain):
 
     if target_node == '':
         common.stopZKConnection(zk_conn)
-        return False, 'ERROR: VM "{}" has not been previously migrated.'.format(dom_uuid)
+        return False, 'ERROR: VM "{}" has not been previously migrated.'.format(domain)
 
     zkhandler.writedata(zk_conn, {
         '/domains/{}/state'.format(dom_uuid): target_state,
@@ -479,7 +479,7 @@ def unmigrate_vm(zk_conn, domain):
         '/domains/{}/lastnode'.format(dom_uuid): ''
     })
 
-    return True, 'Unmigrating VM "{}" back to node "{}".'.format(dom_uuid, target_node)
+    return True, 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
 
 def get_console_log(zk_conn, domain, lines=1000):
     # Validate that VM exists in cluster
