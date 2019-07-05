@@ -1143,8 +1143,11 @@ def ceph_status():
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_status(zk_conn)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_ceph.get_status(zk_conn)
+    if retdata:
+        pvc_ceph.format_status(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc ceph osd
@@ -1303,8 +1306,11 @@ def ceph_osd_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_list_osd(zk_conn, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_ceph.get_list_osd(zk_conn, limit)
+    if retcode:
+        pvc_ceph.format_list_osd(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc ceph pool
@@ -1377,8 +1383,11 @@ def ceph_pool_list(limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_list_pool(zk_conn, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_ceph.get_list_pool(zk_conn, limit)
+    if retcode:
+        pvc_ceph.format_list_pool(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc ceph volume
@@ -1460,8 +1469,11 @@ def ceph_volume_list(limit, pool):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_list_volume(zk_conn, pool, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit)
+    if retcode:
+        pvc_ceph.format_list_volume(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 ###############################################################################
 # pvc ceph volume snapshot
@@ -1551,8 +1563,11 @@ def ceph_volume_snapshot_list(pool, volume, limit):
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
+    if retcode:
+        pvc_ceph.format_list_snapshot(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
 
 
 ###############################################################################
