@@ -10,8 +10,7 @@ pvc:
     # zookeeper: Configuration of the zookeeper connection
     zookeeper:
         # uri: Zookeeper URI specifying the PVCD coordinators to connect to
-        #uri: "pvchv1:2181,pvchv2:2181,pvchv3:2181"
-        uri: "hv1:2181,hv2:2181,hv3:2181"
+        uri: "pvchv1:2181,pvchv2:2181,pvchv3:2181"
     # api: Configuration of the API listener
     api:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
@@ -22,4 +21,4 @@ pvc:
         authentication:
             # key: A secure key to authorize against the API; must be sent in the body
             #      arguments or in the URI of each requess; leave blank for no authentication
-            key: "test1234"
+            key: ""
