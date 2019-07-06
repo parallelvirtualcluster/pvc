@@ -364,23 +364,64 @@ def net_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def net_add():
+def net_add(vni, description, nettype, domain,
+            ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+            dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Add a virtual client network to the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
+                                              ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                                              dhcp4_flag, dhcp4_start, dhcp4_end)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def net_modify():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def net_modify(vni, description, nettype, domain,
+               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+               dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Modify a virtual client network in the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
+                                              ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                                              dhcp4_flag, dhcp4_start, dhcp4_end)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def net_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def net_remove(description):
     """
     Remove a virtual client network from the PVC cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.remove_network(zk_conn, description)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 def net_dhcp_list(network, limit=None, static=False):
     """
@@ -396,43 +437,90 @@ def net_dhcp_list(network, limit=None, static=False):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def net_dhcp_add():
+def net_dhcp_add(network, ipaddress, macaddress, hostname):
     """
     Add a static DHCP lease to a virtual client network.
     """
-    return '', 200
-
-def net_dhcp_remove():
-    """
-    Remove a static DHCP lease from a virtual client network.
-    """
-    return '', 200
-
-def net_acl_list(network, limit=None, direction=None):
-    """
-    Return a list of network ACLs in network NETWORK with limit LIMIT.
-    """
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retflag, retdata = pvc_network.get_list_acl(zk_conn, network, limit, direction)
+    retflag, retmsg = pvc_network.add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname)
     if retflag:
         retcode = 200
     else:
         retcode = 510
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
-def net_acl_add():
+def net_dhcp_remove(network, macaddress):
+    """
+    Remove a static DHCP lease from a virtual client network.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, network, macaddress)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def net_acl_list(network, limit=None, direction=None):
+    """
+    Return a list of network ACLs in network NETWORK with limit LIMIT.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.get_list_acl(zk_conn, network, limit, direction)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def net_acl_add(network, direction, description, rule, order):
     """
     Add an ACL to a virtual client network.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.add_acl(zk_conn, network, direction, description, rule, order)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def net_acl_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def net_acl_remove(network, direction, description):
     """
     Remove an ACL from a virtual client network.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_network.remove_acl(zk_conn, network, description, direction)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 #
 # Ceph functions

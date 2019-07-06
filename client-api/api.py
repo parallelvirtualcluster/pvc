@@ -298,21 +298,147 @@ def api_net_add(network):
     """
     Add a virtual client network with description NETWORK.
     """
-    return pvcapi.net_add()
+    # Get network VNI
+    if 'vni' in flask.request.values:
+        vni = flask.request.values['vni']
+    else:
+        return flask.jsonify({"message":"ERROR: A VNI must be specified for the virtual network."}), 520
+
+    # Get network type
+    if 'nettype' in flask.request.values:
+        nettype = flask.request.values['nettype']
+        if not 'managed' in nettype and not 'bridged' in nettype:
+            return flask.jsonify({"message":"ERROR: A valid nettype must be specified: 'managed' or 'bridged'."}), 520
+    else:
+        return flask.jsonify({"message":"ERROR: A nettype must be specified for the virtual network."}), 520
+
+    # Get network domain
+    if 'domain' in flask.request.values:
+        domain = flask.request.values['domain']
+    else:
+        domain = None
+
+    # Get ipv4 network
+    if 'ip4_network' in flask.request.values:
+        ip4_network = flask.request.values['ip4_network']
+    else:
+        ip4_network = None
+
+    # Get ipv4 gateway
+    if 'ip4_gateway' in flask.request.values:
+        ip4_gateway = flask.request.values['ip4_gateway']
+    else:
+        ip4_gateway = None
+
+    # Get ipv6 network
+    if 'ip6_network' in flask.request.values:
+        ip6_network = flask.request.values['ip6_network']
+    else:
+        ip6_network = None
+
+    # Get ipv6 gateway
+    if 'ip6_gateway' in flask.request.values:
+        ip6_gateway = flask.request.values['ip6_gateway']
+    else:
+        ip6_gateway = None
+
+    # Get ipv4 DHCP flag
+    if 'flag_dhcp4' in flask.request.values:
+        dhcp4_flag = True
+    else:
+        dhcp4_flag = False
+
+    # Get ipv4 DHCP start
+    if 'dhcp4_start' in flask.request.values:
+        dhcp4_start = flask.request.values['dhcp4_start']
+    else:
+        dhcp4_start = None
+
+    # Get ipv4 DHCP end
+    if 'dhcp4_end' in flask.request.values:
+        dhcp4_end = flask.request.values['dhcp4_end']
+    else:
+        dhcp4_end = None
+
+    return pvcapi.net_add(vni, network, nettype, domain,
+                          ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                          dhcp4_flag, dhcp4_start, dhcp4_end)
 
 @api.route('/api/v1/network/<network>/modify', methods=['POST'])
 def api_net_modify(network):
     """
     Modify a virtual client network with description NETWORK.
     """
-    return pvcapi.net_modify()
+    # Get network VNI
+    if 'vni' in flask.request.values:
+        vni = flask.request.values['vni']
+    else:
+        vni = None
+
+    # Get network type
+    if 'nettype' in flask.request.values:
+        nettype = flask.request.values['nettype']
+    else:
+        vni = None
+
+    # Get network domain
+    if 'domain' in flask.request.values:
+        domain = flask.request.values['domain']
+    else:
+        domain = None
+
+    # Get ipv4 network
+    if 'ip4_network' in flask.request.values:
+        ip4_network = flask.request.values['ip4_network']
+    else:
+        ip4_network = None
+
+    # Get ipv4 gateway
+    if 'ip4_gateway' in flask.request.values:
+        ip4_gateway = flask.request.values['ip4_gateway']
+    else:
+        ip4_gateway = None
+
+    # Get ipv6 network
+    if 'ip6_network' in flask.request.values:
+        ip6_network = flask.request.values['ip6_network']
+    else:
+        ip6_network = None
+
+    # Get ipv6 gateway
+    if 'ip6_gateway' in flask.request.values:
+        ip6_gateway = flask.request.values['ip6_gateway']
+    else:
+        ip6_gateway = None
+
+    # Get ipv4 DHCP flag
+    if 'flag_dhcp4' in flask.request.values:
+        dhcp4_flag = True
+    else:
+        dhcp4_flag = False
+
+    # Get ipv4 DHCP start
+    if 'dhcp4_start' in flask.request.values:
+        dhcp4_start = flask.request.values['dhcp4_start']
+    else:
+        dhcp4_start = None
+
+    # Get ipv4 DHCP end
+    if 'dhcp4_end' in flask.request.values:
+        dhcp4_end = flask.request.values['dhcp4_end']
+    else:
+        dhcp4_end = None
+
+    return pvcapi.net_modify(vni, network, nettype, domain,
+                             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                             dhcp4_flag, dhcp4_start, dhcp4_end)
 
 @api.route('/api/v1/network/<network>/remove', methods=['POST'])
 def api_net_remove(network):
     """
     Remove a virtual client network with description NETWORK.
     """
-    return pvcapi.net_remove()
+    return pvcapi.net_remove(network)
 
 @api.route('/api/v1/network/<network>/dhcp', methods=['GET'])
 def api_net_dhcp(network):
@@ -346,14 +472,26 @@ def api_net_dhcp_add(network, lease):
     """
     Add a static DHCP lease for MAC address LEASE to virtual client network with description NETWORK.
     """
-    return pvcapi.net_dhcp_add()
+    # Get lease ipaddress
+    if 'ipaddress' in flask.request.values:
+        ipaddress = flask.request.values['ipaddress']
+    else:
+        return flask.jsonify({"message":"ERROR: An IP address must be specified for the lease."}), 520
+
+    # Get lease hostname
+    if 'hostname' in flask.request.values:
+        hostname = flask.request.values['hostname']
+    else:
+        hostname = None
+
+    return pvcapi.net_dhcp_add(network, ipaddress, lease, hostname)
 
 @api.route('/api/v1/network/<network>/dhcp/<lease>/remove', methods=['POST'])
 def api_net_dhcp_remove(network, lease):
     """
     Remove a static DHCP lease for MAC address LEASE from virtual client network with description NETWORK.
     """
-    return pvcapi.net_dhcp_remove()
+    return pvcapi.net_dhcp_remove(network, lease)
 
 @api.route('/api/v1/network/<network>/acl', methods=['GET'])
 def api_net_acl(network):
@@ -369,8 +507,8 @@ def api_net_acl(network):
     # Get direction limit
     if 'direction' in flask.request.values:
         direction = flask.request.values['direction']
-        if not 'in' in direction or not 'out' in direction:
-            return "Error: Direction must be either 'in' or 'out'; for both, do not specify a direction.\n", 510
+        if not 'in' in direction and not 'out' in direction:
+            return flash.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'; for both, do not specify a direction."}), 510
     else:
         direction = None
 
@@ -389,14 +527,42 @@ def api_net_acl_add(network, acl):
     """
     Add an access control list with description ACL to virtual client network with description NETWORK.
     """
-    return pvcapi.net_acl_add()
+    # Get rule direction
+    if 'direction' in flask.request.values:
+        direction = flask.request.values['limit']
+        if not 'in' in direction and not 'out' in direction:
+            return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 510
+    else:
+        return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 510
+
+    # Get rule data
+    if 'rule' in flask.request.values:
+        rule = flask.request.values['rule']
+    else:
+        return flask.jsonify({"message":"ERROR: A valid NFT rule line must be specified for the ACL."}), 510
+
+    # Get order value
+    if 'order' in flask.request.values:
+        order = flask.request.values['order']
+    else:
+        order = None
+
+    return pvcapi.net_acl_add(network, direction, acl, rule, order)
 
 @api.route('/api/v1/network/<network>/acl/<acl>/remove', methods=['POST'])
 def api_net_acl_remove(network, acl):
     """
     Remove an access control list with description ACL from virtual client network with description NETWORK.
     """
-    return pvcapi.net_acl_remove()
+    # Get rule direction
+    if 'direction' in flask.request.values:
+        direction = flask.request.values['limit']
+        if not 'in' in direction and not 'out' in direction:
+            return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 510
+    else:
+        return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 510
+
+    return pvcapi.net_acl_remove(network, direction, acl)
 
 #
 # Ceph endpoints
