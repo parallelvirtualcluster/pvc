@@ -386,7 +386,11 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 
     # Change direction to something more usable
     if direction:
-        direction = "in"
+        if not 'in' in direction and not 'out' in direction:
+            direction = "in"
+        else:
+            # Preserve the existing value, which is a text of 'in' or 'out'
+            pass
     else:
         direction = "out"
 
@@ -434,7 +438,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 
     return True, 'Firewall rule "{}" added successfully!'.format(description)
 
-def remove_acl(zk_conn, network, rule, direction):
+def remove_acl(zk_conn, network, description, direction):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if not net_vni:
@@ -442,7 +446,11 @@ def remove_acl(zk_conn, network, rule, direction):
 
     # Change direction to something more usable
     if direction:
-        direction = "in"
+        if not 'in' in direction and not 'out' in direction:
+            direction = "in"
+        else:
+            # Preserve the existing value, which is a text of 'in' or 'out'
+            pass
     else:
         direction = "out"
 
@@ -451,11 +459,11 @@ def remove_acl(zk_conn, network, rule, direction):
     # Check if the ACL matches a description currently in the database
     acl_list = getNetworkACLs(zk_conn, net_vni, direction)
     for acl in acl_list:
-        if acl['description'] == rule:
+        if acl['description'] == description:
             match_description = acl['description']
 
     if not match_description:
-        return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(rule)
+        return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(description)
 
     # Remove the entry from zookeeper
     try:
