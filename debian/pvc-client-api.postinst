@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Install client binary to /usr/bin via symlink
+ln -s /usr/share/pvc/api.py /usr/bin/pvc-api

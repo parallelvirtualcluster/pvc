@@ -11,7 +11,7 @@ Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
 Suggests: pvc-client-cli
 Description: Parallel Virtual Cluster virtualization daemon (Python 3)
- The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC node daemon
 
@@ -19,15 +19,23 @@ Package: pvc-client-common
 Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml
 Description: Parallel Virtual Cluster common client libraries (Python 3)
- The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the common client libraries
 
 Package: pvc-client-cli
 Architecture: all
-Depends: pvc-client-common, python3-yaml, python3-netifaces, python3-dialog, python3-paramiko
+Depends: pvc-client-common, python3-yaml, python3-netifaces, python3-dialog
 Description: Parallel Virtual Cluster client (Python 3)
- The Parallel Virtual Cluster provides a management solution for QEMU/KVM virtual clusters.
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC command-line client
+
+Package: pvc-client-api
+Architecture: all
+Depends: pvc-client-common, python3-yaml 
+Description: Parallel Virtual Cluster client (Python 3)
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
+ .
+ This package installs the PVC API client daemon
 
