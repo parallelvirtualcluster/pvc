@@ -67,7 +67,7 @@ All steps in this section can be performed using either the CLI client or the HT
 0. Add each OSD device to each host. The general command is:  
     `$ pvc ceph osd add --weight <weight> <node> <device>`
 
-   For example, if each node has two data disks, as `/dev/sdb` and `/dev/sdc`, run the commands as follows:  
+    For example, if each node has two data disks, as `/dev/sdb` and `/dev/sdc`, run the commands as follows:  
     `$ pvc ceph osd add --weight 1.0 pvchv1 /dev/sdb`  
     `$ pvc ceph osd add --weight 1.0 pvchv1 /dev/sdc`  
     `$ pvc ceph osd add --weight 1.0 pvchv2 /dev/sdb`  
@@ -75,9 +75,9 @@ All steps in this section can be performed using either the CLI client or the HT
     `$ pvc ceph osd add --weight 1.0 pvchv3 /dev/sdb`  
     `$ pvc ceph osd add --weight 1.0 pvchv3 /dev/sdc`   
 
-   *NOTE:* On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportial to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
+    *NOTE:* On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportial to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
 
-   *NOTE:* OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
+    *NOTE:* OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
 
 0. Verify that the OSDs were added and are functional (`up` and `in`):  
     `$ pvc ceph osd list`
@@ -85,12 +85,12 @@ All steps in this section can be performed using either the CLI client or the HT
 0. Create an RBD pool to store VM images on. The general command is:
     `$ pvc ceph pool add <name> <placement_groups>`
 
-   For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
+    For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
     `$ pvc ceph pool add vms 256`
 
-   *NOTE:* Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
+    *NOTE:* Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
 
-   *NOTE:* All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
+    *NOTE:* All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
 
 0. Verify that the pool was added:  
     `$ pvc ceph pool list`
@@ -102,10 +102,10 @@ All steps in this section can be performed using either the CLI client or the HT
 0. Create the virtual network. The general command for an IPv4-only network with DHCP is:  
     `$ pvc network add <vni_id> --type <type> --description <spaceless_description> --domain <domain> --ipnet <ipv4_network_in_CIDR> --gateway <ipv4_gateway_address> --dhcp --dhcp-start <first_address> --dhcp-end <last_address>`
 
-   For example, to create the managed (EVPN VXLAN) network `100` with subnet `10.100.0.0/24`,  gateway `.1` and DHCP from `.100` to `.199`, run the command as follows:  
+    For example, to create the managed (EVPN VXLAN) network `100` with subnet `10.100.0.0/24`,  gateway `.1` and DHCP from `.100` to `.199`, run the command as follows:  
     `$ pvc network add 100 --type managed --description my-managed-network --domain myhosts.local --ipnet 10.100.0.0/24 --gateway 10.100.0.1 --dhcp --dhcp-start 10.100.0.100 --dhcp-end 10.100.0.199`
 
-   For another example, to create the static bridged (switch-configured, tagged VLAN, with no PVC management of IPs) network `200`, run the command as follows:  
+    For another example, to create the static bridged (switch-configured, tagged VLAN, with no PVC management of IPs) network `200`, run the command as follows:  
     `$ pvc network add 200 --type bridged --description my-bridged-network`
 
 0. Verify that the network(s) were added:  
@@ -131,7 +131,7 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 0. Create an RBD image for the VM. The general command is:  
     `$ pvc ceph volume add <pool> <name> <size>
 
-   For example, to create a 20GB disk for a VM called `test1` in the previously-configured pool `vms`, run the command as follows:  
+    For example, to create a 20GB disk for a VM called `test1` in the previously-configured pool `vms`, run the command as follows:  
     `$ pvc ceph volume add vms test1_disk0 20G`
 
 0. Verify the RBD image was created:  
@@ -140,7 +140,7 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 0. On one of the PVC nodes, for example `pvchv1`, map the RBD volume to the local system:  
     `$ ceph rbd map vms/test1_disk0`
 
-   The resulting disk device will be available at `/dev/rbd/vms/test1_disk0` or `/dev/rbd0`.
+    The resulting disk device will be available at `/dev/rbd/vms/test1_disk0` or `/dev/rbd0`.
 
 0. Create a filesystem on the block device, for example `ext4`:  
     `$ mkfs -t ext4 /dev/rbd/vms/test1_disk0`
@@ -177,53 +177,51 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 	`$ uuidgen`
     `$ $EDITOR /tmp/test1.xml`
 
-    ```
-<domain type='kvm'>
-  <name>test1</name>
-  <uuid>[INSERT GENERATED UUID]</uuid>
-  <description>Testing VM</description>
-  <memory unit='MiB'>1024</memory>
-  <vcpu>1</vcpu>
-  <os>
-    <type arch='x86_64' machine='pc-i440fx-2.7'>hvm</type>
-    <boot dev='hd'/>
-  </os>
-  <features>
-    <acpi/>
-    <apic/>
-    <pae/>
-  </features>
-  <clock offset='utc'/>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>restart</on_crash>
-  <devices>
-    <emulator>/usr/bin/kvm</emulator>
-    <controller type='usb' index='0'/>
-    <controller type='pci' index='0' model='pci-root'/>
-    <serial type='pty'/>
-    <console type='pty'/>
-    <disk type='network' device='disk'>
-      <driver name='qemu' discard='unmap'/>
-      <auth username='libvirt'>
-         <secret type='ceph' uuid='[INSERT CEPH STORAGE SECRET]'/>
-      </auth>
-      <source protocol='rbd' name='vms/test1_disk0'>
-        <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-        <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-        <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-      </source>
-      <target dev='sda' bus='scsi'/>
-    </disk>
-    <interface type='bridge'>
-      <mac address='52:54:00:12:34:56'/>
-      <source bridge='vmbr100'/>
-      <model type='virtio'/>
-    </interface>
-    <controller type='scsi' index='0' model='virtio-scsi'/>
-  </devices>
-</domain>
-    ```
+    <domain type='kvm'>
+      <name>test1</name>
+      <uuid>[INSERT GENERATED UUID]</uuid>
+      <description>Testing VM</description>
+      <memory unit='MiB'>1024</memory>
+      <vcpu>1</vcpu>
+      <os>
+        <type arch='x86_64' machine='pc-i440fx-2.7'>hvm</type>
+        <boot dev='hd'/>
+      </os>
+      <features>
+        <acpi/>
+        <apic/>
+        <pae/>
+      </features>
+      <clock offset='utc'/>
+      <on_poweroff>destroy</on_poweroff>
+      <on_reboot>restart</on_reboot>
+      <on_crash>restart</on_crash>
+      <devices>
+        <emulator>/usr/bin/kvm</emulator>
+        <controller type='usb' index='0'/>
+        <controller type='pci' index='0' model='pci-root'/>
+        <serial type='pty'/>
+        <console type='pty'/>
+        <disk type='network' device='disk'>
+          <driver name='qemu' discard='unmap'/>
+          <auth username='libvirt'>
+             <secret type='ceph' uuid='[INSERT CEPH STORAGE SECRET]'/>
+          </auth>
+          <source protocol='rbd' name='vms/test1_disk0'>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+          </source>
+          <target dev='sda' bus='scsi'/>
+        </disk>
+        <interface type='bridge'>
+          <mac address='52:54:00:12:34:56'/>
+          <source bridge='vmbr100'/>
+          <model type='virtio'/>
+        </interface>
+        <controller type='scsi' index='0' model='virtio-scsi'/>
+      </devices>
+    </domain>
 
     *NOTE:* This Libvirt XML is only a sample; it should be modified to fit the specifics of the VM. Alternatively to manual configuration, one can use a tool like `virt-manager` to generate valid Libvirt XML configurations for PVC to use.
 
