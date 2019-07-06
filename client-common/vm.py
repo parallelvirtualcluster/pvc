@@ -237,7 +237,7 @@ def undefine_vm(zk_conn, domain, is_cli=False):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Shut down the VM
-    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(domain))
+    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state != 'stop':
         if is_cli:
             click.echo('Forcibly stopping VM "{}".'.format(domain))
