@@ -20,3 +20,18 @@ It is designed to be an administrator-friendly but extremely powerful and rich m
 Your cloud, the best way; just add physical servers.
 
 To get started with PVC, see [Installing](/installing) for details on setting up a set of PVC nodes, using [`pvc-ansible`](/manuals/ansible) to configure and bootstrap a cluster, and managing it with the [`pvc` cli](/manuals/cli) or [HTTP API](/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](/about).
+
+## Changelog
+
+#### v0.5
+
+First public release; fully implements the VM, network, and storage managers, the HTTP API, and the pvc-ansible framework for deploying and bootstrapping a cluster. This release is suitable for general use, though it is still alpha-quality software and should be expected to change significantly until 1.0 is released.
+
+#### v0.4
+
+Full implementation of virtual management and virtual networking functionality. Partial implementation of storage functionality.
+
+#### v0.3
+
+Basic implementation of virtual management functionality.
+
