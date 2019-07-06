@@ -169,12 +169,12 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 
 0. Exit the `chroot` environment, unmount the temporary mountpoint, and unmap the RBD device:  
     `[chroot]$ exit`  
-    `$ umount <temporary_mountpoint>`
+    `$ umount <temporary_mountpoint>`  
     `$ rbd unmap /dev/rd0`
 
 0. Prepare a Libvirt XML configuration, obtaining the required Ceph storage secret and a new random VM UUID first. This example provides a very simple VM with 1 vCPU, 1GB RAM, the previously-configured network `100`, and the previously-configured disk `vms/test1_disk0`:  
-    `$ virsh secret-list`
-	`$ uuidgen`
+    `$ virsh secret-list`  
+    `$ uuidgen`  
     `$ $EDITOR /tmp/test1.xml`
 
     ```
