@@ -1606,8 +1606,40 @@ def init_cluster(yes):
         if choice != 'y' and choice != 'Y':
             exit(0)
 
-    import pvc_init
-    pvc_init.init_zookeeper(zk_host)
+    click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
+
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+
+    # Destroy the existing data
+    try:
+        zk_conn.delete('/networks', recursive=True)
+        zk_conn.delete('/domains', recursive=True)
+        zk_conn.delete('/nodes', recursive=True)
+        zk_conn.delete('/primary_node', recursive=True)
+        zk_conn.delete('/ceph', recursive=True)
+    except:
+        pass
+
+    # Create the root keys
+    transaction = zk_conn.transaction()
+    transaction.create('/nodes', ''.encode('ascii'))
+    transaction.create('/primary_node', 'none'.encode('ascii'))
+    transaction.create('/domains', ''.encode('ascii'))
+    transaction.create('/networks', ''.encode('ascii'))
+    transaction.create('/ceph', ''.encode('ascii'))
+    transaction.create('/ceph/osds', ''.encode('ascii'))
+    transaction.create('/ceph/pools', ''.encode('ascii'))
+    transaction.create('/ceph/volumes', ''.encode('ascii'))
+    transaction.create('/ceph/snapshots', ''.encode('ascii'))
+    transaction.create('/locks', ''.encode('ascii'))
+    transaction.create('/locks/flush_lock', 'False'.encode('ascii'))
+    transaction.commit()
+
+    # Close the Zookeeper connection
+    pvc_common.stopZKConnection(zk_conn)
+
+    click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
 
 
 ###############################################################################
