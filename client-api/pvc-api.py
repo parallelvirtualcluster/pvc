@@ -22,22 +22,71 @@
 
 import flask
 import json
+import yaml
+import os
+
+import gevent.pywsgi
 
 import api_lib.pvcapi as pvcapi
 
-zk_host = "hv1:2181,hv2:2181,hv3:2181"
-
 api = flask.Flask(__name__)
-api.config["DEBUG"] = True
+api.config['DEBUG'] = True
+
+# Parse the configuration file
+try:
+    pvc_config_file = os.environ['PVC_CONFIG_FILE']
+except:
+    print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvc-api.')
+    exit(1)
+
+# Read in the config
+try:
+    with open(pvc_config_file, 'r') as cfgfile:
+        o_config = yaml.load(cfgfile)
+except Exception as e:
+    print('ERROR: Failed to parse configuration file: {}'.format(e))
+    exit(1)
+
+try:
+    # Create the config object
+    config = {
+        'zookeeper_uri': o_config['pvc']['zookeeper']['uri'],
+        'listen_address': o_config['pvc']['api']['listen_address'],
+        'listen_port': int(o_config['pvc']['api']['listen_port']),
+        'authentication_key': o_config['pvc']['api']['authentication']['key']
+    }
+    # Set the config object in the pvcapi namespace
+    pvcapi.config = config
+except Exception as e:
+    print('ERROR: {}.'.format(e))
+    exit(1)
+
+def authenticator(function):
+    def authenticate(*args, **kwargs):
+        request_values = flask.request.values
+        if config['authentication_key']:
+            if 'key' in request_values:
+                if request_values['key'] == config['authentication_key']:
+                    return function(*args, **kwargs)
+                else:
+                    return flask.jsonify({"message":"Authentication required"}), 401
+            else:
+                return flask.jsonify({"message":"Authentication required"}), 401
+        else:
+            return function(*args, **kwargs)
+    authenticate.__name__ = function.__name__
+    return authenticate
 
 @api.route('/api/v1', methods=['GET'])
+@authenticator
 def api_root():
-    return "PVC API version 1", 209
+    return flask.jsonify({"message":"PVC API version 1"}), 209
 
 #
 # Node endpoints
 #
 @api.route('/api/v1/node', methods=['GET'])
+@authenticator
 def api_node():
     """
     Return a list of nodes with limit LIMIT.
@@ -51,6 +100,7 @@ def api_node():
     return pvcapi.node_list(limit)
 
 @api.route('/api/v1/node/<node>', methods=['GET'])
+@authenticator
 def api_node_info(node):
     """
     Return information about node NODE.
@@ -59,6 +109,7 @@ def api_node_info(node):
     return pvcapi.node_list(node)
 
 @api.route('/api/v1/node/<node>/secondary', methods=['POST'])
+@authenticator
 def api_node_secondary(node):
     """
     Take NODE out of primary router mode.
@@ -66,6 +117,7 @@ def api_node_secondary(node):
     return pvcapi.node_secondary(node)
 
 @api.route('/api/v1/node/<node>/primary', methods=['POST'])
+@authenticator
 def api_node_primary(node):
     """
     Set NODE to primary router mode.
@@ -73,6 +125,7 @@ def api_node_primary(node):
     return pvcapi.node_primary(node)
 
 @api.route('/api/v1/node/<node>/flush', methods=['POST'])
+@authenticator
 def api_node_flush(node):
     """
     Flush NODE of running VMs.
@@ -81,6 +134,7 @@ def api_node_flush(node):
 
 @api.route('/api/v1/node/<node>/unflush', methods=['POST'])
 @api.route('/api/v1/node/<node>/ready', methods=['POST'])
+@authenticator
 def api_node_ready(node):
     """
     Restore NODE to active service.
@@ -91,6 +145,7 @@ def api_node_ready(node):
 # VM endpoints
 #
 @api.route('/api/v1/vm', methods=['GET'])
+@authenticator
 def api_vm():
     """
     Return a list of VMs with limit LIMIT.
@@ -116,6 +171,7 @@ def api_vm():
     return pvcapi.vm_list(node, state, limit)
 
 @api.route('/api/v1/vm/<vm>', methods=['GET'])
+@authenticator
 def api_vm_info(vm):
     """
     Get information about a virtual machine named VM.
@@ -125,6 +181,7 @@ def api_vm_info(vm):
 
 # TODO: #22
 #@api.route('/api/v1/vm/<vm>/add', methods=['POST'])
+#@authenticator
 #def api_vm_add(vm):
 #    """
 #    Add a virtual machine named VM.
@@ -132,12 +189,16 @@ def api_vm_info(vm):
 #    return pvcapi.vm_add()
 
 @api.route('/api/v1/vm/<vm>/define', methods=['POST'])
+@authenticator
 def api_vm_define(vm):
     """
-    Define a virtual machine named VM from Libvirt XML. Send only the Libvirt XML as data.
+    Define a virtual machine named VM from Libvirt XML.
     """
-    # Get XML from the POST body
-    libvirt_xml = flask.request.data
+    # Get XML data
+    if 'xml' in flask.request.values:
+        libvirt_xml = flask.request.values['xml']
+    else:
+        return flask.jsonify({"message":"ERROR: A Libvirt XML document must be specified."}), 520
 
     # Get node name
     if 'node' in flask.request.values:
@@ -154,6 +215,7 @@ def api_vm_define(vm):
     return pvcapi.vm_define(vm, libvirt_xml, node, selector)
 
 @api.route('/api/v1/vm/<vm>/modify', methods=['POST'])
+@authenticator
 def api_vm_modify(vm):
     """
     Modify an existing virtual machine named VM from Libvirt XML.
@@ -170,6 +232,7 @@ def api_vm_modify(vm):
     return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
 
 @api.route('/api/v1/vm/<vm>/undefine', methods=['POST'])
+@authenticator
 def api_vm_undefine(vm):
     """
     Undefine a virtual machine named VM.
@@ -177,6 +240,7 @@ def api_vm_undefine(vm):
     return pvcapi.vm_undefine(vm)
 
 @api.route('/api/v1/vm/<vm>/remove', methods=['POST'])
+@authenticator
 def api_vm_remove(vm):
     """
     Remove a virtual machine named VM including all disks.
@@ -184,6 +248,7 @@ def api_vm_remove(vm):
     return pvcapi.vm_remove(vm)
 
 @api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
+@authenticator
 def api_vm_dump(vm):
     """
     Dump the Libvirt XML configuration of a virtual machine named VM.
@@ -191,6 +256,7 @@ def api_vm_dump(vm):
     return pvcapi.vm_dump(vm)
 
 @api.route('/api/v1/vm/<vm>/start', methods=['POST'])
+@authenticator
 def api_vm_start(vm):
     """
     Start a virtual machine named VM.
@@ -198,6 +264,7 @@ def api_vm_start(vm):
     return pvcapi.vm_start(vm)
 
 @api.route('/api/v1/vm/<vm>/restart', methods=['POST'])
+@authenticator
 def api_vm_restart(vm):
     """
     Restart a virtual machine named VM.
@@ -205,6 +272,7 @@ def api_vm_restart(vm):
     return pvcapi.vm_restart(vm)
 
 @api.route('/api/v1/vm/<vm>/shutdown', methods=['POST'])
+@authenticator
 def api_vm_shutdown(vm):
     """
     Shutdown a virtual machine named VM.
@@ -212,6 +280,7 @@ def api_vm_shutdown(vm):
     return pvcapi.vm_shutdown(vm)
 
 @api.route('/api/v1/vm/<vm>/stop', methods=['POST'])
+@authenticator
 def api_vm_stop(vm):
     """
     Forcibly stop a virtual machine named VM.
@@ -219,6 +288,7 @@ def api_vm_stop(vm):
     return pvcapi.vm_stop(vm)
 
 @api.route('/api/v1/vm/<vm>/move', methods=['POST'])
+@authenticator
 def api_vm_move(vm):
     """
     Move a virtual machine named VM to another node.
@@ -238,6 +308,7 @@ def api_vm_move(vm):
     return pvcapi.vm_move(vm, node, selector)
 
 @api.route('/api/v1/vm/<vm>/migrate', methods=['POST'])
+@authenticator
 def api_vm_migrate(vm):
     """
     Temporarily migrate a virtual machine named VM to another node.
@@ -263,6 +334,7 @@ def api_vm_migrate(vm):
     return pvcapi.vm_migrate(vm, node, selector, flag_force)
 
 @api.route('/api/v1/vm/<vm>/unmigrate', methods=['POST'])
+@authenticator
 def api_vm_unmigrate(vm):
     """
     Unmigrate a migrated virtual machine named VM.
@@ -273,6 +345,7 @@ def api_vm_unmigrate(vm):
 # Network endpoints
 #
 @api.route('/api/v1/network', methods=['GET'])
+@authenticator
 def api_net():
     """
     Return a list of virtual client networks with limit LIMIT.
@@ -286,6 +359,7 @@ def api_net():
     return pvcapi.net_list(limit)
 
 @api.route('/api/v1/network/<network>', methods=['GET'])
+@authenticator
 def api_net_info(network):
     """
     Get information about a virtual client network with description NETWORK.
@@ -294,6 +368,7 @@ def api_net_info(network):
     return pvcapi.net_list(network)
 
 @api.route('/api/v1/network/<network>/add', methods=['POST'])
+@authenticator
 def api_net_add(network):
     """
     Add a virtual client network with description NETWORK.
@@ -365,6 +440,7 @@ def api_net_add(network):
                           dhcp4_flag, dhcp4_start, dhcp4_end)
 
 @api.route('/api/v1/network/<network>/modify', methods=['POST'])
+@authenticator
 def api_net_modify(network):
     """
     Modify a virtual client network with description NETWORK.
@@ -434,6 +510,7 @@ def api_net_modify(network):
                              dhcp4_flag, dhcp4_start, dhcp4_end)
 
 @api.route('/api/v1/network/<network>/remove', methods=['POST'])
+@authenticator
 def api_net_remove(network):
     """
     Remove a virtual client network with description NETWORK.
@@ -441,6 +518,7 @@ def api_net_remove(network):
     return pvcapi.net_remove(network)
 
 @api.route('/api/v1/network/<network>/dhcp', methods=['GET'])
+@authenticator
 def api_net_dhcp(network):
     """
     Return a list of DHCP leases in virtual client network with description NETWORK with limit LIMIT.
@@ -460,6 +538,7 @@ def api_net_dhcp(network):
     return pvcapi.net_dhcp_list(network, limit. flag_static)
 
 @api.route('/api/v1/network/<network>/dhcp/<lease>', methods=['GET'])
+@authenticator
 def api_net_dhcp_info(network, lease):
     """
     Get information about a DHCP lease for MAC address LEASE in virtual client network with description NETWORK.
@@ -468,6 +547,7 @@ def api_net_dhcp_info(network, lease):
     return pvcapi.net_dhcp_list(network, lease, False)
 
 @api.route('/api/v1/network/<network>/dhcp/<lease>/add', methods=['POST'])
+@authenticator
 def api_net_dhcp_add(network, lease):
     """
     Add a static DHCP lease for MAC address LEASE to virtual client network with description NETWORK.
@@ -487,6 +567,7 @@ def api_net_dhcp_add(network, lease):
     return pvcapi.net_dhcp_add(network, ipaddress, lease, hostname)
 
 @api.route('/api/v1/network/<network>/dhcp/<lease>/remove', methods=['POST'])
+@authenticator
 def api_net_dhcp_remove(network, lease):
     """
     Remove a static DHCP lease for MAC address LEASE from virtual client network with description NETWORK.
@@ -494,6 +575,7 @@ def api_net_dhcp_remove(network, lease):
     return pvcapi.net_dhcp_remove(network, lease)
 
 @api.route('/api/v1/network/<network>/acl', methods=['GET'])
+@authenticator
 def api_net_acl(network):
     """
     Return a list of network ACLs in network NETWORK with limit LIMIT.
@@ -515,6 +597,7 @@ def api_net_acl(network):
     return pvcapi.net_acl_list(network, limit, direction)
 
 @api.route('/api/v1/network/<network>/acl/<acl>', methods=['GET'])
+@authenticator
 def api_net_acl_info(network, acl):
     """
     Get information about a network access control entry with description ACL in virtual client network with description NETWORK.
@@ -523,6 +606,7 @@ def api_net_acl_info(network, acl):
     return pvcapi.net_acl_list(network, acl, None)
 
 @api.route('/api/v1/network/<network>/acl/<acl>/add', methods=['POST'])
+@authenticator
 def api_net_acl_add(network, acl):
     """
     Add an access control list with description ACL to virtual client network with description NETWORK.
@@ -550,6 +634,7 @@ def api_net_acl_add(network, acl):
     return pvcapi.net_acl_add(network, direction, acl, rule, order)
 
 @api.route('/api/v1/network/<network>/acl/<acl>/remove', methods=['POST'])
+@authenticator
 def api_net_acl_remove(network, acl):
     """
     Remove an access control list with description ACL from virtual client network with description NETWORK.
@@ -568,6 +653,7 @@ def api_net_acl_remove(network, acl):
 # Ceph endpoints
 #
 @api.route('/api/v1/ceph', methods=['GET'])
+@authenticator
 def api_ceph():
     """
     Get the current Ceph cluster status.
@@ -575,6 +661,7 @@ def api_ceph():
     return pvcapi.ceph_status()
 
 @api.route('/api/v1/ceph/osd', methods=['GET'])
+@authenticator
 def api_ceph_osd():
     """
     Get the list of OSDs in the Ceph storage cluster.
@@ -588,6 +675,7 @@ def api_ceph_osd():
     return pvcapi.ceph_osd_list(limit)
 
 @api.route('/api/v1/ceph/osd/set', methods=['POST'])
+@authenticator
 def api_ceph_osd_set():
     """
     Set OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
@@ -601,6 +689,7 @@ def api_ceph_osd_set():
     return pvcapi.ceph_osd_set(option)
 
 @api.route('/api/v1/ceph/osd/unset', methods=['POST'])
+@authenticator
 def api_ceph_osd_unset():
     """
     Unset OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
@@ -614,6 +703,7 @@ def api_ceph_osd_unset():
     return pvcapi.ceph_osd_unset(option)
 
 @api.route('/api/v1/ceph/osd/<osd>', methods=['GET'])
+@authenticator
 def api_ceph_osd_info(osd):
     """
     Get information about an OSD with ID OSD.
@@ -622,6 +712,7 @@ def api_ceph_osd_info(osd):
     return pvcapi.ceph_osd_list(osd)
 
 @api.route('/api/v1/ceph/osd/<node>/add', methods=['POST'])
+@authenticator
 def api_ceph_osd_add(node):
     """
     Add a Ceph OSD to node NODE.
@@ -641,6 +732,7 @@ def api_ceph_osd_add(node):
     return pvcapi.ceph_osd_add(node, device, weight)
 
 @api.route('/api/v1/ceph/osd/<osd>/remove', methods=['POST'])
+@authenticator
 def api_ceph_osd_remove(osd):
     """
     Remove a Ceph OSD with ID OSD.
@@ -652,6 +744,7 @@ def api_ceph_osd_remove(osd):
     return pvcapi.ceph_osd_remove(osd)
 
 @api.route('/api/v1/ceph/osd/<osd>/in', methods=['POST'])
+@authenticator
 def api_ceph_osd_in(osd):
     """
     Set in a Ceph OSD with ID OSD.
@@ -659,6 +752,7 @@ def api_ceph_osd_in(osd):
     return pvcapi.ceph_osd_in(osd)
 
 @api.route('/api/v1/ceph/osd/<osd>/out', methods=['POST'])
+@authenticator
 def api_ceph_osd_out(osd):
     """
     Set out a Ceph OSD with ID OSD.
@@ -666,6 +760,7 @@ def api_ceph_osd_out(osd):
     return pvcapi.ceph_osd_out(osd)
 
 @api.route('/api/v1/ceph/pool', methods=['GET'])
+@authenticator
 def api_ceph_pool():
     """
     Get the list of RBD pools in the Ceph storage cluster.
@@ -679,6 +774,7 @@ def api_ceph_pool():
     return pvcapi.ceph_pool_list(limit)
 
 @api.route('/api/v1/ceph/pool/<pool>', methods=['GET'])
+@authenticator
 def api_ceph_pool_info(pool):
     """
     Get information about an RBD pool with name POOL.
@@ -687,6 +783,7 @@ def api_ceph_pool_info(pool):
     return pvcapi.ceph_pool_list(pool)
 
 @api.route('/api/v1/ceph/pool/<pool>/add', methods=['POST'])
+@authenticator
 def api_ceph_pool_add(pool):
     """
     Add a Ceph RBD pool with name POOL.
@@ -701,6 +798,7 @@ def api_ceph_pool_add(pool):
     return pvcapi.ceph_pool_add(pool, pgs)
 
 @api.route('/api/v1/ceph/pool/<pool>/remove', methods=['POST'])
+@authenticator
 def api_ceph_pool_remove(pool):
     """
     Remove a Ceph RBD pool with name POOL.
@@ -712,6 +810,7 @@ def api_ceph_pool_remove(pool):
     return pvcapi.ceph_pool_remove(pool)
 
 @api.route('/api/v1/ceph/volume', methods=['GET'])
+@authenticator
 def api_ceph_volume():
     """
     Get the list of RBD volumes in the Ceph storage cluster.
@@ -731,6 +830,7 @@ def api_ceph_volume():
     return pvcapi.ceph_volume_list(pool, limit)
 
 @api.route('/api/v1/ceph/volume/<pool>/<volume>', methods=['GET'])
+@authenticator
 def api_ceph_volume_info(pool, volume):
     """
     Get information about an RBD volume with name VOLUME in RBD pool with name POOL.
@@ -739,6 +839,7 @@ def api_ceph_volume_info(pool, volume):
     return pvcapi.ceph_osd_list(pool, osd)
 
 @api.route('/api/v1/ceph/volume/<pool>/<volume>/add', methods=['POST'])
+@authenticator
 def api_ceph_volume_add(pool, volume):
     """
     Add a Ceph RBD volume with name VOLUME to RBD pool with name POOL.
@@ -752,6 +853,7 @@ def api_ceph_volume_add(pool, volume):
     return pvcapi.ceph_volume_add(pool, volume, size)
 
 @api.route('/api/v1/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
+@authenticator
 def api_ceph_volume_remove(pool, volume):
     """
     Remove a Ceph RBD volume with name VOLUME from RBD pool with name POOL.
@@ -759,6 +861,7 @@ def api_ceph_volume_remove(pool, volume):
     return pvcapi.ceph_volume_remove(pool, volume)
 
 @api.route('/api/v1/ceph/volume/snapshot', methods=['GET'])
+@authenticator
 def api_ceph_volume_snapshot():
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.
@@ -784,6 +887,7 @@ def api_ceph_volume_snapshot():
     return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
 
 @api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET'])
+@authenticator
 def api_ceph_volume_snapshot_info(pool, volume, snapshot):
     """
     Get information about a snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
@@ -792,6 +896,7 @@ def api_ceph_volume_snapshot_info(pool, volume, snapshot):
     return pvcapi.ceph_snapshot_list(pool, volume, snapshot)
 
 @api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add', methods=['POST'])
+@authenticator
 def api_ceph_volume_snapshot_add(pool, volume, snapshot):
     """
     Add a Ceph RBD volume snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
@@ -799,6 +904,7 @@ def api_ceph_volume_snapshot_add(pool, volume, snapshot):
     return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
 @api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
+@authenticator
 def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
     """
     Remove a Ceph RBD volume snapshot with name SNAPSHOT from RBD volume with name VOLUME in RBD pool with name POOL.
@@ -808,4 +914,6 @@ def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
 #
 # Entrypoint
 #
-api.run()
+http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
+http_server.serve_forever()
+

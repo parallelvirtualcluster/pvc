@@ -1,0 +1,25 @@
+# pvc-api client configuration file example
+#
+# This configuration file specifies details for the PVC API client running on
+# this machine. Default values are not supported; the values in this sample
+# configuration are considered defaults and can be used as-is.
+#
+# Copy this example to /etc/pvc/pvc-api.conf and edit to your needs
+
+pvc:
+    # zookeeper: Configuration of the zookeeper connection
+    zookeeper:
+        # uri: Zookeeper URI specifying the PVCD coordinators to connect to
+        #uri: "pvchv1:2181,pvchv2:2181,pvchv3:2181"
+        uri: "hv1:2181,hv2:2181,hv3:2181"
+    # api: Configuration of the API listener
+    api:
+        # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
+        listen_address: "127.0.0.1"
+        # listen_port: TCP port to listen on, usually 7370
+        listen_port: "7370"
+        # authentication: Authentication and security settings
+        authentication:
+            # key: A secure key to authorize against the API; must be sent in the body
+            #      arguments or in the URI of each requess; leave blank for no authentication
+            key: "test1234"

@@ -2,3 +2,13 @@
 
 # Install client binary to /usr/bin via symlink
 ln -s /usr/share/pvc/api.py /usr/bin/pvc-api
+
+# Reload systemd's view of the units
+systemctl daemon-reload
+
+# Restart the daemon (or warn on first install)
+if systemctl is-active --quiet pvc-api.service; then
+    systemctl restart pvc-api.service
+else
+    echo "NOTE: The PVC client API daemon (pvc-api.service) has not been started; create a config file at /etc/pvc/pvc-api.yaml then start it."
+fi

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Reload systemd's view of the units
+systemctl daemon-reload
+
 # Enable the service and target
 systemctl enable /lib/systemd/system/pvcd.service
 systemctl enable /lib/systemd/system/pvcd.target
