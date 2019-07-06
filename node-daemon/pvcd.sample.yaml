@@ -21,6 +21,8 @@ pvc:
     enable_networking: True
     # enable_storage: Enable or disable Ceph storage management functionality
     enable_storage: True
+    # enable_api: Enable or disable the API client, if installed, when node is Primary
+    enable_api: True
   # cluster: Cluster-level configuration
   cluster:
     # coordinators: The list of cluster coordinator hostnames

@@ -254,6 +254,8 @@ class NodeInstance(object):
             self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
             self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
             time.sleep(2)
+            if self.config['enable_api']:
+                common.run_os_command("systemctl stop pvc-api.service")
             for network in self.d_network:
                 self.d_network[network].stopDHCPServer()
                 self.d_network[network].removeGateways()
@@ -269,6 +271,8 @@ class NodeInstance(object):
             for network in self.d_network:
                 self.d_network[network].createGateways()
                 self.d_network[network].startDHCPServer()
+            if self.config['enable_api']:
+                common.run_os_command("systemctl start pvc-api.service")
             time.sleep(1)
             # Force Patroni to switch to the local instance
             self.logger.out('Setting Patroni leader to this node', state='i')
