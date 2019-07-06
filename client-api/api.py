@@ -590,16 +590,28 @@ def api_ceph_osd():
 @api.route('/api/v1/ceph/osd/set', methods=['POST'])
 def api_ceph_osd_set():
     """
-    Set options on a Ceph OSD in the PVC Ceph storage cluster.
+    Set OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
     """
-    return pvcapi.ceph_osd_set()
+    # Get OSD option
+    if 'option' in flask.request.options:
+        option = flask.request.options['option']
+    else:
+        return flask.jsonify({"message":"ERROR: An OSD option must be specified."}), 510
+
+    return pvcapi.ceph_osd_set(option)
 
 @api.route('/api/v1/ceph/osd/unset', methods=['POST'])
 def api_ceph_osd_unset():
     """
-    Unset options on a Ceph OSD in the PVC Ceph storage cluster.
+    Unset OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
     """
-    return pvcapi.ceph_osd_unset()
+    # Get OSD option
+    if 'option' in flask.request.options:
+        option = flask.request.options['option']
+    else:
+        return flask.jsonify({"message":"ERROR: An OSD option must be specified."}), 510
+
+    return pvcapi.ceph_osd_unset(option)
 
 @api.route('/api/v1/ceph/osd/<osd>', methods=['GET'])
 def api_ceph_osd_info(osd):
@@ -609,33 +621,49 @@ def api_ceph_osd_info(osd):
     # Same as specifying /osd?limit=OSD
     return pvcapi.ceph_osd_list(osd)
 
-@api.route('/api/v1/ceph/osd/<osd>/add', methods=['POST'])
-def api_ceph_osd_add(osd):
+@api.route('/api/v1/ceph/osd/<node>/add', methods=['POST'])
+def api_ceph_osd_add(node):
     """
-    Add a Ceph OSD with ID OSD.
+    Add a Ceph OSD to node NODE.
     """
-    return pvcapi.ceph_osd_add()
+    # Get OSD device
+    if 'device' in flask.request.devices:
+        device = flask.request.devices['device']
+    else:
+        return flask.jsonify({"message":"ERROR: A block device must be specified."}), 510
+
+    # Get OSD weight
+    if 'weight' in flask.request.weights:
+        weight = flask.request.weights['weight']
+    else:
+        return flask.jsonify({"message":"ERROR: An OSD weight must be specified."}), 510
+
+    return pvcapi.ceph_osd_add(node, device, weight)
 
 @api.route('/api/v1/ceph/osd/<osd>/remove', methods=['POST'])
 def api_ceph_osd_remove(osd):
     """
     Remove a Ceph OSD with ID OSD.
     """
-    return pvcapi.ceph_osd_remove()
+    # Verify yes-i-really-mean-it flag
+    if not 'flag_yes_i_really_mean_it' in flask.request.values:
+        return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'flag_yes_i_really_mean_it'."}), 599
+
+    return pvcapi.ceph_osd_remove(osd)
 
 @api.route('/api/v1/ceph/osd/<osd>/in', methods=['POST'])
 def api_ceph_osd_in(osd):
     """
     Set in a Ceph OSD with ID OSD.
     """
-    return pvcapi.ceph_osd_in()
+    return pvcapi.ceph_osd_in(osd)
 
 @api.route('/api/v1/ceph/osd/<osd>/out', methods=['POST'])
 def api_ceph_osd_out(osd):
     """
     Set out a Ceph OSD with ID OSD.
     """
-    return pvcapi.ceph_osd_out()
+    return pvcapi.ceph_osd_out(osd)
 
 @api.route('/api/v1/ceph/pool', methods=['GET'])
 def api_ceph_pool():
@@ -663,14 +691,25 @@ def api_ceph_pool_add(pool):
     """
     Add a Ceph RBD pool with name POOL.
     """
-    return pvcapi.ceph_pool_add()
+    # Get placement groups
+    if 'pgs' in flask.request.values:
+        pgs = flask.request.values['pgs']
+    else:
+        # We default to a very small number; DOCUMENT THIS
+        pgs = 128
+
+    return pvcapi.ceph_pool_add(pool, pgs)
 
 @api.route('/api/v1/ceph/pool/<pool>/remove', methods=['POST'])
 def api_ceph_pool_remove(pool):
     """
     Remove a Ceph RBD pool with name POOL.
     """
-    return pvcapi.ceph_pool_remove()
+    # Verify yes-i-really-mean-it flag
+    if not 'flag_yes_i_really_mean_it' in flask.request.values:
+        return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'flag_yes_i_really_mean_it'."}), 599
+
+    return pvcapi.ceph_pool_remove(pool)
 
 @api.route('/api/v1/ceph/volume', methods=['GET'])
 def api_ceph_volume():
@@ -704,14 +743,20 @@ def api_ceph_volume_add(pool, volume):
     """
     Add a Ceph RBD volume with name VOLUME to RBD pool with name POOL.
     """
-    return pvcapi.ceph_volume_add()
+    # Get volume size
+    if 'size' in flask.request.values:
+        size = flask.request.values['size']
+    else:
+        return flask.jsonify({"message":"ERROR: A volume size in bytes (or with an M/G/T suffix) must be specified."}), 510
+
+    return pvcapi.ceph_volume_add(pool, volume, size)
 
 @api.route('/api/v1/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
 def api_ceph_volume_remove(pool, volume):
     """
     Remove a Ceph RBD volume with name VOLUME from RBD pool with name POOL.
     """
-    return pvcapi.ceph_volume_remove()
+    return pvcapi.ceph_volume_remove(pool, volume)
 
 @api.route('/api/v1/ceph/volume/snapshot', methods=['GET'])
 def api_ceph_volume_snapshot():
@@ -751,14 +796,14 @@ def api_ceph_volume_snapshot_add(pool, volume, snapshot):
     """
     Add a Ceph RBD volume snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
     """
-    return pvcapi.ceph_volume_snapshot_add()
+    return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
 @api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
 def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
     """
     Remove a Ceph RBD volume snapshot with name SNAPSHOT from RBD volume with name VOLUME in RBD pool with name POOL.
     """
-    return pvcapi.ceph_volume_snapshot_remove()
+    return pvcapi.ceph_volume_snapshot_remove(pool, volume, snapshot)
 
 #
 # Entrypoint

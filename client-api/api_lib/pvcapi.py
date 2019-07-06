@@ -553,41 +553,107 @@ def ceph_osd_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def ceph_osd_add():
+def ceph_osd_add(node, device, weight):
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.add_osd(zk_conn, node, device, weight)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_osd_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_osd_remove(osd_id):
     """
     Remove a Ceph OSD from the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.remove_osd(zk_conn, osd_id)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_osd_in():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_osd_in(osd_id):
     """
     Set in a Ceph OSD in the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.in_osd(zk_conn, osd_id)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_osd_out():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_osd_out(osd_id):
     """
     Set out a Ceph OSD in the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.out_osd(zk_conn, osd_id)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_osd_set():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_osd_set(option):
     """
     Set options on a Ceph OSD in the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.set_osd(zk_conn, option)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_osd_unset():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_osd_unset(option):
     """
     Unset options on a Ceph OSD in the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.unset_osd(zk_conn, option)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 def ceph_pool_list(limit=None):
     """
@@ -603,17 +669,39 @@ def ceph_pool_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def ceph_pool_add():
+def ceph_pool_add(name, pgs):
     """
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_pool_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_pool_remove(name):
     """
     Remove a Ceph RBD pool to the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 def ceph_volume_list(pool=None, limit=None):
     """
@@ -629,17 +717,39 @@ def ceph_volume_list(pool=None, limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def ceph_volume_add():
+def ceph_volume_add(pool, name, size):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.add_volume(zk_conn, pool, name, size)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_volume_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_volume_remove(pool, name):
     """
     Remove a Ceph RBD volume to the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
 def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
     """
@@ -655,15 +765,38 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def ceph_volume_snapshot_add():
+def ceph_volume_snapshot_add(pool, volume, name):
     """
     Add a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
     """
     return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
 
-def ceph_volume_snapshot_remove():
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_volume_snapshot_remove(pool, volume, name):
     """
-    Remove a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
+    Remove a Ceph RBD volume snapshot from the PVC Ceph storage cluster.
     """
-    return '', 200
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retflag, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retmsg.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
 
