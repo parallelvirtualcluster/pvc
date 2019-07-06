@@ -19,4 +19,4 @@ It is designed to be an administrator-friendly but extremely powerful and rich m
 
 Your cloud, the best way; just add physical servers.
 
-To get started with PVC, see [Installing](/installing) for details on bootstrapping a cluster, then check out the [CLI manual](/manuals/pvc).
+To get started with PVC, see [Installing](/installing) for details on setting up a set of PVC nodes, using [`pvc-ansible`](/manuals/ansible) to configure and bootstrap a cluster, and managing it with the [`pvc` cli](/manuals/cli) or [HTTP API](/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](/about).
