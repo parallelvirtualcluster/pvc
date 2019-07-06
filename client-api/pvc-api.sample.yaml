@@ -20,5 +20,5 @@ pvc:
         # authentication: Authentication and security settings
         authentication:
             # key: A secure key to authorize against the API; must be sent in the body
-            #      arguments or in the URI of each requess; leave blank for no authentication
+            #      arguments or in the URI of each request; leave blank for no authentication
             key: ""
