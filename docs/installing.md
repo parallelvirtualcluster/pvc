@@ -47,7 +47,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Verify your `group_vars` setup from part one, as errors here may require a reinstallation and restart of the bootstrap process.
 
-0. Perform the initial bootstrap. From the `pvc-ansible` repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.
+0. Perform the initial bootstrap. From the `pvc-ansible` repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.  
     `$ ansible-playbook -v -i hosts pvc.yml -l <cluster_name> -e bootstrap=yes`
 
 0. Wait for the Ansible playbook run to finish. Once completed, the cluster bootstrap will be finished, and all 3 nodes will have rebooted into a working PVC cluster.
@@ -82,7 +82,7 @@ All steps in this section can be performed using either the CLI client or the HT
 0. Verify that the OSDs were added and are functional (`up` and `in`):  
     `$ pvc ceph osd list`
 
-0. Create an RBD pool to store VM images on. The general command is:
+0. Create an RBD pool to store VM images on. The general command is:  
     `$ pvc ceph pool add <name> <placement_groups>`
 
     For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
@@ -149,7 +149,7 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
     `$ mount /dev/rbd/vms/test1_disk0 $( mktemp -d )`  
     `$ mount | grep rbd`
 
-0. Run a `debootstrap` installation to the volume:
+0. Run a `debootstrap` installation to the volume:  
     `$ debootstrap buster <temporary_mountpoint> http://ftp.mirror.debian.org/debian`
 
 0. Bind mount the various required directories to the new system:  
@@ -228,10 +228,10 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 0. Define the VM in the PVC cluster:  
     `$ pvc vm define /tmp/test1.xml`
 
-0. Verify the VM is present in the cluster:
+0. Verify the VM is present in the cluster:  
     `$ pvc vm info test1`
 
-0. Start the VM and watch the console log:
+0. Start the VM and watch the console log:  
     `$ pvc vm start test1`  
     `$ pvc vm log -f test1`
 
