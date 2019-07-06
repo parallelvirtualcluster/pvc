@@ -9,7 +9,7 @@ Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVC_CONFIG_FILE=/etc/pvc/pvc.yaml
-ExecStart = /usr/share/pvc/api.py
+ExecStart = /usr/share/pvc/pvc-api.py
 Restart = on-failure
 
 [Install]
