@@ -177,51 +177,53 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
 	`$ uuidgen`
     `$ $EDITOR /tmp/test1.xml`
 
-      <domain type='kvm'>
-        <name>test1</name>
-        <uuid>[INSERT GENERATED UUID]</uuid>
-        <description>Testing VM</description>
-        <memory unit='MiB'>1024</memory>
-        <vcpu>1</vcpu>
-        <os>
-          <type arch='x86_64' machine='pc-i440fx-2.7'>hvm</type>
-          <boot dev='hd'/>
-        </os>
-        <features>
-          <acpi/>
-          <apic/>
-          <pae/>
-        </features>
-        <clock offset='utc'/>
-        <on_poweroff>destroy</on_poweroff>
-        <on_reboot>restart</on_reboot>
-        <on_crash>restart</on_crash>
-        <devices>
-          <emulator>/usr/bin/kvm</emulator>
-          <controller type='usb' index='0'/>
-          <controller type='pci' index='0' model='pci-root'/>
-          <serial type='pty'/>
-          <console type='pty'/>
-          <disk type='network' device='disk'>
-            <driver name='qemu' discard='unmap'/>
-            <auth username='libvirt'>
-               <secret type='ceph' uuid='[INSERT CEPH STORAGE SECRET]'/>
-            </auth>
-            <source protocol='rbd' name='vms/test1_disk0'>
-              <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-              <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-              <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-            </source>
-            <target dev='sda' bus='scsi'/>
-          </disk>
-          <interface type='bridge'>
-            <mac address='52:54:00:12:34:56'/>
-            <source bridge='vmbr100'/>
-            <model type='virtio'/>
-          </interface>
-          <controller type='scsi' index='0' model='virtio-scsi'/>
-        </devices>
-      </domain>
+    ```
+    <domain type='kvm'>
+      <name>test1</name>
+      <uuid>[INSERT GENERATED UUID]</uuid>
+      <description>Testing VM</description>
+      <memory unit='MiB'>1024</memory>
+      <vcpu>1</vcpu>
+      <os>
+        <type arch='x86_64' machine='pc-i440fx-2.7'>hvm</type>
+        <boot dev='hd'/>
+      </os>
+      <features>
+        <acpi/>
+        <apic/>
+        <pae/>
+      </features>
+      <clock offset='utc'/>
+      <on_poweroff>destroy</on_poweroff>
+      <on_reboot>restart</on_reboot>
+      <on_crash>restart</on_crash>
+      <devices>
+        <emulator>/usr/bin/kvm</emulator>
+        <controller type='usb' index='0'/>
+        <controller type='pci' index='0' model='pci-root'/>
+        <serial type='pty'/>
+        <console type='pty'/>
+        <disk type='network' device='disk'>
+          <driver name='qemu' discard='unmap'/>
+          <auth username='libvirt'>
+             <secret type='ceph' uuid='[INSERT CEPH STORAGE SECRET]'/>
+          </auth>
+          <source protocol='rbd' name='vms/test1_disk0'>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
+          </source>
+          <target dev='sda' bus='scsi'/>
+        </disk>
+        <interface type='bridge'>
+          <mac address='52:54:00:12:34:56'/>
+          <source bridge='vmbr100'/>
+          <model type='virtio'/>
+        </interface>
+        <controller type='scsi' index='0' model='virtio-scsi'/>
+      </devices>
+    </domain>
+    ```
 
     *NOTE:* This Libvirt XML is only a sample; it should be modified to fit the specifics of the VM. Alternatively to manual configuration, one can use a tool like `virt-manager` to generate valid Libvirt XML configurations for PVC to use.
 
