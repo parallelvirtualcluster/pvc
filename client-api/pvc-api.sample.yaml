@@ -8,10 +8,11 @@
 # Copy this example to /etc/pvc/pvc-api.conf and edit to your needs
 
 pvc:
-    # zookeeper: Configuration of the zookeeper connection
-    zookeeper:
-        # uri: Zookeeper URI specifying the PVCD coordinators to connect to
-        uri: "pvchv1:2181,pvchv2:2181,pvchv3:2181"
+    # coordinators: The list of cluster coordinator hostnames
+    coordinators:
+      - pvc-hv1
+      - pvc-hv2
+      - pvc-hv3
     # api: Configuration of the API listener
     api:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces

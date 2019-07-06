@@ -50,7 +50,7 @@ except Exception as e:
 try:
     # Create the config object
     config = {
-        'zookeeper_uri': o_config['pvc']['zookeeper']['uri'],
+        'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
         'authentication_key': o_config['pvc']['api']['authentication']['key']
