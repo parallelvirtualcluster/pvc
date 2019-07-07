@@ -53,7 +53,7 @@ try:
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
-        'authentication_key': o_config['pvc']['api']['authentication']['key'],
+        'authentication_tokens': o_config['pvc']['api']['authentication']['tokens'],
         'secret_key': o_config['pvc']['api']['secret_key'],
         'ssl_enabled': o_config['pvc']['api']['ssl']['enabled'],
         'ssl_key_file': o_config['pvc']['api']['ssl']['key_file'],
@@ -70,24 +70,52 @@ api.config["SECRET_KEY"] = config['secret_key']
 
 def authenticator(function):
     def authenticate(*args, **kwargs):
-        request_values = flask.request.values
-        if config['authentication_key']:
-            if 'key' in request_values:
-                if request_values['key'] == config['authentication_key']:
+        # Check if authentication is enabled
+        if not config['authentication_tokens']:
+            return function(*args, **kwargs)
+        else:
+            # Session-based authentication
+            if 'token' in flask.session:
+                return function(*args, **kwargs)
+            # Direct token-based authentication
+            if 'token' in flask.request.values:
+                if any(token for token in config['authentication_tokens'] if flask.request.values['token'] in token['token']):
                     return function(*args, **kwargs)
                 else:
-                    return flask.jsonify({"message":"Authentication required"}), 401
-            else:
-                return flask.jsonify({"message":"Authentication required"}), 401
-        else:
-            return function(*args, **kwargs)
+                    return flask.jsonify({"message":"Authentication failed"}), 401
+
+            return flask.jsonify({"message":"Authentication required"}), 401
+
     authenticate.__name__ = function.__name__
     return authenticate
 
 @api.route('/api/v1', methods=['GET'])
-@authenticator
 def api_root():
     return flask.jsonify({"message":"PVC API version 1"}), 209
+
+@api.route('/api/v1/auth/login', methods=['GET', 'POST'])
+def api_auth_login():
+    if flask.request.method == 'POST':
+        if any(token for token in config['authentication_tokens'] if flask.request.values['token'] in token['token']):
+            flask.session['token'] = flask.request.form['token']
+            return flask.redirect(flask.url_for('api_root'))
+        else:
+            return flask.jsonify({"message":"Authentication failed"}), 401
+    return '''
+        <form method="post">
+            <p>
+                Enter your authentication token:
+                <input type=text name=token style='width:24em'>
+                <input type=submit value=Login>
+            </p>
+        </form>
+    '''
+
+@api.route('/api/v1/auth/logout', methods=['GET', 'POST'])
+def api_auth_logout():
+    # remove the username from the session if it's there
+    flask.session.pop('token', None)
+    return flask.redirect(flask.url_for('api_root'))
 
 #
 # Node endpoints
@@ -921,11 +949,15 @@ def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
 #
 # Entrypoint
 #
-if config['api_ssl_enabled']:
+if config['ssl_enabled']:
     # Run the WSGI server with SSL
     http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,
                                        keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
 else:
     # Run the ?WSGI server without SSL
     http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
-http_server.serve_forever()
+
+if os.environ['PVC_DEBUG']:
+    api.run(host=config['listen_address'], port=config['listen_port'])
+else:
+    http_server.serve_forever()

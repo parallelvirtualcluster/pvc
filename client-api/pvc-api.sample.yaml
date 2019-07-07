@@ -21,10 +21,13 @@ pvc:
         listen_port: "7370"
         # authentication: Authentication and security settings
         authentication:
-            # key: A secure key to authorize against the API; must be sent in the body
-            #      arguments or in the URI of each request; leave blank for no authentication
-            key: ""
-        # secret_key: Random, per-cluster secret key for the Flask API cookies; generate with uuidgen or pwgen
+            # tokens: a list of authentication tokens; leave as an empty list to disable authentication
+            tokens:
+                  # description: token description for management
+                - description: "testing"
+                  # token: random token for authentication; generate with uuidgen or pwgen
+                  token: ""
+        # secret_key: Per-cluster secret key for API cookies; generate with uuidgen or pwgen
         secret_key: ""
         # ssl: SSL configuration
         ssl:
