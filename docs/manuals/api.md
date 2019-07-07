@@ -68,7 +68,7 @@ These endpoints manage PVC node state and operation.
 
 Return a JSON document containing information about all cluster nodes .
 
-If `limit` is specified, return a JSON document listing cluster nodes with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about cluster nodes with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/node/<node>`
  * Methods: `GET`
@@ -126,7 +126,7 @@ This endpoint is an alias for `/api/v1/node/<node>/unflush`.
 
 These endpoints manage PVC virtual machine (VM) state and operation.
 
-**NOTE:** The `<vm>` variable in all VM endpoints can be either a VM `name`, or a VM `uuid`. UUIDs are used internally to track and identify VMs, but are not human-readable, so the API treats both as equally valid and will automatically determine the `uuid` for any given `name`.
+**NOTE:** The `<vm>` variable in all VM endpoints can be either a `name` or a `uuid`. UUIDs are used internally by PVC to track and identify VMs, but are not human-readable, so the clients treat both as equally valid and will automatically determine the `uuid` for any given `name`.
 
 #### `/api/v1/vm`
  * Methods: `GET`
@@ -135,7 +135,7 @@ These endpoints manage PVC virtual machine (VM) state and operation.
 
 Return a JSON document containing information about all cluster VMs .
 
-If `limit` is specified, return a JSON document listing cluster VMs with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about VMs with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/vm/<vm>`
  * Methods: `GET`
@@ -271,7 +271,7 @@ These endpoints manage PVC client virtual network state and operation.
 
 Return a JSON document containing information about all cluster networks.
 
-If `limit` is specified, return a JSON document listing cluster VMs with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about cluster VMs with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/network/<network>`
  * Methods: `GET`
@@ -292,7 +292,9 @@ Add a new virtual network with (whitespace-free) description `<network>`.
 `vni` must be a valid VNI, either a vLAN ID (for `bridged` networks) or VXLAN ID (for `managed`) networks).
 
 `nettype` must be one of:
+
     * `bridged` for unmanaged, vLAN-based bridged networks. All optional values are ignored with this type.
+
     * `managed` for PVC-managed, VXLAN-based networks.
 
 `domain` specifies a DNS domain for hosts in the network. DNS is aggregated and provded for all networks on the primary coordinator node.
@@ -320,7 +322,7 @@ Modify the options of an existing virtual network with description `<network>`.
 
 All values are optional and are identical to the values for `add`. Only those values specified will be updated.
 
-**NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, then moving VMs to it, then finally removing the old virtual network.
+**NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, move VMs to it, then finally remove the old virtual network.
 
 #### `/api/v1/network/<network>/remove`
  * Methods: `POST`
@@ -336,7 +338,7 @@ Remove a virtual network with description `<network>`.
 
 Return a JSON document containing information about all active DHCP leases in virtual network with description `<network>`.
 
-If `limit` is specified, return a JSON document listing all active DHCP leases with MAC addresses matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all active DHCP leases with MAC addresses matching `limit` as fuzzy regex.
 
 If `flag_static` is specified, only return static DHCP leases.
 
@@ -374,7 +376,7 @@ Remove a static DHCP lease for MAC address `<lease`> in virtual network with des
 
 Return a JSON document containing information about all active NFTables ACLs in virtual network with description `<network>`.
 
-If `limit` is specified, return a JSON document listing all active NFTables ACLs with descriptions matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all active NFTables ACLs with descriptions matching `limit` as fuzzy regex.
 
 If `direction` is specified and is one of `in` or `out`, return a JSON codument listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
 
@@ -427,7 +429,7 @@ Return a JSON document containing information about the current Ceph cluster sta
 
 Return a JSON document containing information about all Ceph OSDs in the storage cluster.
 
-If `limit` is specified, return a JSON document listing all Ceph OSDs with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all Ceph OSDs with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/ceph/osd/<osd>`
  * Methods: `GET`
@@ -497,7 +499,7 @@ Set out (inactive) a Ceph OSD device with ID `<osd>` in the storage cluster.
 
 Return a JSON document containing information about all Ceph RBD pools in the storage cluster.
 
-If `limit` is specified, return a JSON document listing all Ceph RBD pools with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all Ceph RBD pools with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/ceph/pool/<pool>`
  * Methods: `GET`
@@ -533,9 +535,9 @@ Remove a Ceph RBD pool with name `<pool>` from the storage cluster.
 
 Return a JSON document containing information about all Ceph RBD volumes in the storage cluster.
 
-If `pool` is specified, return a JSON document listing all Ceph RBD volumes in Ceph RBD pool with name `pool`.
+If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool with name `pool`.
 
-If `limit` is specified, return a JSON document listing all Ceph RBD volumes with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/ceph/volume/<pool>/<volume>`
  * Methods: `GET`
@@ -567,11 +569,11 @@ Remove a Ceph RBD volume with name `<volume>` from Ceph RBD pool `<pool>`.
 
 Return a JSON document containing information about all Ceph RBD volume snapshots in the storage cluster.
 
-If `pool` is specified, return a JSON document listing all Ceph RBD volume snapshots in Ceph RBD pool with name `pool`.
+If `pool` is specified, return a JSON document containing information about all Ceph RBD volume snapshots in Ceph RBD pool with name `pool`.
 
-If `volume` is specified, return a JSON document listing all Ceph RBD volume snapshots of Ceph RBD volume with name `volume`.
+If `volume` is specified, return a JSON document containing information about all Ceph RBD volume snapshots of Ceph RBD volume with name `volume`.
 
-If `limit` is specified, return a JSON document listing all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
+If `limit` is specified, return a JSON document containing information about all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
 
 The various limit options can be combined freely, e.g. one can specify a `volume` without `pool`, which would match all snapshots of the named volume(s) regardless of pool, or a `pool` and `limit` without a `volume`, which would match all named snapshots on any volume in `pool`.
 
