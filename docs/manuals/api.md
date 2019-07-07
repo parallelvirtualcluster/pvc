@@ -28,7 +28,7 @@ Some values are `flag_` values; these do not require a data component, and signa
 
 The PVC API consistently accepts HTTP POST commands of HTML form documents. However, since all form arguments can also be specified as query parameters, and only the `vm define` endpoint accepts a significant amount of data in one argument, it should generally be compatible with API clients speaking only JSON - these can simply send no data in the body and send all required values as query parameters.
 
-The PCI API consistently returns JSON bodies as its responses, with the one exception of the `vm dump` endpoint which returns an XML body. For most endpoints, this is a `message` value containing a human-readable message about the success or failure of the command. The HTTP return code is always 200 for a success or 510 for a failure.
+The PCI API consistently returns JSON bodies as its responses, with the one exception of the `vm dump` endpoint which returns an XML body. For all POST endpoints, unless otherwise specified below, this is a `message` value containing a human-readable message about the success or failure of the command. The HTTP return code is always 200 for a success or 510 for a failure. For all GET endpoints except the mentioned `vm dump`, this is a JSON body containing the requested data.
 
 ## API endpoint documentation
 
@@ -88,8 +88,6 @@ Set node `<node>` into Secondary coordinator mode.
 
 Attempting to `secondary` a non-primary node will return a failure.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/node/<node>/primary
  * Methods: `POST`
  * Mandatory values: N/A
@@ -98,8 +96,6 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 Set node `<node>` into Primary coordinator mode.
 
 Attempting to `primary` an already-primary node will return a failure.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/node/<node>/flush
  * Methods: `POST`
@@ -110,8 +106,6 @@ Flush node `<node>` of running VMs. This command does not wait for completion of
 
 Attempting to `flush` an already flushed node will **NOT** return a failure.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/node/<node>/unflush
  * Methods: `POST`
  * Mandatory values: N/A
@@ -120,8 +114,6 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 Unflush (return to ready) node `<node>`, restoring migrated VMs. This command does not wait for completion of the flush and returns immediately.
 
 Attempting to `unflush` a non-flushed node will **NOT** return a failure.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/node/<node>/ready
  * Methods: `POST`
@@ -169,8 +161,6 @@ If `node` is specified and is valid, the VM will be assigned to `node` instead o
 
 If `selector` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default (`mem`, least allocated VM memory). If `node` is also specified, this value is ignored.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/modify
  * Methods: `POST`
  * Mandatory values: `xml`
@@ -184,16 +174,12 @@ By default the cluster will not restart the VM to load the new configuration; th
 
 If `flag_restart` is specified, the cluster will automatically `restart` the VM with the new configuration.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/undefine
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Forcibly stop and undefine the VM with name or UUID `<vm>`, preserving Ceph volumes.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/vm/<vm>/remove
  * Methods: `POST`
@@ -202,8 +188,6 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 
 Forcibly stop, undefine, and remove Ceph volumes of the VM with name or UUID `<vm>`.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/dump
  * Methods: `GET`
  * Mandatory values: N/A
@@ -211,7 +195,7 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 
 Obtain the raw Libvirt XML configuration of the VM with name or UUID `<vm>`.
 
-Return an HTTP document containing the Libvirt XML and HTTP code 200 on success. Return a JSON `message` and HTTP code 510 on failure.
+Return an XML document containing the Libvirt XML and HTTP code 200 on success.
 
 #### /api/v1/vm/<vm>/start
  * Methods: `POST`
@@ -220,16 +204,12 @@ Return an HTTP document containing the Libvirt XML and HTTP code 200 on success.
 
 Start the VM with name or UUID `<vm>`.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/restart
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Restart (`shutdown` then `start`) the VM with name or UUID `<vm>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/vm/<vm>/shutdown
  * Methods: `POST`
@@ -238,16 +218,12 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 
 Gracefully shutdown the VM with name or UUID `<vm>`. The shutdown event will time out after 90s and `stop` the VM.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/stop
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Forcibly terminate the VM with name or UUID `<vm>` immediately.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/vm/<vm>/move
  * Methods: `POST`
@@ -259,8 +235,6 @@ Permanently move (do not track previous node) the VM with name or UUID `<vm>`. U
 If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, return a failure. 
 
 If `selector` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default (`mem`, least allocated VM memory). If `node` is also specified, this value is ignored.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/vm/<vm>/migrate
  * Methods: `POST`
@@ -277,8 +251,6 @@ Attempting to `migrate` an already-migrated VM will return a failure.
 
 If `flag_force` is specified, migrate the VM even if it has already been migrated. The previous node value will be replaced with the current node; e.g. if VM `test` was on `pvchv1`, then `migrate`ed to `pvchv2`, then `flag_force` `migrate`ed to `pvchv3`, the `previous_node` would then be `pvchv2`. This can be repeated indefinitely. Note however that `move` is almost always better and more consistent than repeated `flag_force` `migrate` actions.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/vm/<vm>/unmigrate
  * Methods: `POST`
  * Mandatory values: N/A
@@ -287,8 +259,6 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 Unmigrate the `migrate`d VM with name or UUID `<vm>`, returning it to its previous node. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the previous node.
 
 Attempting to `unmigrate` a non-migrated VM will return a failure.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 ### Network endpoints
 
@@ -341,8 +311,6 @@ Add a new virtual network with (whitespace-free) description `<network>`.
 
 `dhcp4_end` specifies an IP address for the end of the DHCPv4 IP pool. If `flag_dhcp4` is specified but `dhcp4_end` is not specified or is invalid, return a failure.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/network/<network>/modify
  * Methods: `POST`
  * Mandatory values: N/A
@@ -354,16 +322,12 @@ All values are optional and are identical to the values for `add`. Only those va
 
 **NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, then moving VMs to it, then finally removing the old virtual network.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/network/<network>/remove
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Remove a virtual network with description `<network>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/network/<network>/dhcp
  * Methods: `GET`
@@ -396,16 +360,12 @@ Add a new static DHCP lease for MAC address `<lease>` in virtual network with de
 
 `hostname` specifies a static hostname hint for the lease.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/network/<network>/dhcp/<lease>/remove
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Remove a static DHCP lease for MAC address `<lease`> in virtual network with description `<network>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/network/<network>/acl
  * Methods: `GET`
@@ -440,8 +400,6 @@ Add a new NFTables ACL with description `<acl>` in virtual network with descript
 
 `order` specifies the order of the rule in the current chain. If not specified, the rule will be placed at the end of the rule chain.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/network/<network>/acl/<acl>/remove
  * Methods: `POST`
  * Mandatory values: N/A
@@ -449,13 +407,11 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 
 Remove an NFTables ACL with description `<acl>` from virtual network with description `<network>`.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 ### Ceph endpoints
 
 These endpoints manage PVC Ceph storage cluster state and operation.
 
-**NOTE:** Unlike the other API endpoints, Ceph endpoints will wait until the command completes successfully before returning. This is a safety measure to prevent the critical storage subsystem from going out-of-sync with the PVC Zookeeper database - the cluster objects are only created after the storage subsystem commands complete. Because of this, *be careful with HTTP timeouts when running Ceph commands via the API*. 30s or longer may be required for some commands, especially OSD addition or removal.
+**NOTE:** Unlike the other API endpoints, Ceph endpoints will wait until the command completes successfully before returning. This is a safety measure to prevent the critical storage subsystem from going out-of-sync with the PVC Zookeeper database; the cluster objects are only created after the storage subsystem commands complete. Because of this, *be careful with HTTP timeouts when running Ceph commands via the API*. 30s or longer may be required for some commands, especially OSD addition or removal.
 
 #### /api/v1/ceph
  * Methods: `GET`
@@ -489,8 +445,6 @@ Set a global Ceph OSD option on the storage cluster.
 
 `option` must be a valid option to the `ceph osd set` command, e.g. `noout` or `noscrub`.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/osd/unset
  * Methods: `POST`
  * Mandatory values: N/A
@@ -499,8 +453,6 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 Unset a global Ceph OSD option on the storage cluster.
 
 `option` must be a valid option to the `ceph osd unset` command, e.g. `noout` or `noscrub`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/ceph/osd/<node>/add
  * Methods: `POST`
@@ -513,8 +465,6 @@ Add a new Ceph OSD to PVC node with name `<node>`.
 
 `weight` must be a valid Ceph OSD weight, usually `1.0` if all OSD disks are the same size.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/osd/<osd>/remove
  * Methods: `POST`
  * Mandatory values: `flag_yes_i_really_mean_it`
@@ -526,8 +476,6 @@ Remove a Ceph OSD device with ID `<osd>` from the storage cluster.
 
 **WARNING:** Removing an OSD without first setting it `out` (and letting it flush) triggers an unclean PG recovery. This could potentially cause data loss if other OSDs were to fail or be removed. OSDs should not normally be removed except in the case of failed OSDs during replacement or during a replacement with a larger disk.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/osd/<osd>/in
  * Methods: `POST`
  * Mandatory values: N/A
@@ -535,16 +483,12 @@ Return a JSON `message` indicating either success and HTTP code 200, or failure 
 
 Set in (active) a Ceph OSD device with ID `<osd>` in the storage cluster.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/osd/<osd>/out
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Set out (inactive) a Ceph OSD device with ID `<osd>` in the storage cluster.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/ceph/pool
  * Methods: `GET`
@@ -571,8 +515,6 @@ Add a new Ceph RBD pool with name `<pool>` to the storage cluster.
 
 `pgs` must be a valid number of Placement Groups for the pool, taking into account the number of OSDs and the replication of the pool (`copies=3`). `256` is a safe number for 3 nodes and 2 disks per node. This value can be grown later via `ceph` commands as required.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/pool/<pool>/remove
  * Methods: `POST`
  * Mandatory values: `flag_yes_i_really_mean_it`
@@ -583,8 +525,6 @@ Remove a Ceph RBD pool with name `<pool>` from the storage cluster.
 **NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `flag_yes_i_really_mean_it` must be set or the endpoint will return a failure.
 
 **WARNING:** Removing an RBD pool will delete all data on that pool, including all Ceph RBD volumes on the pool. Do not run this command lightly and without ensuring the pool is safely removable first.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/ceph/volume
  * Methods: `GET`
@@ -613,16 +553,12 @@ Add a new Ceph RBD volume with name `<volume>` to Ceph RBD pool with name `<pool
 
 `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `2G`.
 
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
-
 #### /api/v1/ceph/volume/<pool>/<volume>/remove
  * Methods: `POST`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Remove a Ceph RBD volume with name `<volume>` from Ceph RBD pool `<pool>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/ceph/volume/snapshot
  * Methods: `GET`
@@ -652,8 +588,6 @@ Return a JSON document containing information about Ceph RBD volume snapshot wit
  * Optional values: N/A
 
 Add a new Ceph RBD volume snapshot with name `<volume>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
 
 #### /api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove
  * Methods: `POST`
