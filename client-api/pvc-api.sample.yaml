@@ -19,10 +19,12 @@ pvc:
         listen_address: "127.0.0.1"
         # listen_port: TCP port to listen on, usually 7370
         listen_port: "7370"
-        # secret_key: Per-cluster secret key for API cookies; generate with uuidgen or pwgen
-        secret_key: ""
         # authentication: Authentication and security settings
         authentication:
+            # enabled: Enable or disable authentication (True/False)
+            enabled: False
+            # secret_key: Per-cluster secret key for API cookies; generate with uuidgen or pwgen
+            secret_key: ""
             # tokens: a list of authentication tokens; leave as an empty list to disable authentication
             tokens:
                   # description: token description for management
@@ -31,7 +33,7 @@ pvc:
                   token: ""
         # ssl: SSL configuration
         ssl:
-            # Enabled or disable SSL operation
+            # enabled: Enabled or disable SSL operation (True/False)
             enabled: False
             # cert_file: SSL certificate file
             cert_file: ""

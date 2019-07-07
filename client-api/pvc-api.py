@@ -53,8 +53,9 @@ try:
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
-        'authentication_tokens': o_config['pvc']['api']['authentication']['tokens'],
-        'secret_key': o_config['pvc']['api']['secret_key'],
+        'auth_enabled': o_config['pvc']['api']['authentication']['enabled'],
+        'auth_secret_key': o_config['pvc']['api']['authentication']['secret_key'],
+        'auth_tokens': o_config['pvc']['api']['authentication']['tokens'],
         'ssl_enabled': o_config['pvc']['api']['ssl']['enabled'],
         'ssl_key_file': o_config['pvc']['api']['ssl']['key_file'],
         'ssl_cert_file': o_config['pvc']['api']['ssl']['cert_file']
@@ -66,12 +67,13 @@ except Exception as e:
     print('ERROR: {}.'.format(e))
     exit(1)
 
-api.config["SECRET_KEY"] = config['secret_key']
+if config['auth_enabled']:
+    api.config["SECRET_KEY"] = config['auth_secret_key']
 
 def authenticator(function):
     def authenticate(*args, **kwargs):
         # Check if authentication is enabled
-        if not config['authentication_tokens']:
+        if not config['auth_enabled']:
             return function(*args, **kwargs)
         else:
             # Session-based authentication
@@ -79,7 +81,7 @@ def authenticator(function):
                 return function(*args, **kwargs)
             # Direct token-based authentication
             if 'token' in flask.request.values:
-                if any(token for token in config['authentication_tokens'] if flask.request.values['token'] in token['token']):
+                if any(token for token in config['auth_tokens'] if flask.request.values['token'] in token['token']):
                     return function(*args, **kwargs)
                 else:
                     return flask.jsonify({"message":"Authentication failed"}), 401
@@ -95,8 +97,12 @@ def api_root():
 
 @api.route('/api/v1/auth/login', methods=['GET', 'POST'])
 def api_auth_login():
+    # Just return a 200 if auth is disabled
+    if not config['auth_enabled']:
+        return flask.jsonify({"message":"Authentication is disabled."}), 200
+
     if flask.request.method == 'POST':
-        if any(token for token in config['authentication_tokens'] if flask.request.values['token'] in token['token']):
+        if any(token for token in config['auth_tokens'] if flask.request.values['token'] in token['token']):
             flask.session['token'] = flask.request.form['token']
             return flask.redirect(flask.url_for('api_root'))
         else:
@@ -113,6 +119,10 @@ def api_auth_login():
 
 @api.route('/api/v1/auth/logout', methods=['GET', 'POST'])
 def api_auth_logout():
+    # Just return a 200 if auth is disabled
+    if not config['auth_enabled']:
+        return flask.jsonify({"message":"Authentication is disabled."}), 200
+
     # remove the username from the session if it's there
     flask.session.pop('token', None)
     return flask.redirect(flask.url_for('api_root'))
