@@ -10,7 +10,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. In `pvc-ansible`, create an initial `hosts` inventory, using `hosts.default` as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various components.
 
-0. In `pvc-ansible`, create an initial set of `group_vars`, using the `group_vars/default` as a template. Inside these group vars are two main files:``base.yml` and `pvc.yml`. These example files are well-documented; read them carefully and specify all required options before proceeding.
+0. In `pvc-ansible`, create an initial set of `group_vars`, using the `group_vars/default` as a template. Inside these group vars are two main files: `base.yml` and `pvc.yml`. These example files are well-documented; read them carefully and specify all required options before proceeding.
 
     `base.yml` configures the `base` role and some common per-cluster configurations such as an upstream domain, a root password, and a set of administrative users, as well as and most importantly, the basic network configuration of the nodes. Make special note of the various items that must be generated such as passwords; these should all be cluster-unique.
 
@@ -56,11 +56,11 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
     `$ pvc -z pvchv1:2181,pvchv2:2181,pvchv3:2181 node list`
 
 0. Optionally, verify the API is listening on the `upstream_floating_ip` address configured in the cluster `group_vars`, for instance by running the following command which shows, in JSON format, the same information as in the previous step:  
-    `$ curl -X GET http://<upstream_floating_ip>:7370/api/v1/node`
+    `$ curl -X GET http://<upstream_floating_ip>:7370/api/v1`
 
 ### Part Four - Configuring the Ceph storage cluster
 
-All steps in this section can be performed using either the CLI client or the HTTP API; for clarity, only the CLI commands are shown.
+All steps in this and following sections can be performed using either the CLI client or the HTTP API; for clarity, only the CLI commands are shown.
 
 0. Determine the Ceph OSD block devices on each host, via an `ssh` shell. For instance, check `/dev/disk/by-path` to show the block devices by their physical SAS/SATA bus location, and obtain the relevant `/dev/sdX` name for each disk you wish to be a Ceph OSD on each host.
 
@@ -129,7 +129,7 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
     `$ pvc node ready <node>`
 
 0. Create an RBD image for the VM. The general command is:  
-    `$ pvc ceph volume add <pool> <name> <size>
+    `$ pvc ceph volume add <pool> <name> <size>`
 
     For example, to create a 20GB disk for a VM called `test1` in the previously-configured pool `vms`, run the command as follows:  
     `$ pvc ceph volume add vms test1_disk0 20G`
