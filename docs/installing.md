@@ -1,6 +1,6 @@
 # Getting started - deploying a Parallel Virtual Cluster
 
-PVC aims to be easy to deploy, letting you get on with managing your cluster in just a few hours at most. Once initial setup is complete, the cluster is generally self-managing and can be interfaces with directly from the clients.
+PVC aims to be easy to deploy, letting you get on with managing your cluster in just a few hours at most. Once initial setup is complete, the cluster is managed via the clients, though the Ansible framework is used to add, remove, or modify nodes as required.
 
 This guide will walk you through setting up a simple 3-node PVC cluster from scratch, ending with a fully-usable cluster ready to provision virtual machines. Note that all domains, IP addresses, etc. used are examples - when following this guide, be sure to modify the commands and configurations to suit your needs.
 
