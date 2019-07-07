@@ -293,9 +293,9 @@ Add a new virtual network with (whitespace-free) description `<network>`.
 
 `nettype` must be one of:
 
-    * `bridged` for unmanaged, vLAN-based bridged networks. All optional values are ignored with this type.
+* `bridged` for unmanaged, vLAN-based bridged networks. All optional values are ignored with this type.
 
-    * `managed` for PVC-managed, VXLAN-based networks.
+* `managed` for PVC-managed, VXLAN-based networks.
 
 `domain` specifies a DNS domain for hosts in the network. DNS is aggregated and provded for all networks on the primary coordinator node.
 
