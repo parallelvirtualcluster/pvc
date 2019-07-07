@@ -21,7 +21,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
     * `group_vars/<cluster_name>`: The `group_vars` for the various clusters.
     * `files/<cluster_name>`: Static files, created during the bootstrap Ansible run, for the various clusters.
 
-0. In `pvc-installer`, run the `buildiso.sh` script to generate an installer ISO. This script requires `debootstrap`, `isolinux`, and `xorriso` to function. The resulting file will, by default, be named `pvc-installer.iso` in the current directory.
+0. In `pvc-installer`, run the `buildiso.sh` script to generate an installer ISO. This script requires `debootstrap`, `isolinux`, and `xorriso` to function. The resulting file will, by default, be named `pvc-installer_<date>.iso` in the current directory. For additional options, use the `-h` flag to show help information for the script.
 
 ### Part Two - Preparing and installing the physical hosts
 
