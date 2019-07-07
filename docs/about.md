@@ -63,3 +63,7 @@ The overall management, deployment, bootstrapping, and configuring of nodes is a
 Further information about the Ansible deployment architecture can be found at the [Ansible architecture page](/architecture/ansible).
 
 The Ansible configuration manual can be found at the [Ansible manual page](/manuals/ansible).
+
+## About the author
+
+PVC is written by Joshua M. Boniface. A Linux system administrator by trade, Joshua is always looking for the best solutions to his user's problems, be they developers or end users. PVC grew out of his frustration with the various FOSS virtualization tools, as well as and specifically, the constant failures of Pacemaker/Corosync to gracefully manage a virtualization cluster. He started work on PVC at the end of May 2018 and has been growing the feature set, as well as learning ever more about Python development, ever since.
