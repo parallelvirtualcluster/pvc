@@ -359,22 +359,34 @@ class NodeInstance(object):
         for dom_uuid in fixed_domain_list:
             self.logger.out('Selecting target to migrate VM "{}"'.format(dom_uuid), state='i')
 
-            current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
             target_node = findTargetHypervisor(self.zk_conn, 'mem', dom_uuid)
+
+            # Don't replace the previous node if the VM is already migrated
+            if zkhandler.readdata(self.zk_conn, '/domains/{}/migrated') is 'yes':
+                current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode')
+            else:
+                current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
+
             if target_node == None:
                 self.logger.out('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), state='e')
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
-            else:
-                self.logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
-                zkhandler.writedata(self.zk_conn, {
-                    '/domains/{}/state'.format(dom_uuid): 'migrate',
-                    '/domains/{}/node'.format(dom_uuid): target_node,
-                    '/domains/{}/lastnode'.format(dom_uuid): current_node
-                })
 
-                # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
-                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
+                # Wait for the VM to shut down
+                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'stop':
                     time.sleep(1)
+
+                continue
+
+            self.logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
+            zkhandler.writedata(self.zk_conn, {
+                '/domains/{}/state'.format(dom_uuid): 'migrate',
+                '/domains/{}/node'.format(dom_uuid): target_node,
+                '/domains/{}/lastnode'.format(dom_uuid): current_node
+            })
+
+            # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
+            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
+                time.sleep(1)
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
