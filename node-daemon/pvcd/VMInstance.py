@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# DomainInstance.py - Class implementing a PVC virtual machine in pvcd
+# VMInstance.py - Class implementing a PVC virtual machine in pvcd
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -32,9 +32,9 @@ import kazoo.client
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 
-import pvcd.DomainConsoleWatcherInstance as DomainConsoleWatcherInstance
+import pvcd.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
-class DomainInstance(object):
+class VMInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
         # Passed-in variables on creation
@@ -61,7 +61,7 @@ class DomainInstance(object):
         self.dom = self.lookupByUUID(self.domuuid)
 
         # Log watcher instance
-        self.console_log_instance = DomainConsoleWatcherInstance.DomainConsoleWatcherInstance(self.domuuid, self.domname, self.zk_conn, self.config, self.logger, self.this_node)
+        self.console_log_instance = VMConsoleWatcherInstance.VMConsoleWatcherInstance(self.domuuid, self.domname, self.zk_conn, self.config, self.logger, self.this_node)
 
         # Watch for changes to the state field in Zookeeper
         @self.zk_conn.DataWatch('/domains/{}/state'.format(self.domuuid))

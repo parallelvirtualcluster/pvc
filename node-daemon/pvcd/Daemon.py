@@ -49,7 +49,7 @@ import pvcd.zkhandler as zkhandler
 import pvcd.fencing as fencing
 import pvcd.common as common
 
-import pvcd.DomainInstance as DomainInstance
+import pvcd.VMInstance as VMInstance
 import pvcd.NodeInstance as NodeInstance
 import pvcd.VXNetworkInstance as VXNetworkInstance
 import pvcd.DNSAggregatorInstance as DNSAggregatorInstance
@@ -779,7 +779,7 @@ if enable_hypervisor:
         # Add any missing domains to the list
         for domain in new_domain_list:
             if not domain in domain_list:
-                d_domain[domain] = DomainInstance.DomainInstance(domain, zk_conn, config, logger, this_node)
+                d_domain[domain] = VMInstance.VMInstance(domain, zk_conn, config, logger, this_node)
 
         # Remove any deleted domains from the list
         for domain in domain_list:

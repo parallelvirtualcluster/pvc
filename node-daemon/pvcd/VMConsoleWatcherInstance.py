@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# DomainConsoleWatcherInstance.py - Class implementing a console log watcher for PVC domains
+# VMConsoleWatcherInstance.py - Class implementing a console log watcher for PVC domains
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -35,7 +35,7 @@ import signal
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 
-class DomainConsoleWatcherInstance(object):
+class VMConsoleWatcherInstance(object):
     # Initialization function
     def __init__(self, domuuid, domname, zk_conn, config, logger, this_node):
         self.domuuid = domuuid
