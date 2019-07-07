@@ -39,6 +39,8 @@ except:
     print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvc-api.')
     exit(1)
 
+print('Starting PVC API daemon')
+
 # Read in the config
 try:
     with open(pvc_config_file, 'r') as cfgfile:
@@ -967,4 +969,5 @@ else:
     # Run the ?WSGI server without SSL
     http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 
+print('Starting PyWSGI server')
 http_server.serve_forever()
