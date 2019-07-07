@@ -75,9 +75,9 @@ All steps in this and following sections can be performed using either the CLI c
     `$ pvc ceph osd add --weight 1.0 pvchv3 /dev/sdb`  
     `$ pvc ceph osd add --weight 1.0 pvchv3 /dev/sdc`   
 
-    *NOTE:* On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportial to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
+    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportial to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
 
-    *NOTE:* OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
+    **NOTE:** OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
 
 0. Verify that the OSDs were added and are functional (`up` and `in`):  
     `$ pvc ceph osd list`
@@ -88,9 +88,9 @@ All steps in this and following sections can be performed using either the CLI c
     For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
     `$ pvc ceph pool add vms 256`
 
-    *NOTE:* Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
+    **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
 
-    *NOTE:* All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
+    **NOTE:** All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
 
 0. Verify that the pool was added:  
     `$ pvc ceph pool list`
@@ -225,7 +225,7 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
     </domain>
     ```
 
-    *NOTE:* This Libvirt XML is only a sample; it should be modified to fit the specifics of the VM. Alternatively to manual configuration, one can use a tool like `virt-manager` to generate valid Libvirt XML configurations for PVC to use.
+    **NOTE:** This Libvirt XML is only a sample; it should be modified to fit the specifics of the VM. Alternatively to manual configuration, one can use a tool like `virt-manager` to generate valid Libvirt XML configurations for PVC to use.
 
 0. Define the VM in the PVC cluster:  
     `$ pvc vm define /tmp/test1.xml`
