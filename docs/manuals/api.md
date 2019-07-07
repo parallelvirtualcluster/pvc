@@ -597,5 +597,3 @@ Add a new Ceph RBD volume snapshot with name `<volume>` of Ceph RBD volume with 
  * Optional values: N/A
 
 Remove a Ceph RBD volume snapshot with name `<volume>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
-
-Return a JSON `message` indicating either success and HTTP code 200, or failure and HTTP code 510.
