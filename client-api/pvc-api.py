@@ -969,5 +969,5 @@ else:
     # Run the ?WSGI server without SSL
     http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 
-print('Starting PyWSGI server')
+print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
 http_server.serve_forever()
