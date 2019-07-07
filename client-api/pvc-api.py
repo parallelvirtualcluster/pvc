@@ -967,7 +967,4 @@ else:
     # Run the ?WSGI server without SSL
     http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 
-if os.environ['PVC_DEBUG']:
-    api.run(host=config['listen_address'], port=config['listen_port'])
-else:
-    http_server.serve_forever()
+http_server.serve_forever()
