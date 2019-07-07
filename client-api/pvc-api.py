@@ -53,13 +53,20 @@ try:
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
-        'authentication_key': o_config['pvc']['api']['authentication']['key']
+        'authentication_key': o_config['pvc']['api']['authentication']['key'],
+        'secret_key': o_config['pvc']['api']['secret_key'],
+        'ssl_enabled': o_config['pvc']['api']['ssl']['enabled'],
+        'ssl_key_file': o_config['pvc']['api']['ssl']['key_file'],
+        'ssl_cert_file': o_config['pvc']['api']['ssl']['cert_file']
     }
+
     # Set the config object in the pvcapi namespace
     pvcapi.config = config
 except Exception as e:
     print('ERROR: {}.'.format(e))
     exit(1)
+
+api.config["SECRET_KEY"] = config['secret_key']
 
 def authenticator(function):
     def authenticate(*args, **kwargs):
@@ -914,6 +921,11 @@ def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
 #
 # Entrypoint
 #
-http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
+if config['api_ssl_enabled']:
+    # Run the WSGI server with SSL
+    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,
+                                       keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+else:
+    # Run the ?WSGI server without SSL
+    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 http_server.serve_forever()
-

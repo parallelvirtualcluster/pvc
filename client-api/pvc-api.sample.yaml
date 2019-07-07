@@ -24,3 +24,13 @@ pvc:
             # key: A secure key to authorize against the API; must be sent in the body
             #      arguments or in the URI of each request; leave blank for no authentication
             key: ""
+        # secret_key: Random, per-cluster secret key for the Flask API cookies; generate with uuidgen or pwgen
+        secret_key: ""
+        # ssl: SSL configuration
+        ssl:
+            # Enabled or disable SSL operation
+            enabled: False
+            # cert_file: SSL certificate file
+            cert_file: ""
+            # key_file: SSL certificate key file
+            key_file: ""
