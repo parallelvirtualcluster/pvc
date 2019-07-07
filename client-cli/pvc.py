@@ -563,7 +563,7 @@ def vm_move(domain, target_node, selector):
 )
 @click.option(
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
-    help='Force migrate an already migrated VM.'
+    help='Force migrate an already migrated VM; does not replace an existing previous node value.'
 )
 def vm_migrate(domain, target_node, selector, force_migrate):
     """

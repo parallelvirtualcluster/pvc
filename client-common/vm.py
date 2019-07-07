@@ -444,6 +444,10 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
             common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
+    # Don't overwrite an existing last_node when using force_migrate
+    if last_node and force_migrate:
+        current_node = last_node
+
     zkhandler.writedata(zk_conn, {
         '/domains/{}/state'.format(dom_uuid): 'migrate',
         '/domains/{}/node'.format(dom_uuid): target_node,

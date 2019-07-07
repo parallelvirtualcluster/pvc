@@ -249,7 +249,7 @@ If `selector` is specified, the automatic node determination will use `selector`
 
 Attempting to `migrate` an already-migrated VM will return a failure.
 
-If `flag_force` is specified, migrate the VM even if it has already been migrated. The previous node value will be replaced with the current node; e.g. if VM `test` was on `pvchv1`, then `migrate`ed to `pvchv2`, then `flag_force` `migrate`ed to `pvchv3`, the `previous_node` would then be `pvchv2`. This can be repeated indefinitely. Note however that `move` is almost always better and more consistent than repeated `flag_force` `migrate` actions.
+If `flag_force` is specified, migrate the VM even if it has already been migrated. The previous node value will not be replaced; e.g. if VM `test` was on `pvchv1`, then `migrate`ed to `pvchv2`, then `flag_force` `migrate`ed to `pvchv3`, the `previous_node` would still be `pvchv1`. This can be repeated indefinitely.
 
 #### `/api/v1/vm/<vm>/unmigrate`
  * Methods: `POST`
