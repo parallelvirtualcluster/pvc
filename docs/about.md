@@ -12,7 +12,7 @@ PVC aims to bridge this gap. As a Python 3-based, fully-Free Software, scalable,
 
 PVC provides all the features you'd expect of a "cloud" system - easy management of VMs, including live migration between nodes for maximum uptime; virtual networking support using either vLANs or EVPN-based VXLAN; shared, redundant, object-based storage using Ceph, and a convenient API interface for building your own interfaces. It is able to do this without being excessively complex, and without making sacrifices for legacy ideas.
 
-If you need to run virtual machines, and don't have the time to learn the Stacks or the money to spend on VMWare or Nutanix, PVC might be just what you're looking for.
+If you need to run virtual machines, and don't have the time to learn the Stacks, the patience to deal with the old-style FOSS tools, or the money to spend on VMWare or Nutanix, PVC might be just what you're looking for.
 
 ## Cluster Architecture
 
