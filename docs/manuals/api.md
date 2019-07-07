@@ -256,7 +256,7 @@ If `flag_force` is specified, migrate the VM even if it has already been migrate
  * Mandatory values: N/A
  * Optional values: N/A
 
-Unmigrate the `migrate`d VM with name or UUID `<vm>`, returning it to its previous node. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the previous node.
+Unmigrate the `migrate`ed VM with name or UUID `<vm>`, returning it to its previous node. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the previous node.
 
 Attempting to `unmigrate` a non-migrated VM will return a failure.
 
