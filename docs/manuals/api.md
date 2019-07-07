@@ -1,20 +1,34 @@
 # PVC HTTP API manual
 
-The PVC HTTP API client is built with Flask, a Python framework for creating API interfaces. It interfaces directly with the Zookeeper cluster to send and receive information about the cluster. It supports authentication configured statically via tokens in the configuration file as well as SSL.
+The PVC HTTP API client is built with Flask, a Python framework for creating API interfaces, and run directly with the PyWSGI framework. It interfaces directly with the Zookeeper cluster to send and receive information about the cluster. It supports authentication configured statically via tokens in the configuration file as well as SSL.
 
 The [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) framework will install and configure the API by default, and enable the node daemon option for an instance of the API to follow the primary node, thus ensuring the API is listening on the upstream floating IP at all times.
 
-## API authentication
+## API Details
+
+### SSL
+
+The API accepts SSL certificate and key files via the `pvc-api.yaml` configuration to enable SSL support for the API, which protects the data and query values from snooping or tampering. SSL is strongly recommended if using the API outside of a trusted local area network.
+
+### API authentication
 
 Authentication for the API is available using a static list of tokens. These tokens can be any long string, but UUIDs are typical and simple to use. Within `pvc-ansible`, the list of tokens can be specified in the `pvc.yml` `group_vars` file. Usually, you'd want one token for each user of the API, such as a WebUI, a 3rd-party client, or an administrative user. Within the configuration, each token can have a description; this is mostly for administrative clarity and is not actually used within the API itself.
 
-For one-time authentication, the `token` value can be specified to any API endpoint, containing a token as its data. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
+The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a JSON `message` of `Authentiation is disabled` and HTTP code 200.
 
-## Values
+For one-time authentication, the `token` value can be specified to any API endpoint. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
+
+### Values
 
 The PVC API consistently accepts values (variables) as either HTTP query string arguments, or as HTTP POST form body arguments, in either GET or POST mode.
 
 Some values are `flag_` values; these do not require a data component, and signal an option by their presence.
+
+### Data formats
+
+The PVC API consistently accepts HTTP POST commands of HTML form documents. However, since all form arguments can also be specified as query parameters, and only the `vm define` endpoint accepts a significant amount of data in one argument, it should generally be compatible with API clients speaking only JSON - these can simply send no data in the body and send all required values as query parameters.
+
+The PCI API consistently returns JSON bodies as its responses, with the one exception of the `vm dump` endpoint which returns an XML body. For most endpoints, this is a `message` value containing a human-readable message about the success or failure of the command. The HTTP return code is always 200 for a success or 510 for a failure.
 
 ## API endpoint documentation
 
@@ -25,7 +39,7 @@ Some values are `flag_` values; these do not require a data component, and signa
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON `message` containing the API description.
+Return a JSON `message` containing the API description with HTTP return code 209. Useful for determining if the API is listening and responding properly.
 
 #### /api/v1/auth/login
  * Methods: `GET`, `POST`
