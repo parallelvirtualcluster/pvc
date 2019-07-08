@@ -916,6 +916,21 @@ def update_zookeeper():
                 logger.out('Failed to set Ceph status data', state='e')
                 return
 
+        # Set ceph rados df information in zookeeper (primary only)
+        if this_node.router_state == 'primary':
+            if debug:
+                print("Set ceph rados df information in zookeeper (primary only)")
+            # Get rados df info
+            retcode, stdout, stderr = common.run_os_command('rados df')
+            rados_df = stdout
+            try:
+                zkhandler.writedata(zk_conn, {
+                    '/ceph/radosdf': str(rados_df)
+                })
+            except:
+                logger.out('Failed to set Rados space data', state='e')
+                return
+
         # Set pool information in zookeeper (primary only)
         if this_node.router_state == 'primary':
             if debug:
