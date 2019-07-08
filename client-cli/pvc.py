@@ -1145,7 +1145,23 @@ def ceph_status():
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retdata = pvc_ceph.get_status(zk_conn)
     if retcode:
-        pvc_ceph.format_status(retdata)
+        pvc_ceph.format_raw_output(retdata)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
+
+###############################################################################
+# pvc ceph df
+###############################################################################
+@click.command(name='df', short_help='Show storage cluster utilization.')
+def ceph_radosdf():
+    """
+    Show utilization of the storage cluster.
+    """
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retdata = pvc_ceph.get_radosdf(zk_conn)
+    if retcode:
+        pvc_ceph.format_raw_output(retdata)
         retdata = ''
     cleanup(retcode, retdata, zk_conn)
 
@@ -1748,6 +1764,7 @@ ceph_volume_snapshot.add_command(ceph_volume_snapshot_remove)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
 
 cli_ceph.add_command(ceph_status)
+cli_ceph.add_command(ceph_radosdf)
 cli_ceph.add_command(ceph_osd)
 cli_ceph.add_command(ceph_pool)
 cli_ceph.add_command(ceph_volume)

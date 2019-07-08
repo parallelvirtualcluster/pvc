@@ -537,6 +537,20 @@ def ceph_status():
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
+def ceph_radosdf():
+    """
+    Get the current Ceph cluster utilization.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.get_radosdf(zk_conn)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 510
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
 def ceph_osd_list(limit=None):
     """
     Get the list of OSDs in the Ceph storage cluster.

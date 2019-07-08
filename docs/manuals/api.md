@@ -422,6 +422,24 @@ These endpoints manage PVC Ceph storage cluster state and operation.
 
 Return a JSON document containing information about the current Ceph cluster status.
 
+The JSON element `ceph_data` contains the raw output of a `ceph status` command.
+
+#### `/api/v1/ceph/status`
+ * Methods: `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+This endpoint is an alias for `/api/v1/ceph`.
+
+#### `/api/v1/ceph/df`
+ * Methods: `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about the current Ceph cluster utilization.
+
+The JSON element `ceph_data` contains the raw output of a `rados df` command.
+
 #### `/api/v1/ceph/osd`
  * Methods: `GET`
  * Mandatory values: N/A

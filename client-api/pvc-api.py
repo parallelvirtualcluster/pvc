@@ -700,12 +700,21 @@ def api_net_acl_remove(network, acl):
 # Ceph endpoints
 #
 @api.route('/api/v1/ceph', methods=['GET'])
+@api.route('/api/v1/ceph/status', methods=['GET'])
 @authenticator
-def api_ceph():
+def api_ceph_status():
     """
     Get the current Ceph cluster status.
     """
     return pvcapi.ceph_status()
+
+@api.route('/api/v1/ceph/df', methods=['GET'])
+@authenticator
+def api_ceph_radosdf():
+    """
+    Get the current Ceph cluster utilization.
+    """
+    return pvcapi.ceph_radosdf()
 
 @api.route('/api/v1/ceph/osd', methods=['GET'])
 @authenticator

@@ -109,14 +109,27 @@ def get_status(zk_conn):
 
     # Create a data structure for the information
     status_data = {
+        'type': 'status',
         'primary_node': primary_node,
-        'ceph_status': ceph_status
+        'ceph_data': ceph_status
+    }
+    return True, status_data
+
+def get_radosdf(zk_conn):
+    primary_node = zkhandler.readdata(zk_conn, '/primary_node')
+    ceph_df = zkhandler.readdata(zk_conn, '/ceph/radosdf').rstrip()
+
+    # Create a data structure for the information
+    status_data = {
+        'type': 'utilization',
+        'primary_node': primary_node,
+        'ceph_data': ceph_df
     }
     return True, status_data
     
-def format_status(status_data):
-    click.echo('{bold}Ceph cluster status (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), primary=status_data['primary_node']))
-    click.echo(status_data['ceph_status'])
+def format_raw_output(status_data):
+    click.echo('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
+    click.echo(status_data['ceph_data'])
     click.echo('')
 
 #
