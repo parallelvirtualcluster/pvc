@@ -255,6 +255,7 @@ class NodeInstance(object):
             self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
             time.sleep(2)
             if self.config['enable_api']:
+                self.logger.out('Stopping PVC API client service', state='i')
                 common.run_os_command("systemctl stop pvc-api.service")
             for network in self.d_network:
                 self.d_network[network].stopDHCPServer()
@@ -272,6 +273,7 @@ class NodeInstance(object):
                 self.d_network[network].createGateways()
                 self.d_network[network].startDHCPServer()
             if self.config['enable_api']:
+                self.logger.out('Starting PVC API client service', state='i')
                 common.run_os_command("systemctl start pvc-api.service")
             time.sleep(1)
             # Force Patroni to switch to the local instance
