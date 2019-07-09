@@ -231,11 +231,11 @@ def add_network(zk_conn, vni, description, nettype,
 
     # Check if a network with this VNI or description already exists
     if zkhandler.exists(zk_conn, '/networks/{}'.format(vni)):
-        return False, 'ERROR: A network with VNI {} already exists!'.format(vni)
+        return False, 'ERROR: A network with VNI "{}" already exists!'.format(vni)
     for network in zkhandler.listchildren(zk_conn, '/networks'):
         network_description = zkhandler.readdata(zk_conn, '/networks/{}'.format(network))
         if network_description == description:
-            return False, 'ERROR: A network with description {} already exists!'.format(description)
+            return False, 'ERROR: A network with description "{}" already exists!'.format(description)
 
     # We're generating the default gateway to be ip6_network::1/YY
     if ip6_network:

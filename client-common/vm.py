@@ -181,7 +181,7 @@ def define_vm(zk_conn, config_data, target_node, selector):
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
-            return False, "Specified node {} is invalid.".format(target_node)
+            return False, 'Specified node "{}" is invalid.'.format(target_node)
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -382,7 +382,7 @@ def move_vm(zk_conn, domain, target_node, selector):
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
-            return False, "Specified node {} is invalid.".format(target_node)
+            return False, 'Specified node "{}" is invalid.'.format(target_node)
 
         # Verify if node is current node
         if target_node == current_node:
@@ -437,7 +437,7 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
-            return False, "Specified node {} is invalid.".format(target_node)
+            return False, 'Specified node "{}" is invalid.'.format(target_node)
 
         # Verify if node is current node
         if target_node == current_node:
@@ -568,7 +568,7 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
     if node:
         # Verify node is valid
         if not common.verifyNode(zk_conn, node):
-            return False, "Specified node {} is invalid.".format(node)
+            return False, 'Specified node "{}" is invalid.'.format(node)
 
     if state:
         valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'failed', 'migrate', 'unmigrate' ]

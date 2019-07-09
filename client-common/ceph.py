@@ -208,7 +208,7 @@ def add_osd(zk_conn, node, device, weight):
     # Verify target block device isn't in use
     block_osd = verifyOSDBlock(zk_conn, node, device)
     if block_osd:
-        return False, 'ERROR: Block device {} on node {} is used by OSD {}'.format(device, node, block_osd)
+        return False, 'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(device, node, block_osd)
 
     # Tell the cluster to create a new OSD for the host
     add_osd_string = 'osd_add {},{},{}'.format(node, device, weight) 
@@ -253,7 +253,7 @@ def remove_osd(zk_conn, osd_id):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-osd_remove':
-                message = 'Removed OSD {} from the cluster.'.format(osd_id)
+                message = 'Removed OSD "{}" from the cluster.'.format(osd_id)
                 success = True
             else:
                 message = 'ERROR: Failed to remove OSD; check node logs for details.'
@@ -702,7 +702,7 @@ def remove_pool(zk_conn, name):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-pool_remove':
-                message = 'Removed RBD pool {} and all volumes.'.format(name)
+                message = 'Removed RBD pool "{}" and all volumes.'.format(name)
                 success = True
             else:
                 message = 'ERROR: Failed to remove pool; check node logs for details.'
@@ -981,7 +981,7 @@ def remove_volume(zk_conn, pool, name):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-volume_remove':
-                message = 'Removed RBD volume {} in pool {}.'.format(name, pool)
+                message = 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
                 success = True
             else:
                 message = 'ERROR: Failed to remove volume; check node logs for details.'
@@ -1198,7 +1198,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-snapshot_remove':
-                message = 'Removed RBD snapshot {} and all volumes.'.format(name)
+                message = 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
                 success = True
             else:
                 message = 'ERROR: Failed to remove snapshot; check node logs for details.'

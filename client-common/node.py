@@ -112,7 +112,7 @@ def secondary_node(zk_conn, node):
             '/primary_node': 'none'
         })
     else:
-        return False, 'Node {} is already in secondary router mode.'.format(node)
+        return False, 'Node "{}" is already in secondary router mode.'.format(node)
 
     return True, retmsg
 
@@ -139,7 +139,7 @@ def primary_node(zk_conn, node):
             '/primary_node': node
         })
     else:
-        return False, 'Node {} is already in primary router mode.'.format(node)
+        return False, 'Node "{}" is already in primary router mode.'.format(node)
 
     return True, retmsg
 
