@@ -29,6 +29,9 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Configure the IPMI user specified in the `pvc-ansible` `group_vars/base.yml` file with the required permissions; this user will be used to reboot the host if it fails, so it must be able to control system power state.
 
+0. Configure IPMI to enable IPMI over LAN. Use the default (all-zero) encryption key; this is needed for fencing to work. Verify that IPMI over LAN is operating by using the following command from a machine able to reach the IPMI interface:  
+    `/usr/bin/ipmitool -I lanplus -H <IPMI_host> -U <user> -P <password> chassis power status`
+
 0. Load the installer ISO generated in step 5 of the previous section onto a USB stick, or using IPMI virtual media, on the physical servers.
 
 0. Boot the physical servers off of the installer ISO, in UEFI mode if available for maximum flexibility.
