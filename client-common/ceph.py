@@ -71,7 +71,7 @@ def verifyOSDBlock(zk_conn, node, device):
     return None
 
 # Format byte sizes to/from human-readable units
-unit_matrix = {
+byte_unit_matrix = {
     'B': 1,
     'K': 1024,
     'M': 1024*1024,
@@ -81,8 +81,8 @@ unit_matrix = {
 }
 def format_bytes_tohuman(databytes):
     datahuman = ''
-    for unit in sorted(unit_matrix, key=unit_matrix.get, reverse=True):
-        new_bytes = int(math.ceil(databytes / unit_matrix[unit]))
+    for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get, reverse=True):
+        new_bytes = int(math.ceil(databytes / byte_unit_matrix[unit]))
         # Round up if 5 or more digits
         if new_bytes > 9999:
             # We can jump down another level
@@ -97,8 +97,38 @@ def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
     datasize = int(datahuman[:-1])
-    databytes = datasize * unit_matrix[dataunit]
+    databytes = datasize * byte_unit_matrix[dataunit]
     return '{}B'.format(databytes)
+
+# Format ops sizes to/from human-readable units
+ops_unit_matrix = {
+    '': 1,
+    'K': 1000,
+    'M': 1000*1000,
+    'G': 1000*1000*1000,
+    'T': 1000*1000*1000*1000,
+    'P': 1000*1000*1000*1000*1000
+}
+def format_ops_tohuman(dataops):
+    datahuman = ''
+    for unit in sorted(ops_unit_matrix, key=ops_unit_matrix.get, reverse=True):
+        new_ops = int(math.ceil(dataops / ops_unit_matrix[unit]))
+        # Round up if 5 or more digits
+        if new_ops > 9999:
+            # We can jump down another level
+            continue
+        else:
+            # We're at the end, display with this size
+            datahuman = '{}{}'.format(new_ops, unit)
+
+    return datahuman
+
+def format_ops_fromhuman(datahuman):
+    # Trim off human-readable character
+    dataunit = datahuman[-1]
+    datasize = int(datahuman[:-1])
+    dataops = datasize * ops_unit_matrix[dataunit]
+    return '{}'.format(dataops)
 
 #
 # Status functions
@@ -144,10 +174,6 @@ def getOSDInformation(zk_conn, osd_id):
     # Parse the stats data
     osd_stats_raw = zkhandler.readdata(zk_conn, '/ceph/osds/{}/stats'.format(osd_id))
     osd_stats = dict(json.loads(osd_stats_raw))
-    # Deal with the size
-    databytes = osd_stats['kb'] * 1024
-    databytes_formatted = format_bytes_tohuman(databytes)
-    osd_stats['size'] = databytes_formatted
 
     osd_information = {
         'id': osd_id,
@@ -412,6 +438,17 @@ def format_list_osd(osd_list):
         except KeyError:
             continue
 
+        # Deal with the size to human readable
+        osd_information['stats']['size'] = osd_information['stats']['kb'] * 1024
+        for datatype in 'size', 'wr_data', 'rd_data':
+            databytes = osd_information['stats'][datatype]
+            databytes_formatted = format_bytes_tohuman(int(databytes))
+            osd_information['stats'][datatype] = databytes_formatted
+        for datatype in 'wr_ops', 'rd_ops':
+            dataops = osd_information['stats'][datatype]
+            dataops_formatted = format_ops_tohuman(int(dataops))
+            osd_information['stats'][datatype] = dataops_formatted
+
         # Set the OSD ID length
         _osd_id_length = len(osd_information['id']) + 1
         if _osd_id_length > osd_id_length:
@@ -614,12 +651,6 @@ def getPoolInformation(zk_conn, pool):
     # Parse the stats data
     pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(pool))
     pool_stats = dict(json.loads(pool_stats_raw))
-    # Deal with the size issues
-    for datatype in 'size_bytes', 'read_bytes', 'write_bytes':
-        databytes = pool_stats[datatype]
-        databytes_formatted = format_bytes_tohuman(databytes)
-        new_name = datatype.replace('bytes', 'formatted')
-        pool_stats[new_name] = databytes_formatted
 
     pool_information = {
         'name': pool,
@@ -727,6 +758,16 @@ def format_list_pool(pool_list):
     pool_write_data_length = 5
 
     for pool_information in pool_list:
+        # Deal with the size to human readable
+        for datatype in 'size_bytes', 'write_bytes', 'read_bytes':
+            databytes = pool_information['stats'][datatype]
+            databytes_formatted = format_bytes_tohuman(int(databytes))
+            pool_information['stats'][datatype] = databytes_formatted
+        for datatype in 'write_ops', 'read_ops':
+            dataops = pool_information['stats'][datatype]
+            dataops_formatted = format_ops_tohuman(int(dataops))
+            pool_information['stats'][datatype] = dataops_formatted
+
         # Set the Pool name length
         _pool_name_length = len(pool_information['name']) + 1
         if _pool_name_length > pool_name_length:
@@ -738,7 +779,7 @@ def format_list_pool(pool_list):
             pool_id_length = _pool_id_length
 
         # Set the size and length
-        _pool_size_length = len(str(pool_information['stats']['size_formatted'])) + 1
+        _pool_size_length = len(str(pool_information['stats']['size_bytes'])) + 1
         if _pool_size_length > pool_size_length:
             pool_size_length = _pool_size_length
 
@@ -767,7 +808,7 @@ def format_list_pool(pool_list):
         if _pool_write_ops_length > pool_write_ops_length:
             pool_write_ops_length = _pool_write_ops_length
 
-        _pool_write_data_length = len(pool_information['stats']['write_formatted']) + 1
+        _pool_write_data_length = len(pool_information['stats']['write_bytes']) + 1
         if _pool_write_data_length > pool_write_data_length:
             pool_write_data_length = _pool_write_data_length
 
@@ -775,7 +816,7 @@ def format_list_pool(pool_list):
         if _pool_read_ops_length > pool_read_ops_length:
             pool_read_ops_length = _pool_read_ops_length
 
-        _pool_read_data_length = len(pool_information['stats']['read_formatted']) + 1
+        _pool_read_data_length = len(pool_information['stats']['read_bytes']) + 1
         if _pool_read_data_length > pool_read_data_length:
             pool_read_data_length = _pool_read_data_length
 
@@ -850,15 +891,15 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
                 pool_read_data_length=pool_read_data_length,
                 pool_id=pool_information['stats']['id'],
                 pool_name=pool_information['name'],
-                pool_size=pool_information['stats']['size_formatted'],
+                pool_size=pool_information['stats']['size_bytes'],
                 pool_objects=pool_information['stats']['num_objects'],
                 pool_clones=pool_information['stats']['num_object_clones'],
                 pool_copies=pool_information['stats']['num_object_copies'],
                 pool_degraded=pool_information['stats']['num_objects_degraded'],
                 pool_write_ops=pool_information['stats']['write_ops'],
-                pool_write_data=pool_information['stats']['write_formatted'],
+                pool_write_data=pool_information['stats']['write_bytes'],
                 pool_read_ops=pool_information['stats']['read_ops'],
-                pool_read_data=pool_information['stats']['read_formatted']
+                pool_read_data=pool_information['stats']['read_bytes']
             )
         )
    
