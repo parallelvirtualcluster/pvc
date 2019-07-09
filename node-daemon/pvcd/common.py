@@ -61,27 +61,36 @@ def run_os_daemon(command_string, environment=None, logfile=None):
     return daemon
 
 # Run a oneshot command, optionally without blocking
-def run_os_command(command_string, background=False, environment=None):
+def run_os_command(command_string, background=False, environment=None, timeout=None):
     command = command_string.split()
     if background:
         def runcmd():
-            subprocess.run(
-                command,
-                env=environment,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            try:
+                subprocess.run(
+                    command,
+                    env=environment,
+                    timeout=timeout,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            except subprocess.TimeoutExpired:
+                pass
         thread = threading.Thread(target=runcmd, args=())
         thread.start()
         return 0, None, None
     else:
-        command_output = subprocess.run(
-            command,
-            env=environment,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        retcode = command_output.returncode
+        try:
+            command_output = subprocess.run(
+                command,
+                env=environment,
+                timeout=timeout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            retcode = command_output.returncode
+        except subprocess.TimeoutExpired:
+            retcode = 128
+
         try:
             stdout = command_output.stdout.decode('ascii')
         except:
