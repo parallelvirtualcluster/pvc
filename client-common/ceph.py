@@ -166,10 +166,10 @@ def getOutputColoursOSD(osd_information):
 
     # Set the IN status
     if osd_information['stats']['in'] == 1:
-        osd_in = 'Yes'
+        osd_in_flag = 'Yes'
         osd_in_colour = ansiprint.green()
     else:
-        osd_in = 'No'
+        osd_in_flag = 'No'
         osd_in_colour = ansiprint.red()
 
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
@@ -398,7 +398,7 @@ def format_list_osd(osd_list):
     osd_used_length = 5
     osd_free_length = 6
     osd_util_length = 6
-    osd_var_length = 6
+    osd_var_length = 5
     osd_wrops_length = 4
     osd_wrdata_length = 5
     osd_rdops_length = 4
@@ -595,8 +595,8 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
                 osd_reweight=osd_information['stats']['reweight'],
                 osd_used=osd_information['stats']['used'],
                 osd_free=osd_information['stats']['avail'],
-                osd_util=osd_util[osd],
-                osd_var=osd_var[osd],
+                osd_util=round(osd_information['stats']['utilization'], 2),
+                osd_var=osd_information['stats']['var'],
                 osd_wrops=osd_information['stats']['wr_ops'],
                 osd_wrdata=osd_information['stats']['wr_data'],
                 osd_rdops=osd_information['stats']['rd_ops'],
