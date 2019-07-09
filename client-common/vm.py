@@ -108,7 +108,10 @@ def getDomainName(zk_conn, domain):
 #
 def define_vm(zk_conn, config_data, target_node, selector):
     # Parse the XML data
-    parsed_xml = lxml.objectify.fromstring(config_data)
+    try:
+        parsed_xml = lxml.objectify.fromstring(config_data)
+    except:
+        return False, 'ERROR: Failed to parse XML data.'
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
 
@@ -118,7 +121,14 @@ def define_vm(zk_conn, config_data, target_node, selector):
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
-            return False, 'Specified node "{}" is invalid.'.format(target_node)
+            return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
+
+    # Obtain the RBD disk list using the common functions
+    ddisks = common.getDomainDisks(parsed_xml)
+    rbd_list = []
+    for disk in ddisks:
+        if disk['type'] == 'rbd':
+            rbd_list.append(disk['name'])
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -128,6 +138,7 @@ def define_vm(zk_conn, config_data, target_node, selector):
         '/domains/{}/lastnode'.format(dom_uuid): '',
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
+        '/domains/{}/rbdlist'.format(dom_uuid): ','.join(rbd_list),
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
 
