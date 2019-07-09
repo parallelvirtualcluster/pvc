@@ -468,13 +468,18 @@ def zk_listener(state):
         logger.out('Connection to Zookeeper lost; retrying', state='w')
 
         while True:
+            time.sleep(0.5)
+
             _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
             try:
                 _zk_conn.start()
-                zk_conn = _zk_conn
-                break
             except:
-                time.sleep(1)
+                del _zk_conn
+                continue
+
+            zk_conn = _zk_conn
+            break
+
 zk_conn.add_listener(zk_listener)
 
 ###############################################################################
