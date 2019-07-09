@@ -898,7 +898,7 @@ def update_zookeeper():
         # Get Ceph cluster health (for local printing)
         if debug:
             print("Get Ceph cluster health (for local printing)")
-        retcode, stdout, stderr = common.run_os_command('ceph health')
+        retcode, stdout, stderr = common.run_os_command('ceph --connect-timeout=1 health')
         ceph_health = stdout.rstrip()
         if 'HEALTH_OK' in ceph_health:
             ceph_health_colour = logger.fmt_green
@@ -912,7 +912,7 @@ def update_zookeeper():
             if debug:
                 print("Set ceph health information in zookeeper (primary only)")
             # Get status info
-            retcode, stdout, stderr = common.run_os_command('ceph status')
+            retcode, stdout, stderr = common.run_os_command('ceph --connect-timeout=1 status')
             ceph_status = stdout
             try:
                 zkhandler.writedata(zk_conn, {
@@ -977,7 +977,7 @@ def update_zookeeper():
                 print("Get data from Ceph OSDs")
             # Parse the dump data
             osd_dump = dict()
-            retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json')
+            retcode, stdout, stderr = common.run_os_command('ceph --connect-timeout=1 osd dump --format json')
             osd_dump_raw = json.loads(stdout)['osds']
             if debug:
                 print("Loop through OSD dump")
@@ -995,7 +995,7 @@ def update_zookeeper():
             if debug:
                 print("Parse the OSD df data")
             osd_df = dict()
-            retcode, stdout, stderr = common.run_os_command('ceph osd df --format json')
+            retcode, stdout, stderr = common.run_os_command('ceph --connect-timeout=1 osd df --format json')
             try:
                 osd_df_raw = json.loads(stdout)['nodes']
             except:
@@ -1018,7 +1018,7 @@ def update_zookeeper():
             if debug:
                 print("Parse the OSD status data")
             osd_status = dict()
-            retcode, stdout, stderr = common.run_os_command('ceph osd status')
+            retcode, stdout, stderr = common.run_os_command('ceph --connect-timeout=1 osd status')
             if debug:
                 print("Loop through OSD status data")
             for line in stderr.split('\n'):
