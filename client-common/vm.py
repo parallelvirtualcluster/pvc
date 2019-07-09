@@ -42,61 +42,6 @@ import client_lib.common as common
 import client_lib.ceph as ceph
 
 #
-# XML information parsing functions
-#
-def getInformationFromXML(zk_conn, uuid):
-    """
-    Gather information about a VM from the Libvirt XML configuration in the Zookeper database
-    and return a dict() containing it.
-    """
-    domain_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(uuid))
-    domain_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(uuid))
-    domain_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
-    domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
-
-    parsed_xml = common.getDomainXML(zk_conn, uuid)
-
-    domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = common.getDomainMainDetails(parsed_xml)
-    domain_networks = common.getDomainNetworks(parsed_xml)
-
-    domain_type, domain_arch, domain_machine, domain_console, domain_emulator = common.getDomainExtraDetails(parsed_xml)
-
-    domain_features = common.getDomainCPUFeatures(parsed_xml)
-    domain_disks = common.getDomainDisks(parsed_xml)
-    domain_controllers = common.getDomainControllers(parsed_xml)
-    
-    if domain_lastnode:
-        domain_migrated = 'from {}'.format(domain_lastnode)
-    else:
-        domain_migrated = 'no'
-
-    domain_information = {
-        'name': domain_name,
-        'uuid': domain_uuid,
-        'state': domain_state,
-        'node': domain_node,
-        'last_node': domain_lastnode,
-        'migrated': domain_migrated,
-        'failed_reason': domain_failedreason,
-        'description': domain_description,
-        'memory': domain_memory,
-        'vcpu': domain_vcpu,
-        'vcpu_topology': domain_vcputopo,
-        'networks': domain_networks,
-        'type': domain_type,
-        'arch': domain_arch,
-        'machine': domain_machine,
-        'console': domain_console,
-        'emulator': domain_emulator,
-        'features': domain_features,
-        'disks': domain_disks,
-        'controllers': domain_controllers
-    }
-
-    return domain_information
-
-
-#
 # Cluster search functions
 #
 def getClusterDomainList(zk_conn):
@@ -157,14 +102,6 @@ def getDomainName(zk_conn, domain):
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     return dom_name
-
-def getDomainDisks(zk_conn, dom_uuid):
-    domain_information = getInformationFromXML(zk_conn, dom_uuid)
-    disk_list = []
-    for disk in domain_information['disks']:
-        disk_list.append(disk['name'])
-       
-    return disk_list
 
 #
 # Direct functions
@@ -269,7 +206,7 @@ def remove_vm(zk_conn, domain, is_cli=False):
         common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    disk_list = getDomainDisks(zk_conn, dom_uuid)
+    disk_list = common.getDomainDiskList(zk_conn, dom_uuid)
 
     # Shut down the VM
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
@@ -558,7 +495,7 @@ def get_info(zk_conn, domain):
         return False, 'ERROR: No VM named "{}" is present in the cluster.'.format(domain)
 
     # Gather information from XML config and print it
-    domain_information = getInformationFromXML(zk_conn, dom_uuid)
+    domain_information = common.getInformationFromXML(zk_conn, dom_uuid)
     if not domain_information:
         return False, 'ERROR: Could not get information about VM "{}".'.format(domain)
 
@@ -602,26 +539,26 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
             try:
                 if re.match(limit, vm):
                     if not node and not state:
-                        vm_list.append(getInformationFromXML(zk_conn, vm))
+                        vm_list.append(common.getInformationFromXML(zk_conn, vm))
                     else:
                         if vm_node[vm] == node or vm_state[vm] == state:
-                            vm_list.append(getInformationFromXML(zk_conn, vm))
+                            vm_list.append(common.getInformationFromXML(zk_conn, vm))
 
                 if re.match(limit, name):
                     if not node and not state:
-                        vm_list.append(getInformationFromXML(zk_conn, vm))
+                        vm_list.append(common.getInformationFromXML(zk_conn, vm))
                     else:
                         if vm_node[vm] == node or vm_state[vm] == state:
-                            vm_list.append(getInformationFromXML(zk_conn, vm))
+                            vm_list.append(common.getInformationFromXML(zk_conn, vm))
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
             # Check node to avoid unneeded ZK calls
             if not node and not state:
-                vm_list.append(getInformationFromXML(zk_conn, vm))
+                vm_list.append(common.getInformationFromXML(zk_conn, vm))
             else:
                 if vm_node[vm] == node or vm_state[vm] == state:
-                    vm_list.append(getInformationFromXML(zk_conn, vm))
+                    vm_list.append(common.getInformationFromXML(zk_conn, vm))
 
     return True, vm_list
 

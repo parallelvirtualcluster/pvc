@@ -134,6 +134,71 @@ def getDomainDisks(parsed_xml):
     return ddisks
 
 #
+# Get a list of disk devices
+#
+def getDomainDiskList(zk_conn, dom_uuid):
+    domain_information = getInformationFromXML(zk_conn, dom_uuid)
+    disk_list = []
+    for disk in domain_information['disks']:
+        disk_list.append(disk['name'])
+       
+    return disk_list
+
+#
+# Get domain information from XML
+#
+def getInformationFromXML(zk_conn, uuid):
+    """
+    Gather information about a VM from the Libvirt XML configuration in the Zookeper database
+    and return a dict() containing it.
+    """
+    domain_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(uuid))
+    domain_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(uuid))
+    domain_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
+    domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
+
+    parsed_xml = getDomainXML(zk_conn, uuid)
+
+    domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
+    domain_networks = getDomainNetworks(parsed_xml)
+
+    domain_type, domain_arch, domain_machine, domain_console, domain_emulator = getDomainExtraDetails(parsed_xml)
+
+    domain_features = getDomainCPUFeatures(parsed_xml)
+    domain_disks = getDomainDisks(parsed_xml)
+    domain_controllers = getDomainControllers(parsed_xml)
+    
+    if domain_lastnode:
+        domain_migrated = 'from {}'.format(domain_lastnode)
+    else:
+        domain_migrated = 'no'
+
+    domain_information = {
+        'name': domain_name,
+        'uuid': domain_uuid,
+        'state': domain_state,
+        'node': domain_node,
+        'last_node': domain_lastnode,
+        'migrated': domain_migrated,
+        'failed_reason': domain_failedreason,
+        'description': domain_description,
+        'memory': domain_memory,
+        'vcpu': domain_vcpu,
+        'vcpu_topology': domain_vcputopo,
+        'networks': domain_networks,
+        'type': domain_type,
+        'arch': domain_arch,
+        'machine': domain_machine,
+        'console': domain_console,
+        'emulator': domain_emulator,
+        'features': domain_features,
+        'disks': domain_disks,
+        'controllers': domain_controllers
+    }
+
+    return domain_information
+
+#
 # Get network devices
 #
 def getDomainNetworks(parsed_xml):
