@@ -724,7 +724,7 @@ def update_primary(new_primary, stat, event=''):
             # We're a coordinator and there is no primary
             if new_primary == 'none':
                 if this_node.daemon_state == 'run' and this_node.router_state != 'primary':
-                    logger.out('Contending for primary routing state', state='i')
+                    logger.out('Contending for primary coordinator state', state='i')
                     zkhandler.writedata(zk_conn, {'/primary_node': myhostname})
             elif new_primary == myhostname:
                 zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'primary'})
