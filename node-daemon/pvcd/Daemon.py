@@ -542,9 +542,15 @@ signal.signal(signal.SIGQUIT, term)
 # Check if our node exists in Zookeeper, and create it if not
 if zk_conn.exists('/nodes/{}'.format(myhostname)):
     logger.out("Node is " + logger.fmt_green + "present" + logger.fmt_end + " in Zookeeper", state='i')
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'init' })
     # Update static data just in case it's changed
-    zkhandler.writedata(zk_conn, { '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata) })
+    zkhandler.writedata(zk_conn, {
+        '/nodes/{}/daemonstate'.format(myhostname): 'init',
+        '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata),
+    # Keepalives and fencing information (always load and set from config on boot)
+        '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'],
+        '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'],
+        '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password']
+    })
 else:
     logger.out("Node is " + logger.fmt_red + "absent" + logger.fmt_end + " in Zookeeper; adding new node", state='i')
     keepalive_time = int(time.time())
