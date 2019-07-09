@@ -27,6 +27,7 @@ import os
 import time
 
 import pvcd.log as log
+import pvcd.zkhandler as zkhandler
 
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):
@@ -124,3 +125,101 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
             dev
         )
     )
+
+#
+# Find a migration target
+#
+def findTargetHypervisor(zk_conn, search_field, dom_uuid):
+    if search_field == 'mem':
+        return findTargetHypervisorMem(zk_conn, dom_uuid)
+    if search_field == 'load':
+        return findTargetHypervisorLoad(zk_conn, dom_uuid)
+    if search_field == 'vcpus':
+        return findTargetHypervisorVCPUs(zk_conn, dom_uuid)
+    if search_field == 'vms':
+        return findTargetHypervisorVMs(zk_conn, dom_uuid)
+    return None
+
+# Get the list of valid target nodes
+def getHypervisors(zk_conn, dom_uuid):
+    valid_node_list = []
+    full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
+    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
+
+    for node in full_node_list:
+        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
+        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
+
+        if node == current_node:
+            continue
+
+        if daemon_state != 'run' or domain_state != 'ready':
+            continue
+
+        valid_node_list.append(node)
+
+    return valid_node_list
+
+# via free memory (relative to allocated memory)
+def findTargetHypervisorMem(zk_conn, dom_uuid):
+    most_allocfree = 0
+    target_node = None
+
+    node_list = getHypervisors(zk_conn, dom_uuid)
+    for node in node_list:
+        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
+        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node)))
+        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node)))
+        memtotal = memused + memfree
+        allocfree = memtotal - memalloc
+
+        if allocfree > most_allocfree:
+            most_allocfree = allocfree
+            target_node = node
+
+    return target_node
+
+# via load average
+def findTargetHypervisorLoad(zk_conn, dom_uuid):
+    least_load = 9999
+    target_node = None
+
+    node_list = getHypervisors(zk_conn, dom_uuid)
+    for node in node_list:
+        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(node)))
+
+        if load < least_load:
+            least_load = load
+            target_hypevisor = node
+
+    return target_node
+
+# via total vCPUs
+def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
+    least_vcpus = 9999
+    target_node = None
+
+    node_list = getHypervisors(zk_conn, dom_uuid)
+    for node in node_list:
+        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
+
+        if vcpus < least_vcpus:
+            least_vcpus = vcpus
+            target_node = node
+
+    return target_node
+
+# via total VMs
+def findTargetHypervisorVMs(zk_conn, dom_uuid):
+    least_vms = 9999
+    target_node = None
+
+    node_list = getHypervisors(zk_conn, dom_uuid)
+    for node in node_list:
+        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
+
+        if vms < least_vms:
+            least_vms = vms
+            target_node = node
+
+    return target_node
