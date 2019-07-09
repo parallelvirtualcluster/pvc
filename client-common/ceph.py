@@ -1068,7 +1068,7 @@ def format_list_volume(volume_list):
             volume_format_length = _volume_format_length
 
         # Set the features and length
-        _volume_features_length = len(str(volume_information['stats']['features'])) + 1
+        _volume_features_length = len(str(','.join(volume_information['stats']['features']))) + 1
         if _volume_features_length > volume_features_length:
             volume_features_length = _volume_features_length
 
@@ -1126,7 +1126,7 @@ def format_list_volume(volume_list):
                 volume_objects=volume_information['stats']['objects'],
                 volume_order=volume_information['stats']['order'],
                 volume_format=volume_information['stats']['format'],
-                volume_features=volume_information['stats']['features'],
+                volume_features=','.join(volume_information['stats']['features']),
             )
         )
    
