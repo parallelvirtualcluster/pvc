@@ -221,7 +221,7 @@ def add_osd(zk_conn, node, device, weight):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-osd_add':
-                message = 'Created new OSD with block device {} on node {}.'.format(device, node)
+                message = 'Created new OSD with block device "{}" on node "{}".'.format(device, node)
                 success = True
             else:
                 message = 'ERROR: Failed to create new OSD; check node logs for details.'
@@ -670,7 +670,7 @@ def add_pool(zk_conn, name, pgs):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-pool_add':
-                message = 'Created new RBD pool {} with {} PGs.'.format(name, pgs)
+                message = 'Created new RBD pool "{}" with "{}" PGs.'.format(name, pgs)
                 success = True
             else:
                 message = 'ERROR: Failed to create new pool; check node logs for details.'
@@ -949,7 +949,7 @@ def add_volume(zk_conn, pool, name, size):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-volume_add':
-                message = 'Created new RBD volume {} of size {} on pool {}.'.format(name, size, pool)
+                message = 'Created new RBD volume "{}" of size "{}" on pool "{}".'.format(name, size, pool)
                 success = True
             else:
                 message = 'ERROR: Failed to create new volume; check node logs for details.'
@@ -1166,7 +1166,7 @@ def add_snapshot(zk_conn, pool, volume, name):
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
             if result == 'success-snapshot_add':
-                message = 'Created new RBD snapshot {} of volume {} on pool {}.'.format(name, volume, pool)
+                message = 'Created new RBD snapshot "{}" of volume "{}" on pool "{}".'.format(name, volume, pool)
                 success = True
             else:
                 message = 'ERROR: Failed to create new snapshot; check node logs for details.'
