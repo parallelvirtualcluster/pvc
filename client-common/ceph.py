@@ -703,11 +703,11 @@ def get_list_pool(zk_conn, limit, is_fuzzy=True):
                         limit = limit + '.*'
 
                 if re.match(limit, pool):
-                    pool_list.append(getPoolInformation[zk_conn, pool])
+                    pool_list.append(getPoolInformation(zk_conn, pool))
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
-            pool_list.append(getPoolInformation[zk_conn, pool])
+            pool_list.append(getPoolInformation(zk_conn, pool))
 
     return True, pool_list
 
