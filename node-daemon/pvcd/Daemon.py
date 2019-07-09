@@ -956,7 +956,12 @@ def update_zookeeper():
             # Get pool info
             pool_df = dict()
             retcode, stdout, stderr = common.run_os_command('rados df --format json', timeout=1)
-            pool_df_raw = json.loads(stdout)['pools']
+            try:
+                pool_df_raw = json.loads(stdout)['pools']
+            except json.decoder.JSONDecodeError:
+                logger.out('Failed to obtain Pool data', state='w')
+                pool_df_raw = []
+
             for pool in pool_df_raw:
                 pool_df.update({
                     str(pool['name']): {
@@ -977,9 +982,14 @@ def update_zookeeper():
 
             # Trigger updates for each pool on this node
             for pool in pool_list:
-                zkhandler.writedata(zk_conn, {
-                    '/ceph/pools/{}/stats'.format(pool): str(json.dumps(pool_df[pool]))
-                })
+                try:
+                    stats = json.dumps(pool_df[pool])
+                    zkhandler.writedata(zk_conn, {
+                        '/ceph/pools/{}/stats'.format(pool): str(stats)
+                    })
+                except KeyError:
+                    # One or more of the status commands timed out, just continue
+                    pass
 
         # Only grab OSD stats if there are OSDs to grab (otherwise `ceph osd df` hangs)
         osds_this_node = 0
@@ -990,7 +1000,12 @@ def update_zookeeper():
             # Parse the dump data
             osd_dump = dict()
             retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json', timeout=1)
-            osd_dump_raw = json.loads(stdout)['osds']
+            try:
+                osd_dump_raw = json.loads(stdout)['osds']
+            except json.decoder.JSONDecodeError:
+                logger.out('Failed to obtain OSD data', state='w')
+                osd_dump_raw = []
+
             if debug:
                 print("Loop through OSD dump")
             for osd in osd_dump_raw:
@@ -1012,6 +1027,7 @@ def update_zookeeper():
                 osd_df_raw = json.loads(stdout)['nodes']
             except:
                 logger.out('Failed to parse OSD list', state='w')
+                osd_df_raw = []
 
             if debug:
                 print("Loop through OSD df")
@@ -1066,19 +1082,28 @@ def update_zookeeper():
                 print("Merge OSD data together")
             osd_stats = dict()
             for osd in osd_list:
-                this_dump = osd_dump[osd]
-                this_dump.update(osd_df[osd])
-                this_dump.update(osd_status[osd])
-                osd_stats[osd] = this_dump
+                try:
+                    this_dump = osd_dump[osd]
+                    this_dump.update(osd_df[osd])
+                    this_dump.update(osd_status[osd])
+                    osd_stats[osd] = this_dump
+                except KeyError:
+                    # One or more of the status commands timed out, just continue
+                    pass
 
             # Trigger updates for each OSD on this node
             if debug:
                 print("Trigger updates for each OSD on this node")
             for osd in osd_list:
                 if d_osd[osd].node == myhostname:
-                    zkhandler.writedata(zk_conn, {
-                        '/ceph/osds/{}/stats'.format(osd): str(json.dumps(osd_stats[osd]))
-                    })
+                    try:
+                        stats = json.dumps(osd_stats[osd])
+                        zkhandler.writedata(zk_conn, {
+                            '/ceph/osds/{}/stats'.format(osd): str(stats)
+                        })
+                    except KeyError:
+                        # One or more of the status commands timed out, just continue
+                        pass
                     osds_this_node += 1
 
     memalloc = 0
