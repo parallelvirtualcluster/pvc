@@ -83,7 +83,7 @@ def authenticator(function):
                 return function(*args, **kwargs)
             # Direct token-based authentication
             if 'token' in flask.request.values:
-                if any(token for token in config['auth_tokens'] if flask.request.values['token'] in token['token']):
+                if any(found_token for token in config['auth_tokens'] if flask.request.values['token'] == token['token']):
                     return function(*args, **kwargs)
                 else:
                     return flask.jsonify({"message":"Authentication failed"}), 401
