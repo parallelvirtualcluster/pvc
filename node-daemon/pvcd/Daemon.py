@@ -22,8 +22,6 @@
 
 # Version string for startup output
 version = '0.4'
-# Debugging output mode
-debug = False
 
 import kazoo.client
 import libvirt
@@ -164,6 +162,17 @@ def readConfig(pvcd_config_file, myhostname):
         exit(1)
     config = config_general
 
+    # Handle debugging config
+    try:
+        config_debug = {
+            'debug': o_config['debug']
+        }
+    except:
+        config_debug = {
+            'debug': False
+        }
+    config = {**config, **config_debug}
+
     # Handle the networking config
     if config['enable_networking']:
         try:
@@ -250,6 +259,9 @@ def readConfig(pvcd_config_file, myhostname):
 
 # Get the config object from readConfig()
 config = readConfig(pvcd_config_file, myhostname)
+debug = config['debug']
+if debug:
+    print('DEBUG MODE ENABLED')
 
 # Handle the enable values
 enable_hypervisor = config['enable_hypervisor']
