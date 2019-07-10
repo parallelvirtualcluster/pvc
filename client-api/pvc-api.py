@@ -697,10 +697,22 @@ def api_net_acl_remove(network, acl):
     return pvcapi.net_acl_remove(network, direction, acl)
 
 #
-# Ceph endpoints
+# Storage (Ceph) endpoints
 #
-@api.route('/api/v1/ceph', methods=['GET'])
-@api.route('/api/v1/ceph/status', methods=['GET'])
+# Note: The prefix `/storage` allows future potential storage subsystems.
+#       Since Ceph is the only section not abstracted by PVC directly
+#       (i.e. it references Ceph-specific concepts), this makes more
+#       sense in the long-term.
+#
+@api.route('/api/v1/storage', methods=['GET'])
+def api_storage():
+    """
+    Manage the storage of the PVC cluster.
+    """
+    return flask.jsonify({"message":"Manage the storage of the PVC cluster."}), 200
+
+@api.route('/api/v1/storage/ceph', methods=['GET'])
+@api.route('/api/v1/storage/ceph/status', methods=['GET'])
 @authenticator
 def api_ceph_status():
     """
@@ -708,7 +720,7 @@ def api_ceph_status():
     """
     return pvcapi.ceph_status()
 
-@api.route('/api/v1/ceph/df', methods=['GET'])
+@api.route('/api/v1/storage/ceph/df', methods=['GET'])
 @authenticator
 def api_ceph_radosdf():
     """
@@ -716,7 +728,7 @@ def api_ceph_radosdf():
     """
     return pvcapi.ceph_radosdf()
 
-@api.route('/api/v1/ceph/osd', methods=['GET'])
+@api.route('/api/v1/storage/ceph/osd', methods=['GET'])
 @authenticator
 def api_ceph_osd():
     """
@@ -730,7 +742,7 @@ def api_ceph_osd():
 
     return pvcapi.ceph_osd_list(limit)
 
-@api.route('/api/v1/ceph/osd/set', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/set', methods=['POST'])
 @authenticator
 def api_ceph_osd_set():
     """
@@ -744,7 +756,7 @@ def api_ceph_osd_set():
 
     return pvcapi.ceph_osd_set(option)
 
-@api.route('/api/v1/ceph/osd/unset', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/unset', methods=['POST'])
 @authenticator
 def api_ceph_osd_unset():
     """
@@ -758,7 +770,7 @@ def api_ceph_osd_unset():
 
     return pvcapi.ceph_osd_unset(option)
 
-@api.route('/api/v1/ceph/osd/<osd>', methods=['GET'])
+@api.route('/api/v1/storage/ceph/osd/<osd>', methods=['GET'])
 @authenticator
 def api_ceph_osd_info(osd):
     """
@@ -767,7 +779,7 @@ def api_ceph_osd_info(osd):
     # Same as specifying /osd?limit=OSD
     return pvcapi.ceph_osd_list(osd)
 
-@api.route('/api/v1/ceph/osd/<node>/add', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/<node>/add', methods=['POST'])
 @authenticator
 def api_ceph_osd_add(node):
     """
@@ -787,7 +799,7 @@ def api_ceph_osd_add(node):
 
     return pvcapi.ceph_osd_add(node, device, weight)
 
-@api.route('/api/v1/ceph/osd/<osd>/remove', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/<osd>/remove', methods=['POST'])
 @authenticator
 def api_ceph_osd_remove(osd):
     """
@@ -799,7 +811,7 @@ def api_ceph_osd_remove(osd):
 
     return pvcapi.ceph_osd_remove(osd)
 
-@api.route('/api/v1/ceph/osd/<osd>/in', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/<osd>/in', methods=['POST'])
 @authenticator
 def api_ceph_osd_in(osd):
     """
@@ -807,7 +819,7 @@ def api_ceph_osd_in(osd):
     """
     return pvcapi.ceph_osd_in(osd)
 
-@api.route('/api/v1/ceph/osd/<osd>/out', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd/<osd>/out', methods=['POST'])
 @authenticator
 def api_ceph_osd_out(osd):
     """
@@ -815,7 +827,7 @@ def api_ceph_osd_out(osd):
     """
     return pvcapi.ceph_osd_out(osd)
 
-@api.route('/api/v1/ceph/pool', methods=['GET'])
+@api.route('/api/v1/storage/ceph/pool', methods=['GET'])
 @authenticator
 def api_ceph_pool():
     """
@@ -829,7 +841,7 @@ def api_ceph_pool():
 
     return pvcapi.ceph_pool_list(limit)
 
-@api.route('/api/v1/ceph/pool/<pool>', methods=['GET'])
+@api.route('/api/v1/storage/ceph/pool/<pool>', methods=['GET'])
 @authenticator
 def api_ceph_pool_info(pool):
     """
@@ -838,7 +850,7 @@ def api_ceph_pool_info(pool):
     # Same as specifying /pool?limit=POOL
     return pvcapi.ceph_pool_list(pool)
 
-@api.route('/api/v1/ceph/pool/<pool>/add', methods=['POST'])
+@api.route('/api/v1/storage/ceph/pool/<pool>/add', methods=['POST'])
 @authenticator
 def api_ceph_pool_add(pool):
     """
@@ -853,7 +865,7 @@ def api_ceph_pool_add(pool):
 
     return pvcapi.ceph_pool_add(pool, pgs)
 
-@api.route('/api/v1/ceph/pool/<pool>/remove', methods=['POST'])
+@api.route('/api/v1/storage/ceph/pool/<pool>/remove', methods=['POST'])
 @authenticator
 def api_ceph_pool_remove(pool):
     """
@@ -865,7 +877,7 @@ def api_ceph_pool_remove(pool):
 
     return pvcapi.ceph_pool_remove(pool)
 
-@api.route('/api/v1/ceph/volume', methods=['GET'])
+@api.route('/api/v1/storage/ceph/volume', methods=['GET'])
 @authenticator
 def api_ceph_volume():
     """
@@ -885,7 +897,7 @@ def api_ceph_volume():
 
     return pvcapi.ceph_volume_list(pool, limit)
 
-@api.route('/api/v1/ceph/volume/<pool>/<volume>', methods=['GET'])
+@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET'])
 @authenticator
 def api_ceph_volume_info(pool, volume):
     """
@@ -894,7 +906,7 @@ def api_ceph_volume_info(pool, volume):
     # Same as specifying /volume?limit=VOLUME
     return pvcapi.ceph_osd_list(pool, osd)
 
-@api.route('/api/v1/ceph/volume/<pool>/<volume>/add', methods=['POST'])
+@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>/add', methods=['POST'])
 @authenticator
 def api_ceph_volume_add(pool, volume):
     """
@@ -908,7 +920,7 @@ def api_ceph_volume_add(pool, volume):
 
     return pvcapi.ceph_volume_add(pool, volume, size)
 
-@api.route('/api/v1/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
+@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
 @authenticator
 def api_ceph_volume_remove(pool, volume):
     """
@@ -916,7 +928,7 @@ def api_ceph_volume_remove(pool, volume):
     """
     return pvcapi.ceph_volume_remove(pool, volume)
 
-@api.route('/api/v1/ceph/volume/snapshot', methods=['GET'])
+@api.route('/api/v1/storage/ceph/volume/snapshot', methods=['GET'])
 @authenticator
 def api_ceph_volume_snapshot():
     """
@@ -942,7 +954,7 @@ def api_ceph_volume_snapshot():
 
     return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
 
-@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET'])
+@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET'])
 @authenticator
 def api_ceph_volume_snapshot_info(pool, volume, snapshot):
     """
@@ -951,7 +963,7 @@ def api_ceph_volume_snapshot_info(pool, volume, snapshot):
     # Same as specifying /snapshot?limit=VOLUME
     return pvcapi.ceph_snapshot_list(pool, volume, snapshot)
 
-@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add', methods=['POST'])
+@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add', methods=['POST'])
 @authenticator
 def api_ceph_volume_snapshot_add(pool, volume, snapshot):
     """
@@ -959,7 +971,7 @@ def api_ceph_volume_snapshot_add(pool, volume, snapshot):
     """
     return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
-@api.route('/api/v1/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
+@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
 @authenticator
 def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
     """
