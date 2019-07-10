@@ -1,6 +1,6 @@
 site_name: Parallel Virtual Cluster documentation
 theme:
-  name: material
+  name: null
   custom_dir: 'mkdocs/themes/mkdocs-material/material'
 markdown_extensions:
   - toc:
