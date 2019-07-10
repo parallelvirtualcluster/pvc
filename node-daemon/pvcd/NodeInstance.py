@@ -343,16 +343,6 @@ class NodeInstance(object):
 
     # Flush all VMs on the host
     def flush(self):
-        # Wait indefinitely for the flush_lock to be freed
-        time.sleep(0.5)
-        while zkhandler.readdata(self.zk_conn, '/locks/flush_lock') == 'True':
-            time.sleep(2)
-
-        # Acquire the flush lock
-        zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock': 'True'
-        })
-
         # Begin flush
         self.inflush = True
         self.logger.out('Flushing node "{}" of running VMs'.format(self.name), state='i')
@@ -394,22 +384,7 @@ class NodeInstance(object):
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
         self.inflush = False
 
-        # Release the flush lock
-        zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock': 'False'
-        })
-
     def unflush(self):
-        # Wait indefinitely for the flush_lock to be freed
-        time.sleep(0.5)
-        while zkhandler.readdata(self.zk_conn, '/locks/flush_lock') == 'True':
-            time.sleep(2)
-
-        # Acquire the flush lock
-        zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock': 'True'
-        })
-
         self.inflush = True
         self.logger.out('Restoring node {} to active service.'.format(self.name), state='i')
         fixed_domain_list = self.d_domain.copy()
@@ -435,9 +410,4 @@ class NodeInstance(object):
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
         self.inflush = False
-
-        # Release the flush lock
-        zkhandler.writedata(self.zk_conn, {
-            '/locks/flush_lock': 'False'
-        })
 
