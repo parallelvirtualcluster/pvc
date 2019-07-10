@@ -242,6 +242,7 @@ def remove_vm(zk_conn, domain, is_cli=False):
     if is_cli:
         click.echo('Undefining VM "{}".'.format(domain))
     zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
+    time.sleep(2)
 
     # Remove disks
     for disk in disk_list:
