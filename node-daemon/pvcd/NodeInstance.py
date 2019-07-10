@@ -354,7 +354,7 @@ class NodeInstance(object):
             target_node = common.findTargetHypervisor(self.zk_conn, 'mem', dom_uuid)
 
             # Don't replace the previous node if the VM is already migrated
-            if zkhandler.readdata(self.zk_conn, '/domains/{}/migrated'.format(dom_uuid)) == 'yes':
+            if zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid)):
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
             else:
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
