@@ -285,8 +285,8 @@ class VMInstance(object):
             target_dom = self.dom.migrate(dest_lv_conn, libvirt.VIR_MIGRATE_LIVE, None, dest_tcp, 0)
             if not target_dom:
                 raise
-        except:
-            self.logger.out('Failed to send VM to {}; aborting live migration.'.format(dest_lv), state='e', prefix='Domain {}:'.format(self.domuuid))
+        except Exception as e:
+            self.logger.out('Failed to send VM to {} - aborting live migration; error: {}'.format(dest_lv, e), state='e', prefix='Domain {}:'.format(self.domuuid))
             dest_lv_conn.close()
             return False
 
