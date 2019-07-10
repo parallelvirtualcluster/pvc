@@ -74,7 +74,7 @@ def fenceNode(node_name, zk_conn, config, logger):
 
 # Migrate hosts away from a fenced node
 def migrateFromFencedNode(zk_conn, node_name, logger):
-    logger.out('Moving VMs from dead node "{}" to new hosts'.format(node_name), state='i')
+    logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
         logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
