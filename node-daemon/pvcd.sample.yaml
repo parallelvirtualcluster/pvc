@@ -122,6 +122,10 @@ pvc:
         file_logging: True
         # stdout_logging: Enable or disable logging to stdout (i.e. journald)
         stdout_logging: True
+        # log_colours: Enable or disable ANSI colours in log output
+        log_colours: True
+        # log_dates: Enable or disable date strings in log output
+        log_dates: True
         # log_keepalives: Enable or disable keepalive logging
         log_keepalives: True
         # log_keepalive_cluster_details: Enable or disable node status logging during keepalive

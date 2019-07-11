@@ -37,16 +37,42 @@ class Logger(object):
     fmt_bold =  '\033[1m'
     fmt_end = '\033[0m'
 
+    last_colour = ''
+    last_prompt = ''
+
+    # Format maps
+    format_map_colourized = {
+         # Colourized formatting with chevron prompts (log_colours = True)
+        'o': { 'colour': fmt_green,   'prompt': '>>> '      },
+        'e': { 'colour': fmt_red,     'prompt': '>>> '      },
+        'w': { 'colour': fmt_yellow,  'prompt': '>>> '      },
+        't': { 'colour': fmt_purple,  'prompt': '>>> '      },
+        'i': { 'colour': fmt_blue,    'prompt': '>>> '      },
+        's': { 'colour': fmt_cyan,    'prompt': '>>> '      },
+        'x': { 'colour': last_colour, 'prompt': last_prompt }
+    }
+    format_map_textual = {
+         # Uncolourized formatting with text prompts (log_colours = False)
+        'o': { 'colour': '', 'prompt': 'ok: '      },
+        'e': { 'colour': '', 'prompt': 'failed: '  },
+        'w': { 'colour': '', 'prompt': 'warning: ' },
+        't': { 'colour': '', 'prompt': 'tick: '    },
+        'i': { 'colour': '', 'prompt': 'info: '    },
+        's': { 'colour': '', 'prompt': 'system: '  },
+        'x': { 'colour': '', 'prompt': last_prompt }
+    }
+
     # Initialization of instance
     def __init__(self, config):
         self.config = config
+
         if self.config['file_logging'] == 'True':
             self.logfile = self.config['log_directory'] + '/pvc.log'
             # We open the logfile for the duration of our session, but have a hup function
             self.writer = open(self.logfile, 'a', buffering=1)
-            self.last_colour = self.fmt_cyan
-        else:
-            self.last_colour = ""
+
+        self.last_colour = ''
+        self.last_prompt = ''
 
     # Provide a hup function to close and reopen the writer
     def hup(self):
@@ -54,49 +80,46 @@ class Logger(object):
         self.writer = open(self.logfile, 'a', buffering=0)
 
     # Output function
-    def out(self, message, state='', prefix=''):
+    def out(self, message, state=None, prefix=''):
 
         # Get the date
-        date = '{} - '.format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
-        endc = Logger.fmt_end
-
-        # Determine the formatting
-        # OK
-        if state == 'o':
-            colour = Logger.fmt_green
-            prompt = '>>> '
-        # Error
-        elif state == 'e':
-            colour = Logger.fmt_red
-            prompt = '>>> '
-        # Warning
-        elif state == 'w':
-            colour = Logger.fmt_yellow
-            prompt = '>>> '
-        # Tick
-        elif state == 't':
-            colour = Logger.fmt_purple
-            prompt = '>>> '
-        # Information
-        elif state == 'i':
-            colour = Logger.fmt_blue
-            prompt = '>>> '
-        # Startup
-        elif state == 's':
-            colour = Logger.fmt_cyan
-            prompt = '>>> '
-        # Continuation
+        if self.config['log_dates']:
+            date = '{} - '.format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
         else:
             date = ''
-            colour = self.last_colour
-            prompt = '>>> '
 
-        # Append space to prefix
+        # Get the format map
+        if self.config['log_colours']:
+            format_map = self.format_map_colourized
+            endc = Logger.fmt_end
+        else:
+            format_map = self.format_map_textual
+            endc = ''
+
+        # Define an undefined state as 'x'; no date in these prompts
+        if not state:
+            state = 'x'
+            date = ''
+
+        # Get colour and prompt from the map
+        colour = format_map[state]['colour']
+        prompt = format_map[state]['prompt']
+
+        # Append space and separator to prefix
         if prefix != '':
             prefix = prefix + ' - '
 
+        # Assemble message string
         message = colour + prompt + endc + date + prefix + message
-        print(message)
-        if self.config['file_logging'] == 'True':
+
+        # Log to stdout
+        if self.config['stdout_logging']:
+            print(message)
+
+        # Log to file
+        if self.config['file_logging']:
             self.writer.write(message + '\n')
+
+        # Set last message variables
         self.last_colour = colour
+        self.last_prompt = prompt

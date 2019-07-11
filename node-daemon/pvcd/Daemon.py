@@ -143,6 +143,8 @@ def readConfig(pvcd_config_file, myhostname):
             'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
             'file_logging': o_config['pvc']['system']['configuration']['logging']['file_logging'],
             'stdout_logging': o_config['pvc']['system']['configuration']['logging']['stdout_logging'],
+            'log_colours': o_config['pvc']['system']['configuration']['logging']['log_colours'],
+            'log_dates': o_config['pvc']['system']['configuration']['logging']['log_dates'],
             'log_keepalives': o_config['pvc']['system']['configuration']['logging']['log_keepalives'],
             'log_keepalive_cluster_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_cluster_details'],
             'log_keepalive_storage_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_storage_details'],
@@ -323,6 +325,24 @@ logger.out('  OS: {}'.format(staticdata[2]))
 logger.out('  Kernel: {}'.format(staticdata[1]))
 logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
 
+# Define some colours for future messages if applicable
+if config['log_colours']:
+    fmt_end = logger.fmt_end
+    fmt_bold = logger.fmt_bold
+    fmt_blue = logger.fmt_blue
+    fmt_green = logger.fmt_green
+    fmt_yellow = logger.fmt_yellow
+    fmt_red = logger.fmt_red
+    fmt_purple = logger.fmt_purple
+else:
+    fmt_end = ''
+    fmt_bold = ''
+    fmt_blue = ''
+    fmt_green = ''
+    fmt_yellow = ''
+    fmt_red = ''
+    fmt_purple = ''
+
 ###############################################################################
 # PHASE 2a - Create local IP addresses for static networks
 ###############################################################################
@@ -405,7 +425,7 @@ if myhostname in coordinator_nodes:
     # We are indeed a coordinator host
     config['daemon_mode'] = 'coordinator'
     # Start the zookeeper service using systemctl
-    logger.out('Node is a ' + logger.fmt_blue + 'coordinator' + logger.fmt_end, state='i')
+    logger.out('Node is a ' + fmt_blue + 'coordinator' + fmt_end, state='i')
 else:
     config['daemon_mode'] = 'hypervisor'
 
@@ -558,7 +578,7 @@ signal.signal(signal.SIGQUIT, term)
 
 # Check if our node exists in Zookeeper, and create it if not
 if zk_conn.exists('/nodes/{}'.format(myhostname)):
-    logger.out("Node is " + logger.fmt_green + "present" + logger.fmt_end + " in Zookeeper", state='i')
+    logger.out("Node is " + fmt_green + "present" + fmt_end + " in Zookeeper", state='i')
     # Update static data just in case it's changed
     zkhandler.writedata(zk_conn, {
         '/nodes/{}/daemonstate'.format(myhostname): 'init',
@@ -569,7 +589,7 @@ if zk_conn.exists('/nodes/{}'.format(myhostname)):
         '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password']
     })
 else:
-    logger.out("Node is " + logger.fmt_red + "absent" + logger.fmt_end + " in Zookeeper; adding new node", state='i')
+    logger.out("Node is " + fmt_red + "absent" + fmt_end + " in Zookeeper; adding new node", state='i')
     keepalive_time = int(time.time())
     zkhandler.writedata(zk_conn, {
         '/nodes/{}'.format(myhostname): config['daemon_mode'],
@@ -602,7 +622,7 @@ except kazoo.exceptions.NoNodeError:
     current_primary = 'none'
 
 if current_primary and current_primary != 'none':
-    logger.out('Current primary node is {}{}{}.'.format(logger.fmt_blue, current_primary, logger.fmt_end), state='i')
+    logger.out('Current primary node is {}{}{}.'.format(fmt_blue, current_primary, fmt_end), state='i')
 else:
     if config['daemon_mode'] == 'coordinator':
         logger.out('No primary node found; creating with us as primary.', state='i')
@@ -719,7 +739,7 @@ def update_nodes(new_node_list):
 
     # Update and print new list
     node_list = new_node_list
-    logger.out('{}Node list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(node_list)), state='i')
+    logger.out('{}Node list:{} {}'.format(fmt_blue, fmt_end, ' '.join(node_list)), state='i')
 
     # Update node objects' list
     for node in d_node:
@@ -787,7 +807,7 @@ if enable_networking:
 
         # Update and print new list
         network_list = new_network_list
-        logger.out('{}Network list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(network_list)), state='i')
+        logger.out('{}Network list:{} {}'.format(fmt_blue, fmt_end, ' '.join(network_list)), state='i')
 
         # Update node objects' list
         for node in d_node:
@@ -812,7 +832,7 @@ if enable_hypervisor:
 
         # Update and print new list
         domain_list = new_domain_list
-        logger.out('{}Domain list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(domain_list)), state='i')
+        logger.out('{}Domain list:{} {}'.format(fmt_blue, fmt_end, ' '.join(domain_list)), state='i')
 
         # Update node objects' list
         for node in d_node:
@@ -843,7 +863,7 @@ if enable_storage:
 
         # Update and print new list
         osd_list = new_osd_list
-        logger.out('{}OSD list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(osd_list)), state='i')
+        logger.out('{}OSD list:{} {}'.format(fmt_blue, fmt_end, ' '.join(osd_list)), state='i')
 
     # Pool objects
     @zk_conn.ChildrenWatch('/ceph/pools')
@@ -865,7 +885,7 @@ if enable_storage:
 
         # Update and print new list
         pool_list = new_pool_list
-        logger.out('{}Pool list:{} {}'.format(logger.fmt_blue, logger.fmt_end, ' '.join(pool_list)), state='i')
+        logger.out('{}Pool list:{} {}'.format(fmt_blue, fmt_end, ' '.join(pool_list)), state='i')
 
         # Volume objects in each pool
         for pool in pool_list:
@@ -886,7 +906,7 @@ if enable_storage:
 
                 # Update and print new list
                 volume_list[pool] = new_volume_list
-                logger.out('{}Volume list [{pool}]:{} {plist}'.format(logger.fmt_blue, logger.fmt_end, pool=pool, plist=' '.join(volume_list[pool])), state='i')
+                logger.out('{}Volume list [{pool}]:{} {plist}'.format(fmt_blue, fmt_end, pool=pool, plist=' '.join(volume_list[pool])), state='i')
 
 ###############################################################################
 # PHASE 9 - Run the daemon
@@ -918,11 +938,11 @@ def update_zookeeper():
         retcode, stdout, stderr = common.run_os_command('ceph health', timeout=1)
         ceph_health = stdout.rstrip()
         if 'HEALTH_OK' in ceph_health:
-            ceph_health_colour = logger.fmt_green
+            ceph_health_colour = fmt_green
         elif 'HEALTH_WARN' in ceph_health:
-            ceph_health_colour = logger.fmt_yellow
+            ceph_health_colour = fmt_yellow
         else:
-            ceph_health_colour = logger.fmt_red
+            ceph_health_colour = fmt_red
 
         # Set ceph health information in zookeeper (primary only)
         if this_node.router_state == 'primary':
@@ -1218,9 +1238,9 @@ def update_zookeeper():
     if config['log_keepalives']:
         logger.out(
             '{}{} keepalive{}'.format(
-                logger.fmt_purple,
+                fmt_purple,
                 myhostname,
-                logger.fmt_end
+                fmt_end
             ),
             state='t'
         )
@@ -1232,8 +1252,8 @@ def update_zookeeper():
                 '{bold}Free memory [MiB]:{nofmt} {freemem}  '
                 '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
                 '{bold}Load:{nofmt} {load}'.format(
-                    bold=logger.fmt_bold,
-                    nofmt=logger.fmt_end,
+                    bold=fmt_bold,
+                    nofmt=fmt_end,
                     domcount=this_node.domains_count,
                     freemem=this_node.memfree,
                     usedmem=this_node.memused,
@@ -1248,9 +1268,9 @@ def update_zookeeper():
                 '{bold}Total OSDs:{nofmt} {total_osds}  '
                 '{bold}Node OSDs:{nofmt} {node_osds}  '
                 '{bold}Pools:{nofmt} {total_pools}  '.format(
-                    bold=logger.fmt_bold,
+                    bold=fmt_bold,
                     health_colour=ceph_health_colour,
-                    nofmt=logger.fmt_end,
+                    nofmt=fmt_end,
                     health=ceph_health,
                     total_osds=len(osd_list),
                     node_osds=osds_this_node,
