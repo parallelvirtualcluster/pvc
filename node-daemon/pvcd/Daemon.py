@@ -567,10 +567,16 @@ def cleanup():
 def term(signum='', frame=''):
     cleanup()
 
+# Hangup (logrotate) function
+def hup(signum='', frame=''):
+    if config['file_logging']:
+        logger.hup()
+
 # Handle signals gracefully
 signal.signal(signal.SIGTERM, term)
 signal.signal(signal.SIGINT, term)
 signal.signal(signal.SIGQUIT, term)
+signal.signal(signal.SIGHUP, hup)
 
 ###############################################################################
 # PHASE 6 - Prepare host in Zookeeper

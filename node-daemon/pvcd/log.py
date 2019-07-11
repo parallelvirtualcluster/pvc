@@ -66,7 +66,7 @@ class Logger(object):
     def __init__(self, config):
         self.config = config
 
-        if self.config['file_logging'] == 'True':
+        if self.config['file_logging']:
             self.logfile = self.config['log_directory'] + '/pvc.log'
             # We open the logfile for the duration of our session, but have a hup function
             self.writer = open(self.logfile, 'a', buffering=1)
