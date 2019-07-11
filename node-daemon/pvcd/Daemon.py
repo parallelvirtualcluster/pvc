@@ -838,7 +838,7 @@ if enable_hypervisor:
 
         # Update and print new list
         domain_list = new_domain_list
-        logger.out('{}Domain list:{} {}'.format(fmt_blue, fmt_end, ' '.join(domain_list)), state='i')
+        logger.out('{}VM list:{} {}'.format(fmt_blue, fmt_end, ' '.join(domain_list)), state='i')
 
         # Update node objects' list
         for node in d_node:
@@ -1252,21 +1252,22 @@ def update_zookeeper():
         )
         if config['log_keepalive_cluster_details']:
             logger.out(
-                '{bold}Domains:{nofmt} {domcount}  '
+                '{bold}Active VMs:{nofmt} {domcount}  '
                 '{bold}Networks:{nofmt} {netcount}  '
-                '{bold}VM memory [MiB]:{nofmt} {allocmem}  '
-                '{bold}Free memory [MiB]:{nofmt} {freemem}  '
-                '{bold}Used memory [MiB]:{nofmt} {usedmem}  '
-                '{bold}Load:{nofmt} {load}'.format(
+                '{bold}Load:{nofmt} {load}  '
+                '{bold}Memory [MiB]: VMs:{nofmt} {allocmem}  '
+                '{bold}Used:{nofmt} {usedmem}  '
+                '{bold}Free:{nofmt} {freemem}'.format(
                     bold=fmt_bold,
                     nofmt=fmt_end,
                     domcount=this_node.domains_count,
+                    netcount=len(network_list),
+                    load=this_node.cpuload,
                     freemem=this_node.memfree,
                     usedmem=this_node.memused,
-                    load=this_node.cpuload,
                     allocmem=this_node.memalloc,
-                    netcount=len(network_list)
                 ),
+                state='t'
             )
         if enable_storage and config['log_keepalive_storage_details']:
             logger.out(
@@ -1282,6 +1283,7 @@ def update_zookeeper():
                     node_osds=osds_this_node,
                     total_pools=len(pool_list)
                 ),
+                state='t'
             )
 
 

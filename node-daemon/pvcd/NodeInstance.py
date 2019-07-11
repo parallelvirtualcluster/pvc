@@ -261,7 +261,7 @@ class NodeInstance(object):
     def become_secondary(self):
         if self.config['enable_networking']:
             self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
-            self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+            self.logger.out('Network list: {}'.format(', '.join(self.network_list)), state='i')
             time.sleep(2)
             if self.config['enable_api']:
                 self.logger.out('Stopping PVC API client service', state='i')
@@ -275,7 +275,7 @@ class NodeInstance(object):
     def become_primary(self):
         if self.config['enable_networking']:
             self.logger.out('Setting router {} to primary state'.format(self.name), state='i')
-            self.logger.out('Network list: {}'.format(', '.join(self.network_list)))
+            self.logger.out('Network list: {}'.format(', '.join(self.network_list)), state='i')
             self.createFloatingAddresses()
             # Start up the gateways and DHCP servers
             for network in self.d_network:
@@ -354,7 +354,7 @@ class NodeInstance(object):
     def flush(self):
         # Begin flush
         self.logger.out('Flushing node "{}" of running VMs'.format(self.name), state='i')
-        self.logger.out('Domain list: {}'.format(', '.join(self.domain_list)))
+        self.logger.out('VM list: {}'.format(', '.join(self.domain_list)), state='i')
         fixed_domain_list = self.domain_list.copy()
         for dom_uuid in fixed_domain_list:
             # Allow us to cancel the operation
