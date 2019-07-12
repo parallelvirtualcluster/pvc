@@ -70,7 +70,7 @@ class CephOSDInstance(object):
 
 def add_osd(zk_conn, logger, node, device, weight):
     # We are ready to create a new OSD on this node
-    logger.out('Creating new OSD disk', state='i')
+    logger.out('Creating new OSD disk on block device {}'.format(device), state='i')
     try:
         # 1. Create an OSD; we do this so we know what ID will be gen'd
         retcode, stdout, stderr = common.run_os_command('ceph osd create')
@@ -146,7 +146,7 @@ def add_osd(zk_conn, logger, node, device, weight):
             raise
 
         # 5. Add it to the crush map
-        logger.out('Activating new OSD disk with ID {} to CRUSH map'.format(osd_id), state='i')
+        logger.out('Adding new OSD disk with ID {} to CRUSH map'.format(osd_id), state='i')
         retcode, stdout, stderr = common.run_os_command(
             'ceph osd crush add osd.{osdid} {weight} root=default host={node}'.format(
                 osdid=osd_id,
