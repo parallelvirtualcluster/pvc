@@ -782,19 +782,17 @@ def format_list(zk_conn, vm_list, raw):
         # Handle colouring for an invalid network config
         raw_net_list = getNiceNetID(domain_information)
         net_list = []
+        vm_net_colour = ''
         for net_vni in raw_net_list:
             net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
             if not net_exists and net_vni != 'cluster':
-                net_list.append(ansiprint.red() + net_vni + ansiprint.end())
-                # Add 9 characters (the ANSI control chars) to the length so everything lines up
-                vm_nets_length += 9
-            else:
-                net_list.append(net_vni)
+                vm_net_colour = ansiprint.red()
+            net_list.append(net_vni)
 
         vm_list_output.append(
             '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
-{vm_networks: <{vm_nets_length}} \
+{vm_net_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
@@ -813,6 +811,7 @@ def format_list(zk_conn, vm_list, raw):
                 vm_name=domain_information['name'],
                 vm_uuid=domain_information['uuid'],
                 vm_state=domain_information['state'],
+                vm_net_colour=vm_net_colour,
                 vm_networks=','.join(net_list),
                 vm_memory=domain_information['memory'],
                 vm_vcpu=domain_information['vcpu'],
