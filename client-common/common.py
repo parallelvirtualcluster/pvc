@@ -46,7 +46,14 @@ def validateUUID(dom_uuid):
 #
 def startZKConnection(zk_host):
     zk_conn = kazoo.client.KazooClient(hosts=zk_host)
-    zk_conn.start()
+    try:
+        zk_conn.start()
+    except kazoo.handlers.threading.KazooTimeoutError:
+        print('Timed out connecting to Zookeeper at "{}".'.format(zk_host))
+        exit(1)
+    except Exception as e:
+        print('Failed to connect to Zookeeper at "{}": {}'.format(zk_host, e))
+        exit(1)
     return zk_conn
 
 def stopZKConnection(zk_conn):
