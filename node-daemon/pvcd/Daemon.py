@@ -586,9 +586,15 @@ signal.signal(signal.SIGHUP, hup)
 # Check if our node exists in Zookeeper, and create it if not
 if zk_conn.exists('/nodes/{}'.format(myhostname)):
     logger.out("Node is " + fmt_green + "present" + fmt_end + " in Zookeeper", state='i')
+    if config['daemon_mode'] == 'coordinator':
+        init_routerstate = 'secondary'
+    else:
+        init_routerstate = 'client'
     # Update static data just in case it's changed
     zkhandler.writedata(zk_conn, {
+        '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'],
         '/nodes/{}/daemonstate'.format(myhostname): 'init',
+        '/nodes/{}/routerstate'.format(myhostname): init_routerstate,
         '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata),
     # Keepalives and fencing information (always load and set from config on boot)
         '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'],
