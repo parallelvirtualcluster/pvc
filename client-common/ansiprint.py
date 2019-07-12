@@ -27,6 +27,8 @@ def red():
     return '\033[91m'
 def blue():
     return '\033[94m'
+def cyan():
+    return '\033[96m'
 def green():
     return '\033[92m'
 def yellow():

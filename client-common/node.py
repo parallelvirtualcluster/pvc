@@ -238,7 +238,7 @@ def getOutputColours(node_information):
     elif node_information['coordinator_state'] == 'secondary':
         coordinator_state_colour = ansiprint.blue()
     else:
-        coordinator_state_colour = ansiprint.purple()
+        coordinator_state_colour = ansiprint.cyan()
 
     if node_information['domain_state'] == 'ready':
         domain_state_colour = ansiprint.green()

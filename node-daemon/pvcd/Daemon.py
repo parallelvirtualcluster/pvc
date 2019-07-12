@@ -330,6 +330,7 @@ if config['log_colours']:
     fmt_end = logger.fmt_end
     fmt_bold = logger.fmt_bold
     fmt_blue = logger.fmt_blue
+    fmt_cyan = logger.fmt_cyan
     fmt_green = logger.fmt_green
     fmt_yellow = logger.fmt_yellow
     fmt_red = logger.fmt_red
@@ -1242,12 +1243,18 @@ def update_zookeeper():
 
     # Display node information to the terminal
     if config['log_keepalives']:
+        if this_node.router_state == 'primary':
+            cst_colour = fmt_green
+        elif this_node.router_state == 'secondary':
+            cst_colour = fmt_blue
+        else:
+            cst_colour = fmt_cyan
         logger.out(
             '{}{} keepalive{} [{}{}{}]'.format(
                 fmt_purple,
                 myhostname,
                 fmt_end,
-                fmt_bold,
+                fmt_bold + cst_colour,
                 this_node.router_state,
                 fmt_end
             ),
