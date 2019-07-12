@@ -1243,9 +1243,12 @@ def update_zookeeper():
     # Display node information to the terminal
     if config['log_keepalives']:
         logger.out(
-            '{}{} keepalive{}'.format(
+            '{}{} keepalive{} [{}{}{}]'.format(
                 fmt_purple,
                 myhostname,
+                fmt_end,
+                fmt_bold,
+                this_node.router_state,
                 fmt_end
             ),
             state='t'
