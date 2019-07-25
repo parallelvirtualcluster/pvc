@@ -274,14 +274,6 @@ def api_vm_root(vm):
         else:
             return pvcapi.vm_undefine(vm)
 
-#@api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
-#@authenticator
-#def api_vm_dump(vm):
-#    """
-#    Dump the Libvirt XML configuration of a virtual machine named VM.
-#    """
-#    return pvcapi.vm_dump(vm)
-
 @api.route('/api/v1/vm/<vm>/state', methods=['GET', 'POST'])
 @authenticator
 def api_vm_state(vm):
