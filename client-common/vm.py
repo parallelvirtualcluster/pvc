@@ -106,6 +106,20 @@ def getDomainName(zk_conn, domain):
 #
 # Direct functions
 #
+def is_migrated(zk_conn, domain):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        common.stopZKConnection(zk_conn)
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
+    common.stopZKConnection(zk_conn)
+    if last_node:
+        return True
+    else
+        return False
+
 def define_vm(zk_conn, config_data, target_node, selector):
     # Parse the XML data
     try:
