@@ -170,7 +170,7 @@ def api_node_coordinator_state(node):
         return "Test", 200
 
     if flask.request.method == 'POST':
-        if not coordinator-state in flask.request.values:
+        if not 'coordinator-state' in flask.request.values:
             flask.abort(400)
         new_state = flask.request.values['coordinator-state']
         if new_state == 'primary':
@@ -190,7 +190,7 @@ def api_node_domain_state(node):
         return "Test", 200
 
     if flask.request.method == 'POST':
-        if not domain-state in flask.request.values:
+        if not 'domain-state' in flask.request.values:
             flask.abort(400)
         new_state = flask.request.values['domain-state']
         if new_state == 'ready':
@@ -281,7 +281,7 @@ def api_vm_state(vm):
         return "Test", 200
 
     if flask.request.method == 'POST':
-        if not state in flask.request.values:
+        if not 'state' in flask.request.values:
             flask.abort(400)
         new_state = flask.request.values['state']
         if new_state == 'start':
