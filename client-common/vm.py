@@ -117,7 +117,7 @@ def is_migrated(zk_conn, domain):
     common.stopZKConnection(zk_conn)
     if last_node:
         return True
-    else
+    else:
         return False
 
 def define_vm(zk_conn, config_data, target_node, selector):
