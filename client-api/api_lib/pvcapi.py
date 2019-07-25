@@ -117,6 +117,13 @@ def node_ready(node):
 #
 # VM functions
 #
+def vm_is_migrated(vm):
+    """
+    Determine if a VM is migrated or not
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    return pvc_vm.is_migrated(zk_conn, vm)
+
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.

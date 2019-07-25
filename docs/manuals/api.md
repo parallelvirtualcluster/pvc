@@ -214,20 +214,20 @@ Valid `state` values are: `start`, `shutdown`, `stop`, `restart`
 Return the current host node and previous node, if applicable, for `<vm>`.
 
 ###### `POST`
- * Mandatory values: N/A
- * Optional values: `node`, `selector`, `permanent`
+ * Mandatory values: `action`
+ * Optional values: `node`, `selector`, `permanent`, `force`
 
-Change the current host node for `<vm>`, using live migration if possible, and using `shutdown` then `start` if not.
+Change the current host node for `<vm>` by `action`, using live migration if possible, and using `shutdown` then `start` if not. `action` must be either `migrate` or `unmigrate`.
 
 If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurrs instead.
-
-If `node` is not specified and the VM is in migrated state, returns the VM to its previous `node`.
 
 If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
 
 Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
 
-If `permanent` is specified, the PVC system will not track the previous node and the VM will not be considered migrated.
+If `permanent` is specified, the PVC system will not track the previous node and the VM will not be considered migrated. This is equivalent to the `pvc vm move` CLI command.
+
+If `force` is specified, and the VM has been previously migrated, force through a new migration to the selected target and do not update the previous node value.
 
 ### Network endpoints
 

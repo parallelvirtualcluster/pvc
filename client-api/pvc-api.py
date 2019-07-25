@@ -29,9 +29,6 @@ import gevent.pywsgi
 
 import api_lib.pvcapi as pvcapi
 
-api = flask.Flask(__name__)
-api.config['DEBUG'] = True
-
 # Parse the configuration file
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
@@ -52,6 +49,7 @@ except Exception as e:
 try:
     # Create the config object
     config = {
+        'debug': o_config['pvc']['debug'],
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
@@ -68,6 +66,11 @@ try:
 except Exception as e:
     print('ERROR: {}.'.format(e))
     exit(1)
+
+api = flask.Flask(__name__)
+
+if config['debug']:
+    api.config['DEBUG'] = True
 
 if config['auth_enabled']:
     api.config["SECRET_KEY"] = config['auth_secret_key']
@@ -148,245 +151,202 @@ def api_node():
 
 @api.route('/api/v1/node/<node>', methods=['GET'])
 @authenticator
-def api_node_info(node):
+def api_node_root(node):
     """
     Return information about node NODE.
     """
     # Same as specifying /node?limit=NODE
     return pvcapi.node_list(node)
 
-@api.route('/api/v1/node/<node>/secondary', methods=['POST'])
-@authenticator
-def api_node_secondary(node):
-    """
-    Take NODE out of primary router mode.
-    """
-    return pvcapi.node_secondary(node)
 
-@api.route('/api/v1/node/<node>/primary', methods=['POST'])
+@api.route('/api/v1/node/<node>/coordinator-state', methods=['GET', 'POST'])
 @authenticator
-def api_node_primary(node):
+def api_node_coordinator_state(node):
     """
-    Set NODE to primary router mode.
+    Manage NODE coordinator state.
     """
-    return pvcapi.node_primary(node)
 
-@api.route('/api/v1/node/<node>/flush', methods=['POST'])
-@authenticator
-def api_node_flush(node):
-    """
-    Flush NODE of running VMs.
-    """
-    return pvcapi.node_flush(node)
+    if flask.request.method == 'GET':
+        return "Test", 200
 
-@api.route('/api/v1/node/<node>/unflush', methods=['POST'])
-@api.route('/api/v1/node/<node>/ready', methods=['POST'])
+    if flask.request.method == 'POST':
+        if not coordinator-state in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['coordinator-state']
+        if new_state == 'primary':
+            return pvcapi.node_primary(node)
+        if new_state == 'secondary':
+            return pvcapi.node_secondary(node)
+        flask.abort(400)
+
+@api.route('/api/v1/node/<node>/domain-state', methods=['GET', 'POST'])
 @authenticator
-def api_node_ready(node):
+def api_node_domain_state(node):
     """
-    Restore NODE to active service.
+    Manage NODE domain state.
     """
-    return pvcapi.node_ready(node)
+
+    if flask.request.method == 'GET':
+        return "Test", 200
+
+    if flask.request.method == 'POST':
+        if not domain-state in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['domain-state']
+        if new_state == 'ready':
+            return pvcapi.node_ready(node)
+        if new_state == 'flush':
+            return pvcapi.node_flush(node)
+        flask.abort(400)
 
 #
 # VM endpoints
 #
-@api.route('/api/v1/vm', methods=['GET'])
+@api.route('/api/v1/vm', methods=['GET', 'POST'])
 @authenticator
 def api_vm():
-    """
-    Return a list of VMs with limit LIMIT.
-    """
-    # Get node limit
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
+    if flask.request.method == 'GET':
+        # Get node limit
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
+    
+        # Get state limit
+        if 'state' in flask.request.values:
+            state = flask.request.values['state']
+        else:
+            state = None
+    
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+    
+        return pvcapi.vm_list(node, state, limit)
 
-    # Get state limit
-    if 'state' in flask.request.values:
-        state = flask.request.values['state']
-    else:
-        state = None
+    if flask.request.method == 'POST':
+        # Get XML data
+        if 'xml' in flask.request.values:
+            libvirt_xml = flask.request.values['xml']
+        else:
+            return flask.jsonify({"message":"ERROR: A Libvirt XML document must be specified."}), 400
+    
+        # Get node name
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
+    
+        # Get target selector
+        if 'selector' in flask.request.values:
+            selector = flask.request.values['selector']
+        else:
+            selector = None
+    
+        return pvcapi.vm_define(vm, libvirt_xml, node, selector)
 
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
-
-    return pvcapi.vm_list(node, state, limit)
-
-@api.route('/api/v1/vm/<vm>', methods=['GET'])
+@api.route('/api/v1/vm/<vm>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @authenticator
-def api_vm_info(vm):
-    """
-    Get information about a virtual machine named VM.
-    """
-    # Same as specifying /vm?limit=VM
-    return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
+def api_vm_root(vm):
+    if flask.request.method == 'GET':
+        # Same as specifying /vm?limit=VM
+        return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
 
-# TODO: #22
-#@api.route('/api/v1/vm/<vm>/add', methods=['POST'])
+    if flask.request.method == 'POST':
+        # TODO: #22
+        flask.abort(501)
+
+    if flask.request.method == 'PUT':
+        libvirt_xml = flask.request.data
+    
+        if 'restart' in flask.request.values and flask.request.values['restart']:
+            flag_restart = True
+        else:
+            flag_restart = False
+    
+        return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
+
+    if flask.request.method == 'DELETE':
+        if 'delete_disks' in flask.request.values and flask.request.values['delete_disks']:
+            return pvcapi.vm_remove(vm)
+        else:
+            return pvcapi.vm_undefine(vm)
+
+#@api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
 #@authenticator
-#def api_vm_add(vm):
+#def api_vm_dump(vm):
 #    """
-#    Add a virtual machine named VM.
+#    Dump the Libvirt XML configuration of a virtual machine named VM.
 #    """
-#    return pvcapi.vm_add()
+#    return pvcapi.vm_dump(vm)
 
-@api.route('/api/v1/vm/<vm>/define', methods=['POST'])
+@api.route('/api/v1/vm/<vm>/state', methods=['GET', 'POST'])
 @authenticator
-def api_vm_define(vm):
-    """
-    Define a virtual machine named VM from Libvirt XML.
-    """
-    # Get XML data
-    if 'xml' in flask.request.values:
-        libvirt_xml = flask.request.values['xml']
-    else:
-        return flask.jsonify({"message":"ERROR: A Libvirt XML document must be specified."}), 520
+def api_vm_state(vm):
+    if flask.request.method == 'GET':
+        return "Test", 200
 
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
+    if flask.request.method == 'POST':
+        if not state in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['state']
+        if new_state == 'start':
+            return pvcapi.vm_start(vm)
+        if new_state == 'shutdown':
+            return pvcapi.vm_shutdown(vm)
+        if new_state == 'stop':
+            return pvcapi.vm_stop(vm)
+        if new_state == 'restart':
+            return pvcapi.vm_restart(vm)
+        flask.abort(400)
 
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    return pvcapi.vm_define(vm, libvirt_xml, node, selector)
-
-@api.route('/api/v1/vm/<vm>/modify', methods=['POST'])
+@api.route('/api/v1/vm/<vm>/node', methods=['GET', 'POST'])
 @authenticator
-def api_vm_modify(vm):
-    """
-    Modify an existing virtual machine named VM from Libvirt XML.
-    """
-    # Get XML from the POST body
-    libvirt_xml = flask.request.data
+def api_vm_node(vm):
+    if flask.request.method == 'GET':
+        return "Test", 200
+    
+    if flask.request.method == 'POST':
+        if 'action' in flask.request.values:
+            action = flask.request.values['action']
+        else:
+            flask.abort(400)
+            
+        # Get node name
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
+        # Get target selector
+        if 'selector' in flask.request.values:
+            selector = flask.request.values['selector']
+        else:
+            selector = None
+        # Get permanent flag
+        if 'permanent' in flask.request.values and flask.request.values['permanent']:
+            flag_permanent = True
+        else:
+            flag_permanent = False
+        # Get force flag
+        if 'force' in flask.request.values and flask.request.values['force']:
+            flag_force = True
+        else:
+            flag_force = False
 
-    # Get node name
-    if 'flag_restart' in flask.request.values:
-        flag_restart = flask.request.values['flag_restart']
-    else:
-        flag_restart = None
+        # Check if VM is presently migrated
+        is_migrated = pvcapi.vm_is_migrated(vm)
 
-    return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
+        if action == 'migrate' and not flag_permanent:
+            return pvcapi.vm_migrate(vm, node, selector, flag_force)
+        if action == 'migrate' and flag_permanent:
+            return pvcapi.vm_move(vm, node, selector)
+        if action == 'unmigrate' and is_migrated:
+            return pvcapi.vm_unmigrate(vm)
 
-@api.route('/api/v1/vm/<vm>/undefine', methods=['POST'])
-@authenticator
-def api_vm_undefine(vm):
-    """
-    Undefine a virtual machine named VM.
-    """
-    return pvcapi.vm_undefine(vm)
+        flask.abort(400)
 
-@api.route('/api/v1/vm/<vm>/remove', methods=['POST'])
-@authenticator
-def api_vm_remove(vm):
-    """
-    Remove a virtual machine named VM including all disks.
-    """
-    return pvcapi.vm_remove(vm)
-
-@api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
-@authenticator
-def api_vm_dump(vm):
-    """
-    Dump the Libvirt XML configuration of a virtual machine named VM.
-    """
-    return pvcapi.vm_dump(vm)
-
-@api.route('/api/v1/vm/<vm>/start', methods=['POST'])
-@authenticator
-def api_vm_start(vm):
-    """
-    Start a virtual machine named VM.
-    """
-    return pvcapi.vm_start(vm)
-
-@api.route('/api/v1/vm/<vm>/restart', methods=['POST'])
-@authenticator
-def api_vm_restart(vm):
-    """
-    Restart a virtual machine named VM.
-    """
-    return pvcapi.vm_restart(vm)
-
-@api.route('/api/v1/vm/<vm>/shutdown', methods=['POST'])
-@authenticator
-def api_vm_shutdown(vm):
-    """
-    Shutdown a virtual machine named VM.
-    """
-    return pvcapi.vm_shutdown(vm)
-
-@api.route('/api/v1/vm/<vm>/stop', methods=['POST'])
-@authenticator
-def api_vm_stop(vm):
-    """
-    Forcibly stop a virtual machine named VM.
-    """
-    return pvcapi.vm_stop(vm)
-
-@api.route('/api/v1/vm/<vm>/move', methods=['POST'])
-@authenticator
-def api_vm_move(vm):
-    """
-    Move a virtual machine named VM to another node.
-    """
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
-
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    return pvcapi.vm_move(vm, node, selector)
-
-@api.route('/api/v1/vm/<vm>/migrate', methods=['POST'])
-@authenticator
-def api_vm_migrate(vm):
-    """
-    Temporarily migrate a virtual machine named VM to another node.
-    """
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
-
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    # Get target selector
-    if 'flag_force' in flask.request.values:
-        flag_force = True
-    else:
-        flag_force = False
-
-    return pvcapi.vm_migrate(vm, node, selector, flag_force)
-
-@api.route('/api/v1/vm/<vm>/unmigrate', methods=['POST'])
-@authenticator
-def api_vm_unmigrate(vm):
-    """
-    Unmigrate a migrated virtual machine named VM.
-    """
-    return pvcapi.vm_move(vm)
 
 #
 # Network endpoints
@@ -982,13 +942,15 @@ def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
 #
 # Entrypoint
 #
-if config['ssl_enabled']:
-    # Run the WSGI server with SSL
-    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,
-                                       keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+if config['debug']:
+    api.run(config['listen_address'], config['listen_port'])
 else:
-    # Run the ?WSGI server without SSL
-    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
+    if config['ssl_enabled']:
+        # Run the WSGI server with SSL
+        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,                                           keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+    else:
+        # Run the ?WSGI server without SSL
+        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 
-print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
-http_server.serve_forever()
+    print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
+    http_server.serve_forever()
