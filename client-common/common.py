@@ -201,7 +201,7 @@ def getInformationFromXML(zk_conn, uuid):
         'features': domain_features,
         'disks': domain_disks,
         'controllers': domain_controllers,
-        'xml': parsed_xml
+        'xml': lxml.etree.tostring(parsed_xml, encoding='ascii', method='xml').decode().replace('\"', '\'')
     }
 
     return domain_information
