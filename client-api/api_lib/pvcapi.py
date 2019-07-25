@@ -219,20 +219,6 @@ def vm_remove(name):
     }
     return flask.jsonify(output), retcode
 
-def vm_dump(name):
-    """
-    Dump a VM Libvirt XML configuration.
-    """
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.dump_vm(zk_conn, name)
-    if retflag:
-        retcode = 200
-    else:
-        retcode = 510
-
-    pvc_common.stopZKConnection(zk_conn)
-    return retdata, retcode
-
 def vm_start(name):
     """
     Start a VM in the PVC cluster.
