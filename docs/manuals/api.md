@@ -234,35 +234,23 @@ If `permanent` is specified, the PVC system will not track the previous node and
 These endpoints manage PVC client virtual network state and operation.
 
 #### `/api/v1/network`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all cluster networks.
+Return a JSON document containing information about all cluster networks. If `limit` is specified, return a JSON document containing information about cluster networks with descriptions matching `limit` as fuzzy regex.
 
-If `limit` is specified, return a JSON document containing information about cluster VMs with names matching `limit` as fuzzy regex.
-
-#### `/api/v1/network/<network>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Return a JSON document containing information about `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex matching.
-
-If `<network>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/add`
- * Methods: `POST`
- * Mandatory values: `vni`, `nettype`
+###### `POST`
+ * Mandatory values: `vni`, `description`, `nettype`
  * Optional values: `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
 
-Add a new virtual network with (whitespace-free) description `<network>`.
+Add a new virtual network to the cluster. `vni` must be a valid VNI, either a vLAN ID (for `bridged` networks) or a VXLAN ID (or `managed` networks). `description` must be a whitespace-free description of the network.
 
-`vni` must be a valid VNI, either a vLAN ID (for `bridged` networks) or VXLAN ID (for `managed`) networks).
+`nettype` must be one of the following network types:
 
-`nettype` must be one of:
-
-* `bridged` for unmanaged, vLAN-based bridged networks. All optional values are ignored with this type.
+* `bridged` for unmanaged, vLAN-based bridged networks. All additional optional values are ignored by this type
 
 * `managed` for PVC-managed, VXLAN-based networks.
 
@@ -282,8 +270,16 @@ Add a new virtual network with (whitespace-free) description `<network>`.
 
 `dhcp4_end` specifies an IP address for the end of the DHCPv4 IP pool. If `dhcp4` is specified but `dhcp4_end` is not specified or is invalid, return a failure.
 
-#### `/api/v1/network/<network>/modify`
- * Methods: `POST`
+#### `/api/v1/network/<network>`
+ * Methods: `GET`, `PUT`, `DELETE`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about the virtual network with description `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex matching.
+
+###### `PUT`
  * Mandatory values: N/A
  * Optional values: `vni`, `nettype` `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
 
@@ -293,15 +289,14 @@ All values are optional and are identical to the values for `add`. Only those va
 
 **NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, move VMs to it, then finally remove the old virtual network.
 
-#### `/api/v1/network/<network>/remove`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
+###### `DELETE`
 
 Remove a virtual network with description `<network>`.
 
-#### `/api/v1/network/<network>/dhcp`
- * Methods: `GET`
+#### `/api/v1/network/<network>/lease`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`, `static`
 
@@ -311,35 +306,35 @@ If `limit` is specified, return a JSON document containing information about all
 
 If `static` is specified, only return static DHCP leases.
 
-#### `/api/v1/network/<network>/dhcp/<lease>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex matching.
-
-If `<lease>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/dhcp/<lease>/add`
- * Methods: `POST`
- * Mandatory values: `ipaddress`
+###### `POST`
+ * Mandatory values: `macaddress`, `ipaddress`
  * Optional values: `hostname`
 
-Add a new static DHCP lease for MAC address `<lease>` in virtual network with description `<network>`.
+Add a new static DHCP lease for MAC address `<macaddress>` in virtual network with description `<network>`.
 
 `ipaddress` must be a valid IP address in the specified `<network>` IPv4 netblock, and ideally outside of the DHCPv4 range.
 
 `hostname` specifies a static hostname hint for the lease.
 
-#### `/api/v1/network/<network>/dhcp/<lease>/remove`
- * Methods: `POST`
+#### `/api/v1/network/<network>/dhcp/<lease>`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex matching.
+
+###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Remove a static DHCP lease for MAC address `<lease`> in virtual network with description `<network>`.
 
 #### `/api/v1/network/<network>/acl`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`, `direction`
 
@@ -349,17 +344,7 @@ If `limit` is specified, return a JSON document containing information about all
 
 If `direction` is specified and is one of `in` or `out`, return a JSON codument listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
 
-#### `/api/v1/network/<network>/acl/<acl>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex matching.
-
-If `<acl>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/acl/<acl>/add`
- * Methods: `POST`
+###### `POST`
  * Mandatory values: `direction`, `rule`
  * Optional values: `order`
 
@@ -371,8 +356,18 @@ Add a new NFTables ACL with description `<acl>` in virtual network with descript
 
 `order` specifies the order of the rule in the current chain. If not specified, the rule will be placed at the end of the rule chain.
 
-#### `/api/v1/network/<network>/acl/<acl>/remove`
- * Methods: `POST`
+#### `/api/v1/network/<network>/acl/<acl>`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex matching.
+
+If `<acl>` is not valid, return an empty JSON document.
+
+###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
