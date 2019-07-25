@@ -200,7 +200,8 @@ def getInformationFromXML(zk_conn, uuid):
         'emulator': domain_emulator,
         'features': domain_features,
         'disks': domain_disks,
-        'controllers': domain_controllers
+        'controllers': domain_controllers,
+        'xml': parsed_xml
     }
 
     return domain_information
