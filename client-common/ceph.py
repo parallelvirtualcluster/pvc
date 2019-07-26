@@ -391,16 +391,16 @@ def get_list_osd(zk_conn, limit, is_fuzzy=True):
     osd_list = []
     full_osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match('\^.*', limit):
+            limit = '.*' + limit
+        if not re.match('.*\$', limit):
+            limit = limit + '.*'
+
     for osd in full_osd_list:
         if limit:
             try:
-                if is_fuzzy:
-                    # Implicitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
-
                 if re.match(limit, osd):
                     osd_list.append(getOSDInformation(zk_conn, osd))
             except Exception as e:
@@ -723,16 +723,16 @@ def get_list_pool(zk_conn, limit, is_fuzzy=True):
     pool_list = []
     full_pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match('\^.*', limit):
+            limit = '.*' + limit
+        if not re.match('.*\$', limit):
+            limit = limit + '.*'
+
     for pool in full_pool_list:
         if limit:
             try:
-                if is_fuzzy:
-                    # Implicitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
-
                 if re.match(limit, pool):
                     pool_list.append(getPoolInformation(zk_conn, pool))
             except Exception as e:
@@ -1064,17 +1064,17 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
 
     full_volume_list = getCephVolumes(zk_conn, pool)
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match('\^.*', limit):
+            limit = '.*' + limit
+        if not re.match('.*\$', limit):
+            limit = limit + '.*'
+    
     for volume in full_volume_list:
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                if is_fuzzy:
-                    # Implicitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
-    
                 if re.match(limit, volume):
                     volume_list.append(getVolumeInformation(zk_conn, pool_name, volume_name))
             except Exception as e:
@@ -1284,18 +1284,18 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
 
     full_snapshot_list = getCephSnapshots(zk_conn, pool, volume)
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match('\^.*', limit):
+            limit = '.*' + limit
+        if not re.match('.*\$', limit):
+            limit = limit + '.*'
+
     for snapshot in full_snapshot_list:
         volume, snapshot_name = snapshot.split('@')
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                if is_fuzzy:
-                    # Implicitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
-
                 if re.match(limit, snapshot):
                     snapshot_list.append(getVolumeInformation(zk_conn, pool_name, volume_name, snapshot_name))
             except Exception as e:
