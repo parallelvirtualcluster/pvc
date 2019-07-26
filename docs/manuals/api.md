@@ -22,7 +22,7 @@ For one-time authentication, the `token` value can be specified to any API endpo
 
 The PVC API consistently accepts values (variables) as either HTTP query string arguments, or as HTTP POST form body arguments, in either GET or POST mode.
 
-Some values are `flag_` values; these do not require a data component, and signal an option by their presence.
+Some values are `` values; these do not require a data component, and signal an option by their presence.
 
 ### Data formats
 
@@ -36,26 +36,36 @@ The PCI API consistently returns JSON bodies as its responses, with the one exce
 
 #### `/api/v1`
  * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
+
+###### `GET`
+ * Mandatory values: `GET`: N/A
+ * Optional values: `GET`: N/A
 
 Return a JSON `message` containing the API description with HTTP return code 209. Useful for determining if the API is listening and responding properly.
 
 #### `/api/v1/auth/login`
  * Methods: `GET`, `POST`
- * Mandatory values: `token`
- * Optional values: N/A
 
-On `GET`, return an HTTP login form accepting a token to authorize a Flask session.
-
-On `POST`, compare the specified token to the database and authorize a session. If this comparison fails to find a match, return a JSON `message` of `Authentication failed` and HTTP code 401.
-
-#### `/api/v1/auth/logout`
- * Methods: `GET`, `POST`
+###### `GET`:
  * Mandatory values: N/A
  * Optional values: N/A
 
-On `GET` or `POST`, deactivate the current Flask session for the active token.
+Return an HTTP login form accepting a token to authorize a Flask session.
+
+###### `POST`:
+ * Mandatory values: `token`
+ * Optional values: N/A
+
+Compare the specified `token` to the database and authorize a Flask session.
+
+#### `/api/v1/auth/logout`
+ * Methods: `GET`, `POST`
+
+###### `GET`/`POST`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Deactivate the current Flask session for the active token.
 
 ### Node endpoints
 
@@ -63,64 +73,57 @@ These endpoints manage PVC node state and operation.
 
 #### `/api/v1/node`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all cluster nodes .
-
-If `limit` is specified, return a JSON document containing information about cluster nodes with names matching `limit` as fuzzy regex.
+Return a JSON document containing information about all cluster nodes. If `limit` is specified, return a JSON document containing information about cluster nodes with names matching `limit` as fuzzy regex.
 
 #### `/api/v1/node/<node>`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about `<node>`. The output is identical to `/api/v1/node?limit=<node>` without fuzzy regex.
+Return a JSON document containing information about `<node>`. The output is identical to `/api/v1/node?limit=<node>` without fuzzy regex matching.
 
-If `<node>` is not valid, return an empty JSON document.
+**NOTE:** Nodes are created automatically during daemon startup; they cannot be created by the client tools.
 
-#### `/api/v1/node/<node>/secondary`
- * Methods: `POST`
+#### `/api/v1/node/<node>/coordinator-state`
+ * Methods: `GET`, `POST`
+
+###### `GET`:
  * Mandatory values: N/A
  * Optional values: N/A
 
-Set node `<node>` into Secondary coordinator mode.
+Return the coordinator state of `<node>`.
 
-Attempting to `secondary` a non-primary node will return a failure.
+###### `POST`:
+ * Mandatory values: `coordinator-state`
+ * Optional values: N/A
 
-#### `/api/v1/node/<node>/primary`
- * Methods: `POST`
+Set node `<node>` into the specified coordinator state. Attempting to re-set an existing state has no effect.
+
+Valid `coordinator-state` values are: `primary`, `secondary`.
+
+#### `/api/v1/node/<node>/domain-state`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Set node `<node>` into Primary coordinator mode.
+Return the domain state of `<node>`.
 
-Attempting to `primary` an already-primary node will return a failure.
-
-#### `/api/v1/node/<node>/flush`
- * Methods: `POST`
- * Mandatory values: N/A
+###### `POST`
+ * Mandatory values: `domain-state`
  * Optional values: N/A
 
-Flush node `<node>` of running VMs. This command does not wait for completion of the flush and returns immediately.
+Set node `<node>` to the specified domain state. Attempting to re-set an existing state has effect only if a previous state change did not complete fully, as this triggers a fresh change of state.
 
-Attempting to `flush` an already flushed node will **NOT** return a failure.
-
-#### `/api/v1/node/<node>/unflush`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Unflush (return to ready) node `<node>`, restoring migrated VMs. This command does not wait for completion of the flush and returns immediately.
-
-Attempting to `unflush` a non-flushed node will **NOT** return a failure.
-
-#### `/api/v1/node/<node>/ready`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-This endpoint is an alias for `/api/v1/node/<node>/unflush`.
+Valid `coordinator-state` values are: `flush`, `ready`.
 
 ### VM endpoints
 
@@ -129,171 +132,125 @@ These endpoints manage PVC virtual machine (VM) state and operation.
 **NOTE:** The `<vm>` variable in all VM endpoints can be either a `name` or a `uuid`. UUIDs are used internally by PVC to track and identify VMs, but are not human-readable, so the clients treat both as equally valid and will automatically determine the `uuid` for any given `name`.
 
 #### `/api/v1/vm`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all cluster VMs .
+Return a JSON document containing information about all cluster VMs. If `limit` is specified, return a JSON document containing information about VMs with names matching `limit` as fuzzy regex.
 
-If `limit` is specified, return a JSON document containing information about VMs with names matching `limit` as fuzzy regex.
+###### `POST`
+ * Mandatory values: `xml`
+ * Optional values: `node`, `selector`
+
+Define a new VM with Libvirt XML configuration `xml` (either single-line or human-readable multi-line).
+
+If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurrs instead.
+
+If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
+
+Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
+
+**NOTE:** The `POST` operation assumes that the VM resources (i.e. disks, operating system, etc.) are already created. This is equivalent to the `pvc vm define` command in the PVC CLI client. *[todo v0.6]* Creating a new VM using the provisioner uses the `POST /api/vm/<vm>` endpoint instead.
 
 #### `/api/v1/vm/<vm>`
- * Methods: `GET`
+ * Methods: `GET`, *[todo v0.6]* `POST`, `PUT`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about `<vm>`. The output is identical to `/api/v1/vm?limit=<vm>` without fuzzy regex.
+Return a JSON document containing information about `<vm>`. The output is identical to `GET /api/v1/vm?limit=<vm>` without fuzzy regex matching.
 
-If `<vm>` is not valid, return an empty JSON document.
+###### *[todo v0.6]* `POST`
+ * Mandatory values: `vm_template`
+ * Optional values: `description`
 
-#### `/api/v1/vm/<vm>/define`
- * Methods: `POST`
+Create a new virtual machine `<vm>` with the specified VM template `vm_template` and optional text `description`.
+
+###### `PUT`
  * Mandatory values: `xml`
- * Optional values: `node`, `selector`
+ * Optional values: `restart`
 
-Define a new VM with name or UUID `<vm>`.
+Replace the existing Libvirt XML definition for `<vm>` with the specified Libvirt XML configuration `xml` (either single-line or human-readable multi-line).
 
-**NOTE:** While included for consistency, the specified `<vm>` value is ignored and the values from the Libvirt XML configuration will be used instead.
+If `restart` is specified, the cluster will automatically `restart` the VM with the new configuration; if not, the administrator must do so manually.
 
-`xml` must be a valid Libvirt XML definition; human-readable, multi-line formatted definitions are fully supported.
+###### `DELETE`
+ * Mandatory values: N/A
+ * Optional values: `delete_disks`
 
-If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, return a failure. 
+Forcibly stop and undefine `<vm>`.
 
-If `selector` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default (`mem`, least allocated VM memory). If `node` is also specified, this value is ignored.
+If `delete_disks` is specified, also remove all Ceph storage volumes for the VM.
 
-#### `/api/v1/vm/<vm>/modify`
- * Methods: `POST`
- * Mandatory values: `xml`
- * Optional values: `flag_restart`
+#### `/api/v1/vm/<vm>/state`
+ * Methods: `GET`, `POST`
 
-Replace an existing VM Libvirt XML definition for a VM with name or UUID `<vm>`.
-
-`xml` must be a valid Libvirt XML definition; human-readable, multi-line formatted definitions are fully supported.
-
-By default the cluster will not restart the VM to load the new configuration; the administrator must do so manually.
-
-If `flag_restart` is specified, the cluster will automatically `restart` the VM with the new configuration.
-
-#### `/api/v1/vm/<vm>/undefine`
- * Methods: `POST`
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Forcibly stop and undefine the VM with name or UUID `<vm>`, preserving Ceph volumes.
+Return the state of `<vm>`.
 
-#### `/api/v1/vm/<vm>/remove`
- * Methods: `POST`
+###### `POST`
+ * Mandatory values: `state`
+ * Optional values: N/A
+
+Set `<vm>` to the specified state. Attempting to re-set an existing state has no effect.
+
+Valid `state` values are: `start`, `shutdown`, `stop`, `restart`
+
+**NOTE:** The `shutdown` state will attempt to gracefully shutdown the VM with a 90s timeout, after which it will forcibly `stop` the VM.
+
+#### `/api/v1/vm/<vm>/node`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Forcibly stop, undefine, and remove Ceph volumes of the VM with name or UUID `<vm>`.
+Return the current host node and previous node, if applicable, for `<vm>`.
 
-#### `/api/v1/vm/<vm>/dump`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
+###### `POST`
+ * Mandatory values: `action`
+ * Optional values: `node`, `selector`, `permanent`, `force`
 
-Obtain the raw Libvirt XML configuration of the VM with name or UUID `<vm>`.
+Change the current host node for `<vm>` by `action`, using live migration if possible, and using `shutdown` then `start` if not. `action` must be either `migrate` or `unmigrate`.
 
-Return an XML document containing the Libvirt XML and HTTP code 200 on success.
+If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurrs instead.
 
-#### `/api/v1/vm/<vm>/start`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
+If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
 
-Start the VM with name or UUID `<vm>`.
+Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
 
-#### `/api/v1/vm/<vm>/restart`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
+If `permanent` is specified, the PVC system will not track the previous node and the VM will not be considered migrated. This is equivalent to the `pvc vm move` CLI command.
 
-Restart (`shutdown` then `start`) the VM with name or UUID `<vm>`.
-
-#### `/api/v1/vm/<vm>/shutdown`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Gracefully shutdown the VM with name or UUID `<vm>`. The shutdown event will time out after 90s and `stop` the VM.
-
-#### `/api/v1/vm/<vm>/stop`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Forcibly terminate the VM with name or UUID `<vm>` immediately.
-
-#### `/api/v1/vm/<vm>/move`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: `node`, `selector`
-
-Permanently move (do not track previous node) the VM with name or UUID `<vm>`. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the new node.
-
-If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, return a failure. 
-
-If `selector` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default (`mem`, least allocated VM memory). If `node` is also specified, this value is ignored.
-
-#### `/api/v1/vm/<vm>/migrate`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: `node`, `selector`, `flag_force`
-
-Temporarily move (track the previous node and migrated state) the VM with name or UUID `<vm>`. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the new node.
-
-If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, return a failure.
-
-If `selector` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default (`mem`, least allocated VM memory). If `node` is also specified, this value is ignored.
-
-Attempting to `migrate` an already-migrated VM will return a failure.
-
-If `flag_force` is specified, migrate the VM even if it has already been migrated. The previous node value will not be replaced; e.g. if VM `test` was on `pvchv1`, then `migrate`ed to `pvchv2`, then `flag_force` `migrate`ed to `pvchv3`, the `previous_node` would still be `pvchv1`. This can be repeated indefinitely.
-
-#### `/api/v1/vm/<vm>/unmigrate`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Unmigrate the `migrate`ed VM with name or UUID `<vm>`, returning it to its previous node. Use Libvirt live migration if possible; otherwise `shutdown` then `start` on the previous node.
-
-Attempting to `unmigrate` a non-migrated VM will return a failure.
+If `force` is specified, and the VM has been previously migrated, force through a new migration to the selected target and do not update the previous node value.
 
 ### Network endpoints
 
 These endpoints manage PVC client virtual network state and operation.
 
 #### `/api/v1/network`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all cluster networks.
+Return a JSON document containing information about all cluster networks. If `limit` is specified, return a JSON document containing information about cluster networks with descriptions matching `limit` as fuzzy regex.
 
-If `limit` is specified, return a JSON document containing information about cluster VMs with names matching `limit` as fuzzy regex.
+###### `POST`
+ * Mandatory values: `vni`, `description`, `nettype`
+ * Optional values: `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
 
-#### `/api/v1/network/<network>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
+Add a new virtual network to the cluster. `vni` must be a valid VNI, either a vLAN ID (for `bridged` networks) or a VXLAN ID (or `managed` networks). `description` must be a whitespace-free description of the network.
 
-Return a JSON document containing information about `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex.
+`nettype` must be one of the following network types:
 
-If `<network>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/add`
- * Methods: `POST`
- * Mandatory values: `vni`, `nettype`
- * Optional values: `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `flag_dhcp4`, `dhcp4_start`, `dhcp4_end`
-
-Add a new virtual network with (whitespace-free) description `<network>`.
-
-`vni` must be a valid VNI, either a vLAN ID (for `bridged` networks) or VXLAN ID (for `managed`) networks).
-
-`nettype` must be one of:
-
-* `bridged` for unmanaged, vLAN-based bridged networks. All optional values are ignored with this type.
+* `bridged` for unmanaged, vLAN-based bridged networks. All additional optional values are ignored by this type
 
 * `managed` for PVC-managed, VXLAN-based networks.
 
@@ -307,94 +264,89 @@ Add a new virtual network with (whitespace-free) description `<network>`.
 
 `ip6_gateway` specifies an IP address from the `ip6_network` for the primary coordinator node to provide gateway services to the network. If `ip6_network` is specified but `ip6_gateway` is not specified or is invalid, default to `<ip6_network>::1`.
 
-`flag_dhcp4` specifies that DHCPv4 should be used for the IPv4 network.
+`dhcp4` specifies that DHCPv4 should be used for the IPv4 network.
 
-`dhcp4_start` specifies an IP address for the start of the DHCPv4 IP pool. If `flag_dhcp4` is specified but `dhcp4_start` is not specified or is invalid, return a failure.
+`dhcp4_start` specifies an IP address for the start of the DHCPv4 IP pool. If `dhcp4` is specified but `dhcp4_start` is not specified or is invalid, return a failure.
 
-`dhcp4_end` specifies an IP address for the end of the DHCPv4 IP pool. If `flag_dhcp4` is specified but `dhcp4_end` is not specified or is invalid, return a failure.
+`dhcp4_end` specifies an IP address for the end of the DHCPv4 IP pool. If `dhcp4` is specified but `dhcp4_end` is not specified or is invalid, return a failure.
 
-#### `/api/v1/network/<network>/modify`
- * Methods: `POST`
+#### `/api/v1/network/<network>`
+ * Methods: `GET`, `PUT`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
- * Optional values: `vni`, `nettype` `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `flag_dhcp4`, `dhcp4_start`, `dhcp4_end`
+ * Optional values: N/A
 
-Modify the options of an existing virtual network with description `<network>`.
+Return a JSON document containing information about the virtual network `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex matching.
+
+###### `PUT`
+ * Mandatory values: N/A
+ * Optional values: `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
+
+Modify the options of an existing virtual network `<network>`.
 
 All values are optional and are identical to the values for `add`. Only those values specified will be updated.
 
-**NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, move VMs to it, then finally remove the old virtual network.
+###### `DELETE`
 
-#### `/api/v1/network/<network>/remove`
- * Methods: `POST`
+Remove a virtual network `<network>`.
+
+#### `/api/v1/network/<network>/lease`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
- * Optional values: N/A
+ * Optional values: `limit`, `static`
 
-Remove a virtual network with description `<network>`.
-
-#### `/api/v1/network/<network>/dhcp`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: `limit`, `flag_static`
-
-Return a JSON document containing information about all active DHCP leases in virtual network with description `<network>`.
+Return a JSON document containing information about all active DHCP leases in virtual network `<network>`.
 
 If `limit` is specified, return a JSON document containing information about all active DHCP leases with MAC addresses matching `limit` as fuzzy regex.
 
-If `flag_static` is specified, only return static DHCP leases.
+If `static` is specified, only return static DHCP leases.
 
-#### `/api/v1/network/<network>/dhcp/<lease>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex.
-
-If `<lease>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/dhcp/<lease>/add`
- * Methods: `POST`
- * Mandatory values: `ipaddress`
+###### `POST`
+ * Mandatory values: `macaddress`, `ipaddress`
  * Optional values: `hostname`
 
-Add a new static DHCP lease for MAC address `<lease>` in virtual network with description `<network>`.
+Add a new static DHCP lease for MAC address `<macaddress>` in virtual network `<network>`.
 
 `ipaddress` must be a valid IP address in the specified `<network>` IPv4 netblock, and ideally outside of the DHCPv4 range.
 
 `hostname` specifies a static hostname hint for the lease.
 
-#### `/api/v1/network/<network>/dhcp/<lease>/remove`
- * Methods: `POST`
+#### `/api/v1/network/<network>/dhcp/<lease>`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove a static DHCP lease for MAC address `<lease`> in virtual network with description `<network>`.
+Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex matching.
+
+###### `DELETE`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Remove a static DHCP lease for MAC address `<lease`> in virtual network `<network>`.
 
 #### `/api/v1/network/<network>/acl`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`, `direction`
 
-Return a JSON document containing information about all active NFTables ACLs in virtual network with description `<network>`.
+Return a JSON document containing information about all active NFTables ACLs in virtual network `<network>`.
 
 If `limit` is specified, return a JSON document containing information about all active NFTables ACLs with descriptions matching `limit` as fuzzy regex.
 
 If `direction` is specified and is one of `in` or `out`, return a JSON codument listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
 
-#### `/api/v1/network/<network>/acl/<acl>`
- * Methods: `GET`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex.
-
-If `<acl>` is not valid, return an empty JSON document.
-
-#### `/api/v1/network/<network>/acl/<acl>/add`
- * Methods: `POST`
- * Mandatory values: `direction`, `rule`
+###### `POST`
+ * Mandatory values: `description`, `direction`, `rule`
  * Optional values: `order`
 
-Add a new NFTables ACL with description `<acl>` in virtual network with description `<network>`.
+Add a new NFTables ACL with `description` in virtual network `<network>`.
 
 `direction` must be one of `in` or `out`.
 
@@ -402,12 +354,22 @@ Add a new NFTables ACL with description `<acl>` in virtual network with descript
 
 `order` specifies the order of the rule in the current chain. If not specified, the rule will be placed at the end of the rule chain.
 
-#### `/api/v1/network/<network>/acl/<acl>/remove`
- * Methods: `POST`
+#### `/api/v1/network/<network>/acl/<acl>`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove an NFTables ACL with description `<acl>` from virtual network with description `<network>`.
+Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex matching.
+
+If `<acl>` is not valid, return an empty JSON document.
+
+###### `DELETE`
+ * Mandatory values: `direction`
+ * Optional values: N/A
+
+Remove an NFTables ACL with description `<acl>` in direction `direction` from virtual network `<network>`.
 
 ### Storage (Ceph) endpoints
 
@@ -420,12 +382,12 @@ These endpoints manage PVC Ceph storage cluster state and operation. This sectio
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about the current Ceph cluster status.
-
-The JSON element `ceph_data` contains the raw output of a `ceph status` command.
+Return a JSON document containing information about the current Ceph cluster status. The JSON element `ceph_data` contains the raw output of a `ceph status` command.
 
 #### `/api/v1/storage/ceph/status`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
@@ -433,185 +395,169 @@ This endpoint is an alias for `/api/v1/storage/ceph`.
 
 #### `/api/v1/storage/ceph/df`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about the current Ceph cluster utilization.
+Return a JSON document containing information about the current Ceph cluster utilization. The JSON element `ceph_data` contains the raw output of a `rados df` command.
 
-The JSON element `ceph_data` contains the raw output of a `rados df` command.
+#### `/api/v1/storage/ceph/cluster-option`
+ * Methods: `POST`
+
+###### `POST`
+ * Mandatory values: `action`, `option`
+ * Optional values: N/A
+
+Perform `action` to a global Ceph OSD `option` on the storage cluster. `action` must be either `set` or `unset`. `option` must be a valid option to the `ceph osd set/unset` commands, e.g. `noout` or `noscrub`.
 
 #### `/api/v1/storage/ceph/osd`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all Ceph OSDs in the storage cluster.
+Return a JSON document containing information about all Ceph OSDs in the storage cluster. If `limit` is specified, return a JSON document containing information about all Ceph OSDs with names matching `limit` as fuzzy regex.
 
-If `limit` is specified, return a JSON document containing information about all Ceph OSDs with names matching `limit` as fuzzy regex.
+###### `POST`
+ * Mandatory values: `node`, `device`, `weight`
+ * Optional values: N/A
+
+Add a new Ceph OSD to PVC node `<node>`. `device` must be a valid block device on the specified `<node>`, e.g. `/dev/sdb`. `weight` must be a valid Ceph OSD weight, usually `1.0` if all OSD disks are the same size.
 
 #### `/api/v1/storage/ceph/osd/<osd>`
- * Methods: `GET`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Return a JSON document containing information about Ceph OSD with ID `<osd>` in the storage cluster. Unlike other similar endpoints, this is **NOT** equivalent to any limit within the list, since that limit is based off names rather than just the ID.
 
-#### `/api/v1/storage/ceph/osd/set`
- * Methods: `POST`
- * Mandatory values: `option`
- * Optional values: N/A
-
-Set a global Ceph OSD option on the storage cluster.
-
-`option` must be a valid option to the `ceph osd set` command, e.g. `noout` or `noscrub`.
-
-#### `/api/v1/storage/ceph/osd/unset`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Unset a global Ceph OSD option on the storage cluster.
-
-`option` must be a valid option to the `ceph osd unset` command, e.g. `noout` or `noscrub`.
-
-#### `/api/v1/storage/ceph/osd/<node>/add`
- * Methods: `POST`
- * Mandatory values: `device`, `weight`
- * Optional values: N/A
-
-Add a new Ceph OSD to PVC node with name `<node>`.
-
-`device` must be a valid block device on the specified `<node>`, e.g. `/dev/sdb`.
-
-`weight` must be a valid Ceph OSD weight, usually `1.0` if all OSD disks are the same size.
-
-#### `/api/v1/storage/ceph/osd/<osd>/remove`
- * Methods: `POST`
- * Mandatory values: `flag_yes_i_really_mean_it`
+###### `DELETE`
+ * Mandatory values: `yes_i_really_mean_it`
  * Optional values: N/A
 
 Remove a Ceph OSD device with ID `<osd>` from the storage cluster.
 
-**NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `flag_yes_i_really_mean_it` must be set or the endpoint will return a failure.
+**NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `yes_i_really_mean_it` must be set or the endpoint will return a failure.
 
-**WARNING:** Removing an OSD without first setting it `out` (and letting it flush) triggers an unclean PG recovery. This could potentially cause data loss if other OSDs were to fail or be removed. OSDs should not normally be removed except in the case of failed OSDs during replacement or during a replacement with a larger disk.
+**WARNING:** Removing an OSD without first setting it `out` (and letting it flush) triggers an unclean PG recovery. This could potentially cause data loss if other OSDs were to fail or be removed. OSDs should not normally be removed except in the case of failed OSDs during replacement or during a replacement with a larger disk. For more information please see the Ceph documentation.
 
-#### `/api/v1/storage/ceph/osd/<osd>/in`
- * Methods: `POST`
+#### `/api/v1/storage/ceph/osd/<osd>/state`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Set in (active) a Ceph OSD device with ID `<osd>` in the storage cluster.
+Return the state state of OSD `<osd>`.
 
-#### `/api/v1/storage/ceph/osd/<osd>/out`
- * Methods: `POST`
- * Mandatory values: N/A
+###### `POST`
+ * Mandatory values: `state`
  * Optional values: N/A
 
-Set out (inactive) a Ceph OSD device with ID `<osd>` in the storage cluster.
+Set a Ceph OSD device with ID `<osd>` to `state`. `state` must be either `in` or `out`.
 
 #### `/api/v1/storage/ceph/pool`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all Ceph RBD pools in the storage cluster.
+Return a JSON document containing information about all Ceph RBD pools in the storage cluster. If `limit` is specified, return a JSON document containing information about all Ceph RBD pools with names matching `limit` as fuzzy regex.
 
-If `limit` is specified, return a JSON document containing information about all Ceph RBD pools with names matching `limit` as fuzzy regex.
+###### `POST`
+ * Mandatory values: `pool`, `pgs`
+ * Optional values: N/A
+
+Add a new Ceph RBD pool `<pool>` to the storage cluster. `pgs` must be a valid number of Placement Groups for the pool, taking into account the number of OSDs and the replication of the pool (`copies=3`). `256` is a safe and sane number of PGs for 3 nodes and 2 disks per node. This value can be grown later via `ceph` commands as required.
 
 #### `/api/v1/storage/ceph/pool/<pool>`
- * Methods: `GET`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/pool?limit=<pool>` without fuzzy regex.
+Return a JSON document containing information about Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/pool?limit=<pool>` without fuzzy regex matching.
 
-#### `/api/v1/storage/ceph/pool/<pool>/add`
- * Methods: `POST`
- * Mandatory values: `pgs`
+###### `DELETE`
+ * Mandatory values: `yes_i_really_mean_it`
  * Optional values: N/A
 
-Add a new Ceph RBD pool with name `<pool>` to the storage cluster.
+Remove a Ceph RBD pool `<pool>` from the storage cluster.
 
-`pgs` must be a valid number of Placement Groups for the pool, taking into account the number of OSDs and the replication of the pool (`copies=3`). `256` is a safe number for 3 nodes and 2 disks per node. This value can be grown later via `ceph` commands as required.
-
-#### `/api/v1/storage/ceph/pool/<pool>/remove`
- * Methods: `POST`
- * Mandatory values: `flag_yes_i_really_mean_it`
- * Optional values: N/A
-
-Remove a Ceph RBD pool with name `<pool>` from the storage cluster.
-
-**NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `flag_yes_i_really_mean_it` must be set or the endpoint will return a failure.
+**NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `yes_i_really_mean_it` must be set or the endpoint will return a failure.
 
 **WARNING:** Removing an RBD pool will delete all data on that pool, including all Ceph RBD volumes on the pool. Do not run this command lightly and without ensuring the pool is safely removable first.
 
 #### `/api/v1/storage/ceph/volume`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `pool`, `limit`
 
-Return a JSON document containing information about all Ceph RBD volumes in the storage cluster.
+Return a JSON document containing information about all Ceph RBD volumes in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool `pool`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
 
-If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool with name `pool`.
+###### `POST`
+ * Mandatory values: `volume`, `pool`, `size`
+ * Optional values: N/A
 
-If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
+Add a new Ceph RBD volume `<volume>` to Ceph RBD pool `<pool>`. `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`.
 
 #### `/api/v1/storage/ceph/volume/<pool>/<volume>`
- * Methods: `GET`
+ * Methods: `GET`, `PUT`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD volume with name `<volume>` in Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&limit=<volume>` without fuzzy regex.
+Return a JSON document containing information about Ceph RBD volume `<volume>` in Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&limit=<volume>` without fuzzy regex matching.
 
-#### `/api/v1/storage/ceph/volume/<pool>/<volume>/add`
- * Methods: `POST`
- * Mandatory values: `size`
- * Optional values: N/A
+###### `PUT`
+ * Mandatory values: N/A
+ * Optional values: `name`, `size`
 
-Add a new Ceph RBD volume with name `<volume>` to Ceph RBD pool with name `<pool>`.
+Change the configuration of the volume `<volume>`. If `name` is specified, rename the volume to the specified name. If `size` is specified, resize the volume to the specified size (see `POST /api/v1/storage/ceph/volume` for restrictions).
 
-`size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `2G`.
-
-#### `/api/v1/storage/ceph/volume/<pool>/<volume>/remove`
- * Methods: `POST`
+###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove a Ceph RBD volume with name `<volume>` from Ceph RBD pool `<pool>`.
+Remove a Ceph RBD volume `<volume>` from Ceph RBD pool `<pool>`.
 
 #### `/api/v1/storage/ceph/volume/snapshot`
- * Methods: `GET`
+ * Methods: `GET`, `POST`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: `pool`, `volume`, `limit`
 
-Return a JSON document containing information about all Ceph RBD volume snapshots in the storage cluster.
-
-If `pool` is specified, return a JSON document containing information about all Ceph RBD volume snapshots in Ceph RBD pool with name `pool`.
-
-If `volume` is specified, return a JSON document containing information about all Ceph RBD volume snapshots of Ceph RBD volume with name `volume`.
-
-If `limit` is specified, return a JSON document containing information about all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
+Return a JSON document containing information about all Ceph RBD volume snapshots in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volume snapshots in Ceph RBD pool `pool`. If `volume` is specified, return a JSON document containing information about all Ceph RBD volume snapshots of Ceph RBD volume `volume`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
 
 The various limit options can be combined freely, e.g. one can specify a `volume` without `pool`, which would match all snapshots of the named volume(s) regardless of pool, or a `pool` and `limit` without a `volume`, which would match all named snapshots on any volume in `pool`.
 
+###### `POST`
+ * Mandatory values: `snapshot`, `volume`, `pool`
+ * Optional values: N/A
+
+Add a new Ceph RBD volume snapshot `snapshot` of Ceph RBD volume `volume` on Ceph RBD pool `pool`.
+
 #### `/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>`
- * Methods: `GET`
+ * Methods: `GET`, `DELETE`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD volume snapshot with name `<snapshot>` of Ceph RBD volume with name `<volume>` in Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&volume=<volume>&limit=<snapshot>` without fuzzy regex.
+Return a JSON document containing information about Ceph RBD volume snapshot `<snapshot>` of Ceph RBD volume `<volume>` in Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&volume=<volume>&limit=<snapshot>` without fuzzy regex matching.
 
-#### `/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add`
- * Methods: `POST`
+###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Add a new Ceph RBD volume snapshot with name `<volume>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
-
-#### `/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove`
- * Methods: `POST`
- * Mandatory values: N/A
- * Optional values: N/A
-
-Remove a Ceph RBD volume snapshot with name `<volume>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
+Remove a Ceph RBD volume snapshot `<snapshot>` of Ceph RBD volume `<volume>` on Ceph RBD pool `<pool>`.

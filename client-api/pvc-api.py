@@ -29,9 +29,6 @@ import gevent.pywsgi
 
 import api_lib.pvcapi as pvcapi
 
-api = flask.Flask(__name__)
-api.config['DEBUG'] = True
-
 # Parse the configuration file
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
@@ -52,6 +49,7 @@ except Exception as e:
 try:
     # Create the config object
     config = {
+        'debug': o_config['pvc']['debug'],
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
@@ -68,6 +66,11 @@ try:
 except Exception as e:
     print('ERROR: {}.'.format(e))
     exit(1)
+
+api = flask.Flask(__name__)
+
+if config['debug']:
+    api.config['DEBUG'] = True
 
 if config['auth_enabled']:
     api.config["SECRET_KEY"] = config['auth_secret_key']
@@ -134,10 +137,7 @@ def api_auth_logout():
 #
 @api.route('/api/v1/node', methods=['GET'])
 @authenticator
-def api_node():
-    """
-    Return a list of nodes with limit LIMIT.
-    """
+def api_node_root():
     # Get name limit
     if 'limit' in flask.request.values:
         limit = flask.request.values['limit']
@@ -148,553 +148,456 @@ def api_node():
 
 @api.route('/api/v1/node/<node>', methods=['GET'])
 @authenticator
-def api_node_info(node):
-    """
-    Return information about node NODE.
-    """
+def api_node_element(node):
     # Same as specifying /node?limit=NODE
     return pvcapi.node_list(node)
 
-@api.route('/api/v1/node/<node>/secondary', methods=['POST'])
-@authenticator
-def api_node_secondary(node):
-    """
-    Take NODE out of primary router mode.
-    """
-    return pvcapi.node_secondary(node)
 
-@api.route('/api/v1/node/<node>/primary', methods=['POST'])
+@api.route('/api/v1/node/<node>/coordinator-state', methods=['GET', 'POST'])
 @authenticator
-def api_node_primary(node):
-    """
-    Set NODE to primary router mode.
-    """
-    return pvcapi.node_primary(node)
+def api_node_coordinator_state(node):
+    if flask.request.method == 'GET':
+        return "Test", 200
 
-@api.route('/api/v1/node/<node>/flush', methods=['POST'])
-@authenticator
-def api_node_flush(node):
-    """
-    Flush NODE of running VMs.
-    """
-    return pvcapi.node_flush(node)
+    if flask.request.method == 'POST':
+        if not 'coordinator-state' in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['coordinator-state']
+        if new_state == 'primary':
+            return pvcapi.node_primary(node)
+        if new_state == 'secondary':
+            return pvcapi.node_secondary(node)
+        flask.abort(400)
 
-@api.route('/api/v1/node/<node>/unflush', methods=['POST'])
-@api.route('/api/v1/node/<node>/ready', methods=['POST'])
+@api.route('/api/v1/node/<node>/domain-state', methods=['GET', 'POST'])
 @authenticator
-def api_node_ready(node):
-    """
-    Restore NODE to active service.
-    """
-    return pvcapi.node_ready(node)
+def api_node_domain_state(node):
+    if flask.request.method == 'GET':
+        return "Test", 200
+
+    if flask.request.method == 'POST':
+        if not 'domain-state' in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['domain-state']
+        if new_state == 'ready':
+            return pvcapi.node_ready(node)
+        if new_state == 'flush':
+            return pvcapi.node_flush(node)
+        flask.abort(400)
 
 #
 # VM endpoints
 #
-@api.route('/api/v1/vm', methods=['GET'])
+@api.route('/api/v1/vm', methods=['GET', 'POST'])
 @authenticator
-def api_vm():
-    """
-    Return a list of VMs with limit LIMIT.
-    """
-    # Get node limit
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
+def api_vm_root():
+    if flask.request.method == 'GET':
+        # Get node limit
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
 
-    # Get state limit
-    if 'state' in flask.request.values:
-        state = flask.request.values['state']
-    else:
-        state = None
+        # Get state limit
+        if 'state' in flask.request.values:
+            state = flask.request.values['state']
+        else:
+            state = None
 
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
 
-    return pvcapi.vm_list(node, state, limit)
+        return pvcapi.vm_list(node, state, limit)
 
-@api.route('/api/v1/vm/<vm>', methods=['GET'])
+    if flask.request.method == 'POST':
+        # Get XML data
+        if 'xml' in flask.request.values:
+            libvirt_xml = flask.request.values['xml']
+        else:
+            return flask.jsonify({"message":"ERROR: A Libvirt XML document must be specified."}), 400
+
+        # Get node name
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
+
+        # Get target selector
+        if 'selector' in flask.request.values:
+            selector = flask.request.values['selector']
+        else:
+            selector = None
+
+        return pvcapi.vm_define(vm, libvirt_xml, node, selector)
+
+@api.route('/api/v1/vm/<vm>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @authenticator
-def api_vm_info(vm):
-    """
-    Get information about a virtual machine named VM.
-    """
-    # Same as specifying /vm?limit=VM
-    return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
+def api_vm_element(vm):
+    if flask.request.method == 'GET':
+        # Same as specifying /vm?limit=VM
+        return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
 
-# TODO: #22
-#@api.route('/api/v1/vm/<vm>/add', methods=['POST'])
-#@authenticator
-#def api_vm_add(vm):
-#    """
-#    Add a virtual machine named VM.
-#    """
-#    return pvcapi.vm_add()
+    if flask.request.method == 'POST':
+        # TODO: #22
+        flask.abort(501)
 
-@api.route('/api/v1/vm/<vm>/define', methods=['POST'])
+    if flask.request.method == 'PUT':
+        libvirt_xml = flask.request.data
+
+        if 'restart' in flask.request.values and flask.request.values['restart']:
+            flag_restart = True
+        else:
+            flag_restart = False
+
+        return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
+
+    if flask.request.method == 'DELETE':
+        if 'delete_disks' in flask.request.values and flask.request.values['delete_disks']:
+            return pvcapi.vm_remove(vm)
+        else:
+            return pvcapi.vm_undefine(vm)
+
+@api.route('/api/v1/vm/<vm>/state', methods=['GET', 'POST'])
 @authenticator
-def api_vm_define(vm):
-    """
-    Define a virtual machine named VM from Libvirt XML.
-    """
-    # Get XML data
-    if 'xml' in flask.request.values:
-        libvirt_xml = flask.request.values['xml']
-    else:
-        return flask.jsonify({"message":"ERROR: A Libvirt XML document must be specified."}), 520
+def api_vm_state(vm):
+    if flask.request.method == 'GET':
+        return "Test", 200
 
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
+    if flask.request.method == 'POST':
+        if not 'state' in flask.request.values:
+            flask.abort(400)
+        new_state = flask.request.values['state']
+        if new_state == 'start':
+            return pvcapi.vm_start(vm)
+        if new_state == 'shutdown':
+            return pvcapi.vm_shutdown(vm)
+        if new_state == 'stop':
+            return pvcapi.vm_stop(vm)
+        if new_state == 'restart':
+            return pvcapi.vm_restart(vm)
+        flask.abort(400)
 
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    return pvcapi.vm_define(vm, libvirt_xml, node, selector)
-
-@api.route('/api/v1/vm/<vm>/modify', methods=['POST'])
+@api.route('/api/v1/vm/<vm>/node', methods=['GET', 'POST'])
 @authenticator
-def api_vm_modify(vm):
-    """
-    Modify an existing virtual machine named VM from Libvirt XML.
-    """
-    # Get XML from the POST body
-    libvirt_xml = flask.request.data
+def api_vm_node(vm):
+    if flask.request.method == 'GET':
+        return "Test", 200
 
-    # Get node name
-    if 'flag_restart' in flask.request.values:
-        flag_restart = flask.request.values['flag_restart']
-    else:
-        flag_restart = None
+    if flask.request.method == 'POST':
+        if 'action' in flask.request.values:
+            action = flask.request.values['action']
+        else:
+            flask.abort(400)
 
-    return pvcapi.vm_modify(vm, flag_restart, libvirt_xml)
+        # Get node name
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            node = None
+        # Get target selector
+        if 'selector' in flask.request.values:
+            selector = flask.request.values['selector']
+        else:
+            selector = None
+        # Get permanent flag
+        if 'permanent' in flask.request.values and flask.request.values['permanent']:
+            flag_permanent = True
+        else:
+            flag_permanent = False
+        # Get force flag
+        if 'force' in flask.request.values and flask.request.values['force']:
+            flag_force = True
+        else:
+            flag_force = False
 
-@api.route('/api/v1/vm/<vm>/undefine', methods=['POST'])
-@authenticator
-def api_vm_undefine(vm):
-    """
-    Undefine a virtual machine named VM.
-    """
-    return pvcapi.vm_undefine(vm)
+        # Check if VM is presently migrated
+        is_migrated = pvcapi.vm_is_migrated(vm)
 
-@api.route('/api/v1/vm/<vm>/remove', methods=['POST'])
-@authenticator
-def api_vm_remove(vm):
-    """
-    Remove a virtual machine named VM including all disks.
-    """
-    return pvcapi.vm_remove(vm)
+        if action == 'migrate' and not flag_permanent:
+            return pvcapi.vm_migrate(vm, node, selector, flag_force)
+        if action == 'migrate' and flag_permanent:
+            return pvcapi.vm_move(vm, node, selector)
+        if action == 'unmigrate' and is_migrated:
+            return pvcapi.vm_unmigrate(vm)
 
-@api.route('/api/v1/vm/<vm>/dump', methods=['GET'])
-@authenticator
-def api_vm_dump(vm):
-    """
-    Dump the Libvirt XML configuration of a virtual machine named VM.
-    """
-    return pvcapi.vm_dump(vm)
+        flask.abort(400)
 
-@api.route('/api/v1/vm/<vm>/start', methods=['POST'])
-@authenticator
-def api_vm_start(vm):
-    """
-    Start a virtual machine named VM.
-    """
-    return pvcapi.vm_start(vm)
-
-@api.route('/api/v1/vm/<vm>/restart', methods=['POST'])
-@authenticator
-def api_vm_restart(vm):
-    """
-    Restart a virtual machine named VM.
-    """
-    return pvcapi.vm_restart(vm)
-
-@api.route('/api/v1/vm/<vm>/shutdown', methods=['POST'])
-@authenticator
-def api_vm_shutdown(vm):
-    """
-    Shutdown a virtual machine named VM.
-    """
-    return pvcapi.vm_shutdown(vm)
-
-@api.route('/api/v1/vm/<vm>/stop', methods=['POST'])
-@authenticator
-def api_vm_stop(vm):
-    """
-    Forcibly stop a virtual machine named VM.
-    """
-    return pvcapi.vm_stop(vm)
-
-@api.route('/api/v1/vm/<vm>/move', methods=['POST'])
-@authenticator
-def api_vm_move(vm):
-    """
-    Move a virtual machine named VM to another node.
-    """
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
-
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    return pvcapi.vm_move(vm, node, selector)
-
-@api.route('/api/v1/vm/<vm>/migrate', methods=['POST'])
-@authenticator
-def api_vm_migrate(vm):
-    """
-    Temporarily migrate a virtual machine named VM to another node.
-    """
-    # Get node name
-    if 'node' in flask.request.values:
-        node = flask.request.values['node']
-    else:
-        node = None
-
-    # Get target selector
-    if 'selector' in flask.request.values:
-        selector = flask.request.values['selector']
-    else:
-        selector = None
-
-    # Get target selector
-    if 'flag_force' in flask.request.values:
-        flag_force = True
-    else:
-        flag_force = False
-
-    return pvcapi.vm_migrate(vm, node, selector, flag_force)
-
-@api.route('/api/v1/vm/<vm>/unmigrate', methods=['POST'])
-@authenticator
-def api_vm_unmigrate(vm):
-    """
-    Unmigrate a migrated virtual machine named VM.
-    """
-    return pvcapi.vm_move(vm)
 
 #
 # Network endpoints
 #
-@api.route('/api/v1/network', methods=['GET'])
+@api.route('/api/v1/network', methods=['GET', 'POST'])
 @authenticator
-def api_net():
-    """
-    Return a list of virtual client networks with limit LIMIT.
-    """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
+def api_net_root():
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
 
-    return pvcapi.net_list(limit)
+        return pvcapi.net_list(limit)
 
-@api.route('/api/v1/network/<network>', methods=['GET'])
+    if flask.request.method == 'POST':
+        # Get network VNI
+        if 'vni' in flask.request.values:
+            vni = flask.request.values['vni']
+        else:
+            return flask.jsonify({"message":"ERROR: A VNI must be specified for the virtual network."}), 520
+
+        # Get network description
+        if 'description' in flask.request.values:
+            description = flask.request.values['vni']
+        else:
+            return flask.jsonify({"message":"ERROR: A VNI must be specified for the virtual network."}), 520
+
+        # Get network type
+        if 'nettype' in flask.request.values:
+            nettype = flask.request.values['nettype']
+            if not 'managed' in nettype and not 'bridged' in nettype:
+                return flask.jsonify({"message":"ERROR: A valid nettype must be specified: 'managed' or 'bridged'."}), 520
+        else:
+            return flask.jsonify({"message":"ERROR: A nettype must be specified for the virtual network."}), 520
+
+        # Get network domain
+        if 'domain' in flask.request.values:
+            domain = flask.request.values['domain']
+        else:
+            domain = None
+
+        # Get ipv4 network
+        if 'ip4_network' in flask.request.values:
+            ip4_network = flask.request.values['ip4_network']
+        else:
+            ip4_network = None
+
+        # Get ipv4 gateway
+        if 'ip4_gateway' in flask.request.values:
+            ip4_gateway = flask.request.values['ip4_gateway']
+        else:
+            ip4_gateway = None
+
+        # Get ipv6 network
+        if 'ip6_network' in flask.request.values:
+            ip6_network = flask.request.values['ip6_network']
+        else:
+            ip6_network = None
+
+        # Get ipv6 gateway
+        if 'ip6_gateway' in flask.request.values:
+            ip6_gateway = flask.request.values['ip6_gateway']
+        else:
+            ip6_gateway = None
+
+        # Get ipv4 DHCP flag
+        if 'dhcp4' in flask.request.values and flask.request.values['dhcp4']:
+            dhcp4_flag = True
+        else:
+            dhcp4_flag = False
+
+        # Get ipv4 DHCP start
+        if 'dhcp4_start' in flask.request.values:
+            dhcp4_start = flask.request.values['dhcp4_start']
+        else:
+            dhcp4_start = None
+
+        # Get ipv4 DHCP end
+        if 'dhcp4_end' in flask.request.values:
+            dhcp4_end = flask.request.values['dhcp4_end']
+        else:
+            dhcp4_end = None
+
+        return pvcapi.net_add(vni, description, nettype, domain,
+                              ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                              dhcp4_flag, dhcp4_start, dhcp4_end)
+
+@api.route('/api/v1/network/<network>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
-def api_net_info(network):
-    """
-    Get information about a virtual client network with description NETWORK.
-    """
+def api_net_element(network):
     # Same as specifying /network?limit=NETWORK
-    return pvcapi.net_list(network)
+    if flask.request.method == 'GET':
+        return pvcapi.net_list(network)
 
-@api.route('/api/v1/network/<network>/add', methods=['POST'])
+    if flask.request.method == 'PUT':
+        # Get network description
+        if 'description' in flask.request.values:
+            description = flask.request.values['description']
+        else:
+            description = None
+
+        # Get network domain
+        if 'domain' in flask.request.values:
+            domain = flask.request.values['domain']
+        else:
+            domain = None
+
+        # Get ipv4 network
+        if 'ip4_network' in flask.request.values:
+            ip4_network = flask.request.values['ip4_network']
+        else:
+            ip4_network = None
+
+        # Get ipv4 gateway
+        if 'ip4_gateway' in flask.request.values:
+            ip4_gateway = flask.request.values['ip4_gateway']
+        else:
+            ip4_gateway = None
+
+        # Get ipv6 network
+        if 'ip6_network' in flask.request.values:
+            ip6_network = flask.request.values['ip6_network']
+        else:
+            ip6_network = None
+
+        # Get ipv6 gateway
+        if 'ip6_gateway' in flask.request.values:
+            ip6_gateway = flask.request.values['ip6_gateway']
+        else:
+            ip6_gateway = None
+
+        # Get ipv4 DHCP flag
+        if 'dhcp4' in flask.request.values and flask.request.values['dhcp4']:
+            dhcp4_flag = True
+        else:
+            dhcp4_flag = False
+
+        # Get ipv4 DHCP start
+        if 'dhcp4_start' in flask.request.values:
+            dhcp4_start = flask.request.values['dhcp4_start']
+        else:
+            dhcp4_start = None
+
+        # Get ipv4 DHCP end
+        if 'dhcp4_end' in flask.request.values:
+            dhcp4_end = flask.request.values['dhcp4_end']
+        else:
+            dhcp4_end = None
+
+        return pvcapi.net_modify(network, description, domain,
+                                 ip4_network, ip4_gateway,
+                                 ip6_network, ip6_gateway,
+                                 dhcp4_flag, dhcp4_start, dhcp4_end)
+
+    if flask.request.method == 'DELETE':
+        return pvcapi.net_remove(network)
+
+@api.route('/api/v1/network/<network>/lease', methods=['GET', 'POST'])
 @authenticator
-def api_net_add(network):
-    """
-    Add a virtual client network with description NETWORK.
-    """
-    # Get network VNI
-    if 'vni' in flask.request.values:
-        vni = flask.request.values['vni']
-    else:
-        return flask.jsonify({"message":"ERROR: A VNI must be specified for the virtual network."}), 520
+def api_net_lease_root(network):
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
 
-    # Get network type
-    if 'nettype' in flask.request.values:
-        nettype = flask.request.values['nettype']
-        if not 'managed' in nettype and not 'bridged' in nettype:
-            return flask.jsonify({"message":"ERROR: A valid nettype must be specified: 'managed' or 'bridged'."}), 520
-    else:
-        return flask.jsonify({"message":"ERROR: A nettype must be specified for the virtual network."}), 520
+        # Get static-only flag
+        if 'static' in flask.request.values and flask.request.values['static']:
+            flag_static = True
+        else:
+            flag_static = False
 
-    # Get network domain
-    if 'domain' in flask.request.values:
-        domain = flask.request.values['domain']
-    else:
-        domain = None
+        return pvcapi.net_dhcp_list(network, limit. flag_static)
 
-    # Get ipv4 network
-    if 'ip4_network' in flask.request.values:
-        ip4_network = flask.request.values['ip4_network']
-    else:
-        ip4_network = None
+    if flask.request.method == 'POST':
+        # Get lease macaddr
+        if 'macaddress' in flask.request.values:
+            macaddress = flask.request.values['macaddress']
+        else:
+            return flask.jsonify({"message":"ERROR: An IP address must be specified for the lease."}), 400
+        # Get lease ipaddress
+        if 'ipaddress' in flask.request.values:
+            ipaddress = flask.request.values['ipaddress']
+        else:
+            return flask.jsonify({"message":"ERROR: An IP address must be specified for the lease."}), 400
 
-    # Get ipv4 gateway
-    if 'ip4_gateway' in flask.request.values:
-        ip4_gateway = flask.request.values['ip4_gateway']
-    else:
-        ip4_gateway = None
+        # Get lease hostname
+        if 'hostname' in flask.request.values:
+            hostname = flask.request.values['hostname']
+        else:
+            hostname = None
 
-    # Get ipv6 network
-    if 'ip6_network' in flask.request.values:
-        ip6_network = flask.request.values['ip6_network']
-    else:
-        ip6_network = None
+        return pvcapi.net_dhcp_add(network, ipaddress, lease, hostname)
 
-    # Get ipv6 gateway
-    if 'ip6_gateway' in flask.request.values:
-        ip6_gateway = flask.request.values['ip6_gateway']
-    else:
-        ip6_gateway = None
-
-    # Get ipv4 DHCP flag
-    if 'flag_dhcp4' in flask.request.values:
-        dhcp4_flag = True
-    else:
-        dhcp4_flag = False
-
-    # Get ipv4 DHCP start
-    if 'dhcp4_start' in flask.request.values:
-        dhcp4_start = flask.request.values['dhcp4_start']
-    else:
-        dhcp4_start = None
-
-    # Get ipv4 DHCP end
-    if 'dhcp4_end' in flask.request.values:
-        dhcp4_end = flask.request.values['dhcp4_end']
-    else:
-        dhcp4_end = None
-
-    return pvcapi.net_add(vni, network, nettype, domain,
-                          ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                          dhcp4_flag, dhcp4_start, dhcp4_end)
-
-@api.route('/api/v1/network/<network>/modify', methods=['POST'])
+@api.route('/api/v1/network/<network>/lease/<lease>', methods=['GET', 'DELETE'])
 @authenticator
-def api_net_modify(network):
-    """
-    Modify a virtual client network with description NETWORK.
-    """
-    # Get network VNI
-    if 'vni' in flask.request.values:
-        vni = flask.request.values['vni']
-    else:
-        vni = None
+def api_net_lease_element(network, lease):
+    if flask.request.method == 'GET':
+        # Same as specifying /network?limit=NETWORK
+        return pvcapi.net_dhcp_list(network, lease, False)
 
-    # Get network type
-    if 'nettype' in flask.request.values:
-        nettype = flask.request.values['nettype']
-    else:
-        vni = None
+    if flask.request.method == 'DELETE':
+        return pvcapi.net_dhcp_remove(network, lease)
 
-    # Get network domain
-    if 'domain' in flask.request.values:
-        domain = flask.request.values['domain']
-    else:
-        domain = None
-
-    # Get ipv4 network
-    if 'ip4_network' in flask.request.values:
-        ip4_network = flask.request.values['ip4_network']
-    else:
-        ip4_network = None
-
-    # Get ipv4 gateway
-    if 'ip4_gateway' in flask.request.values:
-        ip4_gateway = flask.request.values['ip4_gateway']
-    else:
-        ip4_gateway = None
-
-    # Get ipv6 network
-    if 'ip6_network' in flask.request.values:
-        ip6_network = flask.request.values['ip6_network']
-    else:
-        ip6_network = None
-
-    # Get ipv6 gateway
-    if 'ip6_gateway' in flask.request.values:
-        ip6_gateway = flask.request.values['ip6_gateway']
-    else:
-        ip6_gateway = None
-
-    # Get ipv4 DHCP flag
-    if 'flag_dhcp4' in flask.request.values:
-        dhcp4_flag = True
-    else:
-        dhcp4_flag = False
-
-    # Get ipv4 DHCP start
-    if 'dhcp4_start' in flask.request.values:
-        dhcp4_start = flask.request.values['dhcp4_start']
-    else:
-        dhcp4_start = None
-
-    # Get ipv4 DHCP end
-    if 'dhcp4_end' in flask.request.values:
-        dhcp4_end = flask.request.values['dhcp4_end']
-    else:
-        dhcp4_end = None
-
-    return pvcapi.net_modify(vni, network, nettype, domain,
-                             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                             dhcp4_flag, dhcp4_start, dhcp4_end)
-
-@api.route('/api/v1/network/<network>/remove', methods=['POST'])
+@api.route('/api/v1/network/<network>/acl', methods=['GET', 'POST'])
 @authenticator
-def api_net_remove(network):
-    """
-    Remove a virtual client network with description NETWORK.
-    """
-    return pvcapi.net_remove(network)
+def api_net_acl_root(network):
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
 
-@api.route('/api/v1/network/<network>/dhcp', methods=['GET'])
+        # Get direction limit
+        if 'direction' in flask.request.values:
+            direction = flask.request.values['direction']
+            if not 'in' in direction and not 'out' in direction:
+                return flash.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'; for both, do not specify a direction."}), 400
+        else:
+            direction = None
+
+        return pvcapi.net_acl_list(network, limit, direction)
+
+    if flask.request.method == 'POST':
+        # Get ACL description
+        if 'description' in flask.request.values:
+            description = flask.request.values['description']
+        else:
+            return flask.jsonify({"message":"ERROR: A description must be provided."}), 400
+
+        # Get rule direction
+        if 'direction' in flask.request.values:
+            direction = flask.request.values['limit']
+            if not 'in' in direction and not 'out' in direction:
+                return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 400
+        else:
+            return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 400
+
+        # Get rule data
+        if 'rule' in flask.request.values:
+            rule = flask.request.values['rule']
+        else:
+            return flask.jsonify({"message":"ERROR: A valid NFT rule line must be specified for the ACL."}), 400
+
+        # Get order value
+        if 'order' in flask.request.values:
+            order = flask.request.values['order']
+        else:
+            order = None
+
+        return pvcapi.net_acl_add(network, direction, acl, rule, order)
+
+@api.route('/api/v1/network/<network>/acl/<acl>', methods=['GET', 'DELETE'])
 @authenticator
-def api_net_dhcp(network):
-    """
-    Return a list of DHCP leases in virtual client network with description NETWORK with limit LIMIT.
-    """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
+def api_net_acl_element(network, acl):
+    if flask.request.method == 'GET':
+        # Same as specifying /network?limit=NETWORK
+        return pvcapi.net_acl_list(network, acl, None)
 
-    # Get static-only flag
-    if 'flag_static' in flask.request.values:
-        flag_static = True
-    else:
-        flag_static = False
+    if flask.request.method == 'DELETE':
+        # Get rule direction
+        if 'direction' in flask.request.values:
+            direction = flask.request.values['limit']
+            if not 'in' in direction and not 'out' in direction:
+                return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 400
+        else:
+            return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 400
 
-    return pvcapi.net_dhcp_list(network, limit. flag_static)
-
-@api.route('/api/v1/network/<network>/dhcp/<lease>', methods=['GET'])
-@authenticator
-def api_net_dhcp_info(network, lease):
-    """
-    Get information about a DHCP lease for MAC address LEASE in virtual client network with description NETWORK.
-    """
-    # Same as specifying /network?limit=NETWORK
-    return pvcapi.net_dhcp_list(network, lease, False)
-
-@api.route('/api/v1/network/<network>/dhcp/<lease>/add', methods=['POST'])
-@authenticator
-def api_net_dhcp_add(network, lease):
-    """
-    Add a static DHCP lease for MAC address LEASE to virtual client network with description NETWORK.
-    """
-    # Get lease ipaddress
-    if 'ipaddress' in flask.request.values:
-        ipaddress = flask.request.values['ipaddress']
-    else:
-        return flask.jsonify({"message":"ERROR: An IP address must be specified for the lease."}), 520
-
-    # Get lease hostname
-    if 'hostname' in flask.request.values:
-        hostname = flask.request.values['hostname']
-    else:
-        hostname = None
-
-    return pvcapi.net_dhcp_add(network, ipaddress, lease, hostname)
-
-@api.route('/api/v1/network/<network>/dhcp/<lease>/remove', methods=['POST'])
-@authenticator
-def api_net_dhcp_remove(network, lease):
-    """
-    Remove a static DHCP lease for MAC address LEASE from virtual client network with description NETWORK.
-    """
-    return pvcapi.net_dhcp_remove(network, lease)
-
-@api.route('/api/v1/network/<network>/acl', methods=['GET'])
-@authenticator
-def api_net_acl(network):
-    """
-    Return a list of network ACLs in network NETWORK with limit LIMIT.
-    """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
-
-    # Get direction limit
-    if 'direction' in flask.request.values:
-        direction = flask.request.values['direction']
-        if not 'in' in direction and not 'out' in direction:
-            return flash.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'; for both, do not specify a direction."}), 510
-    else:
-        direction = None
-
-    return pvcapi.net_acl_list(network, limit, direction)
-
-@api.route('/api/v1/network/<network>/acl/<acl>', methods=['GET'])
-@authenticator
-def api_net_acl_info(network, acl):
-    """
-    Get information about a network access control entry with description ACL in virtual client network with description NETWORK.
-    """
-    # Same as specifying /network?limit=NETWORK
-    return pvcapi.net_acl_list(network, acl, None)
-
-@api.route('/api/v1/network/<network>/acl/<acl>/add', methods=['POST'])
-@authenticator
-def api_net_acl_add(network, acl):
-    """
-    Add an access control list with description ACL to virtual client network with description NETWORK.
-    """
-    # Get rule direction
-    if 'direction' in flask.request.values:
-        direction = flask.request.values['limit']
-        if not 'in' in direction and not 'out' in direction:
-            return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 510
-    else:
-        return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 510
-
-    # Get rule data
-    if 'rule' in flask.request.values:
-        rule = flask.request.values['rule']
-    else:
-        return flask.jsonify({"message":"ERROR: A valid NFT rule line must be specified for the ACL."}), 510
-
-    # Get order value
-    if 'order' in flask.request.values:
-        order = flask.request.values['order']
-    else:
-        order = None
-
-    return pvcapi.net_acl_add(network, direction, acl, rule, order)
-
-@api.route('/api/v1/network/<network>/acl/<acl>/remove', methods=['POST'])
-@authenticator
-def api_net_acl_remove(network, acl):
-    """
-    Remove an access control list with description ACL from virtual client network with description NETWORK.
-    """
-    # Get rule direction
-    if 'direction' in flask.request.values:
-        direction = flask.request.values['limit']
-        if not 'in' in direction and not 'out' in direction:
-            return flask.jsonify({"message":"ERROR: Direction must be either 'in' or 'out'."}), 510
-    else:
-        return flask.jsonify({"message":"ERROR: A direction must be specified for the ACL."}), 510
-
-    return pvcapi.net_acl_remove(network, direction, acl)
+        return pvcapi.net_acl_remove(network, direction, acl)
 
 #
 # Storage (Ceph) endpoints
@@ -706,289 +609,274 @@ def api_net_acl_remove(network, acl):
 #
 @api.route('/api/v1/storage', methods=['GET'])
 def api_storage():
-    """
-    Manage the storage of the PVC cluster.
-    """
     return flask.jsonify({"message":"Manage the storage of the PVC cluster."}), 200
 
 @api.route('/api/v1/storage/ceph', methods=['GET'])
 @api.route('/api/v1/storage/ceph/status', methods=['GET'])
 @authenticator
 def api_ceph_status():
-    """
-    Get the current Ceph cluster status.
-    """
     return pvcapi.ceph_status()
 
 @api.route('/api/v1/storage/ceph/df', methods=['GET'])
 @authenticator
 def api_ceph_radosdf():
-    """
-    Get the current Ceph cluster utilization.
-    """
     return pvcapi.ceph_radosdf()
 
-@api.route('/api/v1/storage/ceph/osd', methods=['GET'])
+@api.route('/api/v1/storage/ceph/cluster-option', methods=['POST'])
 @authenticator
-def api_ceph_osd():
-    """
-    Get the list of OSDs in the Ceph storage cluster.
-    """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
+def api_ceph_cluster_option():
+    if flask.request.method == 'POST':
+        # Get action
+        if 'action' in flask.request.values:
+            action = flask.request.values['action']
+            if not 'set' in action and not 'unset' in action:
+                return flask.jsonify({"message":"ERROR: Action must be one of: set, unset"}), 400
+        else:
+            return flask.jsonify({"message":"ERROR: An action must be specified."}), 400
+        # Get option
+        if 'option' in flask.request.values:
+            option = flask.request.values['option']
+        else:
+            return flask.jsonify({"message":"ERROR: An option must be specified."}), 400
 
-    return pvcapi.ceph_osd_list(limit)
+        if action == 'set':
+            return pvcapi.ceph_osd_set(option)
+        if action == 'unset':
+            return pvcapi.ceph_osd_unset(option)
 
-@api.route('/api/v1/storage/ceph/osd/set', methods=['POST'])
+@api.route('/api/v1/storage/ceph/osd', methods=['GET', 'POST'])
 @authenticator
-def api_ceph_osd_set():
-    """
-    Set OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
-    """
-    # Get OSD option
-    if 'option' in flask.request.options:
-        option = flask.request.options['option']
-    else:
-        return flask.jsonify({"message":"ERROR: An OSD option must be specified."}), 510
+def api_ceph_osd_root():
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
 
-    return pvcapi.ceph_osd_set(option)
+        return pvcapi.ceph_osd_list(limit)
 
-@api.route('/api/v1/storage/ceph/osd/unset', methods=['POST'])
+    if flask.request.method == 'POST':
+        # Get OSD node
+        if 'node' in flask.request.values:
+            node = flask.request.values['node']
+        else:
+            return flask.jsonify({"message":"ERROR: A node must be specified."}), 400
+
+        # Get OSD device
+        if 'device' in flask.request.values:
+            device = flask.request.values['device']
+        else:
+            return flask.jsonify({"message":"ERROR: A block device must be specified."}), 400
+
+        # Get OSD weight
+        if 'weight' in flask.request.values:
+            weight = flask.request.values['weight']
+        else:
+            return flask.jsonify({"message":"ERROR: An OSD weight must be specified."}), 400
+
+        return pvcapi.ceph_osd_add(node, device, weight)
+
+@api.route('/api/v1/storage/ceph/osd/<osd>', methods=['GET', 'DELETE'])
 @authenticator
-def api_ceph_osd_unset():
-    """
-    Unset OSD option OPTION on the PVC Ceph storage cluster, e.g. 'noout' or 'noscrub'.
-    """
-    # Get OSD option
-    if 'option' in flask.request.options:
-        option = flask.request.options['option']
-    else:
-        return flask.jsonify({"message":"ERROR: An OSD option must be specified."}), 510
+def api_ceph_osd_element(osd):
+    if flask.request.method == 'GET':
+        # Same as specifying /osd?limit=OSD
+        return pvcapi.ceph_osd_list(osd)
 
-    return pvcapi.ceph_osd_unset(option)
+    if flask.request.method == 'DELETE':
+        # Verify yes-i-really-mean-it flag
+        if not 'yes_i_really_mean_it' in flask.request.values:
+            return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'yes_i_really_mean_it'."}), 400
 
-@api.route('/api/v1/storage/ceph/osd/<osd>', methods=['GET'])
+        return pvcapi.ceph_osd_remove(osd)
+
+@api.route('/api/v1/storage/ceph/osd/<osd>/state', methods=['GET', 'POST'])
 @authenticator
-def api_ceph_osd_info(osd):
-    """
-    Get information about an OSD with ID OSD.
-    """
-    # Same as specifying /osd?limit=OSD
-    return pvcapi.ceph_osd_list(osd)
+def api_ceph_osd_state(osd):
+    if flask.request.method == 'GET':
+        return pvcapi.ceph_osd_state(osd)
 
-@api.route('/api/v1/storage/ceph/osd/<node>/add', methods=['POST'])
+    if flask.request.method == 'POST':
+        if 'state' in flask.request.values:
+            state = flask.request.values['state']
+            if not 'in' in state and not 'out' in state:
+                return flask.jsonify({"message":"ERROR: State must be one of: in, out."}), 400
+        else:
+            return flask.jsonify({"message":"ERROR: A state must be specified."}), 400
+
+        if state == 'in':
+            return pvcapi.ceph_osd_in(osd)
+        if state == 'out':
+            return pvcapi.ceph_osd_out(osd)
+
+@api.route('/api/v1/storage/ceph/pool', methods=['GET', 'POST'])
 @authenticator
-def api_ceph_osd_add(node):
-    """
-    Add a Ceph OSD to node NODE.
-    """
-    # Get OSD device
-    if 'device' in flask.request.devices:
-        device = flask.request.devices['device']
-    else:
-        return flask.jsonify({"message":"ERROR: A block device must be specified."}), 510
+def api_ceph_pool_root():
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+    
+        return pvcapi.ceph_pool_list(limit)
 
-    # Get OSD weight
-    if 'weight' in flask.request.weights:
-        weight = flask.request.weights['weight']
-    else:
-        return flask.jsonify({"message":"ERROR: An OSD weight must be specified."}), 510
+    if flask.request.method == 'POST':
+        # Get pool name
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            return flask.jsonify({"message":"ERROR: A pool name must be specified."}), 400
+    
+        # Get placement groups
+        if 'pgs' in flask.request.values:
+            pgs = flask.request.values['pgs']
+        else:
+            # We default to a very small number; DOCUMENT THIS
+            pgs = 128
+    
+        return pvcapi.ceph_pool_add(pool, pgs)
 
-    return pvcapi.ceph_osd_add(node, device, weight)
-
-@api.route('/api/v1/storage/ceph/osd/<osd>/remove', methods=['POST'])
+@api.route('/api/v1/storage/ceph/pool/<pool>', methods=['GET', 'DELETE'])
 @authenticator
-def api_ceph_osd_remove(osd):
-    """
-    Remove a Ceph OSD with ID OSD.
-    """
-    # Verify yes-i-really-mean-it flag
-    if not 'flag_yes_i_really_mean_it' in flask.request.values:
-        return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'flag_yes_i_really_mean_it'."}), 599
+def api_ceph_pool_element(pool):
+    if flask.request.method == 'GET':
+        # Same as specifying /pool?limit=POOL
+        return pvcapi.ceph_pool_list(pool)
 
-    return pvcapi.ceph_osd_remove(osd)
+    if flask.request.method == 'DELETE':
+        # Verify yes-i-really-mean-it flag
+        if not 'yes_i_really_mean_it' in flask.request.values:
+            return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'yes_i_really_mean_it'."}), 400
+    
+        return pvcapi.ceph_pool_remove(pool)
 
-@api.route('/api/v1/storage/ceph/osd/<osd>/in', methods=['POST'])
+@api.route('/api/v1/storage/ceph/volume', methods=['GET', 'POST'])
 @authenticator
-def api_ceph_osd_in(osd):
-    """
-    Set in a Ceph OSD with ID OSD.
-    """
-    return pvcapi.ceph_osd_in(osd)
+def api_ceph_volume_root():
+    if flask.request.method == 'GET':
+        # Get pool limit
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            pool = None
+    
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+    
+        return pvcapi.ceph_volume_list(pool, limit)
 
-@api.route('/api/v1/storage/ceph/osd/<osd>/out', methods=['POST'])
+    if flask.request.method == 'POST':
+        # Get volume name
+        if 'volume' in flask.request.values:
+            volume = flask.request.values['volume']
+        else:
+            return flask.jsonify({"message":"ERROR: A volume name must be specified."}), 400
+    
+        # Get volume pool
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            return flask.jsonify({"message":"ERROR: A pool name must be spcified."}), 400
+    
+        # Get volume size
+        if 'size' in flask.request.values:
+            size = flask.request.values['size']
+        else:
+            return flask.jsonify({"message":"ERROR: A volume size in bytes (or with an M/G/T suffix) must be specified."}), 400
+    
+        return pvcapi.ceph_volume_add(pool, volume, size)
+
+@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
-def api_ceph_osd_out(osd):
-    """
-    Set out a Ceph OSD with ID OSD.
-    """
-    return pvcapi.ceph_osd_out(osd)
+def api_ceph_volume_element(pool, volume):
+    if flask.request.method == 'GET':
+        # Same as specifying /volume?limit=VOLUME
+        return pvcapi.ceph_volume_list(pool, volume)
 
-@api.route('/api/v1/storage/ceph/pool', methods=['GET'])
+    if flask.request.method == 'PUT':
+        # TODO: #44
+        flask.abort(501)
+
+    if flask.request.method == 'DELETE':
+        return pvcapi.ceph_volume_remove(pool, volume)
+
+@api.route('/api/v1/storage/ceph/volume/snapshot', methods=['GET', 'POST'])
 @authenticator
-def api_ceph_pool():
-    """
-    Get the list of RBD pools in the Ceph storage cluster.
-    """
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
+def api_ceph_volume_snapshot_root():
+    if flask.request.method == 'GET':
+        # Get pool limit
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            pool = None
+    
+        # Get volume limit
+        if 'volume' in flask.request.values:
+            volume = flask.request.values['volume']
+        else:
+            volume = None
+    
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+    
+        return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
 
-    return pvcapi.ceph_pool_list(limit)
+    if flask.request.method == 'POST':
+        # Get snapshot name
+        if 'snapshot' in flask.request.values:
+            snapshot = flask.request.values['snapshot']
+        else:
+            return flask.jsonify({"message":"ERROR: A snapshot name must be specified."}), 400
+    
+        # Get volume name
+        if 'volume' in flask.request.values:
+            volume = flask.request.values['volume']
+        else:
+            return flask.jsonify({"message":"ERROR: A volume name must be specified."}), 400
+    
+        # Get volume pool
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            return flask.jsonify({"message":"ERROR: A pool name must be spcified."}), 400
+    
+        return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
-@api.route('/api/v1/storage/ceph/pool/<pool>', methods=['GET'])
+
+@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
-def api_ceph_pool_info(pool):
-    """
-    Get information about an RBD pool with name POOL.
-    """
-    # Same as specifying /pool?limit=POOL
-    return pvcapi.ceph_pool_list(pool)
+def api_ceph_volume_snapshot_element(pool, volume, snapshot):
+    if flask.request.method == 'GET':
+        # Same as specifying /snapshot?limit=VOLUME
+        return pvcapi.ceph_volume_snapshot_list(pool, volume, snapshot)
 
-@api.route('/api/v1/storage/ceph/pool/<pool>/add', methods=['POST'])
-@authenticator
-def api_ceph_pool_add(pool):
-    """
-    Add a Ceph RBD pool with name POOL.
-    """
-    # Get placement groups
-    if 'pgs' in flask.request.values:
-        pgs = flask.request.values['pgs']
-    else:
-        # We default to a very small number; DOCUMENT THIS
-        pgs = 128
+    if flask.request.method == 'PUT':
+        # TODO: #44
+        flask.abort(501)
 
-    return pvcapi.ceph_pool_add(pool, pgs)
-
-@api.route('/api/v1/storage/ceph/pool/<pool>/remove', methods=['POST'])
-@authenticator
-def api_ceph_pool_remove(pool):
-    """
-    Remove a Ceph RBD pool with name POOL.
-    """
-    # Verify yes-i-really-mean-it flag
-    if not 'flag_yes_i_really_mean_it' in flask.request.values:
-        return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'flag_yes_i_really_mean_it'."}), 599
-
-    return pvcapi.ceph_pool_remove(pool)
-
-@api.route('/api/v1/storage/ceph/volume', methods=['GET'])
-@authenticator
-def api_ceph_volume():
-    """
-    Get the list of RBD volumes in the Ceph storage cluster.
-    """
-    # Get pool limit
-    if 'pool' in flask.request.values:
-        pool = flask.request.values['pool']
-    else:
-        pool = None
-
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
-
-    return pvcapi.ceph_volume_list(pool, limit)
-
-@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET'])
-@authenticator
-def api_ceph_volume_info(pool, volume):
-    """
-    Get information about an RBD volume with name VOLUME in RBD pool with name POOL.
-    """
-    # Same as specifying /volume?limit=VOLUME
-    return pvcapi.ceph_osd_list(pool, osd)
-
-@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>/add', methods=['POST'])
-@authenticator
-def api_ceph_volume_add(pool, volume):
-    """
-    Add a Ceph RBD volume with name VOLUME to RBD pool with name POOL.
-    """
-    # Get volume size
-    if 'size' in flask.request.values:
-        size = flask.request.values['size']
-    else:
-        return flask.jsonify({"message":"ERROR: A volume size in bytes (or with an M/G/T suffix) must be specified."}), 510
-
-    return pvcapi.ceph_volume_add(pool, volume, size)
-
-@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>/remove', methods=['POST'])
-@authenticator
-def api_ceph_volume_remove(pool, volume):
-    """
-    Remove a Ceph RBD volume with name VOLUME from RBD pool with name POOL.
-    """
-    return pvcapi.ceph_volume_remove(pool, volume)
-
-@api.route('/api/v1/storage/ceph/volume/snapshot', methods=['GET'])
-@authenticator
-def api_ceph_volume_snapshot():
-    """
-    Get the list of RBD volume snapshots in the Ceph storage cluster.
-    """
-    # Get pool limit
-    if 'pool' in flask.request.values:
-        pool = flask.request.values['pool']
-    else:
-        pool = None
-
-    # Get volume limit
-    if 'volume' in flask.request.values:
-        volume = flask.request.values['volume']
-    else:
-        volume = None
-
-    # Get name limit
-    if 'limit' in flask.request.values:
-        limit = flask.request.values['limit']
-    else:
-        limit = None
-
-    return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
-
-@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET'])
-@authenticator
-def api_ceph_volume_snapshot_info(pool, volume, snapshot):
-    """
-    Get information about a snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
-    """
-    # Same as specifying /snapshot?limit=VOLUME
-    return pvcapi.ceph_snapshot_list(pool, volume, snapshot)
-
-@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/add', methods=['POST'])
-@authenticator
-def api_ceph_volume_snapshot_add(pool, volume, snapshot):
-    """
-    Add a Ceph RBD volume snapshot with name SNAPSHOT of RBD volume with name VOLUME in RBD pool with name POOL.
-    """
-    return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
-
-@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>/remove', methods=['POST'])
-@authenticator
-def api_ceph_volume_snapshot_remove(pool, volume, snapshot):
-    """
-    Remove a Ceph RBD volume snapshot with name SNAPSHOT from RBD volume with name VOLUME in RBD pool with name POOL.
-    """
-    return pvcapi.ceph_volume_snapshot_remove(pool, volume, snapshot)
+    if flask.request.method == 'DELETE':
+        return pvcapi.ceph_volume_snapshot_remove(pool, volume, snapshot)
 
 #
 # Entrypoint
 #
-if config['ssl_enabled']:
-    # Run the WSGI server with SSL
-    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,
-                                       keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+if config['debug']:
+    api.run(config['listen_address'], config['listen_port'])
 else:
-    # Run the ?WSGI server without SSL
-    http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
+    if config['ssl_enabled']:
+        # Run the WSGI server with SSL
+        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,                                           keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+    else:
+        # Run the ?WSGI server without SSL
+        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
 
-print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
-http_server.serve_forever()
+    print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
+    http_server.serve_forever()

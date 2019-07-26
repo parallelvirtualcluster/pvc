@@ -8,6 +8,8 @@
 # Copy this example to /etc/pvc/pvc-api.conf and edit to your needs
 
 pvc:
+    # debug: Enable/disable API debug mode
+    debug: True
     # coordinators: The list of cluster coordinator hostnames
     coordinators:
       - pvc-hv1
