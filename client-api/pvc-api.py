@@ -799,8 +799,19 @@ def api_ceph_volume_element(pool, volume):
         return pvcapi.ceph_volume_list(pool, volume)
 
     if flask.request.method == 'PUT':
-        # TODO: #44
-        flask.abort(501)
+        if 'size' in flask.request.values:
+            size = flask.request.values['size']
+
+        if 'name' in flask.request.values:
+            name = flask.request.values['name']
+
+        if size and not name:
+            return pvcapi.ceph_volume_resize(pool, volume, size) 
+   
+        if name and not size:
+            return pvcapi.ceph_volume_rename(pool, volume, name)
+
+        return flask.jsonify({"message":"ERROR: No name or size specified, or both specified; not changing anything."}), 400
 
     if flask.request.method == 'DELETE':
         return pvcapi.ceph_volume_remove(pool, volume)

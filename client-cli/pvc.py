@@ -1483,6 +1483,48 @@ def ceph_volume_remove(pool, name, yes):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc storage ceph volume resize
+###############################################################################
+@click.command(name='resize', short_help='Resize RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'size'
+)
+def ceph_volume_resize(pool, name, size):
+    """
+    Resize an existing Ceph RBD volume with name NAME in pool POOL to size SIZE [in human units, e.g. 1024M, 20G, etc.].
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.resize_volume(zk_conn, pool, name, size)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc storage ceph volume rename
+###############################################################################
+@click.command(name='rename', short_help'Rename RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'new_name'
+)
+def ceph_volume_rename(pool, name, new_name):
+    """
+    Rename an existing Ceph RBD volume with name NAME in pool POOL to name NEW_NAME.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.rename_volume(zk_conn, pool, name, new_name)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc storage ceph volume list
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volumes.')
@@ -1753,6 +1795,8 @@ ceph_pool.add_command(ceph_pool_remove)
 ceph_pool.add_command(ceph_pool_list)
 
 ceph_volume.add_command(ceph_volume_add)
+ceph_volume.add_command(ceph_volume_resize)
+ceph_volume.add_command(ceph_volume_rename)
 ceph_volume.add_command(ceph_volume_remove)
 ceph_volume.add_command(ceph_volume_list)
 ceph_volume.add_command(ceph_volume_snapshot)

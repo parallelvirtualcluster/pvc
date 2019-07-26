@@ -524,6 +524,8 @@ Return a JSON document containing information about Ceph RBD volume `<volume>` i
 
 Change the configuration of the volume `<volume>`. If `name` is specified, rename the volume to the specified name. If `size` is specified, resize the volume to the specified size (see `POST /api/v1/storage/ceph/volume` for restrictions).
 
+**NOTE:** Only one change operation (either `name` or `size`) may be completed in one operation.
+
 ###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A

@@ -803,6 +803,40 @@ def ceph_volume_add(pool, name, size):
     }
     return flask.jsonify(output), retcode
 
+def ceph_volume_resize(pool, name, size):
+    """
+    Resize an existing Ceph RBD volume in the PVC Ceph storage cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.resize_volume(zk_conn, pool, name, size)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def ceph_volume_rename(pool, name, new_name):
+    """
+    Rename a Ceph RBD volume in the PVC Ceph storage cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.rename_volume(zk_conn, pool, name, new_name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
 def ceph_volume_remove(pool, name):
     """
     Remove a Ceph RBD volume to the PVC Ceph storage cluster.

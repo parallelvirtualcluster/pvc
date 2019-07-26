@@ -966,6 +966,65 @@ def add_volume(zk_conn, pool, name, size):
 
     return success, message
 
+def resize_volume(zk_conn, pool, name, size):
+    # Tell the cluster to resize the volume
+    databytes = format_bytes_fromhuman(size)
+    resize_volume_string = 'volume_resize {},{},{}'.format(pool, name, databytes)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': resize_volume_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-volume_resize':
+                message = 'Resized RBD volume "{}" to size "{}" on pool "{}".'.format(name, size, pool)
+                success = True
+            else:
+                message = 'ERROR: Failed to resize volume; check node logs for details.'
+                success = False
+        except:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
+    return success, message
+
+def rename_volume(zk_conn, pool, name, new_name):
+    # Tell the cluster to rename
+    rename_volume_string = 'volume_rename {},{},{}'.format(pool, name, new_name)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': rename_volume_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-volume_add':
+                message = 'Created new RBD volume "{}" of size "{}" on pool "{}".'.format(name, size, pool)
+                success = True
+            else:
+                message = 'ERROR: Failed to create new volume; check node logs for details.'
+                success = False
+        except:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
+    return success, message
+
 def remove_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool {}.'.format(name, pool)
