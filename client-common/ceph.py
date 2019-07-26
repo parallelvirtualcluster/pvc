@@ -1297,11 +1297,11 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
         if limit:
             try:
                 if re.match(limit, snapshot):
-                    snapshot_list.append(getVolumeInformation(zk_conn, pool_name, volume_name, snapshot_name))
+                    snapshot_list.append(snapshot)
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
-            snapshot_list.append(getVolumeInformation(zk_conn, pool_name, volume_name, snapshot_name))
+            snapshot_list.append(snapshot)
 
     return True, snapshot_list
 
