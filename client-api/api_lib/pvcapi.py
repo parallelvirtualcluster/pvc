@@ -567,10 +567,10 @@ def ceph_osd_state(osd):
     else:
         retcode = 400
 
-    in_state = retdata['stats']['in']
-    up_state = retdata['stats']['up']
+    in_state = retdata[0]['stats']['in']
+    up_state = retdata[0]['stats']['up']
 
-    return flask.jsonify([{ "id": osd, "in": in_state, "up": up_state }]), retcode
+    return flask.jsonify({ "id": osd, "in": in_state, "up": up_state }), retcode
 
 def ceph_osd_add(node, device, weight):
     """
