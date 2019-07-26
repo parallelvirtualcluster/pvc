@@ -1007,11 +1007,11 @@ def rename_volume(zk_conn, pool, name, new_name):
     with lock:
         try:
             result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
-            if result == 'success-volume_add':
-                message = 'Created new RBD volume "{}" of size "{}" on pool "{}".'.format(name, size, pool)
+            if result == 'success-volume_rename':
+                message = 'Renamed RBD volume "{}" to "{}" on pool "{}".'.format(name, new_name, pool)
                 success = True
             else:
-                message = 'ERROR: Failed to create new volume; check node logs for details.'
+                message = 'ERROR: Failed to rename volume {} to {}; check node logs for details.'.format(name, new_name)
                 success = False
         except:
             message = 'ERROR: Command ignored by node.'
