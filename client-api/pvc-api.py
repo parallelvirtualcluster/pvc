@@ -622,12 +622,9 @@ def api_ceph_status():
 def api_ceph_radosdf():
     return pvcapi.ceph_radosdf()
 
-@api.route('/api/v1/storage/ceph/cluster-option', methods=['GET', 'POST'])
+@api.route('/api/v1/storage/ceph/cluster-option', methods=['POST'])
 @authenticator
 def api_ceph_cluster_option():
-    if flask.request.method == 'GET':
-        pass
-
     if flask.request.method == 'POST':
         # Get action
         if 'action' in flask.request.values:
@@ -698,7 +695,7 @@ def api_ceph_osd_element(osd):
 @authenticator
 def api_ceph_osd_state(osd):
     if flask.request.method == 'GET':
-        pass
+        return pvcapi.ceph_osd_state(osd)
 
     if flask.request.method == 'POST':
         if 'state' in flask.request.values:
@@ -794,12 +791,16 @@ def api_ceph_volume_root():
     
         return pvcapi.ceph_volume_add(pool, volume, size)
 
-@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET', 'DELETE'])
+@api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
 def api_ceph_volume_element(pool, volume):
     if flask.request.method == 'GET':
         # Same as specifying /volume?limit=VOLUME
         return pvcapi.ceph_volume_list(pool, volume)
+
+    if flask.request.method == 'PUT':
+        # TODO: #44
+        flask.abort(501)
 
     if flask.request.method == 'DELETE':
         return pvcapi.ceph_volume_remove(pool, volume)
@@ -850,12 +851,16 @@ def api_ceph_volume_snapshot_root():
         return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
 
-@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET', 'DELETE'])
+@api.route('/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
 def api_ceph_volume_snapshot_element(pool, volume, snapshot):
     if flask.request.method == 'GET':
         # Same as specifying /snapshot?limit=VOLUME
         return pvcapi.ceph_volume_snapshot_list(pool, volume, snapshot)
+
+    if flask.request.method == 'PUT':
+        # TODO: #44
+        flask.abort(501)
 
     if flask.request.method == 'DELETE':
         return pvcapi.ceph_volume_snapshot_remove(pool, volume, snapshot)

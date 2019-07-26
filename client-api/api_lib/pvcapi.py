@@ -41,7 +41,7 @@ def node_list(limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -55,7 +55,7 @@ def node_secondary(node):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -72,7 +72,7 @@ def node_primary(node):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -89,7 +89,7 @@ def node_flush(node):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -106,7 +106,7 @@ def node_ready(node):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -139,7 +139,7 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
                 'message': 'VM not found.'
             }
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -160,7 +160,7 @@ def vm_define(name, xml, node, selector):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -177,7 +177,7 @@ def vm_modify(name, restart, xml):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -194,7 +194,7 @@ def vm_undefine(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -211,7 +211,7 @@ def vm_remove(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -228,7 +228,7 @@ def vm_start(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -245,7 +245,7 @@ def vm_restart(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -262,7 +262,7 @@ def vm_shutdown(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -279,7 +279,7 @@ def vm_stop(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -296,7 +296,7 @@ def vm_move(name, node, selector):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -313,7 +313,7 @@ def vm_migrate(name, node, selector, flag_force):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -330,7 +330,7 @@ def vm_unmigrate(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -350,7 +350,7 @@ def net_list(limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -368,7 +368,7 @@ def net_add(vni, description, nettype, domain,
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -390,7 +390,7 @@ def net_modify(vni, description, domain,
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -407,7 +407,7 @@ def net_remove(network):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -424,7 +424,7 @@ def net_dhcp_list(network, limit=None, static=False):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -438,7 +438,7 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -455,7 +455,7 @@ def net_dhcp_remove(network, macaddress):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -472,7 +472,7 @@ def net_acl_list(network, limit=None, direction=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -489,7 +489,7 @@ def net_acl_add(network, direction, description, rule, order):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -506,7 +506,7 @@ def net_acl_remove(network, direction, description):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -526,7 +526,7 @@ def ceph_status():
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -540,7 +540,7 @@ def ceph_radosdf():
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -554,10 +554,23 @@ def ceph_osd_list(limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
+
+def ceph_osd_state(osd):
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.get_list_osd(zk_conn, osd)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    in_state = retdata['stats']['in']
+    up_state = retdata['stats']['up']
+
+    return flask.jsonify([{ "id": osd, "in": in_state, "up": up_state }]), retcode
 
 def ceph_osd_add(node, device, weight):
     """
@@ -568,7 +581,7 @@ def ceph_osd_add(node, device, weight):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -585,7 +598,7 @@ def ceph_osd_remove(osd_id):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -602,7 +615,7 @@ def ceph_osd_in(osd_id):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -619,7 +632,7 @@ def ceph_osd_out(osd_id):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -636,7 +649,7 @@ def ceph_osd_set(option):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -653,7 +666,7 @@ def ceph_osd_unset(option):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -670,7 +683,7 @@ def ceph_pool_list(limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -684,7 +697,7 @@ def ceph_pool_add(name, pgs):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -701,7 +714,7 @@ def ceph_pool_remove(name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -718,7 +731,7 @@ def ceph_volume_list(pool=None, limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -732,7 +745,7 @@ def ceph_volume_add(pool, name, size):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -749,7 +762,7 @@ def ceph_volume_remove(pool, name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -766,7 +779,7 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
@@ -781,7 +794,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
@@ -798,7 +811,7 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     if retflag:
         retcode = 200
     else:
-        retcode = 510
+        retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {

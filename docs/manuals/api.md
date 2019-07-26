@@ -386,6 +386,8 @@ Return a JSON document containing information about the current Ceph cluster sta
 
 #### `/api/v1/storage/ceph/status`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
@@ -393,13 +395,17 @@ This endpoint is an alias for `/api/v1/storage/ceph`.
 
 #### `/api/v1/storage/ceph/df`
  * Methods: `GET`
+
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Return a JSON document containing information about the current Ceph cluster utilization. The JSON element `ceph_data` contains the raw output of a `rados df` command.
 
 #### `/api/v1/storage/ceph/cluster-option`
- * Methods: `GET`, `POST`
+ * Methods: `POST`
+
+###### `POST`
  * Mandatory values: `action`, `option`
  * Optional values: N/A
 
@@ -504,13 +510,19 @@ Return a JSON document containing information about all Ceph RBD volumes in the 
 Add a new Ceph RBD volume `<volume>` to Ceph RBD pool `<pool>`. `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`.
 
 #### `/api/v1/storage/ceph/volume/<pool>/<volume>`
- * Methods: `GET`, `DELETE`
+ * Methods: `GET`, `PUT`, `DELETE`
 
 ###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Return a JSON document containing information about Ceph RBD volume `<volume>` in Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&limit=<volume>` without fuzzy regex matching.
+
+###### `PUT`
+ * Mandatory values: N/A
+ * Optional values: `name`, `size`
+
+Change the configuration of the volume `<volume>`. If `name` is specified, rename the volume to the specified name. If `size` is specified, resize the volume to the specified size (see `POST /api/v1/storage/ceph/volume` for restrictions).
 
 ###### `DELETE`
  * Mandatory values: N/A
