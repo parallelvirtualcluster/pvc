@@ -156,7 +156,7 @@ def get_radosdf(zk_conn):
         'ceph_data': ceph_df
     }
     return True, status_data
-    
+
 def format_raw_output(status_data):
     click.echo('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
     click.echo(status_data['ceph_data'])
@@ -211,7 +211,7 @@ def add_osd(zk_conn, node, device, weight):
         return False, 'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(device, node, block_osd)
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = 'osd_add {},{},{}'.format(node, device, weight) 
+    add_osd_string = 'osd_add {},{},{}'.format(node, device, weight)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -640,7 +640,7 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
                 osd_rddata=osd_information['stats']['rd_data']
             )
         )
-  
+
     click.echo('\n'.join(sorted(osd_list_output)))
 
 
@@ -660,7 +660,7 @@ def getPoolInformation(zk_conn, pool):
 
 def add_pool(zk_conn, name, pgs):
     # Tell the cluster to create a new pool
-    add_pool_string = 'pool_add {},{}'.format(name, pgs) 
+    add_pool_string = 'pool_add {},{}'.format(name, pgs)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_pool_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -692,7 +692,7 @@ def remove_pool(zk_conn, name):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
 
     # Tell the cluster to create a new pool
-    remove_pool_string = 'pool_remove {}'.format(name) 
+    remove_pool_string = 'pool_remove {}'.format(name)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_pool_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -902,7 +902,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
                 pool_read_data=pool_information['stats']['read_bytes']
             )
         )
-   
+
     click.echo('\n'.join(sorted(pool_list_output)))
 
 
@@ -1030,7 +1030,7 @@ def remove_volume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool {}.'.format(name, pool)
 
     # Tell the cluster to create a new volume
-    remove_volume_string = 'volume_remove {},{}'.format(pool, name) 
+    remove_volume_string = 'volume_remove {},{}'.format(pool, name)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -1070,7 +1070,7 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
             limit = '.*' + limit
         if not re.match('.*\$', limit):
             limit = limit + '.*'
-    
+
     for volume in full_volume_list:
         pool_name, volume_name = volume.split('/')
         if limit:
@@ -1188,7 +1188,7 @@ def format_list_volume(volume_list):
                 volume_features=','.join(volume_information['stats']['features']),
             )
         )
-   
+
     click.echo('\n'.join(sorted(volume_list_output)))
 
 
@@ -1215,7 +1215,7 @@ def getCephSnapshots(zk_conn, pool, volume):
 
 def add_snapshot(zk_conn, pool, volume, name):
     # Tell the cluster to create a new snapshot
-    add_snapshot_string = 'snapshot_add {},{},{}'.format(pool, volume, name) 
+    add_snapshot_string = 'snapshot_add {},{},{}'.format(pool, volume, name)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': add_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -1247,7 +1247,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
         return False, 'ERROR: No snapshot with name "{}" is present of volume {} on pool {}.'.format(name, volume, pool)
 
     # Tell the cluster to create a new snapshot
-    remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume, name) 
+    remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume, name)
     zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -1366,5 +1366,5 @@ def format_list_snapshot(snapshot_list):
                 snapshot_pool=snapshot_pool,
             )
         )
-   
+
     click.echo('\n'.join(sorted(snapshot_list_output)))

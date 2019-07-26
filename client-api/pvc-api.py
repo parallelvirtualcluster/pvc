@@ -719,7 +719,7 @@ def api_ceph_pool_root():
             limit = flask.request.values['limit']
         else:
             limit = None
-    
+
         return pvcapi.ceph_pool_list(limit)
 
     if flask.request.method == 'POST':
@@ -728,14 +728,14 @@ def api_ceph_pool_root():
             pool = flask.request.values['pool']
         else:
             return flask.jsonify({"message":"ERROR: A pool name must be specified."}), 400
-    
+
         # Get placement groups
         if 'pgs' in flask.request.values:
             pgs = flask.request.values['pgs']
         else:
             # We default to a very small number; DOCUMENT THIS
             pgs = 128
-    
+
         return pvcapi.ceph_pool_add(pool, pgs)
 
 @api.route('/api/v1/storage/ceph/pool/<pool>', methods=['GET', 'DELETE'])
@@ -749,7 +749,7 @@ def api_ceph_pool_element(pool):
         # Verify yes-i-really-mean-it flag
         if not 'yes_i_really_mean_it' in flask.request.values:
             return flask.jsonify({"message":"ERROR: This command can have unintended consequences and should not be automated; if you're sure you know what you're doing, resend with the argument 'yes_i_really_mean_it'."}), 400
-    
+
         return pvcapi.ceph_pool_remove(pool)
 
 @api.route('/api/v1/storage/ceph/volume', methods=['GET', 'POST'])
@@ -761,13 +761,13 @@ def api_ceph_volume_root():
             pool = flask.request.values['pool']
         else:
             pool = None
-    
+
         # Get name limit
         if 'limit' in flask.request.values:
             limit = flask.request.values['limit']
         else:
             limit = None
-    
+
         return pvcapi.ceph_volume_list(pool, limit)
 
     if flask.request.method == 'POST':
@@ -776,19 +776,19 @@ def api_ceph_volume_root():
             volume = flask.request.values['volume']
         else:
             return flask.jsonify({"message":"ERROR: A volume name must be specified."}), 400
-    
+
         # Get volume pool
         if 'pool' in flask.request.values:
             pool = flask.request.values['pool']
         else:
             return flask.jsonify({"message":"ERROR: A pool name must be spcified."}), 400
-    
+
         # Get volume size
         if 'size' in flask.request.values:
             size = flask.request.values['size']
         else:
             return flask.jsonify({"message":"ERROR: A volume size in bytes (or with an M/G/T suffix) must be specified."}), 400
-    
+
         return pvcapi.ceph_volume_add(pool, volume, size)
 
 @api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET', 'PUT', 'DELETE'])
@@ -806,8 +806,8 @@ def api_ceph_volume_element(pool, volume):
             name = flask.request.values['name']
 
         if size and not name:
-            return pvcapi.ceph_volume_resize(pool, volume, size) 
-   
+            return pvcapi.ceph_volume_resize(pool, volume, size)
+
         if name and not size:
             return pvcapi.ceph_volume_rename(pool, volume, name)
 
@@ -825,19 +825,19 @@ def api_ceph_volume_snapshot_root():
             pool = flask.request.values['pool']
         else:
             pool = None
-    
+
         # Get volume limit
         if 'volume' in flask.request.values:
             volume = flask.request.values['volume']
         else:
             volume = None
-    
+
         # Get name limit
         if 'limit' in flask.request.values:
             limit = flask.request.values['limit']
         else:
             limit = None
-    
+
         return pvcapi.ceph_volume_snapshot_list(pool, volume, limit)
 
     if flask.request.method == 'POST':
@@ -846,19 +846,19 @@ def api_ceph_volume_snapshot_root():
             snapshot = flask.request.values['snapshot']
         else:
             return flask.jsonify({"message":"ERROR: A snapshot name must be specified."}), 400
-    
+
         # Get volume name
         if 'volume' in flask.request.values:
             volume = flask.request.values['volume']
         else:
             return flask.jsonify({"message":"ERROR: A volume name must be specified."}), 400
-    
+
         # Get volume pool
         if 'pool' in flask.request.values:
             pool = flask.request.values['pool']
         else:
             return flask.jsonify({"message":"ERROR: A pool name must be spcified."}), 400
-    
+
         return pvcapi.ceph_volume_snapshot_add(pool, volume, snapshot)
 
 
