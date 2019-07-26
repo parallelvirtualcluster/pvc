@@ -39,7 +39,13 @@ def node_list(limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zk_conn, limit)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Node not found.'
+            }
     else:
         retcode = 400
 
@@ -51,7 +57,7 @@ def node_secondary(node):
     Take NODE out of primary router mode.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
-    retflag, retmsg = pvc_node.secondary_node(zk_conn, node)
+    retflag, retdata = pvc_node.secondary_node(zk_conn, node)
     if retflag:
         retcode = 200
     else:
@@ -59,7 +65,7 @@ def node_secondary(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -68,7 +74,7 @@ def node_primary(node):
     Set NODE to primary router mode.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
-    retflag, retmsg = pvc_node.primary_node(zk_conn, node)
+    retflag, retdata = pvc_node.primary_node(zk_conn, node)
     if retflag:
         retcode = 200
     else:
@@ -76,7 +82,7 @@ def node_primary(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -85,7 +91,7 @@ def node_flush(node):
     Flush NODE of running VMs.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_node.flush_node(zk_conn, node, False)
+    retflag, retdata = pvc_node.flush_node(zk_conn, node, False)
     if retflag:
         retcode = 200
     else:
@@ -93,7 +99,7 @@ def node_flush(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -102,7 +108,7 @@ def node_ready(node):
     Restore NODE to active service.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_node.ready_node(zk_conn, node)
+    retflag, retdata = pvc_node.ready_node(zk_conn, node)
     if retflag:
         retcode = 200
     else:
@@ -110,7 +116,7 @@ def node_ready(node):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -122,7 +128,8 @@ def vm_is_migrated(vm):
     Determine if a VM is migrated or not
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    return pvc_vm.is_migrated(zk_conn, vm)
+    retdata = pvc_vm.is_migrated(zk_conn, vm)
+    return retdata
 
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
@@ -156,7 +163,7 @@ def vm_define(name, xml, node, selector):
     Define a VM from Libvirt XML in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.define_vm(zk_conn, xml, node, selector)
+    retflag, retdata = pvc_vm.define_vm(zk_conn, xml, node, selector)
     if retflag:
         retcode = 200
     else:
@@ -164,7 +171,7 @@ def vm_define(name, xml, node, selector):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -173,7 +180,7 @@ def vm_modify(name, restart, xml):
     Modify a VM Libvirt XML in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.modify_vm(zk_conn, name, restart, xml)
+    retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, xml)
     if retflag:
         retcode = 200
     else:
@@ -181,7 +188,7 @@ def vm_modify(name, restart, xml):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -190,7 +197,7 @@ def vm_undefine(name):
     Undefine a VM from the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.undefine_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.undefine_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -198,7 +205,7 @@ def vm_undefine(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -207,7 +214,7 @@ def vm_remove(name):
     Remove a VM from the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.remove_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.remove_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -215,7 +222,7 @@ def vm_remove(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -224,7 +231,7 @@ def vm_start(name):
     Start a VM in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.start_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.start_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -232,7 +239,7 @@ def vm_start(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -241,7 +248,7 @@ def vm_restart(name):
     Restart a VM in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.restart_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.restart_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -249,7 +256,7 @@ def vm_restart(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -258,7 +265,7 @@ def vm_shutdown(name):
     Shutdown a VM in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.shutdown_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.shutdown_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -266,7 +273,7 @@ def vm_shutdown(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -275,7 +282,7 @@ def vm_stop(name):
     Forcibly stop a VM in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.stop_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.stop_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -283,7 +290,7 @@ def vm_stop(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -292,7 +299,7 @@ def vm_move(name, node, selector):
     Move a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.move_vm(zk_conn, name, node, selector)
+    retflag, retdata = pvc_vm.move_vm(zk_conn, name, node, selector)
     if retflag:
         retcode = 200
     else:
@@ -300,7 +307,7 @@ def vm_move(name, node, selector):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -309,7 +316,7 @@ def vm_migrate(name, node, selector, flag_force):
     Temporarily migrate a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.migrate_vm(zk_conn, name, node, selector, flag_force)
+    retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, selector, flag_force)
     if retflag:
         retcode = 200
     else:
@@ -317,7 +324,7 @@ def vm_migrate(name, node, selector, flag_force):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -326,7 +333,7 @@ def vm_unmigrate(name):
     Unmigrate a migrated VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_vm.unmigrate_vm(zk_conn, name)
+    retflag, retdata = pvc_vm.unmigrate_vm(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -334,7 +341,7 @@ def vm_unmigrate(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -348,7 +355,13 @@ def net_list(limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list(zk_conn, limit)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Network not found.'
+            }
     else:
         retcode = 400
 
@@ -362,7 +375,7 @@ def net_add(vni, description, nettype, domain,
     Add a virtual client network to the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
+    retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     if retflag:
@@ -372,7 +385,7 @@ def net_add(vni, description, nettype, domain,
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -384,7 +397,7 @@ def net_modify(vni, description, domain,
     Modify a virtual client network in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.modify_network(zk_conn, vni, description, domain,
+    retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     if retflag:
@@ -394,7 +407,7 @@ def net_modify(vni, description, domain,
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -403,7 +416,7 @@ def net_remove(network):
     Remove a virtual client network from the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.remove_network(zk_conn, network)
+    retflag, retdata = pvc_network.remove_network(zk_conn, network)
     if retflag:
         retcode = 200
     else:
@@ -411,7 +424,7 @@ def net_remove(network):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -422,7 +435,13 @@ def net_dhcp_list(network, limit=None, static=False):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list_dhcp(zk_conn, network, limit, static)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Lease not found.'
+            }
     else:
         retcode = 400
 
@@ -434,7 +453,7 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     Add a static DHCP lease to a virtual client network.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname)
+    retflag, retdata = pvc_network.add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname)
     if retflag:
         retcode = 200
     else:
@@ -442,7 +461,7 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -451,7 +470,7 @@ def net_dhcp_remove(network, macaddress):
     Remove a static DHCP lease from a virtual client network.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, network, macaddress)
+    retflag, retdata = pvc_network.remove_dhcp_reservation(zk_conn, network, macaddress)
     if retflag:
         retcode = 200
     else:
@@ -459,7 +478,7 @@ def net_dhcp_remove(network, macaddress):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -468,15 +487,21 @@ def net_acl_list(network, limit=None, direction=None):
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.get_list_acl(zk_conn, network, limit, direction)
+    retflag, retdata = pvc_network.get_list_acl(zk_conn, network, limit, direction)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'ACL not found.'
+            }
     else:
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -485,7 +510,7 @@ def net_acl_add(network, direction, description, rule, order):
     Add an ACL to a virtual client network.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.add_acl(zk_conn, network, direction, description, rule, order)
+    retflag, retdata = pvc_network.add_acl(zk_conn, network, direction, description, rule, order)
     if retflag:
         retcode = 200
     else:
@@ -493,7 +518,7 @@ def net_acl_add(network, direction, description, rule, order):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -502,7 +527,7 @@ def net_acl_remove(network, direction, description):
     Remove an ACL from a virtual client network.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.remove_acl(zk_conn, network, description, direction)
+    retflag, retdata = pvc_network.remove_acl(zk_conn, network, description, direction)
     if retflag:
         retcode = 200
     else:
@@ -510,7 +535,7 @@ def net_acl_remove(network, direction, description):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -551,19 +576,32 @@ def ceph_osd_list(limit=None):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zk_conn, limit)
+    pvc_common.stopZKConnection(zk_conn)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'OSD not found.'
+            }
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
 def ceph_osd_state(osd):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zk_conn, osd)
+    pvc_common.stopZKConnection(zk_conn)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'OSD not found.'
+            }
     else:
         retcode = 400
 
@@ -577,15 +615,15 @@ def ceph_osd_add(node, device, weight):
     Add a Ceph OSD to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.add_osd(zk_conn, node, device, weight)
+    retflag, retdata = pvc_ceph.add_osd(zk_conn, node, device, weight)
+    pvc_common.stopZKConnection(zk_conn)
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -594,7 +632,7 @@ def ceph_osd_remove(osd_id):
     Remove a Ceph OSD from the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.remove_osd(zk_conn, osd_id)
+    retflag, retdata = pvc_ceph.remove_osd(zk_conn, osd_id)
     if retflag:
         retcode = 200
     else:
@@ -602,7 +640,7 @@ def ceph_osd_remove(osd_id):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -611,7 +649,7 @@ def ceph_osd_in(osd_id):
     Set in a Ceph OSD in the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.in_osd(zk_conn, osd_id)
+    retflag, retdata = pvc_ceph.in_osd(zk_conn, osd_id)
     if retflag:
         retcode = 200
     else:
@@ -619,7 +657,7 @@ def ceph_osd_in(osd_id):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -628,7 +666,7 @@ def ceph_osd_out(osd_id):
     Set out a Ceph OSD in the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.out_osd(zk_conn, osd_id)
+    retflag, retdata = pvc_ceph.out_osd(zk_conn, osd_id)
     if retflag:
         retcode = 200
     else:
@@ -636,7 +674,7 @@ def ceph_osd_out(osd_id):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -645,7 +683,7 @@ def ceph_osd_set(option):
     Set options on a Ceph OSD in the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.set_osd(zk_conn, option)
+    retflag, retdata = pvc_ceph.set_osd(zk_conn, option)
     if retflag:
         retcode = 200
     else:
@@ -653,7 +691,7 @@ def ceph_osd_set(option):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -662,7 +700,7 @@ def ceph_osd_unset(option):
     Unset options on a Ceph OSD in the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.unset_osd(zk_conn, option)
+    retflag, retdata = pvc_ceph.unset_osd(zk_conn, option)
     if retflag:
         retcode = 200
     else:
@@ -670,7 +708,7 @@ def ceph_osd_unset(option):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -681,7 +719,13 @@ def ceph_pool_list(limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_pool(zk_conn, limit)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Pool not found.'
+            }
     else:
         retcode = 400
 
@@ -693,7 +737,7 @@ def ceph_pool_add(name, pgs):
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs)
+    retflag, retdata = pvc_ceph.add_pool(zk_conn, name, pgs)
     if retflag:
         retcode = 200
     else:
@@ -701,7 +745,7 @@ def ceph_pool_add(name, pgs):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -710,7 +754,7 @@ def ceph_pool_remove(name):
     Remove a Ceph RBD pool to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.remove_pool(zk_conn, name)
+    retflag, retdata = pvc_ceph.remove_pool(zk_conn, name)
     if retflag:
         retcode = 200
     else:
@@ -718,7 +762,7 @@ def ceph_pool_remove(name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -729,7 +773,13 @@ def ceph_volume_list(pool=None, limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Volume not found.'
+            }
     else:
         retcode = 400
 
@@ -741,7 +791,7 @@ def ceph_volume_add(pool, name, size):
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.add_volume(zk_conn, pool, name, size)
+    retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, name, size)
     if retflag:
         retcode = 200
     else:
@@ -749,7 +799,7 @@ def ceph_volume_add(pool, name, size):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -758,7 +808,7 @@ def ceph_volume_remove(pool, name):
     Remove a Ceph RBD volume to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
+    retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, name)
     if retflag:
         retcode = 200
     else:
@@ -766,7 +816,7 @@ def ceph_volume_remove(pool, name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -777,7 +827,13 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
     if retflag:
-        retcode = 200
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Volume snapshot not found.'
+            }
     else:
         retcode = 400
 
@@ -790,7 +846,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
     """
     return '', 200
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
+    retflag, retdata = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
     if retflag:
         retcode = 200
     else:
@@ -798,7 +854,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
@@ -807,7 +863,7 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     Remove a Ceph RBD volume snapshot from the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
+    retflag, retdata = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
     if retflag:
         retcode = 200
     else:
@@ -815,7 +871,7 @@ def ceph_volume_snapshot_remove(pool, volume, name):
 
     pvc_common.stopZKConnection(zk_conn)
     output = {
-        'message': retmsg.replace('\"', '\'')
+        'message': retdata.replace('\"', '\'')
     }
     return flask.jsonify(output), retcode
 
