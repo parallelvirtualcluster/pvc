@@ -399,7 +399,7 @@ This endpoint is an alias for `/api/v1/storage/ceph`.
 Return a JSON document containing information about the current Ceph cluster utilization. The JSON element `ceph_data` contains the raw output of a `rados df` command.
 
 #### `/api/v1/storage/ceph/cluster-option`
- * Methods: `POST`
+ * Methods: `GET`, `POST`
  * Mandatory values: `action`, `option`
  * Optional values: N/A
 
@@ -418,7 +418,7 @@ Return a JSON document containing information about all Ceph OSDs in the storage
  * Mandatory values: `node`, `device`, `weight`
  * Optional values: N/A
 
-Add a new Ceph OSD to PVC node with name `<node>`. `device` must be a valid block device on the specified `<node>`, e.g. `/dev/sdb`. `weight` must be a valid Ceph OSD weight, usually `1.0` if all OSD disks are the same size.
+Add a new Ceph OSD to PVC node `<node>`. `device` must be a valid block device on the specified `<node>`, e.g. `/dev/sdb`. `weight` must be a valid Ceph OSD weight, usually `1.0` if all OSD disks are the same size.
 
 #### `/api/v1/storage/ceph/osd/<osd>`
  * Methods: `GET`, `DELETE`
@@ -467,7 +467,7 @@ Return a JSON document containing information about all Ceph RBD pools in the st
  * Mandatory values: `pool`, `pgs`
  * Optional values: N/A
 
-Add a new Ceph RBD pool with name `<pool>` to the storage cluster. `pgs` must be a valid number of Placement Groups for the pool, taking into account the number of OSDs and the replication of the pool (`copies=3`). `256` is a safe and sane number of PGs for 3 nodes and 2 disks per node. This value can be grown later via `ceph` commands as required.
+Add a new Ceph RBD pool `<pool>` to the storage cluster. `pgs` must be a valid number of Placement Groups for the pool, taking into account the number of OSDs and the replication of the pool (`copies=3`). `256` is a safe and sane number of PGs for 3 nodes and 2 disks per node. This value can be grown later via `ceph` commands as required.
 
 #### `/api/v1/storage/ceph/pool/<pool>`
  * Methods: `GET`, `DELETE`
@@ -476,13 +476,13 @@ Add a new Ceph RBD pool with name `<pool>` to the storage cluster. `pgs` must be
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/pool?limit=<pool>` without fuzzy regex matching.
+Return a JSON document containing information about Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/pool?limit=<pool>` without fuzzy regex matching.
 
 ###### `DELETE`
  * Mandatory values: `yes_i_really_mean_it`
  * Optional values: N/A
 
-Remove a Ceph RBD pool with name `<pool>` from the storage cluster.
+Remove a Ceph RBD pool `<pool>` from the storage cluster.
 
 **NOTE:** This is a command with potentially dangerous unintended consequences that should not be scripted. To acknowledge the danger, the `yes_i_really_mean_it` must be set or the endpoint will return a failure.
 
@@ -495,13 +495,13 @@ Remove a Ceph RBD pool with name `<pool>` from the storage cluster.
  * Mandatory values: N/A
  * Optional values: `pool`, `limit`
 
-Return a JSON document containing information about all Ceph RBD volumes in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool with name `pool`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
+Return a JSON document containing information about all Ceph RBD volumes in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool `pool`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
 
 ###### `POST`
- * Mandatory values: `pool`, `size`
+ * Mandatory values: `volume`, `pool`, `size`
  * Optional values: N/A
 
-Add a new Ceph RBD volume with name `<volume>` to Ceph RBD pool with name `<pool>`. `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`.
+Add a new Ceph RBD volume `<volume>` to Ceph RBD pool `<pool>`. `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`.
 
 #### `/api/v1/storage/ceph/volume/<pool>/<volume>`
  * Methods: `GET`, `DELETE`
@@ -510,13 +510,13 @@ Add a new Ceph RBD volume with name `<volume>` to Ceph RBD pool with name `<pool
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD volume with name `<volume>` in Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&limit=<volume>` without fuzzy regex matching.
+Return a JSON document containing information about Ceph RBD volume `<volume>` in Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&limit=<volume>` without fuzzy regex matching.
 
 ###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove a Ceph RBD volume with name `<volume>` from Ceph RBD pool `<pool>`.
+Remove a Ceph RBD volume `<volume>` from Ceph RBD pool `<pool>`.
 
 #### `/api/v1/storage/ceph/volume/snapshot`
  * Methods: `GET`, `POST`
@@ -525,15 +525,15 @@ Remove a Ceph RBD volume with name `<volume>` from Ceph RBD pool `<pool>`.
  * Mandatory values: N/A
  * Optional values: `pool`, `volume`, `limit`
 
-Return a JSON document containing information about all Ceph RBD volume snapshots in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volume snapshots in Ceph RBD pool with name `pool`. If `volume` is specified, return a JSON document containing information about all Ceph RBD volume snapshots of Ceph RBD volume with name `volume`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
+Return a JSON document containing information about all Ceph RBD volume snapshots in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volume snapshots in Ceph RBD pool `pool`. If `volume` is specified, return a JSON document containing information about all Ceph RBD volume snapshots of Ceph RBD volume `volume`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volume snapshots with names matching `limit` as fuzzy regex.
 
 The various limit options can be combined freely, e.g. one can specify a `volume` without `pool`, which would match all snapshots of the named volume(s) regardless of pool, or a `pool` and `limit` without a `volume`, which would match all named snapshots on any volume in `pool`.
 
 ###### `POST`
- * Mandatory values: `snapshot`, `pool`, `volume`
+ * Mandatory values: `snapshot`, `volume`, `pool`
  * Optional values: N/A
 
-Add a new Ceph RBD volume snapshot with name `<snapshot>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
+Add a new Ceph RBD volume snapshot `snapshot` of Ceph RBD volume `volume` on Ceph RBD pool `pool`.
 
 #### `/api/v1/storage/ceph/volume/snapshot/<pool>/<volume>/<snapshot>`
  * Methods: `GET`, `DELETE`
@@ -542,10 +542,10 @@ Add a new Ceph RBD volume snapshot with name `<snapshot>` of Ceph RBD volume wit
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about Ceph RBD volume snapshot with name `<snapshot>` of Ceph RBD volume with name `<volume>` in Ceph RBD pool with name `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&volume=<volume>&limit=<snapshot>` without fuzzy regex matching.
+Return a JSON document containing information about Ceph RBD volume snapshot `<snapshot>` of Ceph RBD volume `<volume>` in Ceph RBD pool `<pool>`. The output is identical to `/api/v1/storage/ceph/volume?pool=<pool>&volume=<volume>&limit=<snapshot>` without fuzzy regex matching.
 
 ###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove a Ceph RBD volume snapshot with name `<snapshot>` of Ceph RBD volume with name `<volume>` on Ceph RBD pool with name `<pool>`.
+Remove a Ceph RBD volume snapshot `<snapshot>` of Ceph RBD volume `<volume>` on Ceph RBD pool `<pool>`.
