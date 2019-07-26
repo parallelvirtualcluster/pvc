@@ -81,6 +81,53 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+# Key rename function
+def renamekey(zk_conn, kv):
+    # Start up a transaction
+    zk_transaction = zk_conn.transaction()
+
+    # Proceed one KV pair at a time
+    for key in sorted(kv):
+        old_name = key
+        new_name = kv[key]
+
+        old_data = zk_conn.get(old_name)
+
+        # Find the children of old_name recursively
+        child_keys = list()
+        def get_children(key):
+            children = zk_conn.get_children(key)
+            if not children:
+                child_keys.append(key)
+                return
+            else:
+                for ckey in children:
+                    get_children(key)
+        get_children(old_name)
+
+        # Get the data out of each of the child keys
+        child_data = dict()
+        for ckey in child_keys:
+            child_data[ckey] = zk_conn.get(ckey)
+
+        # Create the new parent key
+        zk_transaction.create(new_name, old_data)
+
+        # For each child key, create the key and add the data
+        for ckey in child_keys:
+            new_ckey_name = ckey.replace(old_name, new_name)
+            zk_transaction.create(new_ckey_name, child_data[ckey])
+
+        # Remove recursively the old key
+        zk_transaction.delete(old_name, recursive=True)
+
+    # Commit the transaction
+    try:
+        zk_transaction.commit()
+        return True
+    except Exception:
+        return False
+
 # Write lock function
 def writelock(zk_conn, key):
     lock_id = str(uuid.uuid1())

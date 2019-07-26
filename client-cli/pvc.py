@@ -1506,7 +1506,7 @@ def ceph_volume_resize(pool, name, size):
 ###############################################################################
 # pvc storage ceph volume rename
 ###############################################################################
-@click.command(name='rename', short_help'Rename RBD volume.')
+@click.command(name='rename', short_help='Rename RBD volume.')
 @click.argument(
     'pool'
 )

@@ -489,7 +489,7 @@ class CephVolumeInstance(object):
 
 def add_volume(zk_conn, logger, pool, name, size):
     # We are ready to create a new volume on this node
-    logger.out('Creating new RBD volume {} on pool {}'.format(name, pool), state='i')
+    logger.out('Creating new RBD volume {} on pool {} of size {}'.format(name, pool, size), state='i')
     try:
         # Create the volume
         retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
@@ -516,6 +516,70 @@ def add_volume(zk_conn, logger, pool, name, size):
     except Exception as e:
         # Log it
         logger.out('Failed to create new RBD volume {} on pool {}: {}'.format(name, pool, e), state='e')
+        return False
+
+def resize_volume(zk_conn, logger, pool, name, size):
+    logger.out('Resizing RBD volume {} on pool {} to size {}'.format(name, pool, size), state='i')
+    try:
+        # Resize the volume
+        retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
+        if retcode:
+            print('rbd resize')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Get volume stats
+        retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
+        volstats = stdout
+
+        # Update the volume to ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/volumes/{}/{}'.format(pool, name): '',
+            '/ceph/volumes/{}/{}/stats'.format(pool, name): volstats,
+            '/ceph/snapshots/{}/{}'.format(pool, name): '',
+        })
+
+        # Log it
+        logger.out('Created new RBD volume {} on pool {}'.format(name, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to resize RBD volume {} on pool {}: {}'.format(name, pool, e), state='e')
+        return False
+
+def rename_volume(zk_conn, logger, pool, name, new_name):
+    logger.out('Renaming RBD volume {} to {} on pool {}'.format(name, new_name, pool))
+    try:
+        # Rename the volume
+        retcode, stdout, stderr = common.run_os_command('rbd rename {}/{} {}'.format(pool, name, new_name))
+        if retcode:
+            print('rbd rename')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Rename the volume in ZK
+        zkhandler.renamekey(zk_conn, {
+            '/ceph/volumes/{}/{}'.format(pool, name): '/ceph/volumes/{}/{}'.format(pool, new_name),
+            '/ceph/snapshots/{}/{}'.format(pool, name): '/ceph/snapshots/{}/{}'.format(pool, new_name),
+        })
+
+        # Get volume stats
+        retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, new_name))
+        volstats = stdout
+
+        # Update the volume stats in ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/volumes/{}/{}/stats'.format(pool, new_name): volstats,
+        })
+
+        # Log it
+        logger.out('Renamed RBD volume {} to {} on pool {}'.format(name, new_name, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to rename RBD volume {} on pool {}: {}'.format(name, pool, e), state='e')
         return False
 
 def remove_volume(zk_conn, logger, pool, name):
@@ -800,6 +864,48 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
             with zk_lock:
                 # Add the volume
                 result = add_volume(zk_conn, logger, pool, name, size)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Resizing a volume
+    elif command == 'volume_resize':
+        pool, name, size = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Add the volume
+                result = resize_volume(zk_conn, logger, pool, name, size)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Renaming a new volume
+    elif command == 'volume_rename':
+        pool, name, new_name = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Add the volume
+                result = rename_volume(zk_conn, logger, pool, name, new_name)
                 # Command succeeded
                 if result:
                     # Update the command queue
