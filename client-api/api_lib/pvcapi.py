@@ -376,14 +376,15 @@ def net_add(vni, description, nettype, domain,
     }
     return flask.jsonify(output), retcode
 
-def net_modify(vni, description, nettype, domain,
-               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+def net_modify(vni, description, domain,
+               ip4_network, ip4_gateway,
+               ip6_network, ip6_gateway,
                dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Modify a virtual client network in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
+    retflag, retmsg = pvc_network.modify_network(zk_conn, vni, description, domain,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     if retflag:
@@ -397,12 +398,12 @@ def net_modify(vni, description, nettype, domain,
     }
     return flask.jsonify(output), retcode
 
-def net_remove(description):
+def net_remove(network):
     """
     Remove a virtual client network from the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retmsg = pvc_network.remove_network(zk_conn, description)
+    retflag, retmsg = pvc_network.remove_network(zk_conn, network)
     if retflag:
         retcode = 200
     else:

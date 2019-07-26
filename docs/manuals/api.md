@@ -277,21 +277,19 @@ Add a new virtual network to the cluster. `vni` must be a valid VNI, either a vL
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about the virtual network with description `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex matching.
+Return a JSON document containing information about the virtual network `<network>`. The output is identical to `/api/v1/network?limit=<network>` without fuzzy regex matching.
 
 ###### `PUT`
  * Mandatory values: N/A
- * Optional values: `vni`, `nettype` `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
+ * Optional values: `domain`, `ip4_network`, `ip4_gateway`, `ip6_network`, `ip6_gateway`, `dhcp4`, `dhcp4_start`, `dhcp4_end`
 
-Modify the options of an existing virtual network with description `<network>`.
+Modify the options of an existing virtual network `<network>`.
 
 All values are optional and are identical to the values for `add`. Only those values specified will be updated.
 
-**NOTE:** Changing the `vni` or `nettype` of a virtual network is technically possible, but is not recommended. This would require updating all VMs in the network. It is usually advisable to create a new virtual network with the new VNI and type, move VMs to it, then finally remove the old virtual network.
-
 ###### `DELETE`
 
-Remove a virtual network with description `<network>`.
+Remove a virtual network `<network>`.
 
 #### `/api/v1/network/<network>/lease`
  * Methods: `GET`, `POST`
@@ -300,7 +298,7 @@ Remove a virtual network with description `<network>`.
  * Mandatory values: N/A
  * Optional values: `limit`, `static`
 
-Return a JSON document containing information about all active DHCP leases in virtual network with description `<network>`.
+Return a JSON document containing information about all active DHCP leases in virtual network `<network>`.
 
 If `limit` is specified, return a JSON document containing information about all active DHCP leases with MAC addresses matching `limit` as fuzzy regex.
 
@@ -310,7 +308,7 @@ If `static` is specified, only return static DHCP leases.
  * Mandatory values: `macaddress`, `ipaddress`
  * Optional values: `hostname`
 
-Add a new static DHCP lease for MAC address `<macaddress>` in virtual network with description `<network>`.
+Add a new static DHCP lease for MAC address `<macaddress>` in virtual network `<network>`.
 
 `ipaddress` must be a valid IP address in the specified `<network>` IPv4 netblock, and ideally outside of the DHCPv4 range.
 
@@ -323,13 +321,13 @@ Add a new static DHCP lease for MAC address `<macaddress>` in virtual network wi
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex matching.
+Return a JSON document containing information about DHCP lease with MAC address `<lease>` in virtual network `<network>`. The output is identical to `/api/v1/network/<network>/dhcp?limit=<lease>` without fuzzy regex matching.
 
 ###### `DELETE`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Remove a static DHCP lease for MAC address `<lease`> in virtual network with description `<network>`.
+Remove a static DHCP lease for MAC address `<lease`> in virtual network `<network>`.
 
 #### `/api/v1/network/<network>/acl`
  * Methods: `GET`, `POST`
@@ -338,17 +336,17 @@ Remove a static DHCP lease for MAC address `<lease`> in virtual network with des
  * Mandatory values: N/A
  * Optional values: `limit`, `direction`
 
-Return a JSON document containing information about all active NFTables ACLs in virtual network with description `<network>`.
+Return a JSON document containing information about all active NFTables ACLs in virtual network `<network>`.
 
 If `limit` is specified, return a JSON document containing information about all active NFTables ACLs with descriptions matching `limit` as fuzzy regex.
 
 If `direction` is specified and is one of `in` or `out`, return a JSON codument listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
 
 ###### `POST`
- * Mandatory values: `direction`, `rule`
+ * Mandatory values: `description`, `direction`, `rule`
  * Optional values: `order`
 
-Add a new NFTables ACL with description `<acl>` in virtual network with description `<network>`.
+Add a new NFTables ACL with `description` in virtual network `<network>`.
 
 `direction` must be one of `in` or `out`.
 
@@ -363,15 +361,15 @@ Add a new NFTables ACL with description `<acl>` in virtual network with descript
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network with description `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex matching.
+Return a JSON document containing information about NFTables ACL with description `<acl>` in virtual network `<network>`. The output is identical to `/api/v1/network/<network>/acl?limit=<acl>` without fuzzy regex matching.
 
 If `<acl>` is not valid, return an empty JSON document.
 
 ###### `DELETE`
- * Mandatory values: N/A
+ * Mandatory values: `direction`
  * Optional values: N/A
 
-Remove an NFTables ACL with description `<acl>` from virtual network with description `<network>`.
+Remove an NFTables ACL with description `<acl>` in direction `direction` from virtual network `<network>`.
 
 ### Storage (Ceph) endpoints
 
