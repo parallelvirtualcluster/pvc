@@ -157,7 +157,7 @@ def flush_node(zk_conn, node, wait):
 
     # Wait cannot be triggered from the API
     if wait:
-        while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate') == 'flush':
+        while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node)) == 'flush':
             time.sleep(1)
 
     return True, retmsg
