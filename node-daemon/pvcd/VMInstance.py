@@ -114,7 +114,7 @@ class VMInstance(object):
                 # Push the change up to Zookeeper
                 zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list) })
             except Exception as e:
-                self.logger.out('Error adding domain to list: {}'.format(e), state='c')
+                self.logger.out('Error adding domain to list: {}'.format(e), state='e')
 
     def removeDomainFromList(self):
         if self.domuuid in self.this_node.domain_list:
@@ -124,7 +124,7 @@ class VMInstance(object):
                 # Push the change up to Zookeeper
                 zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list) })
             except Exception as e:
-                self.logger.out('Error removing domain from list: {}'.format(e), state='c')
+                self.logger.out('Error removing domain from list: {}'.format(e), state='e')
 
     # Start up the VM
     def start_vm(self):
