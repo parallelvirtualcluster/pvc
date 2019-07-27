@@ -46,13 +46,13 @@ Return a JSON `message` containing the API description with HTTP return code 209
 #### `/api/v1/auth/login`
  * Methods: `GET`, `POST`
 
-###### `GET`:
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Return an HTTP login form accepting a token to authorize a Flask session.
 
-###### `POST`:
+###### `POST`
  * Mandatory values: `token`
  * Optional values: N/A
 
@@ -94,13 +94,13 @@ Return a JSON document containing information about `<node>`. The output is iden
 #### `/api/v1/node/<node>/coordinator-state`
  * Methods: `GET`, `POST`
 
-###### `GET`:
+###### `GET`
  * Mandatory values: N/A
  * Optional values: N/A
 
 Return the coordinator state of `<node>`.
 
-###### `POST`:
+###### `POST`
  * Mandatory values: `coordinator-state`
  * Optional values: N/A
 
