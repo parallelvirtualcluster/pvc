@@ -38,7 +38,7 @@ The `group_vars` folder contains configuration variables for all clusters manage
 
 This section outlines the various configuration options available in the `group_vars` configuration; the `group_vars/default` directory contains an example set of variables, split into two files (`base.yml` and `pvc.yml`), that set every listed configuration option. 
 
-#### Conventions
+### Conventions
 
 * Settings may be *required*, `optional`, or `ignored`. Ignored settings are used for human-readability in the configuration but are ignored by the actual role.
 
@@ -46,7 +46,7 @@ This section outlines the various configuration options available in the `group_
 
 * If a particular `<setting>` is marked `optional`, and a latter setting is marked `depends on <setting>`, the latter is ignored unless the `<setting>` is specified.
 
-## `base.yml`
+### `base.yml`
 
 Example configuration:
 
@@ -102,20 +102,20 @@ networks:
     floating_ip: "10.0.1.254/24"
 ```
 
-### `local_domain`
+#### `local_domain`
 
 * *required*
 
 The domain name of the PVC cluster nodes. This is the domain portion of the FQDN of each node, and should usually be the domain of the `upstream` network.
 
-### `username_ipmi_host`
+#### `username_ipmi_host`
 
 * *optional*
 * *requires* `passwd_ipmi_host`
 
 The IPMI username used by PVC to communicate with the node management controllers. This user should be created on each node's IPMI before deploying the cluster, and should have, at minimum, permission to read and alter the node's power state.
 
-### `passwd_ipmi_host`
+#### `passwd_ipmi_host`
 
 * *optional*
 * *requires* `username_ipmi_host`
@@ -124,7 +124,7 @@ The IPMI password, in plain text, used by PVC to communicate with the node manag
 
 Generate using `pwgen -s 16` and adjusting length as required.
 
-### `passwdhash_root`
+#### `passwdhash_root`
 
 * *required*
 
@@ -132,49 +132,49 @@ The `/etc/shadow`-encoded root password for all nodes.
 
 Generate using `pwgen -s 16`, adjusting length as required, and encrypt using `mkpasswd -m sha-512 <password> $( pwgen -s 8 )`.
 
-### `logrotate_keepcount`
+#### `logrotate_keepcount`
 
 * *required*
 
 The number of `logrotate_interval` to keep system logs.
 
-### `logrotate_interval`
+#### `logrotate_interval`
 
 * *required*
 
 The interval for rotating system logs. Must be one of: `hourly`, `daily`, `weekly`, `monthly`.
 
-### `username_email_root`
+#### `username_email_root`
 
 * *required*
 
 The email address of the root user, at the `local_domain`. Usually `root`, but can be something like `admin` if needed.
 
-### `admin_users`
+#### `admin_users`
 
 * *required*
 
 A list of non-root users, their UIDs, and SSH public keys, that are able to access the server. At least one non-root user should be specified to administer the nodes. These users will not have a password set; only key-based login is supported. Each list element contains the following subelements:
 
-#### `name`
+##### `name`
 
 * *required*
 
 The name of the user.
 
-#### `uid`
+##### `uid`
 
 * *required*
 
 The Linux UID of the user. Should usually start at 500 and increment for each user.
 
-#### `keys`
+##### `keys`
 
 * *required*
 
 A list of SSH public key strings, in `authorized_keys` line format, for the user.
 
-### `networks`
+#### `networks`
 
 * *required*
 
@@ -184,67 +184,67 @@ The three required networks are: `upstream`, `cluster`, `storage`.
 
 Within each `network` element, the following options may be specified:
 
-#### `device`
+##### `device`
 
 * *required*
 
 The network device name.
 
-#### `type`
+##### `type`
 
 * *required*
 
 The type of network device. Must be one of: `nic`, `bond`, `vlan`.
 
-#### `bond_mode`
+##### `bond_mode`
 
 * *required* if `type` is `bond`
 
 The Linux bonding/`ifenslave` mode for the cluster. Must be a valid Linux bonding mode.
 
-#### `bond_devices`
+##### `bond_devices`
 
 * *required* if `type` is `bond`
 
 The list of physical (`nic`) interfaces to bond.
 
-#### `raw_device`
+##### `raw_device`
 
 * *required* if `type` is `vlan`
 
 The underlying interface for the vLAN.
 
-#### `mtu`
+##### `mtu`
 
 * *required*
 
 The MTU of the interface. Ensure that the underlying network infrastructure can support the configured MTU.
 
-#### `domain`
+##### `domain`
 
 * *required*
 
 The domain name for the network. For the "upstream" network, should usually be `local_domain`. 
 
-#### `subnet`
+##### `subnet`
 
 * *required*
 
 The CIDR-formated subnet of the network. Individual nodes will be configured with specific IPs in this network in a later setting.
 
-#### `floating_ip`
+##### `floating_ip`
 
 * *required*
 
 A CIDR-formatted IP address in the network to act as the cluster floating IP address. This IP address will follow the primary coordinator.
 
-#### `gateway_ip`
+##### `gateway_ip`
 
 * *optional*
 
 A non-CIDR gateway IP address for the network.
 
-## `pvc.yml`
+### `pvc.yml`
 
 Example configuration:
 
@@ -349,19 +349,19 @@ pvc_storage_subnet: "{{ networks['storage']['subnet'] }}"
 pvc_storage_floatingip: "{{ networks['storage']['floating_ip'] }}"
 ```
 
-### `pvc_log_to_file`
+#### `pvc_log_to_file`
 
 * *required*
 
 Whether to log PVC output to the file `/var/log/pvc/pvc.log`. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_log_to_stdout`
+#### `pvc_log_to_stdout`
 
 * *required*
 
 Whether to log PVC output to stdout, i.e. `journald`. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_log_colours`
+#### `pvc_log_colours`
 
 * *required*
 
@@ -371,7 +371,7 @@ Requires `journalctl -o cat` or file logging in order to be visible and useful.
 
 If set to False, the prompts will instead be text values.
 
-### `pvc_log_dates`
+#### `pvc_log_dates`
 
 * *required*
 
@@ -379,51 +379,51 @@ Whether to include dates in the log output. Must be one of, unquoted: `True`, `F
 
 Requires `journalctl -o cat` or file logging in order to be visible and useful (and not clutter the logs with duplicate dates).
 
-### `pvc_log_keepalives`
+#### `pvc_log_keepalives`
 
 * *required*
 
 Whether to log keepalive messages. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_log_keepalive_cluster_details`
+#### `pvc_log_keepalive_cluster_details`
 
 * *required*
 * *ignored* if `pvc_log_keepalives` is `False`
 
 Whether to log cluster and node details during keepalive messages. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_log_keepalive_storage_details`
+#### `pvc_log_keepalive_storage_details`
 
 * *required*
 * *ignored* if `pvc_log_keepalives` is `False`
 
 Whether to log storage cluster details during keepalive messages. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_log_console_lines`
+#### `pvc_log_console_lines`
 
 * *required*
 
 The number of output console lines to log for each VM.
 
-### `pvc_api_listen_address`
+#### `pvc_api_listen_address`
 
 * *required*
 
 Address for the API to listen on; `0.0.0.0` indicates all interfaces.
 
-### `pvc_api_listen_port`
+#### `pvc_api_listen_port`
 
 * *required*
 
 Port for the API to listen on.
 
-### `pvc_api_enable_authentication`
+#### `pvc_api_enable_authentication`
 
 * *required*
 
 Whether to enable authentication on the API. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_api_secret_key`
+#### `pvc_api_secret_key`
 
 * *required*
 
@@ -431,19 +431,19 @@ A secret key used to sign and encrypt API Flask cookies.
 
 Generate using `uuidgen` or `pwgen -s 32` and adjusting length as required.
 
-### `pvc_api_tokens`
+#### `pvc_api_tokens`
 
 * *required*
 
 A list of API tokens that are allowed to access the PVC API. At least one should be specified. Each list element contains the following subelements:
 
-#### `description`
+##### `description`
 
 * *required*
 
 A human-readable description of the token. Not parsed anywhere, but used to make this list human-readable and identify individual tokens by their use.
 
-#### `token`
+##### `token`
 
 * *required*
 
@@ -451,25 +451,25 @@ The API token.
 
 Generate using `uuidgen` or `pwgen -s 32` and adjusting length as required.
 
-### `pvc_api_enable_ssl`
+#### `pvc_api_enable_ssl`
 
 * *required*
 
 Whether to enable SSL for the PVC API. Must be one of, unquoted: `True`, `False`.
 
-### `pvc_api_ssl_cert`
+#### `pvc_api_ssl_cert`
 
 * *required* if `pvc_api_enable_ssl` is `True`
 
 The SSL certificate, in text form, for the PVC API to use.
 
-### `pvc_api_ssl_key`
+#### `pvc_api_ssl_key`
 
 * *required* if `pvc_api_enable_ssl` is `True`
 
 The SSL private key, in text form, for the PVC API to use.
 
-### `pvc_ceph_storage_secret_uuid`
+#### `pvc_ceph_storage_secret_uuid`
 
 * *required*
 
@@ -477,19 +477,19 @@ The UUIS for Libvirt to communicate with the Ceph storage cluster. This UUID wil
 
 Generate using `uuidgen`.
 
-### `pvc_dns_database_name`
+#### `pvc_dns_database_name`
 
 * *required*
 
 The name of the PVC DNS aggregator database.
 
-### `pvc_dns_database_user`
+#### `pvc_dns_database_user`
 
 * *required*
 
 The username of the PVC DNS aggregator database user.
 
-### `pvc_dns_database_password`
+#### `pvc_dns_database_password`
 
 * *required*
 
@@ -497,13 +497,13 @@ The password of the PVC DNS aggregator database user.
 
 Generate using `pwgen -s 16` and adjusting length as required.
 
-### `pvc_replication_database_user`
+#### `pvc_replication_database_user`
 
 * *required*
 
 The username of the PVC DNS aggregator database replication user.
 
-### `pvc_repliation_database_password`
+#### `pvc_repliation_database_password`
 
 * *required*
 
@@ -511,13 +511,13 @@ The password of the PVC DNS aggregator database replication user.
 
 Generate using `pwgen -s 16` and adjusting length as required.
 
-### `pvc_superuser_database_user`
+#### `pvc_superuser_database_user`
 
 * *required*
 
 The username of the PVC DNS aggregator database superuser.
 
-### `pvc_superuser_database_password`
+#### `pvc_superuser_database_password`
 
 * *required*
 
@@ -525,101 +525,101 @@ The password of the PVC DNS aggregator database superuser.
 
 Generate using `pwgen -s 16` and adjusting length as required.
 
-### `pvc_asn`
+#### `pvc_asn`
 
 * *required*
 
 The private autonomous system number used for BGP updates to upstream routers.
 
-### `pvc_routers`
+#### `pvc_routers`
 
 A list of upstream routers to communicate BGP routes to.
 
-### `pvc_nodes`
+#### `pvc_nodes`
 
 * *required*
 
 A list of all nodes in the PVC cluster and their node-specific configurations. Each node must be present in this list. Each list element contains the following subelements:
 
-#### `hostname`
+##### `hostname`
 
 * *required*
 
 The (short) hostname of the node.
 
-#### `is_coordinator`
+##### `is_coordinator`
 
 * *required*
 
 Whether the node is a coordinator. Must be one of, unquoted: `yes`, `no`.
 
-#### `node_id`
+##### `node_id`
 
 * *required*
 
 The ID number of the node. Should normally match the number suffix of the `hostname`.
 
-#### `router_id`
+##### `router_id`
 
 * *required*
 
 The BGP router-id value for upstream route exchange. Should normally match the `upstream_ip`.
 
-#### `upstream_ip`
+##### `upstream_ip`
 
 * *required*
 
 The non-CIDR IP address of the node in the `upstream` network.
 
-#### `upstream_cidr`
+##### `upstream_cidr`
 
 * *required*
 
 The CIDR bit mask of the node `upstream_ip` address. Must match the `upstream` network.
 
-#### `cluster_ip`
+##### `cluster_ip`
 
 * *required*
 
 The non-CIDR IP address of the node in the `cluster` network.
 
-#### `cluster_cidr`
+##### `cluster_cidr`
 
 * *required*
 
 The CIDR bit mask of the node `cluster_ip` address. Must match the `cluster` network.
 
-#### `storage_ip`
+##### `storage_ip`
 
 * *required*
 
 The non-CIDR IP address of the node in the `storage` network.
 
-#### `storage_cidr`
+##### `storage_cidr`
 
 * *required*
 
 The CIDR bit mask of the node `storage_ip` address. Must match the `storage` network.
 
-#### `ipmi_host`
+##### `ipmi_host`
 
 * *required*
 
 The IPMI hostname or non-CIDR IP address of the node management controller. Must be reachable by all nodes.
 
-#### `ipmi_user`
+##### `ipmi_user`
 
 * *required*
 
 The IPMI username for the node management controller. Unless a per-host override is required, should usually use the previously-configured global `username_ipmi_host`. All notes from that entry apply.
 
-#### `ipmi_password`
+##### `ipmi_password`
 
 * *required*
 
 The IPMI password for the node management controller. Unless a per-host override is required, should usually use the previously-configured global `passwordname_ipmi_host`. All notes from that entry apply.
 
-### `pvc_<network>_*`
+#### `pvc_<network>_*`
 
 The next set of entries is hardcoded to use the values from the global `networks` list. It should not need to be changed under most circumstances. Refer to the previous sections for specific notes about each entry.
 
