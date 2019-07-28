@@ -78,16 +78,16 @@ pvc:
         pass: pvcdns
   # system: Local PVC instance configuration
   system:
+    # intervals: Intervals for keepalives and fencing
+    intervals:
+      # keepalive_interval: Number of seconds between keepalive/status updates
+      keepalive_interval: 5
+      # fence_intervals: Number of keepalive_intervals to declare a node dead and fence it
+      fence_intervals: 6
+      # suicide_intervals: Numer of keepalive_intervals before a node considers itself dead and self-fences, 0 to disable 
+      suicide_intervals: 0
     # fencing: Node fencing configuration
     fencing:
-      # intervals: Intervals for fencing determination
-      intervals:
-        # keepalive_interval: Number of seconds between keepalive/status updates
-        keepalive_interval: 5
-        # fence_intervals: Number of keepalive_intervals to declare a node dead and fence it
-        fence_intervals: 6
-        # suicide_intervals: Numer of keepalive_intervals before a node considers itself dead and self-fences, 0 to disable 
-        suicide_intervals: 0
       # actions: Actions to take after a fence trigger
       actions:
         # successful_fence: Action to take after successfully fencing a node, options: migrate, None
