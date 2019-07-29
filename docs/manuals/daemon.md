@@ -262,6 +262,12 @@ The directory to store ephemeral configuration files. Usually `/run/pvc` or a si
 
 The directory to store log files for `file_logging`. Usually `/var/log/pvc` or a similar directory. Must be specified even if `file_logging` is `False`, though ignored.
 
+#### `system` → `configuration` → `directories` → `console_log_directory`
+
+* *required*
+
+The directory to store VM console logs. Usually `/var/log/libvirt` or a similar directory.
+
 #### `system` → `configuration` → `logging` → `file_logging`
 
 * *required*

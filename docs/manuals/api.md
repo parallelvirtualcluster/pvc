@@ -107,11 +107,11 @@ The Flask authentication secret key used to salt session credentials. Should be 
 * *optional*
 * *requires* `authentication` → `enabled`
 
-A list of API authentication tokens that can be passed via the `X-Api-Key` header to authorize access to the API.
+A list of API authentication tokens that can be passed via the `X-Api-Key` header to authorize access to the API. Each list element contains the following fields:
 
 ##### `description`
 
-* *required*
+* *ignored*
 
 A text description of the token function or use. Not parsed by the API, but used for administrator reference in the configuration file.
 
@@ -195,6 +195,15 @@ Return a JSON document containing information about all cluster nodes. If `limit
 Return a JSON document containing information about `<node>`. The output is identical to `/api/v1/node?limit=<node>` without fuzzy regex matching.
 
 **NOTE:** Nodes are created automatically during daemon startup; they cannot be created by the client tools.
+
+#### `/api/v1/node/<node>/daemon-state`
+ * Methods: `GET`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return the daemon state of `<node>`.
 
 #### `/api/v1/node/<node>/coordinator-state`
  * Methods: `GET`, `POST`
