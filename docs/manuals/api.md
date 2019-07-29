@@ -79,33 +79,33 @@ Whether to enable Debug mode or not. If enabled, the API will use the Flask debu
 
 A list of coordinator hosts, used to generate the Zookeeper connection string.
 
-#### `api` -> `listen_address`
+#### `api` → `listen_address`
 
 * *required*
 
 The IP address for the API to listen on. Use `0.0.0.0` to specify "all interfaces".
 
-#### `api` -> `listen_port`
+#### `api` → `listen_port`
 
 The port for the API to listen on.
 
-#### `api` -> `authentication` -> `enabled`
+#### `api` → `authentication` → `enabled`
 
 * *required*
 
 Whether to enable API authentication or not. Should usually be enabled in production deployments, especially if the API is available on untrusted networks.
 
-#### `api` -> `authentication` -> `secret_key`
+#### `api` → `authentication` → `secret_key`
 
 * *optional*
-* *requires* `authentication` -> `enabled`
+* *requires* `authentication` → `enabled`
 
 The Flask authentication secret key used to salt session credentials. Should be a long (>32-character) random string generated with `pwgen` or a similar tool.
 
-#### `api` -> `authentication` -> `tokens`
+#### `api` → `authentication` → `tokens`
 
 * *optional*
-* *requires* `authentication` -> `enabled`
+* *requires* `authentication` → `enabled`
 
 A list of API authentication tokens that can be passed via the `X-Api-Key` header to authorize access to the API.
 
@@ -121,17 +121,17 @@ A text description of the token function or use. Not parsed by the API, but used
 
 The token itself, usually a UUID created with `uuidegen` or a similar tool.
         
-#### `api` -> `ssl` -> `enabled`
+#### `api` → `ssl` → `enabled`
 
 * *required*
 
 Whether to enable SSL for the API or not. Should usually be enabled in production deployments, especially if the API is available on untrusted networks.
 
-#### `api` -> `ssl` -> `cert_file`
+#### `api` → `ssl` → `cert_file`
 
 The path to the SSL certificate file for the API to use.
 
-#### `api` -> `ssl` -> `key_file`
+#### `api` → `ssl` → `key_file`
 
 The path to the SSL private key file for the API to use.
 

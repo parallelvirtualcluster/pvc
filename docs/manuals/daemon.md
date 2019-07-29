@@ -103,39 +103,39 @@ pvc:
 
 The (short) hostname of the node; host-specific.
 
-#### `functions` -> `enable_hypervisor`
+#### `functions` → `enable_hypervisor`
 
 * *required*
 
 Whether to enable the hypervisor functionality of the PVC Daemon or not. This should usually be enabled except in advanced deployment scenarios (such as a dedicated quorum-keeping micronode or dedicated network routing node).
 
-#### `functions` -> `enable_networking`
+#### `functions` → `enable_networking`
 
 * *required*
 
 Whether to enable the client network functionality of the PVC Daemon or not. This should usually be enabled except in deployment scenarios where networking is completely unmanaged by PVC.
 
-#### `functions` -> `enable_storage`
+#### `functions` → `enable_storage`
 
 * *required*
 
 Whether to enable the virtual storage functionality of the PVC Daemon or not. This should usually be enabled except in advanced deployment scenarios featuring unmanaged external storage.
 
-#### `functions` -> `enable_api`
+#### `functions` → `enable_api`
 
 Whether to enable the PVC API client on the cluster floating IPs or not.
 
-#### `cluster` -> `coordinators`
+#### `cluster` → `coordinators`
 
 * *required*
 
 A list of coordinator hosts, used to generate the Zookeeper connection string and determine if the current host is a coordinator or not
 .
 
-#### `cluster` -> `networks`
+#### `cluster` → `networks`
 
 * *optional*
-* *requires* `functions` -> `enable_networking`
+* *requires* `functions` → `enable_networking`
 
 Contains a dictionary of networks and their configurations for the PVC cluster. Optional only if `enable_networking` is `False`. The three required network types/names are `upstream`, `cluster`, and `storage`. Each network type contains the following entries.
 
@@ -160,65 +160,65 @@ The IPv4 address for the gateway of the network. Usually applicable only to the 
 #### `coordinator` 
 
 * *optional*
-* *requires* `functions` -> `enable_networking`
+* *requires* `functions` → `enable_networking`
 
 Configuration for coordinator functions on the node. Optional only if `enable_networking` is `False`. Not optional on non-coordinator hosts, though unused. Contains the following subentries.
 
-##### `dns` -> `database` -> `host`
+##### `dns` → `database` → `host`
 
 * *required*
 
 The hostname of the PostgreSQL instance for the DNS aggregator database. Should always be `localhost` except in advanced deployment scenarios.
 
-##### `dns` -> `database` -> `port`
+##### `dns` → `database` → `port`
 
 * *required*
 
 The port of the PostgreSQL instance for the DNS aggregator database. Should always be `5432`.
 
-##### `dns` -> `database` -> `name`
+##### `dns` → `database` → `name`
 
 * *required*
 
 The database name for the DNS aggregator database. Should always be `pvcdns`.
 
-##### `dns` -> `database` -> `user`
+##### `dns` → `database` → `user`
 
 * *required*
 
 The username for the PVC node daemon to access the DNS aggregator database.
 
-##### `dns` -> `database` -> `pass`
+##### `dns` → `database` → `pass`
 
 * *required*
 
 The password for the PVC node daemon to access the DNS aggregator database.
 
-#### `system` -> `intervals` -> `keepalive_interval`
+#### `system` → `intervals` → `keepalive_interval`
 
 * *required*
 
 The number of seconds between keepalive messages to the cluster. The default is 5 seconds; for slow cluster nodes, 10-30 seconds may be more appropriate however this will result in slower responses to changes in the cluster and less accurate/up-to-date information in the clients.
 
-#### `system` -> `intervals` -> `fence_intervals`
+#### `system` → `intervals` → `fence_intervals`
 
 * *required*
 
 The number of keepalive messages that can be missed before a node is considered dead and the fencing cycle triggered on it. The default is 6, or 30 seconds of inactivity with a 5 second `keepalive_interval`. Can be set to 0 to disable fencing as the timeout will never trigger.
 
-#### `system` -> `intervals` -> `suicide_intervals`
+#### `system` → `intervals` → `suicide_intervals`
 
 * *required*
 
 The number of keepalive message that can be missed before a node consideres itself dead and forcibly resets itself. Note that, due to the large number of reasons a node could become unresponsive, the suicide interval alone should not be relied upon. The default is 0, which disables this functionality. If set, should usually be equal to or less than `fence_intervals` for maximum safety.
 
-#### `system` -> `fencing` -> `actions` -> `successful_fence`
+#### `system` → `fencing` → `actions` → `successful_fence`
 
 * *required*
 
 The action to take regarding VMs once a node is *successfully* fenced, i.e. the IPMI command to restart the node reports a success. Can be one of `migrate`, to migrate and start all failed VMs on other nodes and the default, or `None` to perform no action.
 
-#### `system` -> `fencing` -> `actions` -> `failed_fence`
+#### `system` → `fencing` → `actions` → `failed_fence`
 
 * *required*
 
@@ -226,94 +226,94 @@ The action to take regarding VMs once a node fencing *fails*, i.e. the IPMI comm
 
 **WARNING:** This functionality is potentially **dangerous** and can result in data loss or corruption in the VM disks; the post-fence migration process *explicitly clears RBD locks on the disk volumes*. It is designed only for specific and advanced usecases, such as servers that do not reliably report IPMI responses or servers without IPMI (not recommended; see the [cluster architecture documentation](/architecture/cluster)). If this is set to `migrate`, the `suicide_intervals` **must** be set to provide at least some guarantee that the VMs on the node will actually be terminated before this condition triggers. The administrator should think very carefully about their setup and potential failure modes before enabling this option.
 
-#### `system` -> `fencing` -> `ipmi` -> `host`
+#### `system` → `fencing` → `ipmi` → `host`
 
 * *required*
 
 The hostname or IP address of this node's IPMI interface. Must be reachable from the nodes.
 
-#### `system` -> `fencing` -> `ipmi` -> `user`
+#### `system` → `fencing` → `ipmi` → `user`
 
 * *required*
 
 The username for the PVC node daemon to log in to the IPMI interface. Must have permission to reboot the host (command `ipmitool chassis power reset`).
 
-#### `system` -> `fencing` -> `ipmi` -> `pass`
+#### `system` → `fencing` → `ipmi` → `pass`
 
 * *required*
 
 The password for the PVC node daemon to log in to the IPMI interface.
 
-#### `system` -> `migration` -> `target_selector`
+#### `system` → `migration` → `target_selector`
 
 * *required*
 
 The selector algorithm to use when migrating hosts away from the node. Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
 
-#### `system` -> `configuration` -> `directories` -> `dynamic_directory`
+#### `system` → `configuration` → `directories` → `dynamic_directory`
 
 * *required*
 
 The directory to store ephemeral configuration files. Usually `/run/pvc` or a similar temporary directory.
 
-#### `system` -> `configuration` -> `directories` -> `log_directory`
+#### `system` → `configuration` → `directories` → `log_directory`
 
 * *required*
 
 The directory to store log files for `file_logging`. Usually `/var/log/pvc` or a similar directory. Must be specified even if `file_logging` is `False`, though ignored.
 
-#### `system` -> `configuration` -> `logging` -> `file_logging`
+#### `system` → `configuration` → `logging` → `file_logging`
 
 * *required*
 
 Whether to enable direct logging to a file in `log_directory` or not.
 
-#### `system` -> `configuration` -> `logging` -> `stdout_logging`
+#### `system` → `configuration` → `logging` → `stdout_logging`
 
 * *required*
 
 Whether to enable logging to stdout or not; captured by SystemD and JournalD by default.
 
-#### `system` -> `configuration` -> `logging` -> `log_colours`
+#### `system` → `configuration` → `logging` → `log_colours`
 
 * *required*
 
 Whether to log ANSI colour sequences in the log output or not.
 
-#### `system` -> `configuration` -> `logging` -> `log_dates`
+#### `system` → `configuration` → `logging` → `log_dates`
 
 * *required*
 
 Whether to log the current date and time in the log output or not.
 
-#### `system` -> `configuration` -> `logging` -> `log_keepalives`
+#### `system` → `configuration` → `logging` → `log_keepalives`
 
 * *required*
 
 Whether to log keepalive messages or not.
 
-#### `system` -> `configuration` -> `logging` -> `log_keepalive_cluster_details`
+#### `system` → `configuration` → `logging` → `log_keepalive_cluster_details`
 
 * *required*
 
 Whether to log node status information during keepalives or not.
 
-#### `system` -> `configuration` -> `logging` -> `log_keepalive_storage_details`
+#### `system` → `configuration` → `logging` → `log_keepalive_storage_details`
 
 * *required*
 
 Whether to log storage cluster status information during keepalives or not.
 
-#### `system` -> `configuration` -> `logging` -> `console_log_lines`
+#### `system` → `configuration` → `logging` → `console_log_lines`
 
 * *required*
 
 How many lines of VM console logs to keep in the Zookeeper database for each VM.
 
-#### `system` -> `configuration` -> `networking`
+#### `system` → `configuration` → `networking`
 
 * *optional*
-* *requires* `functions` -> `enable_networking`
+* *requires* `functions` → `enable_networking`
 
 Contains a dictionary of networks and their configurations on this node. Optional only if `enable_networking` is `False`. The three required network types/names are `upstream`, `cluster`, and `storage`. Each network type contains the following entries.
 
