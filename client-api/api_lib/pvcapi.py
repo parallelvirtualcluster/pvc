@@ -52,6 +52,78 @@ def node_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
+def node_daemon_state(node):
+    """
+    Return the daemon state of node NODE.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': node,
+                'daemon_state': retdata[0]['daemon_state']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Node not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
+def node_coordinator_state(node):
+    """
+    Return the coordinator state of node NODE.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': node,
+                'coordinator_state': retdata[0]['coordinator_state']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Node not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
+def node_domain_state(node):
+    """
+    Return the domain state of node NODE.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': node,
+                'domain_state': retdata[0]['domain_state']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'Node not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
 def node_secondary(node):
     """
     Take NODE out of primary router mode.

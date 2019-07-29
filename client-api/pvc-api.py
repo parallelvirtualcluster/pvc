@@ -157,12 +157,17 @@ def api_node_element(node):
     # Same as specifying /node?limit=NODE
     return pvcapi.node_list(node)
 
+@api.route('/api/v1/node/<node>/daemon-state', methods=['GET'])
+@authenticator
+def api_node_daemon_state(node):
+    if flask.request.method == 'GET':
+        return pvcapi.node_daemon_state(node)
 
 @api.route('/api/v1/node/<node>/coordinator-state', methods=['GET', 'POST'])
 @authenticator
 def api_node_coordinator_state(node):
     if flask.request.method == 'GET':
-        return "Test", 200
+        return pvcapi.node_coordinator_state(node)
 
     if flask.request.method == 'POST':
         if not 'coordinator-state' in flask.request.values:
@@ -178,7 +183,7 @@ def api_node_coordinator_state(node):
 @authenticator
 def api_node_domain_state(node):
     if flask.request.method == 'GET':
-        return "Test", 200
+        return pvcapi.node_domain_state(node)
 
     if flask.request.method == 'POST':
         if not 'domain-state' in flask.request.values:
