@@ -4,7 +4,7 @@ This document contains considerations the administrator should make when prepari
 
 ## Node Specifications: Considering the size of nodes
 
-Each node in the cluster must be sized based on the needs of the cluster and the load placed on it. In general, taller nodes are generally better for performance and allow for a more powerful cluster on less hardware, though the needs of each specific environment and workload my affect this differently.
+Each node in the cluster must be sized based on the needs of the cluster and the load placed on it. In general, taller nodes are better for performance and allow for a more powerful cluster on less hardware, though the needs of each specific environment and workload my affect this differently.
 
 At a bare minimum, each node should have the following specifications:
 
@@ -14,10 +14,10 @@ At a bare minimum, each node should have the following specifications:
 * 1x 10GB+ system disk (SSD/HDD/USB/SD/eMMC flash)
 * 1x 400GB+ OSD data disk (SSD)
 
-From a cluster of 3 such nodes, this will provide a cluster total of:
+For a cluster of 3 such nodes, this will provide a total of:
 
 * 36 total CPU cores
-* 144GB total RAM
+* 144GB RAM
 * 400GB usable Ceph storage space (`copies=3`)
 
 Of this, some amount of CPU and RAM will be used by the storage subsystem and the PVC daemons themselves, meaning that the total available for virtual machines is slightly less. Generally, each OSD data disk will consume 1 vCPU at load and 1-2GB RAM, so nodes should be sized not only according to the VM workload, but the number of storage disks per node. Additionally the coordinator databases will use additional RAM and CPU resources of up to 1-4GB per node, though there is generally little need to spec coordinators any larger than non-coordinator nodes and the VM automatic node selection process will take used RAM into account by default.
@@ -38,9 +38,9 @@ A PVC cluster needs, at minimum, 3 networks in order to function properly. Each 
 
 ### Physical network considerations
 
-At a minimum, a PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as vLANs.
+At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as vLANs.
 
-More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance.
+More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance. See the [Example Configurations](#example-configurations) section for some examples.
 
 ### Upstream: Connecting the nodes to the wider world
 
@@ -126,7 +126,7 @@ Coordinators are a special set of 3, 5, or potentially 7, though no more, nodes 
 
 In addition to these functions, coordinators can usually also run all other PVC node functions.
 
-The set of coordinator nodes is generally configured at cluster bootstrap, generally 3 nodes, which are then bootstrapped together to form the initial 3-node cluster. Additional nodes, either as coordinators or as hypervisors, are then added to the running cluster.
+The set of coordinator nodes is generally configured at cluster bootstrap, initially with 3 nodes, which are then bootstrapped together to form a basic 3-node cluster. Additional nodes, either as coordinators or as hypervisors, are then added to the running cluster.
 
 ##### The Primary Coordinator
 
@@ -138,7 +138,7 @@ Within the set of coordinators, a single primary coordinator is elected and shuf
 
 #### Hypervisors
 
-Hypervisors consist of all other PVC nodes in the cluster. For small clusters (3 nodes), there will generally not be any non-coordinator nodes, though adding a 4th would require it to be a hypervisor and preserve quorum between the coordinators. For large clusters of more than a few hosts, generally all except the first 3, 5, or for very large clusters 7, nodes should be hypervisors only, to avoid sprawl in the number of database nodes that must be kept in sync.
+Hypervisors consist of all other PVC nodes in the cluster. For small clusters (3 nodes), there will generally not be any non-coordinator nodes, though adding a 4th would require it to be a hypervisor to preserve quorum between the coordinators. Larger clusters will generally add new nodes as Hypervisors rather than coordinators to preserve the small set of coordinator nodes previously mentioned.
 
 ## Example Configurations
 
