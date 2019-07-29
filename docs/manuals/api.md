@@ -30,6 +30,111 @@ The PVC API consistently accepts HTTP POST commands of HTML form documents. Howe
 
 The PCI API consistently returns JSON bodies as its responses, with the one exception of the `vm dump` endpoint which returns an XML body. For all POST endpoints, unless otherwise specified below, this is a `message` value containing a human-readable message about the success or failure of the command. The HTTP return code is always 200 for a success or 510 for a failure. For all GET endpoints except the mentioned `vm dump`, this is a JSON body containing the requested data.
 
+## Configuration
+
+The API is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVC_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvc-api.yaml`.
+
+### Conventions
+
+* Settings may be `required`, `optional`, or `ignored`.
+
+* Settings may `depends` on other settings. This indicates that, if one setting is enabled, the other setting is very likely `required` by that setting.
+
+### `pvc-api.yaml`
+
+Example configuration:
+
+```
+---
+pvc:
+    debug: True
+    coordinators:
+      - pvc-hv1
+      - pvc-hv2
+      - pvc-hv3
+    api:
+        listen_address: "127.0.0.1"
+        listen_port: "7370"
+        authentication:
+            enabled: False
+            secret_key: "aSuperLong&SecurePasswordString"
+            tokens:
+                - description: "testing"
+                  token: ""
+        ssl:
+            enabled: False
+            cert_file: ""
+            key_file: ""
+```
+
+#### `debug`
+
+* *required*
+
+Whether to enable Debug mode or not. If enabled, the API will use the Flask debug runtime instead of the PyWSGI framework and will log additional output. Should not be enabled in production.
+
+#### `coordinators`
+
+* *required*
+
+A list of coordinator hosts, used to generate the Zookeeper connection string.
+
+#### `api` -> `listen_address`
+
+* *required*
+
+The IP address for the API to listen on. Use `0.0.0.0` to specify "all interfaces".
+
+#### `api` -> `listen_port`
+
+The port for the API to listen on.
+
+#### `api` -> `authentication` -> `enabled`
+
+* *required*
+
+Whether to enable API authentication or not. Should usually be enabled in production deployments, especially if the API is available on untrusted networks.
+
+#### `api` -> `authentication` -> `secret_key`
+
+* *optional*
+* *requires* `authentication` -> `enabled`
+
+The Flask authentication secret key used to salt session credentials. Should be a long (>32-character) random string generated with `pwgen` or a similar tool.
+
+#### `api` -> `authentication` -> `tokens`
+
+* *optional*
+* *requires* `authentication` -> `enabled`
+
+A list of API authentication tokens that can be passed via the `X-Authentication` header to authorize access to the API.
+
+##### `description`
+
+* *required*
+
+A text description of the token function or use. Not parsed by the API, but used for administrator reference in the configuration file.
+
+##### `token`
+
+* *required*
+
+The token itself, usually a UUID created with `uuidegen` or a similar tool.
+        
+#### `api` -> `ssl` -> `enabled`
+
+* *required*
+
+Whether to enable SSL for the API or not. Should usually be enabled in production deployments, especially if the API is available on untrusted networks.
+
+#### `api` -> `ssl` -> `cert_file`
+
+The path to the SSL certificate file for the API to use.
+
+#### `api` -> `ssl` -> `key_file`
+
+The path to the SSL private key file for the API to use.
+
 ## API endpoint documentation
 
 ### General endpoints
