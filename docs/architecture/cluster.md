@@ -156,7 +156,7 @@ This section provides diagrams of 3 possible node configurations, providing an i
 
 *Above: A diagram of a midsized 8-node cluster with 3 coordinators, dual bonded 10Gbps network interfaces per node*
 
-#### Large 17-node cluster with 5 coordinators.
+#### Large 17-node cluster with 5 coordinators
 
 ![17-node cluster](/images/17-node-cluster.png)
 
