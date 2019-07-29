@@ -46,7 +46,7 @@ The CLI client manual can be found at the [CLI manual page](/manuals/cli).
 
 ### API client
 
-The HTTP API client is a more advanced interface to the PVC cluster, suitable for creating custom interfaces for PVC and providing better access control than the CLI. It is a Python 3 Flask application which also interfaces directly with the Zookeper cluster, and provides services on port 7370 by default. The API features a basic, key-based authentication mechanism to prevent unauthorized access, though this is optional, and can also provide HTTPS support if required for maximum security over public networks. With the exception of cluster initialization, the API can perform all functions that the CLI client can using a similar syntax and layout. Requests return JSON, and POST requests generally expect HTTP form responses.
+The HTTP API client is a more advanced interface to the PVC cluster, suitable for creating custom interfaces for PVC and providing better access control than the CLI. It is a Python 3 Flask application which also interfaces directly with the Zookeper cluster, and provides services on port 7370 by default. The API features a basic, key-based authentication mechanism to prevent unauthorized access, though this is optional, and can also provide HTTPS support if required for maximum security over public networks. With the exception of cluster initialization, the API can perform all functions that the CLI client can using a RESTful layout. Requests return JSON, and POST requests expect HTTP form bodies.
 
 Further information about the API client architecture can be found at the [API client architecture page](/architecture/api).
 
