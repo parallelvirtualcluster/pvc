@@ -158,7 +158,7 @@ This section provides diagrams of 3 possible node configurations, providing an i
 
 #### Large 17-node cluster with 5 coordinators.
 
-![15-node cluster](/images/15-node-cluster.png)
+![17-node cluster](/images/17-node-cluster.png)
 
 *Above: A diagram of a large 17-node cluster with 5 coordinators, dual bonded 10Gbps network interfaces per node for both cluster/upstream and storage networks*
 
