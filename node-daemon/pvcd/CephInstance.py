@@ -656,6 +656,35 @@ def add_snapshot(zk_conn, logger, pool, volume, name):
         logger.out('Failed to create new RBD snapshot {} of volume {} on pool {}: {}'.format(name, volume, pool, e), state='e')
         return False
 
+def rename_snapshot(zk_conn, logger, pool, volume, name, new_name):
+    logger.out('Renaming RBD volume snapshot {} to {} for volume {} on pool {}'.format(name, new_name, volume, pool))
+    try:
+        # Rename the volume
+        retcode, stdout, stderr = common.run_os_command('rbd snap rename {}/{}@{} {}'.format(pool, volume, name, new_name))
+        if retcode:
+            print('rbd snap rename')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Rename the snapshot in ZK
+        zkhandler.renamekey(zk_conn, {
+            '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name): '/ceph/snapshots/{}/{}/{}'.format(pool, volume, new_name)
+        })
+
+        # Update the snapshot stats in ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, new_name): '{}',
+        })
+
+        # Log it
+        logger.out('Renamed RBD volume snapshot {} to {} for volume {} on pool {}'.format(name, new_name, volume, pool), state='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to rename RBD volume snapshot {} for volume {} on pool {}: {}'.format(name, volume, pool, e), state='e')
+        return False
+
 def remove_snapshot(zk_conn, logger, pool, volume, name):
     # We are ready to create a new snapshot on this node
     logger.out('Removing RBD snapshot {} of volume {} on pool {}'.format(name, volume, pool), state='i')
@@ -948,6 +977,27 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
             with zk_lock:
                 # Add the snapshot
                 result = add_snapshot(zk_conn, logger, pool, volume, name)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/ceph/cmd': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Renaming a snapshot
+    elif command == 'snapshot_rename':
+        pool, volume, name, new_name = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+            with zk_lock:
+                # Add the snapshot
+                result = rename_snapshot(zk_conn, logger, pool, volume, name, new_name)
                 # Command succeeded
                 if result:
                     # Update the command queue
