@@ -75,23 +75,26 @@ if config['debug']:
 if config['auth_enabled']:
     api.config["SECRET_KEY"] = config['auth_secret_key']
 
+# Authentication decorator function
 def authenticator(function):
     def authenticate(*args, **kwargs):
-        # Check if authentication is enabled
+        # No authentication required
         if not config['auth_enabled']:
             return function(*args, **kwargs)
-        else:
-            # Session-based authentication
-            if 'token' in flask.session:
-                return function(*args, **kwargs)
-            # Direct token-based authentication
-            if 'token' in flask.request.values:
-                if any(token for token in config['auth_tokens'] if flask.request.values['token'] == token['token']):
-                    return function(*args, **kwargs)
-                else:
-                    return flask.jsonify({"message":"Authentication failed"}), 401
 
-            return flask.jsonify({"message":"Authentication required"}), 401
+        # Session-based authentication
+        if 'token' in flask.session:
+            return function(*args, **kwargs)
+
+        # Key header-based authentication
+        if 'X-Api-Key' in flask.request.headers:
+            if any(token for token in secret_tokens if flask.request.headers.get('X-Api-Key') == token):
+                return function(*args, **kwargs)
+            else:
+                return "X-Api-Key Authentication failed\n", 401
+
+        # All authentications failed
+        return "X-Api-Key Authentication required\n", 401
 
     authenticate.__name__ = function.__name__
     return authenticate
@@ -106,21 +109,23 @@ def api_auth_login():
     if not config['auth_enabled']:
         return flask.jsonify({"message":"Authentication is disabled."}), 200
 
+    if flask.request.method == 'GET':
+        return '''
+            <form method="post">
+                <p>
+                    Enter your authentication token:
+                    <input type=text name=token style='width:24em'>
+                    <input type=submit value=Login>
+                </p>
+            </form>
+        '''
+
     if flask.request.method == 'POST':
         if any(token for token in config['auth_tokens'] if flask.request.values['token'] in token['token']):
             flask.session['token'] = flask.request.form['token']
             return flask.redirect(flask.url_for('api_root'))
         else:
             return flask.jsonify({"message":"Authentication failed"}), 401
-    return '''
-        <form method="post">
-            <p>
-                Enter your authentication token:
-                <input type=text name=token style='width:24em'>
-                <input type=submit value=Login>
-            </p>
-        </form>
-    '''
 
 @api.route('/api/v1/auth/logout', methods=['GET', 'POST'])
 def api_auth_logout():

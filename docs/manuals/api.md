@@ -16,7 +16,7 @@ Authentication for the API is available using a static list of tokens. These tok
 
 The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a JSON `message` of `Authentiation is disabled` and HTTP code 200.
 
-For one-time authentication, the `token` value can be specified to any API endpoint. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
+For one-time authentication, the `token` value can be specified to any API endpoint via the `X-Api-Key` header value. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
 
 ### Values
 
@@ -107,7 +107,7 @@ The Flask authentication secret key used to salt session credentials. Should be 
 * *optional*
 * *requires* `authentication` -> `enabled`
 
-A list of API authentication tokens that can be passed via the `X-Authentication` header to authorize access to the API.
+A list of API authentication tokens that can be passed via the `X-Api-Key` header to authorize access to the API.
 
 ##### `description`
 
