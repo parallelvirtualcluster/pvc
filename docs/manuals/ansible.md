@@ -40,9 +40,9 @@ This section outlines the various configuration options available in the `group_
 
 ### Conventions
 
-* Settings may be *required*, `optional`, or `ignored`. Ignored settings are used for human-readability in the configuration but are ignored by the actual role.
+* Settings may be `required`, `optional`, or `ignored`. Ignored settings are used for human-readability in the configuration but are ignored by the actual role.
 
-* Settings may `depends` on other settings. This indicates that, if one setting is enabled, the other setting is very likely *required* by that setting.
+* Settings may `depends` on other settings. This indicates that, if one setting is enabled, the other setting is very likely `required` by that setting.
 
 * If a particular `<setting>` is marked `optional`, and a latter setting is marked `depends on <setting>`, the latter is ignored unless the `<setting>` is specified.
 
