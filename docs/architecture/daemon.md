@@ -42,9 +42,9 @@ The daemon startup sequence is documented below. The main daemon entrypoint is `
 
 0. The node begins setting up the object representations of resources, in order:
 
-  a. Node entries
-  b. Network entries, creating client networks and starting them as required.
-  c. Domain (VM) entries, starting up the VMs as required.
-  d. Ceph storage entries (OSDs, Pools, Volumes, Snapshots).
+    a. Node entries
+    b. Network entries, creating client networks and starting them as required.
+    c. Domain (VM) entries, starting up the VMs as required.
+    d. Ceph storage entries (OSDs, Pools, Volumes, Snapshots).
 
 0. The node activates its keepalived timer and begins sending keepalive updates to the cluster. The daemon state transitions from `init` to `run` and the system has started fully.
