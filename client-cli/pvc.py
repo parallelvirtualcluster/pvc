@@ -1573,11 +1573,35 @@ def ceph_volume_snapshot():
 )
 def ceph_volume_snapshot_add(pool, volume, name):
     """
-    Add a snapshot of Ceph RBD volume VOLUME with name NAME.
+    Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc storage ceph volume snapshot rename
+###############################################################################
+@click.command(name='rename', short_help='Rename RBD volume snapshot.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'volume'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'new_name'
+)
+def ceph_volume_snapshot_rename(pool, volume, name, new_name):
+    """
+    Rename an existing Ceph RBD volume snapshot with name NAME to name NEW_NAME for volume VOLUME in pool POOL.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.rename_snapshot(zk_conn, pool, volume, name, new_name)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -1600,7 +1624,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
 )
 def ceph_volume_snapshot_remove(pool, volume, name, yes):
     """
-    Remove a Ceph RBD volume with name NAME from pool POOL.
+    Remove a Ceph RBD volume snapshot with name NAME from volume VOLUME in pool POOL.
     """
 
     if not yes:
@@ -1802,6 +1826,7 @@ ceph_volume.add_command(ceph_volume_list)
 ceph_volume.add_command(ceph_volume_snapshot)
 
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_add)
+ceph_volume_snapshot.add_command(ceph_volume_snapshot_rename)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_remove)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
 

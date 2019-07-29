@@ -1242,6 +1242,35 @@ def add_snapshot(zk_conn, pool, volume, name):
 
     return success, message
 
+def rename_snapshot(zk_conn, pool, volume, name, new_name):
+    # Tell the cluster to rename
+    rename_snapshot_string = 'snapshot_rename {},{},{}'.format(pool, name, new_name)
+    zkhandler.writedata(zk_conn, {'/ceph/cmd': rename_snapshot_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            if result == 'success-snapshot_rename':
+                message = 'Renamed RBD volume snapshot "{}" to "{}" for volume {} on pool "{}".'.format(name, new_name, volume, pool)
+                success = True
+            else:
+                message = 'ERROR: Failed to rename volume {} to {}; check node logs for details.'.format(name, new_name)
+                success = False
+        except:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+
+    return success, message
+
 def remove_snapshot(zk_conn, pool, volume, name):
     if not verifySnapshot(zk_conn, pool, volume, name):
         return False, 'ERROR: No snapshot with name "{}" is present of volume {} on pool {}.'.format(name, volume, pool)

@@ -892,6 +892,23 @@ def ceph_volume_snapshot_add(pool, volume, name):
     }
     return flask.jsonify(output), retcode
 
+def ceph_volume_snapshot_rename(pool, volume, name, new_name):
+    """
+    Rename a Ceph RBD volume snapshot in the PVC Ceph storage cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.rename_snapshot(zk_conn, pool, volume, name, new_name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
 def ceph_volume_snapshot_remove(pool, volume, name):
     """
     Remove a Ceph RBD volume snapshot from the PVC Ceph storage cluster.

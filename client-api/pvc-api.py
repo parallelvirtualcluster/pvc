@@ -870,8 +870,12 @@ def api_ceph_volume_snapshot_element(pool, volume, snapshot):
         return pvcapi.ceph_volume_snapshot_list(pool, volume, snapshot)
 
     if flask.request.method == 'PUT':
-        # TODO: #44
-        flask.abort(501)
+        if 'name' in flask.request.values:
+            name = flask.request.values['name']
+        else:
+            return flask.jsonify({"message":"ERROR: A new name must be specified."}), 400
+
+        return pvcapi.ceph_volume_snapshot_rename(pool, volume, snapshot, name)
 
     if flask.request.method == 'DELETE':
         return pvcapi.ceph_volume_snapshot_remove(pool, volume, snapshot)
