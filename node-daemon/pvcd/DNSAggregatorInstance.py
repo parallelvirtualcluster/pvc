@@ -96,10 +96,9 @@ class PowerDNSInstance(object):
             '--disable-syslog=yes',             # Log only to stdout (which is then captured)
             '--disable-axfr=no',                # Allow AXFRs
             '--allow-axfr-ips=0.0.0.0/0',       # Allow AXFRs to anywhere
-#            '--also-notify=10.101.0.60',        # Notify upstreams
             '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),
                                                 # Listen on floating IPs
-            '--local-port=10053',                  # On port 10053
+            '--local-port=53',                  # On port 53
             '--log-dns-details=on',             # Log details
             '--loglevel=3',                     # Log info
             '--master=yes',                     # Enable master mode
