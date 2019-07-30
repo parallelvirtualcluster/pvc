@@ -143,8 +143,8 @@ The path to the SSL private key file for the API to use.
  * Methods: `GET`
 
 ###### `GET`
- * Mandatory values: `GET`: N/A
- * Optional values: `GET`: N/A
+ * Mandatory values: N/A
+ * Optional values: N/A
 
 Return a JSON `message` containing the API description with HTTP return code 209. Useful for determining if the API is listening and responding properly.
 
