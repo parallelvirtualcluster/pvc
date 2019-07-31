@@ -609,8 +609,6 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--bind-interfaces',
-                '--interface={}'.format(self.bridge_nic),
-                '--except-interface=lo',
             ]
             dhcp_configuration_v4 = [
                 '--listen-address={}'.format(self.ip4_gateway),
