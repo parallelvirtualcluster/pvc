@@ -71,13 +71,8 @@ class VMInstance(object):
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            # If we get a delete state, just terminate outselves
-            if data == None:
-                return
-            # Otherwise perform a management command
-            else:
-                self.manage_vm_state()
-
+            # Perform a management command
+            self.manage_vm_state()
 
     # Get data functions
     def getstate(self):
