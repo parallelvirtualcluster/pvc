@@ -167,7 +167,7 @@ def readConfig(pvcd_config_file, myhostname):
     # Handle debugging config
     try:
         config_debug = {
-            'debug': o_config['debug']
+            'debug': o_config['pvc']['debug']
         }
     except:
         config_debug = {

@@ -12,6 +12,8 @@
 pvc:
   # node: The (short) hostname of the node, set during provisioning
   node: pvc-hv1
+  # debug: Enable or disable debug output
+  debug: False
   # functions: The daemon functions to enable
   functions:
     # enable_hypervisor: Enable or disable hypervisor functionality
