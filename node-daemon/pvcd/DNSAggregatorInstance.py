@@ -333,6 +333,9 @@ class AXFRDaemonInstance(object):
             for network, instance in self.dns_networks.items():
                 zone_modified = False
 
+                # Set up our SQL cursor
+                sql_curs = self.sql_conn.cursor()
+
                 # Set up our basic variables
                 domain = network.domain
                 if network.ip4_gateway != 'None':
@@ -371,33 +374,57 @@ class AXFRDaemonInstance(object):
                 #
                 # Get the current zone from the database
                 #
-                sql_curs = self.sql_conn.cursor()
-                sql_curs.execute(
-                    "SELECT id FROM domains WHERE name=%s",
-                    (domain,)
-                )
-                domain_id = sql_curs.fetchone()
-                sql_curs.execute(
-                    "SELECT * FROM records WHERE domain_id=%s",
-                    (domain_id,)
-                )
-                results = list(sql_curs.fetchall())
+                try:
+                    sql_curs.execute(
+                        "SELECT id FROM domains WHERE name=%s",
+                        (domain,)
+                    )
+                    domain_id = sql_curs.fetchone()
+                    sql_curs.execute(
+                        "SELECT * FROM records WHERE domain_id=%s",
+                        (domain_id,)
+                    )
+                    results = list(sql_curs.fetchall())
+                    if self.config['debug']:
+                        print('SQL query results: {}'.format(results))
+                except Exception as e:
+                    self.logger.out('ERROR: Failed to obtain DNS records from database: {}'.format(e))
 
                 # Fix the formatting because it's useless for comparison
                 # reference: ((10, 28, 'testnet01.i.bonilan.net', 'SOA', 'nsX.pvc.local root.pvc.local 1 10800 1800 86400 86400', 86400, 0, None, 0, None, 1), etc.)
                 records_old = list()
                 records_old_ids = list()
+                if not results:
+                    if self.config['debug']:
+                        print('No results found, skipping.')
+                    continue
                 for record in results:
                     # Skip the non-A
-                    if record[3] != 'A' or record[3] != 'AAAA':
-                        continue
+                    r_id = record[0]
+                    r_name = record[2]
+                    r_ttl = record[5]
+                    r_type = record[3]
+                    r_data = record[4]
                     # Assemble a list element in the same format as the AXFR data
-                    entry = '{} {} IN {} {}'.format(record[2], record[5], record[3], record[4])
+                    entry = '{} {} IN {} {}'.format(r_name, r_ttl, r_type, r_data)
+                    if self.config['debug']:
+                        print('Found record: {}'.format(entry))
+
+                    # Skip non-A or AAAA records
+                    if r_type != 'A' and r_type != 'AAAA':
+                        if self.config['debug']:
+                            print('Skipping record {}, not A or AAAA: "{}"'.format(entry, r_type))
+                        continue
+
                     records_old.append(entry)
-                    records_old_ids.append(record[0])
+                    records_old_ids.append(r_id)
 
                 records_new.sort()
                 records_old.sort()
+
+                if self.config['debug']:
+                    print('New: {}'.format(records_new))
+                    print('Old: {}'.format(records_old))
 
                 # Find the differences between the lists
                 # Basic check one: are they completely equal
@@ -407,6 +434,10 @@ class AXFRDaemonInstance(object):
                     in_old = set(records_old)
                     in_new_not_in_old = in_new - in_old
                     in_old_not_in_new = in_old - in_new
+
+                    if self.config['debug']:
+                        print('New but not old: {}'.format(in_new_not_in_old))
+                        print('Old but not new: {}'.format(in_old_not_in_new))
 
                     # Go through the old list
                     remove_records = list() # list of database IDs
@@ -430,7 +461,8 @@ class AXFRDaemonInstance(object):
                     if len(remove_records) > 0:
                         # Remove the invalid old records
                         for record_id in remove_records:
-                            sql_curs = self.sql_conn.cursor()
+                            if self.config['debug']:
+                                print('Removing record: {}'.format(record_id))
                             sql_curs.execute(
                                 "DELETE FROM records WHERE id=%s",
                                 (record_id,)
@@ -442,14 +474,15 @@ class AXFRDaemonInstance(object):
                         for record in in_new_not_in_old:
                             # [NAME, TTL, 'IN', TYPE, DATA]
                             record = record.split()
-                            rname = record[0]
-                            rttl = record[1]
-                            rtype = record[3]
-                            rdata = record[4]
-                            sql_curs = self.sql_conn.cursor()
+                            r_name = record[0]
+                            r_ttl = record[1]
+                            r_type = record[3]
+                            r_data = record[4]
+                            if self.config['debug']:
+                                print('Add record: {}'.format(name))
                             sql_curs.execute(
                                 "INSERT INTO records (domain_id, name, ttl, type, prio, content) VALUES (%s, %s, %s, %s, %s, %s)",
-                                (domain_id, rname, rttl, rtype, 0, rdata)
+                                (domain_id, r_name, r_ttl, r_type, 0, r_data)
                             )
                             changed = True
 
@@ -463,13 +496,20 @@ class AXFRDaemonInstance(object):
                         current_serial = int(soa_record[2])
                         new_serial = current_serial + 1
                         soa_record[2] = str(new_serial)
+                        if self.config['debug']:
+                            print('Records changed; bumping SOA: {}'.format(new_serial))
                         sql_curs.execute(
                             "UPDATE records SET content=%s WHERE domain_id=%s AND type='SOA'",
                             (' '.join(soa_record), domain_id)
                         )
 
                         # Commit all the previous changes
-                        self.sql_conn.commit()
+                        if self.config['debug']:
+                            print('Committing database changes and reloading PDNS')
+                        try:
+                            self.sql_conn.commit()
+                        except Exception as e:
+                            self.logger.out('ERROR: Failed to commit DNS aggregator changes: {}'.format(e), state='e')
 
                         # Reload the domain
                         common.run_os_command(
