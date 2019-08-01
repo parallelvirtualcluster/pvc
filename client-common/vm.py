@@ -261,10 +261,13 @@ def remove_vm(zk_conn, domain, is_cli=False):
     # Remove disks
     for disk in disk_list:
         # vmpool/vmname_volume
-        disk_pool, disk_name = disk.split('/')
-        retcode, message = ceph.remove_volume(zk_conn, disk_pool, disk_name)
-        if is_cli and message:
-            click.echo('{}'.format(message))
+        try:
+            disk_pool, disk_name = disk.split('/')
+            retcode, message = ceph.remove_volume(zk_conn, disk_pool, disk_name)
+            if is_cli and message:
+                click.echo('{}'.format(message))
+        except ValueError:
+            continue
 
     return True, 'Removed VM "{}" and disks from the cluster.'.format(domain)
 
