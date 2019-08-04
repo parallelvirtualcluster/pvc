@@ -306,9 +306,9 @@ class NodeInstance(object):
                 if stdout:
                     self.logger.out('Successfully switched Patroni leader\n{}'.format(stdout), state='o')
                     break
-                elif stderr == "Error: Switchover target and source are the same.":
+                elif stderr == "Error: Switchover target and source are the same.\n":
                     self.logger.out('Failed to switch Patroni leader to ourselves; this is fine\n{}'.format(stderr), state='w')
-                    break 
+                    break
                 else:
                     self.logger.out('Failed to switch Patroni leader; retrying\n{}'.format(stderr), state='e')
                     time.sleep(2)
