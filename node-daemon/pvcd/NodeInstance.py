@@ -291,6 +291,7 @@ class NodeInstance(object):
 
             # Switch Patroni leader to the local instance
             self.logger.out('Setting Patroni leader to this node', state='i')
+            tick = 1
             while True:
                 retcode, stdout, stderr = common.run_os_command(
                     """
@@ -309,8 +310,12 @@ class NodeInstance(object):
                 elif stderr == "Error: Switchover target and source are the same.\n":
                     self.logger.out('Failed to switch Patroni leader to ourselves; this is fine\n{}'.format(stderr), state='w')
                     break
+                elif tick >= 5:
+                    self.logger.out('Failed to switch Patroni leader after 5 tries; aborting\n{}'.format(stderr), state='e')
+                    break
                 else:
-                    self.logger.out('Failed to switch Patroni leader; retrying\n{}'.format(stderr), state='e')
+                    self.logger.out('Failed to switch Patroni leader; retrying [{}/5]\n{}'.format(tick, stderr), state='e')
+                    tick += 1
                     time.sleep(2)
 
             # Start the DNS aggregator instance
