@@ -124,7 +124,7 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
     )
     ipmi_reset_retcode, ipmi_reset_stdout, ipmi_reset_stderr = common.run_os_command(ipmi_command_reset)
 
-    time.sleep(0.5)
+    time.sleep(2)
 
     # Ensure the node is powered on
     ipmi_command_status = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power status'.format(
@@ -145,4 +145,5 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
         return True
     else:
         logger.out('Failed to reboot dead node', state='e')
+        print(ipmi_reset_stderr)
         return False
