@@ -593,9 +593,9 @@ def vm_unmigrate(domain):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
-# pvc vm flush_locks
+# pvc vm flush-locks
 ###############################################################################
-@click.command(name='flush_locks', short_help='Flush stale RBD locks for a virtual machine.')
+@click.command(name='flush-locks', short_help='Flush stale RBD locks for a virtual machine.')
 @click.argument(
     'domain'
 )
