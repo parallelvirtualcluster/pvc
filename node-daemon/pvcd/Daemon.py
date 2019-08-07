@@ -489,7 +489,7 @@ def zk_listener(state):
         logger.out('Connection to Zookeeper lost; retrying', state='w')
 
         while True:
-            time.sleep(0.5)
+            time.sleep(1)
 
             _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
             try:
@@ -509,7 +509,7 @@ zk_conn.add_listener(zk_listener)
 
 # Cleanup function
 def cleanup():
-    global zk_conn, update_timer, d_domains
+    global zk_conn, update_timer, d_domain
 
     logger.out('Performing final keepalive update', state='s')
     update_zookeeper()
@@ -830,6 +830,12 @@ if enable_networking:
             d_node[node].update_network_list(d_network)
 
 if enable_hypervisor:
+    # VM command pipeline key
+    @zk_conn.DataWatch('/cmd/domains')
+    def cmd(data, stat, event=''):
+        if data:
+            VMInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'))
+
     # VM domain objects
     @zk_conn.ChildrenWatch('/domains')
     def update_domains(new_domain_list):
@@ -855,7 +861,7 @@ if enable_hypervisor:
             d_node[node].update_domain_list(d_domain)
 
 if enable_storage:
-    # Ceph OSD provisioning key
+    # Ceph command pipeline key
     @zk_conn.DataWatch('/ceph/cmd')
     def cmd(data, stat, event=''):
         if data:

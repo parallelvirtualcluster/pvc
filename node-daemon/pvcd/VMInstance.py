@@ -64,6 +64,31 @@ def flush_locks(zk_conn, logger, dom_uuid):
                     continue
                 logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock, rbd), state='o')
 
+# Primary command function
+def run_command(zk_conn, logger, this_node, data):
+    # Get the command and args
+    command, args = data.split()
+
+    # Flushing VM RBD locks
+    if command == 'flush_locks':
+        dom_uuid = args
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/cmd/domains')
+            with zk_lock:
+                # Add the OSD
+                result = flush_locks(zk_conn, logger, dom_uuid)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/cmd/domains': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/cmd/domains': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
 class VMInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
