@@ -212,14 +212,14 @@ def add_osd(zk_conn, node, device, weight):
 
     # Tell the cluster to create a new OSD for the host
     add_osd_string = 'osd_add {},{},{}'.format(node, device, weight)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': add_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_add':
                 message = 'Created new OSD with block device "{}" on node "{}".'.format(device, node)
                 success = True
@@ -231,10 +231,10 @@ def add_osd(zk_conn, node, device, weight):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(5)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -244,14 +244,14 @@ def remove_osd(zk_conn, osd_id):
 
     # Tell the cluster to remove an OSD
     remove_osd_string = 'osd_remove {}'.format(osd_id)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_remove':
                 message = 'Removed OSD "{}" from the cluster.'.format(osd_id)
                 success = True
@@ -263,10 +263,10 @@ def remove_osd(zk_conn, osd_id):
             message = 'ERROR Command ignored by node.'
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(5)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -276,14 +276,14 @@ def in_osd(zk_conn, osd_id):
 
     # Tell the cluster to online an OSD
     in_osd_string = 'osd_in {}'.format(osd_id)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': in_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': in_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_in':
                 message = 'Set OSD {} online in the cluster.'.format(osd_id)
                 success = True
@@ -295,10 +295,10 @@ def in_osd(zk_conn, osd_id):
             message = 'ERROR Command ignored by node.'
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -308,14 +308,14 @@ def out_osd(zk_conn, osd_id):
 
     # Tell the cluster to offline an OSD
     out_osd_string = 'osd_out {}'.format(osd_id)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': out_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': out_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_out':
                 message = 'Set OSD {} offline in the cluster.'.format(osd_id)
                 success = True
@@ -327,24 +327,24 @@ def out_osd(zk_conn, osd_id):
             message = 'ERROR Command ignored by node.'
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
 def set_osd(zk_conn, option):
     # Tell the cluster to set an OSD property
     set_osd_string = 'osd_set {}'.format(option)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': set_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': set_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_set':
                 message = 'Set OSD property {} on the cluster.'.format(option)
                 success = True
@@ -355,20 +355,20 @@ def set_osd(zk_conn, option):
             success = False
             message = 'ERROR Command ignored by node.'
 
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
     return success, message
 
 def unset_osd(zk_conn, option):
     # Tell the cluster to unset an OSD property
     unset_osd_string = 'osd_unset {}'.format(option)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': unset_osd_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': unset_osd_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-osd_unset':
                 message = 'Unset OSD property {} on the cluster.'.format(option)
                 success = True
@@ -380,10 +380,10 @@ def unset_osd(zk_conn, option):
             message = 'ERROR Command ignored by node.'
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -661,14 +661,14 @@ def getPoolInformation(zk_conn, pool):
 def add_pool(zk_conn, name, pgs):
     # Tell the cluster to create a new pool
     add_pool_string = 'pool_add {},{}'.format(name, pgs)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': add_pool_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_pool_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-pool_add':
                 message = 'Created new RBD pool "{}" with "{}" PGs.'.format(name, pgs)
                 success = True
@@ -680,10 +680,10 @@ def add_pool(zk_conn, name, pgs):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(3)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -693,14 +693,14 @@ def remove_pool(zk_conn, name):
 
     # Tell the cluster to create a new pool
     remove_pool_string = 'pool_remove {}'.format(name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_pool_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_pool_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-pool_remove':
                 message = 'Removed RBD pool "{}" and all volumes.'.format(name)
                 success = True
@@ -712,10 +712,10 @@ def remove_pool(zk_conn, name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(3)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -940,14 +940,14 @@ def add_volume(zk_conn, pool, name, size):
     # Tell the cluster to create a new volume
     databytes = format_bytes_fromhuman(size)
     add_volume_string = 'volume_add {},{},{}'.format(pool, name, databytes)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': add_volume_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-volume_add':
                 message = 'Created new RBD volume "{}" of size "{}" on pool "{}".'.format(name, size, pool)
                 success = True
@@ -959,10 +959,10 @@ def add_volume(zk_conn, pool, name, size):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -970,14 +970,14 @@ def resize_volume(zk_conn, pool, name, size):
     # Tell the cluster to resize the volume
     databytes = format_bytes_fromhuman(size)
     resize_volume_string = 'volume_resize {},{},{}'.format(pool, name, databytes)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': resize_volume_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': resize_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-volume_resize':
                 message = 'Resized RBD volume "{}" to size "{}" on pool "{}".'.format(name, size, pool)
                 success = True
@@ -989,24 +989,24 @@ def resize_volume(zk_conn, pool, name, size):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
 def rename_volume(zk_conn, pool, name, new_name):
     # Tell the cluster to rename
     rename_volume_string = 'volume_rename {},{},{}'.format(pool, name, new_name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': rename_volume_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': rename_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-volume_rename':
                 message = 'Renamed RBD volume "{}" to "{}" on pool "{}".'.format(name, new_name, pool)
                 success = True
@@ -1018,10 +1018,10 @@ def rename_volume(zk_conn, pool, name, new_name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -1031,14 +1031,14 @@ def remove_volume(zk_conn, pool, name):
 
     # Tell the cluster to create a new volume
     remove_volume_string = 'volume_remove {},{}'.format(pool, name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_volume_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_volume_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-volume_remove':
                 message = 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
                 success = True
@@ -1050,10 +1050,10 @@ def remove_volume(zk_conn, pool, name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -1216,14 +1216,14 @@ def getCephSnapshots(zk_conn, pool, volume):
 def add_snapshot(zk_conn, pool, volume, name):
     # Tell the cluster to create a new snapshot
     add_snapshot_string = 'snapshot_add {},{},{}'.format(pool, volume, name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': add_snapshot_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-snapshot_add':
                 message = 'Created new RBD snapshot "{}" of volume "{}" on pool "{}".'.format(name, volume, pool)
                 success = True
@@ -1235,24 +1235,24 @@ def add_snapshot(zk_conn, pool, volume, name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
 def rename_snapshot(zk_conn, pool, volume, name, new_name):
     # Tell the cluster to rename
     rename_snapshot_string = 'snapshot_rename {},{},{}'.format(pool, name, new_name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': rename_snapshot_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': rename_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-snapshot_rename':
                 message = 'Renamed RBD volume snapshot "{}" to "{}" for volume {} on pool "{}".'.format(name, new_name, volume, pool)
                 success = True
@@ -1264,10 +1264,10 @@ def rename_snapshot(zk_conn, pool, volume, name, new_name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 
@@ -1277,14 +1277,14 @@ def remove_snapshot(zk_conn, pool, volume, name):
 
     # Tell the cluster to create a new snapshot
     remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume, name)
-    zkhandler.writedata(zk_conn, {'/ceph/cmd': remove_snapshot_string})
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_snapshot_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
     with lock:
         try:
-            result = zkhandler.readdata(zk_conn, '/ceph/cmd').split()[0]
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-snapshot_remove':
                 message = 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
                 success = True
@@ -1296,10 +1296,10 @@ def remove_snapshot(zk_conn, pool, volume, name):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/ceph/cmd')
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
         time.sleep(1)
-        zkhandler.writedata(zk_conn, {'/ceph/cmd': ''})
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
 

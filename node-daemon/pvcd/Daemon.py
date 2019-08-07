@@ -862,7 +862,7 @@ if enable_hypervisor:
 
 if enable_storage:
     # Ceph command pipeline key
-    @zk_conn.DataWatch('/ceph/cmd')
+    @zk_conn.DataWatch('/cmd/ceph')
     def cmd(data, stat, event=''):
         if data:
             CephInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'), d_osd)
