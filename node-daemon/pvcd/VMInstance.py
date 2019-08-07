@@ -28,9 +28,11 @@ import time
 import threading
 import libvirt
 import kazoo.client
+import json
 
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
+import pvcd.common as common
 
 import pvcd.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
@@ -51,8 +53,6 @@ def flush_locks(zk_conn, logger, dom_uuid):
             logger.out('Failed to parse lock list for volume "{}": {}'.format(rbd, e), state='e')
             continue
 
-        logger.out('Lock list for volume "{}": {}'.format(rbd, lock_list), state='i')
-
         # If there's at least one lock
         if lock_list:
             # Loop through the locks
@@ -60,9 +60,11 @@ def flush_locks(zk_conn, logger, dom_uuid):
                 # Free the lock
                 lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock, detail['locker']))
                 if lock_remove_retcode != 0:
-                    logger.out('Failed to free RBD lock "{}" on volume "{}"'.format(lock, rbd), state='e')
+                    logger.out('Failed to free RBD lock "{}" on volume "{}"\n{}'.format(lock, rbd, lock_remove_stderr), state='e')
                     continue
                 logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock, rbd), state='o')
+
+    return True
 
 # Primary command function
 def run_command(zk_conn, logger, this_node, data):
