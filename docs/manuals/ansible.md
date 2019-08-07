@@ -63,6 +63,10 @@ logrotate_interval: daily
 
 username_email_root: root
 
+hosts:
+  - name: testhost
+    ip: 127.0.0.1
+
 admin_users:
   - name: "myuser"
     uid: 500
@@ -149,6 +153,20 @@ The interval for rotating system logs. Must be one of: `hourly`, `daily`, `weekl
 * *required*
 
 The email address of the root user, at the `local_domain`. Usually `root`, but can be something like `admin` if needed.
+
+#### `hosts`
+
+* *optional*
+
+A list of additional entries for the `/etc/hosts` files on the nodes. Each list element contains the following subelements:
+
+##### `name`
+
+The hostname of the entry.
+
+##### `ip`
+
+The IP address of the entry.
 
 #### `admin_users`
 
