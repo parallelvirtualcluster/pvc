@@ -325,7 +325,7 @@ Valid `state` values are: `start`, `shutdown`, `stop`, `restart`
  * Mandatory values: N/A
  * Optional values: N/A
 
-Return the current host node and previous node, if applicable, for `<vm>`.
+Return the current host node, and last host node if applicable, for `<vm>`.
 
 ###### `POST`
  * Mandatory values: `action`
@@ -342,6 +342,21 @@ Valid `selector` values are: `mem`: the node with the least allocated VM memory;
 If `permanent` is specified, the PVC system will not track the previous node and the VM will not be considered migrated. This is equivalent to the `pvc vm move` CLI command.
 
 If `force` is specified, and the VM has been previously migrated, force through a new migration to the selected target and do not update the previous node value.
+
+#### `/api/v1/vm/<vm>/locks`
+ * Methods: `GET`, `POST`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Not yet implemented and not planned. Return the list of RBD locks for the VM.
+
+###### `POST`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Clear all RBD locks for volumes attached to `<vm>`.
 
 ### Network endpoints
 

@@ -203,6 +203,55 @@ def vm_is_migrated(vm):
     retdata = pvc_vm.is_migrated(zk_conn, vm)
     return retdata
 
+def vm_state(vm):
+    """
+    Return the state of virtual machine VM.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': vm,
+                'state': retdata[0]['state']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VM not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
+def vm_node(vm):
+    """
+    Return the current node of virtual machine VM.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': vm,
+                'node': retdata[0]['node'],
+                'last_node': retdata[0]['last_node']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VM not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return flask.jsonify(retdata), retcode
+
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.
@@ -406,6 +455,23 @@ def vm_unmigrate(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.unmigrate_vm(zk_conn, name)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_flush_locks(name):
+    """
+    Flush locks of a (stopped) VM.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.flush_locks(zk_conn, name)
     if retflag:
         retcode = 200
     else:

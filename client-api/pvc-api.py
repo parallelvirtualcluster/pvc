@@ -274,7 +274,7 @@ def api_vm_element(vm):
 @authenticator
 def api_vm_state(vm):
     if flask.request.method == 'GET':
-        return "Test", 200
+        return pvcapi.vm_state(vm)
 
     if flask.request.method == 'POST':
         if not 'state' in flask.request.values:
@@ -294,7 +294,7 @@ def api_vm_state(vm):
 @authenticator
 def api_vm_node(vm):
     if flask.request.method == 'GET':
-        return "Test", 200
+        return pvcapi.vm_node(vm)
 
     if flask.request.method == 'POST':
         if 'action' in flask.request.values:
@@ -334,6 +334,15 @@ def api_vm_node(vm):
             return pvcapi.vm_unmigrate(vm)
 
         flask.abort(400)
+
+@api.route('/api/v1/vm/<vm>/locks', methods=['GET', 'POST'])
+@authenticator
+def api_vm_locks(vm):
+    if flask.request.method == 'GET':
+        return "Not implemented", 400
+
+    if flask.request.method == 'POST':
+        return pvcapi.vm_flush_locks(vm)
 
 
 #
