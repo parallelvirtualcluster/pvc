@@ -25,13 +25,14 @@ import threading
 import signal
 import os
 import time
+import shlex
 
 import pvcd.log as log
 import pvcd.zkhandler as zkhandler
 
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):
-        command = command_string.split()
+        command = shlex.split(command_string)
         # Set stdout to be a logfile if set
         if logfile:
             stdout = open(logfile, 'a')
@@ -62,7 +63,7 @@ def run_os_daemon(command_string, environment=None, logfile=None):
 
 # Run a oneshot command, optionally without blocking
 def run_os_command(command_string, background=False, environment=None, timeout=None):
-    command = command_string.split()
+    command = shlex.split(command_string)
     if background:
         def runcmd():
             try:
