@@ -25,6 +25,7 @@ import threading
 
 import pvcd.zkhandler as zkhandler
 import pvcd.common as common
+import pvcd.VMInstance as VMInstance
 
 #
 # Fence thread entry function
@@ -77,30 +78,7 @@ def migrateFromFencedNode(zk_conn, node_name, logger):
     logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
-        logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
-        # Get the list of RBD images
-        rbd_list = zkhandler.readdata(zk_conn, '/domains/{}/rbdlist'.format(dom_uuid)).split(',')
-        for rbd in rbd_list:
-            # Check if a lock exists
-            lock_list_retcode, lock_list_stdout, lock_list_stderr = common.run_os_command('rbd lock list --format json {}'.format(rbd))
-            if lock_list_retcode != 0:
-                logger.out('Failed to obtain lock list for volume "{}"'.format(rbd), state='e')
-                continue
-            try:
-                lock_list = json.loads(lock_list_stdout)
-            except:
-                lock_list = {}
-
-            # If there's at least one lock
-            if lock_list:
-                # Loop through the locks
-                for lock, detail in lock_list.items():
-                    # Free the lock
-                    lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock, detail['locker']))
-                    if lock_remove_retcode != 0:
-                        logger.out('Failed to free RBD lock "{}" on volume "{}"'.format(lock, rbd), state='e')
-                        continue
-                    logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock, rbd), state='o')
+        VMInstance.flush_locks(zk_conn, logger, dom_uuid)
 
         target_node = common.findTargetHypervisor(zk_conn, 'mem', dom_uuid)
 

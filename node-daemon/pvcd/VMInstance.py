@@ -34,6 +34,36 @@ import pvcd.zkhandler as zkhandler
 
 import pvcd.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
+def flush_locks(zk_conn, logger, dom_uuid):
+    logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
+    # Get the list of RBD images
+    rbd_list = zkhandler.readdata(zk_conn, '/domains/{}/rbdlist'.format(dom_uuid)).split(',')
+    for rbd in rbd_list:
+        # Check if a lock exists
+        lock_list_retcode, lock_list_stdout, lock_list_stderr = common.run_os_command('rbd lock list --format json {}'.format(rbd))
+        if lock_list_retcode != 0:
+            logger.out('Failed to obtain lock list for volume "{}"'.format(rbd), state='e')
+            continue
+
+        try:
+            lock_list = json.loads(lock_list_stdout)
+        except Exception as e:
+            logger.out('Failed to parse lock list for volume "{}": {}'.format(rbd, e), state='e')
+            continue
+
+        logger.out('Lock list for volume "{}": {}'.format(rbd, lock_list), state='i')
+
+        # If there's at least one lock
+        if lock_list:
+            # Loop through the locks
+            for lock, detail in lock_list.items():
+                # Free the lock
+                lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock, detail['locker']))
+                if lock_remove_retcode != 0:
+                    logger.out('Failed to free RBD lock "{}" on volume "{}"'.format(lock, rbd), state='e')
+                    continue
+                logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock, rbd), state='o')
+
 class VMInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
