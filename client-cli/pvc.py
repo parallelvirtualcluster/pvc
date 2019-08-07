@@ -593,6 +593,23 @@ def vm_unmigrate(domain):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc vm flush_locks
+###############################################################################
+@click.command(name='flush_locks', short_help='Flush stale RBD locks for a virtual machine.')
+@click.argument(
+    'domain'
+)
+def vm_flush_locks(domain):
+    """
+    Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in a stopped state before flushing locks.
+    """
+
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.flush_locks(zk_conn, domain)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc vm info
 ###############################################################################
 @click.command(name='info', short_help='Show details of a VM object.')
@@ -1714,6 +1731,9 @@ def init_cluster(yes):
     transaction.create('/ceph/pools', ''.encode('ascii'))
     transaction.create('/ceph/volumes', ''.encode('ascii'))
     transaction.create('/ceph/snapshots', ''.encode('ascii'))
+    transaction.create('/cmd', ''.encode('ascii'))
+    transaction.create('/cmd/domains', ''.encode('ascii'))
+    transaction.create('/cmd/ceph', ''.encode('ascii'))
     transaction.commit()
 
     # Close the Zookeeper connection
@@ -1783,6 +1803,7 @@ cli_vm.add_command(vm_stop)
 cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
+cli_vm.add_command(vm_flush_locks)
 cli_vm.add_command(vm_info)
 cli_vm.add_command(vm_log)
 cli_vm.add_command(vm_list)
