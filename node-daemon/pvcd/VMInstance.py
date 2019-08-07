@@ -229,12 +229,20 @@ class VMInstance(object):
     # Shutdown the VM gracefully
     def shutdown_vm(self):
         self.logger.out('Gracefully stopping VM', state='i', prefix='Domain {}:'.format(self.domuuid))
+        is_aborted = False
         self.inshutdown = True
         self.dom.shutdown()
         tick = 0
         while True:
-            tick += 1
-            time.sleep(1)
+            tick += 2
+            time.sleep(2)
+
+            # Abort shutdown if the state changes to start
+            current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
+            if current_state != 'shutdown':
+                self.logger.out('Aborting VM shutdown due to state change', state='i', prefix='Domain {}:'.format(self.domuuid))
+                is_aborted = True
+                break
 
             try:
                 lvdomstate = self.dom.state()[0]
@@ -257,6 +265,9 @@ class VMInstance(object):
                 break
 
         self.inshutdown = False
+
+        if is_aborted:
+            self.manage_vm_state()
 
         if self.inrestart:
             # Wait to prevent race conditions
