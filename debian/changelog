@@ -1,3 +1,9 @@
+pvc (0.5-0) unstable; urgency=medium
+
+  * First public release
+
+ -- Joshua Boniface <joshua@boniface.me>  Thu, 08 Aug 2019 20:55:51 -0400
+
 pvc (0.4-0) unstable; urgency=medium
 
   * Unification of all daemons into node daemon
