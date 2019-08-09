@@ -3,7 +3,8 @@
 <p align="center">
 <img alt="Logo banner" src="https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png"/>
 <br/><br/>
-<a href="https://github.com/parallelvirtualcluster/pvc"><img alt="Release" src="https://img.shields.io/github/release/parallelvirtualcluster/pvc.svg"/></a>
+<a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
+<a href="https://github.com/parallelvirtualcluster/pvc/releases"><img alt="Release" src="https://img.shields.io/github/release-pre/parallelvirtualcluster/pvc"/></a>
 <a href="https://git.bonifacelabs.ca/parallelvirtualcluster/pvc/pipelines"><img alt="Pipeline Status" src="https://git.bonifacelabs.ca/parallelvirtualcluster/pvc/badges/master/pipeline.svg"/></a>
 <a href="https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
 </p>
