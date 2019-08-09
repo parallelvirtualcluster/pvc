@@ -14,7 +14,7 @@ During startup, the system scans the Zookeeper database and sets up the required
 
 ## Startup sequence
 
-The daemon startup sequence is documented below. The main daemon entrypoint is `Daemon.py` inside the `pvcd` folder, which is called from the `pvcd.py` stub file.
+The daemon startup sequence is documented below. The main daemon entry-point is `Daemon.py` inside the `pvcd` folder, which is called from the `pvcd.py` stub file.
 
 0. The configuration is read from `/etc/pvc/pvcd.yaml` and the configuration object set up.
 
@@ -36,7 +36,7 @@ The daemon startup sequence is documented below. The main daemon entrypoint is `
 
 0. The node checks if Libvirt is accessible.
 
-0. The node starts up the NFT firewall if applicable and configures the base ruleset.
+0. The node starts up the NFT firewall if applicable and configures the base rule-set.
 
 0. The node ensures that `dnsmasq` is stopped (legacy check, might be safe to remove eventually).
 

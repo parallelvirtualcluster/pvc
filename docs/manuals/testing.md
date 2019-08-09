@@ -26,11 +26,11 @@ As PVC does not currently feature any sort of automated tests, this is the prima
 
 0. Verify console logs are operating (`pvc vm log -f`).
 
-0. Migrate VM to another node via autoselection and back again (`pvc vm migrate` and `pvc vm unmigrate`).
+0. Migrate VM to another node via auto-selection and back again (`pvc vm migrate` and `pvc vm unmigrate`).
 
 0. Manually shuffle VM between nodes and verify reachability on each node (`pvc vm move`).
 
-0. Kill the VM and ensure restart occurrs (`virsh destroy`).
+0. Kill the VM and ensure restart occurs (`virsh destroy`).
 
 0. Restart the VM (`pvc vm restart`).
 

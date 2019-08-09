@@ -107,7 +107,7 @@ The (short) hostname of the node; host-specific.
 
 * *required*
 
-Whether to enable the hypervisor functionality of the PVC Daemon or not. This should usually be enabled except in advanced deployment scenarios (such as a dedicated quorum-keeping micronode or dedicated network routing node).
+Whether to enable the hypervisor functionality of the PVC Daemon or not. This should usually be enabled except in advanced deployment scenarios (such as a dedicated quorum-keeping micro-node or dedicated network routing node).
 
 #### `functions` → `enable_networking`
 
@@ -162,7 +162,7 @@ The IPv4 address for the gateway of the network. Usually applicable only to the 
 * *optional*
 * *requires* `functions` → `enable_networking`
 
-Configuration for coordinator functions on the node. Optional only if `enable_networking` is `False`. Not optional on non-coordinator hosts, though unused. Contains the following subentries.
+Configuration for coordinator functions on the node. Optional only if `enable_networking` is `False`. Not optional on non-coordinator hosts, though unused. Contains the following sub-entries.
 
 ##### `dns` → `database` → `host`
 
@@ -210,7 +210,7 @@ The number of keepalive messages that can be missed before a node is considered 
 
 * *required*
 
-The number of keepalive message that can be missed before a node consideres itself dead and forcibly resets itself. Note that, due to the large number of reasons a node could become unresponsive, the suicide interval alone should not be relied upon. The default is 0, which disables this functionality. If set, should usually be equal to or less than `fence_intervals` for maximum safety.
+The number of keepalive message that can be missed before a node considers itself dead and forcibly resets itself. Note that, due to the large number of reasons a node could become unresponsive, the suicide interval alone should not be relied upon. The default is 0, which disables this functionality. If set, should usually be equal to or less than `fence_intervals` for maximum safety.
 
 #### `system` → `fencing` → `actions` → `successful_fence`
 
@@ -224,7 +224,7 @@ The action to take regarding VMs once a node is *successfully* fenced, i.e. the 
 
 The action to take regarding VMs once a node fencing *fails*, i.e. the IPMI command to restart the node reports a failure. Can be one of `None`, to perform no action and the default, or `migrate` to migrate and start all failed VMs on other nodes.
 
-**WARNING:** This functionality is potentially **dangerous** and can result in data loss or corruption in the VM disks; the post-fence migration process *explicitly clears RBD locks on the disk volumes*. It is designed only for specific and advanced usecases, such as servers that do not reliably report IPMI responses or servers without IPMI (not recommended; see the [cluster architecture documentation](/architecture/cluster)). If this is set to `migrate`, the `suicide_intervals` **must** be set to provide at least some guarantee that the VMs on the node will actually be terminated before this condition triggers. The administrator should think very carefully about their setup and potential failure modes before enabling this option.
+**WARNING:** This functionality is potentially **dangerous** and can result in data loss or corruption in the VM disks; the post-fence migration process *explicitly clears RBD locks on the disk volumes*. It is designed only for specific and advanced use-cases, such as servers that do not reliably report IPMI responses or servers without IPMI (not recommended; see the [cluster architecture documentation](/architecture/cluster)). If this is set to `migrate`, the `suicide_intervals` **must** be set to provide at least some guarantee that the VMs on the node will actually be terminated before this condition triggers. The administrator should think very carefully about their setup and potential failure modes before enabling this option.
 
 #### `system` → `fencing` → `ipmi` → `host`
 

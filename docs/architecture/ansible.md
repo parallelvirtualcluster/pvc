@@ -8,7 +8,7 @@ The Base role configures a node to a specific, standard base Debian system, with
 
 * Installing the custom PVC repository at Boniface Labs.
 
-* Removing several unneccessary packages and instaling numerous additional packages.
+* Removing several unnecessary packages and installing numerous additional packages.
 
 * Automatically configuring network interfaces based on the `group_vars` configuration.
 
@@ -16,7 +16,7 @@ The Base role configures a node to a specific, standard base Debian system, with
 
 * Installing and configuring rsyslog, postfix, ntpd, ssh, and fail2ban.
 
-* Creating the users sepecified in the `group_vars` configuration.
+* Creating the users specified in the `group_vars` configuration.
 
 * Installing custom MOTDs, bashrc files, vimrc files, and other useful configurations for each user.
 
@@ -30,7 +30,7 @@ The PVC role configures all the dependencies of PVC, including storage, networki
 
 * Install, configure, and if `bootstrap=yes` is set, bootstrap a Zookeeper cluster (coordinators only).
 
-* Install, configure, and if `bootstrap=yes` is set`, bootstrap a Patroni Postgresql cluster for the PowerDNS aggregator (coordinators only).
+* Install, configure, and if `bootstrap=yes` is set`, bootstrap a Patroni PostgreSQL cluster for the PowerDNS aggregator (coordinators only).
 
 * Install and configure Libvirt.
 

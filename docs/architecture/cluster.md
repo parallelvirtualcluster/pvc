@@ -24,11 +24,11 @@ Of this, some amount of CPU and RAM will be used by the storage subsystem and th
 
 ## Storage Layout: Ceph and OSDs
 
-The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" setup whereby storage and VM hypervisor functions are colocated onto the same physical servers. The performance of the storage must be taken into account when sizing the nodes as mentioned above.
+The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" setup whereby storage and VM hypervisor functions are collocated onto the same physical servers. The performance of the storage must be taken into account when sizing the nodes as mentioned above.
 
 The Ceph system is laid out similar to the other daemons. The Ceph Monitor and Manager functions are delegated to the Coordinators over the cluster network, with all nodes connecting to these hosts to obtain the CRUSH maps and select OSD disks. OSDs are then distributed on all hosts, including non-coordinator hypervisors, and communicate with clients over the cluster network and with each other (for replication, failover, etc.) over the storage network.
 
-Without exception for proper redundancy, Ceph pools on the cluster use the `copies=3` `mincopies=2` replication scheme. That is to say, for each 4MB "object" the cluster stores, it will store 3 copies on 3 different nodes; if one copy becomes unavalable, due to a node maintenance or failure, the other 2 copies continue to enable read/write access to the clouster; if two copies become unavainable, writes to the cluster will block however reads will still proceed from the single remaining copy, allowing recovery. More than 3 nodes running OSD disks increases the resiliency of the cluster, however object placement is decided at write time and is evenly distributed across the cluster, so even in very large clusters only 1 node can be down at one time and writes guaranteed to succeed.
+Without exception for proper redundancy, Ceph pools on the cluster use the `copies=3` `mincopies=2` replication scheme. That is to say, for each 4MB "object" the cluster stores, it will store 3 copies on 3 different nodes; if one copy becomes unavailable, due to a node maintenance or failure, the other 2 copies continue to enable read/write access to the cluster; if two copies become unavailable, writes to the cluster will block however reads will still proceed from the single remaining copy, allowing recovery. More than 3 nodes running OSD disks increases the resiliency of the cluster, however object placement is decided at write time and is evenly distributed across the cluster, so even in very large clusters only 1 node can be down at one time and writes guaranteed to succeed.
 
 In this configuration, therefore, each 1MB of storage at the VM layer consumes 3MB (3 copies) of storage at the raw disk layer. Size OSD disks accordingly to ensure sufficient storage space and performance. Future versions of PVC may support more complex Ceph storage layouts, such as `copies=4` `mincopies=2` or multiple-parity Erasure Coding pools.
 
@@ -90,9 +90,9 @@ Generally the cluster network should be completely separate from the upstream ne
 
 The storage network is an unrouted private network used by the PVC node storage OSDs to communicated with each other, without using the main cluster network and introducing potentially large amounts of traffic there.
 
-Nodes in this network are generally assigned IPs automatically based on their node number. The network should be large enough to include all nodes squentially.
+Nodes in this network are generally assigned IPs automatically based on their node number. The network should be large enough to include all nodes sequentially.
 
-The administrator may choose to colocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceved ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth.
+The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth.
 
 ### Bridged (unmanaged) Client Networks
 
@@ -102,7 +102,7 @@ With this client network type, PVC does no management of the network. This is le
 
 ### VXLAN (managed) Client Networks
 
-The sceond type of client network is the managed VXLAN network. These networks make use of BGP EVPN, managed by route reflection on the coordinators, to create virtual layer 2 Ethernet tunnels between all nodes in the cluster. VXLANs are then run on top of these virtual layer 2 tunnels, with the primary PVC node providing routing, DHCP, and DNS functionality to the network via a single IP address.
+The second type of client network is the managed VXLAN network. These networks make use of BGP EVPN, managed by route reflection on the coordinators, to create virtual layer 2 Ethernet tunnels between all nodes in the cluster. VXLANs are then run on top of these virtual layer 2 tunnels, with the primary PVC node providing routing, DHCP, and DNS functionality to the network via a single IP address.
 
 With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's cluster network as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network of the primary coordinator node; note that this may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when sizing the cluster network.
 
@@ -150,11 +150,11 @@ This section provides diagrams of 3 possible node configurations, providing an i
 
 *Above: A diagram of a simple 3-node cluster; all nodes are coordinators, single 1Gbps network interface per node, collapsed cluster and storage networks*
 
-#### Midsized 8-node cluster with 3 coordinators
+#### Mid-sized 8-node cluster with 3 coordinators
 
 ![8-node cluster](/images/8-node-cluster.png)
 
-*Above: A diagram of a midsized 8-node cluster with 3 coordinators, dual bonded 10Gbps network interfaces per node*
+*Above: A diagram of a mid-sized 8-node cluster with 3 coordinators, dual bonded 10Gbps network interfaces per node*
 
 #### Large 17-node cluster with 5 coordinators
 

@@ -4,7 +4,7 @@ PVC aims to be easy to deploy, letting you get on with managing your cluster in 
 
 This guide will walk you through setting up a simple 3-node PVC cluster from scratch, ending with a fully-usable cluster ready to provision virtual machines. Note that all domains, IP addresses, etc. used are examples - when following this guide, be sure to modify the commands and configurations to suit your needs.
 
-### Part One - Prepararing for bootstrap
+### Part One - Preparing for bootstrap
 
 0. Download the latest copy of the [`pvc-installer`](https://github.com/parallelvirtualcluster/pvc-installer) and [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) repositories to your local machine.
 
@@ -38,7 +38,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Follow the prompts from the installer ISO. It will ask for a hostname, the system disk device to use, the initial network interface to configure as well as either DHCP or static IP information, and finally either an HTTP URL containing an SSH `authorized_keys` to use for the `deploy` user, or a password for this user if key auth is unavailable.
 
-0. Wait for the installer to complete. It will provide some next steps at the end, and wait for the administrator to acknowledge via an "Enter" keypress. The node will now reboot into the base PVC system.
+0. Wait for the installer to complete. It will provide some next steps at the end, and wait for the administrator to acknowledge via an "Enter" key-press. The node will now reboot into the base PVC system.
 
 0. Repeat the above steps for all 3 initial nodes. On boot, they will display their configured IP address to be used in the next steps.
 
@@ -48,7 +48,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Verify connectivity from your administrative host to the 3 initial nodes, including SSH access. Accept their host keys as required before proceeding as Ansible does not like those prompts.
 
-0. Verify your `group_vars` setup from part one, as errors here may require a reinstallation and restart of the bootstrap process.
+0. Verify your `group_vars` setup from part one, as errors here may require a re-installation and restart of the bootstrap process.
 
 0. Perform the initial bootstrap. From the `pvc-ansible` repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.  
     `$ ansible-playbook -v -i hosts pvc.yml -l <cluster_name> -e bootstrap=yes`
@@ -78,7 +78,7 @@ All steps in this and following sections can be performed using either the CLI c
     `$ pvc storage ceph osd add --weight 1.0 pvchv3 /dev/sdb`  
     `$ pvc storage ceph osd add --weight 1.0 pvchv3 /dev/sdc`   
 
-    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportial to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
+    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
 
     **NOTE:** OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
 
@@ -103,7 +103,7 @@ All steps in this and following sections can be performed using either the CLI c
 0. Determine a domain name, IPv4, and/or IPv6 network for your first client network, and any other client networks you may wish to create. For this guide we will create a single "managed" virtual client network with DHCP.
 
 0. Create the virtual network. The general command for an IPv4-only network with DHCP is:  
-    `$ pvc network add <vni_id> --type <type> --description <spaceless_description> --domain <domain> --ipnet <ipv4_network_in_CIDR> --gateway <ipv4_gateway_address> --dhcp --dhcp-start <first_address> --dhcp-end <last_address>`
+    `$ pvc network add <vni_id> --type <type> --description <space-less_description> --domain <domain> --ipnet <ipv4_network_in_CIDR> --gateway <ipv4_gateway_address> --dhcp --dhcp-start <first_address> --dhcp-end <last_address>`
 
     For example, to create the managed (EVPN VXLAN) network `100` with subnet `10.100.0.0/24`,  gateway `.1` and DHCP from `.100` to `.199`, run the command as follows:  
     `$ pvc network add 100 --type managed --description my-managed-network --domain myhosts.local --ipnet 10.100.0.0/24 --gateway 10.100.0.1 --dhcp --dhcp-start 10.100.0.100 --dhcp-end 10.100.0.199`

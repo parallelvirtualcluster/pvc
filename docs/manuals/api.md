@@ -14,7 +14,7 @@ The API accepts SSL certificate and key files via the `pvc-api.yaml` configurati
 
 Authentication for the API is available using a static list of tokens. These tokens can be any long string, but UUIDs are typical and simple to use. Within `pvc-ansible`, the list of tokens can be specified in the `pvc.yaml` `group_vars` file. Usually, you'd want one token for each user of the API, such as a WebUI, a 3rd-party client, or an administrative user. Within the configuration, each token can have a description; this is mostly for administrative clarity and is not actually used within the API itself.
 
-The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a JSON `message` of `Authentiation is disabled` and HTTP code 200.
+The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a JSON `message` of `Authentication is disabled` and HTTP code 200.
 
 For one-time authentication, the `token` value can be specified to any API endpoint via the `X-Api-Key` header value. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
 
@@ -260,7 +260,7 @@ Return a JSON document containing information about all cluster VMs. If `limit` 
 
 Define a new VM with Libvirt XML configuration `xml` (either single-line or human-readable multi-line).
 
-If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurrs instead.
+If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurs instead.
 
 If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
 
@@ -333,7 +333,7 @@ Return the current host node, and last host node if applicable, for `<vm>`.
 
 Change the current host node for `<vm>` by `action`, using live migration if possible, and using `shutdown` then `start` if not. `action` must be either `migrate` or `unmigrate`.
 
-If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurrs instead.
+If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurs instead.
 
 If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
 
@@ -383,7 +383,7 @@ Add a new virtual network to the cluster. `vni` must be a valid VNI, either a vL
 
 * `managed` for PVC-managed, VXLAN-based networks.
 
-`domain` specifies a DNS domain for hosts in the network. DNS is aggregated and provded for all networks on the primary coordinator node.
+`domain` specifies a DNS domain for hosts in the network. DNS is aggregated and provided for all networks on the primary coordinator node.
 
 `ip4_network` specifies a CIDR-formatted IPv4 netblock, usually RFC1918, for the network.
 
@@ -469,7 +469,7 @@ Return a JSON document containing information about all active NFTables ACLs in 
 
 If `limit` is specified, return a JSON document containing information about all active NFTables ACLs with descriptions matching `limit` as fuzzy regex.
 
-If `direction` is specified and is one of `in` or `out`, return a JSON codument listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
+If `direction` is specified and is one of `in` or `out`, return a JSON document listing all active NFTables ACLs in the specified direction only. If `direction` is invalid, return a failure.
 
 ###### `POST`
  * Mandatory values: `description`, `direction`, `rule`

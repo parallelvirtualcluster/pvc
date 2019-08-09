@@ -158,7 +158,7 @@ The email address of the root user, at the `local_domain`. Usually `root`, but c
 
 * *optional*
 
-A list of additional entries for the `/etc/hosts` files on the nodes. Each list element contains the following subelements:
+A list of additional entries for the `/etc/hosts` files on the nodes. Each list element contains the following sub-elements:
 
 ##### `name`
 
@@ -172,7 +172,7 @@ The IP address of the entry.
 
 * *required*
 
-A list of non-root users, their UIDs, and SSH public keys, that are able to access the server. At least one non-root user should be specified to administer the nodes. These users will not have a password set; only key-based login is supported. Each list element contains the following subelements:
+A list of non-root users, their UIDs, and SSH public keys, that are able to access the server. At least one non-root user should be specified to administer the nodes. These users will not have a password set; only key-based login is supported. Each list element contains the following sub-elements:
 
 ##### `name`
 
@@ -248,7 +248,7 @@ The domain name for the network. For the "upstream" network, should usually be `
 
 * *required*
 
-The CIDR-formated subnet of the network. Individual nodes will be configured with specific IPs in this network in a later setting.
+The CIDR-formatted subnet of the network. Individual nodes will be configured with specific IPs in this network in a later setting.
 
 ##### `floating_ip`
 
@@ -453,7 +453,7 @@ Generate using `uuidgen` or `pwgen -s 32` and adjusting length as required.
 
 * *required*
 
-A list of API tokens that are allowed to access the PVC API. At least one should be specified. Each list element contains the following subelements:
+A list of API tokens that are allowed to access the PVC API. At least one should be specified. Each list element contains the following sub-elements:
 
 ##### `description`
 
@@ -491,7 +491,7 @@ The SSL private key, in text form, for the PVC API to use.
 
 * *required*
 
-The UUIS for Libvirt to communicate with the Ceph storage cluster. This UUID will be used in all VM configurations for the block device.
+The UUID for Libvirt to communicate with the Ceph storage cluster. This UUID will be used in all VM configurations for the block device.
 
 Generate using `uuidgen`.
 
@@ -521,7 +521,7 @@ Generate using `pwgen -s 16` and adjusting length as required.
 
 The username of the PVC DNS aggregator database replication user.
 
-#### `pvc_repliation_database_password`
+#### `pvc_replication_database_password`
 
 * *required*
 
@@ -557,7 +557,7 @@ A list of upstream routers to communicate BGP routes to.
 
 * *required*
 
-A list of all nodes in the PVC cluster and their node-specific configurations. Each node must be present in this list. Each list element contains the following subelements:
+A list of all nodes in the PVC cluster and their node-specific configurations. Each node must be present in this list. Each list element contains the following sub-elements:
 
 ##### `hostname`
 
@@ -639,5 +639,5 @@ The IPMI password for the node management controller. Unless a per-host override
 
 #### `pvc_<network>_*`
 
-The next set of entries is hardcoded to use the values from the global `networks` list. It should not need to be changed under most circumstances. Refer to the previous sections for specific notes about each entry.
+The next set of entries is hard-coded to use the values from the global `networks` list. It should not need to be changed under most circumstances. Refer to the previous sections for specific notes about each entry.
 
