@@ -1707,6 +1707,9 @@ def init_cluster(yes):
 
     click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
 
+    # Easter-egg
+    click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
+
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
 
