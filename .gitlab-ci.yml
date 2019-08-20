@@ -7,7 +7,7 @@ build:
   before_script: 
     - git submodule update --init
   script:
-    - /usr/local/bin/build-package 0.5
+    - build-deb.sh
     - /usr/local/bin/deploy-package
   artifacts:
     paths:
