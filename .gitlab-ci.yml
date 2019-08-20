@@ -11,6 +11,6 @@ build:
     - /usr/local/bin/deploy-package
   artifacts:
     paths:
-      - "*.deb"
+      - "../*.deb"
   only:
     - master
