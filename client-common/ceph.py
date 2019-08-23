@@ -658,9 +658,9 @@ def getPoolInformation(zk_conn, pool):
     }
     return pool_information
 
-def add_pool(zk_conn, name, pgs):
+def add_pool(zk_conn, name, pgs, replcfg):
     # Tell the cluster to create a new pool
-    add_pool_string = 'pool_add {},{}'.format(name, pgs)
+    add_pool_string = 'pool_add {},{},{}'.format(name, pgs, replcfg)
     zkhandler.writedata(zk_conn, {'/cmd/ceph': add_pool_string})
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
@@ -670,7 +670,7 @@ def add_pool(zk_conn, name, pgs):
         try:
             result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
             if result == 'success-pool_add':
-                message = 'Created new RBD pool "{}" with "{}" PGs.'.format(name, pgs)
+                message = 'Created new RBD pool "{}" with "{}" PGs and replication configuration {}.'.format(name, pgs, replcfg)
                 success = True
             else:
                 message = 'ERROR: Failed to create new pool; check node logs for details.'

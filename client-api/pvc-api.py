@@ -755,6 +755,13 @@ def api_ceph_pool_root():
             # We default to a very small number; DOCUMENT THIS
             pgs = 128
 
+        # Get replication configuration
+        if 'replcfg' in flask.request.values:
+            replcfg = flask.request.values['replcfg']
+        else:
+            # We default to copies=3,mincopies=2
+            replcfg = 'copies=3,mincopies=2'
+
         return pvcapi.ceph_pool_add(pool, pgs)
 
 @api.route('/api/v1/storage/ceph/pool/<pool>', methods=['GET', 'DELETE'])

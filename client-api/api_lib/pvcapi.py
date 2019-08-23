@@ -870,12 +870,12 @@ def ceph_pool_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def ceph_pool_add(name, pgs):
+def ceph_pool_add(name, pgs, replcfg):
     """
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.add_pool(zk_conn, name, pgs)
+    retflag, retdata = pvc_ceph.add_pool(zk_conn, name, pgs, replcfg)
     if retflag:
         retcode = 200
     else:

@@ -1380,13 +1380,22 @@ def ceph_pool():
 @click.argument(
     'pgs'
 )
-def ceph_pool_add(name, pgs):
+@click.option(
+    '--replcfg', 'replcfg',
+    default='copies=3,mincopies=2', show_default=True, required=False,
+    help="""
+    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a
+    comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
+    """
+)
+def ceph_pool_add(name, pgs, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
+
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs)
+    retcode, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs, replcfg)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
