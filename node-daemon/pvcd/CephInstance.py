@@ -398,7 +398,7 @@ class CephPoolInstance(object):
             if data and data != self.stats:
                 self.stats = json.loads(data)
 
-def add_pool(zk_conn, logger, name, pgs):
+def add_pool(zk_conn, logger, name, pgs, copies, mincopies):
     # We are ready to create a new pool on this node
     logger.out('Creating new RBD pool {}'.format(name), state='i')
     try:
@@ -410,7 +410,21 @@ def add_pool(zk_conn, logger, name, pgs):
             print(stderr)
             raise
 
-        # 2. Enable RBD application
+        # 2. Set the size and min_size
+        retcode, stdout, stderr = common.run_os_command('ceph osd pool set {} size {}'.format(name, copies))
+        if retcode:
+            print('ceph osd pool set size')
+            print(stdout)
+            print(stderr)
+            raise
+        retcode, stdout, stderr = common.run_os_command('ceph osd pool set {} min_size {}'.format(name, mincopies))
+        if retcode:
+            print('ceph osd pool set min_size')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # 3. Enable RBD application
         retcode, stdout, stderr = common.run_os_command('ceph osd pool application enable {} rbd'.format(name))
         if retcode:
             print('ceph osd pool application enable')
@@ -418,7 +432,7 @@ def add_pool(zk_conn, logger, name, pgs):
             print(stderr)
             raise
 
-        # 3. Add the new pool to ZK
+        # 4. Add the new pool to ZK
         zkhandler.writedata(zk_conn, {
             '/ceph/pools/{}'.format(name): '',
             '/ceph/pools/{}/pgs'.format(name): pgs,
@@ -843,14 +857,16 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
 
     # Adding a new pool
     elif command == 'pool_add':
-        name, pgs = args.split(',')
+        name, pgs, copies, mincopies = args.split(',')
+        copies = copies.replace('copies=','')
+        mincopies = mincopies.replace('mincopies=','')
 
         if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
             with zk_lock:
                 # Add the pool
-                result = add_pool(zk_conn, logger, name, pgs)
+                result = add_pool(zk_conn, logger, name, pgs, copies, mincopies)
                 # Command succeeded
                 if result:
                     # Update the command queue
