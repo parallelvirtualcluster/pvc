@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # ceph.py - PVC client function library, Ceph cluster fuctions
 # Part of the Parallel Virtual Cluster (PVC) system
