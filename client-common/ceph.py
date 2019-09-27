@@ -862,7 +862,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         )
     )
 
-    for pool in pool_list:
+    for pool_information in pool_list:
         # Format the output header
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
