@@ -1551,6 +1551,27 @@ def ceph_volume_rename(pool, name, new_name):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc storage ceph volume clone
+###############################################################################
+@click.command(name='rename', short_help='Clone RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'new_name'
+)
+def ceph_volume_clone(pool, name, new_name):
+    """
+    Clone a Ceph RBD volume with name NAME in pool POOL to name NEW_NAME in pool POOL.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_ceph.clone_volume(zk_conn, pool, name, new_name)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc storage ceph volume list
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volumes.')
