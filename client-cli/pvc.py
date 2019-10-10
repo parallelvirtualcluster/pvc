@@ -1694,48 +1694,9 @@ def ceph_volume_snapshot_list(pool, volume, limit):
 
 
 ###############################################################################
-# pvc deploy
-###############################################################################
-@click.group(name='deploy', short_help='Manage VM deployment configuration.', context_settings=CONTEXT_SETTINGS)
-def cli_deploy():
-    """
-    Manage the configuration of VM deployments in the PVC cluster.
-    """
-    pass
-
-###############################################################################
-# pvc deploy image
-###############################################################################
-@click.group(name='image', short_help='Manage VM disk images.', context_settings=CONTEXT_SETTINGS)
-def deploy_image():
-    """
-    Manage VM disk images in the PVC cluster.
-    """
-    pass
-
-###############################################################################
-# pvc deploy template
-###############################################################################
-@click.group(name='template', short_help='Manage VM disk templates.', context_settings=CONTEXT_SETTINGS)
-def deploy_template():
-    """
-    Manage VM disk images in the PVC cluster.
-    """
-    pass
-
-###############################################################################
-# pvc deploy script
-###############################################################################
-@click.group(name='script', short_help='Manage VM deployment scripts.', context_settings=CONTEXT_SETTINGS)
-def deploy_script():
-    """
-    Manage VM deployment scripts in the PVC cluster.
-    """
-    pass
-
-###############################################################################
 # pvc init
 ###############################################################################
+
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
     '--yes', 'yes',
@@ -1910,15 +1871,10 @@ cli_ceph.add_command(ceph_volume)
 
 cli_storage.add_command(cli_ceph)
 
-cli_deploy.add_command(deploy_image)
-cli_deploy.add_command(deploy_template)
-cli_deploy.add_command(deploy_script)
-
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
-cli.add_command(cli_deploy)
 cli.add_command(init_cluster)
 
 #
