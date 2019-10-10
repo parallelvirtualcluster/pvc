@@ -633,10 +633,14 @@ Remove a Ceph RBD pool `<pool>` from the storage cluster.
 Return a JSON document containing information about all Ceph RBD volumes in the storage cluster. If `pool` is specified, return a JSON document containing information about all Ceph RBD volumes in Ceph RBD pool `pool`. If `limit` is specified, return a JSON document containing information about all Ceph RBD volumes with names matching `limit` as fuzzy regex.
 
 ###### `POST`
- * Mandatory values: `volume`, `pool`, `size`
- * Optional values: N/A
+ * Mandatory values: `volume`, `pool`
+ * Optional values: `size`, `source_volume`
 
-Add a new Ceph RBD volume `<volume>` to Ceph RBD pool `<pool>`. `size` must be a valid size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`.
+Add a new Ceph RBD volume `<volume>` to Ceph RBD pool `<pool>`.
+
+If `source_volume` is specified, clone the specified source volume into the new volume; when using this option, `size` is ignored.
+
+The value for `size` is mandatory if not cloning from a `source_volume`, and must be a valid storage size, in bytes or a single-character metric prefix of bytes, e.g. `1073741824` (1GB), `4096M`, or `20G`. PVC uses multiples of 1024 (MiB, GiB, etc.) consistently.
 
 #### `/api/v1/storage/ceph/volume/<pool>/<volume>`
  * Methods: `GET`, `PUT`, `DELETE`

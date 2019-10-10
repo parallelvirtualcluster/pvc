@@ -809,13 +809,25 @@ def api_ceph_volume_root():
         else:
             return flask.jsonify({"message":"ERROR: A pool name must be spcified."}), 400
 
+        # Get source_volume
+        if 'source_volume' in flask.request.values:
+            source_volume = flask.request.values['source_volume']
+        else:
+            source_volume = None
+
         # Get volume size
         if 'size' in flask.request.values:
             size = flask.request.values['size']
+        elif source_volume:
+            # We ignore size if we're cloning a volume
+            size = None
         else:
             return flask.jsonify({"message":"ERROR: A volume size in bytes (or with an M/G/T suffix) must be specified."}), 400
 
-        return pvcapi.ceph_volume_add(pool, volume, size)
+        if source_volume:
+            return pvcapi.ceph_volume_clone(pool, volume, source_volume)
+        else:
+            return pvcapi.ceph_volume_add(pool, volume, size)
 
 @api.route('/api/v1/storage/ceph/volume/<pool>/<volume>', methods=['GET', 'PUT', 'DELETE'])
 @authenticator
