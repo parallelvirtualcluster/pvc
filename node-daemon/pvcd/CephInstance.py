@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# CehpInstance.py - Class implementing a PVC node Ceph instance
+# CephInstance.py - Class implementing a PVC node Ceph instance
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
@@ -532,6 +532,39 @@ def add_volume(zk_conn, logger, pool, name, size):
         logger.out('Failed to create new RBD volume {} on pool {}: {}'.format(name, pool, e), state='e')
         return False
 
+def clone_volume(zk_conn, logger, pool, name_orig, name_new, prefix):
+    if not prefix:
+        # Ensure that prefix is just an empty string if it isn't set
+        prefix = ''
+    logger.out('Cloning RBD volume {} to {}{} on pool {}'.format(name_orig, prefix, name_new, pool), state='i')
+    try:
+        # Clone the volume
+        retcode, stdout, stderr = common.run_os_command('rbd copy {}/{} {}/{}{}'.format(pool, name_orig, pool, prefix, name_new))
+        if retcode:
+            print('rbd copy')
+            print(stdout)
+            print(stderr)
+            raise
+
+        # Get volume stats
+        retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}{}'.format(pool, prefix, name_new))
+        volstats = stdout
+
+        # Add the new volume to ZK
+        zkhandler.writedata(zk_conn, {
+            '/ceph/volumes/{}/{}{}'.format(pool, prefix, name_new): '',
+            '/ceph/volumes/{}/{}{}/stats'.format(pool, prefix, name_new): volstats,
+            '/ceph/snapshots/{}/{}{}'.format(pool, prefix, name_new): '',
+        })
+
+        # Log it
+        logger.out('Cloned RBD volume {} to {}{} on pool {}'.format(name_orig, prefix, name_new, pool), stats='o')
+        return True
+    except Exception as e:
+        # Log it
+        logger.out('Failed to clone RBD volume {} to {}{} on pool {}: {}'.format(name_orig, prefix, name_new, pool, e), state='e')
+        return False
+
 def resize_volume(zk_conn, logger, pool, name, size):
     logger.out('Resizing RBD volume {} on pool {} to size {}'.format(name, pool, size), state='i')
     try:
@@ -909,6 +942,27 @@ def run_command(zk_conn, logger, this_node, data, d_osd):
             with zk_lock:
                 # Add the volume
                 result = add_volume(zk_conn, logger, pool, name, size)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/cmd/ceph': 'success-{}'.format(data)})
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.writedata(zk_conn, {'/cmd/ceph': 'failure-{}'.format(data)})
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Cloning a volume
+    elif command == 'volume_clone':
+        pool, name_orig, name_new, prefix = args.split(',')
+
+        if this_node.router_state == 'primary':
+            # Lock the command queue
+            zk_lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
+            with zk_lock:
+                # Clone the volume
+                result = clone_volume(zk_conn, logger, pool, name_orig, name_new, prefix)
                 # Command succeeded
                 if result:
                     # Update the command queue

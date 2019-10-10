@@ -1026,6 +1026,35 @@ def rename_volume(zk_conn, pool, name, new_name):
 
     return success, message
 
+def clone_volume(zk_conn, pool, name, new_name):
+    # Tell the cluster to clone
+    clone_volume_string = 'volume_clone {},{},{}'.format(pool, name, new_name)
+    zkhandler.writedata(zk_conn, {'/cmd/ceph': clone_volume_string})
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
+    with lock:
+        try:
+            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
+            if result == 'success-volume_clone':
+                message = 'Cloned RBD volume "{}" to "{}" on pool "{}".'.format(name, new_name, pool)
+                success = True
+            else:
+                message = 'ERROR: Failed to clone volume {} to {}; check node logs for details.'.format(name, new_name)
+                success = False
+        except:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
+    with lock:
+        time.sleep(1)
+        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+
+    return success, message
+
 def remove_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool {}.'.format(name, pool)
