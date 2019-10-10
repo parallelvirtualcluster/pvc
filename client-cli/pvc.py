@@ -1714,46 +1714,6 @@ def deploy_image():
     pass
 
 ###############################################################################
-# pvc deploy image create
-###############################################################################
-@click.group(name='create', short_help='Create VM disk image from volume.', context_settings=CONTEXT_SETTINGS)
-def deploy_image_create():
-    """
-    Create a disk image from an existing RBD volume.
-    """
-    pass
-
-###############################################################################
-# pvc deploy image upload
-###############################################################################
-@click.group(name='upload', short_help='Upload VM disk image from file.', context_settings=CONTEXT_SETTINGS)
-def deploy_image_upload():
-    """
-    Create a disk image from a file.
-    """
-    pass
-
-###############################################################################
-# pvc deploy image remove
-###############################################################################
-@click.group(name='remove', short_help='Remove VM disk image.', context_settings=CONTEXT_SETTINGS)
-def deploy_image_remove():
-    """
-    Remove a disk image from the cluster.
-    """
-    pass
-
-###############################################################################
-# pvc deploy image list
-###############################################################################
-@click.group(name='list', short_help='List VM disk images.', context_settings=CONTEXT_SETTINGS)
-def deploy_image_list():
-    """
-    List VM disk images in the PVC cluster.
-    """
-    pass
-
-###############################################################################
 # pvc deploy template
 ###############################################################################
 @click.group(name='template', short_help='Manage VM disk templates.', context_settings=CONTEXT_SETTINGS)
@@ -1949,11 +1909,6 @@ cli_ceph.add_command(ceph_pool)
 cli_ceph.add_command(ceph_volume)
 
 cli_storage.add_command(cli_ceph)
-
-deploy_image.add_command(deploy_image_create)
-deploy_image.add_command(deploy_image_upload)
-deploy_image.add_command(deploy_image_remove)
-deploy_image.add_command(deploy_image_list)
 
 cli_deploy.add_command(deploy_image)
 cli_deploy.add_command(deploy_template)
