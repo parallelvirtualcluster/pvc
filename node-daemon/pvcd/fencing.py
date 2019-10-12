@@ -67,27 +67,34 @@ def fenceNode(node_name, zk_conn, config, logger):
 
     # If the fence succeeded and successful_fence is migrate
     if fence_status == True and config['successful_fence'] == 'migrate':
-        migrateFromFencedNode(zk_conn, node_name, logger)
+        migrateFromFencedNode(zk_conn, node_name, config, logger)
 
     # If the fence failed and failed_fence is migrate
     if fence_status == False and config['failed_fence'] == 'migrate' and config['suicide_intervals'] != '0':
-        migrateFromFencedNode(zk_conn, node_name, logger)
+        migrateFromFencedNode(zk_conn, node_name, config, logger)
 
 # Migrate hosts away from a fenced node
-def migrateFromFencedNode(zk_conn, node_name, logger):
+def migrateFromFencedNode(zk_conn, node_name, config, logger):
     logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
     for dom_uuid in dead_node_running_domains:
         VMInstance.flush_locks(zk_conn, logger, dom_uuid)
 
-        target_node = common.findTargetHypervisor(zk_conn, 'mem', dom_uuid)
+        target_node = common.findTargetHypervisor(zk_conn, config, dom_uuid)
 
-        logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
-        zkhandler.writedata(zk_conn, {
-            '/domains/{}/state'.format(dom_uuid): 'start',
-            '/domains/{}/node'.format(dom_uuid): target_node,
-            '/domains/{}/lastnode'.format(dom_uuid): node_name
-        })
+        if target_node is not None:
+            logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
+            zkhandler.writedata(zk_conn, {
+                '/domains/{}/state'.format(dom_uuid): 'start',
+                '/domains/{}/node'.format(dom_uuid): target_node,
+                '/domains/{}/lastnode'.format(dom_uuid): node_name
+            })
+        else:
+            logger.out('No target node found for VM "{}"; VM will autostart on next unflush/ready of current node'.format(dom_uuid), state='i')
+            zkhandler.writedata(zk_conn, {
+                '/domains/{}/state'.format(dom_uuid): 'stopped',
+                '/domains/{}/node_autostart'.format(dom_uuid): 'True'
+            }
 
     # Set node in flushed state for easy remigrating when it comes back
     zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })

@@ -382,7 +382,7 @@ class NodeInstance(object):
 
             self.logger.out('Selecting target to migrate VM "{}"'.format(dom_uuid), state='i')
 
-            target_node = common.findTargetHypervisor(self.zk_conn, 'mem', dom_uuid)
+            target_node = common.findTargetHypervisor(self.zk_conn, self.config, dom_uuid)
 
             # Don't replace the previous node if the VM is already migrated
             if zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid)):
@@ -390,9 +390,10 @@ class NodeInstance(object):
             else:
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
 
-            if target_node == None:
-                self.logger.out('Failed to find migration target for VM "{}"; shutting down'.format(dom_uuid), state='e')
+            if target_node is None:
+                self.logger.out('Failed to find migration target for VM "{}"; shutting down and setting autostart flag'.format(dom_uuid), state='e')
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/node_autostart'.format(dom_uuid): 'True' })
 
                 # Wait for the VM to shut down
                 while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'stop':
@@ -426,6 +427,19 @@ class NodeInstance(object):
                 self.flush_thread = None
                 self.flush_stopper = False
                 return
+
+            # Handle autostarts
+            autostart = zkhandler.readdata(self.zk_conn, '/domains/{}/node_autostart'.format(dom_uuid))
+            node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
+            if autostart == 'True' and node == self.name:
+                self.logger.out('Starting autostart VM "{}"'.format(dom_uuid), state='i')
+                zkhandler.writedata(self.zk_conn, {
+                    '/domains/{}/state'.format(dom_uuid): 'start',
+                    '/domains/{}/node'.format(dom_uuid): self.name,
+                    '/domains/{}/lastnode'.format(dom_uuid): '',
+                    '/domains/{}/node_autostart'.format(dom_uuid): 'False'
+                })
+                continue
 
             try:
                 last_node = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid))

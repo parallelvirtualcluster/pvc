@@ -164,6 +164,10 @@ def getInformationFromXML(zk_conn, uuid):
     domain_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
     domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
 
+    domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
+    domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
+    domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
+
     parsed_xml = getDomainXML(zk_conn, uuid)
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
@@ -188,6 +192,9 @@ def getInformationFromXML(zk_conn, uuid):
         'last_node': domain_lastnode,
         'migrated': domain_migrated,
         'failed_reason': domain_failedreason,
+        'node_limit': domain_node_limit,
+        'node_selector': domain_node_selector,
+        'node_autostart': domain_node_autostart,
         'description': domain_description,
         'memory': domain_memory,
         'vcpu': domain_vcpu,

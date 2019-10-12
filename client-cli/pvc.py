@@ -217,17 +217,25 @@ def cli_vm():
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
 @click.option(
     '-t', '--target', 'target_node',
-    help='Home node for this domain; autodetect if unspecified.'
+    help='Home node for this domain; autoselect if unspecified.'
 )
 @click.option(
-    '-s', '--selector', 'selector', default='mem', show_default=True,
+    '-l', '--limit', 'node_limit', default=None, show_default=False,
+    help='Comma-separated list of nodes to limit VM operation to; saved with VM.'
+)
+@click.option(
+    '-s', '--selector', 'node_selector', default='mem', show_default=True,
     type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine optimal target node during autodetect.'
+    help='Method to determine optimal target node during autoselect; saved with VM.'
+)
+@click.option(
+    '-a'/'-A', '--autostart'/'--no-autostart', 'node_autostart', is_flag=True, default=False,
+    help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
 @click.argument(
     'config', type=click.File()
 )
-def vm_define(config, target_node, selector):
+def vm_define(config, target_node, node_limit, node_selector, node_autostart):
     """
     Define a new virtual machine from Libvirt XML configuration file CONFIG.
     """
@@ -237,7 +245,39 @@ def vm_define(config, target_node, selector):
     config.close()
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.define_vm(zk_conn, config_data, target_node, selector)
+    retcode, retmsg = pvc_vm.define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
+# pvc vm meta
+###############################################################################
+@click.command(name='meta', short_help='Modify PVC metadata of an existing VM.')
+@click.option(
+    '-l', '--limit', 'node_limit', default=None, show_default=False,
+    help='Comma-separated list of nodes to limit VM operation to.'
+)
+@click.option(
+    '-s', '--selector', 'node_selector', default=None, show_default=False,
+    type=click.Choice(['mem','load','vcpus','vms']),
+    help='Method to determine optimal target node during autoselect; saved with VM.'
+)
+@click.option(
+    '-a'/'-A', '--autostart'/'--no-autostart', 'node_autostart', is_flag=True, default=None,
+    help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
+)
+@click.argument(
+    'domain'
+)
+def vm_meta(domain, node_limit, node_selector, node_autostart):
+    """
+    Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
+    """
+
+    if node_limit is None and node_selector is None and node_autostart is None:
+        cleanup(False, 'At least one metadata option must be specified to update.')
+
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -1774,6 +1814,7 @@ cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
 cli_vm.add_command(vm_define)
+cli_vm.add_command(vm_meta)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
 cli_vm.add_command(vm_remove)

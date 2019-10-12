@@ -235,11 +235,23 @@ def api_vm_root():
         else:
             node = None
 
-        # Get target selector
+        # Set target limit metadata
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+
+        # Set target selector metadata
         if 'selector' in flask.request.values:
             selector = flask.request.values['selector']
         else:
-            selector = None
+            selector = 'mem'
+
+        # Set target autostart metadata
+        if 'autostart' in flask.request.values:
+            autostart = True
+        else:
+            autostart = False
 
         return pvcapi.vm_define(vm, libvirt_xml, node, selector)
 
@@ -251,8 +263,27 @@ def api_vm_element(vm):
         return pvcapi.vm_list(None, None, vm, is_fuzzy=False)
 
     if flask.request.method == 'POST':
-        # TODO: #22
-        flask.abort(501)
+        # Set target limit metadata
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+
+        # Set target selector metadata
+        if 'selector' in flask.request.values:
+            selector = flask.request.values['selector']
+        else:
+            selector = None
+
+        # Set target autostart metadata
+        if 'no-autostart' in flask.request.values:
+            autostart = False
+        elif 'autostart' in flask.request.values:
+            autostart = True
+        else:
+            autostart = None
+
+       return pvcapi.vm_meta(vm, limit, selector, autostart)
 
     if flask.request.method == 'PUT':
         libvirt_xml = flask.request.data

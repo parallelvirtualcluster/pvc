@@ -272,19 +272,29 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-# TODO: #22
-#def vm_add():
-#    """
-#    Add a VM named NAME to the PVC cluster.
-#    """
-#    return '', 200
-
 def vm_define(name, xml, node, selector):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.define_vm(zk_conn, xml, node, selector)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return flask.jsonify(output), retcode
+
+def vm_meta(vm, limit, selector, autostart):
+    """
+    Update metadata of a VM.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm. limit, selector, autostart)
     if retflag:
         retcode = 200
     else:

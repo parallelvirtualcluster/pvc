@@ -160,7 +160,7 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
-def define_vm(zk_conn, config_data, target_node, selector):
+def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -190,6 +190,9 @@ def define_vm(zk_conn, config_data, target_node, selector):
         '/domains/{}/state'.format(dom_uuid): 'stop',
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
+        '/domains/{}/node_limit'.format(dom_uuid): node_limit,
+        '/domains/{}/node_selector'.format(dom_uuid): node_selector,
+        '/domains/{}/node_autostart'.format(dom_uuid): node_autostart,
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/rbdlist'.format(dom_uuid): ','.join(rbd_list),
@@ -197,6 +200,28 @@ def define_vm(zk_conn, config_data, target_node, selector):
     })
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
+
+def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart):
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    if node_limit is not None:
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/node_limit'.format(dom_uuid): node_limit
+        })
+
+    if node_selector is not None:
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/node_selector'.format(dom_uuid): node_selector
+        })
+
+    if node_autostart is not None:
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/node_autostart'.format(dom_uuid): node_autostart
+        })
+
+    return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
 
 def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -680,6 +705,11 @@ def format_info(zk_conn, domain_information, long_output):
     if domain_information['failed_reason']:
         ainformation.append('')
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
+
+    ainformation.append('')
+    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_limit']))
+    ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_selector']))
+    ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_autostart']))
 
     # Network list
     net_list = []

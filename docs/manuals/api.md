@@ -256,20 +256,26 @@ Return a JSON document containing information about all cluster VMs. If `limit` 
 
 ###### `POST`
  * Mandatory values: `xml`
- * Optional values: `node`, `selector`
+ * Optional values: `node`, `limit`, `selector`, `autostart`
 
 Define a new VM with Libvirt XML configuration `xml` (either single-line or human-readable multi-line).
 
 If `node` is specified and is valid, the VM will be assigned to `node` instead of automatically determining the target node. If `node` is specified and not valid, auto-selection occurs instead.
 
-If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster.
+If `limit` is speficied, the node will not be allowed to run on nodes not specified in the limit.
+
+The `limit` value must be a comma-separated list of nodes; invalid nodes are ignored.
+
+If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster. This value is stored as PVC metadata for this VM and is used in subsequent migrate (including node flush) and fence recovery operations.
 
 Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
+
+If `autostart` is specified, the VM will be set to autostart on the next node unflush/ready operation of the home node. This metadata value is reset to False by the node daemon on each successful use.
 
 **NOTE:** The `POST` operation assumes that the VM resources (i.e. disks, operating system, etc.) are already created. This is equivalent to the `pvc vm define` command in the PVC CLI client. *[todo v0.6]* Creating a new VM using the provisioner uses the `POST /api/vm/<vm>` endpoint instead.
 
 #### `/api/v1/vm/<vm>`
- * Methods: `GET`, *[todo v0.6]* `POST`, `PUT`, `DELETE`
+ * Methods: `GET`, `POST`, `PUT`, `DELETE`
 
 ###### `GET`
  * Mandatory values: N/A
@@ -277,11 +283,23 @@ Valid `selector` values are: `mem`: the node with the least allocated VM memory;
 
 Return a JSON document containing information about `<vm>`. The output is identical to `GET /api/v1/vm?limit=<vm>` without fuzzy regex matching.
 
-###### *[todo v0.6]* `POST`
- * Mandatory values: `vm_template`
- * Optional values: `description`
+###### `POST`
+ * Mandatory values: At least one of optional values must be specified
+ * Optional values: `limit`, `selector`, `autostart`/`no-autostart`
 
-Create a new virtual machine `<vm>` with the specified VM template `vm_template` and optional text `description`.
+Update the PVC metadata of `<vm>` with the specified values.
+
+If `limit` is speficied, the node will not be allowed to run on nodes not specified in the limit.
+
+The `limit` value must be a comma-separated list of nodes; invalid nodes are ignored.
+
+If `selector` is specified and no specific and valid `node` is specified, the automatic node determination will use `selector` to determine the optimal node instead of the default for the cluster. This value is stored as PVC metadata for this VM and is used in subsequent migrate (including node flush) and fence recovery operations.
+
+Valid `selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
+
+If `autostart` is specified, the VM will be set to autostart on the next node unflush/ready operation of the home node. This metadata value is reset to False by the node daemon on each successful use.
+
+If `no-autostart` is specified, an existing autostart will be disabled if applicable.
 
 ###### `PUT`
  * Mandatory values: `xml`

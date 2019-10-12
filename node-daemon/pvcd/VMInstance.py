@@ -105,6 +105,10 @@ class VMInstance(object):
         self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        try:
+            self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
+        except:
+            self.pinpolicy = "None"
 
         # These will all be set later
         self.instart = False

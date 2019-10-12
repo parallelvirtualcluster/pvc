@@ -139,24 +139,44 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
 #
 # Find a migration target
 #
-def findTargetHypervisor(zk_conn, search_field, dom_uuid):
+def findTargetHypervisor(zk_conn, config, dom_uuid):
+    # Determine VM node limits; set config value if read fails
+    try:
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(node)).split(',')
+    except:
+        node_limit = None
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(node): 'None' })
+
+    # Determine VM search field or use default; set config value if read fails
+    try:
+        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(node)).split(',')
+    except:
+        search_field = config.migration_target_selector
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(node): config.migration_target_selector })
+
+    # Execute the search
     if search_field == 'mem':
-        return findTargetHypervisorMem(zk_conn, dom_uuid)
+        return findTargetHypervisorMem(zk_conn, node_limit, dom_uuid)
     if search_field == 'load':
-        return findTargetHypervisorLoad(zk_conn, dom_uuid)
+        return findTargetHypervisorLoad(zk_conn, node_limit, dom_uuid)
     if search_field == 'vcpus':
-        return findTargetHypervisorVCPUs(zk_conn, dom_uuid)
+        return findTargetHypervisorVCPUs(zk_conn, node_limit, dom_uuid)
     if search_field == 'vms':
-        return findTargetHypervisorVMs(zk_conn, dom_uuid)
+        return findTargetHypervisorVMs(zk_conn, node_limit, dom_uuid)
+
+    # Nothing was found
     return None
 
 # Get the list of valid target nodes
-def getHypervisors(zk_conn, dom_uuid):
+def getHypervisors(zk_conn, node_limit, dom_uuid):
     valid_node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
     for node in full_node_list:
+        if node_limit and node not in node_limit:
+            continue
+
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
         domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
 
@@ -171,11 +191,11 @@ def getHypervisors(zk_conn, dom_uuid):
     return valid_node_list
 
 # via free memory (relative to allocated memory)
-def findTargetHypervisorMem(zk_conn, dom_uuid):
+def findTargetHypervisorMem(zk_conn, node_limit, dom_uuid):
     most_allocfree = 0
     target_node = None
 
-    node_list = getHypervisors(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
         memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
         memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node)))
@@ -190,11 +210,11 @@ def findTargetHypervisorMem(zk_conn, dom_uuid):
     return target_node
 
 # via load average
-def findTargetHypervisorLoad(zk_conn, dom_uuid):
+def findTargetHypervisorLoad(zk_conn, node_limit, dom_uuid):
     least_load = 9999
     target_node = None
 
-    node_list = getHypervisors(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
         load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(node)))
 
@@ -205,11 +225,11 @@ def findTargetHypervisorLoad(zk_conn, dom_uuid):
     return target_node
 
 # via total vCPUs
-def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
+def findTargetHypervisorVCPUs(zk_conn, node_limit, dom_uuid):
     least_vcpus = 9999
     target_node = None
 
-    node_list = getHypervisors(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
         vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
 
@@ -220,11 +240,11 @@ def findTargetHypervisorVCPUs(zk_conn, dom_uuid):
     return target_node
 
 # via total VMs
-def findTargetHypervisorVMs(zk_conn, dom_uuid):
+def findTargetHypervisorVMs(zk_conn, node_limit, dom_uuid):
     least_vms = 9999
     target_node = None
 
-    node_list = getHypervisors(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
         vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
 
