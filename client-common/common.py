@@ -164,9 +164,17 @@ def getInformationFromXML(zk_conn, uuid):
     domain_lastnode = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(uuid))
     domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
 
-    domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
-    domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
-    domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
+    try:
+        domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
+        domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
+        domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
+    except:
+        domain_node_limit = None
+        domain_node_selector = None
+        domain_node_autostart = None
+
+    if not domain_node_limit:
+        domain_node_limit = 'False'
 
     parsed_xml = getDomainXML(zk_conn, uuid)
 

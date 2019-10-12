@@ -229,7 +229,7 @@ def cli_vm():
     help='Method to determine optimal target node during autoselect; saved with VM.'
 )
 @click.option(
-    '-a'/'-A', '--autostart'/'--no-autostart', 'node_autostart', is_flag=True, default=False,
+    '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=False,
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
 @click.argument(
@@ -262,7 +262,7 @@ def vm_define(config, target_node, node_limit, node_selector, node_autostart):
     help='Method to determine optimal target node during autoselect; saved with VM.'
 )
 @click.option(
-    '-a'/'-A', '--autostart'/'--no-autostart', 'node_autostart', is_flag=True, default=None,
+    '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=None,
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
 @click.argument(

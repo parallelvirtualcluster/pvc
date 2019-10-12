@@ -707,8 +707,8 @@ def format_info(zk_conn, domain_information, long_output):
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 
     ainformation.append('')
-    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_limit']))
     ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_selector']))
+    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_limit']))
     ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_autostart']))
 
     # Network list

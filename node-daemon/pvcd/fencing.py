@@ -94,7 +94,7 @@ def migrateFromFencedNode(zk_conn, node_name, config, logger):
             zkhandler.writedata(zk_conn, {
                 '/domains/{}/state'.format(dom_uuid): 'stopped',
                 '/domains/{}/node_autostart'.format(dom_uuid): 'True'
-            }
+            })
 
     # Set node in flushed state for easy remigrating when it comes back
     zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })
