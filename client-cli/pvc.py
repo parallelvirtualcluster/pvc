@@ -212,56 +212,6 @@ def cli_vm():
     pass
 
 ###############################################################################
-# pvc vm add
-###############################################################################
-@click.command(name='add', short_help='Add a new virtual machine to the provisioning queue.')
-@click.option(
-    '--target', 'target_node',
-    help='Home node for this domain; autodetect if unspecified.'
-)
-@click.option(
-    '--cluster', 'is_cluster',
-    is_flag=True,
-    help='Create a cluster VM.'
-)
-@click.option(
-    '--system-template', 'system_template',
-    required=True,
-    help='System resource template for this domain.'
-)
-@click.option(
-    '--network-template', 'network_template',
-    required=True,
-    help='Network resource template for this domain.'
-)
-@click.option(
-    '--storage-template', 'storage_template',
-    required=True,
-    help='Storage resource template for this domain.'
-)
-@click.argument(
-    'vmname'
-)
-def vm_add(vmname, target_node, is_cluster, system_template, network_template, storage_template):
-    """
-    Add a new VM VMNAME to the provisioning queue.
-
-    Note: Cluster VMs are those which will only run on Coordinator hosts. Usually, these VMs will use the 'cluster' network template, or possibly a custom template including the upstream network as well. Use these sparingly, as they are designed primarily for cluster control or upstream bridge VMs.
-    """
-
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_provisioner.add_vm(
-        zk_conn,
-        vmname=vmname,
-        target_node=target_node,
-        is_cluster=is_cluster,
-        system_template=system_template,
-        network_template=network_template,
-        storage_template=storage_template
-    )
-    cleanup(retcode, retmsg, zk_conn)
-
-###############################################################################
 # pvc vm define
 ###############################################################################
 @click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
@@ -1823,7 +1773,6 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
-cli_vm.add_command(vm_add)
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_modify)
 cli_vm.add_command(vm_undefine)
