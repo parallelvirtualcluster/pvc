@@ -293,13 +293,15 @@ def getPrimaryNode(zk_conn):
 def findTargetNode(zk_conn, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
-        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(node)).split(',')
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
+        if not any(node_limit):
+            node_limit = None
     except:
         node_limit = None
 
     # Determine VM search field or use default; set config value if read fails
     try:
-        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(node)).split(',')
+        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
     except:
         search_field = 'mem'
 

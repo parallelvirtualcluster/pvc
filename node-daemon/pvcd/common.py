@@ -142,17 +142,17 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
 def findTargetNode(zk_conn, config, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
-        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(node)).split(',')
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
     except:
         node_limit = None
-        zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(node): 'None' })
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(dom_uuid): 'None' })
 
     # Determine VM search field or use default; set config value if read fails
     try:
-        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(node)).split(',')
+        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
     except:
         search_field = config.migration_target_selector
-        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(node): config.migration_target_selector })
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(dom_uuid): config.migration_target_selector })
 
     # Execute the search
     if search_field == 'mem':
