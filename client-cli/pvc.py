@@ -254,12 +254,12 @@ def vm_define(config, target_node, node_limit, node_selector, node_autostart):
 @click.command(name='meta', short_help='Modify PVC metadata of an existing VM.')
 @click.option(
     '-l', '--limit', 'node_limit', default=None, show_default=False,
-    help='Comma-separated list of nodes to limit VM operation to.'
+    help='Comma-separated list of nodes to limit VM operation to; set to an empty string to remove.'
 )
 @click.option(
     '-s', '--selector', 'node_selector', default=None, show_default=False,
     type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine optimal target node during autoselect; saved with VM.'
+    help='Method to determine optimal target node during autoselect.'
 )
 @click.option(
     '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=None,
