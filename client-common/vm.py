@@ -170,7 +170,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
     dom_name = parsed_xml.name.text
 
     if not target_node:
-        target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
+        target_node = common.findTargetNode(zk_conn, dom_uuid)
     else:
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
