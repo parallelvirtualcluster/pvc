@@ -80,7 +80,7 @@ def migrateFromFencedNode(zk_conn, node_name, config, logger):
     for dom_uuid in dead_node_running_domains:
         VMInstance.flush_locks(zk_conn, logger, dom_uuid)
 
-        target_node = common.findTargetHypervisor(zk_conn, config, dom_uuid)
+        target_node = common.findTargetNode(zk_conn, config, dom_uuid)
 
         if target_node is not None:
             logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')

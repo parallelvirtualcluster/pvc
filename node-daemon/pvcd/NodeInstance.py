@@ -382,7 +382,7 @@ class NodeInstance(object):
 
             self.logger.out('Selecting target to migrate VM "{}"'.format(dom_uuid), state='i')
 
-            target_node = common.findTargetHypervisor(self.zk_conn, self.config, dom_uuid)
+            target_node = common.findTargetNode(self.zk_conn, self.config, dom_uuid)
 
             # Don't replace the previous node if the VM is already migrated
             if zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid)):
