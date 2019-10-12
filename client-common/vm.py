@@ -398,7 +398,7 @@ def stop_vm(zk_conn, domain):
 
     return True, 'Forcibly stopping VM "{}".'.format(domain)
 
-def move_vm(zk_conn, domain, target_node, selector):
+def move_vm(zk_conn, domain, target_node):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -408,12 +408,17 @@ def move_vm(zk_conn, domain, target_node, selector):
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
     if not target_node:
-        target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
+        target_node = common.findTargetNode(zk_conn, dom_uuid)
     else:
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
             return False, 'Specified node "{}" is invalid.'.format(target_node)
+
+        # Check if node is within the limit
+        limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid).split(',')
+        if target_node not in limit:
+            return False, 'Specified node "{}" is not in the allowed list of nodes for VM "{}".'.format(target_node, domain)
 
         # Verify if node is current node
         if target_node == current_node:
@@ -435,7 +440,7 @@ def move_vm(zk_conn, domain, target_node, selector):
 
     return True, 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
 
-def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=False):
+def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -463,12 +468,17 @@ def migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=Fal
             return False, 'ERROR: VM "{}" has been previously migrated.'.format(domain)
 
     if not target_node:
-        target_node = common.findTargetNode(zk_conn, selector, dom_uuid)
+        target_node = common.findTargetNode(zk_conn, dom_uuid)
     else:
         # Verify node is valid
         valid_node = common.verifyNode(zk_conn, target_node)
         if not valid_node:
             return False, 'Specified node "{}" is invalid.'.format(target_node)
+
+        # Check if node is within the limit
+        limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid).split(',')
+        if target_node not in limit:
+            return False, 'Specified node "{}" is not in the allowed list of nodes for VM "{}".'.format(target_node, domain)
 
         # Verify if node is current node
         if target_node == current_node:

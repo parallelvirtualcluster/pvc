@@ -288,18 +288,46 @@ def getPrimaryNode(zk_conn):
     return primary_node
 
 #
-# Get the list of valid target nodes
+# Find a migration target
 #
-def getNodes(zk_conn, dom_uuid):
+def findTargetHypervisor(zk_conn, config, dom_uuid):
+    # Determine VM node limits; set config value if read fails
+    try:
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(node)).split(',')
+    except:
+        node_limit = None
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(node): 'None' })
+
+    # Determine VM search field or use default; set config value if read fails
+    try:
+        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(node)).split(',')
+    except:
+        search_field = config.migration_target_selector
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(node): config.migration_target_selector })
+
+    # Execute the search
+    if search_field == 'mem':
+        return findTargetHypervisorMem(zk_conn, node_limit, dom_uuid)
+    if search_field == 'load':
+        return findTargetHypervisorLoad(zk_conn, node_limit, dom_uuid)
+    if search_field == 'vcpus':
+        return findTargetHypervisorVCPUs(zk_conn, node_limit, dom_uuid)
+    if search_field == 'vms':
+        return findTargetHypervisorVMs(zk_conn, node_limit, dom_uuid)
+
+    # Nothing was found
+    return None
+
+# Get the list of valid target nodes
+def getHypervisors(zk_conn, node_limit, dom_uuid):
     valid_node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
-
-    try:
-        current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
-    except:
-        current_node = None
+    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
     for node in full_node_list:
+        if node_limit and node not in node_limit:
+            continue
+
         daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
         domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
 
@@ -311,64 +339,50 @@ def getNodes(zk_conn, dom_uuid):
 
         valid_node_list.append(node)
 
-    if not valid_node_list:
-        # We found no valid nodes; possibly they're all flushed or all down. Return the entire list instead.
-        valid_node_list = full_node_list
-
     return valid_node_list
-    
-#
-# Find a migration target
-#
-def findTargetNode(zk_conn, search_field, dom_uuid):
-    if search_field == 'mem':
-        return findTargetNodeMem(zk_conn, dom_uuid)
-    if search_field == 'load':
-        return findTargetNodeLoad(zk_conn, dom_uuid)
-    if search_field == 'vcpus':
-        return findTargetNodeVCPUs(zk_conn, dom_uuid)
-    if search_field == 'vms':
-        return findTargetNodeVMs(zk_conn, dom_uuid)
-    return None
 
-# via allocated memory
-def findTargetNodeMem(zk_conn, dom_uuid):
-    least_alloc = math.inf
+# via free memory (relative to allocated memory)
+def findTargetHypervisorMem(zk_conn, node_limit, dom_uuid):
+    most_allocfree = 0
     target_node = None
 
-    node_list = getNodes(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        alloc = float(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
+        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
+        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node)))
+        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node)))
+        memtotal = memused + memfree
+        allocfree = memtotal - memalloc
 
-        if alloc < least_alloc:
-            least_alloc = alloc
+        if allocfree > most_allocfree:
+            most_allocfree = allocfree
             target_node = node
 
     return target_node
 
 # via load average
-def findTargetNodeLoad(zk_conn, dom_uuid):
-    least_load = math.inf
+def findTargetHypervisorLoad(zk_conn, node_limit, dom_uuid):
+    least_load = 9999
     target_node = None
 
-    node_list = getNodes(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node)))
+        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(node)))
 
         if load < least_load:
             least_load = load
-            target_node = node
+            target_hypevisor = node
 
     return target_node
 
 # via total vCPUs
-def findTargetNodeVCPUs(zk_conn, dom_uuid):
-    least_vcpus = math.inf
+def findTargetHypervisorVCPUs(zk_conn, node_limit, dom_uuid):
+    least_vcpus = 9999
     target_node = None
 
-    node_list = getNodes(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        vcpus = float(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
+        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
 
         if vcpus < least_vcpus:
             least_vcpus = vcpus
@@ -377,13 +391,13 @@ def findTargetNodeVCPUs(zk_conn, dom_uuid):
     return target_node
 
 # via total VMs
-def findTargetNodeVMs(zk_conn, dom_uuid):
-    least_vms = math.inf
+def findTargetHypervisorVMs(zk_conn, node_limit, dom_uuid):
+    least_vms = 9999
     target_node = None
 
-    node_list = getNodes(zk_conn, dom_uuid)
+    node_list = getHypervisors(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        vms = float(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
+        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
 
         if vms < least_vms:
             least_vms = vms

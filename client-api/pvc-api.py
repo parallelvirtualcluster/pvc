@@ -338,11 +338,6 @@ def api_vm_node(vm):
             node = flask.request.values['node']
         else:
             node = None
-        # Get target selector
-        if 'selector' in flask.request.values:
-            selector = flask.request.values['selector']
-        else:
-            selector = None
         # Get permanent flag
         if 'permanent' in flask.request.values and flask.request.values['permanent']:
             flag_permanent = True
@@ -358,9 +353,9 @@ def api_vm_node(vm):
         is_migrated = pvcapi.vm_is_migrated(vm)
 
         if action == 'migrate' and not flag_permanent:
-            return pvcapi.vm_migrate(vm, node, selector, flag_force)
+            return pvcapi.vm_migrate(vm, node, flag_force)
         if action == 'migrate' and flag_permanent:
-            return pvcapi.vm_move(vm, node, selector)
+            return pvcapi.vm_move(vm, node)
         if action == 'unmigrate' and is_migrated:
             return pvcapi.vm_unmigrate(vm)
 

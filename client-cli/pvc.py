@@ -520,19 +520,14 @@ def vm_stop(domain):
     '-t', '--target', 'target_node', default=None,
     help='Target node to migrate to; autodetect if unspecified.'
 )
-@click.option(
-    '-s', '--selector', 'selector', default='mem', show_default=True,
-    type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine optimal target node during autodetect.'
-)
-def vm_move(domain, target_node, selector):
+def vm_move(domain, target_node):
     """
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
     """
 
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.move_vm(zk_conn, domain, target_node, selector)
+    retcode, retmsg = pvc_vm.move_vm(zk_conn, domain, target_node)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -547,22 +542,17 @@ def vm_move(domain, target_node, selector):
     help='Target node to migrate to; autodetect if unspecified.'
 )
 @click.option(
-    '-s', '--selector', 'selector', default='mem', show_default=True,
-    type=click.Choice(['mem','load','vcpus','vms']),
-    help='Method to determine optimal target node during autodetect.'
-)
-@click.option(
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
     help='Force migrate an already migrated VM; does not replace an existing previous node value.'
 )
-def vm_migrate(domain, target_node, selector, force_migrate):
+def vm_migrate(domain, target_node, force_migrate):
     """
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
     # Open a Zookeeper connection
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_node, selector, force_migrate, is_cli=True)
+    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=True)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

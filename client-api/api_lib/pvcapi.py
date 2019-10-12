@@ -425,12 +425,12 @@ def vm_stop(name):
     }
     return flask.jsonify(output), retcode
 
-def vm_move(name, node, selector):
+def vm_move(name, node):
     """
     Move a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.move_vm(zk_conn, name, node, selector)
+    retflag, retdata = pvc_vm.move_vm(zk_conn, name, node)
     if retflag:
         retcode = 200
     else:
@@ -442,12 +442,12 @@ def vm_move(name, node, selector):
     }
     return flask.jsonify(output), retcode
 
-def vm_migrate(name, node, selector, flag_force):
+def vm_migrate(name, node, flag_force):
     """
     Temporarily migrate a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, selector, flag_force)
+    retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, flag_force)
     if retflag:
         retcode = 200
     else:
