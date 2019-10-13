@@ -27,7 +27,7 @@ import os
 
 import gevent.pywsgi
 
-import api_lib.pvcapi as pvcapi
+import api_lib.api as pvcapi
 
 # Parse the configuration file
 try:
