@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# api.py - PVC HTTP API interface
+# pvc-api.py - PVC HTTP API interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2019 Joshua M. Boniface <joshua@boniface.me>
