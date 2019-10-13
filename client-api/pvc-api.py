@@ -948,14 +948,23 @@ def api_ceph_volume_snapshot_element(pool, volume, snapshot):
 # Entrypoint
 #
 if config['debug']:
+    # Run in Flask standard mode
     api.run(config['listen_address'], config['listen_port'])
 else:
     if config['ssl_enabled']:
         # Run the WSGI server with SSL
-        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api,                                           keyfile=config['ssl_key_file'], certfile=config['ssl_cert_file'])
+        http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            api,
+            keyfile=config['ssl_key_file'],
+            certfile=config['ssl_cert_file']
+        )
     else:
         # Run the ?WSGI server without SSL
-        http_server = gevent.pywsgi.WSGIServer((config['listen_address'], config['listen_port']), api)
+        http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            api
+        )
 
     print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
     http_server.serve_forever()
