@@ -3,7 +3,7 @@
 # network.py - PVC client function library, Network fuctions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
-#    Copyright (C) 2018  Joshua M. Boniface <joshua@boniface.me>
+#    Copyright (C) 2018-2019 Joshua M. Boniface <joshua@boniface.me>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
