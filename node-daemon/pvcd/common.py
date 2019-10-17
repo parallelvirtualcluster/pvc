@@ -143,6 +143,8 @@ def findTargetNode(zk_conn, config, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
         node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
+        if not any(node_limit):
+            node_limit = None
     except:
         node_limit = None
         zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(dom_uuid): 'None' })
