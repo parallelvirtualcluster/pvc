@@ -425,6 +425,9 @@ def move_vm(zk_conn, domain, target_node):
             common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
+    if not target_node:
+        return False, 'ERROR: Could not find a valid migration target for VM "{}".'.format(domain)
+
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state == 'start':
         zkhandler.writedata(zk_conn, {
@@ -484,6 +487,9 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
         if target_node == current_node:
             common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
+
+    if not target_node:
+        return False, 'ERROR: Could not find a valid migration target for VM "{}".'.format(domain)
 
     # Don't overwrite an existing last_node when using force_migrate
     if last_node and force_migrate:
