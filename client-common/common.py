@@ -168,7 +168,7 @@ def getInformationFromXML(zk_conn, uuid):
         domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
     except:
         domain_node_limit = None
-    try
+    try:
         domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
     except:
         domain_node_selector = None
