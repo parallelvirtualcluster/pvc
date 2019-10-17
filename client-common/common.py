@@ -166,15 +166,21 @@ def getInformationFromXML(zk_conn, uuid):
 
     try:
         domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
-        domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
-        domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
     except:
         domain_node_limit = None
+    try
+        domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
+    except:
         domain_node_selector = None
+    try:
+        domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
+    except:
         domain_node_autostart = None
 
     if not domain_node_limit:
         domain_node_limit = 'False'
+    if not domain_node_autostart:
+        domain_node_autostart = 'False'
 
     parsed_xml = getDomainXML(zk_conn, uuid)
 
