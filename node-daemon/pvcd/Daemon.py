@@ -936,6 +936,15 @@ if enable_storage:
 
 # Zookeeper keepalive update function
 def update_zookeeper():
+    # Set the upstream IP in Zookeeper for clients to read
+    if config['enable_networking']:
+        if this_node.router_state == 'primary':
+            try:
+                if zkhandler.readdata(zk_conn, '/upstream_ip') != config['upstream_floating_ip']:
+                    raise
+            except:
+                zkhandler.writedata(zk_conn, {'/upstream_ip': config['upstream_floating_ip']})
+
     # Get past state and update if needed
     if debug:
         print("Get past state and update if needed")
