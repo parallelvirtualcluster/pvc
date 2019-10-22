@@ -176,10 +176,15 @@ def format_info(cluster_information, oformat):
         return
 
     # Plain formatting, i.e. human-readable
+    if cluster_information['health'] == 'Optimal':
+        health_colour = ansiprint.green()
+    else:
+        health_colour = ansiprint.yellow()
+
     ainformation = []
     ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
-    ainformation.append('{}Cluster health:{}      {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['health']))
+    ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
     ainformation.append('{}Primary node:{}        {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['primary_node']))
     ainformation.append('{}Cluster upstream IP:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['upstream_ip']))
     ainformation.append('')
