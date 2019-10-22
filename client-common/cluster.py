@@ -91,7 +91,7 @@ def getClusterInformation(zk_conn):
             ceph_osd_healthy_status[index] = True
         up_texts = { 1: 'up', 0: 'down' }
         in_texts = { 1: 'in', 0: 'out' }
-        ceph_osd_report_status[index] = up_texts[osd_up] + ',' + in_texts[osd_in]
+        ceph_osd_report_status[index] = up_texts[ceph_osd_up] + ',' + in_texts[ceph_osd_in]
 
     # Find out the overall cluster health; if any element of a healthy_status is false, it's unhealthy
     if False in node_healthy_status or False in vm_healthy_status or False in ceph_osd_healthy_status:
