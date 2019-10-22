@@ -213,16 +213,19 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         logger.out('Flushing OSD disk with ID {}'.format(osd_id), state='i')
         osd_string = str()
         while True:
-            retcode, stdout, stderr = common.run_os_command('ceph pg dump osds --format json')
-            dump_string = json.loads(stdout)
-            for osd in dump_string:
-                if str(osd['osd']) == osd_id:
-                    osd_string = osd
-            num_pgs = osd_string['num_pgs']
-            if num_pgs > 0:
-               time.sleep(5)
-            else:
-               break
+            try:
+                retcode, stdout, stderr = common.run_os_command('ceph pg dump osds --format json')
+                dump_string = json.loads(stdout)
+                for osd in dump_string:
+                    if str(osd['osd']) == osd_id:
+                        osd_string = osd
+                num_pgs = osd_string['num_pgs']
+                if num_pgs > 0:
+                   time.sleep(5)
+                else:
+                   raise
+            except:
+                break
 
         # 3. Stop the OSD process and wait for it to be terminated
         logger.out('Stopping OSD disk with ID {}'.format(osd_id), state='i')
