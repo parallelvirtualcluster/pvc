@@ -32,6 +32,7 @@ import yaml
 
 import client_lib.ansiprint as ansiprint
 import client_lib.common as pvc_common
+import client_lib.cluster as pvc_cluster
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
@@ -1695,9 +1696,28 @@ def ceph_volume_snapshot_list(pool, volume, limit):
 
 
 ###############################################################################
+# pvc status
+###############################################################################
+@click.command(name='status', short_help='Show current cluster status.')
+@click.option(
+    '-f', '--format', 'oformat', default='plain', show_default=True,
+    type=click.Choice(['plain', 'json', 'json-pretty']),
+    help='Output format of cluster status information.'
+)
+def status_cluster(oformat):
+    """
+    Show basic information and health for the active PVC cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retdata = pvc_cluster.get_info(zk_conn)
+    if retcode:
+        pvc_cluster.format_info(retdata, oformat)
+        retdata = ''
+    cleanup(retcode, retdata, zk_conn)
+
+###############################################################################
 # pvc init
 ###############################################################################
-
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
     '--yes', 'yes',
@@ -1876,6 +1896,7 @@ cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
+cli.add_command(status_cluster)
 cli.add_command(init_cluster)
 
 #
