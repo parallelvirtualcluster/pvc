@@ -153,8 +153,8 @@ def findTargetNode(zk_conn, config, dom_uuid):
     try:
         search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
     except:
-        search_field = config.migration_target_selector
-        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(dom_uuid): config.migration_target_selector })
+        search_field = config['migration_target_selector']
+        zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(dom_uuid): config['migration_target_selector'] })
 
     # Execute the search
     if search_field == 'mem':
