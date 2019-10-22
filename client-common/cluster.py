@@ -83,8 +83,16 @@ def getClusterInformation(zk_conn):
     ceph_osd_healthy_status = list(range(0, ceph_osd_count))
     ceph_osd_report_status = list(range(0, ceph_osd_count))
     for index, ceph_osd in enumerate(ceph_osd_list):
-        ceph_osd_up = ceph_osd['stats']['up']
-        ceph_osd_in = ceph_osd['stats']['in']
+        try:
+            ceph_osd_up = ceph_osd['stats']['up']
+        except KeyError:
+            ceph_osd_up = 0
+
+        try:
+            ceph_osd_in = ceph_osd['stats']['in']
+        except KeyError:
+            ceph_osd_in = 0
+
         if not ceph_osd_up or not ceph_osd_in:
             ceph_osd_healthy_status[index] = False
         else:
