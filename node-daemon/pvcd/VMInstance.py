@@ -221,7 +221,7 @@ class VMInstance(object):
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
             except libvirt.libvirtError as e:
                 self.logger.out('Failed to create VM', state='e', prefix='Domain {}:'.format(self.domuuid))
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'fail' })
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): str(e) })
                 self.dom = None
 
@@ -420,7 +420,7 @@ class VMInstance(object):
             # HARDCODE: 90s should be plenty of time for even extremely large VMs on reasonable networks
             if tick > 90:
                 # The receive timed out
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'failed' })
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'fail' })
                 self.logger.out('Receive timed out without state change', state='e', prefix='Domain {}:'.format(self.domuuid))
                 break
 
@@ -447,9 +447,9 @@ class VMInstance(object):
                 # If we've already been waiting 120s for a shutdown
                 # HARDCODE: The remote timeout is 90s, so an extra 30s of buffer
                 if tick > 120:
-                    # The shutdown timed out; something is very amiss, so switch state to failed and abort
+                    # The shutdown timed out; something is very amiss, so switch state to fail and abort
                     zkhandler.writedata(self.zk_conn, {
-                       '/domains/{}/state'.format(self.domuuid): 'failed',
+                       '/domains/{}/state'.format(self.domuuid): 'fail',
                        '/domains/{}/failedreason'.format(self.domuuid): 'Timeout waiting for migrate or shutdown'
                     })
                     self.logger.out('Shutdown timed out without state change', state='e', prefix='Domain {}:'.format(self.domuuid))

@@ -73,7 +73,7 @@ def getClusterInformation(zk_conn):
     vm_report_status = list(range(0, vm_count))
     for index, vm in enumerate(vm_list):
         vm_state = vm['state']
-        if vm_state != 'start' and vm_state != 'disabled':
+        if vm_state != 'start' and vm_state != 'disable':
             vm_healthy_status[index] = False
         else:
             vm_healthy_status[index] = True
@@ -114,7 +114,7 @@ def getClusterInformation(zk_conn):
         'stop,ready', 'stop,flush', 'stop,flushed', 'stop,unflush'
     ]
     vm_state_combinations = [
-        'start', 'restart', 'shutdown', 'stop', 'disabled', 'failed', 'migrate', 'unmigrate'
+        'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate'
     ]
     ceph_osd_state_combinations = [
         'up,in', 'up,out', 'down,in', 'down,out'
@@ -219,7 +219,7 @@ def format_info(cluster_information, oformat):
         if state == 'total' or state == 'start':
             continue
 
-        if state == 'disabled':
+        if state == 'disable':
             colour = ansiprint.blue()
         else:
             colour = ansiprint.yellow()

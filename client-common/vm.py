@@ -400,9 +400,9 @@ def disable_vm(zk_conn, domain):
         return False, 'ERROR: VM "{}" must be stopped before disabling!'.format(domain)
 
     # Set the VM to start
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'disabled'})
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'disable'})
 
-    return True, 'Marked VM "{}" as disabled.'.format(domain)
+    return True, 'Marked VM "{}" as disable.'.format(domain)
 
 def move_vm(zk_conn, domain, target_node):
     # Validate that VM exists in cluster
@@ -622,7 +622,7 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
             return False, 'Specified node "{}" is invalid.'.format(node)
 
     if state:
-        valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'disabled', 'failed', 'migrate', 'unmigrate' ]
+        valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate' ]
         if not state in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
 
@@ -708,8 +708,8 @@ def format_info(zk_conn, domain_information, long_output):
         'restart': ansiprint.yellow(),
         'shutdown': ansiprint.yellow(),
         'stop': ansiprint.red(),
-        'disabled': ansiprint.blue(),
-        'failed': ansiprint.red(),
+        'disable': ansiprint.blue(),
+        'fail': ansiprint.red(),
         'migrate': ansiprint.blue(),
         'unmigrate': ansiprint.blue()
     }
@@ -868,7 +868,7 @@ def format_list(zk_conn, vm_list, raw):
             vm_state_colour = ansiprint.yellow()
         elif domain_information['state'] == 'stop':
             vm_state_colour = ansiprint.red()
-        elif domain_information['state'] == 'failed':
+        elif domain_information['state'] == 'fail':
             vm_state_colour = ansiprint.red()
         else:
             vm_state_colour = ansiprint.blue()
