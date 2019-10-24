@@ -110,11 +110,9 @@ def is_migrated(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
-    common.stopZKConnection(zk_conn)
     if last_node:
         return True
     else:
@@ -124,7 +122,6 @@ def flush_locks(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
@@ -260,7 +257,6 @@ def undefine_vm(zk_conn, domain, is_cli=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Shut down the VM
@@ -293,7 +289,6 @@ def remove_vm(zk_conn, domain, is_cli=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     disk_list = common.getDomainDiskList(zk_conn, dom_uuid)
@@ -340,7 +335,6 @@ def start_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Set the VM to start
@@ -352,13 +346,11 @@ def restart_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
 
     # Set the VM to start
@@ -375,7 +367,6 @@ def shutdown_vm(zk_conn, domain):
     # Get state and verify we're OK to proceed
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
 
     # Set the VM to shutdown
@@ -387,7 +378,6 @@ def stop_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
@@ -402,7 +392,6 @@ def disable_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
@@ -419,7 +408,6 @@ def move_vm(zk_conn, domain, target_node):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
@@ -439,7 +427,6 @@ def move_vm(zk_conn, domain, target_node):
 
         # Verify if node is current node
         if target_node == current_node:
-            common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
     if not target_node:
@@ -464,7 +451,6 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
@@ -502,7 +488,6 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
 
         # Verify if node is current node
         if target_node == current_node:
-            common.stopZKConnection(zk_conn)
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
 
     if not target_node:
@@ -524,7 +509,6 @@ def unmigrate_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get state and verify we're OK to proceed
@@ -538,7 +522,6 @@ def unmigrate_vm(zk_conn, domain):
     target_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 
     if target_node == '':
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: VM "{}" has not been previously migrated.'.format(domain)
 
     zkhandler.writedata(zk_conn, {
@@ -623,7 +606,6 @@ def get_info(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
-        common.stopZKConnection(zk_conn)
         return False, 'ERROR: No VM named "{}" is present in the cluster.'.format(domain)
 
     # Gather information from XML config and print it
