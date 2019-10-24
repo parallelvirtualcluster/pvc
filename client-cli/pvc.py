@@ -511,6 +511,25 @@ def vm_stop(domain):
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
+# pvc vm disable
+###############################################################################
+@click.command(name='disable', short_help='Mark a virtual machine as disabled.')
+@click.argument(
+    'domain'
+)
+def vm_disable(domain):
+    """
+    Prevent stopped virtual machine DOMAIN from being counted towards cluster health status. DOMAIN may be a UUID or name.
+
+    Use this option for VM that are stopped intentionally or long-term and which should not impact cluster health if stopped. A VM can be started directly from disable state.
+    """
+
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(zk_host)
+    retcode, retmsg = pvc_vm.disable_vm(zk_conn, domain)
+    cleanup(retcode, retmsg, zk_conn)
+
+###############################################################################
 # pvc vm move
 ###############################################################################
 @click.command(name='move', short_help='Permanently move a virtual machine to another node.')
@@ -1833,6 +1852,7 @@ cli_vm.add_command(vm_start)
 cli_vm.add_command(vm_restart)
 cli_vm.add_command(vm_shutdown)
 cli_vm.add_command(vm_stop)
+cli_vm.add_command(vm_disable)
 cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
