@@ -1,0 +1,16 @@
+# Parallel Virtual Cluster Provisioner client daemon unit file
+
+[Unit]
+Description = Parallel Virtual Cluster Provisioner client daemon
+After = network-online.target
+
+[Service]
+Type = simple
+WorkingDirectory = /usr/share/pvc
+Environment = PYTHONUNBUFFERED=true
+Environment = PVC_CONFIG_FILE=/etc/pvc/pvc-provisioner.yaml
+ExecStart = /usr/share/pvc/pvc-provisioner.py
+Restart = on-failure
+
+[Install]
+WantedBy = multi-user.target
