@@ -15,6 +15,11 @@
 pvc:
     # debug: Enable/disable API debug mode
     debug: True
+    # coordinators: The list of cluster coordinator hostnames
+    coordinators:
+      - hv1
+      - hv2
+      - hv3
     # provisioner: Configuration of the Provisioner API listener
     provisioner:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
@@ -43,9 +48,9 @@ pvc:
             key_file: ""
         # database: Backend database configuration
         database:
-            # host: PostgreSQL hostname, invariably 'localhost
+            # host: PostgreSQL hostname, usually 'localhost'
             host: 10.100.0.252
-            # port: PostgreSQL port, invariably 'localhost'
+            # port: PostgreSQL port, invariably '5432'
             port: 5432
             # name: PostgreSQL database name, invariably 'pvcprov'
             name: pvcprov
@@ -53,3 +58,11 @@ pvc:
             user: pvcprov
             # pass: PostgreSQL user password, randomly generated
             pass: pvcprov
+        # queue: Celery backend queue using the PVC Zookeeper cluster
+        queue:
+            # host: Redis hostname, usually 'localhost'
+            host: localhost
+            # port: Redis port, invariably '6279'
+            port: 6379
+            # path: Redis queue path, invariably '/0'
+            path: /0

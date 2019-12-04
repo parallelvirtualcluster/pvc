@@ -26,8 +26,10 @@ import psycopg2
 import psycopg2.extras
 import os
 import re
+import time
 
 import client_lib.common as pvc_common
+import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
@@ -239,7 +241,7 @@ def create_template_storage(name):
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
-def create_template_storage_element(name, disk_id, disk_size_gb, mountpoint=None, filesystem=None):
+def create_template_storage_element(name, pool, disk_id, disk_size_gb, mountpoint=None, filesystem=None):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} does not exist".format(name) }
         retcode = 400
@@ -266,8 +268,8 @@ def create_template_storage_element(name, disk_id, disk_size_gb, mountpoint=None
         args = (name,)
         cur.execute(query, args)
         template_id = cur.fetchone()['id']
-        query = "INSERT INTO storage (storage_template, disk_id, disk_size_gb, mountpoint, filesystem) VALUES (%s, %s, %s, %s, %s);"
-        args = (template_id, disk_id, disk_size_gb, mountpoint, filesystem)
+        query = "INSERT INTO storage (storage_template, pool, disk_id, disk_size_gb, mountpoint, filesystem) VALUES (%s, %s, %s, %s, %s, %s);"
+        args = (template_id, pool, disk_id, disk_size_gb, mountpoint, filesystem)
         cur.execute(query, args)
         retmsg = { "name": name, "disk_id": disk_id }
         retcode = 200
@@ -509,17 +511,21 @@ def list_profile(limit, is_fuzzy=True):
     for profile in orig_data:
         profile_data = dict()
         profile_data['name'] = profile['name']
+        # Parse the name of each subelement
         for etype in 'system_template', 'network_template', 'storage_template', 'script':
             query = 'SELECT name from {} WHERE id = %s'.format(etype)
             args = (profile[etype],)
             cur.execute(query, args)
             name = cur.fetchone()['name']
             profile_data[etype] = name
+        # Split the arguments back into a list
+        profile_data['arguments'] = profile['arguments'].split('|')
+        # Append the new data to our actual output structure
         data.append(profile_data)
     close_database(conn, cur)
     return data
 
-def create_profile(name, system_template, network_template, storage_template, script):
+def create_profile(name, system_template, network_template, storage_template, script, arguments=[]):
     if list_profile(name, is_fuzzy=False):
         retmsg = { "message": "The profile {} already exists".format(name) }
         retcode = 400
@@ -565,10 +571,12 @@ def create_profile(name, system_template, network_template, storage_template, sc
         retcode = 400
         return flask.jsonify(retmsg), retcode
 
+    arguments_formatted = '|'.join(arguments)
+
     conn, cur = open_database(config)
     try:
-        query = "INSERT INTO profile (name, system_template, network_template, storage_template, script) VALUES (%s, %s, %s, %s, %s);"
-        args = (name, system_template_id, network_template_id, storage_template_id, script_id)
+        query = "INSERT INTO profile (name, system_template, network_template, storage_template, script, arguments) VALUES (%s, %s, %s, %s, %s, %s);"
+        args = (name, system_template_id, network_template_id, storage_template_id, script_id, arguments_formatted)
         cur.execute(query, args)
         retmsg = { "name": name }
         retcode = 200
@@ -598,9 +606,76 @@ def delete_profile(name):
     return flask.jsonify(retmsg), retcode
 
 #
-# Job functions
+# VM provisioning helper functions
 #
-def create_vm(vm_name, profile_name):
-    pass
 
+#
+# Main VM provisioning function - executed by the Celery worker
+#
+def create_vm(self, vm_name, vm_profile):
+    # Runtime imports
+    import time
+    import importlib
+
+    # Phase 1 - setup
+    #  * Get the profile elements
+    #  * Get the details from these elements
+    #  * Assemble a VM configuration dictionary
+    self.update_state(state='RUNNING', meta={'current': 1, 'total': 10, 'status': 'Collecting configuration'})
+    time.sleep(5)
+
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    print(pvc_node.get_list(zk_conn, None))
+    pvc_common.stopZKConnection(zk_conn)
+
+    # Phase 2 - verification
+    #  * Ensure that at least one node has enough free RAM to hold the VM (becomes main host)
+    #  * Ensure that all networks are valid
+    #  * Ensure that there is enough disk space in the Ceph cluster for the disks
+    # This is the "safe fail" step when an invalid configuration will be caught
+    self.update_state(state='RUNNING', meta={'current': 2, 'total': 10, 'status': 'Verifying configuration against cluster'})
+    time.sleep(5)
+
+    # Phase 3 - disk creation
+    #  * Create each Ceph storage volume for the disks
+    self.update_state(state='RUNNING', meta={'current': 3, 'total': 10, 'status': 'Creating storage volumes'})
+    time.sleep(5)
+
+    # Phase 4 - disk mapping
+    #  * Map each volume to the local host in order
+    #  * Format each volume with any specified filesystems
+    #  * If any mountpoints are specified, create a temporary mount directory
+    #  * Mount any volumes to their respective mountpoints
+    self.update_state(state='RUNNING', meta={'current': 4, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
+    time.sleep(5)
+
+    # Phase 5 - provisioning script preparation
+    #  * Import the provisioning script as a library with importlib
+    #  * Ensure the required function(s) are present
+    self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Preparing provisioning script'})
+    time.sleep(5)
+
+    # Phase 6 - provisioning script execution
+    #  * Execute the provisioning script main function ("install") passing any custom arguments
+    self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Executing provisioning script'})
+    time.sleep(5)
+
+    # Phase 7 - install cleanup
+    #  * Unmount any mounted volumes
+    #  * Remove any temporary directories
+    self.update_state(state='RUNNING', meta={'current': 7, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
+    time.sleep(5)
+
+    # Phase 8 - configuration creation
+    #  * Create the libvirt XML configuration
+    self.update_state(state='RUNNING', meta={'current': 8, 'total': 10, 'status': 'Preparing Libvirt XML configuration'})
+    time.sleep(5)
+
+    # Phase 9 - definition
+    #  * Create the VM in the PVC cluster
+    #  * Start the VM in the PVC cluster
+    self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Defining and starting VM on the cluster'})
+    time.sleep(5)
+
+    return {"status": "VM '{}' with profile '{}' has been provisioned and started successfully".format(vm_name, vm_profile), "current": 10, "total": 10}
 

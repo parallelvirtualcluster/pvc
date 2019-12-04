@@ -58,7 +58,7 @@ def install(**kwargs):
     except:
         deb_mirror = "http://ftp.debian.org/debian"
     try:
-        deb_packages = kwargs['deb_packages']
+        deb_packages = kwargs['deb_packages'].split(',')
     except:
         deb_packages = ["linux-image-amd64", "grub-pc", "cloud-init", "python3-cffi-backend"]
 

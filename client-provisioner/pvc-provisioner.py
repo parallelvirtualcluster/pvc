@@ -28,6 +28,8 @@ import uu
 
 import gevent.pywsgi
 
+import celery as Celery
+
 import provisioner_lib.provisioner as pvcprovisioner
 
 # Parse the configuration file
@@ -51,6 +53,7 @@ try:
     # Create the config object
     config = {
         'debug': o_config['pvc']['debug'],
+        'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['provisioner']['listen_address'],
         'listen_port': int(o_config['pvc']['provisioner']['listen_port']),
         'auth_enabled': o_config['pvc']['provisioner']['authentication']['enabled'],
@@ -63,7 +66,10 @@ try:
         'database_port': int(o_config['pvc']['provisioner']['database']['port']),
         'database_name': o_config['pvc']['provisioner']['database']['name'],
         'database_user': o_config['pvc']['provisioner']['database']['user'],
-        'database_password': o_config['pvc']['provisioner']['database']['pass']
+        'database_password': o_config['pvc']['provisioner']['database']['pass'],
+        'queue_host': o_config['pvc']['provisioner']['queue']['host'],
+        'queue_port': o_config['pvc']['provisioner']['queue']['port'],
+        'queue_path': o_config['pvc']['provisioner']['queue']['path'],
     }
 
     # Set the config object in the pvcapi namespace
@@ -82,12 +88,25 @@ except Exception as e:
     exit(1)
 
 api = flask.Flask(__name__)
+api.config['CELERY_BROKER_URL'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
+api.config['CELERY_RESULT_BACKEND'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
 
 if config['debug']:
     api.config['DEBUG'] = True
 
 if config['auth_enabled']:
     api.config["SECRET_KEY"] = config['auth_secret_key']
+
+print(api.name)
+celery = Celery.Celery(api.name, broker=api.config['CELERY_BROKER_URL'])
+celery.conf.update(api.config)
+
+#
+# Job functions
+#
+@celery.task(bind=True)
+def create_vm(self, vm_name, profile_name):
+    return pvcprovisioner.create_vm(self, vm_name, profile_name)
 
 # Authentication decorator function
 def authenticator(function):
@@ -561,6 +580,10 @@ def api_template_storage_disk_root(template):
             * type: Disk identifier in 'sdX' or 'vdX' format, unique within template
             * optional: false
             * requires: N/A
+        ?pool: The storage pool in which to store the disk.
+            * type: Storage Pool name
+            * optional: false
+            * requires: N/A
         ?disk_size: The disk size in GB.
             * type: integer, Gigabytes (GB)
             * optional: false
@@ -591,6 +614,11 @@ def api_template_storage_disk_root(template):
         else:
             return flask.jsonify({"message": "A disk ID in sdX/vdX format must be specified."}), 400
 
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            return flask.jsonify({"message": "A pool name must be specified."}), 400
+
         if 'disk_size' in flask.request.values:
             disk_size = flask.request.values['disk_size']
         else:
@@ -606,7 +634,7 @@ def api_template_storage_disk_root(template):
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, disk_id, disk_size, filesystem, mountpoint)
+        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, mountpoint)
 
     if flask.request.method == 'DELETE':
         if 'disk_id' in flask.request.values:
@@ -625,6 +653,10 @@ def api_template_storage_disk_element(template, disk_id):
     GET: Show details of disk <disk_id> storage template <template>.
 
     POST: Add new storage VNI <vni> to storage template <template>.
+        ?pool: The storage pool in which to store the disk.
+            * type: Storage Pool name
+            * optional: false
+            * requires: N/A
         ?disk_size: The disk size in GB.
             * type: integer, Gigabytes (GB)
             * optional: false
@@ -650,6 +682,11 @@ def api_template_storage_disk_element(template, disk_id):
         return flask.jsonify({"message": "Found no disk with ID {} in storage template {}".format(disk_id, template)}), 404
 
     if flask.request.method == 'POST':
+        if 'pool' in flask.request.values:
+            pool = flask.request.values['pool']
+        else:
+            return flask.jsonify({"message": "A pool name must be specified."}), 400
+
         if 'disk_size' in flask.request.values:
             disk_size = flask.request.values['disk_size']
         else:
@@ -665,7 +702,7 @@ def api_template_storage_disk_element(template, disk_id):
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, disk_id, disk_size, mountpoint, filesystem)
+        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, mountpoint, filesystem)
 
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_template_storage_element(template, disk_id)
@@ -787,6 +824,10 @@ def api_profile_root():
             * type: text
             * optional: false
             * requires: N/A
+        ?arg: An arbitrary key=value argument for use by the provisioning script.
+            * type: key-value pair, multiple
+            * optional: true
+            * requires: N/A
     """
     if flask.request.method == 'GET':
         # Get name limit
@@ -828,7 +869,12 @@ def api_profile_root():
         else:
             return flask.jsonify({"message": "A script must be specified."}), 400
 
-        return pvcprovisioner.create_profile(name, system_template, network_template, storage_template, script)
+        if 'arg' in flask.request.values:
+            arguments = flask.request.values.getlist('arg')
+        else:
+            arguments = None
+
+        return pvcprovisioner.create_profile(name, system_template, network_template, storage_template, script, arguments)
 
 @api.route('/api/v1/profile/<profile>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
@@ -901,32 +947,96 @@ def api_create_root():
     /create - Create new VM on the cluster.
 
     POST: Create new VM.
+        ?name: The name of the VM.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?profile: The profile name of the VM.
+            * type: text
+            * optional: flase
+            * requires: N/A
     """
-    pass
+    if 'name' in flask.request.values:
+        name = flask.request.values['name']
+    else:
+        return flask.jsonify({"message": "A VM name must be specified."}), 400
 
+    if 'profile' in flask.request.values:
+        profile = flask.request.values['profile']
+    else:
+        return flask.jsonify({"message": "A VM profile must be specified."}), 400
 
+    print("starting task")
+    task = create_vm.delay(name, profile)
+    print(task.id)
+
+    return flask.jsonify({"task_id": task.id}), 202, {'Location': flask.url_for('api_status_root', task_id=task.id)}
+
+@api.route('/api/v1/status/<task_id>', methods=['GET'])
+@authenticator
+def api_status_root(task_id):
+    """
+    /status - Report on VM creation status.
+
+    GET: Get status of the VM provisioning.
+        ?task: The task ID returned from the '/create' endpoint.
+            * type: text
+            * optional: flase
+            * requires: N/A
+    """
+    task = create_vm.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        # job is still running
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return flask.jsonify(response)
 
 #
 # Entrypoint
 #
-if config['debug']:
-    # Run in Flask standard mode
-    api.run(config['listen_address'], config['listen_port'])
-else:
-    if config['ssl_enabled']:
-        # Run the WSGI server with SSL
-        http_server = gevent.pywsgi.WSGIServer(
-            (config['listen_address'], config['listen_port']),
-            api,
-            keyfile=config['ssl_key_file'],
-            certfile=config['ssl_cert_file']
-        )
+if __name__ == '__main__':
+    if config['debug']:
+        # Run in Flask standard mode
+        api.run(config['listen_address'], config['listen_port'])
     else:
-        # Run the ?WSGI server without SSL
-        http_server = gevent.pywsgi.WSGIServer(
-            (config['listen_address'], config['listen_port']),
-            api
-        )
+        if config['ssl_enabled']:
+            # Run the WSGI server with SSL
+            http_server = gevent.pywsgi.WSGIServer(
+                (config['listen_address'], config['listen_port']),
+                api,
+                keyfile=config['ssl_key_file'],
+                certfile=config['ssl_cert_file']
+            )
+        else:
+            # Run the ?WSGI server without SSL
+            http_server = gevent.pywsgi.WSGIServer(
+                (config['listen_address'], config['listen_port']),
+                api
+            )
+    
+        print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
+        http_server.serve_forever()
+    
 
-    print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
-    http_server.serve_forever()
