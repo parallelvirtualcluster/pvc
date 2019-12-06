@@ -35,6 +35,21 @@ import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
 
 #
+# Exceptions (used by Celery tasks)
+#
+class ValidationError(Exception):
+    """
+    An exception that results from some value being un- or mis-defined.
+    """
+    pass
+
+class ClusterError(Exception):
+    """
+    An exception that results from the PVC cluster being out of alignment with the action.
+    """
+    pass
+
+#
 # Common functions
 #
 
@@ -189,7 +204,7 @@ def create_template_network(name, mac_template=None):
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
-def create_template_network_element(name, network):
+def create_template_network_element(name, vni):
     if not list_template_network(name, is_fuzzy=False):
         retmsg = { "message": "The network template {} does not exist".format(name) }
         retcode = 400
@@ -198,7 +213,7 @@ def create_template_network_element(name, network):
     networks = list_template_network_vnis(name)
     found_vni = False
     for network in networks:
-        if network['vni'] == vni:
+        if int(network['vni']) == vni:
             found_vni = True
     if found_vni:
         retmsg = { "message": "The VNI {} in network template {} already exists".format(vni, name) }
@@ -212,12 +227,12 @@ def create_template_network_element(name, network):
         cur.execute(query, args)
         template_id = cur.fetchone()['id']
         query = "INSERT INTO network (network_template, vni) VALUES (%s, %s);"
-        args = (template_id, network)
+        args = (template_id, vni)
         cur.execute(query, args)
-        retmsg = { "name": name, "vni": network }
+        retmsg = { "name": name, "vni": vni }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(network), "error": e }
+        retmsg = { "message": "Failed to create entry {}".format(vni), "error": e }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
@@ -279,6 +294,9 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, mountpoin
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
+#
+# Template Delete functions
+#
 def delete_template_system(name):
     if not list_template_system(name, is_fuzzy=False):
         retmsg = { "message": "The system template {} does not exist".format(name) }
@@ -333,7 +351,7 @@ def delete_template_network_element(name, vni):
     networks = list_template_network_vnis(name)
     found_vni = False
     for network in networks:
-        if network['vni'] == vni:
+        if network['vni'] == int(vni):
             found_vni = True
     if not found_vni:
         retmsg = { "message": "The VNI {} in network template {} does not exist".format(vni, name) }
@@ -617,16 +635,70 @@ def create_vm(self, vm_name, vm_profile):
     import time
     import importlib
 
+    print("Starting provisioning of VM '{}' with profile '{}'".format(vm_name, vm_profile))
+
+    # Phase 0 - connect to databases
+    try:
+        db_conn, db_cur = open_database(config)
+    except:
+        print('FATAL - failed to connect to Postgres')
+        raise Exception
+
+    try:
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    except:
+        print('FATAL - failed to connect to Zookeeper')
+        raise Exception
+
     # Phase 1 - setup
     #  * Get the profile elements
     #  * Get the details from these elements
     #  * Assemble a VM configuration dictionary
     self.update_state(state='RUNNING', meta={'current': 1, 'total': 10, 'status': 'Collecting configuration'})
-    time.sleep(5)
+    time.sleep(3)
+    
+    vm_data = dict()
 
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    print(pvc_node.get_list(zk_conn, None))
-    pvc_common.stopZKConnection(zk_conn)
+    # Get the profile information
+    query = "SELECT system_template, network_template, storage_template, script, arguments FROM profile WHERE name = %s"
+    args = (vm_profile,)
+    db_cur.execute(query, args)
+    profile_data = db_cur.fetchone()
+    vm_data['script_arguments'] = profile_data['arguments'].split('|')
+    
+    # Get the system details
+    query = 'SELECT vcpu_count, vram_mb, serial, vnc, vnc_bind FROM system_template WHERE id = %s'
+    args = (profile_data['system_template'],)
+    db_cur.execute(query, args)
+    vm_data['system_details'] = db_cur.fetchone()
+
+    # Get the MAC template
+    query = 'SELECT mac_template FROM network_template WHERE id = %s'
+    args = (profile_data['network_template'],)
+    db_cur.execute(query, args)
+    vm_data['mac_template'] = db_cur.fetchone()['mac_template']
+
+    # Get the networks
+    query = 'SELECT vni FROM network WHERE network_template = %s'
+    args = (profile_data['network_template'],)
+    db_cur.execute(query, args)
+    vm_data['networks'] = db_cur.fetchall()
+
+    # Get the storage volumes
+    query = 'SELECT pool, disk_id, disk_size_gb, mountpoint, filesystem FROM storage WHERE storage_template = %s'
+    args = (profile_data['storage_template'],)
+    db_cur.execute(query, args)
+    vm_data['volumes'] = db_cur.fetchall()
+
+    # Get the script
+    query = 'SELECT script FROM script WHERE id = %s'
+    args = (profile_data['script'],)
+    db_cur.execute(query, args)
+    vm_data['script'] = db_cur.fetchone()['script']
+  
+    close_database(db_conn, db_cur)
+
+    print(json.dumps(vm_data))
 
     # Phase 2 - verification
     #  * Ensure that at least one node has enough free RAM to hold the VM (becomes main host)
@@ -634,7 +706,58 @@ def create_vm(self, vm_name, vm_profile):
     #  * Ensure that there is enough disk space in the Ceph cluster for the disks
     # This is the "safe fail" step when an invalid configuration will be caught
     self.update_state(state='RUNNING', meta={'current': 2, 'total': 10, 'status': 'Verifying configuration against cluster'})
-    time.sleep(5)
+    time.sleep(3)
+
+    # Verify that at least one host has enough free RAM to run the VM
+    _discard, nodes = pvc_node.get_list(zk_conn, None)
+    target_node = None
+    last_free = 0
+    for node in nodes:
+        # Skip the node if it is not ready to run VMs
+        if node ['daemon_state'] != "run" or node['domain_state'] != "ready":
+            continue
+        # Skip the node if its free memory is less than the new VM's size, plus a 512MB buffer
+        if node['memory']['free'] < (vm_data['system_details']['vram_mb'] + 512):
+            continue
+        # If this node has the most free, use it
+        if node['memory']['free'] > last_free:
+            last_free = node['memory']['free']
+            target_node = node['name']
+    # Raise if no node was found
+    if not target_node:
+        raise ClusterError("No ready cluster node contains at least {}+512 MB of free RAM".format(vm_data['system_details']['vram_mb']))
+
+    print("Selecting target node {} with {} MB free ram".format(target_node, last_free))
+
+    # Verify that all configured networks are present on the cluster
+    cluster_networks, _discard = pvc_network.getClusterNetworkList(zk_conn)
+    for network in vm_data['networks']:
+        vni = str(network['vni'])
+        if not vni in cluster_networks:
+            raise ClusterError("The network VNI {} is not present on the cluster".format(vni))
+
+    print("All configured networks {} for VM are valid".format(vm_data['networks']))
+
+    # Verify that there is enough disk space free to provision all VM disks
+    pools = dict()
+    for volume in vm_data['volumes']:
+        if not volume['pool'] in pools:
+            pools[volume['pool']] = 0
+    for volume in vm_data['volumes']:
+        pools[volume['pool']] += volume['disk_size_gb']
+
+    print(pools)
+
+    for pool in pools:
+        pool_free_space = pvc_ceph.getPoolInformation(zk_conn, pool)
+        pool_vm_usage = pools[pool]
+
+        print(pool_free_space)
+        print(pool_vm_usage)
+
+    print(pvc_ceph.get_radosdf(zk_conn))
+
+    return
 
     # Phase 3 - disk creation
     #  * Create each Ceph storage volume for the disks
@@ -677,5 +800,6 @@ def create_vm(self, vm_name, vm_profile):
     self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Defining and starting VM on the cluster'})
     time.sleep(5)
 
+    pvc_common.stopZKConnection(zk_conn)
     return {"status": "VM '{}' with profile '{}' has been provisioned and started successfully".format(vm_name, vm_profile), "current": 10, "total": 10}
 
