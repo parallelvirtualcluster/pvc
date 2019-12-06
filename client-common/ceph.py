@@ -131,6 +131,10 @@ def format_ops_fromhuman(datahuman):
     dataops = datasize * ops_unit_matrix[dataunit]
     return '{}'.format(dataops)
 
+def format_pct_tohuman(datapct):
+    datahuman = "{0:.1f}".format(float(datapct * 100.0))
+    return datahuman
+
 #
 # Status functions
 #
@@ -748,7 +752,9 @@ def format_list_pool(pool_list):
 
     pool_name_length = 5
     pool_id_length = 3
-    pool_size_length = 5
+    pool_used_length = 5
+    pool_usedpct_length = 5
+    pool_free_length = 5
     pool_num_objects_length = 6
     pool_num_clones_length = 7
     pool_num_copies_length = 7
@@ -760,14 +766,18 @@ def format_list_pool(pool_list):
 
     for pool_information in pool_list:
         # Deal with the size to human readable
-        for datatype in 'size_bytes', 'write_bytes', 'read_bytes':
+        for datatype in ['free_bytes', 'used_bytes', 'write_bytes', 'read_bytes']:
             databytes = pool_information['stats'][datatype]
             databytes_formatted = format_bytes_tohuman(int(databytes))
             pool_information['stats'][datatype] = databytes_formatted
-        for datatype in 'write_ops', 'read_ops':
+        for datatype in ['write_ops', 'read_ops']:
             dataops = pool_information['stats'][datatype]
             dataops_formatted = format_ops_tohuman(int(dataops))
             pool_information['stats'][datatype] = dataops_formatted
+        for datatype in ['used_percent']:
+            datapct = pool_information['stats'][datatype]
+            datapct_formatted = format_pct_tohuman(float(datapct))
+            pool_information['stats'][datatype] = datapct_formatted
 
         # Set the Pool name length
         _pool_name_length = len(pool_information['name']) + 1
@@ -779,10 +789,20 @@ def format_list_pool(pool_list):
         if _pool_id_length > pool_id_length:
             pool_id_length = _pool_id_length
 
-        # Set the size and length
-        _pool_size_length = len(str(pool_information['stats']['size_bytes'])) + 1
-        if _pool_size_length > pool_size_length:
-            pool_size_length = _pool_size_length
+        # Set the used and length
+        _pool_used_length = len(str(pool_information['stats']['used_bytes'])) + 1
+        if _pool_used_length > pool_used_length:
+            pool_used_length = _pool_used_length
+
+        # Set the usedpct and length
+        _pool_usedpct_length = len(str(pool_information['stats']['used_percent'])) + 1
+        if _pool_usedpct_length > pool_usedpct_length:
+            pool_usedpct_length = _pool_usedpct_length
+
+        # Set the free and length
+        _pool_free_length = len(str(pool_information['stats']['free_bytes'])) + 1
+        if _pool_free_length > pool_free_length:
+            pool_free_length = _pool_free_length
 
         # Set the num_objects and length
         _pool_num_objects_length = len(str(pool_information['stats']['num_objects'])) + 1
@@ -825,7 +845,9 @@ def format_list_pool(pool_list):
     pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
-{pool_size: <{pool_size_length}} \
+{pool_used: <{pool_used_length}} \
+{pool_usedpct: <{pool_usedpct_length}} \
+{pool_free: <{pool_free_length}} \
 Obj: {pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
@@ -839,7 +861,9 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
             end_bold=ansiprint.end(),
             pool_id_length=pool_id_length,
             pool_name_length=pool_name_length,
-            pool_size_length=pool_size_length,
+            pool_used_length=pool_used_length,
+            pool_usedpct_length=pool_usedpct_length,
+            pool_free_length=pool_free_length,
             pool_objects_length=pool_num_objects_length,
             pool_clones_length=pool_num_clones_length,
             pool_copies_length=pool_num_copies_length,
@@ -850,7 +874,9 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
             pool_read_data_length=pool_read_data_length,
             pool_id='ID',
             pool_name='Name',
-            pool_size='Used',
+            pool_used='Used',
+            pool_usedpct='%',
+            pool_free='Free',
             pool_objects='Count',
             pool_clones='Clones',
             pool_copies='Copies',
@@ -867,7 +893,9 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
-{pool_size: <{pool_size_length}} \
+{pool_used: <{pool_used_length}} \
+{pool_usedpct: <{pool_usedpct_length}} \
+{pool_free: <{pool_free_length}} \
      {pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
@@ -881,7 +909,9 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
                 end_bold='',
                 pool_id_length=pool_id_length,
                 pool_name_length=pool_name_length,
-                pool_size_length=pool_size_length,
+                pool_used_length=pool_used_length,
+                pool_usedpct_length=pool_usedpct_length,
+                pool_free_length=pool_free_length,
                 pool_objects_length=pool_num_objects_length,
                 pool_clones_length=pool_num_clones_length,
                 pool_copies_length=pool_num_copies_length,
@@ -892,7 +922,9 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
                 pool_read_data_length=pool_read_data_length,
                 pool_id=pool_information['stats']['id'],
                 pool_name=pool_information['name'],
-                pool_size=pool_information['stats']['size_bytes'],
+                pool_used=pool_information['stats']['used_bytes'],
+                pool_usedpct=pool_information['stats']['used_percent'],
+                pool_free=pool_information['stats']['free_bytes'],
                 pool_objects=pool_information['stats']['num_objects'],
                 pool_clones=pool_information['stats']['num_object_clones'],
                 pool_copies=pool_information['stats']['num_object_copies'],

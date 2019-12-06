@@ -1009,21 +1009,42 @@ def update_zookeeper():
         if this_node.router_state == 'primary':
             if debug:
                 print("Set pool information in zookeeper (primary only)")
+
             # Get pool info
-            pool_df = dict()
+            retcode, stdout, stderr = common.run_os_command('ceph df --format json', timeout=1)
+            try:
+                ceph_pool_df_raw = json.loads(stdout)['pools']
+            except json.decoder.JSONDecodeError:
+                logger.out('Failed to obtain Pool data (ceph df)', state='w')
+                ceph_pool_df_raw = []
+
             retcode, stdout, stderr = common.run_os_command('rados df --format json', timeout=1)
             try:
-                pool_df_raw = json.loads(stdout)['pools']
+                rados_pool_df_raw = json.loads(stdout)['pools']
             except json.decoder.JSONDecodeError:
-                logger.out('Failed to obtain Pool data', state='w')
-                pool_df_raw = []
+                logger.out('Failed to obtain Pool data (rados df)', state='w')
+                rados_pool_df_raw = []
 
-            for pool in pool_df_raw:
-                pool_df.update({
-                    str(pool['name']): {
+            pool_count = len(ceph_pool_df_raw)
+            for pool_idx in range(0, pool_count - 1):
+                try:
+                    # Combine all the data for this pool
+                    ceph_pool_df = ceph_pool_df_raw[pool_idx]
+                    rados_pool_df = rados_pool_df_raw[pool_idx]
+                    pool = ceph_pool_df
+                    pool.update(rados_pool_df)
+
+                    # Ignore any pools that aren't in our pool list
+                    if pool['name'] not in pool_list:
+                        continue
+
+                    # Assemble a useful data structure
+                    pool_df = {
                         'id': pool['id'],
-                        'size_bytes': pool['size_bytes'],
-                        'num_objects': pool['num_objects'],
+                        'free_bytes': pool['stats']['max_avail'],
+                        'used_bytes': pool['stats']['bytes_used'],
+                        'used_percent': pool['stats']['percent_used'],
+                        'num_objects': pool['stats']['objects'],
                         'num_object_clones': pool['num_object_clones'],
                         'num_object_copies': pool['num_object_copies'],
                         'num_objects_missing_on_primary': pool['num_objects_missing_on_primary'],
@@ -1034,17 +1055,14 @@ def update_zookeeper():
                         'write_ops': pool['write_ops'],
                         'write_bytes': pool['write_bytes']
                     }
-                })
-
-            # Trigger updates for each pool on this node
-            for pool in pool_list:
-                try:
-                    stats = json.dumps(pool_df[pool])
+                    
+                    # Write the pool data to Zookeeper
                     zkhandler.writedata(zk_conn, {
-                        '/ceph/pools/{}/stats'.format(pool): str(stats)
+                        '/ceph/pools/{}/stats'.format(pool['name']): str(json.dumps(pool_df))
                     })
-                except KeyError:
+                except Exception as e:
                     # One or more of the status commands timed out, just continue
+                    logger.out('Failed to format and send pool data', state='w')
                     pass
 
         # Only grab OSD stats if there are OSDs to grab (otherwise `ceph osd df` hangs)
