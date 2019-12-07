@@ -593,6 +593,10 @@ def api_template_storage_disk_root(template):
             * type: Valid Linux filesystem
             * optional: true
             * requires: N/A
+        ?filesystem_arg: Argument for the guest filesystem
+            * type: Valid mkfs.<filesystem> argument, multiple
+            * optional: true
+            * requires: N/A
         ?mountpoint: The Linux guest mountpoint for the disk
             * default: unmounted in guest
             * type: Valid Linux mountpoint (e.g. '/', '/var', etc.)
@@ -629,12 +633,17 @@ def api_template_storage_disk_root(template):
         else:
             filesystem = None
            
+        if 'filesystem_arg' in flask.request.values:
+            filesystem_args = flask.request.values.getlist('filesystem_arg')
+        else:
+            filesystem_args = None
+           
         if 'mountpoint' in flask.request.values:
             mountpoint = flask.request.values['mountpoint']
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, mountpoint)
+        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
 
     if flask.request.method == 'DELETE':
         if 'disk_id' in flask.request.values:
@@ -697,12 +706,17 @@ def api_template_storage_disk_element(template, disk_id):
         else:
             filesystem = None
            
+        if 'filesystem_arg' in flask.request.values:
+            filesystem_args = flask.request.values.getlist('filesystem_arg')
+        else:
+            filesystem_args = None
+           
         if 'mountpoint' in flask.request.values:
             mountpoint = flask.request.values['mountpoint']
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, mountpoint, filesystem)
+        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
 
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_template_storage_element(template, disk_id)

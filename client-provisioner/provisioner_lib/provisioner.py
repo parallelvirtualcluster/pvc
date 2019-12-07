@@ -27,6 +27,8 @@ import psycopg2.extras
 import os
 import re
 import time
+import shlex
+import subprocess
 
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
@@ -46,6 +48,12 @@ class ValidationError(Exception):
 class ClusterError(Exception):
     """
     An exception that results from the PVC cluster being out of alignment with the action.
+    """
+    pass
+
+class ProvisioningError(Exception):
+    """
+    An exception that results from a failure of a provisioning command.
     """
     pass
 
@@ -256,7 +264,7 @@ def create_template_storage(name):
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
-def create_template_storage_element(name, pool, disk_id, disk_size_gb, mountpoint=None, filesystem=None):
+def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} does not exist".format(name) }
         retcode = 400
@@ -283,8 +291,8 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, mountpoin
         args = (name,)
         cur.execute(query, args)
         template_id = cur.fetchone()['id']
-        query = "INSERT INTO storage (storage_template, pool, disk_id, disk_size_gb, mountpoint, filesystem) VALUES (%s, %s, %s, %s, %s, %s);"
-        args = (template_id, pool, disk_id, disk_size_gb, mountpoint, filesystem)
+        query = "INSERT INTO storage (storage_template, pool, disk_id, disk_size_gb, mountpoint, filesystem, filesystem_args) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+        args = (template_id, pool, disk_id, disk_size_gb, mountpoint, filesystem, ' '.join(filesystem_args))
         cur.execute(query, args)
         retmsg = { "name": name, "disk_id": disk_id }
         retcode = 200
@@ -495,7 +503,7 @@ def delete_script(name):
         retmsg = { "name": name }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
@@ -626,6 +634,30 @@ def delete_profile(name):
 #
 # VM provisioning helper functions
 #
+def run_os_command(command_string, background=False, environment=None, timeout=None):
+    command = shlex.split(command_string)
+    try:
+        command_output = subprocess.run(
+            command,
+            env=environment,
+            timeout=timeout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        retcode = command_output.returncode
+    except subprocess.TimeoutExpired:
+        retcode = 128
+
+    try:
+        stdout = command_output.stdout.decode('ascii')
+    except:
+        stdout = ''
+    try:
+        stderr = command_output.stderr.decode('ascii')
+    except:
+        stderr = ''
+    return retcode, stdout, stderr
+
 
 #
 # Main VM provisioning function - executed by the Celery worker
@@ -634,6 +666,8 @@ def create_vm(self, vm_name, vm_profile):
     # Runtime imports
     import time
     import importlib
+
+    time.sleep(2)
 
     print("Starting provisioning of VM '{}' with profile '{}'".format(vm_name, vm_profile))
 
@@ -655,7 +689,7 @@ def create_vm(self, vm_name, vm_profile):
     #  * Get the details from these elements
     #  * Assemble a VM configuration dictionary
     self.update_state(state='RUNNING', meta={'current': 1, 'total': 10, 'status': 'Collecting configuration'})
-    time.sleep(3)
+    time.sleep(1)
     
     vm_data = dict()
 
@@ -685,7 +719,7 @@ def create_vm(self, vm_name, vm_profile):
     vm_data['networks'] = db_cur.fetchall()
 
     # Get the storage volumes
-    query = 'SELECT pool, disk_id, disk_size_gb, mountpoint, filesystem FROM storage WHERE storage_template = %s'
+    query = 'SELECT pool, disk_id, disk_size_gb, mountpoint, filesystem, filesystem_args FROM storage WHERE storage_template = %s'
     args = (profile_data['storage_template'],)
     db_cur.execute(query, args)
     vm_data['volumes'] = db_cur.fetchall()
@@ -698,15 +732,13 @@ def create_vm(self, vm_name, vm_profile):
   
     close_database(db_conn, db_cur)
 
-    print(json.dumps(vm_data))
-
     # Phase 2 - verification
     #  * Ensure that at least one node has enough free RAM to hold the VM (becomes main host)
     #  * Ensure that all networks are valid
     #  * Ensure that there is enough disk space in the Ceph cluster for the disks
     # This is the "safe fail" step when an invalid configuration will be caught
     self.update_state(state='RUNNING', meta={'current': 2, 'total': 10, 'status': 'Verifying configuration against cluster'})
-    time.sleep(3)
+    time.sleep(1)
 
     # Verify that at least one host has enough free RAM to run the VM
     _discard, nodes = pvc_node.get_list(zk_conn, None)
@@ -736,58 +768,169 @@ def create_vm(self, vm_name, vm_profile):
         if not vni in cluster_networks:
             raise ClusterError("The network VNI {} is not present on the cluster".format(vni))
 
-    print("All configured networks {} for VM are valid".format(vm_data['networks']))
+    print("All configured networks for VM are valid")
 
     # Verify that there is enough disk space free to provision all VM disks
     pools = dict()
     for volume in vm_data['volumes']:
         if not volume['pool'] in pools:
-            pools[volume['pool']] = 0
-    for volume in vm_data['volumes']:
-        pools[volume['pool']] += volume['disk_size_gb']
-
-    print(pools)
+            pools[volume['pool']] = volume['disk_size_gb']
+        else:
+            pools[volume['pool']] += volume['disk_size_gb']
 
     for pool in pools:
-        pool_free_space = pvc_ceph.getPoolInformation(zk_conn, pool)
-        pool_vm_usage = pools[pool]
+        pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
+        if not pool_information:
+            raise ClusterError("Pool {} is not present on the cluster".format(pool))
+        pool_free_space_gb = int(pool_information['stats']['free_bytes'] / 1024 / 1024 / 1024)
+        pool_vm_usage_gb = int(pools[pool])
 
-        print(pool_free_space)
-        print(pool_vm_usage)
+        if pool_vm_usage_gb >= pool_free_space_gb:
+            raise ClusterError("Pool {} has only {} GB free and VM requires {} GB".format(pool, pool_free_space_gb, pool_vm_usage_gb))
 
-    print(pvc_ceph.get_radosdf(zk_conn))
+    print("There is enough space on cluster to store VM volumes")
 
-    return
+    # Verify that every specified filesystem is valid
+    used_filesystems = list()
+    for volume in vm_data['volumes']:
+        if volume['filesystem'] and volume['filesystem'] not in used_filesystems:
+            used_filesystems.append(volume['filesystem'])
 
-    # Phase 3 - disk creation
+    for filesystem in used_filesystems:
+        retcode, stdout, stderr = run_os_command("which mkfs.{}".format(filesystem))
+        if retcode:
+            raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
+
+    print("All selected filesystems are valid")
+
+    # Phase 3 - provisioning script preparation
+    #  * Import the provisioning script as a library with importlib
+    #  * Ensure the required function(s) are present
+    self.update_state(state='RUNNING', meta={'current': 3, 'total': 10, 'status': 'Preparing provisioning script'})
+    time.sleep(1)
+
+    # Write the script out to a temporary file
+    retcode, stdout, stderr = run_os_command("mktemp")
+    if retcode:
+        raise ProvisioningError("Failed to create a temporary file: {}".format(stderr))
+    script_file = stdout.strip()
+    with open(script_file, 'w') as fh:
+        fh.write(vm_data['script'])
+        fh.write('\n')
+
+    # Import the script file
+    loader = importlib.machinery.SourceFileLoader('installer_script', script_file)
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    installer_script = importlib.util.module_from_spec(spec)
+    loader.exec_module(installer_script)
+
+    # Verify that the install() function is valid
+    if not "install" in dir(installer_script):
+        raise ProvisioningError("Specified script does not contain an install() function")
+
+    print("Provisioning script imported successfully")
+
+    # Phase 4 - disk creation
     #  * Create each Ceph storage volume for the disks
-    self.update_state(state='RUNNING', meta={'current': 3, 'total': 10, 'status': 'Creating storage volumes'})
-    time.sleep(5)
+    self.update_state(state='RUNNING', meta={'current': 4, 'total': 10, 'status': 'Creating storage volumes'})
+    time.sleep(1)
+    
+    for volume in vm_data['volumes']:
+        success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
+        print(message)
+        if not success:
+            raise ClusterError("Failed to create volume {}".format(volume['disk_id']))
 
-    # Phase 4 - disk mapping
+    # Phase 5 - disk mapping
     #  * Map each volume to the local host in order
     #  * Format each volume with any specified filesystems
     #  * If any mountpoints are specified, create a temporary mount directory
     #  * Mount any volumes to their respective mountpoints
-    self.update_state(state='RUNNING', meta={'current': 4, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
-    time.sleep(5)
+    self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
+    time.sleep(1)
 
-    # Phase 5 - provisioning script preparation
-    #  * Import the provisioning script as a library with importlib
-    #  * Ensure the required function(s) are present
-    self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Preparing provisioning script'})
-    time.sleep(5)
+    for volume in vm_data['volumes']:
+        if not volume['filesystem']:
+            continue
+
+        rbd_volume = "{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+
+        filesystem_args_list = list()
+        for arg in volume['filesystem_args'].split(' '):
+            arg_entry, arg_data = arg.split('=')
+            filesystem_args_list.append(arg_entry)
+            filesystem_args_list.append(arg_data)
+        filesystem_args = ' '.join(filesystem_args_list)
+
+        # Map the RBD device
+        retcode, stdout, stderr = run_os_command("rbd map {}".format(rbd_volume))
+        if retcode:
+            raise ProvisioningError("Failed to map volume {}: {}".format(rbd_volume, stderr))
+
+        # Create the filesystem
+        retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
+        if retcode:
+            raise ProvisioningError("Failed to create {} filesystem on {}: {}".format(volume['filesystem'], rbd_volume, stderr))
+
+        print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
+
+    # Create temporary directory
+    retcode, stdout, stderr = run_os_command("mktemp -d")
+    if retcode:
+        raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
+    temp_dir = stdout.strip()
+
+    for volume in vm_data['volumes']:
+        if not volume['mountpoint']:
+            continue
+
+        mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+        mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+
+        # Ensure the mount path exists (within the filesystems)
+        retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
+        if retcode:
+            raise ProvisioningError("Failed to create mountpoint {}: {}".format(mount_path, stderr))
+
+        # Mount filesystems to temporary directory
+        retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
+        if retcode:
+            raise ProvisioningError("Failed to mount {} on {}: {}".format(mapped_rbd_volume, mount_path, stderr))
+
+        print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
 
     # Phase 6 - provisioning script execution
     #  * Execute the provisioning script main function ("install") passing any custom arguments
     self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Executing provisioning script'})
-    time.sleep(5)
+    time.sleep(1)
+
+    print("Running installer script")
+
+    # Parse the script arguments
+    script_arguments = dict()
+    for argument in vm_data['script_arguments']:
+        argument_name, argument_data = argument.split('=')
+        script_arguments[argument_name] = argument_data
+
+    # Run the script
+    installer_script.install(
+        vm_name=vm_name,
+        vm_id=re.findall(r'/(\d+)$/', vm_name),
+        temporary_directory=temp_dir,
+        disks=vm_data['volumes'],
+        networks=vm_data['networks'],
+        **script_arguments
+    )
+
+
+    return
+
 
     # Phase 7 - install cleanup
     #  * Unmount any mounted volumes
     #  * Remove any temporary directories
     self.update_state(state='RUNNING', meta={'current': 7, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
-    time.sleep(5)
+    time.sleep(1)
 
     # Phase 8 - configuration creation
     #  * Create the libvirt XML configuration

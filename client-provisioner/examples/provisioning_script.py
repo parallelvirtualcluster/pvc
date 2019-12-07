@@ -43,7 +43,6 @@ def install(**kwargs):
     # by this point, so we can get right to running the debootstrap after setting
     # some nicer variable names; you don't necessarily have to do this.
     vm_name = kwargs['vm_name']
-    vm_id = kwargs['vm_id']
     temporary_directory = kwargs['temporary_directory']
     disks = kwargs['disks']
     networks = kwargs['networks']
@@ -69,7 +68,6 @@ def install(**kwargs):
             root_disk = disk
     if not root_disk:
         return
-    print(root_disk)
 
     # Ensure we have debootstrap intalled on the provisioner system; this is a
     # good idea to include if you plan to use anything that is not part of the
@@ -116,7 +114,7 @@ def install(**kwargs):
         # Append the fstab line
         with open(fstab_file, 'a') as fh:
             fh.write("/dev/{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
-                disk=disk['name'],
+                disk=disk['disk_id'],
                 mountpoint=disk['mountpoint'],
                 filesystem=disk['filesystem'],
                 options=options,
@@ -136,7 +134,7 @@ GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_DISABLE_LINUX_UUID=false
-""".format(root_disk=root_disk['name']))
+""".format(root_disk=root_disk['disk_id']))
 
     # Chroot and install GRUB so we can boot, then exit the chroot
     # EXITING THE CHROOT IS VERY IMPORTANT OR THE FOLLOWING STAGES OF THE PROVISIONER
@@ -146,7 +144,7 @@ GRUB_DISABLE_LINUX_UUID=false
     fake_root = os.open("/", os.O_RDONLY)
     os.fchdir(fake_root)
     os.system(
-        "grub-install /dev/rbd/{}".format(root_disk['volume'])
+        "grub-install /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
     )
     os.system( 
         "update-grub"
