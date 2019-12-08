@@ -144,7 +144,7 @@ GRUB_DISABLE_LINUX_UUID=false
     fake_root = os.open("/", os.O_RDONLY)
     os.fchdir(fake_root)
     os.system(
-        "grub-install /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
+        "grub-install --force /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
     )
     os.system( 
         "update-grub"
