@@ -167,7 +167,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
     dom_name = parsed_xml.name.text
 
     # Ensure that the UUID and name are unique
-    if searchClusterByUUID(dom_uuid) or searchClusterByName(dom_name):
+    if searchClusterByUUID(zk_conn, dom_uuid) or searchClusterByName(zk_conn, dom_name):
         return False, 'ERROR: Specified VM "{}" or UUID "{}" matches an existing VM on the cluster'.format(dom_name, dom_uuid)
 
     if not target_node:

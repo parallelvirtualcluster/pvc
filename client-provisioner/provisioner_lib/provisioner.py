@@ -1005,16 +1005,16 @@ def create_vm(self, vm_name, vm_profile):
         vm_memory=vm_data['system_details']['vram_mb'],
         vm_vcpus=vm_data['system_details']['vcpu_count'],
         vm_architecture=system_architecture
-    )
+    ).strip()
 
     # Add default devices
-    vm_schema += libvirt_schema.devices_default
+    vm_schema += libvirt_schema.devices_default.strip()
 
     # Add serial device
     if vm_data['system_details']['serial']:
         vm_schema += libvirt_schema.devices_serial.format(
             vm_name=vm_name
-        )
+        ).strip()
 
     # Add VNC device
     if vm_data['system_details']['vnc']:
@@ -1030,10 +1030,10 @@ def create_vm(self, vm_name, vm_profile):
             vm_vncport=vm_vncport,
             vm_vnc_autoport=vm_vnc_autoport,
             vm_vnc_bind=vm_vnc_bind
-        )
+        ).strip()
 
     # Add SCSI controller
-    vm_schema += libvirt_schema.devices_scsi_controller
+    vm_schema += libvirt_schema.devices_scsi_controller.strip()
 
     # Add disk devices
     monitor_list = list()
@@ -1049,15 +1049,15 @@ def create_vm(self, vm_name, vm_profile):
             disk_pool=volume['pool'],
             vm_name=vm_name,
             disk_id=volume['disk_id']
-        )
+        ).strip()
         for monitor in monitor_list:
             vm_schema += libvirt_schema.devices_disk_coordinator.format(
                 coordinator_name=monitor,
                 coordinator_ceph_mon_port=config['ceph_monitor_port']
-            )
-        vm_schema += libvirt_schema.devices_disk_footer
+            ).strip()
+        vm_schema += libvirt_schema.devices_disk_footer.strip()
 
-    vm_schema += libvirt_schema.devices_vhostmd
+    vm_schema += libvirt_schema.devices_vhostmd.strip()
 
     # Add network devices
     network_id = 0
@@ -1093,11 +1093,11 @@ def create_vm(self, vm_name, vm_profile):
         vm_schema += libvirt_schema.devices_net_interface.format(
             eth_macaddr=eth_macaddr,
             eth_bridge=eth_bridge
-        )
+        ).strip()
 
         network_id += 1
 
-    vm_schema += libvirt_schema.libvirt_footer
+    vm_schema += libvirt_schema.libvirt_footer.strip()
 
     print("Final VM schema:\n{}\n".format(vm_schema))
     
