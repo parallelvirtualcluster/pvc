@@ -730,7 +730,7 @@ def cli_network():
 @click.option(
     '--dns-server', 'name_servers',
     multiple=True,
-    help='DNS nameserver for network'
+    help='DNS nameserver for network; multiple entries may be specified.'
 )
 @click.option(
     '-i', '--ipnet', 'ip_network',
@@ -813,7 +813,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
 @click.option(
     '--dns-server', 'name_servers',
     multiple=True,
-    help='DNS nameserver for network'
+    help='DNS nameserver for network; multiple entries may be specified (will overwrite all previous entries).'
 )
 @click.option(
     '-i', '--ipnet', 'ip4_network',
