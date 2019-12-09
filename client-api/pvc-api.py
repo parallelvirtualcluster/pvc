@@ -413,6 +413,12 @@ def api_net_root():
         else:
             domain = None
 
+        # Get network name servers
+        if 'name_server' in flask.request.values:
+            name_servers = flask.request.values.getlist('name_server')
+        else:
+            name_servers = None
+
         # Get ipv4 network
         if 'ip4_network' in flask.request.values:
             ip4_network = flask.request.values['ip4_network']
@@ -455,7 +461,7 @@ def api_net_root():
         else:
             dhcp4_end = None
 
-        return pvcapi.net_add(vni, description, nettype, domain,
+        return pvcapi.net_add(vni, description, nettype, domain, name_servers,
                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                               dhcp4_flag, dhcp4_start, dhcp4_end)
 
@@ -479,6 +485,12 @@ def api_net_element(network):
         else:
             domain = None
 
+        # Get network name servers
+        if 'name_server' in flask.request.values:
+            name_servers = flask.request.values.getlist('name_server')
+        else:
+            name_servers = None
+
         # Get ipv4 network
         if 'ip4_network' in flask.request.values:
             ip4_network = flask.request.values['ip4_network']
@@ -521,7 +533,7 @@ def api_net_element(network):
         else:
             dhcp4_end = None
 
-        return pvcapi.net_modify(network, description, domain,
+        return pvcapi.net_modify(network, description, domain, name_servers,
                                  ip4_network, ip4_gateway,
                                  ip6_network, ip6_gateway,
                                  dhcp4_flag, dhcp4_start, dhcp4_end)

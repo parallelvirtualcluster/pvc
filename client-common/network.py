@@ -134,6 +134,7 @@ def getNetworkInformation(zk_conn, vni):
     description = zkhandler.readdata(zk_conn, '/networks/{}'.format(vni))
     nettype = zkhandler.readdata(zk_conn, '/networks/{}/nettype'.format(vni))
     domain = zkhandler.readdata(zk_conn, '/networks/{}/domain'.format(vni))
+    name_servers = zkhandler.readdata(zk_conn, '/networks/{}/name_servers'.format(vni))
     ip6_network = zkhandler.readdata(zk_conn, '/networks/{}/ip6_network'.format(vni))
     ip6_gateway = zkhandler.readdata(zk_conn, '/networks/{}/ip6_gateway'.format(vni))
     dhcp6_flag = zkhandler.readdata(zk_conn, '/networks/{}/dhcp6_flag'.format(vni))
@@ -149,6 +150,7 @@ def getNetworkInformation(zk_conn, vni):
         'description': description,
         'type': nettype,
         'domain': domain,
+        'name_servers': name_servers.split(','),
         'ip6': {
             'network': ip6_network,
             'gateway': ip6_gateway,
@@ -223,7 +225,7 @@ def isValidIP(ipaddr):
 # Direct functions
 #
 def add_network(zk_conn, vni, description, nettype,
-                domain, ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                 dhcp4_flag, dhcp4_start, dhcp4_end):
     # Ensure start and end DHCP ranges are set if the flag is set
     if dhcp4_flag and ( not dhcp4_start or not dhcp4_end ):
@@ -254,6 +256,7 @@ def add_network(zk_conn, vni, description, nettype,
         '/networks/{}'.format(vni): description,
         '/networks/{}/nettype'.format(vni): nettype,
         '/networks/{}/domain'.format(vni): domain,
+        '/networks/{}/name_servers'.format(vni): ','.join(name_servers),
         '/networks/{}/ip6_network'.format(vni): ip6_network,
         '/networks/{}/ip6_gateway'.format(vni): ip6_gateway,
         '/networks/{}/dhcp6_flag'.format(vni): dhcp6_flag,
@@ -278,6 +281,8 @@ def modify_network(zk_conn, vni, **parameters):
         zk_data.update({'/networks/{}'.format(vni): parameters['description']})
     if parameters['domain']:
         zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
+    if parameters['name_servers']:
+        zk_data.update({'/networks/{}/name_servers'.format(vni): ','.join(parameters['name_servers'])})
     if parameters['ip4_network']:
         zk_data.update({'/networks/{}/ip4_network'.format(vni): parameters['ip4_network']})
     if parameters['ip4_gateway']:
@@ -644,6 +649,7 @@ def format_info(network_information, long_output):
     ainformation.append('{}Description:{}    {}'.format(ansiprint.purple(), ansiprint.end(), network_information['description']))
     if network_information['type'] == 'managed':
         ainformation.append('{}Domain:{}         {}'.format(ansiprint.purple(), ansiprint.end(), network_information['domain']))
+        ainformation.append('{}DNS Servers:{}    {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(network_information['name_servers'])))
         if network_information['ip6']['network'] != "None":
             ainformation.append('')
             ainformation.append('{}IPv6 network:{}   {}'.format(ansiprint.purple(), ansiprint.end(), network_information['ip6']['network']))

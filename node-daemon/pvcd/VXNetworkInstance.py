@@ -90,6 +90,7 @@ class VXNetworkInstance(object):
         self.old_description = None
         self.description = None
         self.domain = None
+        self.name_servers = None
         self.ip6_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_gateway'.format(self.vni))
         self.ip6_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni))
         self.ip6_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni)).split('/')[-1]
@@ -179,6 +180,17 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             if data and self.domain != data.decode('ascii'):
                 domain = data.decode('ascii')
                 self.domain = domain
+
+        @self.zk_conn.DataWatch('/networks/{}/name_servers'.format(self.vni))
+        def watch_network_name_servers(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.name_servers != data.decode('ascii'):
+                name_servers = data.decode('ascii').split(',')
+                self.name_servers = name_servers
 
         @self.zk_conn.DataWatch('/networks/{}/ip6_network'.format(self.vni))
         def watch_network_ip6_network(data, stat, event=''):
