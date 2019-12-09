@@ -660,6 +660,11 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
         stderr = ''
     return retcode, stdout, stderr
 
+#
+# Cloned VM provisioning function - executed by the Celery worker
+#
+def clone_vm(self, vm_name, vm_profile):
+    pass
 
 #
 # Main VM provisioning function - executed by the Celery worker
@@ -752,6 +757,10 @@ def create_vm(self, vm_name, vm_profile):
     # This is the "safe fail" step when an invalid configuration will be caught
     self.update_state(state='RUNNING', meta={'current': 2, 'total': 10, 'status': 'Verifying configuration against cluster'})
     time.sleep(1)
+
+    # Verify that a VM with this name does not already exist
+    if pvc_vm.searchClusterByName(zk_conn, vm_name):
+        raise ClusterError("A VM with the name '{}' already exists in the cluster".format(vm_name))
 
     # Verify that at least one host has enough free RAM to run the VM
     _discard, nodes = pvc_node.get_list(zk_conn, None)

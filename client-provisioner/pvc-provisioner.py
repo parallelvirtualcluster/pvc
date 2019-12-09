@@ -1073,6 +1073,7 @@ def api_status_root(task_id):
 # Entrypoint
 #
 if __name__ == '__main__':
+    # Start main API
     if config['debug']:
         # Run in Flask standard mode
         api.run(config['listen_address'], config['listen_port'])
@@ -1095,4 +1096,3 @@ if __name__ == '__main__':
         print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
         http_server.serve_forever()
     
-
