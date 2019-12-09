@@ -11,5 +11,5 @@ if systemctl is-active --quiet pvc-provisioner.service; then
     systemctl restart pvc-provisioner.service
     systemctl restart pvc-provisioner-worker.service
 else
-    echo "NOTE: The PVC client API daemon (pvc-provisioner.service) has not been started; create a config file at /etc/pvc/pvc-provisioner.yaml then start it."
+    echo "NOTE: The PVC provisioner API daemon (pvc-provisioner.service) has not been started; create a config file at /etc/pvc/pvc-provisioner.yaml then start it."
 fi
