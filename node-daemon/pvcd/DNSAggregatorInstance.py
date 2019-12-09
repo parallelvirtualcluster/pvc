@@ -219,10 +219,10 @@ class DNSNetworkInstance(object):
                 INSERT INTO records (domain_id, name, content, type, ttl, prio) VALUES
                 (%s, %s, %s, %s, %s, %s)
                 """,
-                (domain_id, network_domain, 'nsX.{d} root.{d} 1 10800 1800 86400 86400'.format(d=self.config['cluster_domain']), 'SOA', 86400, 0)
+                (domain_id, network_domain, 'nsX.{d} root.{d} 1 10800 1800 86400 86400'.format(d=self.config['upstream_domain']), 'SOA', 86400, 0)
             )
 
-            ns_servers = ['pvc-ns.{}'.format(self.config['cluster_domain'])]
+            ns_servers = ['pvc-ns.{}'.format(self.config['upstream_domain'])]
             for ns_server in ns_servers:
                 sql_curs.execute(
                     """
