@@ -25,6 +25,7 @@ import json
 import yaml
 import os
 import uu
+import distutils.util
 
 import gevent.pywsgi
 
@@ -284,13 +285,13 @@ def api_template_system_root():
             return flask.jsonify({"message": "A vram integer value in Megabytes must be specified."}), 400
 
         # Get serial configuration
-        if 'serial' in flask.request.values and flask.request.values['serial']:
+        if 'serial' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['serial'])):
             serial = True
         else:
             serial = False
 
         # Get VNC configuration
-        if 'vnc' in flask.request.values and flask.request.values['vnc']:
+        if 'vnc' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['vnc'])):
             vnc = True
 
             if 'vnc_bind' in flask.request.values:
@@ -301,6 +302,7 @@ def api_template_system_root():
             vnc = False
             vnc_bind = None
 
+        # Get metadata
         if 'node_limit' in flask.request.values:
             node_limit = flask.request.values['node_limit']
         else:
@@ -311,7 +313,7 @@ def api_template_system_root():
         else:
             node_selector = None
 
-        if 'start_with_node' in flask.request.values and flask.request.values['start_with_node']:
+        if 'start_with_node' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['start_with_node'])):
             start_with_node = True
         else:
             start_with_node = False
@@ -348,6 +350,18 @@ def api_template_system_element(template):
             * type: IP Address (or '0.0.0.0' wildcard)
             * optional: true
             * requires: vnc=True
+        ?node_limit: CSV list of node(s) to limit VM operation to
+            * type: CSV of valid PVC nodes
+            * optional: true
+            * requires: N/A
+        ?node_selector: Selector to use for node migrations after initial provisioning
+            * type: Valid PVC node selector
+            * optional: true
+            * requires: N/A
+        ?start_with_node: Whether to start limited node with the parent node
+            * default: false
+            * type: boolean
+            * optional: true
 
     DELETE: Remove system template <template>.
     """
@@ -374,13 +388,13 @@ def api_template_system_element(template):
             return flask.jsonify({"message": "A vram integer value in Megabytes must be specified."}), 400
 
         # Get serial configuration
-        if 'serial' in flask.request.values and flask.request.values['serial']:
+        if 'serial' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['serial'])):
             serial = True
         else:
             serial = False
 
         # Get VNC configuration
-        if 'vnc' in flask.request.values and flask.request.values['vnc']:
+        if 'vnc' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['vnc'])):
             vnc = True
 
             if 'vnc_bind' in flask.request.values:
@@ -390,6 +404,22 @@ def api_template_system_element(template):
         else:
             vnc = False
             vnc_bind = None
+
+        # Get metadata
+        if 'node_limit' in flask.request.values:
+            node_limit = flask.request.values['node_limit']
+        else:
+            node_limit = None
+
+        if 'node_selector' in flask.request.values:
+            node_selector = flask.request.values['node_selector']
+        else:
+            node_selector = None
+
+        if 'start_with_node' in flask.request.values and bool(distutils.util.strtobool(flask.request.values['start_with_node'])):
+            start_with_node = True
+        else:
+            start_with_node = False
 
         return pvcprovisioner.create_template_system(template, vcpu_count, vram_mb, serial, vnc, vnc_bind)
 
@@ -1022,9 +1052,7 @@ def api_create_root():
     else:
         return flask.jsonify({"message": "A VM profile must be specified."}), 400
 
-    print("starting task")
     task = create_vm.delay(name, profile)
-    print(task.id)
 
     return flask.jsonify({"task_id": task.id}), 202, {'Location': flask.url_for('api_status_root', task_id=task.id)}
 
