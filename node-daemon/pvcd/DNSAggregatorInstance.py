@@ -222,7 +222,7 @@ class DNSNetworkInstance(object):
                 (domain_id, network_domain, 'nsX.{d} root.{d} 1 10800 1800 86400 86400'.format(d=self.config['cluster_domain']), 'SOA', 86400, 0)
             )
 
-            ns_servers = [network_gateway, 'pvc-ns1.{}'.format(self.config['cluster_domain']), 'pvc-ns2.{}'.format(self.config['cluster_domain'])]
+            ns_servers = ['pvc-ns.{}'.format(self.config['cluster_domain'])]
             for ns_server in ns_servers:
                 sql_curs.execute(
                     """
