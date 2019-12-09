@@ -122,6 +122,11 @@ def install(**kwargs):
                 cpass=cpass
             ))
 
+    # Write the hostname
+    hostname_file = "{}/etc/hostname".format(temporary_directory)
+    with open(hostname_file, 'w') as fh:
+        fh.write("{}".format(vm_name))
+
     # Write the GRUB configuration
     grubcfg_file = "{}/etc/default/grub".format(temporary_directory)
     with open(grubcfg_file, 'w') as fh:
@@ -149,6 +154,9 @@ GRUB_DISABLE_LINUX_UUID=false
     os.system( 
         "update-grub"
     )
+    os.system(
+        "echo root:test123 | chpasswd"
+    )
     # Restore our original root
     os.fchdir(real_root)
     os.chroot(".")
@@ -162,5 +170,9 @@ GRUB_DISABLE_LINUX_UUID=false
             temporary_directory
         )
     )
+
+    # Clean up file handles so paths can be unmounted
+    del fake_root
+    del real_root
 
     # Everything else is done via cloud-init

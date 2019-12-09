@@ -36,6 +36,8 @@ import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
 
+import provisioner_lib.libvirt_schema as libvirt_schema
+
 #
 # Exceptions (used by Celery tasks)
 #
@@ -173,14 +175,14 @@ def template_list(limit):
 #
 # Template Create functions
 #
-def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None):
+def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, start_with_node=False):
     if list_template_system(name, is_fuzzy=False):
         retmsg = { "message": "The system template {} already exists".format(name) }
         retcode = 400
         return flask.jsonify(retmsg), retcode
 
-    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind) VALUES (%s, %s, %s, %s, %s, %s);"
-    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind)
+    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node)
 
     conn, cur = open_database(config)
     try:
@@ -666,6 +668,9 @@ def create_vm(self, vm_name, vm_profile):
     # Runtime imports
     import time
     import importlib
+    import uuid
+    import datetime
+    import random
 
     time.sleep(2)
 
@@ -690,7 +695,13 @@ def create_vm(self, vm_name, vm_profile):
     #  * Assemble a VM configuration dictionary
     self.update_state(state='RUNNING', meta={'current': 1, 'total': 10, 'status': 'Collecting configuration'})
     time.sleep(1)
-    
+   
+    vm_id = re.findall(r'/(\d+)$/', vm_name)
+    if not vm_id:
+        vm_id = 0
+    else:
+        vm_id = vm_id[0]
+ 
     vm_data = dict()
 
     # Get the profile information
@@ -701,7 +712,7 @@ def create_vm(self, vm_name, vm_profile):
     vm_data['script_arguments'] = profile_data['arguments'].split('|')
     
     # Get the system details
-    query = 'SELECT vcpu_count, vram_mb, serial, vnc, vnc_bind FROM system_template WHERE id = %s'
+    query = 'SELECT vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node FROM system_template WHERE id = %s'
     args = (profile_data['system_template'],)
     db_cur.execute(query, args)
     vm_data['system_details'] = db_cur.fetchone()
@@ -731,6 +742,8 @@ def create_vm(self, vm_name, vm_profile):
     vm_data['script'] = db_cur.fetchone()['script']
   
     close_database(db_conn, db_cur)
+
+    print("VM configuration data:\n{}".format(json.dumps(vm_data, sort_keys=True, indent=2)))
 
     # Phase 2 - verification
     #  * Ensure that at least one node has enough free RAM to hold the VM (becomes main host)
@@ -849,7 +862,7 @@ def create_vm(self, vm_name, vm_profile):
     self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
     time.sleep(1)
 
-    for volume in vm_data['volumes']:
+    for volume in reversed(vm_data['volumes']):
         if not volume['filesystem']:
             continue
 
@@ -915,16 +928,12 @@ def create_vm(self, vm_name, vm_profile):
     # Run the script
     installer_script.install(
         vm_name=vm_name,
-        vm_id=re.findall(r'/(\d+)$/', vm_name),
+        vm_id=vm_id,
         temporary_directory=temp_dir,
         disks=vm_data['volumes'],
         networks=vm_data['networks'],
         **script_arguments
     )
-
-
-    return
-
 
     # Phase 7 - install cleanup
     #  * Unmount any mounted volumes
@@ -932,16 +941,169 @@ def create_vm(self, vm_name, vm_profile):
     self.update_state(state='RUNNING', meta={'current': 7, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
     time.sleep(1)
 
+    for volume in list(reversed(vm_data['volumes'])):
+        # Unmount the volume
+        if volume['mountpoint']:
+            print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
+
+            mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+            retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
+            if retcode:
+                raise ProvisioningError("Failed to unmount {}: {}".format(mount_path, stderr))
+
+        # Unmap the RBD device
+        if volume['filesystem']:
+            print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
+
+            rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+            retcode, stdout, stderr = run_os_command("rbd unmap {}".format(rbd_volume))
+            if retcode:
+                raise ProvisioningError("Failed to unmap volume {}: {}".format(rbd_volume, stderr))
+
+    print("Cleaning up temporary directories and files")
+
+    # Remove temporary mount directory (don't fail if not removed)
+    retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
+    if retcode:
+        print("Failed to delete temporary directory {}: {}".format(temp_dir, stderr))
+
+    # Remote temporary script (don't fail if not removed)
+    retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
+    if retcode:
+        print("Failed to delete temporary script file {}: {}".format(script_file, stderr))
+
     # Phase 8 - configuration creation
     #  * Create the libvirt XML configuration
     self.update_state(state='RUNNING', meta={'current': 8, 'total': 10, 'status': 'Preparing Libvirt XML configuration'})
-    time.sleep(5)
+    time.sleep(1)
 
+    print("Creating Libvirt configuration")
+
+    # Get information about VM
+    vm_uuid = uuid.uuid4()
+    vm_description = "PVC provisioner @ {}, profile '{}'".format(datetime.datetime.now(), vm_profile)
+
+    retcode, stdout, stderr = run_os_command("uname -m")
+    system_architecture = stdout.strip()
+
+    # Begin assembling libvirt schema
+    vm_schema = ""
+
+    vm_schema += libvirt_schema.libvirt_header.format(
+        vm_name=vm_name,
+        vm_uuid=vm_uuid,
+        vm_description=vm_description,
+        vm_memory=vm_data['system_details']['vram_mb'],
+        vm_vcpus=vm_data['system_details']['vcpu_count'],
+        vm_architecture=system_architecture
+    )
+
+    # Add default devices
+    vm_schema += libvirt_schema.devices_default
+
+    # Add serial device
+    if vm_data['system_details']['serial']:
+        vm_schema += libvirt_schema.devices_serial.format(
+            vm_name=vm_name
+        )
+
+    # Add VNC device
+    if vm_data['system_details']['vnc']:
+        if vm_data['system_details']['vnc_bind']:
+            vm_vnc_bind = vm_data['system_details']['vnc_bind']
+        else:
+            vm_vnc_bind = "127.0.0.1"
+
+        vm_vncport = 5900
+        vm_vnc_autoport = "yes"
+
+        vm_schema += libvirt_schema.devices_vnc.format(
+            vm_vncport=vm_vncport,
+            vm_vnc_autoport=vm_vnc_autoport,
+            vm_vnc_bind=vm_vnc_bind
+        )
+
+    # Add SCSI controller
+    vm_schema += libvirt_schema.devices_scsi_controller
+
+    # Add disk devices
+    monitor_list = list()
+    coordinator_names = config['storage_hosts']
+    for coordinator in coordinator_names:
+        monitor_list.append("{}.{}".format(coordinator, config['storage_domain']))
+
+    ceph_storage_secret = config['ceph_storage_secret_uuid']
+
+    for volume in vm_data['volumes']:
+        vm_schema += libvirt_schema.devices_disk_header.format(
+            ceph_storage_secret=ceph_storage_secret,
+            disk_pool=volume['pool'],
+            vm_name=vm_name,
+            disk_id=volume['disk_id']
+        )
+        for monitor in monitor_list:
+            vm_schema += libvirt_schema.devices_disk_coordinator.format(
+                coordinator_name=monitor,
+                coordinator_ceph_mon_port=config['ceph_monitor_port']
+            )
+        vm_schema += libvirt_schema.devices_disk_footer
+
+    vm_schema += libvirt_schema.devices_vhostmd
+
+    # Add network devices
+    network_id = 0
+    for network in vm_data['networks']:
+        vni = network['vni']
+        eth_bridge = "vmbr{}".format(vni)
+
+        vm_id_hex = '{:x}'.format(int(vm_id % 16))
+        net_id_hex = '{:x}'.format(int(network_id % 16))
+        mac_prefix = '52:54:00'
+
+        if vm_data['mac_template']:
+            mactemplate = "{prefix}:ff:f6:{vmid}{netid}"
+            macgen_template = vm_data['mac_template']
+            eth_macaddr = macgen_template.format(
+                prefix=mac_prefix,
+                vmid=vm_id_hex,
+                netid=net_id_hex,
+            )
+        else:
+            random_octet_A = '{:x}'.format(random.randint(16,238))
+            random_octet_B = '{:x}'.format(random.randint(16,238))
+            random_octet_C = '{:x}'.format(random.randint(16,238))
+
+            macgen_template = '{prefix}:{octetA}:{octetB}:{octetC}'
+            eth_macaddr = macgen_template.format(
+                prefix=mac_prefix,
+                octetA=random_octet_A,
+                octetB=random_octet_B,
+                octetC=random_octet_C
+            )
+
+        vm_schema += libvirt_schema.devices_net_interface.format(
+            eth_macaddr=eth_macaddr,
+            eth_bridge=eth_bridge
+        )
+
+        network_id += 1
+
+    vm_schema += libvirt_schema.libvirt_footer
+
+    print("Final VM schema:\n{}\n".format(vm_schema))
+    
     # Phase 9 - definition
     #  * Create the VM in the PVC cluster
     #  * Start the VM in the PVC cluster
     self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Defining and starting VM on the cluster'})
-    time.sleep(5)
+    time.sleep(1)
+
+    print("Defining and starting VM on cluster")
+
+    retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['start_with_node'])
+    print(retmsg)
+    retcode, retmsg = pvc_vm.start_vm(zk_conn, vm_name)
+    print(retmsg)
 
     pvc_common.stopZKConnection(zk_conn)
     return {"status": "VM '{}' with profile '{}' has been provisioned and started successfully".format(vm_name, vm_profile), "current": 10, "total": 10}

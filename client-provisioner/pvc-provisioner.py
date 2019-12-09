@@ -70,7 +70,14 @@ try:
         'queue_host': o_config['pvc']['provisioner']['queue']['host'],
         'queue_port': o_config['pvc']['provisioner']['queue']['port'],
         'queue_path': o_config['pvc']['provisioner']['queue']['path'],
+        'storage_hosts': o_config['pvc']['cluster']['storage_hosts'],
+        'storage_domain': o_config['pvc']['cluster']['storage_domain'],
+        'ceph_monitor_port': o_config['pvc']['cluster']['ceph_monitor_port'],
+        'ceph_storage_secret_uuid': o_config['pvc']['cluster']['ceph_storage_secret_uuid']
     }
+
+    if not config['storage_hosts']:
+        config['storage_hosts'] = config['coordinators']
 
     # Set the config object in the pvcapi namespace
     pvcprovisioner.config = config
@@ -228,6 +235,19 @@ def api_template_system_root():
             * type: IP Address (or '0.0.0.0' wildcard)
             * optional: true
             * requires: vnc=True
+        ?node_limit: CSV list of node(s) to limit VM operation to
+            * type: CSV of valid PVC nodes
+            * optional: true
+            * requires: N/A
+        ?node_selector: Selector to use for node migrations after initial provisioning
+            * type: Valid PVC node selector
+            * optional: true
+            * requires: N/A
+        ?start_with_node: Whether to start limited node with the parent node
+            * default: false
+            * type: boolean
+            * optional: true
+            * requires: N/A
     """
     if flask.request.method == 'GET':
         # Get name limit
@@ -281,7 +301,22 @@ def api_template_system_root():
             vnc = False
             vnc_bind = None
 
-        return pvcprovisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind)
+        if 'node_limit' in flask.request.values:
+            node_limit = flask.request.values['node_limit']
+        else:
+            node_limit = None
+
+        if 'node_selector' in flask.request.values:
+            node_selector = flask.request.values['node_selector']
+        else:
+            node_selector = None
+
+        if 'start_with_node' in flask.request.values and flask.request.values['start_with_node']:
+            start_with_node = True
+        else:
+            start_with_node = False
+
+        return pvcprovisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node)
 
 @api.route('/api/v1/template/system/<template>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
@@ -379,9 +414,16 @@ def api_template_network_root():
             * optional: false
             * requires: N/A
         ?mac_template: The MAC address template for the template.
-            * type: text
+            * type: MAC address template
             * optional: true
             * requires: N/A
+
+    The MAC address template should use the following conventions:
+      * use {prefix} to represent the Libvirt MAC prefix, always "52:54:00"
+      * use {vmid} to represent the hex value (<16) of the host's ID (e.g. server4 has ID 4, server has ID 0)
+      * use {netid} to represent the hex value (<16) of the network's sequential integer ID (first is 0, etc.)
+
+      Example: "{prefix}:ff:ff:{vmid}{netid}"
     """
     if flask.request.method == 'GET':
         # Get name limit

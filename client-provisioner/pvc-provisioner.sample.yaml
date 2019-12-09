@@ -20,6 +20,21 @@ pvc:
       - hv1
       - hv2
       - hv3
+    # cluster: Information about the cluster
+    cluster:
+        # storage_hosts: The list of hosts that the Ceph monitors are valid on; if empty (the default),
+        #                uses the list of coordinators
+        storage_hosts:
+          - ceph1
+          - ceph2
+          - ceph2
+        # storage_domain: The storage domain name, concatenated with the coordinators list names
+        #                 to form monitor access strings
+        storage_domain: "s.bonilan.net"
+        # ceph_monitor_port: The port that the Ceph monitor on each coordinator listens on
+        ceph_monitor_port: 6789
+        # ceph_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
+        ceph_storage_secret_uuid: "c416032b-2ce9-457f-a5c2-18704a3485f4"
     # provisioner: Configuration of the Provisioner API listener
     provisioner:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
