@@ -1,0 +1,16 @@
+# Parallel Virtual Cluster Provisioner client worker unit file
+
+[Unit]
+Description = Parallel Virtual Cluster Provisioner worker
+After = network-online.target
+
+[Service]
+Type = simple
+WorkingDirectory = /usr/share/pvc
+Environment = PYTHONUNBUFFERED=true
+Environment = PVC_CONFIG_FILE=/etc/pvc/pvc-provisioner.yaml
+ExecStart = /usr/bin/celery worker -A pvc-provisioner.celery --concurrency 1 --loglevel INFO
+Restart = on-failure
+
+[Install]
+WantedBy = multi-user.target
