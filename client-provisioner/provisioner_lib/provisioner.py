@@ -669,7 +669,7 @@ def clone_vm(self, vm_name, vm_profile):
 #
 # Main VM provisioning function - executed by the Celery worker
 #
-def create_vm(self, vm_name, vm_profile):
+def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     # Runtime imports
     import time
     import importlib
@@ -1108,12 +1108,19 @@ def create_vm(self, vm_name, vm_profile):
     self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Defining and starting VM on the cluster'})
     time.sleep(1)
 
-    print("Defining and starting VM on cluster")
+    if start_vm and not define_vm:
+        start_vm = False
 
-    retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['start_with_node'])
-    print(retmsg)
-    retcode, retmsg = pvc_vm.start_vm(zk_conn, vm_name)
-    print(retmsg)
+    if define_vm or start_vm:
+        print("Defining and starting VM on cluster")
+
+    if define_vm:
+        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['start_with_node'], vm_profile)
+        print(retmsg)
+
+    if start_vm:
+        retcode, retmsg = pvc_vm.start_vm(zk_conn, vm_name)
+        print(retmsg)
 
     pvc_common.stopZKConnection(zk_conn)
     return {"status": "VM '{}' with profile '{}' has been provisioned and started successfully".format(vm_name, vm_profile), "current": 10, "total": 10}
