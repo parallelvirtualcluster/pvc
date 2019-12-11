@@ -127,6 +127,13 @@ def install(**kwargs):
     with open(hostname_file, 'w') as fh:
         fh.write("{}".format(vm_name))
 
+    # Write a DHCP stanza for ens2
+    # NOTE: Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
+    #       will always be on PCI bus ID 2, hence the name "ens2".
+    ens2_network_file = "{}/etc/network/interfaces.d/ens2".format(temporary_directory)
+    with open(ens2_network_file, 'w') as fh:
+        fh.write("auto ens2\niface ens2 inet dhcp\n")
+
     # Write the GRUB configuration
     grubcfg_file = "{}/etc/default/grub".format(temporary_directory)
     with open(grubcfg_file, 'w') as fh:
