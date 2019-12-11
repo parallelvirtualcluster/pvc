@@ -133,6 +133,8 @@ add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 123 meta iifname {bridgenic} counter accept
 add rule inet filter input ip6 nexthdr udp udp dport 547 meta iifname {bridgenic} counter accept
+# Allow metadata API into the router from network
+add rule inet filter input tcp dport 80 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
