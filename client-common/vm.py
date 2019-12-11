@@ -157,7 +157,7 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
-def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart):
+def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, profile=None):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -197,6 +197,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/rbdlist'.format(dom_uuid): ','.join(rbd_list),
+        '/domains/{}/profile'.format(dom_uuid): profile,
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
 
