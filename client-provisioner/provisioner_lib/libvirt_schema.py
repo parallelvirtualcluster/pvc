@@ -28,8 +28,7 @@
 #  * vm_memory
 #  * vm_vcpus
 #  * vm_architecture
-libvirt_header = """
-<domain type='kvm'>
+libvirt_header = """<domain type='kvm'>
   <name>{vm_name}</name>
   <uuid>{vm_uuid}</uuid>
   <description>{vm_description}</description>
@@ -57,14 +56,11 @@ libvirt_header = """
 """
 
 # File footer, closing devices and domain elements
-libvirt_footer = """
-  </devices>
-</domain>
-"""
+libvirt_footer = """  </devices>
+</domain>"""
 
 # Default devices for all VMs
-devices_default = """
-    <emulator>/usr/bin/kvm</emulator>
+devices_default = """    <emulator>/usr/bin/kvm</emulator>
     <controller type='usb' index='0'/>
     <controller type='pci' index='0' model='pci-root'/>
     <rng model='virtio'>
@@ -76,8 +72,7 @@ devices_default = """
 # Serial device
 # Variables:
 #  * vm_name
-devices_serial = """
-    <serial type='pty'>
+devices_serial = """    <serial type='pty'>
       <log file='/var/log/libvirt/{vm_name}.log' append='on'/>
     </serial>
     <console type='pty'/>
@@ -88,13 +83,11 @@ devices_serial = """
 #  * vm_vncport
 #  * vm_vnc_autoport
 #  * vm_vnc_bind
-devices_vnc = """
-    <graphics type='vnc' port='{vm_vncport}' autoport='{vm_vnc_autoport}' listen='{vm_vnc_bind}'/>
+devices_vnc = """    <graphics type='vnc' port='{vm_vncport}' autoport='{vm_vnc_autoport}' listen='{vm_vnc_bind}'/>
 """
 
 # VirtIO SCSI device
-devices_scsi_controller = """
-    <controller type='scsi' index='0' model='virtio-scsi'/>
+devices_scsi_controller = """    <controller type='scsi' index='0' model='virtio-scsi'/>
 """
 
 # Disk device header
@@ -103,8 +96,7 @@ devices_scsi_controller = """
 #  * disk_pool
 #  * vm_name
 #  * disk_id
-devices_disk_header = """
-    <disk type='network' device='disk'>
+devices_disk_header = """    <disk type='network' device='disk'>
       <driver name='qemu' discard='unmap'/>
       <target dev='{disk_id}' bus='scsi'/>
       <auth username='libvirt'>
@@ -117,19 +109,16 @@ devices_disk_header = """
 # Variables:
 #  * coordinator_name
 #  * coordinator_ceph_mon_port
-devices_disk_coordinator = """
-        <host name='{coordinator_name}' port='{coordinator_ceph_mon_port}'/>
+devices_disk_coordinator = """        <host name='{coordinator_name}' port='{coordinator_ceph_mon_port}'/>
 """
 
 # Disk device footer
-devices_disk_footer = """
-      </source>
+devices_disk_footer = """      </source>
     </disk>
 """
 
 # vhostmd virtualization passthrough device
-devices_vhostmd = """
-    <disk type='file' device='disk'>
+devices_vhostmd = """    <disk type='file' device='disk'>
       <drive name='qemu' type='raw'/>
       <source file='/dev/shm/vhostmd0'/>
       <target dev='sdz' bus='usb'/>
@@ -141,8 +130,7 @@ devices_vhostmd = """
 # Variables:
 #  * eth_macaddr
 #  * eth_bridge
-devices_net_interface = """
-    <interface type='bridge'>
+devices_net_interface = """    <interface type='bridge'>
       <mac address='{eth_macaddr}'/>
       <source bridge='{eth_bridge}'/>
       <model type='virtio'/>
