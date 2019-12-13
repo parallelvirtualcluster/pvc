@@ -191,7 +191,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         '/domains/{}/state'.format(dom_uuid): 'stop',
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
-        '/domains/{}/node_limit'.format(dom_uuid): node_limit,
+        '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit),
         '/domains/{}/node_selector'.format(dom_uuid): node_selector,
         '/domains/{}/node_autostart'.format(dom_uuid): node_autostart,
         '/domains/{}/failedreason'.format(dom_uuid): '',
@@ -210,7 +210,7 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
 
     if node_limit is not None:
         zkhandler.writedata(zk_conn, {
-            '/domains/{}/node_limit'.format(dom_uuid): node_limit
+            '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit)
         })
 
     if node_selector is not None:
