@@ -157,7 +157,7 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
-def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart):
+def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, profile=None):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -165,6 +165,10 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         return False, 'ERROR: Failed to parse XML data.'
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
+
+    # Ensure that the UUID and name are unique
+    if searchClusterByUUID(zk_conn, dom_uuid) or searchClusterByName(zk_conn, dom_name):
+        return False, 'ERROR: Specified VM "{}" or UUID "{}" matches an existing VM on the cluster'.format(dom_name, dom_uuid)
 
     if not target_node:
         target_node = common.findTargetNode(zk_conn, dom_uuid)
@@ -187,12 +191,13 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         '/domains/{}/state'.format(dom_uuid): 'stop',
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
-        '/domains/{}/node_limit'.format(dom_uuid): node_limit,
+        '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit),
         '/domains/{}/node_selector'.format(dom_uuid): node_selector,
         '/domains/{}/node_autostart'.format(dom_uuid): node_autostart,
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/rbdlist'.format(dom_uuid): ','.join(rbd_list),
+        '/domains/{}/profile'.format(dom_uuid): profile,
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
 
@@ -205,7 +210,7 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
 
     if node_limit is not None:
         zkhandler.writedata(zk_conn, {
-            '/domains/{}/node_limit'.format(dom_uuid): node_limit
+            '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit)
         })
 
     if node_selector is not None:
@@ -688,6 +693,7 @@ def format_info(zk_conn, domain_information, long_output):
     ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['uuid']))
     ainformation.append('{}Name:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['name']))
     ainformation.append('{}Description:{}        {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['description']))
+    ainformation.append('{}Profile:{}            {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['profile']))
     ainformation.append('{}Memory (M):{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['memory']))
     ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu']))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu_topology']))
@@ -715,6 +721,8 @@ def format_info(zk_conn, domain_information, long_output):
     }
     ainformation.append('{}State:{}              {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dstate_colour[domain_information['state']], domain_information['state'], ansiprint.end()))
     ainformation.append('{}Current Node:{}       {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node']))
+    if not domain_information['last_node']:
+        domain_information['last_node'] = "N/A"
     ainformation.append('{}Previous Node:{}      {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['last_node']))
 
     # Get a failure reason if applicable
@@ -722,9 +730,8 @@ def format_info(zk_conn, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 
-    ainformation.append('')
     ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_selector']))
-    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_limit']))
+    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(domain_information['node_limit'])))
     ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_autostart']))
 
     # Network list

@@ -266,6 +266,9 @@ class NodeInstance(object):
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
             common.run_os_command("systemctl stop pvc-api.service")
+        if self.config['enable_provisioner']:
+            self.logger.out('Stopping PVC Provisioner service', state='i')
+            common.run_os_command("systemctl stop pvc-provisioner.service")
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGateways()
@@ -284,9 +287,6 @@ class NodeInstance(object):
             for network in self.d_network:
                 self.d_network[network].createGateways()
                 self.d_network[network].startDHCPServer()
-            if self.config['enable_api']:
-                self.logger.out('Starting PVC API client service', state='i')
-                common.run_os_command("systemctl start pvc-api.service")
             time.sleep(1)
 
             # Switch Patroni leader to the local instance
@@ -321,6 +321,15 @@ class NodeInstance(object):
             # Start the DNS aggregator instance
             time.sleep(1)
             self.dns_aggregator.start_aggregator()
+
+            # Start the clients
+            if self.config['enable_api']:
+                self.logger.out('Starting PVC API client service', state='i')
+                common.run_os_command("systemctl start pvc-api.service")
+            if self.config['enable_provisioner']:
+                self.logger.out('Starting PVC Provisioner service', state='i')
+                common.run_os_command("systemctl start pvc-provisioner-worker.service")
+                common.run_os_command("systemctl start pvc-provisioner.service")
 
     def createFloatingAddresses(self):
         # VNI floating IP

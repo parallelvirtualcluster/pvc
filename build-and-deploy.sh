@@ -27,5 +27,5 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb
     ssh $HOST $SUDO systemctl restart pvcd
     ssh $HOST rm -rf /tmp/pvc
-    sleep 15
+    sleep 30
 done

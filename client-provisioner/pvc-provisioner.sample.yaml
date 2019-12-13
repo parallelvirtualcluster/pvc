@@ -1,0 +1,83 @@
+---
+# pvc-provisioner client configuration file example
+#
+# This configuration file specifies details for the PVC provisioner client
+# running on this machine. Default values are not supported; the values in
+# this sample configuration are considered defaults and can be used as-is.
+#
+# Copy this example to /etc/pvc/pvc-provisioner.yaml and edit to your needs.
+#
+# Alternatively, you may combine this configuration (anything under the
+# `provisioner` section) with a PVC API configuration in a single file, and
+# create links between them. By default, the only difference is the
+# provisioner header and the listen port specifically.
+
+pvc:
+    # debug: Enable/disable API debug mode
+    debug: True
+    # coordinators: The list of cluster coordinator hostnames
+    coordinators:
+      - hv1
+      - hv2
+      - hv3
+    # cluster: Information about the cluster
+    cluster:
+        # storage_hosts: The list of hosts that the Ceph monitors are valid on; if empty (the default),
+        #                uses the list of coordinators
+        storage_hosts:
+          - ceph1
+          - ceph2
+          - ceph2
+        # storage_domain: The storage domain name, concatenated with the coordinators list names
+        #                 to form monitor access strings
+        storage_domain: "s.bonilan.net"
+        # ceph_monitor_port: The port that the Ceph monitor on each coordinator listens on
+        ceph_monitor_port: 6789
+        # ceph_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
+        ceph_storage_secret_uuid: "c416032b-2ce9-457f-a5c2-18704a3485f4"
+    # provisioner: Configuration of the Provisioner API listener
+    provisioner:
+        # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
+        listen_address: "10.100.0.252"
+        # listen_port: TCP port to listen on, usually 7375
+        listen_port: "7375"
+        # authentication: Authentication and security settings
+        authentication:
+            # enabled: Enable or disable authentication (True/False)
+            enabled: False
+            # secret_key: Per-cluster secret key for API cookies; generate with uuidgen or pwgen
+            secret_key: ""
+            # tokens: a list of authentication tokens; leave as an empty list to disable authentication
+            tokens:
+                  # description: token description for management
+                - description: "testing"
+                  # token: random token for authentication; generate with uuidgen or pwgen
+                  token: ""
+        # ssl: SSL configuration
+        ssl:
+            # enabled: Enabled or disable SSL operation (True/False)
+            enabled: False
+            # cert_file: SSL certificate file
+            cert_file: ""
+            # key_file: SSL certificate key file
+            key_file: ""
+        # database: Backend database configuration
+        database:
+            # host: PostgreSQL hostname, usually 'localhost'
+            host: 10.100.0.252
+            # port: PostgreSQL port, invariably '5432'
+            port: 5432
+            # name: PostgreSQL database name, invariably 'pvcprov'
+            name: pvcprov
+            # user: PostgreSQL username, invariable 'pvcprov'
+            user: pvcprov
+            # pass: PostgreSQL user password, randomly generated
+            pass: pvcprov
+        # queue: Celery backend queue using the PVC Zookeeper cluster
+        queue:
+            # host: Redis hostname, usually 'localhost'
+            host: localhost
+            # port: Redis port, invariably '6279'
+            port: 6379
+            # path: Redis queue path, invariably '/0'
+            path: /0

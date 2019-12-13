@@ -516,14 +516,14 @@ def net_list(limit=None):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def net_add(vni, description, nettype, domain,
+def net_add(vni, description, nettype, domain, name_servers,
             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
             dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Add a virtual client network to the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain,
+    retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     if retflag:
@@ -537,7 +537,7 @@ def net_add(vni, description, nettype, domain,
     }
     return flask.jsonify(output), retcode
 
-def net_modify(vni, description, domain,
+def net_modify(vni, description, domain, name_servers,
                ip4_network, ip4_gateway,
                ip6_network, ip6_gateway,
                dhcp4_flag, dhcp4_start, dhcp4_end):
@@ -545,7 +545,7 @@ def net_modify(vni, description, domain,
     Modify a virtual client network in the PVC cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain,
+    retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     if retflag:

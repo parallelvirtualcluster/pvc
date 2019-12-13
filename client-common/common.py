@@ -182,6 +182,11 @@ def getInformationFromXML(zk_conn, uuid):
     if not domain_node_autostart:
         domain_node_autostart = 'False'
 
+    try:
+        domain_profile = zkhandler.readdata(zk_conn, '/domains/{}/profile'.format(uuid))
+    except:
+        domain_profile = None
+
     parsed_xml = getDomainXML(zk_conn, uuid)
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
@@ -210,6 +215,7 @@ def getInformationFromXML(zk_conn, uuid):
         'node_selector': domain_node_selector,
         'node_autostart': domain_node_autostart,
         'description': domain_description,
+        'profile': domain_profile,
         'memory': domain_memory,
         'vcpu': domain_vcpu,
         'vcpu_topology': domain_vcputopo,

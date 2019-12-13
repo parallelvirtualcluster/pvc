@@ -728,6 +728,11 @@ def cli_network():
     help='Domain name of the network.'
 )
 @click.option(
+    '--dns-server', 'name_servers',
+    multiple=True,
+    help='DNS nameserver for network; multiple entries may be specified.'
+)
+@click.option(
     '-i', '--ipnet', 'ip_network',
     default=None,
     help='CIDR-format IPv4 network address for subnet.'
@@ -766,7 +771,7 @@ def cli_network():
 @click.argument(
     'vni'
 )
-def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
     """
     Add a new virtual network with VXLAN identifier VNI to the cluster.
 
@@ -788,7 +793,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
         exit(1)
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################
@@ -804,6 +809,11 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     '-n', '--domain', 'domain',
     default=None,
     help='Domain name of the network.'
+)
+@click.option(
+    '--dns-server', 'name_servers',
+    multiple=True,
+    help='DNS nameserver for network; multiple entries may be specified (will overwrite all previous entries).'
 )
 @click.option(
     '-i', '--ipnet', 'ip4_network',
@@ -844,7 +854,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
 @click.argument(
     'vni'
 )
-def net_modify(vni, description, domain, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
@@ -853,7 +863,7 @@ def net_modify(vni, description, domain, ip6_network, ip6_gateway, ip4_network, 
     """
 
     zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, ip6_network=ip6_network, ip6_gateway=ip6_gateway, ip4_network=ip4_network, ip4_gateway=ip4_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
+    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, name_servers=name_servers, ip6_network=ip6_network, ip6_gateway=ip6_gateway, ip4_network=ip4_network, ip4_gateway=ip4_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
     cleanup(retcode, retmsg, zk_conn)
 
 ###############################################################################

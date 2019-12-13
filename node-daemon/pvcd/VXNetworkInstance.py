@@ -31,12 +31,13 @@ import pvcd.common as common
 
 class VXNetworkInstance(object):
     # Initialization function
-    def __init__ (self, vni, zk_conn, config, logger, this_node):
+    def __init__ (self, vni, zk_conn, config, logger, this_node, dns_aggregator):
         self.vni = vni
         self.zk_conn = zk_conn
         self.config = config
         self.logger = logger
         self.this_node = this_node
+        self.dns_aggregator = dns_aggregator
         self.vni_dev = config['vni_dev']
         self.vni_mtu = config['vni_mtu']
 
@@ -90,6 +91,7 @@ class VXNetworkInstance(object):
         self.old_description = None
         self.description = None
         self.domain = None
+        self.name_servers = None
         self.ip6_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_gateway'.format(self.vni))
         self.ip6_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni))
         self.ip6_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni)).split('/')[-1]
@@ -132,6 +134,8 @@ add rule inet filter input udp dport 53 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 67 meta iifname {bridgenic} counter accept
 add rule inet filter input udp dport 123 meta iifname {bridgenic} counter accept
 add rule inet filter input ip6 nexthdr udp udp dport 547 meta iifname {bridgenic} counter accept
+# Allow metadata API into the router from network
+add rule inet filter input tcp dport 80 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
@@ -168,6 +172,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             if data and self.description != data.decode('ascii'):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/domain'.format(self.vni))
         def watch_network_domain(data, stat, event=''):
@@ -178,7 +185,30 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.domain != data.decode('ascii'):
                 domain = data.decode('ascii')
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.remove_network(self)
                 self.domain = domain
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.add_network(self)
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
+
+        @self.zk_conn.DataWatch('/networks/{}/name_servers'.format(self.vni))
+        def watch_network_name_servers(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.name_servers != data.decode('ascii'):
+                name_servers = data.decode('ascii').split(',')
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.remove_network(self)
+                self.name_servers = name_servers
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.add_network(self)
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip6_network'.format(self.vni))
         def watch_network_ip6_network(data, stat, event=''):
@@ -191,6 +221,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 ip6_network = data.decode('ascii')
                 self.ip6_network = ip6_network
                 self.ip6_cidrnetmask = ip6_network.split('/')[-1]
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip6_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
@@ -210,6 +243,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     if self.dhcp_server_daemon:
                         self.stopDHCPServer()
                         self.startDHCPServer()
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp6_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
@@ -236,6 +272,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 ip4_network = data.decode('ascii')
                 self.ip4_network = ip4_network
                 self.ip4_cidrnetmask = ip4_network.split('/')[-1]
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip4_gateway'.format(self.vni))
         def watch_network_gateway(data, stat, event=''):
@@ -255,6 +294,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     if self.dhcp_server_daemon:
                         self.stopDHCPServer()
                         self.startDHCPServer()
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp4_flag'.format(self.vni))
         def watch_network_dhcp_status(data, stat, event=''):
@@ -279,6 +321,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.dhcp4_start != data.decode('ascii'):
                 self.dhcp4_start = data.decode('ascii')
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp4_end'.format(self.vni))
         def watch_network_dhcp4_end(data, stat, event=''):
@@ -289,6 +334,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.dhcp4_end != data.decode('ascii'):
                 self.dhcp4_end = data.decode('ascii')
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
         def watch_network_dhcp_reservations(new_reservations, event=''):
@@ -302,6 +350,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.dhcp_reservations = new_reservations
                 if self.this_node.router_state == 'primary':
                     self.updateDHCPReservations(old_reservations, new_reservations)
+                if self.dhcp_server_daemon:
+                    self.stopDHCPServer()
+                    self.startDHCPServer()
 
         @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/in'.format(self.vni))
         def watch_network_firewall_rules(new_rules, event=''):

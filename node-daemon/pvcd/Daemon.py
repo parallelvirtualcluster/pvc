@@ -138,6 +138,7 @@ def readConfig(pvcd_config_file, myhostname):
             'enable_networking': o_config['pvc']['functions']['enable_networking'],
             'enable_storage': o_config['pvc']['functions']['enable_storage'],
             'enable_api': o_config['pvc']['functions']['enable_api'],
+            'enable_provisioner': o_config['pvc']['functions']['enable_provisioner'],
             'dynamic_directory': o_config['pvc']['system']['configuration']['directories']['dynamic_directory'],
             'log_directory': o_config['pvc']['system']['configuration']['directories']['log_directory'],
             'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
@@ -795,7 +796,7 @@ if enable_networking:
         # Add any missing networks to the list
         for network in new_network_list:
             if not network in network_list:
-                d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
+                d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node, dns_aggregator)
                 if config['daemon_mode'] == 'coordinator' and d_network[network].nettype == 'managed':
                     try:
                         dns_aggregator.add_network(d_network[network])
