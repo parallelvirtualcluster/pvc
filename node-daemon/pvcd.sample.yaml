@@ -25,6 +25,8 @@ pvc:
     enable_storage: True
     # enable_api: Enable or disable the API client, if installed, when node is Primary
     enable_api: True
+    # enable_provisioner: Enable or disable the Provisioner client, if installed, when node is Primary
+    enable_provisioner: True
   # cluster: Cluster-level configuration
   cluster:
     # coordinators: The list of cluster coordinator hostnames
