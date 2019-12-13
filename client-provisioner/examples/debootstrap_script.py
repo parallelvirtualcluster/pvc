@@ -113,31 +113,64 @@ def install(**kwargs):
 
         # Append the fstab line
         with open(fstab_file, 'a') as fh:
-            fh.write("/dev/{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
+            data = "/dev/{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
                 disk=disk['disk_id'],
                 mountpoint=disk['mountpoint'],
                 filesystem=disk['filesystem'],
                 options=options,
                 dump=dump,
                 cpass=cpass
-            ))
+            )
+            fh.write(data)
 
     # Write the hostname
     hostname_file = "{}/etc/hostname".format(temporary_directory)
     with open(hostname_file, 'w') as fh:
         fh.write("{}".format(vm_name))
 
-    # Write a DHCP stanza for ens2
+    # Fix the cloud-init.target since it's broken
+    cloudinit_target_file = "{}/etc/systemd/system/cloud-init.target".format(temporary_directory)
+    with open(cloudinit_target_file, 'w') as fh:
+        data = """[Install]
+WantedBy=multi-user.target
+[Unit]
+Description=Cloud-init target
+After=multi-user.target
+"""
+        fh.write(data)
+
     # NOTE: Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
     #       will always be on PCI bus ID 2, hence the name "ens2".
+    # Write a DHCP stanza for ens2
     ens2_network_file = "{}/etc/network/interfaces.d/ens2".format(temporary_directory)
     with open(ens2_network_file, 'w') as fh:
-        fh.write("auto ens2\niface ens2 inet dhcp\n")
+        data = """auto ens2
+iface ens2 inet dhcp
+"""
+        fh.write(data)
+
+    # Write the DHCP config for ens2
+    dhclient_file = "{}/etc/dhcp/dhclient.conf".format(temporary_directory)
+    with open(dhclient_file, 'w') as fh:
+        data = """# DHCP client configuration
+# Created by vminstall for host web1.i.bonilan.net
+option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
+interface "ens2" {
+        send host-name = "web1";
+        send fqdn.fqdn = "web1";
+        request subnet-mask, broadcast-address, time-offset, routers,
+                domain-name, domain-name-servers, domain-search, host-name,
+                dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,
+                netbios-name-servers, netbios-scope, interface-mtu,
+                rfc3442-classless-static-routes, ntp-servers;
+}
+"""
+        fh.write(data)
 
     # Write the GRUB configuration
     grubcfg_file = "{}/etc/default/grub".format(temporary_directory)
     with open(grubcfg_file, 'w') as fh:
-        fh.write("""# Written by the PVC provisioner
+        data = """# Written by the PVC provisioner
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=1
 GRUB_DISTRIBUTOR="PVC Virtual Machine"
@@ -146,25 +179,39 @@ GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_DISABLE_LINUX_UUID=false
-""".format(root_disk=root_disk['disk_id']))
+""".format(root_disk=root_disk['disk_id'])
+        fh.write(data)
 
-    # Chroot and install GRUB so we can boot, then exit the chroot
+    # Chroot, do some in-root tasks, then exit the chroot
     # EXITING THE CHROOT IS VERY IMPORTANT OR THE FOLLOWING STAGES OF THE PROVISIONER
     # WILL FAIL IN UNEXPECTED WAYS! Keep this in mind when using chroot in your scripts.
     real_root = os.open("/", os.O_RDONLY)
     os.chroot(temporary_directory)
     fake_root = os.open("/", os.O_RDONLY)
     os.fchdir(fake_root)
+
+    # Install and update GRUB
     os.system(
         "grub-install --force /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
     )
     os.system( 
         "update-grub"
     )
+    # Set a really dumb root password [TEMPORARY]
     os.system(
         "echo root:test123 | chpasswd"
     )
-    # Restore our original root
+    # Enable cloud-init target on (first) boot
+    # NOTE: Your user-data should handle this and disable it once done, or things get messy.
+    #       That cloud-init won't run without this hack seems like a bug... but even the official
+    #       Debian cloud images are affected, so who knows.
+    os.system(
+        "systemctl enable cloud-init.target"
+    )
+
+    # Restore our original root/exit the chroot
+    # EXITING THE CHROOT IS VERY IMPORTANT OR THE FOLLOWING STAGES OF THE PROVISIONER
+    # WILL FAIL IN UNEXPECTED WAYS! Keep this in mind when using chroot in your scripts.
     os.fchdir(real_root)
     os.chroot(".")
     os.fchdir(real_root)
@@ -182,4 +229,4 @@ GRUB_DISABLE_LINUX_UUID=false
     del fake_root
     del real_root
 
-    # Everything else is done via cloud-init
+    # Everything else is done via cloud-init user-data

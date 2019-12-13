@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcapi.py - PVC HTTP API functions
+# provisioner.py - PVC Provisioner functions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2019 Joshua M. Boniface <joshua@boniface.me>
@@ -165,12 +165,20 @@ def list_template_storage_disks(name):
     disks = data['disks']
     return disks
 
+def list_template_userdata(limit, is_fuzzy=True):
+    """
+    Obtain a list of userdata templates.
+    """
+    data = list_template(limit, 'userdata_template', is_fuzzy)
+    return data
+
 def template_list(limit):
     system_templates = list_template_system(limit)
     network_templates = list_template_network(limit)
     storage_templates = list_template_storage(limit)
+    userdata_templates = list_template_userdata(limit)
 
-    return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates }
+    return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates, "userdata_templates": userdata_templates }
 
 #
 # Template Create functions
@@ -300,6 +308,49 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
         retcode = 200
     except psycopg2.IntegrityError as e:
         retmsg = { "message": "Failed to create entry {}".format(disk_id), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
+def create_template_userdata(name, userdata):
+    if list_template_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata template {} already exists".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    conn, cur = open_database(config)
+    try:
+        query = "INSERT INTO userdata_template (name, userdata) VALUES (%s, %s);"
+        args = (name, userdata)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
+#
+# Template update functions
+#
+def update_template_userdata(name, userdata):
+    if not list_template_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata template {} does not exist".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    tid = list_template_userdata(name, is_fuzzy=False)[0]['id']
+
+    conn, cur = open_database(config)
+    try:
+        query = "UPDATE userdata_template SET userdata = %s WHERE id = %s;"
+        args = (userdata, tid)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
@@ -444,6 +495,25 @@ def delete_template_storage_element(name, disk_id):
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
+def delete_template_userdata(name):
+    if not list_template_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata template {} does not exist".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    conn, cur = open_database(config)
+    try:
+        query = "DELETE FROM userdata_template WHERE name = %s;"
+        args = (name,)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
 #
 # Script functions
 #
@@ -487,6 +557,27 @@ def create_script(name, script):
         retcode = 200
     except psycopg2.IntegrityError as e:
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
+def update_script(name, script):
+    if not list_script(name, is_fuzzy=False):
+        retmsg = { "message": "The script {} does not exist".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    tid = list_script(name, is_fuzzy=False)[0]['id']
+
+    conn, cur = open_database(config)
+    try:
+        query = "UPDATE script SET script = %s WHERE id = %s;"
+        args = (script, tid)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
@@ -540,7 +631,7 @@ def list_profile(limit, is_fuzzy=True):
         profile_data = dict()
         profile_data['name'] = profile['name']
         # Parse the name of each subelement
-        for etype in 'system_template', 'network_template', 'storage_template', 'script':
+        for etype in 'system_template', 'network_template', 'storage_template', 'userdata_template', 'script':
             query = 'SELECT name from {} WHERE id = %s'.format(etype)
             args = (profile[etype],)
             cur.execute(query, args)
@@ -553,7 +644,7 @@ def list_profile(limit, is_fuzzy=True):
     close_database(conn, cur)
     return data
 
-def create_profile(name, system_template, network_template, storage_template, script, arguments=[]):
+def create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments=[]):
     if list_profile(name, is_fuzzy=False):
         retmsg = { "message": "The profile {} already exists".format(name) }
         retcode = 400
@@ -589,6 +680,16 @@ def create_profile(name, system_template, network_template, storage_template, sc
         retcode = 400
         return flask.jsonify(retmsg), retcode
 
+    userdata_templates = list_template_userdata(None)
+    userdata_template_id = None
+    for template in userdata_templates:
+        if template['name'] == userdata_template:
+            userdata_template_id = template['id']
+    if not userdata_template_id:
+        retmsg = { "message": "The userdata template {} for profile {} does not exist".format(userdata_template, name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
     scripts = list_script(None)
     script_id = None
     for scr in scripts:
@@ -603,8 +704,8 @@ def create_profile(name, system_template, network_template, storage_template, sc
 
     conn, cur = open_database(config)
     try:
-        query = "INSERT INTO profile (name, system_template, network_template, storage_template, script, arguments) VALUES (%s, %s, %s, %s, %s, %s);"
-        args = (name, system_template_id, network_template_id, storage_template_id, script_id, arguments_formatted)
+        query = "INSERT INTO profile (name, system_template, network_template, storage_template, userdata_template, script, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+        args = (name, system_template_id, network_template_id, storage_template_id, userdata_template_id, script_id, arguments_formatted)
         cur.execute(query, args)
         retmsg = { "name": name }
         retcode = 200
@@ -663,7 +764,7 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
 #
 # Cloned VM provisioning function - executed by the Celery worker
 #
-def clone_vm(self, vm_name, vm_profile):
+def clone_vm(self, vm_name, vm_profile, source_volumes):
     pass
 
 #

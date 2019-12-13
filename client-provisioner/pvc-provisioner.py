@@ -573,7 +573,6 @@ def api_template_network_net_element(template, vni):
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_template_network_element(template, vni)
         
-
 @api.route('/api/v1/template/storage', methods=['GET', 'POST'])
 @authenticator
 def api_template_storage_root():
@@ -793,10 +792,127 @@ def api_template_storage_disk_element(template, disk_id):
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_template_storage_element(template, disk_id)
 
+@api.route('/api/v1/template/userdata', methods=['GET', 'POST', 'PUT'])
+@authenticator
+def api_template_userdata_root():
+    """
+    /template/userdata - Manage userdata provisioning templates for VM creation.
+
+    GET: List all userdata templates in the provisioning system.
+        ?limit: Specify a limit to queries. Fuzzy by default; use ^ and $ to force exact matches.
+            * type: text
+            * optional: true
+            * requires: N/A
+
+    POST: Add new userdata template.
+        ?name: The name of the template.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?data: The raw text of the cloud-init user-data.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+
+    PUT: Update existing userdata template.
+        ?name: The name of the template.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?data: The raw text of the cloud-init user-data.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+    """
+    if flask.request.method == 'GET':
+        # Get name limit
+        if 'limit' in flask.request.values:
+            limit = flask.request.values['limit']
+        else:
+            limit = None
+
+        return flask.jsonify(pvcprovisioner.list_template_userdata(limit)), 200
+
+    if flask.request.method == 'POST':
+        # Get name data
+        if 'name' in flask.request.values:
+            name = flask.request.values['name']
+        else:
+            return flask.jsonify({"message": "A name must be specified."}), 400
+
+        # Get userdata data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "A userdata object must be specified."}), 400
+
+        return pvcprovisioner.create_template_userdata(name, data)
+
+    if flask.request.method == 'PUT':
+        # Get name data
+        if 'name' in flask.request.values:
+            name = flask.request.values['name']
+        else:
+            return flask.jsonify({"message": "A name must be specified."}), 400
+
+        # Get userdata data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "A userdata object must be specified."}), 400
+
+        return pvcprovisioner.update_template_userdata(name, data)
+
+@api.route('/api/v1/template/userdata/<template>', methods=['GET', 'POST','PUT', 'DELETE'])
+@authenticator
+def api_template_userdata_element(template):
+    """
+    /template/userdata/<template> - Manage userdata provisioning template <template>.
+
+    GET: Show details of userdata template.
+
+    POST: Add new userdata template.
+        ?data: The raw text of the cloud-init user-data.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+
+    PUT: Modify existing userdata template.
+        ?data: The raw text of the cloud-init user-data.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+
+    DELETE: Remove userdata template.
+    """
+    if flask.request.method == 'GET':
+        return flask.jsonify(pvcprovisioner.list_template_userdata(template, is_fuzzy=False)), 200
+
+    if flask.request.method == 'POST':
+        # Get userdata data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "A userdata object must be specified."}), 400
+
+        return pvcprovisioner.create_template_userdata(template, data)
+
+    if flask.request.method == 'PUT':
+        # Get userdata data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "A userdata object must be specified."}), 400
+
+        return pvcprovisioner.update_template_userdata(template, data)
+
+    if flask.request.method == 'DELETE':
+        return pvcprovisioner.delete_template_userdata(template)
+
 #
 # Script endpoints
 #
-@api.route('/api/v1/script', methods=['GET', 'POST'])
+@api.route('/api/v1/script', methods=['GET', 'POST', 'PUT'])
 @authenticator
 def api_script_root():
     """
@@ -809,6 +925,15 @@ def api_script_root():
             * requires: N/A
 
     POST: Add new provisioning script.
+        ?name: The name of the script.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?data: The raw text of the script.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+    PUT: Modify existing provisioning script.
         ?name: The name of the script.
             * type: text
             * optional: false
@@ -842,8 +967,23 @@ def api_script_root():
 
         return pvcprovisioner.create_script(name, data)
 
+    if flask.request.method == 'PUT':
+        # Get name data
+        if 'name' in flask.request.values:
+            name = flask.request.values['name']
+        else:
+            return flask.jsonify({"message": "A name must be specified."}), 400
 
-@api.route('/api/v1/script/<script>', methods=['GET', 'POST', 'DELETE'])
+        # Get script data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "Script data must be specified."}), 400
+
+        return pvcprovisioner.update_script(name, data)
+
+
+@api.route('/api/v1/script/<script>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @authenticator
 def api_script_element(script):
     """
@@ -852,6 +992,12 @@ def api_script_element(script):
     GET: Show details of provisioning script.
 
     POST: Add new provisioning script.
+        ?data: The raw text of the script.
+            * type: text (freeform)
+            * optional: false
+            * requires: N/A
+
+    PUT: Modify existing provisioning script.
         ?data: The raw text of the script.
             * type: text (freeform)
             * optional: false
@@ -870,6 +1016,15 @@ def api_script_element(script):
             return flask.jsonify({"message": "Script data must be specified."}), 400
 
         return pvcprovisioner.create_script(script, data)
+
+    if flask.request.method == 'PUT':
+        # Get script data
+        if 'data' in flask.request.values:
+            data = flask.request.values['data']
+        else:
+            return flask.jsonify({"message": "Script data must be specified."}), 400
+
+        return pvcprovisioner.update_script(script, data)
 
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_script(script)
@@ -902,7 +1057,11 @@ def api_profile_root():
             * type: text
             * optional: false
             * requires: N/A
-        ?storage_template: The name of the disk template.
+        ?storage_template: The name of the storage template.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?userdata_template: The name of the userdata template.
             * type: text
             * optional: false
             * requires: N/A
@@ -947,7 +1106,13 @@ def api_profile_root():
         if 'storage_template' in flask.request.values:
             storage_template = flask.request.values['storage_template']
         else:
-            return flask.jsonify({"message": "A disk template must be specified."}), 400
+            return flask.jsonify({"message": "A storage template must be specified."}), 400
+
+        # Get userdata_template data
+        if 'userdata_template' in flask.request.values:
+            userdata_template = flask.request.values['userdata_template']
+        else:
+            return flask.jsonify({"message": "A userdata template must be specified."}), 400
 
         # Get script data
         if 'script' in flask.request.values:
@@ -960,7 +1125,7 @@ def api_profile_root():
         else:
             arguments = None
 
-        return pvcprovisioner.create_profile(name, system_template, network_template, storage_template, script, arguments)
+        return pvcprovisioner.create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments)
 
 @api.route('/api/v1/profile/<profile>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
@@ -979,7 +1144,11 @@ def api_profile_element(profile):
             * type: text
             * optional: false
             * requires: N/A
-        ?storage_template: The name of the disk template.
+        ?storage_template: The name of the storage template.
+            * type: text
+            * optional: false
+            * requires: N/A
+        ?userdata_template: The name of the userdata template.
             * type: text
             * optional: false
             * requires: N/A
@@ -1010,7 +1179,13 @@ def api_profile_element(profile):
         if 'storage_template' in flask.request.values:
             storage_template = flask.request.values['storage_template']
         else:
-            return flask.jsonify({"message": "A disk template must be specified."}), 400
+            return flask.jsonify({"message": "A storage template must be specified."}), 400
+
+        # Get userdata_template data
+        if 'userdata_template' in flask.request.values:
+            userdata_template = flask.request.values['userdata_template']
+        else:
+            return flask.jsonify({"message": "A userdata template must be specified."}), 400
 
         # Get script data
         if 'script' in flask.request.values:
@@ -1018,7 +1193,7 @@ def api_profile_element(profile):
         else:
             return flask.jsonify({"message": "A script must be specified."}), 400
 
-        return pvcprovisioner.create_profile(profile, system_template, network_template, storage_template, script)
+        return pvcprovisioner.create_profile(profile, system_template, network_template, storage_template, userdata_template, script)
 
     if flask.request.method == 'DELETE':
         return pvcprovisioner.delete_profile(profile)
