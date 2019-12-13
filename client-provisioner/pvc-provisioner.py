@@ -26,12 +26,17 @@ import yaml
 import os
 import uu
 import distutils.util
-
+import threading
+import time
 import gevent.pywsgi
 
 import celery as Celery
 
-import provisioner_lib.provisioner as pvcprovisioner
+import provisioner_lib.provisioner as pvc_provisioner
+
+import client_lib.common as pvc_common
+import client_lib.vm as pvc_vm
+import client_lib.network as pvc_network
 
 # Parse the configuration file
 try:
@@ -81,7 +86,7 @@ try:
         config['storage_hosts'] = config['coordinators']
 
     # Set the config object in the pvcapi namespace
-    pvcprovisioner.config = config
+    pvc_provisioner.config = config
 except Exception as e:
     print('{}'.format(e))
     exit(1)
@@ -89,32 +94,39 @@ except Exception as e:
 # Try to connect to the database or fail
 try:
     print('Verifying connectivity to database')
-    conn, cur = pvcprovisioner.open_database(config)
-    pvcprovisioner.close_database(conn, cur)
+    conn, cur = pvc_provisioner.open_database(config)
+    pvc_provisioner.close_database(conn, cur)
 except Exception as e:
     print('{}'.format(e))
     exit(1)
 
-api = flask.Flask(__name__)
-api.config['CELERY_BROKER_URL'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
-api.config['CELERY_RESULT_BACKEND'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
+# Primary provisioning API
+prapi = flask.Flask(__name__)
+prapi.config['CELERY_BROKER_URL'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
+prapi.config['CELERY_RESULT_BACKEND'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
 
 if config['debug']:
-    api.config['DEBUG'] = True
+    prapi.config['DEBUG'] = True
 
 if config['auth_enabled']:
-    api.config["SECRET_KEY"] = config['auth_secret_key']
+    prapi.config["SECRET_KEY"] = config['auth_secret_key']
 
-print(api.name)
-celery = Celery.Celery(api.name, broker=api.config['CELERY_BROKER_URL'])
-celery.conf.update(api.config)
+celery = Celery.Celery(prapi.name, broker=prapi.config['CELERY_BROKER_URL'])
+celery.conf.update(prapi.config)
+
+# Metadata API
+mdapi = flask.Flask(__name__)
+
+if config['debug']:
+    mdapi.config['DEBUG'] = True
 
 #
 # Job functions
 #
+
 @celery.task(bind=True)
 def create_vm(self, vm_name, profile_name):
-    return pvcprovisioner.create_vm(self, vm_name, profile_name)
+    return pvc_provisioner.create_vm(self, vm_name, profile_name)
 
 # Authentication decorator function
 def authenticator(function):
@@ -140,11 +152,15 @@ def authenticator(function):
     authenticate.__name__ = function.__name__
     return authenticate
 
-@api.route('/api/v1', methods=['GET'])
+#
+# Provisioning API
+#
+
+@prapi.route('/api/v1', methods=['GET'])
 def api_root():
     return flask.jsonify({"message": "PVC Provisioner API version 1"}), 209
 
-@api.route('/api/v1/auth/login', methods=['GET', 'POST'])
+@prapi.route('/api/v1/auth/login', methods=['GET', 'POST'])
 def api_auth_login():
     # Just return a 200 if auth is disabled
     if not config['auth_enabled']:
@@ -168,7 +184,7 @@ def api_auth_login():
         else:
             return flask.jsonify({"message": "Authentication failed"}), 401
 
-@api.route('/api/v1/auth/logout', methods=['GET', 'POST'])
+@prapi.route('/api/v1/auth/logout', methods=['GET', 'POST'])
 def api_auth_logout():
     # Just return a 200 if auth is disabled
     if not config['auth_enabled']:
@@ -181,7 +197,7 @@ def api_auth_logout():
 #
 # Template endpoints
 #
-@api.route('/api/v1/template', methods=['GET'])
+@prapi.route('/api/v1/template', methods=['GET'])
 @authenticator
 def api_template_root():
     """
@@ -196,9 +212,9 @@ def api_template_root():
     else:
         limit = None
 
-    return flask.jsonify(pvcprovisioner.template_list(limit)), 200
+    return flask.jsonify(pvc_provisioner.template_list(limit)), 200
 
-@api.route('/api/v1/template/system', methods=['GET', 'POST'])
+@prapi.route('/api/v1/template/system', methods=['GET', 'POST'])
 @authenticator
 def api_template_system_root():
     """
@@ -257,7 +273,7 @@ def api_template_system_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_template_system(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_template_system(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -318,9 +334,9 @@ def api_template_system_root():
         else:
             start_with_node = False
 
-        return pvcprovisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node)
+        return pvc_provisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node)
 
-@api.route('/api/v1/template/system/<template>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/system/<template>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_system_element(template):
     """
@@ -366,7 +382,7 @@ def api_template_system_element(template):
     DELETE: Remove system template <template>.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_system(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_system(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         # Get vcpus data
@@ -421,12 +437,12 @@ def api_template_system_element(template):
         else:
             start_with_node = False
 
-        return pvcprovisioner.create_template_system(template, vcpu_count, vram_mb, serial, vnc, vnc_bind)
+        return pvc_provisioner.create_template_system(template, vcpu_count, vram_mb, serial, vnc, vnc_bind)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_system(template)
+        return pvc_provisioner.delete_template_system(template)
 
-@api.route('/api/v1/template/network', methods=['GET', 'POST'])
+@prapi.route('/api/v1/template/network', methods=['GET', 'POST'])
 @authenticator
 def api_template_network_root():
     """
@@ -462,7 +478,7 @@ def api_template_network_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_template_network(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_template_network(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -476,9 +492,9 @@ def api_template_network_root():
         else:
             mac_template = None
            
-        return pvcprovisioner.create_template_network(name, mac_template)
+        return pvc_provisioner.create_template_network(name, mac_template)
 
-@api.route('/api/v1/template/network/<template>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/network/<template>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_network_element(template):
     """
@@ -495,7 +511,7 @@ def api_template_network_element(template):
     DELETE: Remove network template <template>.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_network(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_network(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         if 'mac_template' in flask.request.values:
@@ -503,12 +519,12 @@ def api_template_network_element(template):
         else:
             mac_template = None
            
-        return pvcprovisioner.create_template_network(template, mac_template)
+        return pvc_provisioner.create_template_network(template, mac_template)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_network(template)
+        return pvc_provisioner.delete_template_network(template)
 
-@api.route('/api/v1/template/network/<template>/net', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/network/<template>/net', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_network_net_root(template):
     """
@@ -529,7 +545,7 @@ def api_template_network_net_root(template):
             * requires: N/A
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_network(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_network(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         if 'vni' in flask.request.values:
@@ -537,7 +553,7 @@ def api_template_network_net_root(template):
         else:
             return flask.jsonify({"message": "A VNI must be specified."}), 400
 
-        return pvcprovisioner.create_template_network_element(template, vni)
+        return pvc_provisioner.create_template_network_element(template, vni)
 
     if flask.request.method == 'DELETE':
         if 'vni' in flask.request.values:
@@ -545,9 +561,9 @@ def api_template_network_net_root(template):
         else:
             return flask.jsonify({"message": "A VNI must be specified."}), 400
 
-        return pvcprovisioner.delete_template_network_element(template, vni)
+        return pvc_provisioner.delete_template_network_element(template, vni)
         
-@api.route('/api/v1/template/network/<template>/net/<vni>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/network/<template>/net/<vni>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_network_net_element(template, vni):
     """
@@ -560,7 +576,7 @@ def api_template_network_net_element(template, vni):
     DELETE: Remove network VNI <vni> from network template <template>.
     """
     if flask.request.method == 'GET':
-        networks = pvcprovisioner.list_template_network_vnis(template)
+        networks = pvc_provisioner.list_template_network_vnis(template)
         for network in networks:
             if int(network['vni']) == int(vni):
                 return flask.jsonify(network), 200
@@ -568,12 +584,12 @@ def api_template_network_net_element(template, vni):
 
 
     if flask.request.method == 'POST':
-        return pvcprovisioner.create_template_network_element(template, vni)
+        return pvc_provisioner.create_template_network_element(template, vni)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_network_element(template, vni)
+        return pvc_provisioner.delete_template_network_element(template, vni)
         
-@api.route('/api/v1/template/storage', methods=['GET', 'POST'])
+@prapi.route('/api/v1/template/storage', methods=['GET', 'POST'])
 @authenticator
 def api_template_storage_root():
     """
@@ -598,7 +614,7 @@ def api_template_storage_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_template_storage(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_template_storage(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -607,9 +623,9 @@ def api_template_storage_root():
         else:
             return flask.jsonify({"message": "A name must be specified."}), 400
 
-        return pvcprovisioner.create_template_storage(name)
+        return pvc_provisioner.create_template_storage(name)
 
-@api.route('/api/v1/template/storage/<template>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/storage/<template>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_storage_element(template):
     """
@@ -622,13 +638,13 @@ def api_template_storage_element(template):
     DELETE: Remove storage template.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_storage(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_storage(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
-        return pvcprovisioner.create_template_storage(template)
+        return pvc_provisioner.create_template_storage(template)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_storage(template)
+        return pvc_provisioner.delete_template_storage(template)
 
         if 'disk' in flask.request.values:
             disks = list()
@@ -638,7 +654,7 @@ def api_template_storage_element(template):
         else:
             return flask.jsonify({"message": "A disk must be specified."}), 400
 
-@api.route('/api/v1/template/storage/<template>/disk', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/storage/<template>/disk', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_storage_disk_root(template):
     """
@@ -681,7 +697,7 @@ def api_template_storage_disk_root(template):
             * requires: N/A
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_storage(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_storage(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         if 'disk_id' in flask.request.values:
@@ -714,7 +730,7 @@ def api_template_storage_disk_root(template):
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
+        return pvc_provisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
 
     if flask.request.method == 'DELETE':
         if 'disk_id' in flask.request.values:
@@ -722,9 +738,9 @@ def api_template_storage_disk_root(template):
         else:
             return flask.jsonify({"message": "A disk ID in sdX/vdX format must be specified."}), 400
 
-        return pvcprovisioner.delete_template_storage_element(template, disk_id)
+        return pvc_provisioner.delete_template_storage_element(template, disk_id)
         
-@api.route('/api/v1/template/storage/<template>/disk/<disk_id>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/template/storage/<template>/disk/<disk_id>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_template_storage_disk_element(template, disk_id):
     """
@@ -755,7 +771,7 @@ def api_template_storage_disk_element(template, disk_id):
     DELETE: Remove storage VNI <vni> from storage template <template>.
     """
     if flask.request.method == 'GET':
-        disks = pvcprovisioner.list_template_storage_disks(template)
+        disks = pvc_provisioner.list_template_storage_disks(template)
         for disk in disks:
             if disk['disk_id'] == disk_id:
                 return flask.jsonify(disk), 200
@@ -787,12 +803,12 @@ def api_template_storage_disk_element(template, disk_id):
         else:
             mountpoint = None
            
-        return pvcprovisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
+        return pvc_provisioner.create_template_storage_element(template, pool, disk_id, disk_size, filesystem, filesystem_args, mountpoint)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_storage_element(template, disk_id)
+        return pvc_provisioner.delete_template_storage_element(template, disk_id)
 
-@api.route('/api/v1/template/userdata', methods=['GET', 'POST', 'PUT'])
+@prapi.route('/api/v1/template/userdata', methods=['GET', 'POST', 'PUT'])
 @authenticator
 def api_template_userdata_root():
     """
@@ -831,7 +847,7 @@ def api_template_userdata_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_template_userdata(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_template_userdata(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -846,7 +862,7 @@ def api_template_userdata_root():
         else:
             return flask.jsonify({"message": "A userdata object must be specified."}), 400
 
-        return pvcprovisioner.create_template_userdata(name, data)
+        return pvc_provisioner.create_template_userdata(name, data)
 
     if flask.request.method == 'PUT':
         # Get name data
@@ -861,9 +877,9 @@ def api_template_userdata_root():
         else:
             return flask.jsonify({"message": "A userdata object must be specified."}), 400
 
-        return pvcprovisioner.update_template_userdata(name, data)
+        return pvc_provisioner.update_template_userdata(name, data)
 
-@api.route('/api/v1/template/userdata/<template>', methods=['GET', 'POST','PUT', 'DELETE'])
+@prapi.route('/api/v1/template/userdata/<template>', methods=['GET', 'POST','PUT', 'DELETE'])
 @authenticator
 def api_template_userdata_element(template):
     """
@@ -886,7 +902,7 @@ def api_template_userdata_element(template):
     DELETE: Remove userdata template.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_template_userdata(template, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_template_userdata(template, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         # Get userdata data
@@ -895,7 +911,7 @@ def api_template_userdata_element(template):
         else:
             return flask.jsonify({"message": "A userdata object must be specified."}), 400
 
-        return pvcprovisioner.create_template_userdata(template, data)
+        return pvc_provisioner.create_template_userdata(template, data)
 
     if flask.request.method == 'PUT':
         # Get userdata data
@@ -904,15 +920,15 @@ def api_template_userdata_element(template):
         else:
             return flask.jsonify({"message": "A userdata object must be specified."}), 400
 
-        return pvcprovisioner.update_template_userdata(template, data)
+        return pvc_provisioner.update_template_userdata(template, data)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_template_userdata(template)
+        return pvc_provisioner.delete_template_userdata(template)
 
 #
 # Script endpoints
 #
-@api.route('/api/v1/script', methods=['GET', 'POST', 'PUT'])
+@prapi.route('/api/v1/script', methods=['GET', 'POST', 'PUT'])
 @authenticator
 def api_script_root():
     """
@@ -950,7 +966,7 @@ def api_script_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_script(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_script(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -965,7 +981,7 @@ def api_script_root():
         else:
             return flask.jsonify({"message": "Script data must be specified."}), 400
 
-        return pvcprovisioner.create_script(name, data)
+        return pvc_provisioner.create_script(name, data)
 
     if flask.request.method == 'PUT':
         # Get name data
@@ -980,10 +996,10 @@ def api_script_root():
         else:
             return flask.jsonify({"message": "Script data must be specified."}), 400
 
-        return pvcprovisioner.update_script(name, data)
+        return pvc_provisioner.update_script(name, data)
 
 
-@api.route('/api/v1/script/<script>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@prapi.route('/api/v1/script/<script>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @authenticator
 def api_script_element(script):
     """
@@ -1006,7 +1022,7 @@ def api_script_element(script):
     DELETE: Remove provisioning script.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_script(script, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_script(script, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         # Get script data
@@ -1015,7 +1031,7 @@ def api_script_element(script):
         else:
             return flask.jsonify({"message": "Script data must be specified."}), 400
 
-        return pvcprovisioner.create_script(script, data)
+        return pvc_provisioner.create_script(script, data)
 
     if flask.request.method == 'PUT':
         # Get script data
@@ -1024,15 +1040,15 @@ def api_script_element(script):
         else:
             return flask.jsonify({"message": "Script data must be specified."}), 400
 
-        return pvcprovisioner.update_script(script, data)
+        return pvc_provisioner.update_script(script, data)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_script(script)
+        return pvc_provisioner.delete_script(script)
 
 #
 # Profile endpoints
 #
-@api.route('/api/v1/profile', methods=['GET', 'POST'])
+@prapi.route('/api/v1/profile', methods=['GET', 'POST'])
 @authenticator
 def api_profile_root():
     """
@@ -1081,7 +1097,7 @@ def api_profile_root():
         else:
             limit = None
 
-        return flask.jsonify(pvcprovisioner.list_profile(limit)), 200
+        return flask.jsonify(pvc_provisioner.list_profile(limit)), 200
 
     if flask.request.method == 'POST':
         # Get name data
@@ -1125,9 +1141,9 @@ def api_profile_root():
         else:
             arguments = None
 
-        return pvcprovisioner.create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments)
+        return pvc_provisioner.create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments)
 
-@api.route('/api/v1/profile/<profile>', methods=['GET', 'POST', 'DELETE'])
+@prapi.route('/api/v1/profile/<profile>', methods=['GET', 'POST', 'DELETE'])
 @authenticator
 def api_profile_element(profile):
     """
@@ -1160,7 +1176,7 @@ def api_profile_element(profile):
     DELETE: Remove VM profile.
     """
     if flask.request.method == 'GET':
-        return flask.jsonify(pvcprovisioner.list_profile(profile, is_fuzzy=False)), 200
+        return flask.jsonify(pvc_provisioner.list_profile(profile, is_fuzzy=False)), 200
 
     if flask.request.method == 'POST':
         # Get system_template data
@@ -1193,15 +1209,15 @@ def api_profile_element(profile):
         else:
             return flask.jsonify({"message": "A script must be specified."}), 400
 
-        return pvcprovisioner.create_profile(profile, system_template, network_template, storage_template, userdata_template, script)
+        return pvc_provisioner.create_profile(profile, system_template, network_template, storage_template, userdata_template, script)
 
     if flask.request.method == 'DELETE':
-        return pvcprovisioner.delete_profile(profile)
+        return pvc_provisioner.delete_profile(profile)
 
 #
 # Provisioning endpoints
 #
-@api.route('/api/v1/create', methods=['POST'])
+@prapi.route('/api/v1/create', methods=['POST'])
 @authenticator
 def api_create_root():
     """
@@ -1231,7 +1247,7 @@ def api_create_root():
 
     return flask.jsonify({"task_id": task.id}), 202, {'Location': flask.url_for('api_status_root', task_id=task.id)}
 
-@api.route('/api/v1/status/<task_id>', methods=['GET'])
+@prapi.route('/api/v1/status/<task_id>', methods=['GET'])
 @authenticator
 def api_status_root(task_id):
     """
@@ -1273,29 +1289,155 @@ def api_status_root(task_id):
     return flask.jsonify(response)
 
 #
+# Metadata API
+#
+
+# VM details function
+def get_vm_details(source_address):
+    # Start connection to Zookeeper
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    _discard, networks = pvc_network.get_list(zk_conn, None)
+
+    # Figure out which server this is via the DHCP address
+    host_information = dict()
+    networks_managed = (x for x in networks if x['type'] == 'managed')
+    for network in networks_managed:
+        network_leases = pvc_network.getNetworkDHCPLeases(zk_conn, network['vni'])
+        for network_lease in network_leases:
+            information = pvc_network.getDHCPLeaseInformation(zk_conn, network['vni'], network_lease)
+            try:
+                if information['ip4_address'] == source_address:
+                    host_information = information
+            except:
+                pass
+
+    # Get our real information on the host; now we can start querying about it
+    client_hostname = host_information['hostname']
+    client_macaddr = host_information['mac_address']
+    client_ipaddr = host_information['ip4_address']
+
+    # Find the VM with that MAC address - we can't assume that the hostname is actually right
+    _discard, vm_list = pvc_vm.get_list(zk_conn, None, None, None)
+    vm_name = None
+    vm_details = dict()
+    for vm in vm_list:
+        try:
+            for network in vm['networks']:
+                if network['mac'] == client_macaddr:
+                    vm_name = vm['name']
+                    vm_details = vm
+        except:
+            pass
+    
+    # Stop connection to Zookeeper
+    pvc_common.stopZKConnection(zk_conn)
+
+    return vm_details
+
+@mdapi.route('/', methods=['GET'])
+def api_root():
+    return flask.jsonify({"message": "PVC Provisioner Metadata API version 1"}), 209
+
+@mdapi.route('/<version>/meta-data/', methods=['GET'])
+def api_metadata_root(version):
+    metadata = """instance-id
+name
+profile
+"""
+    return metadata, 200
+
+@mdapi.route('/<version>/meta-data/instance-id', methods=['GET'])
+def api_metadata_instanceid(version):
+    source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
+    vm_details = get_vm_details(source_address)
+    instance_id = vm_details['uuid']
+    return instance_id, 200
+
+@mdapi.route('/<version>/meta-data/name', methods=['GET'])
+def api_metadata_hostname(version):
+    source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
+    vm_details = get_vm_details(source_address)
+    vm_name = vm_details['name']
+    return vm_name, 200
+
+@mdapi.route('/<version>/meta-data/profile', methods=['GET'])
+def api_metadata_profile(version):
+    source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
+    vm_details = get_vm_details(source_address)
+    vm_profile = vm_details['profile']
+    return vm_profile, 200
+
+@mdapi.route('/<version>/user-data', methods=['GET'])
+def api_userdata(version):
+    source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
+    vm_details = get_vm_details(source_address)
+    vm_profile = vm_details['profile']
+    print("Profile: {}".format(vm_profile))
+    # Get profile details
+    profile_details = pvc_provisioner.list_profile(vm_profile, is_fuzzy=False)[0]
+    # Get the userdata
+    userdata = pvc_provisioner.list_template_userdata(profile_details['userdata_template'])[0]['userdata']
+    print(userdata)
+    return flask.Response(userdata)
+
+#
+# Launch/threading functions
+#
+def debug_run_prapi():
+    # Run provisioner API in Flask standard mode on listen_address and listen_port
+    prapi.run(config['listen_address'], config['listen_port'], use_reloader=False)
+
+def debug_run_mdapi():
+    # Run metadata API on 169.254.169.254 and port 80
+    mdapi.run('169.254.169.254', 80, use_reloader=False)
+
+def launch_debug():
+    # Launch Provisioning API
+    threading.Thread(target=debug_run_prapi).start()
+    time.sleep(1)
+    # Launch Metadata API
+    threading.Thread(target=debug_run_mdapi).start()
+
+def production_run_api(http_server):
+    http_server.serve_forever()
+
+def launch_production():
+    if config['ssl_enabled']:
+        # Run the provisioning API WSGI server on listen_address and listen_port with SSL
+        pr_http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            prapi,
+            keyfile=config['ssl_key_file'],
+            certfile=config['ssl_cert_file']
+        )
+    else:
+        # Run the provisioning API WSGI server on listen_address and listen_port without SSL
+        pr_http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            prapi
+        )
+
+    # Run metadata API on 169.254.169.254 and port 80 without SSL
+    md_http_server = gevent.pywsgi.WSGIServer(
+        ('169.254.169.254', 80),
+        mdapi
+    )
+
+    # Launch Provisioning API
+    print('Starting PyWSGI server for Provisioning API at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
+    threading.Thread(target=production_run_api, args=(pr_http_server)).start()
+    time.sleep(1)
+    # Launch Metadata API
+    print('Starting PyWSGI server for Metadata API at 169.254.169.254:80')
+    threading.Thread(target=production_run_api, args=(md_http_server)).start()
+
+#
 # Entrypoint
 #
 if __name__ == '__main__':
     # Start main API
     if config['debug']:
-        # Run in Flask standard mode
-        api.run(config['listen_address'], config['listen_port'])
+        launch_debug()
     else:
-        if config['ssl_enabled']:
-            # Run the WSGI server with SSL
-            http_server = gevent.pywsgi.WSGIServer(
-                (config['listen_address'], config['listen_port']),
-                api,
-                keyfile=config['ssl_key_file'],
-                certfile=config['ssl_cert_file']
-            )
-        else:
-            # Run the ?WSGI server without SSL
-            http_server = gevent.pywsgi.WSGIServer(
-                (config['listen_address'], config['listen_port']),
-                api
-            )
-    
-        print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
-        http_server.serve_forever()
+        launch_production()
     

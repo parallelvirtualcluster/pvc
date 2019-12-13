@@ -38,7 +38,7 @@ pvc:
     # provisioner: Configuration of the Provisioner API listener
     provisioner:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
-        listen_address: "127.0.0.1"
+        listen_address: "10.100.0.252"
         # listen_port: TCP port to listen on, usually 7375
         listen_port: "7375"
         # authentication: Authentication and security settings

@@ -1,3 +1,6 @@
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+
 #cloud-config
 # Example user-data file to set up an alternate /var/home, a first user and some SSH keys, and some packages
 bootcmd:
@@ -16,8 +19,9 @@ users:
     lock_passwd: true
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBRBGPzlbh5xYD6k8DMZdPNEwemZzKSSpWGOuU72ehfN joshua@bonifacelabs.net 2017-04
-usercmd:
+runcmd:
+  - "userdel debian"
   - "groupmod -g 200 deploy"
   - "usermod -u 200 deploy"
-  - "userdel debian"
   - "systemctl disable cloud-init.target"
+  - "reboot"
