@@ -269,7 +269,6 @@ class NodeInstance(object):
         if self.config['enable_provisioner']:
             self.logger.out('Stopping PVC Provisioner service', state='i')
             common.run_os_command("systemctl stop pvc-provisioner.service")
-            common.run_os_command("systemctl stop pvc-provisioner-worker.service")
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGateways()
