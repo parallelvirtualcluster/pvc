@@ -796,7 +796,7 @@ if enable_networking:
         # Add any missing networks to the list
         for network in new_network_list:
             if not network in network_list:
-                d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node)
+                d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node, dns_aggregator)
                 if config['daemon_mode'] == 'coordinator' and d_network[network].nettype == 'managed':
                     try:
                         dns_aggregator.add_network(d_network[network])

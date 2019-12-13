@@ -31,12 +31,13 @@ import pvcd.common as common
 
 class VXNetworkInstance(object):
     # Initialization function
-    def __init__ (self, vni, zk_conn, config, logger, this_node):
+    def __init__ (self, vni, zk_conn, config, logger, this_node, dns_aggregator):
         self.vni = vni
         self.zk_conn = zk_conn
         self.config = config
         self.logger = logger
         self.this_node = this_node
+        self.dns_aggregator = dns_aggregator
         self.vni_dev = config['vni_dev']
         self.vni_mtu = config['vni_mtu']
 
@@ -184,8 +185,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.domain != data.decode('ascii'):
                 domain = data.decode('ascii')
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.remove_network(self)
                 self.domain = domain
                 if self.dhcp_server_daemon:
+                    self.dns_aggregator.add_network(self)
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
@@ -198,8 +202,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.name_servers != data.decode('ascii'):
                 name_servers = data.decode('ascii').split(',')
+                if self.dhcp_server_daemon:
+                    self.dns_aggregator.remove_network(self)
                 self.name_servers = name_servers
                 if self.dhcp_server_daemon:
+                    self.dns_aggregator.add_network(self)
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
