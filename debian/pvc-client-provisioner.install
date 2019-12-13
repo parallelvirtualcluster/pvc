@@ -3,3 +3,4 @@ client-provisioner/pvc-provisioner.sample.yaml etc/pvc
 client-provisioner/provisioner_lib usr/share/pvc
 client-provisioner/pvc-provisioner.service lib/systemd/system
 client-provisioner/pvc-provisioner-worker.service lib/systemd/system
+client-provisioner/examples usr/share/pvc/provisioner
