@@ -34,7 +34,7 @@ import pvcd.common as common
 
 class NodeInstance(object):
     # Initialization function
-    def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator):
+    def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api):
         # Passed-in variables on creation
         self.name = name
         self.this_node = this_node
@@ -53,6 +53,7 @@ class NodeInstance(object):
         self.d_network = d_network
         self.d_domain = d_domain
         self.dns_aggregator = dns_aggregator
+        self.metadata_api = metadata_api
         # Printable lists
         self.active_node_list = []
         self.flushed_node_list = []
@@ -269,8 +270,9 @@ class NodeInstance(object):
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGateways()
-        self.removeFloatingAddresses()
         self.dns_aggregator.stop_aggregator()
+        self.metadata_api.stop()
+        self.removeFloatingAddresses()
 
     def become_primary(self):
         # Establish a lock
@@ -318,6 +320,7 @@ class NodeInstance(object):
             # Start the DNS aggregator instance
             time.sleep(1)
             self.dns_aggregator.start_aggregator()
+            self.metadata_api.start()
 
             # Start the clients
             if self.config['enable_api']:
@@ -327,6 +330,17 @@ class NodeInstance(object):
                 common.run_os_command("systemctl start pvc-provisioner-worker.service")
 
     def createFloatingAddresses(self):
+        # Metadata link-local IP
+        self.logger.out(
+            'Creating Metadata link-local IP {}/{} on interface {}'.format(
+                '169.254.169.254',
+                '32',
+                'lo'
+            ),
+            state='o'
+        )
+        common.createIPAddress('169.254.169.254', '32', 'lo')
+
         # VNI floating IP
         self.logger.out(
             'Creating floating management IP {}/{} on interface {}'.format(
@@ -337,6 +351,7 @@ class NodeInstance(object):
             state='o'
         )
         common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
+
         # Upstream floating IP
         self.logger.out(
             'Creating floating upstream IP {}/{} on interface {}'.format(
@@ -349,6 +364,17 @@ class NodeInstance(object):
         common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, self.upstream_dev)
 
     def removeFloatingAddresses(self):
+        # Metadata link-local IP
+        self.logger.out(
+            'Removing Metadata link-local IP {}/{} from interface {}'.format(
+                '169.254.169.254',
+                '32',
+                'lo'
+            ),
+            state='o'
+        )
+        common.removeIPAddress('169.254.169.254', '32', 'lo')
+
         # VNI floating IP
         self.logger.out(
             'Removing floating management IP {}/{} from interface {}'.format(
@@ -359,6 +385,7 @@ class NodeInstance(object):
             state='o'
         )
         common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
+
         # Upstream floating IP
         self.logger.out(
             'Removing floating upstream IP {}/{} from interface {}'.format(

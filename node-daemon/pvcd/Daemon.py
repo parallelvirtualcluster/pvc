@@ -52,6 +52,7 @@ import pvcd.NodeInstance as NodeInstance
 import pvcd.VXNetworkInstance as VXNetworkInstance
 import pvcd.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcd.CephInstance as CephInstance
+import pvcd.MetadataAPIInstance as MetadataAPIInstance
 
 ###############################################################################
 # PVCD - node daemon startup program
@@ -194,6 +195,11 @@ def readConfig(pvcd_config_file, myhostname):
                 'pdns_postgresql_dbname': o_config['pvc']['coordinator']['dns']['database']['name'],
                 'pdns_postgresql_user': o_config['pvc']['coordinator']['dns']['database']['user'],
                 'pdns_postgresql_password': o_config['pvc']['coordinator']['dns']['database']['pass'],
+                'metadata_postgresql_host': o_config['pvc']['coordinator']['metadata']['database']['host'],
+                'metadata_postgresql_port': o_config['pvc']['coordinator']['metadata']['database']['port'],
+                'metadata_postgresql_dbname': o_config['pvc']['coordinator']['metadata']['database']['name'],
+                'metadata_postgresql_user': o_config['pvc']['coordinator']['metadata']['database']['user'],
+                'metadata_postgresql_password': o_config['pvc']['coordinator']['metadata']['database']['pass'],
                 'vni_dev': o_config['pvc']['system']['configuration']['networking']['cluster']['device'],
                 'vni_mtu': o_config['pvc']['system']['configuration']['networking']['cluster']['mtu'],
                 'vni_dev_ip': o_config['pvc']['system']['configuration']['networking']['cluster']['address'],
@@ -726,13 +732,16 @@ pool_list = []
 volume_list = dict() # Dict of Lists
 
 if enable_networking:
-    # Create an instance of the DNS Aggregator if we're a coordinator
+    # Create an instance of the DNS Aggregator and Metadata API if we're a coordinator
     if config['daemon_mode'] == 'coordinator':
         dns_aggregator = DNSAggregatorInstance.DNSAggregatorInstance(zk_conn, config, logger)
+        metadata_api = MetadataAPIInstance.MetadataAPIInstance(zk_conn, config, logger)
     else:
         dns_aggregator = None
+        metadata_api = None
 else:
     dns_aggregator = None
+    metadata_api = None
 
 # Node objects
 @zk_conn.ChildrenWatch('/nodes')
@@ -742,7 +751,7 @@ def update_nodes(new_node_list):
     # Add any missing nodes to the list
     for node in new_node_list:
         if not node in node_list:
-            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator)
+            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api)
 
     # Remove any deleted nodes from the list
     for node in node_list:

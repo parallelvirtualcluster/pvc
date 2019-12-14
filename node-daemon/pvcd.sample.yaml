@@ -25,8 +25,6 @@ pvc:
     enable_storage: True
     # enable_api: Enable or disable the API client, if installed, when node is Primary
     enable_api: True
-    # enable_provisioner: Enable or disable the Provisioner client, if installed, when node is Primary
-    enable_provisioner: True
   # cluster: Cluster-level configuration
   cluster:
     # coordinators: The list of cluster coordinator hostnames
@@ -80,6 +78,20 @@ pvc:
         user: pvcdns
         # pass: PostgreSQL user password, randomly generated
         pass: pvcdns
+    # metadata: Metadata API subsystem
+    metadata:
+      # database: Patroni PostgreSQL database configuration
+      database:
+        # host: PostgreSQL hostname, invariably 'localhost'
+        host: localhost
+        # port: PostgreSQL port, invariably 'localhost'
+        port: 5432
+        # name: PostgreSQL database name, invariably 'pvcprov'
+        name: pvcprov
+        # user: PostgreSQL username, invariable 'pvcprov'
+        user: pvcprov
+        # pass: PostgreSQL user password, randomly generated
+        pass: pvcprov
   # system: Local PVC instance configuration
   system:
     # intervals: Intervals for keepalives and fencing
