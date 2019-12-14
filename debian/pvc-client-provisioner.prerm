@@ -1,4 +1,0 @@
-#!/bin/sh
-
-# Remove client binary symlink
-rm -f /usr/bin/pvc-provisioner
