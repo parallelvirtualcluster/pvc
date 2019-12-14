@@ -22,10 +22,16 @@ $SUDO ./build-deb.sh
 $SUDO dpkg -i ../pvc-client*.deb
 
 for HOST in ${HOSTS[@]}; do
+    echo "****"
+    echo "Deploying to host ${HOST}"
+    echo "****"
     ssh $HOST mkdir /tmp/pvc
     scp ../*.deb $HOST:/tmp/pvc/
     ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb
     ssh $HOST $SUDO systemctl restart pvcd
     ssh $HOST rm -rf /tmp/pvc
+    echo "****"
+    echo "Waiting 30s for host ${HOST} to stabilize"
+    echo "****"
     sleep 30
 done
