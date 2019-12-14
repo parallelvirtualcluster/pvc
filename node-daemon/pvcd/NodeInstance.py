@@ -266,9 +266,6 @@ class NodeInstance(object):
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
             common.run_os_command("systemctl stop pvc-api.service")
-        if self.config['enable_provisioner']:
-            self.logger.out('Stopping PVC Provisioner service', state='i')
-            common.run_os_command("systemctl stop pvc-provisioner.service")
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
             self.d_network[network].removeGateways()
@@ -326,10 +323,8 @@ class NodeInstance(object):
             if self.config['enable_api']:
                 self.logger.out('Starting PVC API client service', state='i')
                 common.run_os_command("systemctl start pvc-api.service")
-            if self.config['enable_provisioner']:
-                self.logger.out('Starting PVC Provisioner service', state='i')
+                self.logger.out('Starting PVC Provisioner Worker service', state='i')
                 common.run_os_command("systemctl start pvc-provisioner-worker.service")
-                common.run_os_command("systemctl start pvc-provisioner.service")
 
     def createFloatingAddresses(self):
         # VNI floating IP

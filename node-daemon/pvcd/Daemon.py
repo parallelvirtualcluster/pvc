@@ -138,7 +138,6 @@ def readConfig(pvcd_config_file, myhostname):
             'enable_networking': o_config['pvc']['functions']['enable_networking'],
             'enable_storage': o_config['pvc']['functions']['enable_storage'],
             'enable_api': o_config['pvc']['functions']['enable_api'],
-            'enable_provisioner': o_config['pvc']['functions']['enable_provisioner'],
             'dynamic_directory': o_config['pvc']['system']['configuration']['directories']['dynamic_directory'],
             'log_directory': o_config['pvc']['system']['configuration']['directories']['log_directory'],
             'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
