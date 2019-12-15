@@ -33,7 +33,7 @@ Description: Parallel Virtual Cluster CLI client (Python 3)
 
 Package: pvc-client-api
 Architecture: all
-Depends: pvc-client-common, python3-yaml, python3-flask, python3-gevent, python3-celery, python-celery-common
+Depends: pvc-client-common, python3-yaml, python3-flask, python3-gevent, python3-celery, python-celery-common, python3-distutils
 Description: Parallel Virtual Cluster API client (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
