@@ -119,7 +119,7 @@ def createIPAddress(ipaddr, cidrnetmask, dev):
         )
     )
     run_os_command(
-        'arping -A -c3 -I {dev} -P -U -S {ip} {ip}'.format(
+        'arping -W 0.1 -A -c3 -I {dev} -P -U -S {ip} {ip}'.format(
             dev=dev,
             ip=ipaddr
         ),
