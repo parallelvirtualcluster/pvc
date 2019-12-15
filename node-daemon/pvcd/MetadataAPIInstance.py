@@ -41,6 +41,7 @@ class MetadataAPIInstance(object):
         self.logger = logger
         self.thread = None
         self.md_http_server = None
+        self.add_routes()
 
     # Add flask routes inside our instance
     def add_routes(self):
@@ -86,7 +87,6 @@ class MetadataAPIInstance(object):
         
     def launch_wsgi(self):
         try:
-            self.add_routes()
             self.md_http_server = gevent.pywsgi.WSGIServer(
                 ('169.254.169.254', 80),
                 self.mdapi,
@@ -106,14 +106,17 @@ class MetadataAPIInstance(object):
         self.logger.out('Successfully started Metadata API thread', state='o')
 
     def stop(self):
+        if not self.md_http_server:
+            return
+
         self.logger.out('Stopping Metadata API at 169.254.169.254:80', state='i')
-        if self.thread and self.md_http_server:
-            try:
-                self.md_http_server.stop()
-                self.md_http_server.close()
-                self.logger.out('Successfully stopped Metadata API', state='o')
-            except Exception as e:
-                self.logger.out('Error stopping Metadata API: {}'.format(e), state='e')
+        try:
+            self.md_http_server.stop()
+            self.md_http_server.close()
+            self.md_http_server = None
+            self.logger.out('Successfully stopped Metadata API', state='o')
+        except Exception as e:
+            self.logger.out('Error stopping Metadata API: {}'.format(e), state='e')
 
     # Helper functions
     def open_database(self):
