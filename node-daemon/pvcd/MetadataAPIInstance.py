@@ -24,6 +24,7 @@ import gevent.pywsgi
 import flask
 import threading
 import sys
+import time
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -112,7 +113,9 @@ class MetadataAPIInstance(object):
         self.logger.out('Stopping Metadata API at 169.254.169.254:80', state='i')
         try:
             self.md_http_server.stop()
+            time.sleep(0.1)
             self.md_http_server.close()
+            time.sleep(0.1)
             self.md_http_server = None
             self.logger.out('Successfully stopped Metadata API', state='o')
         except Exception as e:
