@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Remove any cached CPython directories or files
+echo "Cleaning up existing CPython files"
+find /usr/share/pvc -type d -name "__pycache__" -exec rm -rf {} \; &>/dev/null || true
