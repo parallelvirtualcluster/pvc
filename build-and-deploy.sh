@@ -31,7 +31,7 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO systemctl restart pvcd
     ssh $HOST rm -rf /tmp/pvc
     echo "****"
-    echo "Waiting 30s for host ${HOST} to stabilize"
+    echo "Waiting 10s for host ${HOST} to stabilize"
     echo "****"
-    sleep 30
+    sleep 10
 done
