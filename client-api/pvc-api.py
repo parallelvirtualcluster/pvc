@@ -296,7 +296,7 @@ def api_vm_root():
         else:
             autostart = False
 
-        return api_helper.vm_define(libvirt_xml, node, selector)
+        return api_helper.vm_define(libvirt_xml, node, limit, selector, autostart)
 
 @api.route('/api/v1/vm/<vm>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @authenticator
