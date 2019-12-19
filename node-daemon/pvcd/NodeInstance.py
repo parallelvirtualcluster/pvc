@@ -288,10 +288,11 @@ class NodeInstance(object):
                 self.d_network[network].startDHCPServer()
             time.sleep(1)
 
-            # Switch Patroni leader to the local instance
             self.logger.out('Setting Patroni leader to this node', state='i')
             tick = 1
-            while True:
+            # As long as we're primary, keep trying to set the Patroni leader to us
+            while self.router_state == 'primary':
+                # Switch Patroni leader to the local instance
                 retcode, stdout, stderr = common.run_os_command(
                     """
                     patronictl
@@ -303,19 +304,30 @@ class NodeInstance(object):
                         pvcdns
                     """.format(self.name)
                 )
-                if stdout:
+
+                # Combine the stdout and stderr and strip the output
+                # Patronictl's output is pretty junky
+                if stderr:
+                    stdout += stderr
+                stdout = stdout.strip()
+
+                # Handle our current Patroni leader being us
+                if stdout and stdout.split('\n')[-1].split() == ["Error:", "Switchover", "target", "and", "source", "are", "the", "same."]:
+                    self.logger.out('Failed to switch Patroni leader to ourselves; this is fine\n{}'.format(stdout), state='w')
+                    break
+                # Handle a failed switchover
+                elif stdout and (stdout.split('\n')[-1].split()[:2] == ["Switchover", "failed,"] or stdout.strip().split('\n')[-1].split()[:1] == ["Error"]):
+                    self.logger.out('Failed to switch Patroni leader; retrying [{}/5]\n{}\n'.format(tick, stdout, state='e'))
+                    tick += 1
+                    if tick > 5:
+                        self.logger.out('Failed to switch Patroni leader after 5 tries; aborting', state='e')
+                        break
+                    else:
+                        time.sleep(5)
+                # Otherwise, we succeeded
+                else:
                     self.logger.out('Successfully switched Patroni leader\n{}'.format(stdout), state='o')
                     break
-                elif stderr == "Error: Switchover target and source are the same.\n":
-                    self.logger.out('Failed to switch Patroni leader to ourselves; this is fine\n{}'.format(stderr), state='w')
-                    break
-                elif tick >= 5:
-                    self.logger.out('Failed to switch Patroni leader after 5 tries; aborting\n{}'.format(stderr), state='e')
-                    break
-                else:
-                    self.logger.out('Failed to switch Patroni leader; retrying [{}/5]\n{}'.format(tick, stderr), state='e')
-                    tick += 1
-                    time.sleep(2)
 
             # Start the DNS aggregator instance
             time.sleep(1)
