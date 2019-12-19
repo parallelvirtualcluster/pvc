@@ -241,6 +241,9 @@ def vm_define(config, target_node, node_limit, node_selector, node_autostart):
     Define a new virtual machine from Libvirt XML configuration file CONFIG.
     """
 
+    if node_limit:
+        node_limit = node_limit.split(',')
+
     # Open the XML file
     config_data = config.read()
     config.close()
@@ -276,6 +279,9 @@ def vm_meta(domain, node_limit, node_selector, node_autostart):
 
     if node_limit is None and node_selector is None and node_autostart is None:
         cleanup(False, 'At least one metadata option must be specified to update.')
+
+    if node_limit:
+        node_limit = node_limit.split(',')
 
     zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_vm.modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart)

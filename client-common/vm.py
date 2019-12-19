@@ -186,22 +186,16 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
             rbd_list.append(disk['name'])
 
     # Join the limit
-    if isinstance(node_limit, list):
+    if isinstance(node_limit, list) and node_limit:
         formatted_node_limit = ','.join(node_limit)
     else:
-        if node_limit:
-            formatted_node_limit = node_limit
-        else:
-            formatted_node_limit = ''
+        formatted_node_limit = ''
 
     # Join the RBD list
-    if isinstance(rbd_list, list):
+    if isinstance(rbd_list, list) and rbd_list:
         formatted_rbd_list = ','.join(rbd_list)
     else:
-        if rbd_list:
-            formatted_rbd_list = rbd_list
-        else:
-            formatted_rbd_list = ''
+        formatted_rbd_list = ''
 
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
@@ -226,10 +220,17 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
+
     if node_limit is not None:
-        zkhandler.writedata(zk_conn, {
-            '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit)
-        })
+        # Join the limit
+        if isinstance(node_limit, list):
+            zkhandler.writedata(zk_conn, {
+                '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit)
+            })
+        else:
+            zkhandler.writedata(zk_conn, {
+                '/domains/{}/node_limit'.format(dom_uuid): ''
+            })
 
     if node_selector is not None:
         zkhandler.writedata(zk_conn, {

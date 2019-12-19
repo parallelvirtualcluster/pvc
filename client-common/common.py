@@ -165,7 +165,7 @@ def getInformationFromXML(zk_conn, uuid):
     domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
 
     try:
-        domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
+        domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid)).split(',')
     except:
         domain_node_limit = None
     try:

@@ -280,7 +280,7 @@ def api_vm_root():
 
         # Set target limit metadata
         if 'limit' in flask.request.values:
-            limit = flask.request.values['limit']
+            limit = flask.request.values['limit'].split(',')
         else:
             limit = None
 
@@ -308,7 +308,7 @@ def api_vm_element(vm):
     if flask.request.method == 'POST':
         # Set target limit metadata
         if 'limit' in flask.request.values:
-            limit = flask.request.values['limit']
+            limit = flask.request.values['limit'].split(',')
         else:
             limit = None
 
