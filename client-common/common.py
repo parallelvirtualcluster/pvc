@@ -165,7 +165,7 @@ def getInformationFromXML(zk_conn, uuid):
     domain_failedreason = zkhandler.readdata(zk_conn, '/domains/{}/failedreason'.format(uuid))
 
     try:
-        domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid)).split(',')
+        domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
     except:
         domain_node_limit = None
     try:
@@ -178,9 +178,12 @@ def getInformationFromXML(zk_conn, uuid):
         domain_node_autostart = None
 
     if not domain_node_limit:
-        domain_node_limit = 'False'
+        domain_node_limit = None
+    else:
+        domain_node_limit = domain_node_limit.split(',')
+
     if not domain_node_autostart:
-        domain_node_autostart = 'False'
+        domain_node_autostart = None
 
     try:
         domain_profile = zkhandler.readdata(zk_conn, '/domains/{}/profile'.format(uuid))

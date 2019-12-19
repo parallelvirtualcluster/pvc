@@ -749,9 +749,24 @@ def format_info(zk_conn, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 
-    ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_selector']))
-    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(domain_information['node_limit'])))
-    ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node_autostart']))
+    if not domain_information['node_selector']:
+        formatted_node_selector = "False"
+    else:
+        formatted_node_selector = domain_information['node_selector']
+
+    if not domain_information['node_limit']:
+        formatted_node_limit = "False"
+    else:
+        formatted_node_limit = ', '.join(domain_information['node_limit'])
+
+    if not domain_information['node_autostart']:
+        formatted_node_autostart = "False"
+    else:
+        formatted_node_autostart = domain_information['node_autostart']
+
+    ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_selector))
+    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_limit))
+    ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_autostart))
 
     # Network list
     net_list = []
