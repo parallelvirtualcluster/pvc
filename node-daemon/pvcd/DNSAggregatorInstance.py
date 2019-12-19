@@ -484,11 +484,15 @@ class AXFRDaemonInstance(object):
                             r_data = record[4]
                             if self.config['debug']:
                                 print('Add record: {}'.format(name))
-                            sql_curs.execute(
-                                "INSERT INTO records (domain_id, name, ttl, type, prio, content) VALUES (%s, %s, %s, %s, %s, %s)",
-                                (domain_id, r_name, r_ttl, r_type, 0, r_data)
-                            )
-                            changed = True
+                            try:
+                                sql_curs.execute(
+                                    "INSERT INTO records (domain_id, name, ttl, type, prio, content) VALUES (%s, %s, %s, %s, %s, %s)",
+                                    (domain_id, r_name, r_ttl, r_type, 0, r_data)
+                                )
+                                changed = True
+                            except psycopg2.IntegrityError as e:
+                                if self.config['debug']:
+                                    print('Failed to add record due to {}: {}'.format(e, name))
 
                     if changed:
                         # Increase SOA serial
