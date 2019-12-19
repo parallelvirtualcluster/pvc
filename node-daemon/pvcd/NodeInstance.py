@@ -66,7 +66,7 @@ class NodeInstance(object):
         self.memfree = 0
         self.memalloc = 0
         self.vcpualloc = 0
-        # Floating upstreams
+        # Floating IP configurations
         if self.config['enable_networking']:
             self.vni_dev = self.config['vni_dev']
             self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
@@ -118,13 +118,11 @@ class NodeInstance(object):
                     self.router_state = data
                     if self.config['enable_networking']:
                         if self.router_state == 'primary':
-                            # Skip becoming primary unless already running
-                            if self.daemon_state == 'run':
-                                self.logger.out('Setting node {} to primary state'.format(self.name), state='i')
-                                #self.become_primary()
-                                transition_thread = threading.Thread(target=self.become_primary, args=(), kwargs={})
-                                transition_thread.start()
-                                #transition_thread.join() 
+                            self.logger.out('Setting node {} to primary state'.format(self.name), state='i')
+                            #self.become_primary()
+                            transition_thread = threading.Thread(target=self.become_primary, args=(), kwargs={})
+                            transition_thread.start()
+                            #transition_thread.join() 
                         else:
                             # Skip becoming secondary unless already running
                             if self.daemon_state == 'run':
@@ -433,6 +431,7 @@ class NodeInstance(object):
         # 5. Transition Patroni primary
         self.logger.out('Setting Patroni leader to this node', state='i')
         tick = 1
+        patroni_failed = True
         # As long as we're primary, keep trying to set the Patroni leader to us
         while self.router_state == 'primary':
             # Switch Patroni leader to the local instance
@@ -470,18 +469,22 @@ class NodeInstance(object):
             # Otherwise, we succeeded
             else:
                 self.logger.out('Successfully switched Patroni leader\n{}'.format(stdout), state='o')
+                patroni_failed = False
                 time.sleep(0.2)
                 break
         # 6. Start DHCP servers
         for network in self.d_network:
             self.d_network[network].startDHCPServer()
-        # 7. Start DNS aggregator
-        self.dns_aggregator.start_aggregator()
-        # 8. Start metadata API
+        # 7. Start DNS aggregator; just continue if we fail
+        if not patroni_failed:
+            self.dns_aggregator.start_aggregator()
+        else:
+            self.logger.out('Not starting DNS aggregator due to Patroni failures', state='e')
+        # 8. Start metadata API; just continue if we fail
         self.metadata_api.start()
         # 9. Start client API (and provisioner worker)
         if self.config['enable_api']:
-            self.logger.out('Stopping PVC API client service', state='i')
+            self.logger.out('Starting PVC API client service', state='i')
             common.run_os_command("systemctl start pvc-api.service")
             self.logger.out('Starting PVC Provisioner Worker service', state='i')
             common.run_os_command("systemctl start pvc-provisioner-worker.service")
@@ -603,8 +606,11 @@ class NodeInstance(object):
         # Synchronize nodes G (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
         self.logger.out('Acquiring read lock for synchronization G', state='i')
-        lock.acquire()
-        self.logger.out('Acquired read lock for synchronization G', state='o')
+        try:
+            lock.acquire(timeout=60) # Don't wait forever and completely block us
+            self.logger.out('Acquired read lock for synchronization G', state='o')
+        except:
+            pass
         self.logger.out('Releasing read lock for synchronization G', state='i')
         lock.release()
         self.logger.out('Released read lock for synchronization G', state='o')
