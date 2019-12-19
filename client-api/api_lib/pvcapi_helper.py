@@ -272,7 +272,7 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     pvc_common.stopZKConnection(zk_conn)
     return flask.jsonify(retdata), retcode
 
-def vm_define(name, xml, node, selector):
+def vm_define(xml, node, selector):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
