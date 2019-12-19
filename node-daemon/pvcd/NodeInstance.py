@@ -261,9 +261,14 @@ class NodeInstance(object):
 
     # Routing primary/secondary states
     def become_secondary(self):
+        if self.daemon_state == 'init':
+            return
+
         self.logger.out('Setting router {} to secondary state'.format(self.name), state='i')
         self.logger.out('Network list: {}'.format(', '.join(self.network_list)), state='i')
-        time.sleep(2)
+
+        time.sleep(1)
+
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
             common.run_os_command("systemctl stop pvc-api.service")
@@ -278,14 +283,15 @@ class NodeInstance(object):
         # Establish a lock
         with zkhandler.writelock(self.zk_conn, '/primary_node'):
             self.logger.out('Setting router {} to primary state'.format(self.name), state='i')
+            self.logger.out('Network list: {}'.format(', '.join(self.network_list)), state='i')
 
             # Create floating addresses
-            self.logger.out('Network list: {}'.format(', '.join(self.network_list)), state='i')
             self.createFloatingAddresses()
             # Start up the gateways and DHCP servers
             for network in self.d_network:
                 self.d_network[network].createGateways()
                 self.d_network[network].startDHCPServer()
+
             time.sleep(1)
 
             self.logger.out('Setting Patroni leader to this node', state='i')
