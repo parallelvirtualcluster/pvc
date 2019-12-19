@@ -119,11 +119,10 @@ def createIPAddress(ipaddr, cidrnetmask, dev):
         )
     )
     run_os_command(
-        'arping -P -U -W 0.2 -c5 -i {dev} -S {ip} {ip}'.format(
+        'arping -P -U -W 0.02 -c 2 -i {dev} -S {ip} {ip}'.format(
             dev=dev,
             ip=ipaddr
-        ),
-        background=True
+        )
     )
 
 # Remove IP address
