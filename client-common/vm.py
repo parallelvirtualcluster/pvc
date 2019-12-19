@@ -185,18 +185,36 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         if disk['type'] == 'rbd':
             rbd_list.append(disk['name'])
 
+    # Join the limit
+    if isinstance(node_limit, list):
+        formatted_node_limit = ','.join(node_limit)
+    else:
+        if node_limit:
+            formatted_node_limit = node_limit
+        else:
+            formatted_node_limit = ''
+
+    # Join the RBD list
+    if isinstance(rbd_list, list):
+        formatted_rbd_list = ','.join(rbd_list)
+    else:
+        if rbd_list:
+            formatted_rbd_list = rbd_list
+        else:
+            formatted_rbd_list = ''
+
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/domains/{}'.format(dom_uuid): dom_name,
         '/domains/{}/state'.format(dom_uuid): 'stop',
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
-        '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit),
+        '/domains/{}/node_limit'.format(dom_uuid): formatted_node_limit,
         '/domains/{}/node_selector'.format(dom_uuid): node_selector,
         '/domains/{}/node_autostart'.format(dom_uuid): node_autostart,
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
-        '/domains/{}/rbdlist'.format(dom_uuid): ','.join(rbd_list),
+        '/domains/{}/rbdlist'.format(dom_uuid): formatted_rbd_list,
         '/domains/{}/profile'.format(dom_uuid): profile,
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
