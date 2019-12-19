@@ -334,7 +334,10 @@ def findTargetNode(zk_conn, dom_uuid):
 def getNodes(zk_conn, node_limit, dom_uuid):
     valid_node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
-    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
+    try:
+        current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
+    except kazoo.exceptions.NoNodeError:
+        current_node = None
 
     for node in full_node_list:
         if node_limit and node not in node_limit:
