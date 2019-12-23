@@ -126,7 +126,8 @@ def getNetworkACLs(zk_conn, vni, _direction):
             ordered_acls[order] = acl
 
         for order in sorted(ordered_acls.keys()):
-            full_acl_list.append({'direction': direction, 'description': ordered_acls[order]})
+            rule = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, acl))
+            full_acl_list.append({'direction': direction, 'order': int(order), 'description': ordered_acls[order], 'rule': rule})
 
     return full_acl_list
 
@@ -146,7 +147,7 @@ def getNetworkInformation(zk_conn, vni):
 
     # Construct a data structure to represent the data
     network_information = {
-        'vni': vni,
+        'vni': int(vni),
         'description': description,
         'type': nettype,
         'domain': domain,
@@ -191,7 +192,8 @@ def getACLInformation(zk_conn, vni, direction, description):
     acl_information = {
         'order': order,
         'description': description,
-        'rule': rule
+        'rule': rule,
+        'direction': direction
     }
     return acl_information
 
@@ -391,7 +393,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 
     # Change direction to something more usable
     if direction:
-        if not 'in' in direction and not 'out' in direction:
+        if isinstance(direction, bool):
             direction = "in"
         else:
             # Preserve the existing value, which is a text of 'in' or 'out'
@@ -413,7 +415,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
         order = int(order)
 
     # Insert into the array at order-1
-    full_acl_list.insert(order, {'direction': direction, 'description': description})
+    full_acl_list.insert(order, {'direction': direction, 'description': description, 'rule': rule})
 
     # Update the existing ordering
     updated_orders = dict()
@@ -443,36 +445,27 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 
     return True, 'Firewall rule "{}" added successfully!'.format(description)
 
-def remove_acl(zk_conn, network, description, direction):
+def remove_acl(zk_conn, network, description):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
     if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
-    # Change direction to something more usable
-    if direction:
-        if not 'in' in direction and not 'out' in direction:
-            direction = "in"
-        else:
-            # Preserve the existing value, which is a text of 'in' or 'out'
-            pass
-    else:
-        direction = "out"
-
     match_description = ''
 
     # Check if the ACL matches a description currently in the database
-    acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    acl_list = getNetworkACLs(zk_conn, net_vni, None)
     for acl in acl_list:
         if acl['description'] == description:
             match_description = acl['description']
+            match_direction = acl['direction']
 
     if not match_description:
         return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(description)
 
     # Remove the entry from zookeeper
     try:
-        zkhandler.deletekey(zk_conn, '/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, match_description))
+        zkhandler.deletekey(zk_conn, '/networks/{}/firewall_rules/{}/{}'.format(net_vni, match_direction, match_description))
     except Exception as e:
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
@@ -512,12 +505,8 @@ def get_list(zk_conn, limit, is_fuzzy=True):
         description = zkhandler.readdata(zk_conn, '/networks/{}'.format(net))
         if limit:
             try:
-                if is_fuzzy:
-                    # Implcitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
+                if not is_fuzzy:
+                    limit = '^' + limit + '$'
 
                 if re.match(limit, net):
                     net_list.append(getNetworkInformation(zk_conn, net))
@@ -546,8 +535,11 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
         full_dhcp_list = getNetworkDHCPLeases(zk_conn, net_vni)
         reservations = False
 
-    if limit and is_fuzzy:
+    if limit:
         try:
+            if not is_fuzzy:
+                limit = '^' + limit + '$'
+
             # Implcitly assume fuzzy limits
             if not re.match('\^.*', limit):
                 limit = '.*' + limit
@@ -590,8 +582,11 @@ def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
     acl_list = []
     full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
 
-    if limit and is_fuzzy:
+    if limit:
         try:
+            if not is_fuzzy:
+                limit = '^' + limit + '$'
+
             # Implcitly assume fuzzy limits
             if not re.match('\^.*', limit):
                 limit = '.*' + limit
@@ -637,6 +632,10 @@ def getOutputColours(network_information):
     return v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour
 
 def format_info(network_information, long_output):
+    if not network_information:
+        click.echo("No network found")
+        return
+
     v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour = getOutputColours(network_information)
 
     # Format a nice output: do this line-by-line then concat the elements at the end
@@ -685,6 +684,10 @@ def format_info(network_information, long_output):
     click.echo('\n'.join(ainformation))
 
 def format_list(network_list):
+    if not network_list:
+        click.echo("No network found")
+        return
+
     network_list_output = []
 
     # Determine optimal column widths
@@ -698,7 +701,7 @@ def format_list(network_list):
     net_dhcp4_flag_length = 7
     for network_information in network_list:
         # vni column
-        _net_vni_length = len(network_information['vni']) + 1
+        _net_vni_length = len(str(network_information['vni'])) + 1
         if _net_vni_length > net_vni_length:
             net_vni_length = _net_vni_length
         # description column
@@ -872,7 +875,7 @@ def format_list_acl(acl_list):
     acl_rule_length = 5
     for acl_information in acl_list:
         # order column
-        _acl_order_length = len(acl_information['order']) + 1
+        _acl_order_length = len(str(acl_information['order'])) + 1
         if _acl_order_length > acl_order_length:
             acl_order_length = _acl_order_length
         # description column
