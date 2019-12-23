@@ -391,18 +391,20 @@ def add_acl(zk_conn, network, direction, description, rule, order):
     if not net_vni:
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
+    # Check if the ACL matches a description currently in the database
+    full_acl_list = getNetworkACLs(zk_conn, net_vni, 'both')
+    for acl in full_acl_list:
+        if acl['description'] == description:
+            match_description = acl['description']
+
+    if match_description:
+        return False, 'ERROR: A rule with description "{}" already exists!'.format(description)
+
     # Change direction to something more usable
     if direction:
-        if isinstance(direction, bool):
-            direction = "in"
-        else:
-            # Preserve the existing value, which is a text of 'in' or 'out'
-            pass
+        direction = "in"
     else:
         direction = "out"
-
-    if zkhandler.exists(zk_conn, '/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description)):
-        return False, 'ERROR: A rule with description "{}" already exists!'.format(description)
 
     # Handle reordering
     full_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
