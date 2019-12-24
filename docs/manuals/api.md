@@ -68,6 +68,7 @@ curl -X POST http://localhost:7370/api/v1/provisioner/template/network?name=net2
 curl -X POST http://localhost:7370/api/v1/provisioner/template/network/net200+net300/net?vni=200
 curl -X POST http://localhost:7370/api/v1/provisioner/template/network/net200+net300/net/300
 curl -X GET http://localhost:7370/api/v1/provisioner/template/net200+net300
+```
 
 #### Storage Templates
 
