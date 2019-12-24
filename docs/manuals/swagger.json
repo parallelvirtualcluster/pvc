@@ -4,7 +4,7 @@
             "properties": {
                 "message": {
                     "description": "A text message",
-                    "example": "PVC API version 1",
+                    "example": "PVC API version 1.0",
                     "type": "string"
                 }
             },
@@ -902,9 +902,9 @@
             "type": "object"
         }
     },
+    "host": "http://pvc.local:7570",
     "info": {
         "title": "PVC Client and Provisioner API",
-        "url": "http://pvc.local:7570",
         "version": "1.0"
     },
     "paths": {
