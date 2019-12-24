@@ -214,7 +214,7 @@ class API_Doc(Resource):
         swagger_data = swagger(pvc_api.app)
         swagger_data['info']['version'] = API_VERSION
         swagger_data['info']['title'] = "PVC Client and Provisioner API"
-        swagger_data['info']['url'] = "{}://{}:{}".format(scheme, config['listen_address'], config['listen_port'])
+        swagger_data['host'] = "{}://{}:{}".format(scheme, config['listen_address'], config['listen_port'])
         return swagger_data
 api.add_resource(API_Doc, '/doc')
 
