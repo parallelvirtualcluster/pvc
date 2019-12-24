@@ -904,6 +904,7 @@
     },
     "info": {
         "title": "PVC Client and Provisioner API",
+        "url": "http://pvc.local:7570",
         "version": "1.0"
     },
     "paths": {

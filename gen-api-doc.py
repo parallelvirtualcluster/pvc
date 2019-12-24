@@ -19,6 +19,7 @@ swagger_file = "docs/manuals/swagger.json"
 swagger_data = swagger(pvc_api.app)
 swagger_data['info']['version'] = "1.0"
 swagger_data['info']['title'] = "PVC Client and Provisioner API"
+swagger_data['info']['url'] = "http://pvc.local:7570"
 
 with open(swagger_file, 'w') as fd:
     fd.write(json.dumps(swagger_data, sort_keys=True, indent=4))
