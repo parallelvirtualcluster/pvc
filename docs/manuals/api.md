@@ -14,25 +14,19 @@ The API accepts SSL certificate and key files via the `pvc-api.yaml` configurati
 
 Authentication for the API is available using a static list of tokens. These tokens can be any long string, but UUIDs are typical and simple to use. Within `pvc-ansible`, the list of tokens can be specified in the `pvc.yaml` `group_vars` file. Usually, you'd want one token for each user of the API, such as a WebUI, a 3rd-party client, or an administrative user. Within the configuration, each token can have a description; this is mostly for administrative clarity and is not actually used within the API itself.
 
-The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a JSON `message` of `Authentication is disabled` and HTTP code 200.
+The API provides session-based login using the `/api/v1/auth/login` and `/api/v1/auth/logout` options. If authentication is not enabled, these endpoints return a temporary redirect to the root (version) endpoint.
 
 For one-time authentication, the `token` value can be specified to any API endpoint via the `X-Api-Key` header value. This is only checked if there is no valid session already established. If authentication is enabled, there is no valid session, and no `token` value is specified, the API will return a JSON `message` of `Authentication required` and HTTP code 401.
 
-### Values
-
-The PVC API consistently accepts values (variables) as either HTTP query string arguments, or as HTTP POST form body arguments, in either GET or POST mode.
-
-Some values are `` values; these do not require a data component, and signal an option by their presence.
-
 ### Data formats
 
-The PVC API consistently accepts HTTP POST commands of HTML form documents. However, since all form arguments can also be specified as query parameters, and only the `vm define` endpoint accepts a significant amount of data in one argument, it should generally be compatible with API clients speaking only JSON - these can simply send no data in the body and send all required values as query parameters.
+The PVC API consistently accepts HTTP POST commands of HTML form documents.
 
-The PCI API consistently returns JSON bodies as its responses, with the one exception of the `vm dump` endpoint which returns an XML body. For all POST endpoints, unless otherwise specified below, this is a `message` value containing a human-readable message about the success or failure of the command. The HTTP return code is always 200 for a success or 510 for a failure. For all GET endpoints except the mentioned `vm dump`, this is a JSON body containing the requested data.
+The PCI API consistently returns JSON bodies as its responses.
 
 ## Provisioner
 
-The provisioner subsection (`/api/v1/provisioner`) is used to create new virtual machines on a PVC cluster. By creating templates and scripts, then grouping these into profiles, VMs can be created based on dynamic, declarative configurations via direct installation or templating. Administrators can use this facility to automate the creation VMs running most *NIX instances that can be installed in a parent host, or by using templates as a base for new VMs. It can also create VMs based on existing templates or ISO images to facilitate installing alternate operating systems such as Microsoft Windows.
+The provisioner subsection (`/api/v1/provisioner`) is used to create new virtual machines on a PVC cluster. By creating templates and scripts, then grouping these into profiles, VMs can be created based on dynamic, declarative configurations via direct installation or templating. Administrators can use this facility to automate the creation of VMs running most UNIX-like operating systems that can be installed in a parent host. It can also create VMs based on existing templates or ISO images to facilitate installing alternate operating systems such as Microsoft Windows.
 
 ### Templates
 
