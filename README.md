@@ -21,3 +21,5 @@ It is designed to be an administrator-friendly but extremely powerful and rich m
 Your cloud, the best way; just add physical servers.
 
 [See the documentation here](https://parallelvirtualcluster.readthedocs.io/en/latest/)
+
+[See the API reference here](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/api-reference.html)
