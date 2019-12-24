@@ -838,16 +838,137 @@ Remove a Ceph RBD volume snapshot `<snapshot>` of Ceph RBD volume `<volume>` on 
 
 ## Provisioner API endpoint documentation
 
-### Node endpoints
+### General endpoints
 
-These endpoints manage PVC node state and operation.
-
-#### `/api/v1/node`
+#### `/api/v1/provisioner/template`
  * Methods: `GET`
+
+###### `GET`
+ * Manadatory values: N/A
+ * Optional values: `limit`
+
+Return a JSON document containing information about all available templates. If `limit` is specified, return a JSON document containing information about any templates with names matching`limit` as a fuzzy regex; `^` or `$` can be used for force exact start/end matches.
+
+### System Template endpoints
+
+These endpoints manage PVC system templates.
+
+#### `/api/v1/provisioner/template/system`
+ * Methods: `GET`, `POST`
 
 ###### `GET`
  * Mandatory values: N/A
  * Optional values: `limit`
 
-Return a JSON document containing information about all cluster nodes. If `limit` is specified, return a JSON document containing information about cluster nodes with names matching `limit` as fuzzy regex.
+Return a JSON document containing information about all available system templates. If `limit` is specified, return a JSON document containing information about any system templates with names matching`limit` as a fuzzy regex; `^` or `$` can be used for force exact start/end matches.
+
+###### `POST`
+ * Mandatory values: `name`, `vcpus`, `vram`, `serial`, `vnc`
+ * Optional values: `vnc_bind`, `node_limit`, `node_selector`, `start_with_node`
+
+Add a new system template `name` with `vcpus` vCPUs, `vram` MB of RAM, and with `serial` and/or `vnc` enabled (`true`) or disabled (`false`).
+
+If `vnc=true`, the `vnc_bind` option specifies which IP address(es) for VNC to listen on. Common values would include `127.0.0.1` (the default), `0.0.0.0` for all interfaces, or a specific IP such as the cluster upstream floating IP address.
+
+If `node_limit` is specified and is a valid list of PVC nodes in CSV format, the PVC VM metadata to limit the VM to the specified nodes will be set.
+
+If `node_selector` is specified, the PVC VM metadata to specify the node selector for the VM will be set. Valid `node_selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
+
+If `start_with_node` is specified, the PVC VM metadata to specify the autostart-with-node will be set for the first boot. This is most useful if the VM will not be started by default and is set to run on a stopped or flushed node.
+
+#### `/api/v1/provisioner/template/system/<name>`
+ * Methods: `GET`, `POST`, `PUT`, `DELETE`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about system template `<name>`. The output is identical to `/api/v1/provisioner/template/system?limit=<name>` without fuzzy regex matching.
+
+###### `POST`
+ * Mandatory values: `vcpus`, `vram`, `serial`, `vnc`
+ * Optional values: `vnc_bind`, `node_limit`, `node_selector`, `start_with_node`
+
+Add a new system template `name` with `vcpus` vCPUs, `vram` MB of RAM, and with `serial` and/or `vnc` enabled (`true`) or disabled (`false`).
+
+If `vnc=true`, the `vnc_bind` option specifies which IP address(es) for VNC to listen on. Common values would include `127.0.0.1` (the default), `0.0.0.0` for all interfaces, or a specific IP such as the cluster upstream floating IP address.
+
+If `node_limit` is specified and is a valid list of PVC nodes in CSV format, the PVC VM metadata to limit the VM to the specified nodes will be set.
+
+If `node_selector` is specified, the PVC VM metadata to specify the node selector for the VM will be set. Valid `node_selector` values are: `mem`: the node with the least allocated VM memory; `vcpus`: the node with the least allocated VM vCPUs; `load`: the node with the least current load average; `vms`: the node with the least number of provisioned VMs.
+
+If `start_with_node` is specified, the PVC VM metadata to specify the autostart-with-node will be set for the first boot. This is most useful if the VM will not be started by default and is set to run on a stopped or flushed node.
+
+###### `PUT`
+ * Mandatory values: N/A
+ * Optional values: `vcpus`, `vram`, `serial`, `vnc`, `vnc_bind`, `node_limit`, `node_selector`, `start_with_node`
+
+Modify an existing system template `name` by updating the specified value(s).
+
+###### `DELETE`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Delete the system template `name`. Note that you cannot delete a template which is a member of a profile; it must first be removed from the profile, or the profile deleted.
+
+### Network Template endpoints
+
+These endpoints manage PVC network templates.
+
+#### `/api/v1/provisioner/template/network`
+ * Methods: `GET`, `POST`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: `limit`
+
+Return a JSON document containing information about all available network templates. If `limit` is specified, return a JSON document containing information about any network templates with names matching`limit` as a fuzzy regex; `^` or `$` can be used for force exact start/end matches.
+
+###### `POST`
+ * Mandatory values: 
+ * Optional values: 
+
+Add a new network template `name`.
+
+#### `/api/v1/provisioner/template/network/<name>`
+ * Methods: `GET`, `POST`, `DELETE`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about network template `<name>`. The output is identical to `/api/v1/provisioner/template/network?limit=<name>` without fuzzy regex matching.
+
+###### `POST`
+ * Mandatory values: 
+ * Optional values: 
+
+Add a new network template `name`.
+
+###### `DELETE`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Delete the network template `name`. Note that you cannot delete a template which is a member of a profile; it must first be removed from the profile, or the profile deleted.
+
+#### `/api/v1/provisioner/template/network/<name>/net`
+ * Methods: `GET`, `POST`
+
+###### `GET`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Return a JSON document containing information about network template `<name>`. The output is identical to `/api/v1/provisioner/template/network?limit=<name>` without fuzzy regex matching.
+
+###### `POST`
+ * Mandatory values: 
+ * Optional values: 
+
+Add a new network template `name`.
+
+###### `DELETE`
+ * Mandatory values: N/A
+ * Optional values: N/A
+
+Delete the network template `name`. Note that you cannot delete a template which is a member of a profile; it must first be removed from the profile, or the profile deleted.
 

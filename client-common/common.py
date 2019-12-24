@@ -25,6 +25,8 @@ import lxml
 import math
 import kazoo.client
 
+from distutils.util import strtobool
+
 import client_lib.zkhandler as zkhandler
 
 ###############################################################################
@@ -216,11 +218,11 @@ def getInformationFromXML(zk_conn, uuid):
         'failed_reason': domain_failedreason,
         'node_limit': domain_node_limit,
         'node_selector': domain_node_selector,
-        'node_autostart': domain_node_autostart,
+        'node_autostart': bool(strtobool(domain_node_autostart)),
         'description': domain_description,
         'profile': domain_profile,
-        'memory': domain_memory,
-        'vcpu': domain_vcpu,
+        'memory': int(domain_memory),
+        'vcpu': int(domain_vcpu),
         'vcpu_topology': domain_vcputopo,
         'networks': domain_networks,
         'type': domain_type,

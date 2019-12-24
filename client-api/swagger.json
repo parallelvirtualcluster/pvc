@@ -1,0 +1,4750 @@
+{
+    "definitions": {
+        "API-Version": {
+            "properties": {
+                "message": {
+                    "description": "A text message",
+                    "example": "PVC API version 1",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "Message": {
+            "properties": {
+                "message": {
+                    "description": "A text message",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "NodeCoordinatorState": {
+            "properties": {
+                "coordinator_state": {
+                    "description": "The current coordinator state",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the node",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "NodeDaemonState": {
+            "properties": {
+                "daemon_state": {
+                    "description": "The current daemon state",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the node",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "NodeDomainState": {
+            "properties": {
+                "domain_state": {
+                    "description": "The current domain state",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the node",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "VMMetadata": {
+            "properties": {
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                },
+                "node_autostart": {
+                    "description": "Whether to autostart the VM when its node returns to ready domain state",
+                    "type": "string"
+                },
+                "node_limit": {
+                    "description": "The node(s) the VM is permitted to be assigned to",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "node_selector": {
+                    "description": "The selector used to determine candidate nodes during migration",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "VMNode": {
+            "properties": {
+                "last_node": {
+                    "description": "The last node the VM was assigned to before migrating",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                },
+                "node": {
+                    "description": "The node the VM is currently assigned to",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "VMState": {
+            "properties": {
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "The current state of the VM",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "acl": {
+            "properties": {
+                "description": {
+                    "description": "The description of the rule",
+                    "type": "string"
+                },
+                "direction": {
+                    "description": "The direction the rule applies in",
+                    "type": "string"
+                },
+                "order": {
+                    "description": "The order of the rule in the chain",
+                    "type": "integer"
+                },
+                "rule": {
+                    "description": "The NFT-format rule string",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "all-templates": {
+            "properties": {
+                "network-templates": {
+                    "items": {
+                        "$ref": "#/definitions/network-template"
+                    },
+                    "type": "array"
+                },
+                "storage-templates": {
+                    "items": {
+                        "$ref": "#/definitions/storage-template"
+                    },
+                    "type": "array"
+                },
+                "system-templates": {
+                    "items": {
+                        "$ref": "#/definitions/system-template"
+                    },
+                    "type": "array"
+                },
+                "userdata-templates": {
+                    "items": {
+                        "$ref": "#/definitions/userdata-template"
+                    },
+                    "type": "array"
+                }
+            },
+            "type": "object"
+        },
+        "lease": {
+            "properties": {
+                "hostname": {
+                    "description": "The (short) hostname of the lease",
+                    "type": "string"
+                },
+                "ip4_address": {
+                    "description": "The IPv4 address of the lease",
+                    "type": "string"
+                },
+                "mac_address": {
+                    "description": "The MAC address of the lease",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "description": "The UNIX timestamp of the lease creation",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "network": {
+            "properties": {
+                "description": {
+                    "description": "The description of the network",
+                    "type": "string"
+                },
+                "domain": {
+                    "description": "The DNS domain of the network (\"managed\" networks only)",
+                    "type": "string"
+                },
+                "ip4": {
+                    "description": "The IPv4 details of the network (\"managed\" networks only)",
+                    "properties": {
+                        "dhcp_end": {
+                            "description": "The IPv4 DHCP pool end address",
+                            "type": "string"
+                        },
+                        "dhcp_flag": {
+                            "description": "Whether DHCP is enabled",
+                            "type": "boolean"
+                        },
+                        "dhcp_start": {
+                            "description": "The IPv4 DHCP pool start address",
+                            "type": "string"
+                        },
+                        "gateway": {
+                            "description": "The IPv4 default gateway address",
+                            "type": "string"
+                        },
+                        "network": {
+                            "description": "The IPv4 network subnet in CIDR format",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
+                "ip6": {
+                    "description": "The IPv6 details of the network (\"managed\" networks only)",
+                    "properties": {
+                        "dhcp_flag": {
+                            "description": "Whether DHCPv6 is enabled",
+                            "type": "boolean"
+                        },
+                        "gateway": {
+                            "description": "The IPv6 default gateway address",
+                            "type": "string"
+                        },
+                        "network": {
+                            "description": "The IPv6 network subnet in CIDR format",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
+                "name_servers": {
+                    "description": "The configured DNS nameservers of the network for NS records (\"managed\" networks only)",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "type": {
+                    "description": "The type of network",
+                    "enum": [
+                        "managed",
+                        "bridged"
+                    ],
+                    "type": "string"
+                },
+                "vni": {
+                    "description": "The VNI of the network",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "network-template": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner template ID",
+                    "type": "integer"
+                },
+                "mac_template": {
+                    "description": "MAC address template for VM",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Template name",
+                    "type": "string"
+                },
+                "networks": {
+                    "items": {
+                        "$ref": "#/definitions/network-template-net"
+                    },
+                    "type": "array"
+                }
+            },
+            "type": "object"
+        },
+        "network-template-net": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner template ID",
+                    "type": "integer"
+                },
+                "network_template": {
+                    "description": "Internal provisioner network template ID",
+                    "type": "integer"
+                },
+                "vni": {
+                    "description": "PVC network VNI",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "node": {
+            "properties": {
+                "arch": {
+                    "description": "The architecture of the CPU",
+                    "type": "string"
+                },
+                "coordinator_state": {
+                    "description": "The current coordinator state",
+                    "type": "string"
+                },
+                "cpu_count": {
+                    "description": "The number of available CPU cores",
+                    "type": "integer"
+                },
+                "daemon_state": {
+                    "description": "The current daemon state",
+                    "type": "string"
+                },
+                "domain_state": {
+                    "description": "The current domain (VM) state",
+                    "type": "string"
+                },
+                "domains_count": {
+                    "description": "The number of running domains (VMs)",
+                    "type": "integer"
+                },
+                "kernel": {
+                    "desription": "The running kernel version from uname",
+                    "type": "string"
+                },
+                "load": {
+                    "description": "The current 5-minute CPU load",
+                    "format": "float",
+                    "type": "number"
+                },
+                "memory": {
+                    "properties": {
+                        "allocated": {
+                            "description": "The total amount of RAM allocated to domains in MB",
+                            "type": "integer"
+                        },
+                        "free": {
+                            "description": "The total free RAM on the node in MB",
+                            "type": "integer"
+                        },
+                        "total": {
+                            "description": "The total amount of node RAM in MB",
+                            "type": "integer"
+                        },
+                        "used": {
+                            "description": "The total used RAM on the node in MB",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                },
+                "name": {
+                    "description": "The name of the node",
+                    "type": "string"
+                },
+                "os": {
+                    "description": "The current operating system type",
+                    "type": "string"
+                },
+                "running_domains": {
+                    "description": "The list of running domains (VMs) by UUID",
+                    "type": "string"
+                },
+                "vcpu": {
+                    "properties": {
+                        "allocated": {
+                            "description": "The total number of allocated vCPU cores",
+                            "type": "integer"
+                        },
+                        "total": {
+                            "description": "The total number of real CPU cores available",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        },
+        "pool": {
+            "properties": {
+                "name": {
+                    "description": "The name of the pool",
+                    "type": "string"
+                },
+                "stats": {
+                    "properties": {
+                        "free_bytes": {
+                            "description": "The total free space (in bytes)",
+                            "type": "integer"
+                        },
+                        "id": {
+                            "description": "The Ceph pool ID",
+                            "type": "integer"
+                        },
+                        "num_object_clones": {
+                            "description": "The total number of cloned Ceph objects",
+                            "type": "integer"
+                        },
+                        "num_object_copies": {
+                            "description": "The total number of Ceph objects after replication",
+                            "type": "integer"
+                        },
+                        "num_objects": {
+                            "description": "The number of Ceph objects before replication",
+                            "type": "integer"
+                        },
+                        "num_objects_degraded": {
+                            "description": "The total number of degraded Ceph objects",
+                            "type": "integer"
+                        },
+                        "num_objects_missing_on_primary": {
+                            "description": "The total number of missing-on-primary Ceph objects",
+                            "type": "integer"
+                        },
+                        "num_objects_unfound": {
+                            "description": "The total number of unfound Ceph objects",
+                            "type": "integer"
+                        },
+                        "read_bytes": {
+                            "description": "The total read bytes on the pool (pool-lifetime)",
+                            "type": "integer"
+                        },
+                        "read_ops": {
+                            "description": "The total read operations on the pool (pool-lifetime)",
+                            "type": "integer"
+                        },
+                        "used_bytes": {
+                            "description": "The total used space (in bytes)",
+                            "type": "integer"
+                        },
+                        "used_percent": {
+                            "description": "The ratio of used space to free space",
+                            "type": "number"
+                        },
+                        "write_bytes": {
+                            "description": "The total write bytes on the pool (pool-lifetime)",
+                            "type": "integer"
+                        },
+                        "write_ops": {
+                            "description": "The total write operations on the pool (pool-lifetime)",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        },
+        "profile": {
+            "properties": {
+                "arguments": {
+                    "items": {
+                        "description": "Script install() function keyword arguments in \"arg=data\" format",
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "Internal provisioner profile ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Profile name",
+                    "type": "string"
+                },
+                "network_template": {
+                    "description": "Network template name",
+                    "type": "string"
+                },
+                "script": {
+                    "description": "Script name",
+                    "type": "string"
+                },
+                "storage_template": {
+                    "description": "Storage template name",
+                    "type": "string"
+                },
+                "system_template": {
+                    "description": "System template name",
+                    "type": "string"
+                },
+                "userdata_template": {
+                    "description": "Userdata template name",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "script": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner script ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Script name",
+                    "type": "string"
+                },
+                "script": {
+                    "description": "Raw Python script document",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "snapshot": {
+            "properties": {
+                "pool": {
+                    "description": "The name of the pool",
+                    "type": "string"
+                },
+                "snapshot": {
+                    "description": "The name of the snapshot",
+                    "type": "string"
+                },
+                "volume": {
+                    "description": "The name of the volume",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "storage-template": {
+            "properties": {
+                "disks": {
+                    "items": {
+                        "$ref": "#/definitions/storage-template-disk"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "Internal provisioner template ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Template name",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "storage-template-disk": {
+            "properties": {
+                "disk_id": {
+                    "description": "Disk identifier",
+                    "type": "string"
+                },
+                "disk_size_gb": {
+                    "description": "Disk size in GB",
+                    "type": "string"
+                },
+                "filesystem": {
+                    "description": "Filesystem for disk",
+                    "type": "string"
+                },
+                "filesystem_args": {
+                    "items": {
+                        "description": "Filesystem mkfs arguments",
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "Internal provisioner disk ID",
+                    "type": "integer"
+                },
+                "mountpoint": {
+                    "description": "In-VM mountpoint for disk",
+                    "type": "string"
+                },
+                "pool": {
+                    "description": "Ceph storage pool for disk",
+                    "type": "string"
+                },
+                "storage_template": {
+                    "description": "Internal provisioner storage template ID",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "system-template": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner template ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Template name",
+                    "type": "string"
+                },
+                "node_autostart": {
+                    "description": "Whether to start VM with node ready state (one-time)",
+                    "type": "boolean"
+                },
+                "node_limit": {
+                    "description": "CSV list of node(s) to limit VM assignment to",
+                    "type": "string"
+                },
+                "node_selector": {
+                    "description": "Selector to use for VM node assignment on migration/move",
+                    "type": "string"
+                },
+                "serial": {
+                    "description": "Whether to enable serial console for VM",
+                    "type": "boolean"
+                },
+                "vcpu_count": {
+                    "description": "vCPU count for VM",
+                    "type": "integer"
+                },
+                "vnc": {
+                    "description": "Whether to enable VNC console for VM",
+                    "type": "boolean"
+                },
+                "vnc_bind": {
+                    "description": "VNC bind address when VNC console is enabled",
+                    "type": "string"
+                },
+                "vram_mb": {
+                    "description": "vRAM size in MB for VM",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "userdata-template": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner template ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Template name",
+                    "type": "string"
+                },
+                "userdata": {
+                    "description": "Raw userdata configuration document",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "vm": {
+            "properties": {
+                "arch": {
+                    "description": "The architecture of the VM",
+                    "type": "string"
+                },
+                "console": {
+                    "descritpion": "The serial console type of the VM",
+                    "type": "string"
+                },
+                "controllers": {
+                    "description": "The device controllers attached to the VM",
+                    "items": {
+                        "properties": {
+                            "model": {
+                                "description": "The model of the controller",
+                                "type": "string"
+                            },
+                            "type": {
+                                "description": "The type of the controller",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "description": "The description of the VM",
+                    "type": "string"
+                },
+                "disks": {
+                    "description": "The PVC storage volumes attached to the VM",
+                    "items": {
+                        "properties": {
+                            "bus": {
+                                "description": "The virtual bus of the volume in the VM",
+                                "type": "string"
+                            },
+                            "dev": {
+                                "description": "The device ID of the volume in the VM",
+                                "type": "string"
+                            },
+                            "name": {
+                                "description": "The full name of the volume in \"pool/volume\" format",
+                                "type": "string"
+                            },
+                            "type": {
+                                "description": "The type of volume",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "emulator": {
+                    "description": "The binary emulator of the VM",
+                    "type": "string"
+                },
+                "failed_reason": {
+                    "description": "Information about why the VM failed to start",
+                    "type": "string"
+                },
+                "features": {
+                    "description": "The available features of the VM",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "last_node": {
+                    "description": "The last node the VM was assigned to before migrating",
+                    "type": "string"
+                },
+                "machine": {
+                    "description": "The QEMU machine type of the VM",
+                    "type": "string"
+                },
+                "memory": {
+                    "description": "The assigned RAM of the VM in MB",
+                    "type": "integer"
+                },
+                "migrated": {
+                    "description": "Whether the VM has been migrated, either \"no\" or \"from <last_node>\"",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                },
+                "networks": {
+                    "description": "The PVC networks attached to the VM",
+                    "items": {
+                        "properties": {
+                            "mac": {
+                                "description": "The MAC address of the VM network interface",
+                                "type": "string"
+                            },
+                            "model": {
+                                "description": "The virtual network device model",
+                                "type": "string"
+                            },
+                            "source": {
+                                "description": "The parent network bridge on the node",
+                                "type": "string"
+                            },
+                            "type": {
+                                "description": "The PVC network type",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "node": {
+                    "description": "The node the VM is currently assigned to",
+                    "type": "string"
+                },
+                "node_autostart": {
+                    "description": "Whether to autostart the VM when its node returns to ready domain state",
+                    "type": "boolean"
+                },
+                "node_limit": {
+                    "description": "The node(s) the VM is permitted to be assigned to",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "node_selector": {
+                    "description": "The selector used to determine candidate nodes during migration",
+                    "type": "string"
+                },
+                "profile": {
+                    "description": "The provisioner profile used to create the VM",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "The current state of the VM",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "The type of the VM",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "The UUID of the VM",
+                    "type": "string"
+                },
+                "vcpu": {
+                    "description": "The assigned vCPUs of the VM",
+                    "type": "integer"
+                },
+                "vcpu_topology": {
+                    "description": "The topology of the assigned vCPUs in Sockets/Cores/Threads format",
+                    "type": "string"
+                },
+                "xml": {
+                    "description": "The raw Libvirt XML definition of the VM",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "volume": {
+            "properties": {
+                "name": {
+                    "description": "The name of the volume",
+                    "type": "string"
+                },
+                "pool": {
+                    "description": "The name of the pool containing the volume",
+                    "type": "string"
+                },
+                "stats": {
+                    "properties": {
+                        "access_timestamp": {
+                            "description": "The volume access timestamp",
+                            "type": "string"
+                        },
+                        "block_name_prefix": {
+                            "description": "The Ceph-internal block name prefix",
+                            "type": "string"
+                        },
+                        "create_timestamp": {
+                            "description": "The volume creation timestamp",
+                            "type": "string"
+                        },
+                        "features": {
+                            "items": {
+                                "description": "The Ceph RBD feature",
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "flags": {
+                            "items": {
+                                "description": "The Ceph RBD volume flags",
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "format": {
+                            "description": "The Ceph RBD volume format",
+                            "type": "integer"
+                        },
+                        "id": {
+                            "description": "The Ceph volume ID",
+                            "type": "string"
+                        },
+                        "modify_timestamp": {
+                            "description": "The volume modification timestamp",
+                            "type": "string"
+                        },
+                        "name": {
+                            "description": "The name of the volume",
+                            "type": "string"
+                        },
+                        "object_size": {
+                            "description": "The size of each object in bytes",
+                            "type": "integer"
+                        },
+                        "objects": {
+                            "description": "The number of Ceph objects making up the volume",
+                            "type": "integer"
+                        },
+                        "op_features": {
+                            "items": {
+                                "description": "The Ceph RBD operational features",
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "order": {
+                            "description": "The Ceph volume order ID",
+                            "type": "integer"
+                        },
+                        "size": {
+                            "description": "The size of the volume (human-readable values)",
+                            "type": "string"
+                        },
+                        "snapshot_count": {
+                            "description": "The number of snapshots of the volume",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "info": {
+        "title": "PVC Client and Provisioner API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/v1/": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/API-Version"
+                        }
+                    }
+                },
+                "summary": "Return the PVC API version string",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
+        "/api/v1/initialize": {
+            "post": {
+                "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "302": {
+                        "description": "Cluster already initialized"
+                    }
+                },
+                "summary": "Initialize a new PVC cluster",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
+        "/api/v1/login": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "302": {
+                        "description": "Authentication disabled"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Log in to the PVC API with an authentication key",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
+        "/api/v1/logout": {
+            "post": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "302": {
+                        "description": "Authentication disabled"
+                    }
+                },
+                "summary": "Log out of an existing PVC API session",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
+        "/api/v1/network": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A VNI or description search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/network"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of networks in the cluster",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The VNI of the network",
+                        "in": "query",
+                        "name": "vni",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The description of the network",
+                        "in": "query",
+                        "name": "description",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The type of network",
+                        "enum": [
+                            "managed",
+                            "bridged"
+                        ],
+                        "in": "query",
+                        "name": "nettype",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DNS domain of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "domain",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The CSV list of DNS nameservers for network NS records (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "name_servers",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 network subnet of the network in CIDR format; IPv4 disabled if unspecified (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_gateway",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to enable DHCPv4 for the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "The DHCPv4 pool start address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_start",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DHCPv4 pool end address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_end",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 network subnet of the network in CIDR format; IPv6 disabled if unspecified; DHCPv6 is always used in IPv6 managed networks (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_gateway",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/network/{vni}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/network"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The description of the network",
+                        "in": "query",
+                        "name": "description",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The type of network",
+                        "enum": [
+                            "managed",
+                            "bridged"
+                        ],
+                        "in": "query",
+                        "name": "nettype",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DNS domain of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "domain",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The CSV list of DNS nameservers for network NS records (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "name_servers",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 network subnet of the network in CIDR format; IPv4 disabled if unspecified (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_gateway",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to enable DHCPv4 for the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "The DHCPv4 pool start address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_start",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DHCPv4 pool end address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_end",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 network subnet of the network in CIDR format; IPv6 disabled if unspecified; DHCPv6 is always used in IPv6 managed networks (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_gateway",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "put": {
+                "description": "Note: A network's type cannot be changed; the network must be removed and recreated as the new type",
+                "parameters": [
+                    {
+                        "description": "The description of the network",
+                        "in": "query",
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DNS domain of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "domain",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The CSV list of DNS nameservers for network NS records (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "name_servers",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 network subnet of the network in CIDR format; IPv4 disabled if unspecified (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv4 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip4_gateway",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to enable DHCPv4 for the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "The DHCPv4 pool start address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_start",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The DHCPv4 pool end address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "dhcp4_end",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 network subnet of the network in CIDR format; IPv6 disabled if unspecified; DHCPv6 is always used in IPv6 managed networks (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_network",
+                        "type": "string"
+                    },
+                    {
+                        "description": "The IPv6 default gateway address of the network (\"managed\" networks only)",
+                        "in": "query",
+                        "name": "ip6_gateway",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update details of network {vni}",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/network/{vni}/acl": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A description search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The direction of rules to display; both directions shown if unspecified",
+                        "in": "query",
+                        "name": "direction",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/acl"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return a list of ACLs in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A whitespace-free description/name for the ACL",
+                        "in": "query",
+                        "name": "description",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The direction of the ACL; defaults to \"in\" if unspecified",
+                        "enum": [
+                            "in",
+                            "out"
+                        ],
+                        "in": "query",
+                        "name": "direction",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The order of the ACL in the chain; defaults to the end",
+                        "in": "query",
+                        "name": "order",
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The raw NFT firewall rule string",
+                        "in": "query",
+                        "name": "rule",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new ACL in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/network/{vni}/acl/{description}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Delete ACL {description} in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/acl"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about ACL {description} in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The direction of the ACL; defaults to \"in\" if unspecified",
+                        "enum": [
+                            "in",
+                            "out"
+                        ],
+                        "in": "query",
+                        "name": "direction",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The order of the ACL in the chain; defaults to the end",
+                        "in": "query",
+                        "name": "order",
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The raw NFT firewall rule string",
+                        "in": "query",
+                        "name": "rule",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new ACL {description} in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/network/{vni}/lease": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A MAC address search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "default": false,
+                        "description": "Whether to show only static leases",
+                        "in": "query",
+                        "name": "static",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/lease"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return a list of DHCP leases in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A MAC address for the lease",
+                        "in": "query",
+                        "name": "macaddress",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "An IPv4 address for the lease",
+                        "in": "query",
+                        "name": "ipaddress",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "An optional hostname for the lease",
+                        "in": "query",
+                        "name": "hostname",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new static DHCP lease in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/network/{vni}/lease/{mac}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Delete static DHCP lease {mac}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/lease"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about DHCP lease {mac} in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A MAC address for the lease",
+                        "in": "query",
+                        "name": "macaddress",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "An IPv4 address for the lease",
+                        "in": "query",
+                        "name": "ipaddress",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "An optional hostname for the lease",
+                        "in": "query",
+                        "name": "hostname",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new static DHCP lease {mac} in network {vni}",
+                "tags": [
+                    "network"
+                ]
+            }
+        },
+        "/api/v1/node": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/node"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of nodes in the cluster",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/node/{node}": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/node"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about {node}",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/node/{node}/coordinator-state": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/NodeCoordinatorState"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the coordinator state of {node}",
+                "tags": [
+                    "node"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new coordinator state of the node",
+                        "enum": [
+                            "primary",
+                            "secondary"
+                        ],
+                        "in": "query",
+                        "name": "action",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the coordinator state of {node}",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/node/{node}/daemon-state": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/NodeDaemonState"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the daemon state of {node}",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/node/{node}/domain-state": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/NodeDomainState"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the domain state of {node}",
+                "tags": [
+                    "node"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new domain state of the node",
+                        "enum": [
+                            "flush",
+                            "ready"
+                        ],
+                        "in": "query",
+                        "name": "action",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the domain state of {node}",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/provisioner/create": {
+            "post": {
+                "description": "Note: Starts a background job in the pvc-provisioner-worker Celery worker while returning a task ID; the task ID can be used to query the \"GET /provisioner/status/<task_id>\" endpoint for the job status",
+                "parameters": [
+                    {
+                        "description": "Virtual machine name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Profile name",
+                        "in": "query",
+                        "name": "profile",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "task_id": {
+                                    "description": "Task ID for the provisioner Celery worker",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new virtual machine",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/profile": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A profile name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/profile"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of profiles",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Profile name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Script name",
+                        "in": "query",
+                        "name": "script",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "System template name",
+                        "in": "query",
+                        "name": "system_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Network template name",
+                        "in": "query",
+                        "name": "network_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Storage template name",
+                        "in": "query",
+                        "name": "storage_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Userdata template name",
+                        "in": "query",
+                        "name": "userdata_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Script install() function keywork argument in \"arg=data\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "arg",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new profile",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/profile/{profile}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove profile {profile}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about profile {profile}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Script name",
+                        "in": "query",
+                        "name": "script",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "System template name",
+                        "in": "query",
+                        "name": "system_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Network template name",
+                        "in": "query",
+                        "name": "network_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Storage template name",
+                        "in": "query",
+                        "name": "storage_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Userdata template name",
+                        "in": "query",
+                        "name": "userdata_template",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Script install() function keywork argument in \"arg=data\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "arg",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new profile {profile}",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/script": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A script name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/script"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of scripts",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Script name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Raw Python script document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new script",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/script/{script}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove script {script}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/script"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about script {script}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Raw Python script document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new script {script}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Raw Python script document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update script {script}",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/status/{task_id}": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "current": {
+                                    "description": "Current steps completed",
+                                    "type": "integer"
+                                },
+                                "state": {
+                                    "description": "Current job state",
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "description": "Status details about job",
+                                    "type": "string"
+                                },
+                                "total": {
+                                    "description": "Total number of steps",
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "View status of a provisioner Celery worker job",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/all-templates"
+                        }
+                    }
+                },
+                "summary": "Return a list of all templates",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/network": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/network-template"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of network templates",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Template name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "MAC address template",
+                        "in": "query",
+                        "name": "mac_template",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network template",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/network/{template}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/network-template"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "MAC address template",
+                        "in": "query",
+                        "name": "mac_template",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/network/{template}/net": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/network-template-net"
+                            },
+                            "type": "list"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return a list of networks in network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "PVC network VNI",
+                        "in": "query",
+                        "name": "vni",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network in network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/network/{template}/net/{vni}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove network {vni} from network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/network-template-net"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about network {vni} in network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new network {vni} in network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/storage": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/storage-template"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of storage templates",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Template name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new storage template",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/storage/{template}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/storage-template"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/storage/{template}/disk": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/storage-template-disk"
+                            },
+                            "type": "list"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return a list of disks in network template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Disk identifier in \"sdX\"/\"vdX\" format (e.g. \"sda\", \"vdb\", etc.)",
+                        "in": "query",
+                        "name": "disk_id",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "ceph storage pool for disk",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Disk size in GB",
+                        "in": "query",
+                        "name": "disk_size",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Filesystem for disk",
+                        "in": "query",
+                        "name": "filesystem",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Filesystem mkfs argument in \"-X=foo\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "filesystem_arg",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "In-VM mountpoint for disk",
+                        "in": "query",
+                        "name": "mountpoint",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new disk in storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/storage/{template}/disk/{disk_id}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove disk {disk_id} from storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/storage-template-disk"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about disk {disk_id} in storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "Alternative to \"POST /provisioner/template/storage/<template>/disk?disk_id=<disk_id>\"",
+                "parameters": [
+                    {
+                        "description": "ceph storage pool for disk",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Disk size in GB",
+                        "in": "query",
+                        "name": "disk_size",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Filesystem for disk",
+                        "in": "query",
+                        "name": "filesystem",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Filesystem mkfs argument in \"-X=foo\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "filesystem_arg",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "In-VM mountpoint for disk",
+                        "in": "query",
+                        "name": "mountpoint",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new disk {disk_id} in storage template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/system": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/system-template"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of system templates",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Template name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "vCPU count for VM",
+                        "in": "query",
+                        "name": "vcpus",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "vRAM size in MB for VM",
+                        "in": "query",
+                        "name": "vram",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Whether to enable serial console for VM",
+                        "in": "query",
+                        "name": "serial",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to enable VNC console for VM",
+                        "in": "query",
+                        "name": "vnc",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "VNC bind address when VNC console is enabled",
+                        "in": "query",
+                        "name": "vnc_bind",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "CSV list of node(s) to limit VM assignment to",
+                        "in": "query",
+                        "name": "node_limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Selector to use for VM node assignment on migration/move",
+                        "in": "query",
+                        "name": "node_selector",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to start VM with node ready state (one-time)",
+                        "in": "query",
+                        "name": "node_autostart",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new system template",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/system/{template}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove system template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/system-template"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about system template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "vCPU count for VM",
+                        "in": "query",
+                        "name": "vcpus",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "vRAM size in MB for VM",
+                        "in": "query",
+                        "name": "vram",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Whether to enable serial console for VM",
+                        "in": "query",
+                        "name": "serial",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to enable VNC console for VM",
+                        "in": "query",
+                        "name": "vnc",
+                        "required": true,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "VNC bind address when VNC console is enabled",
+                        "in": "query",
+                        "name": "vnc_bind",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "CSV list of node(s) to limit VM assignment to",
+                        "in": "query",
+                        "name": "node_limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Selector to use for VM node assignment on migration/move",
+                        "in": "query",
+                        "name": "node_selector",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to start VM with node ready state (one-time)",
+                        "in": "query",
+                        "name": "node_autostart",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new system template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/userdata": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/userdata-template"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of userdata templates",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Template name",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Raw userdata configuration document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new userdata template",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/provisioner/template/userdata/{template}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove userdata template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/userdata-template"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about userdata template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Raw userdata configuration document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new userdata template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Raw userdata configuration document",
+                        "in": "query",
+                        "name": "data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update userdata template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/option": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The Ceph OSD option to act on; must be valid to \"ceph osd set/unset\"",
+                        "in": "query",
+                        "name": "option",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The action to take",
+                        "enum": [
+                            "set",
+                            "unset"
+                        ],
+                        "in": "query",
+                        "name": "action",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set or unset OSD options on the Ceph cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/osd": {
+            "post": {
+                "description": "Note: This task may take up to 30s to complete and return",
+                "parameters": [
+                    {
+                        "description": "The PVC node to create the OSD on",
+                        "in": "query",
+                        "name": "node",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) to create the OSD on",
+                        "in": "query",
+                        "name": "device",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The Ceph CRUSH weight for the OSD",
+                        "in": "query",
+                        "name": "weight",
+                        "required": true,
+                        "type": "number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Add a Ceph OSD to the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/osd/{osdid}": {
+            "delete": {
+                "description": "Note: This task may take up to 30s to complete and return<br/>Warning: This operation may have unintended consequences for the storage cluster; ensure the cluster can support removing the OSD before proceeding",
+                "parameters": [
+                    {
+                        "description": "A confirmation string to ensure that the API consumer really means it",
+                        "in": "query",
+                        "name": "yes-i-really-mean-it",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove Ceph OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/pool": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A pool name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/pool"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of pools in the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The name of the pool",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The number of placement groups (PGs) for the pool",
+                        "in": "query",
+                        "name": "pgs",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The replication configuration (e.g. \"copies=3,mincopies=2\") for the pool",
+                        "in": "query",
+                        "name": "replcfg",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph pool",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/pool/{pool}": {
+            "delete": {
+                "description": "Note: This task may take up to 30s to complete and return",
+                "parameters": [
+                    {
+                        "description": "A confirmation string to ensure that the API consumer really means it",
+                        "in": "query",
+                        "name": "yes-i-really-mean-it",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove Ceph pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pool"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The number of placement groups (PGs) for the pool",
+                        "in": "query",
+                        "name": "pgs",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The replication configuration (e.g. \"copies=3,mincopies=2\") for the pool",
+                        "in": "query",
+                        "name": "replcfg",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/snapshot": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A volume name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "A pool to limit the search to",
+                        "in": "query",
+                        "name": "pool",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "A volume to limit the search to",
+                        "in": "query",
+                        "name": "volume",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/snapshot"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of snapshots in the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The name of the snapshot",
+                        "in": "query",
+                        "name": "snapshot",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The name of the volume",
+                        "in": "query",
+                        "name": "volume",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The name of the pool",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph snapshot",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/snapshot/{pool}/{volume}/{snapshot}": {
+            "delete": {
+                "description": "Note: This task may take up to 30s to complete and return depending on the size of the snapshot",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove Ceph snapshot {snapshot} of volume {volume} from pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/snapshot"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about snapshot {snapshot} of volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The name of the snapshot",
+                        "in": "query",
+                        "name": "snapshot",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The name of the volume",
+                        "in": "query",
+                        "name": "volume",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The name of the pool",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph snapshot {snapshot} of volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new snaoshot name",
+                        "in": "query",
+                        "name": "new_name",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update the name of Ceph snapshot {snapshot} of volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/status": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "ceph_data": {
+                                    "description": "The raw output data",
+                                    "type": "string"
+                                },
+                                "primary_node": {
+                                    "description": "The curent primary node in the cluster",
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "description": "The type of Ceph data returned",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "Return status data for the PVC Ceph cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/utilization": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "ceph_data": {
+                                    "description": "The raw output data",
+                                    "type": "string"
+                                },
+                                "primary_node": {
+                                    "description": "The curent primary node in the cluster",
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "description": "The type of Ceph data returned",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "Return utilization data for the PVC Ceph cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/volume": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A volume name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "A pool to limit the search to",
+                        "in": "query",
+                        "name": "pool",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/volume"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of volumes in the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The name of the volume",
+                        "in": "query",
+                        "name": "volume",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The name of the pool to contain the volume",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The volume size in bytes (or with a metric suffix, i.e. k/M/G/T)",
+                        "in": "query",
+                        "name": "size",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph volume",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/volume/{pool}/{volume}": {
+            "delete": {
+                "description": "Note: This task may take up to 30s to complete and return depending on the size of the volume",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove Ceph volume {volume} from pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/volume"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The volume size in bytes (or with a metric suffix, i.e. k/M/G/T)",
+                        "in": "query",
+                        "name": "size",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new Ceph volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new volume size in bytes (or with a metric suffix, i.e. k/M/G/T); must be greater than the previous size (shrinking not supported)",
+                        "in": "query",
+                        "name": "size",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The new volume name",
+                        "in": "query",
+                        "name": "new_name",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update the size or name of Ceph volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/volume/{pool}/{volume}/clone": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The name of the new cloned volume",
+                        "in": "query",
+                        "name": "new_volume",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Clone Ceph volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/vm": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Limit list to VMs assigned to this node",
+                        "in": "query",
+                        "name": "node",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Limit list to VMs in this state",
+                        "in": "query",
+                        "name": "state",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/vm"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of VMs in the cluster",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The raw Libvirt XML definition of the VM",
+                        "in": "query",
+                        "name": "xml",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The node the VM should be assigned to; autoselect if empty or invalid",
+                        "in": "query",
+                        "name": "node",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The CSV list of node(s) the VM is permitted to be assigned to; should include \"node\" and any other valid target nodes; this limit will be used for autoselection on definition and migration",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "default": "mem",
+                        "description": "The selector used to determine candidate nodes during migration",
+                        "enum": [
+                            "mem",
+                            "vcpu",
+                            "load",
+                            "vms"
+                        ],
+                        "in": "query",
+                        "name": "selector",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to autostart the VM when its node returns to ready domain state",
+                        "in": "query",
+                        "name": "autostart",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create a new virtual machine",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}": {
+            "delete": {
+                "description": "",
+                "parameters": [
+                    {
+                        "default": false,
+                        "description": "Whether to automatically delete all VM disk volumes",
+                        "in": "query",
+                        "name": "delete_disks",
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "VM not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/vm"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "Note: The name {vm} is ignored; only the \"name\" value from the Libvirt XML is used<br/>This endpoint is identical to \"POST /api/v1/vm\"",
+                "parameters": [
+                    {
+                        "description": "The raw Libvirt XML definition of the VM",
+                        "in": "query",
+                        "name": "xml",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The node the VM should be assigned to; autoselect if empty or invalid",
+                        "in": "query",
+                        "name": "node",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The CSV list of node(s) the VM is permitted to be assigned to; should include \"node\" and any other valid target nodes; this limit will be used for autoselection on definition and migration",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "default": "mem",
+                        "description": "The selector used to determine candidate nodes during migration",
+                        "enum": [
+                            "mem",
+                            "vcpu",
+                            "load",
+                            "vms"
+                        ],
+                        "in": "query",
+                        "name": "selector",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to autostart the VM when its node returns to ready domain state",
+                        "in": "query",
+                        "name": "autostart",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Create new {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The raw Libvirt XML definition of the VM",
+                        "in": "query",
+                        "name": "xml",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to automatically restart the VM to apply the new configuration",
+                        "in": "query",
+                        "name": "restart",
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Update the Libvirt XML of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/locks": {
+            "post": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Flush disk locks of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/meta": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/VMMetadata"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the metadata of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The CSV list of node(s) the VM is permitted to be assigned to; should include \"node\" and any other valid target nodes; this limit will be used for autoselection on definition and migration",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The selector used to determine candidate nodes during migration",
+                        "enum": [
+                            "mem",
+                            "vcpu",
+                            "load",
+                            "vms"
+                        ],
+                        "in": "query",
+                        "name": "selector",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to autostart the VM when its node returns to ready domain state",
+                        "in": "query",
+                        "name": "autostart",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the metadata of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/node": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/VMNode"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the node information of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The action to take to change nodes",
+                        "enum": [
+                            "migrate",
+                            "unmigrate",
+                            "move"
+                        ],
+                        "in": "query",
+                        "name": "action",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The node the VM should be assigned to; autoselect if empty or invalid",
+                        "in": "query",
+                        "name": "node",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to force an already-migrated VM to a new node",
+                        "in": "query",
+                        "name": "force",
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the node of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/state": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/VMState"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the state information of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new state of the VM",
+                        "enum": [
+                            "start",
+                            "shutdown",
+                            "stop",
+                            "restart",
+                            "disable"
+                        ],
+                        "in": "query",
+                        "name": "state",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the state of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        }
+    },
+    "swagger": "2.0"
+}

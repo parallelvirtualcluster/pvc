@@ -728,13 +728,10 @@ def get_list_pool(zk_conn, limit, is_fuzzy=True):
     pool_list = []
     full_pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
 
-    if is_fuzzy and limit:
-        # Implicitly assume fuzzy limits
-        if not re.match('\^.*', limit):
-            limit = '.*' + limit
-        if not re.match('.*\$', limit):
-            limit = limit + '.*'
-
+    if limit:
+        if not is_fuzzy:
+            limit = '^' + limit + '$'
+            
     for pool in full_pool_list:
         if limit:
             try:
@@ -1121,23 +1118,26 @@ def remove_volume(zk_conn, pool, name):
 
 def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []
-    if pool and not verifyPool(zk_conn, name):
+    if pool and not verifyPool(zk_conn, pool):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
 
     full_volume_list = getCephVolumes(zk_conn, pool)
 
-    if is_fuzzy and limit:
-        # Implicitly assume fuzzy limits
-        if not re.match('\^.*', limit):
-            limit = '.*' + limit
-        if not re.match('.*\$', limit):
-            limit = limit + '.*'
+    if limit:
+        if not is_fuzzy:
+            limit = '^' + limit + '$'
+        else:
+            # Implicitly assume fuzzy limits
+            if not re.match('\^.*', limit):
+                limit = '.*' + limit
+            if not re.match('.*\$', limit):
+                limit = limit + '.*'
 
     for volume in full_volume_list:
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                if re.match(limit, volume):
+                if re.match(limit, volume_name):
                     volume_list.append(getVolumeInformation(zk_conn, pool_name, volume_name))
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
@@ -1387,12 +1387,12 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
         pool_name, volume_name = volume.split('/')
         if limit:
             try:
-                if re.match(limit, snapshot):
-                    snapshot_list.append(snapshot)
+                if re.match(limit, snapshot_name):
+                    snapshot_list.append({'pool': pool_name, 'volume': volume_name, 'snapshot': snapshot_name})
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
-            snapshot_list.append(snapshot)
+            snapshot_list.append({'pool': pool_name, 'volume': volume_name, 'snapshot': snapshot_name})
 
     return True, snapshot_list
 

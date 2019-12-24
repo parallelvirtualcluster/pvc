@@ -12,9 +12,9 @@ pvc:
     debug: True
     # coordinators: The list of cluster coordinator hostnames
     coordinators:
-      - pvc-hv1
-      - pvc-hv2
-      - pvc-hv3
+      - hv1
+      - hv2
+      - hv3
     # api: Configuration of the API listener
     api:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces

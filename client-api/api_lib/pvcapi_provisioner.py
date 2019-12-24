@@ -110,7 +110,7 @@ def list_template(limit, table, is_fuzzy=True):
     if table == 'network_template':
         for template_id, template_data in enumerate(data):
             # Fetch list of VNIs from network table
-            query = "SELECT vni FROM network WHERE network_template = %s;"
+            query = "SELECT * FROM network WHERE network_template = %s;"
             args = (template_data['id'],)
             cur.execute(query, args)
             vnis = cur.fetchall()
@@ -119,13 +119,18 @@ def list_template(limit, table, is_fuzzy=True):
     if table == 'storage_template':
         for template_id, template_data in enumerate(data):
             # Fetch list of VNIs from network table
-            query = "SELECT * FROM storage WHERE storage_template = %s;"
+            query = 'SELECT * FROM storage WHERE storage_template = %s'
             args = (template_data['id'],)
             cur.execute(query, args)
             disks = cur.fetchall()
             data[template_id]['disks'] = disks
 
     close_database(conn, cur)
+
+    # Strip outer list if only one element
+    if isinstance(data, list) and len(data) == 1:
+        data = data[0]
+
     return data
 
 def list_template_system(limit, is_fuzzy=True):
@@ -183,14 +188,14 @@ def template_list(limit):
 #
 # Template Create functions
 #
-def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, start_with_node=False):
+def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False):
     if list_template_system(name, is_fuzzy=False):
         retmsg = { "message": "The system template {} already exists".format(name) }
         retcode = 400
         return flask.jsonify(retmsg), retcode
 
-    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
-    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node)
+    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart)
 
     conn, cur = open_database(config)
     try:
@@ -606,7 +611,7 @@ def delete_script(name):
 #
 def list_profile(limit, is_fuzzy=True):
     if limit:
-        if is_fuzzy:
+        if not is_fuzzy:
             # Handle fuzzy vs. non-fuzzy limits
             if not re.match('\^.*', limit):
                 limit = '%' + limit
@@ -629,6 +634,7 @@ def list_profile(limit, is_fuzzy=True):
     data = list()
     for profile in orig_data:
         profile_data = dict()
+        profile_data['id'] = profile['id']
         profile_data['name'] = profile['name']
         # Parse the name of each subelement
         for etype in 'system_template', 'network_template', 'storage_template', 'userdata_template', 'script':
@@ -811,38 +817,38 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     vm_data = dict()
 
     # Get the profile information
-    query = "SELECT system_template, network_template, storage_template, script, arguments FROM profile WHERE name = %s"
+    query = "SELECT * FROM profile WHERE name = %s"
     args = (vm_profile,)
     db_cur.execute(query, args)
     profile_data = db_cur.fetchone()
     vm_data['script_arguments'] = profile_data['arguments'].split('|')
     
     # Get the system details
-    query = 'SELECT vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, start_with_node FROM system_template WHERE id = %s'
+    query = 'SELECT * FROM system_template WHERE id = %s'
     args = (profile_data['system_template'],)
     db_cur.execute(query, args)
     vm_data['system_details'] = db_cur.fetchone()
 
     # Get the MAC template
-    query = 'SELECT mac_template FROM network_template WHERE id = %s'
+    query = 'SELECT * FROM network_template WHERE id = %s'
     args = (profile_data['network_template'],)
     db_cur.execute(query, args)
     vm_data['mac_template'] = db_cur.fetchone()['mac_template']
 
     # Get the networks
-    query = 'SELECT vni FROM network WHERE network_template = %s'
+    query = 'SELECT * FROM network WHERE network_template = %s'
     args = (profile_data['network_template'],)
     db_cur.execute(query, args)
     vm_data['networks'] = db_cur.fetchall()
 
     # Get the storage volumes
-    query = 'SELECT pool, disk_id, disk_size_gb, mountpoint, filesystem, filesystem_args FROM storage WHERE storage_template = %s'
+    query = 'SELECT * FROM storage WHERE storage_template = %s'
     args = (profile_data['storage_template'],)
     db_cur.execute(query, args)
     vm_data['volumes'] = db_cur.fetchall()
 
     # Get the script
-    query = 'SELECT script FROM script WHERE id = %s'
+    query = 'SELECT * FROM script WHERE id = %s'
     args = (profile_data['script'],)
     db_cur.execute(query, args)
     vm_data['script'] = db_cur.fetchone()['script']
@@ -1216,7 +1222,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         print("Defining and starting VM on cluster")
 
     if define_vm:
-        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['start_with_node'], vm_profile)
+        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['node_autostart'], vm_profile)
         print(retmsg)
 
     if start_vm:

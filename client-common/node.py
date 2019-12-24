@@ -47,17 +47,17 @@ def getNodeInformation(zk_conn, node_name):
     node_coordinator_state = zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(node_name))
     node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
     node_static_data = zkhandler.readdata(zk_conn, '/nodes/{}/staticdata'.format(node_name)).split()
-    node_cpu_count = node_static_data[0]
+    node_cpu_count = int(node_static_data[0])
     node_kernel = node_static_data[1]
     node_os = node_static_data[2]
     node_arch = node_static_data[3]
-    node_vcpu_allocated = zkhandler.readdata(zk_conn, 'nodes/{}/vcpualloc'.format(node_name))
+    node_vcpu_allocated = int(zkhandler.readdata(zk_conn, 'nodes/{}/vcpualloc'.format(node_name)))
     node_mem_total = int(zkhandler.readdata(zk_conn, '/nodes/{}/memtotal'.format(node_name)))
     node_mem_allocated = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node_name)))
     node_mem_used = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node_name)))
     node_mem_free = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node_name)))
-    node_load = zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node_name))
-    node_domains_count = zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node_name))
+    node_load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node_name)))
+    node_domains_count = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node_name)))
     node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
 
     # Construct a data structure to represent the data
@@ -200,12 +200,8 @@ def get_list(zk_conn, limit, is_fuzzy=True):
     for node in full_node_list:
         if limit:
             try:
-                if is_fuzzy:
-                    # Implcitly assume fuzzy limits
-                    if not re.match('\^.*', limit):
-                        limit = '.*' + limit
-                    if not re.match('.*\$', limit):
-                        limit = limit + '.*'
+                if not is_fuzzy:
+                    limit = '^' + limit + '$'
 
                 if re.match(limit, node):
                     node_list.append(getNodeInformation(zk_conn, node))

@@ -1,6 +1,6 @@
 create database pvcprov with owner = pvcprov connection limit = -1;
 \c pvcprov
-create table system_template (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, vcpu_count INT NOT NULL, vram_mb INT NOT NULL, serial BOOL NOT NULL, vnc BOOL NOT NULL, vnc_bind TEXT, node_limit TEXT, node_selector TEXT, start_with_node BOOL NOT NULL);
+create table system_template (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, vcpu_count INT NOT NULL, vram_mb INT NOT NULL, serial BOOL NOT NULL, vnc BOOL NOT NULL, vnc_bind TEXT, node_limit TEXT, node_selector TEXT, node_autostart BOOL NOT NULL);
 create table network_template (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, mac_template TEXT);
 create table network (id SERIAL PRIMARY KEY, network_template INT REFERENCES network_template(id), vni INT NOT NULL);
 create table storage_template (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE);

@@ -23,6 +23,8 @@
 import flask
 import json
 
+from distutils.util import strtobool
+
 import client_lib.common as pvc_common
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
@@ -30,14 +32,48 @@ import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
 
 #
+# Initialization function
+#
+def initialize_cluster():
+    # Open a Zookeeper connection
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+
+    # Abort if we've initialized the cluster before
+    if zk_conn.exists('/primary_node'):
+        return False
+
+    # Create the root keys
+    transaction = zk_conn.transaction()
+    transaction.create('/primary_node', 'none'.encode('ascii'))
+    transaction.create('/upstream_ip', 'none'.encode('ascii'))
+    transaction.create('/nodes', ''.encode('ascii'))
+    transaction.create('/domains', ''.encode('ascii'))
+    transaction.create('/networks', ''.encode('ascii'))
+    transaction.create('/ceph', ''.encode('ascii'))
+    transaction.create('/ceph/osds', ''.encode('ascii'))
+    transaction.create('/ceph/pools', ''.encode('ascii'))
+    transaction.create('/ceph/volumes', ''.encode('ascii'))
+    transaction.create('/ceph/snapshots', ''.encode('ascii'))
+    transaction.create('/cmd', ''.encode('ascii'))
+    transaction.create('/cmd/domains', ''.encode('ascii'))
+    transaction.create('/cmd/ceph', ''.encode('ascii'))
+    transaction.create('/locks', ''.encode('ascii'))
+    transaction.create('/locks/flush_lock', ''.encode('ascii'))
+    transaction.create('/locks/primary_node', ''.encode('ascii'))
+    transaction.commit()
+
+    # Close the Zookeeper connection
+    pvc_common.stopZKConnection(zk_conn)
+
+#
 # Node functions
 #
-def node_list(limit=None):
+def node_list(limit=None, is_fuzzy=True):
     """
     Return a list of nodes with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_node.get_list(zk_conn, limit)
+    retflag, retdata = pvc_node.get_list(zk_conn, limit, is_fuzzy=is_fuzzy)
     if retflag:
         if retdata:
             retcode = 200
@@ -50,7 +86,12 @@ def node_list(limit=None):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
+    return retdata, retcode
 
 def node_daemon_state(node):
     """
@@ -74,7 +115,7 @@ def node_daemon_state(node):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def node_coordinator_state(node):
     """
@@ -98,7 +139,7 @@ def node_coordinator_state(node):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def node_domain_state(node):
     """
@@ -122,7 +163,7 @@ def node_domain_state(node):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def node_secondary(node):
     """
@@ -139,7 +180,7 @@ def node_secondary(node):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def node_primary(node):
     """
@@ -156,7 +197,7 @@ def node_primary(node):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def node_flush(node):
     """
@@ -173,7 +214,7 @@ def node_flush(node):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def node_ready(node):
     """
@@ -190,7 +231,7 @@ def node_ready(node):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 #
 # VM functions
@@ -209,12 +250,17 @@ def vm_state(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
             retdata = {
                 'name': vm,
-                'state': retdata[0]['state']
+                'state': retdata['state']
             }
         else:
             retcode = 404
@@ -225,7 +271,7 @@ def vm_state(vm):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def vm_node(vm):
     """
@@ -233,13 +279,18 @@ def vm_node(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
             retdata = {
                 'name': vm,
-                'node': retdata[0]['node'],
-                'last_node': retdata[0]['last_node']
+                'node': retdata['node'],
+                'last_node': retdata['last_node']
             }
         else:
             retcode = 404
@@ -250,7 +301,7 @@ def vm_node(vm):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
@@ -258,6 +309,11 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit, is_fuzzy)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
@@ -270,7 +326,8 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+
+    return retdata, retcode
 
 def vm_define(xml, node, limit, selector, autostart):
     """
@@ -287,14 +344,45 @@ def vm_define(xml, node, limit, selector, autostart):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def vm_meta(vm, limit, selector, autostart):
+def get_vm_meta(vm):
+    """
+    Get metadata of a VM.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': vm,
+                'node_limit': retdata['node_limit'],
+                'node_selector': retdata['node_selector'],
+                'node_autostart': retdata['node_autostart']
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VM not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return retdata, retcode
+
+def update_vm_meta(vm, limit, selector, autostart):
     """
     Update metadata of a VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm. limit, selector, autostart)
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm. limit, selector, strtobool(autostart))
     if retflag:
         retcode = 200
     else:
@@ -304,7 +392,7 @@ def vm_meta(vm, limit, selector, autostart):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_modify(name, restart, xml):
     """
@@ -321,7 +409,7 @@ def vm_modify(name, restart, xml):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_undefine(name):
     """
@@ -338,7 +426,7 @@ def vm_undefine(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_remove(name):
     """
@@ -355,7 +443,7 @@ def vm_remove(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_start(name):
     """
@@ -372,7 +460,7 @@ def vm_start(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_restart(name):
     """
@@ -389,7 +477,7 @@ def vm_restart(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_shutdown(name):
     """
@@ -406,7 +494,7 @@ def vm_shutdown(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_stop(name):
     """
@@ -423,7 +511,7 @@ def vm_stop(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_move(name, node):
     """
@@ -440,7 +528,7 @@ def vm_move(name, node):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_migrate(name, node, flag_force):
     """
@@ -457,7 +545,7 @@ def vm_migrate(name, node, flag_force):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def vm_unmigrate(name):
     """
@@ -474,14 +562,23 @@ def vm_unmigrate(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def vm_flush_locks(name):
+def vm_flush_locks(vm):
     """
     Flush locks of a (stopped) VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.flush_locks(zk_conn, name)
+    retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
+    if retdata['state'] not in ['stop', 'disable']:
+        return {"message":"VM must be stopped to flush locks"}, 400
+
+    retflag, retdata = pvc_vm.flush_locks(zk_conn, vm)
     if retflag:
         retcode = 200
     else:
@@ -491,17 +588,22 @@ def vm_flush_locks(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 #
 # Network functions
 #
-def net_list(limit=None):
+def net_list(limit=None, is_fuzzy=True):
     """
     Return a list of client networks with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_network.get_list(zk_conn, limit)
+    retflag, retdata = pvc_network.get_list(zk_conn, limit, is_fuzzy)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
@@ -514,7 +616,7 @@ def net_list(limit=None):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def net_add(vni, description, nettype, domain, name_servers,
             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
@@ -535,7 +637,7 @@ def net_add(vni, description, nettype, domain, name_servers,
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def net_modify(vni, description, domain, name_servers,
                ip4_network, ip4_gateway,
@@ -557,7 +659,7 @@ def net_modify(vni, description, domain, name_servers,
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def net_remove(network):
     """
@@ -574,7 +676,7 @@ def net_remove(network):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def net_dhcp_list(network, limit=None, static=False):
     """
@@ -594,7 +696,7 @@ def net_dhcp_list(network, limit=None, static=False):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def net_dhcp_add(network, ipaddress, macaddress, hostname):
     """
@@ -611,7 +713,7 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def net_dhcp_remove(network, macaddress):
     """
@@ -628,14 +730,14 @@ def net_dhcp_remove(network, macaddress):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def net_acl_list(network, limit=None, direction=None):
+def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
     """
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_network.get_list_acl(zk_conn, network, limit, direction)
+    retflag, retdata = pvc_network.get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True)
     if retflag:
         if retdata:
             retcode = 200
@@ -647,11 +749,12 @@ def net_acl_list(network, limit=None, direction=None):
     else:
         retcode = 400
 
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     pvc_common.stopZKConnection(zk_conn)
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
-    return flask.jsonify(output), retcode
+    return retdata, retcode
 
 def net_acl_add(network, direction, description, rule, order):
     """
@@ -668,14 +771,14 @@ def net_acl_add(network, direction, description, rule, order):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def net_acl_remove(network, direction, description):
+def net_acl_remove(network, description):
     """
     Remove an ACL from a virtual client network.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_network.remove_acl(zk_conn, network, description, direction)
+    retflag, retdata = pvc_network.remove_acl(zk_conn, network, description)
     if retflag:
         retcode = 200
     else:
@@ -685,7 +788,7 @@ def net_acl_remove(network, direction, description):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 #
 # Ceph functions
@@ -702,7 +805,7 @@ def ceph_status():
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_radosdf():
     """
@@ -716,7 +819,7 @@ def ceph_radosdf():
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_osd_list(limit=None):
     """
@@ -736,7 +839,7 @@ def ceph_osd_list(limit=None):
     else:
         retcode = 400
 
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_osd_state(osd):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
@@ -756,7 +859,7 @@ def ceph_osd_state(osd):
     in_state = retdata[0]['stats']['in']
     up_state = retdata[0]['stats']['up']
 
-    return flask.jsonify({ "id": osd, "in": in_state, "up": up_state }), retcode
+    return { "id": osd, "in": in_state, "up": up_state }, retcode
 
 def ceph_osd_add(node, device, weight):
     """
@@ -773,7 +876,7 @@ def ceph_osd_add(node, device, weight):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_osd_remove(osd_id):
     """
@@ -790,7 +893,7 @@ def ceph_osd_remove(osd_id):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_osd_in(osd_id):
     """
@@ -807,7 +910,7 @@ def ceph_osd_in(osd_id):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_osd_out(osd_id):
     """
@@ -824,7 +927,7 @@ def ceph_osd_out(osd_id):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_osd_set(option):
     """
@@ -841,7 +944,7 @@ def ceph_osd_set(option):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_osd_unset(option):
     """
@@ -858,14 +961,19 @@ def ceph_osd_unset(option):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def ceph_pool_list(limit=None):
+def ceph_pool_list(limit=None, is_fuzzy=True):
     """
     Get the list of RBD pools in the Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.get_list_pool(zk_conn, limit)
+    retflag, retdata = pvc_ceph.get_list_pool(zk_conn, limit, is_fuzzy)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
@@ -878,7 +986,7 @@ def ceph_pool_list(limit=None):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_pool_add(name, pgs, replcfg):
     """
@@ -895,7 +1003,7 @@ def ceph_pool_add(name, pgs, replcfg):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_pool_remove(name):
     """
@@ -912,14 +1020,19 @@ def ceph_pool_remove(name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def ceph_volume_list(pool=None, limit=None):
+def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volumes in the Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit)
+    retflag, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit, is_fuzzy)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
@@ -932,7 +1045,7 @@ def ceph_volume_list(pool=None, limit=None):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_volume_add(pool, name, size):
     """
@@ -949,7 +1062,7 @@ def ceph_volume_add(pool, name, size):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_clone(pool, name, source_volume):
     """
@@ -966,7 +1079,7 @@ def ceph_volume_clone(pool, name, source_volume):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_resize(pool, name, size):
     """
@@ -983,7 +1096,7 @@ def ceph_volume_resize(pool, name, size):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_rename(pool, name, new_name):
     """
@@ -1000,7 +1113,7 @@ def ceph_volume_rename(pool, name, new_name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_remove(pool, name):
     """
@@ -1017,14 +1130,19 @@ def ceph_volume_remove(pool, name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
-def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
+def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
+    retflag, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy)
+
+    # If this is a single element, strip it out of the list
+    if isinstance(retdata, list) and len(retdata) == 1:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200
@@ -1037,13 +1155,12 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None):
         retcode = 400
 
     pvc_common.stopZKConnection(zk_conn)
-    return flask.jsonify(retdata), retcode
+    return retdata, retcode
 
 def ceph_volume_snapshot_add(pool, volume, name):
     """
     Add a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
     """
-    return '', 200
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
     if retflag:
@@ -1055,7 +1172,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
@@ -1072,7 +1189,7 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
 def ceph_volume_snapshot_remove(pool, volume, name):
     """
@@ -1089,5 +1206,5 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     output = {
         'message': retdata.replace('\"', '\'')
     }
-    return flask.jsonify(output), retcode
+    return output, retcode
 
