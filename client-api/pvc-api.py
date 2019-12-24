@@ -207,6 +207,15 @@ api.add_resource(API_Root, '/')
 # /doc
 class API_Doc(Resource):
     def get(self):
+        """
+        Provide the Swagger API documentation
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+        """
         swagger_data = swagger(pvc_api.app)
         swagger_data['info']['version'] = API_VERSION
         swagger_data['info']['title'] = "PVC Client and Provisioner API"
