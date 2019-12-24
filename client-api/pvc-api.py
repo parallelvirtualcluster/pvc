@@ -33,7 +33,6 @@ from distutils.util import strtobool
 from functools import wraps
 
 from flask_restful import Resource, Api, reqparse, abort
-from flask_swagger import swagger
 
 from celery import Celery
 
@@ -204,24 +203,24 @@ class API_Root(Resource):
         return { "message": "PVC API version {}".format(API_VERSION) }
 api.add_resource(API_Root, '/')
 
-# /doc
-class API_Doc(Resource):
-    def get(self):
-        """
-        Provide the Swagger API documentation
-        ---
-        tags:
-          - root
-        responses:
-          200:
-            description: OK
-        """
-        swagger_data = swagger(pvc_api.app)
-        swagger_data['info']['version'] = API_VERSION
-        swagger_data['info']['title'] = "PVC Client and Provisioner API"
-        swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
-        return swagger_data
-api.add_resource(API_Doc, '/doc')
+# /doc - NOTE: Until flask_swagger is packaged for Debian this must be disabled
+#class API_Doc(Resource):
+#    def get(self):
+#        """
+#        Provide the Swagger API documentation
+#        ---
+#        tags:
+#          - root
+#        responses:
+#          200:
+#            description: OK
+#        """
+#        swagger_data = swagger(pvc_api.app)
+#        swagger_data['info']['version'] = API_VERSION
+#        swagger_data['info']['title'] = "PVC Client and Provisioner API"
+#        swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
+#        return swagger_data
+#api.add_resource(API_Doc, '/doc')
 
 # /login
 class API_Login(Resource):
