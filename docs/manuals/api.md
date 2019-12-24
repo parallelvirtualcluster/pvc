@@ -253,4 +253,4 @@ The path to the SSL private key file for the API to use.
 
 ## API Endpoint Documentation
 
-The full API endpoint and schema documentation [can be found here](/manuals/swagger.html).
+The full API endpoint and schema documentation [can be found here](/manuals/api-reference.html).
