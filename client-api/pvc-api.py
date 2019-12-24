@@ -40,6 +40,8 @@ from celery import Celery
 import api_lib.pvcapi_helper as api_helper
 import api_lib.pvcapi_provisioner as api_provisioner
 
+API_VERSION = 1.0
+
 # Parse the configuration file
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
@@ -197,15 +199,23 @@ class API_Root(Resource):
                 message:
                   type: string
                   description: A text message
-                  example: "PVC API version 1"
+                  example: "PVC API version 1.0"
         """
-        return {"message":"PVC API version 1"}
+        return { "message": "PVC API version {}".format(API_VERSION) }
 api.add_resource(API_Root, '/')
 
 # /doc
 class API_Doc(Resource):
     def get(self):
-        return swagger(app)
+        if config['ssl_enabled']:
+            scheme = 'https'
+        else:
+            scheme = 'http'
+        swagger_data = swagger(pvc_api.app)
+        swagger_data['info']['version'] = API_VERSION
+        swagger_data['info']['title'] = "PVC Client and Provisioner API"
+        swagger_data['info']['url'] = "{}://{}:{}".format(scheme, config['listen_address'], config['listen_port'])
+        return swagger_data
 api.add_resource(API_Doc, '/doc')
 
 # /login
