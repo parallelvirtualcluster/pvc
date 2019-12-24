@@ -4,14 +4,17 @@
 # Part of the Parallel Virtual Cluster (PVC) system
 
 from flask_swagger import swagger
+import os
 import sys
 import json
 
-sys.path.append(',')
+os.environ['PVC_CONFIG_FILE'] = "./client-api/pvc-api.sample.yaml"
+
+sys.path.append('client-api')
 
 pvc_api = __import__('pvc-api')
 
-swagger_file = "swagger.json"
+swagger_file = "docs/manuals/swagger.json"
 
 swagger_data = swagger(pvc_api.app)
 swagger_data['info']['version'] = "1.0"
