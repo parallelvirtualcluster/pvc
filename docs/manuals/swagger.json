@@ -925,6 +925,20 @@
                 ]
             }
         },
+        "/api/v1/doc": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                },
+                "summary": "Provide the Swagger API documentation",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
         "/api/v1/initialize": {
             "post": {
                 "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding and returns 400 if found",
