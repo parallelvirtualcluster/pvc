@@ -926,7 +926,7 @@
         },
         "/api/v1/initialize": {
             "post": {
-                "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding",
+                "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding and returns 400 if found",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -934,8 +934,8 @@
                             "$ref": "#/definitions/Message"
                         }
                     },
-                    "302": {
-                        "description": "Cluster already initialized"
+                    "400": {
+                        "description": "Bad request"
                     }
                 },
                 "summary": "Initialize a new PVC cluster",
