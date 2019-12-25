@@ -65,6 +65,8 @@ def initialize_cluster():
     # Close the Zookeeper connection
     pvc_common.stopZKConnection(zk_conn)
 
+    return True
+
 #
 # Node functions
 #
