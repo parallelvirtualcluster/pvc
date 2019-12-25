@@ -23,14 +23,6 @@ Description: Parallel Virtual Cluster common client libraries (Python 3)
  .
  This package installs the common client libraries
 
-Package: pvc-client-cli
-Architecture: all
-Depends: pvc-client-common, python3-yaml, python3-netifaces, python3-dialog
-Description: Parallel Virtual Cluster CLI client (Python 3)
- A KVM/Zookeeper/Ceph-based VM and private cloud manager
- .
- This package installs the PVC command-line client
-
 Package: pvc-client-api
 Architecture: all
 Depends: systemd, pvc-client-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis
@@ -38,3 +30,11 @@ Description: Parallel Virtual Cluster API client (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC API client daemon
+
+Package: pvc-client-cli
+Architecture: all
+Depends: python3-requests, python3-yaml
+Description: Parallel Virtual Cluster CLI client (Python 3)
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
+ .
+ This package installs the PVC API command-line client
