@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvc.py - PVC API command-line interface
+# pvc.py - PVC client command-line interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2019 Joshua M. Boniface <joshua@boniface.me>
@@ -29,7 +29,15 @@ import difflib
 import re
 import colorama
 import yaml
-import requests
+
+import client_lib.ansiprint as ansiprint
+import client_lib.common as pvc_common
+import client_lib.cluster as pvc_cluster
+import client_lib.node as pvc_node
+import client_lib.vm as pvc_vm
+import client_lib.network as pvc_network
+import client_lib.ceph as pvc_ceph
+#import client_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
