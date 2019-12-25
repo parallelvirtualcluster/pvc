@@ -307,15 +307,15 @@ def format_list(node_list):
         if _domain_state_length > domain_state_length:
             domain_state_length = _domain_state_length
         # domains_count column
-        _domains_count_length = len(node_information['domains_count']) + 1
+        _domains_count_length = len(str(node_information['domains_count'])) + 1
         if _domains_count_length > domains_count_length:
             domains_count_length = _domains_count_length
         # cpu_count column
-        _cpu_count_length = len(node_information['cpu_count']) + 1
+        _cpu_count_length = len(str(node_information['cpu_count'])) + 1
         if _cpu_count_length > cpu_count_length:
             cpu_count_length = _cpu_count_length
         # load column
-        _load_length = len(node_information['load']) + 1
+        _load_length = len(str(node_information['load'])) + 1
         if _load_length > load_length:
             load_length = _load_length
         # mem_total column
