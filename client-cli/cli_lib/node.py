@@ -51,19 +51,15 @@ def node_coordinator_state(config, node, action):
     request_uri = get_request_uri(config, '/node/{node}/coordinator-state'.format(node=node))
     response = requests.post(
         request_uri,
-        params={'state': action}
+        params={
+            'state': action
+        }
     )
 
     if config['debug']:
-        print(
-            'API endpoint: POST {}'.format(request_uri)
-        )
-        print(
-            'Response code: {}'.format(response.status_code)
-        )
-        print(
-            'Response headers: {}'.format(response.headers)
-        )
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     if response.status_code == 200:
         retstatus = True
@@ -83,19 +79,16 @@ def node_domain_state(config, node, action, wait):
     request_uri = get_request_uri(config, '/node/{node}/domain-state'.format(node=node))
     response = requests.post(
         request_uri,
-        params={'state': action, 'wait': wait}
+        params={
+            'state': action,
+            'wait': wait
+        }
     )
 
     if config['debug']:
-        print(
-            'API endpoint: POST {}'.format(request_uri)
-        )
-        print(
-            'Response code: {}'.format(response.status_code)
-        )
-        print(
-            'Response headers: {}'.format(response.headers)
-        )
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     if response.status_code == 200:
         retstatus = True
@@ -118,15 +111,9 @@ def node_info(config, node):
     )
 
     if config['debug']:
-        print(
-            'API endpoint: GET {}'.format(request_uri)
-        )
-        print(
-            'Response code: {}'.format(response.status_code)
-        )
-        print(
-            'Response headers: {}'.format(response.headers)
-        )
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     if response.status_code == 200:
         return True, response.json()
@@ -142,7 +129,9 @@ def node_list(config, limit):
     API schema: [{json_data_object},{json_data_object},etc.]
     """
     if limit:
-        params = {'limit': limit}
+        params = {
+            'limit': limit
+        }
     else:
         params = {}
 
@@ -153,15 +142,9 @@ def node_list(config, limit):
     )
 
     if config['debug']:
-        print(
-            'API endpoint: GET {}'.format(request_uri)
-        )
-        print(
-            'Response code: {}'.format(response.status_code)
-        )
-        print(
-            'Response headers: {}'.format(response.headers)
-        )
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     if response.status_code == 200:
         return True, response.json()
