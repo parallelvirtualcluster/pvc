@@ -133,6 +133,41 @@ def node_info(config, node):
     else:
         return False, response.json()['message']
 
+def node_list(config, limit):
+    """
+    Get list information about nodes (limited by {limit})
+
+    API endpoint: GET /api/v1/node
+    API arguments: limit={limit}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    if limit:
+        params = {'limit': limit}
+    else:
+        params = {}
+
+    request_uri = get_request_uri(config, '/node')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print(
+            'API endpoint: GET {}'.format(request_uri)
+        )
+        print(
+            'Response code: {}'.format(response.status_code)
+        )
+        print(
+            'Response headers: {}'.format(response.headers)
+        )
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
 #
 # Output display functions
 #

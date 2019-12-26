@@ -187,12 +187,11 @@ def node_list(limit):
     List all nodes in the cluster; optionally only match names matching regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_node.get_list(zk_conn, limit)
+    retcode, retdata = pvc_node.node_list(config, limit)
     if retcode:
         pvc_node.format_list(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc vm
