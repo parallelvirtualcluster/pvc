@@ -1100,6 +1100,7 @@ class API_VM_Metadata(Resource):
               id: Message
         """
         return api_helper.update_vm_meta(
+            vm,
             reqargs.get('limit', None),
             reqargs.get('selector', None),
             reqargs.get('autostart', None)
