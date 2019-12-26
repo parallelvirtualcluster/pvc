@@ -22,7 +22,7 @@ For one-time authentication, the `token` value can be specified to any API endpo
 
 The PVC API consistently accepts HTTP POST commands of HTML form documents.
 
-The PCI API consistently returns JSON bodies as its responses.
+The PCI API consistently returns JSON bodies as its responses. For (most) POST endpoints and any failures (400, 401, 404, etc.), this body contains a "message" field with a text message indicating the result. For (most) GET endpoints, this body is a JSON representation of the data being provided, subject to the schema outlined in the API endpoint documentation.
 
 ## Provisioner
 
