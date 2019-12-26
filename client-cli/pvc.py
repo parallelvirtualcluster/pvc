@@ -81,9 +81,8 @@ def node_secondary(node):
     Take NODE out of primary router mode.
     """
     
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.secondary_node(zk_conn, node)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node primary
@@ -97,9 +96,8 @@ def node_primary(node):
     Put NODE into primary router mode.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.primary_node(zk_conn, node)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node flush
@@ -117,9 +115,8 @@ def node_flush(node, wait):
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
     
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.flush_node(zk_conn, node, wait)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, 'flush', wait)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node ready/unflush
@@ -137,9 +134,8 @@ def node_ready(node, wait):
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.ready_node(zk_conn, node, wait)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
+    cleanup(retcode, retmsg)
 
 @click.command(name='unflush', short_help='Restore node to service.')
 @click.argument(
@@ -154,9 +150,8 @@ def node_unflush(node, wait):
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_node.ready_node(zk_conn, node, wait)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node info

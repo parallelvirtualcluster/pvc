@@ -20,12 +20,95 @@
 #
 ###############################################################################
 
-import difflib
-import colorama
 import click
+import requests
 
 import cli_lib.ansiprint as ansiprint
 
+def get_request_uri(config, endpoint):
+    """
+    Return the fully-formed URI for {endpoint}
+    """
+    uri = '{}://{}{}{}'.format(
+        config['api_scheme'],
+        config['api_host'],
+        config['api_prefix'],
+        endpoint
+    )
+    return uri
+
+#
+# Primary functions
+#
+def node_coordinator_state(config, node, action):
+    """
+    Set node coordinator state state (primary/secondary)
+
+    API endpoint: POST /api/v1/node/{node}/coordinator-state
+    API arguments: action={action}
+    API schema: {"message": "{data}"}
+    """
+    request_uri = get_request_uri(config, '/node/{node}/coordinator-state'.format(node=node))
+
+    response = requests.post(
+        request_uri,
+        params={'state': action}
+    )
+
+    if config['debug']:
+        print(
+            'API endpoint: POST {}'.format(request_uri)
+        )
+        print(
+            'Response code: {}'.format(response.status_code)
+        )
+        print(
+            'Response headers: {}'.format(response.headers)
+        )
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def node_domain_state(config, node, action, wait):
+    """
+    Set node domain state state (flush/ready)
+
+    API endpoint: POST /api/v1/node/{node}/domain-state
+    API arguments: action={action}, wait={wait}
+    API schema: {"message": "{data}"}
+    """
+    request_uri = get_request_uri(config, '/node/{node}/domain-state'.format(node=node))
+
+    response = requests.post(
+        request_uri,
+        params={'state': action, 'wait': wait}
+    )
+
+    if config['debug']:
+        print(
+            'API endpoint: POST {}'.format(request_uri)
+        )
+        print(
+            'Response code: {}'.format(response.status_code)
+        )
+        print(
+            'Response headers: {}'.format(response.headers)
+        )
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+#
+# Output display functions
+#
 def getOutputColours(node_information):
     if node_information['daemon_state'] == 'run':
         daemon_state_colour = ansiprint.green()
