@@ -133,7 +133,9 @@ class VMInstance(object):
                 return False
 
             # Perform a management command
-            self.manage_vm_state()
+            self.logger.out('Updating state of VM {}'.format(self.domuuid), state='i')
+            state_thread = threading.Thread(target=self.manage_vm_state, args=(), kwargs={})
+            state_thread.start()
 
     # Get data functions
     def getstate(self):
