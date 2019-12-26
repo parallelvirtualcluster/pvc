@@ -551,8 +551,8 @@ def cleanup():
             '/nodes/{}/routerstate'.format(myhostname): 'secondary',
             '/primary_node': 'none'
         })
-        logger.out('Waiting 3 seconds for primary migration', state='s')
-        time.sleep(3)
+        logger.out('Waiting 5 seconds for primary migration', state='s')
+        time.sleep(5)
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })

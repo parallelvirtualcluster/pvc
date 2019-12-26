@@ -123,7 +123,7 @@ class NodeInstance(object):
                             transition_thread.start()
                         else:
                             # Skip becoming secondary unless already running
-                            if self.daemon_state == 'run' or self.daemon_state = 'shutdown':
+                            if self.daemon_state == 'run' or self.daemon_state == 'shutdown':
                                 self.logger.out('Setting node {} to secondary state'.format(self.name), state='i')
                                 transition_thread = threading.Thread(target=self.become_secondary, args=(), kwargs={})
                                 transition_thread.start()
