@@ -1056,7 +1056,7 @@ class API_VM_Metadata(Resource):
 
     @RequestParser([
         { 'name': 'limit' },
-        { 'name': 'selector', 'choices': ('mem', 'vcpu', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
+        { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
     ])
     @Authenticator
@@ -1079,7 +1079,7 @@ class API_VM_Metadata(Resource):
             description: The selector used to determine candidate nodes during migration
             enum:
               - mem
-              - vcpu
+              - vcpus
               - load
               - vms
           - in: query
