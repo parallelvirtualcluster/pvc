@@ -42,7 +42,7 @@ myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
 config = dict()
-config['debug'] = True
+config['debug'] = False
 config['api_scheme'] = 'http'
 config['api_host'] = 'localhost:7370'
 config['api_prefix'] = '/api/v1'
@@ -169,17 +169,11 @@ def node_info(node, long_output):
     Show information about node NODE. If unspecified, defaults to this host.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_node.get_info(zk_conn, node)
+    retcode, retdata = pvc_node.node_info(config, node)
     if retcode:
         pvc_node.format_info(retdata, long_output)
-        if long_output:
-            click.echo('{}Virtual machines on node:{}'.format(ansiprint.bold(), ansiprint.end()))
-            click.echo('')
-            pvc_vm.get_list(zk_conn, node, None, None, None)
-            click.echo('')
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc node list
@@ -1811,7 +1805,11 @@ def init_cluster(yes):
     '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default=None,
     help='Zookeeper connection string.'
 )
-def cli(_zk_host):
+@click.option(
+    '-v', '--debug', '_debug', envvar='PVC_DEBUG', is_flag=True, default=False,
+    help='Additional debug details.'
+)
+def cli(_zk_host, _debug):
     """
     Parallel Virtual Cluster CLI management tool
 
@@ -1838,6 +1836,8 @@ def cli(_zk_host):
 
     global zk_host
     zk_host = _zk_host
+    global config
+    config['debug'] = _debug
 
 
 #

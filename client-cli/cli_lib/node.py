@@ -49,7 +49,6 @@ def node_coordinator_state(config, node, action):
     API schema: {"message": "{data}"}
     """
     request_uri = get_request_uri(config, '/node/{node}/coordinator-state'.format(node=node))
-
     response = requests.post(
         request_uri,
         params={'state': action}
@@ -82,7 +81,6 @@ def node_domain_state(config, node, action, wait):
     API schema: {"message": "{data}"}
     """
     request_uri = get_request_uri(config, '/node/{node}/domain-state'.format(node=node))
-
     response = requests.post(
         request_uri,
         params={'state': action, 'wait': wait}
@@ -105,6 +103,35 @@ def node_domain_state(config, node, action, wait):
         retstatus = False
 
     return retstatus, response.json()['message']
+
+def node_info(config, node):
+    """
+    Get information about node
+
+    API endpoint: GET /api/v1/node/{node}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/node/{node}'.format(node=node))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print(
+            'API endpoint: GET {}'.format(request_uri)
+        )
+        print(
+            'Response code: {}'.format(response.status_code)
+        )
+        print(
+            'Response headers: {}'.format(response.headers)
+        )
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
 
 #
 # Output display functions
