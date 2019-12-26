@@ -564,19 +564,13 @@ def get_console_log(zk_conn, domain, lines=1000):
 
     # Get the data from ZK
     console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+    print(lines)
 
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
     loglines = '\n'.join(shrunk_log)
 
-    # Show it in the pager (less)
-    try:
-        pager = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
-        pager.communicate(input=loglines.encode('utf8'))
-    except FileNotFoundError:
-        return False, 'ERROR: The "less" pager is required to view console logs.'
-
-    return True, ''
+    return True, loglines
 
 def follow_console_log(zk_conn, domain, lines=10):
     # Validate that VM exists in cluster

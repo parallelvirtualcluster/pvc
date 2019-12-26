@@ -305,6 +305,35 @@ def vm_node(vm):
     pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
+def vm_console(vm, lines=None):
+    """
+    Return the current console log for VM.
+    """
+    # Default to 10 lines of log if not set
+    if not lines:
+        lines = 10
+
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.get_console_log(zk_conn, vm, lines)
+
+    if retflag:
+        if retdata:
+            retcode = 200
+            retdata = {
+                'name': vm,
+                'data': retdata
+            }
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VM not found.'
+            }
+    else:
+        retcode = 400
+
+    pvc_common.stopZKConnection(zk_conn)
+    return retdata ,retcode
+
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.

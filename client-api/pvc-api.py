@@ -1292,6 +1292,49 @@ class API_VM_Locks(Resource):
         return api_helper.vm_flush_locks(vm)
 api.add_resource(API_VM_Locks, '/vm/<vm>/locks')
 
+# /vm/<vm</console
+class API_VM_Console(Resource):
+    @RequestParser([
+        { 'name': 'lines' }
+    ])
+    @Authenticator
+    def get(self, vm, reqargs):
+        """
+        Return the recent console log of {vm}
+        ---
+        tags:
+          - vm
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: VMLog
+              properties:
+                name:
+                  type: string
+                  description: The name of the VM
+                data:
+                  type: string
+                  description: The recent console log text
+        parameters:
+          - in: query
+            name: lines
+            type: integer
+            required: false
+            description: The number of lines to retrieve
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_console(
+            vm,
+            int(reqargs.get('lines', None))
+        )
+api.add_resource(API_VM_Console, '/vm/<vm>/console')
+
 
 ##########################################################
 # Client API - Network
