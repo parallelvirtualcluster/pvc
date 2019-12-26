@@ -784,7 +784,7 @@ class API_VM_Root(Resource):
     @RequestParser([
         { 'name': 'limit' },
         { 'name': 'node' },
-        { 'name': 'selector', 'choices': ('mem', 'vcpu', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
+        { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
         { 'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
     ])
@@ -819,7 +819,7 @@ class API_VM_Root(Resource):
             default: mem
             enum:
               - mem
-              - vcpu
+              - vcpus
               - load
               - vms
           - in: query
@@ -1309,6 +1309,12 @@ class API_VM_Console(Resource):
         ---
         tags:
           - vm
+        parameters:
+          - in: query
+            name: lines
+            type: integer
+            required: false
+            description: The number of lines to retrieve
         responses:
           200:
             description: OK
@@ -1322,12 +1328,6 @@ class API_VM_Console(Resource):
                 data:
                   type: string
                   description: The recent console log text
-        parameters:
-          - in: query
-            name: lines
-            type: integer
-            required: false
-            description: The number of lines to retrieve
           404:
             description: Not found
             schema:

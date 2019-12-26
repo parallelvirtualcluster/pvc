@@ -58,6 +58,19 @@
             },
             "type": "object"
         },
+        "VMLog": {
+            "properties": {
+                "data": {
+                    "description": "The recent console log text",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "VMMetadata": {
             "properties": {
                 "name": {
@@ -920,20 +933,6 @@
                     }
                 },
                 "summary": "Return the PVC API version string",
-                "tags": [
-                    "root"
-                ]
-            }
-        },
-        "/api/v1/doc": {
-            "get": {
-                "description": "",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                },
-                "summary": "Provide the Swagger API documentation",
                 "tags": [
                     "root"
                 ]
@@ -1946,6 +1945,12 @@
                         "name": "action",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "description": "Whether to block waiting for the full flush/ready state",
+                        "in": "query",
+                        "name": "wait",
+                        "type": "boolean"
                     }
                 ],
                 "responses": {
@@ -4337,7 +4342,7 @@
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
-                            "vcpu",
+                            "vcpus",
                             "load",
                             "vms"
                         ],
@@ -4529,6 +4534,38 @@
                     }
                 },
                 "summary": "Update the Libvirt XML of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/console": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The number of lines to retrieve",
+                        "in": "query",
+                        "name": "lines",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/VMLog"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the recent console log of {vm}",
                 "tags": [
                     "vm"
                 ]
