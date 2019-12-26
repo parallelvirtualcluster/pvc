@@ -558,7 +558,6 @@ def get_console_log(zk_conn, domain, lines=1000):
 
     # Get the data from ZK
     console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
-    print(lines)
 
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
