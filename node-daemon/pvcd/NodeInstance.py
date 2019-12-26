@@ -663,6 +663,7 @@ class NodeInstance(object):
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
         self.flush_thread = None
         self.flush_stopper = False
+        return
 
     def unflush(self):
         self.logger.out('Restoring node {} to active service.'.format(self.name), state='i')
@@ -710,3 +711,4 @@ class NodeInstance(object):
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
         self.flush_thread = None
         self.flush_stopper = False
+        return
