@@ -415,7 +415,7 @@ def update_vm_meta(vm, limit, selector, autostart):
     Update metadata of a VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm. limit, selector, strtobool(autostart))
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, strtobool(autostart))
     if retflag:
         retcode = 200
     else:
