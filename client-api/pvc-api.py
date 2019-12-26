@@ -1331,7 +1331,7 @@ class API_VM_Console(Resource):
         """
         return api_helper.vm_console(
             vm,
-            int(reqargs.get('lines', None))
+            reqargs.get('lines', None)
         )
 api.add_resource(API_VM_Console, '/vm/<vm>/console')
 

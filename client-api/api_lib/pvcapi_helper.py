@@ -310,7 +310,9 @@ def vm_console(vm, lines=None):
     Return the current console log for VM.
     """
     # Default to 10 lines of log if not set
-    if not lines:
+    try:
+        lines = int(lines)
+    except TypeError:
         lines = 10
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
