@@ -32,7 +32,6 @@ import yaml
 import requests
 
 import cli_lib.ansiprint as ansiprint
-import cli_lib.common as pvc_common
 import cli_lib.cluster as pvc_cluster
 import cli_lib.node as pvc_node
 import cli_lib.vm as pvc_vm
@@ -42,11 +41,15 @@ import cli_lib.ceph as pvc_ceph
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
+config = dict()
+config['debug'] = True
+config['api_scheme'] = 'http'
+config['api_host'] = 'localhost:7370'
+config['api_prefix'] = '/api/v1'
+
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
-def cleanup(retcode, retmsg, zk_conn=None):
-    if zk_conn:
-        pvc_common.stopZKConnection(zk_conn)
+def cleanup(retcode, retmsg):
     if retcode == True:
         if retmsg != '':
             click.echo(retmsg)
@@ -647,7 +650,7 @@ def vm_info(domain, long_output):
     'domain'
 )
 @click.option(
-    '-l', '--lines', 'lines', default=1000, show_default=True,
+    '-l', '--lines', 'lines', default=100, show_default=True,
     help='Display this many log lines from the end of the log buffer.'
 )
 @click.option(
@@ -659,16 +662,11 @@ def vm_log(domain, lines, follow):
 	Show console logs of virtual machine DOMAIN on its current node in the 'less' pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
     """
 
-	# Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
     if follow:
-        # Handle the "new" default of the follow
-        if lines == 1000:
-            lines = 10
-        retcode, retmsg = pvc_vm.follow_console_log(zk_conn, domain, lines)
+        retcode, retmsg = pvc_vm.follow_console_log(config, domain, lines)
     else:
-        retcode, retmsg = pvc_vm.get_console_log(zk_conn, domain, lines)
-    cleanup(retcode, retmsg, zk_conn)
+        retcode, retmsg = pvc_vm.view_console_log(config, domain, lines)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm list

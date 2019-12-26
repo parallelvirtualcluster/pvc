@@ -20,26 +20,64 @@
 #
 ###############################################################################
 
-import difflib
-import colorama
+import time
+import subprocess
 import click
+import requests
 
 from collections import deque
 
-import client_lib.ansiprint as ansiprint
-import client_lib.zkhandler as zkhandler
-import client_lib.common as common
+import cli_lib.ansiprint as ansiprint
+import cli_lib.ceph as ceph
 
-import client_lib.ceph as ceph
+def get_request_uri(config, endpoint):
+    """
+    Return the fully-formed URI for {endpoint}
+    """
+    uri = '{}://{}{}{}'.format(
+        config['api_scheme'],
+        config['api_host'],
+        config['api_prefix'],
+        endpoint
+    )
+    return uri
 
-def get_console_log(zk_conn, domain, lines=1000):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zk_conn, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+#
+# Primary functions
+#
+def view_console_log(config, vm, lines=100):
+    """
+    Return console log lines from the API and display them in a pager
 
-    # Get the data from ZK
-    console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+    API endpoint: GET /vm/{vm}/console
+    API arguments: lines={lines}
+    API schema: {"name":"{vmname}","data":"{console_log}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
+    if config['debug']:
+        print(
+            'API endpoint: GET {}'.format(request_uri)
+        )
+        
+    # Get the data from the API
+    response = requests.get(
+        request_uri,
+        params={'lines': lines}
+    )
+
+    if config['debug']:
+        print(
+            'Response code: {}'.format(
+                response.status_code
+            )
+        )
+        print(
+            'Response headers: {}'.format(
+                response.headers
+            )
+        )
+
+    console_log = response.json()['data']
 
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
@@ -50,18 +88,44 @@ def get_console_log(zk_conn, domain, lines=1000):
         pager = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
         pager.communicate(input=loglines.encode('utf8'))
     except FileNotFoundError:
-        return False, 'ERROR: The "less" pager is required to view console logs.'
+        click.echo("Error: `less` pager not found, dumping log ({} lines) to stdout".format(lines))
+        return True, loglines
 
     return True, ''
 
-def follow_console_log(zk_conn, domain, lines=10):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zk_conn, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+def follow_console_log(config, vm, lines=10):
+    """
+    Return and follow console log lines from the API
 
-    # Get the initial data from ZK
-    console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
+    API endpoint: GET /vm/{vm}/console
+    API arguments: lines={lines}
+    API schema: {"name":"{vmname}","data":"{console_log}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
+    if config['debug']:
+        print(
+            'API endpoint: GET {}'.format(request_uri)
+        )
+        
+    # Get the (initial) data from the API
+    response = requests.get(
+        request_uri,
+        params={'lines': lines}
+    )
+
+    if config['debug']:
+        print(
+            'Response code: {}'.format(
+                response.status_code
+            )
+        )
+        print(
+            'Response headers: {}'.format(
+                response.headers
+            )
+        )
+
+    console_log = response.json()['data']
 
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
@@ -70,39 +134,60 @@ def follow_console_log(zk_conn, domain, lines=10):
     # Print the initial data and begin following
     print(loglines, end='')
 
-    try:
-        while True:
-            # Grab the next line set
-            new_console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
-            # Split the new and old log strings into constitutent lines
-            old_console_loglines = console_log.split('\n')
-            new_console_loglines = new_console_log.split('\n')
-            # Set the console log to the new log value for the next iteration
-            console_log = new_console_log
-            # Remove the lines from the old log until we hit the first line of the new log; this
-            # ensures that the old log is a string that we can remove from the new log entirely
-            for index, line in enumerate(old_console_loglines, start=0):
-                if line == new_console_loglines[0]:
-                    del old_console_loglines[0:index]
-                    break
-            # Rejoin the log lines into strings
-            old_console_log = '\n'.join(old_console_loglines)
-            new_console_log = '\n'.join(new_console_loglines)
-            # Remove the old lines from the new log
-            diff_console_log = new_console_log.replace(old_console_log, "")
-            # If there's a difference, print it out
-            if diff_console_log:
-                print(diff_console_log, end='')
-            # Wait a second
-            time.sleep(1)
-    except kazoo.exceptions.NoNodeError:
-        return False, 'ERROR: VM has gone away.'
-    except:
-        return False, 'ERROR: Lost connection to Zookeeper node.'
+    while True:
+        # Grab the next line set
+        # Get the (initial) data from the API
+        response = requests.get(
+            '{}://{}{}{}'.format(
+                config['api_scheme'],
+                config['api_host'],
+                config['api_prefix'],
+                '/vm/{}/console'.format(vm)
+            ),
+            params={'lines': lines}
+        )
+    
+        if config['debug']:
+            print(
+                'Response code: {}'.format(
+                    response.status_code
+                )
+            )
+            print(
+                'Response headers: {}'.format(
+                    response.headers
+                )
+            )
+    
+        new_console_log = response.json()['data']
+        # Split the new and old log strings into constitutent lines
+        old_console_loglines = console_log.split('\n')
+        new_console_loglines = new_console_log.split('\n')
+        # Set the console log to the new log value for the next iteration
+        console_log = new_console_log
+        # Remove the lines from the old log until we hit the first line of the new log; this
+        # ensures that the old log is a string that we can remove from the new log entirely
+        for index, line in enumerate(old_console_loglines, start=0):
+            if line == new_console_loglines[0]:
+                del old_console_loglines[0:index]
+                break
+        # Rejoin the log lines into strings
+        old_console_log = '\n'.join(old_console_loglines)
+        new_console_log = '\n'.join(new_console_loglines)
+        # Remove the old lines from the new log
+        diff_console_log = new_console_log.replace(old_console_log, "")
+        # If there's a difference, print it out
+        if diff_console_log:
+            print(diff_console_log, end='')
+        # Wait a second
+        time.sleep(1)
 
     return True, ''
 
-def format_info(zk_conn, domain_information, long_output):
+#
+# Output display functions
+#
+def format_info(config, domain_information, long_output):
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
     ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))
@@ -211,7 +296,7 @@ def format_info(zk_conn, domain_information, long_output):
 
     click.echo('')
 
-def format_list(zk_conn, vm_list, raw):
+def format_list(config, vm_list, raw):
     # Function to strip the "br" off of nets and return a nicer list
     def getNiceNetID(domain_information):
         # Network list
