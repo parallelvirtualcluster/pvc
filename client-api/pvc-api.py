@@ -873,7 +873,7 @@ class API_VM_Element(Resource):
     @RequestParser([
         { 'name': 'limit' },
         { 'name': 'node' },
-        { 'name': 'selector', 'choices': ('mem', 'vcpu', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
+        { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
         { 'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
     ])
@@ -910,7 +910,7 @@ class API_VM_Element(Resource):
             default: mem
             enum:
               - mem
-              - vcpu
+              - vcpus
               - load
               - vms
           - in: query
