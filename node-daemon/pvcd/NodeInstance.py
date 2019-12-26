@@ -156,6 +156,7 @@ class NodeInstance(object):
                         while self.flush_stopper:
                             time.sleep(1)
                     self.flush_stopper = False
+                    self.flush_thread = None
                     # Do flushing in a thread so it doesn't block the migrates out
                     if self.domain_state == 'flush':
                         self.flush_thread = threading.Thread(target=self.flush, args=(), kwargs={})
