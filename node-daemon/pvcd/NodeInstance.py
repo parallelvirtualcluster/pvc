@@ -119,18 +119,14 @@ class NodeInstance(object):
                     if self.config['enable_networking']:
                         if self.router_state == 'primary':
                             self.logger.out('Setting node {} to primary state'.format(self.name), state='i')
-                            #self.become_primary()
                             transition_thread = threading.Thread(target=self.become_primary, args=(), kwargs={})
                             transition_thread.start()
-                            #transition_thread.join() 
                         else:
                             # Skip becoming secondary unless already running
-                            if self.daemon_state == 'run':
+                            if self.daemon_state == 'run' or self.daemon_state = 'shutdown':
                                 self.logger.out('Setting node {} to secondary state'.format(self.name), state='i')
-                                #self.become_secondary()
                                 transition_thread = threading.Thread(target=self.become_secondary, args=(), kwargs={})
                                 transition_thread.start()
-                                #transition_thread.join() 
 
         @self.zk_conn.DataWatch('/nodes/{}/domainstate'.format(self.name))
         def watch_node_domainstate(data, stat, event=''):
@@ -150,13 +146,12 @@ class NodeInstance(object):
                 # toggle state management of this node
                 if self.name == self.this_node:
                     # Stop any existing flush jobs
-                    if self.flush_thread:
-                        self.flush_stopper = True
+                    if self.flush_thread is not None:
                         self.logger.out('Waiting for previous migration to complete'.format(self.name), state='i')
+                        self.flush_stopper = True
                         while self.flush_stopper:
-                            time.sleep(1)
-                    self.flush_stopper = False
-                    self.flush_thread = None
+                            time.sleep(0.1)
+
                     # Do flushing in a thread so it doesn't block the migrates out
                     if self.domain_state == 'flush':
                         self.flush_thread = threading.Thread(target=self.flush, args=(), kwargs={})
