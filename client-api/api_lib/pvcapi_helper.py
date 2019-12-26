@@ -201,12 +201,12 @@ def node_primary(node):
     }
     return output, retcode
 
-def node_flush(node):
+def node_flush(node, wait):
     """
     Flush NODE of running VMs.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_node.flush_node(zk_conn, node, False)
+    retflag, retdata = pvc_node.flush_node(zk_conn, node, wait)
     if retflag:
         retcode = 200
     else:
@@ -218,12 +218,12 @@ def node_flush(node):
     }
     return output, retcode
 
-def node_ready(node):
+def node_ready(node, wait):
     """
     Restore NODE to active service.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_node.ready_node(zk_conn, node)
+    retflag, retdata = pvc_node.ready_node(zk_conn, node, wait)
     if retflag:
         retcode = 200
     else:

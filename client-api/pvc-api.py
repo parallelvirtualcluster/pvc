@@ -567,7 +567,8 @@ class API_Node_DomainState(Resource):
         return api_helper.node_domain_state(node)
 
     @RequestParser([
-        { 'name': 'state', 'choices': ('ready', 'flush'), 'helptext': "A valid state must be specified", 'required': True }
+        { 'name': 'state', 'choices': ('ready', 'flush'), 'helptext': "A valid state must be specified", 'required': True },
+        { 'name': 'wait' }
     ])
     @Authenticator
     def post(self, node, reqargs):
@@ -585,6 +586,10 @@ class API_Node_DomainState(Resource):
             enum:
               - flush
               - ready
+          - in: query
+            name: wait
+            type: boolean
+            description: Whether to block waiting for the full flush/ready state
         responses:
           200:
             description: OK
@@ -598,9 +603,9 @@ class API_Node_DomainState(Resource):
               id: Message
         """
         if reqargs['state'] == 'flush':
-            return api_helper.node_flush(node)
+            return api_helper.node_flush(node, reqargs.get('wait', None))
         if reqargs['state'] == 'ready':
-            return api_helper.node_ready(node)
+            return api_helper.node_ready(node, reqargs.get('wait', None))
         abort(400)
 api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 
