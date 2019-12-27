@@ -21,6 +21,7 @@
 ###############################################################################
 
 import time
+import re
 import subprocess
 import click
 import requests
@@ -45,6 +46,291 @@ def get_request_uri(config, endpoint):
 #
 # Primary functions
 #
+def vm_info(config, vm):
+    """
+    Get information about VM
+
+    API endpoint: GET /api/v1/vm/{vm}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def vm_list(config, limit, target_node, target_state):
+    """
+    Get list information about nodes (limited by {limit}, {target_node}, or {target_state})
+
+    API endpoint: GET /api/v1/vm
+    API arguments: limit={limit}, node={target_node}, state={target_state}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+    if target_node:
+        params['node'] = target_node
+    if target_state:
+        params['state'] = target_state
+
+    request_uri = get_request_uri(config, '/vm')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
+    """
+    Define a new VM on the cluster
+
+    API endpoint: POST /vm
+    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm')
+    response = requests.post(
+        request_uri,
+        params={
+            'xml': xml,
+            'node': node,
+            'limit': node_limit,
+            'selector': node_selector,
+            'autostart': node_autostart
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_modify(config, vm, xml, restart):
+    """
+    Modify the configuration of VM
+
+    API endpoint: POST /vm/{vm}
+    API arguments: xml={xml}, restart={restart}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
+    response = requests.post(
+        request_uri,
+        params={
+            'xml': xml,
+            'restart': restart
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
+    """
+    Modify PVC metadata of a VM
+
+    API endpoint: GET /vm/{vm}/meta,  POST /vm/{vm}/meta
+    API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/meta'.format(vm=vm))
+
+    # Get the existing metadata so we can perform a fully dynamic update
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    metadata = response.json()
+
+    # Update any params that we've sent
+    if node_limit is not None:
+        metadata['node_limit'] = node_limit
+    else:
+        # Collapse the existing list back down to a CSV
+        metadata['node_limit'] = ','.join(metadata['node_limit'])
+
+    if node_selector is not None:
+        metadata['node_selector'] = node_selector
+
+    if node_autostart is not None:
+        metadata['node_autostart'] = node_autostart
+
+    # Write the new metadata
+    print(metadata['node_limit'])
+    response = requests.post(
+        request_uri,
+        params={
+            'limit': metadata['node_limit'],
+            'selector': metadata['node_selector'],
+            'autostart': metadata['node_autostart']
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_remove(config, vm, delete_disks=False):
+    """
+    Remove a VM
+
+    API endpoint: DELETE /vm/{vm}
+    API arguments: delete_disks={delete_disks}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
+    response = requests.delete(
+        request_uri,
+        params={
+            'delete_disks': delete_disks
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_state(config, vm, target_state):
+    """
+    Modify the current state of VM
+
+    API endpoint: POST /vm/{vm}/state
+    API arguments: state={state}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/state'.format(vm=vm))
+    response = requests.post(
+        request_uri,
+        params={
+            'state': target_state,
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_node(config, vm, target_node, action, force=False):
+    """
+    Modify the current node of VM via {action}
+
+    API endpoint: POST /vm/{vm}/node
+    API arguments: node={target_node}, action={action}, force={force}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/node'.format(vm=vm))
+    response = requests.post(
+        request_uri,
+        params={
+            'node': target_node,
+            'action': action,
+            'force': force
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def vm_locks(config, vm):
+    """
+    Flush RBD locks of (stopped) VM
+
+    API endpoint: POST /vm/{vm}/locks
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/vm/{vm}/locks'.format(vm=vm))
+    response = requests.post(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def view_console_log(config, vm, lines=100):
     """
     Return console log lines from the API and display them in a pager
@@ -54,28 +340,15 @@ def view_console_log(config, vm, lines=100):
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
     request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
-    if config['debug']:
-        print(
-            'API endpoint: GET {}'.format(request_uri)
-        )
-        
-    # Get the data from the API
     response = requests.get(
         request_uri,
         params={'lines': lines}
     )
 
     if config['debug']:
-        print(
-            'Response code: {}'.format(
-                response.status_code
-            )
-        )
-        print(
-            'Response headers: {}'.format(
-                response.headers
-            )
-        )
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     console_log = response.json()['data']
 
@@ -102,28 +375,15 @@ def follow_console_log(config, vm, lines=10):
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
     request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
-    if config['debug']:
-        print(
-            'API endpoint: GET {}'.format(request_uri)
-        )
-        
-    # Get the (initial) data from the API
     response = requests.get(
         request_uri,
         params={'lines': lines}
     )
 
     if config['debug']:
-        print(
-            'Response code: {}'.format(
-                response.status_code
-            )
-        )
-        print(
-            'Response headers: {}'.format(
-                response.headers
-            )
-        )
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
 
     console_log = response.json()['data']
 
@@ -261,11 +521,16 @@ def format_info(config, domain_information, long_output):
             net_vni = net_vnis[0]
         else:
             net_vni = re.sub('br', '', net['source'])
-        net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
-        if not net_exists and net_vni != 'cluster':
+
+        request_uri = get_request_uri(config, '/network/{net}'.format(net=net_vni))
+        response = requests.get(
+            request_uri
+        )
+        if response.status_code != 200 and net_vni != 'cluster':
             net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
         else:
             net_list.append(net_vni)
+
     ainformation.append('')
     ainformation.append('{}Networks:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(net_list)))
 
@@ -382,7 +647,9 @@ def format_list(config, vm_list, raw):
             vm_migrated='Migrated'
         )
     )
-            
+    
+    # Keep track of nets we found to be valid to cut down on duplicate API hits
+    valid_net_list = []
     # Format the string (elements)
     for domain_information in vm_list:
         if domain_information['state'] == 'start':
@@ -403,9 +670,16 @@ def format_list(config, vm_list, raw):
         net_list = []
         vm_net_colour = ''
         for net_vni in raw_net_list:
-            net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
-            if not net_exists and net_vni != 'cluster':
-                vm_net_colour = ansiprint.red()
+            if not net_vni in valid_net_list:
+                request_uri = get_request_uri(config, '/network/{net}'.format(net=net_vni))
+                response = requests.get(
+                    request_uri
+                )
+                if response.status_code != 200 and net_vni != 'cluster':
+                    vm_net_colour = ansiprint.red()
+                else:
+                    valid_net_list.append(net_vni)
+
             net_list.append(net_vni)
 
         vm_list_output.append(
@@ -442,4 +716,3 @@ def format_list(config, vm_list, raw):
     click.echo('\n'.join(sorted(vm_list_output)))
 
     return True, ''
-

@@ -29,6 +29,7 @@ import difflib
 import re
 import colorama
 import yaml
+import lxml.etree as etree
 import requests
 
 import cli_lib.ansiprint as ansiprint
@@ -232,16 +233,12 @@ def vm_define(config, target_node, node_limit, node_selector, node_autostart):
     Define a new virtual machine from Libvirt XML configuration file CONFIG.
     """
 
-    if node_limit:
-        node_limit = node_limit.split(',')
-
     # Open the XML file
     config_data = config.read()
     config.close()
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
     retcode, retmsg = pvc_vm.define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart)
-    cleanup(retcode, retmsg, zk_conn)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm meta
@@ -271,12 +268,8 @@ def vm_meta(domain, node_limit, node_selector, node_autostart):
     if node_limit is None and node_selector is None and node_autostart is None:
         cleanup(False, 'At least one metadata option must be specified to update.')
 
-    if node_limit:
-        node_limit = node_limit.split(',')
-
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm modify
@@ -294,31 +287,33 @@ def vm_meta(domain, node_limit, node_selector, node_autostart):
     'domain'
 )
 @click.argument(
-    'config', type=click.File(), default=None, required=False
+    'cfgfile', type=click.File(), default=None, required=False
 )
-def vm_modify(domain, config, editor, restart):
+def vm_modify(domain, cfgfile, editor, restart):
     """
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
 
-    if editor == False and config == None:
+    if editor == False and cfgfile == None:
         cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-
-    dom_uuid = pvc_vm.getDomainUUID(zk_conn, domain)
-    if dom_uuid == None:
+    retcode, vm_information = pvc_vm.vm_info(config, domain)
+    if not retcode and not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
-    dom_name = pvc_vm.getDomainName(zk_conn, dom_uuid)
+
+    dom_uuid = vm_information.get('uuid')
+    dom_name = vm_information.get('name')
 
     if editor == True:
         # Grab the current config
-        current_vm_config = zk_conn.get('/domains/{}/xml'.format(dom_uuid))[0].decode('ascii')
+        current_vm_cfg_raw = vm_information.get('xml')
+        xml_data = etree.fromstring(current_vm_cfg_raw)
+        current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
 
         # Write it to a tempfile
         fd, path = tempfile.mkstemp()
         fw = os.fdopen(fd, 'w')
-        fw.write(current_vm_config)
+        fw.write(current_vm_cfgfile.strip())
         fw.close()
 
         # Edit it
@@ -327,14 +322,14 @@ def vm_modify(domain, config, editor, restart):
 
         # Open the tempfile to read
         with open(path, 'r') as fr:
-            new_vm_config = fr.read()
+            new_vm_cfgfile = fr.read()
             fr.close()
 
         # Delete the tempfile
         os.unlink(path)
 
         # Show a diff and confirm
-        diff = list(difflib.unified_diff(current_vm_config.split('\n'), new_vm_config.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         if len(diff) < 1:
             click.echo('Aborting with no modifications.')
             exit(0)
@@ -355,23 +350,23 @@ def vm_modify(domain, config, editor, restart):
         click.confirm('Write modifications to Zookeeper?', abort=True)
 
         if restart:
-            click.echo('Writing modified config of VM "{}" and restarting.'.format(dom_name))
+            click.echo('Writing modified configuration of VM "{}" and restarting.'.format(dom_name))
         else:
-            click.echo('Writing modified config of VM "{}".'.format(dom_name))
+            click.echo('Writing modified configuration of VM "{}".'.format(dom_name))
 
     # We're operating in replace mode
     else:
         # Open the XML file
-        new_vm_config = config.read()
-        config.close()
+        new_vm_cfgfile = cfgfile.read()
+        cfgfile.close()
 
         if restart:
-            click.echo('Replacing config of VM "{}" with file "{}" and restarting.'.format(dom_name, config.name))
+            click.echo('Replacing configuration of VM "{}" with file "{}" and restarting.'.format(dom_name, cfgfile.name))
         else:
-            click.echo('Replacing config of VM "{}" with file "{}".'.format(dom_name, config.name))
+            click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
 
-    retcode, retmsg = pvc_vm.modify_vm(zk_conn, domain, restart, new_vm_config)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_modify(config, domain, new_vm_config, restart)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm undefine
@@ -385,15 +380,8 @@ def vm_undefine(domain):
     Stop virtual machine DOMAIN and remove it from the cluster database, preserving disks. DOMAIN may be a UUID or name.
     """
 
-    # Ensure at least one search method is set
-    if domain == None:
-        click.echo("ERROR: You must specify either a name or UUID value.")
-        exit(1)
-
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.undefine_vm(zk_conn, domain, is_cli=True)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=False)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm remove
@@ -407,37 +395,8 @@ def vm_remove(domain):
     Stop virtual machine DOMAIN and remove it, along with all disks, from the cluster. DOMAIN may be a UUID or name.
     """
 
-    # Ensure at least one search method is set
-    if domain == None:
-        click.echo("ERROR: You must specify either a name or UUID value.")
-        exit(1)
-
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.remove_vm(zk_conn, domain, is_cli=True)
-    cleanup(retcode, retmsg, zk_conn)
-
-###############################################################################
-# pvc vm dump
-###############################################################################
-@click.command(name='dump', short_help='Dump a virtual machine XML to stdout.')
-@click.argument(
-    'domain'
-)
-def vm_dump(domain):
-    """
-    Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
-    """
-
-    # Ensure at least one search method is set
-    if domain == None:
-        click.echo("ERROR: You must specify either a name or UUID value.")
-        exit(1)
-
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.dump_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=True)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm start
@@ -451,10 +410,8 @@ def vm_start(domain):
     Start virtual machine DOMAIN on its configured node. DOMAIN may be a UUID or name.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.start_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'start')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm restart
@@ -468,10 +425,8 @@ def vm_restart(domain):
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.restart_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm shutdown
@@ -485,10 +440,8 @@ def vm_shutdown(domain):
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.shutdown_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm stop
@@ -502,10 +455,8 @@ def vm_stop(domain):
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.stop_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'stop')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm disable
@@ -521,10 +472,8 @@ def vm_disable(domain):
     Use this option for VM that are stopped intentionally or long-term and which should not impact cluster health if stopped. A VM can be started directly from disable state.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.disable_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'disable')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm move
@@ -542,10 +491,8 @@ def vm_move(domain, target_node):
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.move_vm(zk_conn, domain, target_node)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm migrate
@@ -567,10 +514,8 @@ def vm_migrate(domain, target_node, force_migrate):
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=True)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm unmigrate
@@ -584,10 +529,8 @@ def vm_unmigrate(domain):
     Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.unmigrate_vm(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm flush-locks
@@ -601,34 +544,8 @@ def vm_flush_locks(domain):
     Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in a stopped state before flushing locks.
     """
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_vm.flush_locks(zk_conn, domain)
-    cleanup(retcode, retmsg, zk_conn)
-
-###############################################################################
-# pvc vm info
-###############################################################################
-@click.command(name='info', short_help='Show details of a VM object.')
-@click.argument(
-    'domain'
-)
-@click.option(
-    '-l', '--long', 'long_output', is_flag=True, default=False,
-    help='Display more detailed information.'
-)
-def vm_info(domain, long_output):
-    """
-	Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
-    """
-
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_vm.get_info(zk_conn, domain)
-    if retcode:
-        pvc_vm.format_info(zk_conn, retdata, long_output)
-        retdata = ''
-    cleanup(retcode, retdata, zk_conn)
-
+    retcode, retmsg = pvc_vm.vm_locks(config, domain)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc vm log
@@ -657,6 +574,50 @@ def vm_log(domain, lines, follow):
     cleanup(retcode, retmsg)
 
 ###############################################################################
+# pvc vm info
+###############################################################################
+@click.command(name='info', short_help='Show details of a VM object.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-l', '--long', 'long_output', is_flag=True, default=False,
+    help='Display more detailed information.'
+)
+def vm_info(domain, long_output):
+    """
+	Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retdata = pvc_vm.vm_info(config, domain)
+    if retcode:
+        pvc_vm.format_info(config, retdata, long_output)
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc vm dump
+###############################################################################
+@click.command(name='dump', short_help='Dump a virtual machine XML to stdout.')
+@click.argument(
+    'domain'
+)
+def vm_dump(domain):
+    """
+    Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
+    """
+
+    retcode, vm_information = pvc_vm.vm_info(config, domain)
+    if not retcode and not vm_information.get('name', None):
+        cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+
+    # Grab the current config
+    current_vm_cfg_raw = vm_information.get('xml')
+    xml_data = etree.fromstring(current_vm_cfg_raw)
+    current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    click.echo(current_vm_cfgfile.strip())
+
+###############################################################################
 # pvc vm list
 ###############################################################################
 @click.command(name='list', short_help='List all VM objects.')
@@ -682,12 +643,11 @@ def vm_list(target_node, target_state, limit, raw):
     NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_vm.get_list(zk_conn, target_node, target_state, limit)
+    retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state)
     if retcode:
-        pvc_vm.format_list(zk_conn, retdata, raw)
+        pvc_vm.format_list(config, retdata, raw)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc network
