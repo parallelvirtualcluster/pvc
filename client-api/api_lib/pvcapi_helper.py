@@ -657,6 +657,9 @@ def net_add(vni, description, nettype, domain, name_servers,
     """
     Add a virtual client network to the PVC cluster.
     """
+    if name_servers is not None:
+        name_servers = name_servers.split(',')
+
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
@@ -679,6 +682,9 @@ def net_modify(vni, description, domain, name_servers,
     """
     Modify a virtual client network in the PVC cluster.
     """
+    if name_servers is not None:
+        name_servers = name_servers.split(',')
+
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,

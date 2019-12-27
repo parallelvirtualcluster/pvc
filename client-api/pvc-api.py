@@ -1644,7 +1644,7 @@ class API_Network_Element(Resource):
             reqargs.get('description', None),
             reqargs.get('nettype', None),
             reqargs.get('domain', None),
-            reqargs.get('name_servers', None).split(','),
+            reqargs.get('name_servers', None),
             reqargs.get('ip4_network', None),
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
@@ -1735,7 +1735,7 @@ class API_Network_Element(Resource):
         return api_helper.net_modify(
             reqargs.get('description', None),
             reqargs.get('domain', None),
-            reqargs.get('name_servers', None).split(','),
+            reqargs.get('name_servers', None),
             reqargs.get('ip4_network', None),
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
