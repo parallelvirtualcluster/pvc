@@ -258,7 +258,7 @@ def add_network(zk_conn, vni, description, nettype,
         '/networks/{}'.format(vni): description,
         '/networks/{}/nettype'.format(vni): nettype,
         '/networks/{}/domain'.format(vni): domain,
-        '/networks/{}/name_servers'.format(vni): ','.join(name_servers),
+        '/networks/{}/name_servers'.format(vni): name_servers,
         '/networks/{}/ip6_network'.format(vni): ip6_network,
         '/networks/{}/ip6_gateway'.format(vni): ip6_gateway,
         '/networks/{}/dhcp6_flag'.format(vni): dhcp6_flag,
@@ -284,7 +284,7 @@ def modify_network(zk_conn, vni, **parameters):
     if parameters['domain']:
         zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
     if parameters['name_servers']:
-        zk_data.update({'/networks/{}/name_servers'.format(vni): ','.join(parameters['name_servers'])})
+        zk_data.update({'/networks/{}/name_servers'.format(vni): parameters['name_servers']})
     if parameters['ip4_network']:
         zk_data.update({'/networks/{}/ip4_network'.format(vni): parameters['ip4_network']})
     if parameters['ip4_gateway']:
