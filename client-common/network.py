@@ -276,40 +276,42 @@ def add_network(zk_conn, vni, description, nettype,
 
     return True, 'Network "{}" added successfully!'.format(description)
 
-def modify_network(zk_conn, vni, **parameters):
-    # Add the new network to Zookeeper
+def modify_network(zk_conn, vni, description=None, domain=None, name_servers=None,
+                   ip4_network=None, ip4_gateway=None, ip6_network=None, ip6_gateway=None,
+                   dhcp4_flag=None, dhcp4_start=None, dhcp4_end=None):
+    # Add the modified parameters to Zookeeper
     zk_data = dict()
-    if parameters['description']:
-        zk_data.update({'/networks/{}'.format(vni): parameters['description']})
-    if parameters['domain']:
-        zk_data.update({'/networks/{}/domain'.format(vni): parameters['domain']})
-    if parameters['name_servers']:
-        zk_data.update({'/networks/{}/name_servers'.format(vni): parameters['name_servers']})
-    if parameters['ip4_network']:
-        zk_data.update({'/networks/{}/ip4_network'.format(vni): parameters['ip4_network']})
-    if parameters['ip4_gateway']:
-        zk_data.update({'/networks/{}/ip4_gateway'.format(vni): parameters['ip4_gateway']})
-    if parameters['ip6_network']:
-        zk_data.update({'/networks/{}/ip6_network'.format(vni): parameters['ip6_network']})
-        if parameters['ip6_network']:
+    if description:
+        zk_data.update({'/networks/{}'.format(vni): description})
+    if domain:
+        zk_data.update({'/networks/{}/domain'.format(vni): domain})
+    if name_servers:
+        zk_data.update({'/networks/{}/name_servers'.format(vni): name_servers})
+    if ip4_network:
+        zk_data.update({'/networks/{}/ip4_network'.format(vni): ip4_network})
+    if ip4_gateway:
+        zk_data.update({'/networks/{}/ip4_gateway'.format(vni): ip4_gateway})
+    if ip6_network:
+        zk_data.update({'/networks/{}/ip6_network'.format(vni): ip6_network})
+        if ip6_network is not None:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'True'})
         else:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'False'})
-    if parameters['ip6_gateway']:
-        zk_data.update({'/networks/{}/ip6_gateway'.format(vni): parameters['ip6_gateway']})
+    if ip6_gateway:
+        zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
     else:
         # If we're changing the network, but don't also specify the gateway,
         # generate a new one automatically
-        if parameters['ip6_network']:
-            ip6_netpart, ip6_maskpart = parameters['ip6_network'].split('/')
+        if ip6_network:
+            ip6_netpart, ip6_maskpart = ip6_network.split('/')
             ip6_gateway = '{}1'.format(ip6_netpart)
             zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
-    if parameters['dhcp_flag']:
-        zk_data.update({'/networks/{}/dhcp_flag'.format(vni): parameters['dhcp_flag']})
-    if parameters['dhcp_start']:
-        zk_data.update({'/networks/{}/dhcp_start'.format(vni): parameters['dhcp_start']})
-    if parameters['dhcp_end']:
-        zk_data.update({'/networks/{}/dhcp_end'.format(vni): parameters['dhcp_end']})
+    if dhcp4_flag:
+        zk_data.update({'/networks/{}/dhcp4_flag'.format(vni): dhcp4_flag})
+    if dhcp4_start:
+        zk_data.update({'/networks/{}/dhcp4_start'.format(vni): dhcp4_start})
+    if dhcp4_end:
+        zk_data.update({'/networks/{}/dhcp4_end'.format(vni): dhcp4_end})
 
     zkhandler.writedata(zk_conn, zk_data)
 
