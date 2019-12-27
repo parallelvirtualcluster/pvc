@@ -1667,7 +1667,7 @@ class API_Network_Element(Resource):
         { 'name': 'dhcp4_end' }
     ])
     @Authenticator
-    def put(self, vni):
+    def put(self, vni, reqargs):
         """
         Update details of network {vni}
         Note: A network's type cannot be changed; the network must be removed and recreated as the new type
