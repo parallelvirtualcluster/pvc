@@ -1733,6 +1733,7 @@ class API_Network_Element(Resource):
               id: Message
         """
         return api_helper.net_modify(
+            vni,
             reqargs.get('description', None),
             reqargs.get('domain', None),
             reqargs.get('name_servers', None),
