@@ -222,15 +222,9 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
 
 
     if node_limit is not None:
-        # Join the limit
-        if isinstance(node_limit, list):
-            zkhandler.writedata(zk_conn, {
-                '/domains/{}/node_limit'.format(dom_uuid): ','.join(node_limit)
-            })
-        else:
-            zkhandler.writedata(zk_conn, {
-                '/domains/{}/node_limit'.format(dom_uuid): ''
-            })
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/node_limit'.format(dom_uuid): node_limit
+        })
 
     if node_selector is not None:
         zkhandler.writedata(zk_conn, {
