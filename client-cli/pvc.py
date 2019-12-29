@@ -744,9 +744,8 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
         click.echo('Error: At least one of "-i" / "--ipnet" or "-i6" / "--ipnet6" must be specified.')
         exit(1)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc network modify
@@ -814,9 +813,8 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
     pvc network modify 1001 --gateway 10.1.1.1 --dhcp
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.modify_network(zk_conn, vni, description=description, domain=domain, name_servers=name_servers, ip6_network=ip6_network, ip6_gateway=ip6_gateway, ip4_network=ip4_network, ip4_gateway=ip4_gateway, dhcp_flag=dhcp_flag, dhcp_start=dhcp_start, dhcp_end=dhcp_end)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_modify(config, vni, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc network remove
@@ -827,15 +825,14 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
 )
 def net_remove(net):
     """
-    Remove an existing virtual network NET from the cluster; NET can be either a VNI or description.
+    Remove an existing virtual network NET from the cluster; NET must be a VNI.
 
     WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.remove_network(zk_conn, net)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_remove(config, net)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc network info
@@ -853,14 +850,11 @@ def net_info(vni, long_output):
 	Show information about virtual network VNI.
     """
 
-	# Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_network.get_info(zk_conn, vni)
+    retcode, retdata = pvc_network.net_info(config, vni)
     if retcode:
-        pvc_network.format_info(retdata, long_output)
+        pvc_network.format_info(config, retdata, long_output)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
-
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc network list
@@ -874,12 +868,11 @@ def net_list(limit):
     List all virtual networks in the cluster; optionally only match VNIs or Descriptions matching regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_network.get_list(zk_conn, limit)
+    retcode, retdata = pvc_network.net_list(config, limit)
     if retcode:
-        pvc_network.format_list(retdata)
+        pvc_network.format_list(config, retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc network dhcp
@@ -892,39 +885,7 @@ def net_dhcp():
     pass
 
 ###############################################################################
-# pvc network dhcp list
-###############################################################################
-@click.command(name='list', short_help='List active DHCP leases.')
-@click.argument(
-    'net'
-)
-@click.argument(
-    'limit', default=None, required=False
-)
-def net_dhcp_list(net, limit):
-    """
-    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
-    """
-
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=False)
-    if retcode:
-        pvc_network.format_list_dhcp(retdata)
-        retdata = ''
-    cleanup(retcode, retdata, zk_conn)
-
-###############################################################################
-# pvc network dhcp static
-###############################################################################
-@click.group(name='static', short_help='Manage DHCP static reservations in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
-def net_dhcp_static():
-    """
-    Manage host DHCP static reservations of a VXLAN network in the PVC cluster.
-    """
-    pass
-
-###############################################################################
-# pvc network dhcp static add
+# pvc network dhcp add
 ###############################################################################
 @click.command(name='add', short_help='Add a DHCP static reservation.')
 @click.argument(
@@ -939,55 +900,56 @@ def net_dhcp_static():
 @click.argument(
     'macaddr'
 )
-def net_dhcp_static_add(net, ipaddr, macaddr, hostname):
+def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
-    Add a new DHCP static reservation of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET can be either a VNI or description.
+    Add a new DHCP static reservation of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET must be a VNI.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_dhcp_reservation(zk_conn, net, ipaddr, macaddr, hostname)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_dhcp_add(config, net, ipaddr, macaddr, hostname)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc network dhcp static remove
+# pvc network dhcp remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove a DHCP static reservation.')
 @click.argument(
     'net'
 )
 @click.argument(
-    'reservation'
+    'macaddr'
 )
-def net_dhcp_static_remove(net, reservation):
+def net_dhcp_remove(net, reservation):
     """
-    Remove a DHCP static reservation RESERVATION from virtual network NET; RESERVATION can be either a MAC address, an IP address, or a hostname; NET can be either a VNI or description.
+    Remove a DHCP static reservation for MACADDR from virtual network NET; NET must be a VNI.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.remove_dhcp_reservation(zk_conn, net, reservation)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_dhcp_remove(config, net, reservation)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc network dhcp static list
+# pvc network dhcp list
 ###############################################################################
-@click.command(name='list', short_help='List DHCP static reservations.')
+@click.command(name='list', short_help='List active DHCP leases.')
 @click.argument(
     'net'
 )
 @click.argument(
     'limit', default=None, required=False
 )
-def net_dhcp_static_list(net, limit):
+@click.option(
+    '-s', '--static', 'only_static', is_flag=True, default=False,
+    help='Show only static leases.'
+)
+def net_dhcp_list(net, limit, only_static):
     """
-    List all DHCP static reservations in virtual network NET; optionally only match elements matching regex LIMIT; NET can be either a VNI or description.
+    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET must be a VNI.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_network.get_list_dhcp(zk_conn, net, limit, only_static=True)
+    retcode, retdata = pvc_network.net_dhcp_list(config, net, limit, only_static)
     if retcode:
         pvc_network.format_list_dhcp(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc network acl
@@ -1006,8 +968,7 @@ def net_acl():
 @click.option(
     '--in/--out', 'direction',
     is_flag=True,
-    required=True,
-    default=None,
+    default=True, #inbound
     help='Inbound or outbound ruleset.'
 )
 @click.option(
@@ -1030,46 +991,44 @@ def net_acl():
 )
 def net_acl_add(net, direction, description, rule, order):
     """
-    Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET can be either a VNI or description.
+    Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET must be a VNI.
 
     NOTE: All client networks are default-allow in both directions; deny rules MUST be added here at the end of the sequence for a default-deny setup.
 
     NOTE: Ordering places the rule at the specified ID, not before it; the old rule of that ID and all subsequent rules will be moved down.
 
+    NOTE: Descriptions are used as names, and must be unique within a network (both directions).
+
     Example:
 
     pvc network acl add 1001 --in --rule "tcp dport 22 ct state new accept" --description "ssh-in" --order 3
     """
+    if direction:
+        direction = 'in'
+    else:
+        direction = 'out'
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.add_acl(zk_conn, net, direction, description, rule, order)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_acl_add(config, net, direction, description, rule, order)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc network acl remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove firewall ACL.')
-@click.option(
-    '--in/--out', 'direction',
-    is_flag=True,
-    required=True,
-    default=None,
-    help='Inbound or outbound rule set.'
-)
 @click.argument(
     'net'
 )
 @click.argument(
     'rule',
 )
-def net_acl_remove(net, rule, direction):
+def net_acl_remove(net, rule):
     """
-    Remove an NFT firewall rule RULE from network NET; RULE can be either a sequence order identifier or description; NET can be either a VNI or description."
+    Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_network.remove_acl(zk_conn, net, rule, direction)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_network.net_acl_remove(config, net, rule)
+    cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc network acl list
@@ -1092,13 +1051,17 @@ def net_acl_list(net, limit, direction):
     """
     List all NFT firewall rules in network NET; optionally only match elements matching description regex LIMIT; NET can be either a VNI or description.
     """
+    if direction is not None:
+        if direction:
+            direction = 'in'
+        else:
+            direction = 'out'
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_network.get_list_acl(zk_conn, net, limit, direction)
+    retcode, retdata = pvc_network.net_acl_list(config, net, limit, direction)
     if retcode:
         pvc_network.format_list_acl(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage
@@ -1838,11 +1801,8 @@ cli_network.add_command(net_dhcp)
 cli_network.add_command(net_acl)
 
 net_dhcp.add_command(net_dhcp_list)
-net_dhcp.add_command(net_dhcp_static)
-
-net_dhcp_static.add_command(net_dhcp_static_add)
-net_dhcp_static.add_command(net_dhcp_static_remove)
-net_dhcp_static.add_command(net_dhcp_static_list)
+net_dhcp.add_command(net_dhcp_add)
+net_dhcp.add_command(net_dhcp_remove)
 
 net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
