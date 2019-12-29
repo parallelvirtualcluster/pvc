@@ -394,6 +394,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Check if the ACL matches a description currently in the database
+    match_description = ''
     full_acl_list = getNetworkACLs(zk_conn, net_vni, 'both')
     for acl in full_acl_list:
         if acl['description'] == description:
