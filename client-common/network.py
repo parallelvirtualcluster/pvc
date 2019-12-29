@@ -459,7 +459,7 @@ def remove_acl(zk_conn, network, description):
     match_description = ''
 
     # Check if the ACL matches a description currently in the database
-    acl_list = getNetworkACLs(zk_conn, net_vni, None)
+    acl_list = getNetworkACLs(zk_conn, net_vni, 'both')
     for acl in acl_list:
         if acl['description'] == description:
             match_description = acl['description']
@@ -475,11 +475,11 @@ def remove_acl(zk_conn, network, description):
         return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
 
     # Update the existing ordering
-    updated_acl_list = getNetworkACLs(zk_conn, net_vni, direction)
+    updated_acl_list = getNetworkACLs(zk_conn, net_vni, match_direction)
     updated_orders = dict()
     for idx, acl in enumerate(updated_acl_list):
         updated_orders[
-            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl['description'])
+            '/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, match_direction, acl['description'])
         ] = idx
 
     if updated_orders:
