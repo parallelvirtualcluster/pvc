@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# vm.py - PVC CLI client function library, VM fuctions
+# vm.py - PVC CLI client function library, VM functions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2019 Joshua M. Boniface <joshua@boniface.me>
