@@ -10,6 +10,93 @@
             },
             "type": "object"
         },
+        "ClusterStatus": {
+            "properties": {
+                "health": {
+                    "description": "The overall cluster health",
+                    "example": "Optimal",
+                    "type": "string"
+                },
+                "networks": {
+                    "description": "The total number of networks in the cluster",
+                    "type": "integer"
+                },
+                "nodes": {
+                    "items": {
+                        "properties": {
+                            "state-combination": {
+                                "description": "The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. \"run,ready\", \"stop,flushed\", etc.",
+                                "type": "integer"
+                            },
+                            "total": {
+                                "description": "The total number of nodes in the cluster",
+                                "example": 3,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "osds": {
+                    "items": {
+                        "properties": {
+                            "state-combination": {
+                                "description": "The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. \"up,in\", \"down,out\", etc.",
+                                "type": "integer"
+                            },
+                            "total": {
+                                "description": "The total number of OSDs in the storage cluster",
+                                "example": 3,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "pools": {
+                    "description": "The total number of pools in the storage cluster",
+                    "type": "integer"
+                },
+                "primary_node": {
+                    "description": "The current primary coordinator node",
+                    "example": "pvchv1",
+                    "type": "string"
+                },
+                "snapshots": {
+                    "description": "The total number of snapshots in the storage cluster",
+                    "type": "integer"
+                },
+                "upstream_ip": {
+                    "description": "The cluster upstream IP address in CIDR format",
+                    "example": "10.0.0.254/24",
+                    "type": "string"
+                },
+                "vms": {
+                    "items": {
+                        "properties": {
+                            "state": {
+                                "description": "The total number of VMs in {state} state, e.g. \"start\", \"stop\", etc.",
+                                "type": "integer"
+                            },
+                            "total": {
+                                "description": "The total number of VMs in the cluster",
+                                "example": 6,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "volumes": {
+                    "description": "The total number of volumes in the storage cluster",
+                    "type": "integer"
+                }
+            },
+            "type": "object"
+        },
         "Message": {
             "properties": {
                 "message": {
@@ -3449,6 +3536,26 @@
                 ]
             }
         },
+        "/api/v1/status": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ClusterStatus"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "summary": "Return the current PVC cluster status",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
         "/api/v1/storage/ceph/option": {
             "post": {
                 "description": "",
@@ -4466,7 +4573,7 @@
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
-                            "vcpu",
+                            "vcpus",
                             "load",
                             "vms"
                         ],
@@ -4630,7 +4737,7 @@
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
-                            "vcpu",
+                            "vcpus",
                             "load",
                             "vms"
                         ],
