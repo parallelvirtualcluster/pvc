@@ -26,6 +26,7 @@ import json
 from distutils.util import strtobool
 
 import client_lib.common as pvc_common
+import client_lib.cluster as pvc_cluster
 import client_lib.node as pvc_node
 import client_lib.vm as pvc_vm
 import client_lib.network as pvc_network
@@ -66,6 +67,17 @@ def initialize_cluster():
     pvc_common.stopZKConnection(zk_conn)
 
     return True
+
+#
+# Status function
+#
+def cluster_status():
+    """
+    Get the overall status of the PVC cluster
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_cluster.get_info(zk_conn)
+    return retdata, 200
 
 #
 # Node functions

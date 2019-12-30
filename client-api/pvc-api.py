@@ -310,12 +310,93 @@ class API_Initialize(Resource):
           400:
             description: Bad request
         """
-        # TODO: Implement me in api_helper
         if api_helper.initialize_cluster():
             return { "message": "Successfully initialized a new PVC cluster" }, 200
         else:
             return { "message": "PVC cluster already initialized" }, 400
 api.add_resource(API_Initialize, '/initialize')
+
+# /status
+class API_Status(Resource):
+    @Authenticator
+    def get(self):
+        """
+        Return the current PVC cluster status
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: ClusterStatus
+              properties:
+                health:
+                  type: string
+                  description: The overall cluster health
+                  example: Optimal
+                primary_node:
+                  type: string
+                  description: The current primary coordinator node
+                  example: pvchv1
+                upstream_ip:
+                  type: string
+                  description: The cluster upstream IP address in CIDR format
+                  example: 10.0.0.254/24
+                nodes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: The total number of nodes in the cluster
+                        example: 3
+                      state-combination:
+                        type: integer
+                        description: The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. "run,ready", "stop,flushed", etc.
+                vms:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: The total number of VMs in the cluster
+                        example: 6
+                      state:
+                        type: integer
+                        description: The total number of VMs in {state} state, e.g. "start", "stop", etc.
+                networks:
+                  type: integer
+                  description: The total number of networks in the cluster
+                osds:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: The total number of OSDs in the storage cluster
+                        example: 3
+                      state-combination:
+                        type: integer
+                        description: The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. "up,in", "down,out", etc.
+                pools:
+                  type: integer
+                  description: The total number of pools in the storage cluster
+                volumes:
+                  type: integer
+                  description: The total number of volumes in the storage cluster
+                snapshots:
+                  type: integer
+                  description: The total number of snapshots in the storage cluster
+          400:
+            description: Bad request
+        """
+        return api_helper.cluster_status()
+api.add_resource(API_Status, '/status')
 
 
 ##########################################################
