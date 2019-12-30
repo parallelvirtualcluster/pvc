@@ -29,8 +29,11 @@ import difflib
 import re
 import colorama
 import yaml
+import json
 import lxml.etree as etree
 import requests
+
+from distutils.util import strtobool
 
 import cli_lib.ansiprint as ansiprint
 import cli_lib.cluster as pvc_cluster
@@ -42,11 +45,81 @@ import cli_lib.ceph as pvc_ceph
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
-config = dict()
-config['debug'] = False
-config['api_scheme'] = 'http'
-config['api_host'] = 'localhost:7370'
-config['api_prefix'] = '/api/v1'
+default_store_data = {
+    'cfgfile': '/etc/pvc/pvc-api.yaml' # pvc/api/listen_address, pvc/api/listen_port
+}
+
+#
+# Data store handling functions
+#
+def read_from_yaml(cfgfile):
+    with open(cfgfile, 'r') as fh:
+        api_config = yaml.load(fh, Loader=yaml.BaseLoader)
+    host = api_config['pvc']['api']['listen_address']
+    port = api_config['pvc']['api']['listen_port']
+    if strtobool(api_config['pvc']['api']['ssl']['enabled']):
+        scheme = 'https'
+    else:
+        scheme = 'http'
+    return host, port, scheme
+    
+def get_config(store_data, cluster=None):
+    # This is generally static
+    prefix = '/api/v1'
+
+    cluster_details = store_data.get(cluster)
+
+    if not cluster_details:
+        cluster_details = default_store_data
+        cluster = 'local'
+
+    if cluster_details.get('cfgfile', None):
+        # This is a reference to an API configuration; grab the details from its listen address
+        cfgfile = cluster_details.get('cfgfile')
+        if os.path.isfile(cfgfile):
+            host, port, scheme = read_from_yaml(cfgfile)
+        else:
+            print('Attempted to load API configuration from a nonexistent file; using defaults')
+            host = 'localhost'
+            port = '7370'
+            scheme = 'http'
+    else:
+        # This is a static configuration, get the raw details
+        host = cluster_details['host']
+        port = cluster_details['port']
+        scheme = cluster_details['scheme']
+
+    config = dict()
+    config['debug'] = False
+    config['cluster'] = cluster
+    config['api_host'] = '{}:{}'.format(host, port)
+    config['api_scheme'] = scheme
+    config['api_prefix'] = prefix
+
+    return config
+
+def get_store(store_path):
+    store_file = '{}/pvc-cli.json'.format(store_path)
+    with open(store_file, 'r') as fh:
+       store_data = json.loads(fh.read())
+    return store_data
+
+def update_store(store_path, store_data):
+    store_file = '{}/pvc-cli.json'.format(store_path)
+    with open(store_file, 'w') as fh:
+        fh.write(json.dumps(store_data, sort_keys=True, indent=4))
+
+home_dir = os.environ.get('HOME', None)
+if home_dir:
+    store_path = '{}/.config/pvc'.format(home_dir)
+else:
+    print('No home dir found - not permanently saving any configurations as this user')
+    store_path = '/tmp/pvc'
+
+if not os.path.isdir(store_path):
+    os.makedirs(store_path)
+if not os.path.isfile(store_path + '/pvc-cli.json'):
+    update_store(store_path, {"local": default_store_data})
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
@@ -59,6 +132,163 @@ def cleanup(retcode, retmsg):
         if retmsg != '':
             click.echo(retmsg)
         exit(1)
+
+###############################################################################
+# pvc cluster
+###############################################################################
+@click.group(name='cluster', short_help='Manage PVC cluster connections.', context_settings=CONTEXT_SETTINGS)
+def cli_cluster():
+    """
+    Manage the PVC clusters this CLI can connect to.
+    """
+    pass
+
+###############################################################################
+# pvc cluster add
+###############################################################################
+@click.command(name='add', short_help='Add a new cluster to the client.')
+@click.option(
+    '-a', '--address', 'address', required=True,
+    help='The IP address or hostname of the cluster API client.'
+)
+@click.option(
+    '-p', '--port', 'port', required=False, default=7370, show_default=True,
+    help='The cluster API client port.'
+)
+@click.option(
+    '-s/-S', '--ssl/--no-ssl', 'ssl', is_flag=True, default=False, show_default=True,
+    help='Whether to use SSL or not.'
+)
+@click.argument(
+    'name'
+)
+def cluster_add(address, port, ssl, name):
+    """
+    Add a new PVC cluster NAME, via its API connection details, to the configuration of the local CLI client. Replaces any existing cluster with this name.
+    """
+    if ssl:
+        scheme = 'https'
+    else:
+        scheme = 'http'
+
+    # Get the existing data
+    existing_config = get_store(store_path)
+    # Append our new entry to the end
+    existing_config[name] = {
+        'host': address,
+        'port': port,
+        'scheme': scheme
+    }
+    # Update the store
+    update_store(store_path, existing_config)
+
+###############################################################################
+# pvc cluster remove
+###############################################################################
+@click.command(name='remove', short_help='Remove a cluster from the client.')
+@click.argument(
+    'name'
+)
+def cluster_remove(name):
+    """
+    Remove a PVC cluster from the configuration of the local CLI client.
+    """
+    # Get the existing data
+    existing_config = get_store(store_path)
+    # Remove the entry matching the name
+    try:
+        existing_config.pop(name)
+    except KeyError:
+        print('No cluster with name "{}" found'.format(name))
+    # Update the store
+    update_store(store_path, existing_config)
+
+###############################################################################
+# pvc cluster list
+###############################################################################
+@click.command(name='list', short_help='List all available clusters.')
+def cluster_list():
+    """
+    List all the available PVC clusters configured in this CLI instance.
+    """
+    # Get the existing data
+    clusters = get_store(store_path)
+    # Find the lengths of each column
+    name_length = 5
+    address_length = 10
+    port_length = 5
+    scheme_length = 5
+
+    for cluster in clusters:
+        cluster_details = clusters[cluster]
+        if cluster_details.get('cfgfile', None):
+            # This is a reference to an API configuration; grab the details from its listen address
+            cfgfile = cluster_details.get('cfgfile')
+            if os.path.isfile(cfgfile):
+                address, port, scheme = read_from_yaml(cfgfile)
+        else:
+            address = cluster_details.get('host', None)
+            port = cluster_details.get('port', None)
+            scheme = cluster_details.get('scheme', None)
+
+        _name_length = len(cluster) + 1
+        if _name_length > name_length:
+            name_length = _name_length
+        _address_length = len(address) + 1
+        if _address_length > address_length:
+            address_length = _address_length
+        _port_length = len(str(port)) + 1
+        if _port_length > port_length:
+            port_length = _port_length
+        _scheme_length = len(scheme) + 1
+        if _scheme_length > scheme_length:
+            scheme_length = _scheme_length
+
+    # Display the data nicely
+    click.echo("Available clusters:")
+    click.echo()
+    click.echo(
+        '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name="Name",
+            name_length=name_length,
+            address="Address",
+            address_length=address_length,
+            port="Port",
+            port_length=port_length,
+            scheme="Scheme",
+            scheme_length=scheme_length
+        )
+    )
+
+    for cluster in clusters:
+        cluster_details = clusters[cluster]
+        if cluster_details.get('cfgfile', None):
+            # This is a reference to an API configuration; grab the details from its listen address
+            cfgfile = cluster_details.get('cfgfile')
+            if os.path.isfile(cfgfile):
+                address, port, scheme = read_from_yaml(cfgfile)
+        else:
+            address = cluster_details.get('host', None)
+            port = cluster_details.get('port', None)
+            scheme = cluster_details.get('scheme', None)
+
+        click.echo(
+            '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
+                bold=ansiprint.bold(),
+                end_bold=ansiprint.end(),
+                name=cluster,
+                name_length=name_length,
+                address=address,
+                address_length=address_length,
+                port=port,
+                port_length=port_length,
+                scheme=scheme,
+                scheme_length=scheme_length
+            )
+        )
+    
 
 ###############################################################################
 # pvc node
@@ -1669,43 +1899,34 @@ def init_cluster(yes):
 ###############################################################################
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option(
-    '-z', '--zookeeper', '_zk_host', envvar='PVC_ZOOKEEPER', default=None,
+    '-c', '--cluster', '_cluster', envvar='PVC_CLUSTER', default=None,
     help='Zookeeper connection string.'
 )
 @click.option(
     '-v', '--debug', '_debug', envvar='PVC_DEBUG', is_flag=True, default=False,
     help='Additional debug details.'
 )
-def cli(_zk_host, _debug):
+def cli(_cluster, _debug):
     """
     Parallel Virtual Cluster CLI management tool
 
     Environment variables:
 
-      "PVC_ZOOKEEPER": Set the cluster Zookeeper address instead of using "--zookeeper".
+      "PVC_CLUSTER": Set the cluster to access instead of using --cluster/-c
 
-    If no PVC_ZOOKEEPER/--zookeeper is specified, attempts to load coordinators list from /etc/pvc/pvcd.yaml.
+    If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
+    for an API configuration in "/etc/pvc/pvc-api.yaml". If this is also not found, connection defaults
+    to "http://localhost:7370" as a last restort.
     """
 
-    # If no zk_host was passed, try to read from /etc/pvc/pvcd.yaml; otherwise fail
-    if _zk_host is None:
-        try:
-            cfgfile = '/etc/pvc/pvcd.yaml'
-            with open(cfgfile) as cfgf:
-                o_config = yaml.load(cfgf)
-            _zk_host = o_config['pvc']['cluster']['coordinators']
-        except:
-            _zk_host = None
-
-    if _zk_host is None:
-        print('ERROR: Must specify a PVC_ZOOKEEPER value or have a coordinator set configured in /etc/pvc/pvcd.yaml.')
-        exit(1)
-
-    global zk_host
-    zk_host = _zk_host
     global config
+    store_data = get_store(store_path)
+    config = get_config(store_data, _cluster)
     config['debug'] = _debug
+    click.echo('Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(config['cluster'], config['api_host'], config['api_scheme'], config['api_prefix']))
+    click.echo()
 
+config = dict()
 
 #
 # Click command tree
@@ -1786,12 +2007,18 @@ cli_ceph.add_command(ceph_volume)
 
 cli_storage.add_command(cli_ceph)
 
+cli_cluster.add_command(cluster_add)
+cli_cluster.add_command(cluster_remove)
+cli_cluster.add_command(cluster_list)
+
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
+cli.add_command(cli_cluster)
 cli.add_command(status_cluster)
 cli.add_command(init_cluster)
+
 
 #
 # Main entry point
