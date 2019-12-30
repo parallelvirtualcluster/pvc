@@ -243,12 +243,6 @@
                         "$ref": "#/definitions/system-template"
                     },
                     "type": "array"
-                },
-                "userdata-templates": {
-                    "items": {
-                        "$ref": "#/definitions/userdata-template"
-                    },
-                    "type": "array"
                 }
             },
             "type": "object"
@@ -722,14 +716,14 @@
             },
             "type": "object"
         },
-        "userdata-template": {
+        "userdata": {
             "properties": {
                 "id": {
-                    "description": "Internal provisioner template ID",
+                    "description": "Internal provisioner ID",
                     "type": "integer"
                 },
                 "name": {
-                    "description": "Template name",
+                    "description": "Userdata name",
                     "type": "string"
                 },
                 "userdata": {
@@ -3357,12 +3351,12 @@
                 ]
             }
         },
-        "/api/v1/provisioner/template/userdata": {
+        "/api/v1/provisioner/userdata": {
             "get": {
                 "description": "",
                 "parameters": [
                     {
-                        "description": "A template name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "description": "A userdata name search limit; fuzzy by default, use ^/$ to force exact matches",
                         "in": "query",
                         "name": "limit",
                         "required": false,
@@ -3374,22 +3368,22 @@
                         "description": "OK",
                         "schema": {
                             "items": {
-                                "$ref": "#/definitions/userdata-template"
+                                "$ref": "#/definitions/userdata"
                             },
                             "type": "list"
                         }
                     }
                 },
-                "summary": "Return a list of userdata templates",
+                "summary": "Return a list of userdata documents",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             },
             "post": {
                 "description": "",
                 "parameters": [
                     {
-                        "description": "Template name",
+                        "description": "Userdata name",
                         "in": "query",
                         "name": "name",
                         "required": true,
@@ -3417,13 +3411,13 @@
                         }
                     }
                 },
-                "summary": "Create a new userdata template",
+                "summary": "Create a new userdata document",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             }
         },
-        "/api/v1/provisioner/template/userdata/{template}": {
+        "/api/v1/provisioner/userdata/{userdata}": {
             "delete": {
                 "description": "",
                 "responses": {
@@ -3440,9 +3434,9 @@
                         }
                     }
                 },
-                "summary": "Remove userdata template {template}",
+                "summary": "Remove userdata document {userdata}",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             },
             "get": {
@@ -3451,7 +3445,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userdata-template"
+                            "$ref": "#/definitions/userdata"
                         }
                     },
                     "404": {
@@ -3461,9 +3455,9 @@
                         }
                     }
                 },
-                "summary": "Return information about userdata template {template}",
+                "summary": "Return information about userdata document {userdata}",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             },
             "post": {
@@ -3491,9 +3485,9 @@
                         }
                     }
                 },
-                "summary": "Create a new userdata template {template}",
+                "summary": "Create a new userdata document {userdata}",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             },
             "put": {
@@ -3521,9 +3515,9 @@
                         }
                     }
                 },
-                "summary": "Update userdata template {template}",
+                "summary": "Update userdata document {userdata}",
                 "tags": [
-                    "provisioner / template"
+                    "provisioner"
                 ]
             }
         },

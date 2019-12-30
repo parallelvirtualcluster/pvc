@@ -170,20 +170,12 @@ def list_template_storage_disks(name):
     disks = data['disks']
     return disks
 
-def list_template_userdata(limit, is_fuzzy=True):
-    """
-    Obtain a list of userdata templates.
-    """
-    data = list_template(limit, 'userdata_template', is_fuzzy)
-    return data
-
 def template_list(limit):
     system_templates = list_template_system(limit)
     network_templates = list_template_network(limit)
     storage_templates = list_template_storage(limit)
-    userdata_templates = list_template_userdata(limit)
 
-    return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates, "userdata_templates": userdata_templates }
+    return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates }
 
 #
 # Template Create functions
@@ -313,49 +305,6 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
         retcode = 200
     except psycopg2.IntegrityError as e:
         retmsg = { "message": "Failed to create entry {}".format(disk_id), "error": e }
-        retcode = 400
-    close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
-
-def create_template_userdata(name, userdata):
-    if list_template_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata template {} already exists".format(name) }
-        retcode = 400
-        return flask.jsonify(retmsg), retcode
-
-    conn, cur = open_database(config)
-    try:
-        query = "INSERT INTO userdata_template (name, userdata) VALUES (%s, %s);"
-        args = (name, userdata)
-        cur.execute(query, args)
-        retmsg = { "name": name }
-        retcode = 200
-    except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
-        retcode = 400
-    close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
-
-#
-# Template update functions
-#
-def update_template_userdata(name, userdata):
-    if not list_template_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata template {} does not exist".format(name) }
-        retcode = 400
-        return flask.jsonify(retmsg), retcode
-
-    tid = list_template_userdata(name, is_fuzzy=False)[0]['id']
-
-    conn, cur = open_database(config)
-    try:
-        query = "UPDATE userdata_template SET userdata = %s WHERE id = %s;"
-        args = (userdata, tid)
-        cur.execute(query, args)
-        retmsg = { "name": name }
-        retcode = 200
-    except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
@@ -500,21 +449,89 @@ def delete_template_storage_element(name, disk_id):
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode
 
-def delete_template_userdata(name):
-    if not list_template_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata template {} does not exist".format(name) }
+#
+# Userdata functions
+#
+def list_userdata(limit, is_fuzzy=True):
+    if limit:
+        if is_fuzzy:
+            # Handle fuzzy vs. non-fuzzy limits
+            if not re.match('\^.*', limit):
+                limit = '%' + limit
+            else:
+                limit = limit[1:]
+            if not re.match('.*\$', limit):
+                limit = limit + '%'
+            else:
+                limit = limit[:-1]
+
+        query = "SELECT * FROM {} WHERE name LIKE %s;".format('userdata')
+        args = (limit, )
+    else:
+        query = "SELECT * FROM {};".format('userdata')
+        args = ()
+
+    conn, cur = open_database(config)
+    cur.execute(query, args)
+    data = cur.fetchall()
+    close_database(conn, cur)
+    return data
+
+def create_userdata(name, userdata):
+    if list_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata {} already exists".format(name) }
         retcode = 400
         return flask.jsonify(retmsg), retcode
 
     conn, cur = open_database(config)
     try:
-        query = "DELETE FROM userdata_template WHERE name = %s;"
+        query = "INSERT INTO userdata (name, userdata) VALUES (%s, %s);"
+        args = (name, userdata)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
+def update_userdata(name, userdata):
+    if not list_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata {} does not exist".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    tid = list_userdata(name, is_fuzzy=False)[0]['id']
+
+    conn, cur = open_database(config)
+    try:
+        query = "UPDATE userdata SET userdata = %s WHERE id = %s;"
+        args = (userdata, tid)
+        cur.execute(query, args)
+        retmsg = { "name": name }
+        retcode = 200
+    except psycopg2.IntegrityError as e:
+        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
+        retcode = 400
+    close_database(conn, cur)
+    return flask.jsonify(retmsg), retcode
+
+def delete_userdata(name):
+    if not list_userdata(name, is_fuzzy=False):
+        retmsg = { "message": "The userdata {} does not exist".format(name) }
+        retcode = 400
+        return flask.jsonify(retmsg), retcode
+
+    conn, cur = open_database(config)
+    try:
+        query = "DELETE FROM userdata WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
         retmsg = { "name": name }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
         retcode = 400
     close_database(conn, cur)
     return flask.jsonify(retmsg), retcode

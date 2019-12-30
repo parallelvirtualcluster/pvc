@@ -3457,10 +3457,6 @@ class API_Provisioner_Template_Root(Resource):
                   type: array
                   items:
                     $ref: '#/definitions/storage-template'
-                userdata-templates:
-                  type: array
-                  items:
-                    $ref: '#/definitions/userdata-template'
         parameters:
           - in: query
             name: limit
@@ -4538,29 +4534,29 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
         )
 api.add_resource(API_Provisioner_Template_Storage_Disk_Element, '/provisioner/template/storage/<template>/disk/<disk_id>')
 
-# /provisioner/template/userdata
-class API_Provisioner_Template_Userdata_Root(Resource):
+# /provisioner/userdata
+class API_Provisioner_Userdata_Root(Resource):
     @RequestParser([
         { 'name': 'limit' }
     ])
     @Authenticator
     def get(self, reqargs):
         """
-        Return a list of userdata templates
+        Return a list of userdata documents
         ---
         tags:
-          - provisioner / template
+          - provisioner
         definitions:
           - schema:
               type: object
-              id: userdata-template
+              id: userdata
               properties:
                 id:
                   type: integer
-                  description: Internal provisioner template ID
+                  description: Internal provisioner ID
                 name:
                   type: string
-                  description: Template name
+                  description: Userdata name
                 userdata:
                   type: string
                   description: Raw userdata configuration document
@@ -4569,36 +4565,36 @@ class API_Provisioner_Template_Userdata_Root(Resource):
             name: limit
             type: string
             required: false
-            description: A template name search limit; fuzzy by default, use ^/$ to force exact matches
+            description: A userdata name search limit; fuzzy by default, use ^/$ to force exact matches
         responses:
           200:
             description: OK
             schema:
               type: list
               items:
-                $ref: '#/definitions/userdata-template'
+                $ref: '#/definitions/userdata'
         """
         return api_provisioner.list_template_userdata(
             reqargs.get('limit', None)
         )
 
     @RequestParser([
-        { 'name': 'name', 'required': True, 'helpmsg': "A template name must be specified" },
+        { 'name': 'name', 'required': True, 'helpmsg': "A name must be specified" },
         { 'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified" }
     ])
     @Authenticator
     def post(self, reqargs):
         """
-        Create a new userdata template
+        Create a new userdata document
         ---
         tags:
-          - provisioner / template
+          - provisioner
         parameters:
           - in: query
             name: name
             type: string
             required: true
-            description: Template name
+            description: Userdata name
           - in: query
             name: data
             type: string
@@ -4616,33 +4612,33 @@ class API_Provisioner_Template_Userdata_Root(Resource):
               type: object
               id: Message
         """
-        return api_provisioner.create_template_userdata(
+        return api_provisioner.create_userdata(
             reqargs.get('name', None),
             reqargs.get('data', None)
         )
-api.add_resource(API_Provisioner_Template_Userdata_Root, '/provisioner/template/userdata')
+api.add_resource(API_Provisioner_Userdata_Root, '/provisioner/userdata')
 
-# /provisioner/template/userdata/<template>
-class API_Provisioner_Template_Userdata_Element(Resource):
+# /provisioner/userdata/<userdata>
+class API_Provisioner_Userdata_Element(Resource):
     @Authenticator
-    def get(self, template):
+    def get(self, userdata):
         """
-        Return information about userdata template {template}
+        Return information about userdata document {userdata}
         ---
         tags:
-          - provisioner / template
+          - provisioner
         responses:
           200:
             description: OK
             schema:
-              $ref: '#/definitions/userdata-template'
+              $ref: '#/definitions/userdata'
           404:
             description: Not found
             schema:
               type: object
               id: Message
         """
-        return api_provisioner.list_template_userdata(
+        return api_provisioner.list_userdata(
             template,
             is_fuzzy=False
         )
@@ -4651,12 +4647,12 @@ class API_Provisioner_Template_Userdata_Element(Resource):
         { 'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified" }
     ])
     @Authenticator
-    def post(self, template, reqargs):
+    def post(self, userdata, reqargs):
         """
-        Create a new userdata template {template}
+        Create a new userdata document {userdata}
         ---
         tags:
-          - provisioner / template
+          - provisioner
         parameters:
           - in: query
             name: data
@@ -4675,8 +4671,8 @@ class API_Provisioner_Template_Userdata_Element(Resource):
               type: object
               id: Message
         """
-        return api_provisioner.create_template_userdata(
-            template,
+        return api_provisioner.create_userdata(
+            userdata,
             reqargs.get('data', None)
         )
 
@@ -4686,10 +4682,10 @@ class API_Provisioner_Template_Userdata_Element(Resource):
     @Authenticator
     def put(self, template):
         """
-        Update userdata template {template}
+        Update userdata document {userdata}
         ---
         tags:
-          - provisioner / template
+          - provisioner
         parameters:
           - in: query
             name: data
@@ -4708,18 +4704,18 @@ class API_Provisioner_Template_Userdata_Element(Resource):
               type: object
               id: Message
         """
-        return api_provisioner.update_template_userdata(
-            template,
+        return api_provisioner.update_userdata(
+            userdata,
             reqargs.get('data', None)
         )
 
     @Authenticator
     def delete(self, template):
         """
-        Remove userdata template {template}
+        Remove userdata document {userdata}
         ---
         tags:
-          - provisioner / template
+          - provisioner
         responses:
           200:
             description: OK
@@ -4732,10 +4728,10 @@ class API_Provisioner_Template_Userdata_Element(Resource):
               type: object
               id: Message
         """
-        return api_provisioner.delete_template_userdata(
-            template
+        return api_provisioner.delete_userdata(
+            userdata
         )
-api.add_resource(API_Provisioner_Template_Userdata_Element, '/provisioner/template/userdata/<template>')
+api.add_resource(API_Provisioner_Userdata_Element, '/provisioner/userdata/<userdata>')
 
 # /provisioner/script
 class API_Provisioner_Script_Root(Resource):
