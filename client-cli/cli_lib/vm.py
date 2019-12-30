@@ -60,7 +60,7 @@ def vm_info(config, vm):
     )
 
     if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
+        print('API endpoint: GET {}'.format(request_uri))
         print('Response code: {}'.format(response.status_code))
         print('Response headers: {}'.format(response.headers))
 
@@ -71,7 +71,7 @@ def vm_info(config, vm):
 
 def vm_list(config, limit, target_node, target_state):
     """
-    Get list information about nodes (limited by {limit}, {target_node}, or {target_state})
+    Get list information about VMs (limited by {limit}, {target_node}, or {target_state})
 
     API endpoint: GET /api/v1/vm
     API arguments: limit={limit}, node={target_node}, state={target_state}
@@ -92,7 +92,7 @@ def vm_list(config, limit, target_node, target_state):
     )
 
     if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
+        print('API endpoint: GET {}'.format(request_uri))
         print('Response code: {}'.format(response.status_code))
         print('Response headers: {}'.format(response.headers))
 
