@@ -62,7 +62,7 @@ def read_from_yaml(cfgfile):
     else:
         scheme = 'http'
     return host, port, scheme
-    
+
 def get_config(store_data, cluster=None):
     # This is generally static
     prefix = '/api/v1'
@@ -288,7 +288,7 @@ def cluster_list():
                 scheme_length=scheme_length
             )
         )
-    
+
 
 ###############################################################################
 # pvc node
@@ -311,7 +311,7 @@ def node_secondary(node):
     """
     Take NODE out of primary router mode.
     """
-    
+
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
     cleanup(retcode, retmsg)
 
@@ -345,7 +345,7 @@ def node_flush(node, wait):
     """
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
-    
+
     retcode, retmsg = pvc_node.node_domain_state(config, node, 'flush', wait)
     cleanup(retcode, retmsg)
 
@@ -962,7 +962,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     pvc network add 101 --type bridged
 
       > Creates vLAN 101 and a simple bridge on the VNI dev interface.
-    
+
     pvc network add 1001 --type managed --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
 
       > Creates a VXLAN with ID 1001 on the VNI dev interface, with IPv4 managed networking.
