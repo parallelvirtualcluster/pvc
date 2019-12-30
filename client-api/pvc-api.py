@@ -61,14 +61,14 @@ except Exception as e:
 try:
     # Create the config object
     config = {
-        'debug': o_config['pvc']['debug'],
+        'debug': strtobool(o_config['pvc']['debug']),
         'coordinators': o_config['pvc']['coordinators'],
         'listen_address': o_config['pvc']['api']['listen_address'],
         'listen_port': int(o_config['pvc']['api']['listen_port']),
         'auth_enabled': strtobool(o_config['pvc']['api']['authentication']['enabled']),
         'auth_secret_key': o_config['pvc']['api']['authentication']['secret_key'],
         'auth_tokens': o_config['pvc']['api']['authentication']['tokens'],
-        'ssl_enabled': o_config['pvc']['api']['ssl']['enabled'],
+        'ssl_enabled': strtobool(o_config['pvc']['api']['ssl']['enabled']),
         'ssl_key_file': o_config['pvc']['api']['ssl']['key_file'],
         'ssl_cert_file': o_config['pvc']['api']['ssl']['cert_file'],
         'database_host': o_config['pvc']['provisioner']['database']['host'],
