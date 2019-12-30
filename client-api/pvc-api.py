@@ -345,44 +345,38 @@ class API_Status(Resource):
                   description: The cluster upstream IP address in CIDR format
                   example: 10.0.0.254/24
                 nodes:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      total:
-                        type: integer
-                        description: The total number of nodes in the cluster
-                        example: 3
-                      state-combination:
-                        type: integer
-                        description: The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. "run,ready", "stop,flushed", etc.
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      description: The total number of nodes in the cluster
+                      example: 3
+                    state-combination:
+                      type: integer
+                      description: The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. "run,ready", "stop,flushed", etc.
                 vms:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      total:
-                        type: integer
-                        description: The total number of VMs in the cluster
-                        example: 6
-                      state:
-                        type: integer
-                        description: The total number of VMs in {state} state, e.g. "start", "stop", etc.
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      description: The total number of VMs in the cluster
+                      example: 6
+                    state:
+                      type: integer
+                      description: The total number of VMs in {state} state, e.g. "start", "stop", etc.
                 networks:
                   type: integer
                   description: The total number of networks in the cluster
                 osds:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      total:
-                        type: integer
-                        description: The total number of OSDs in the storage cluster
-                        example: 3
-                      state-combination:
-                        type: integer
-                        description: The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. "up,in", "down,out", etc.
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      description: The total number of OSDs in the storage cluster
+                      example: 3
+                    state-combination:
+                      type: integer
+                      description: The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. "up,in", "down,out", etc.
                 pools:
                   type: integer
                   description: The total number of pools in the storage cluster

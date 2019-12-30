@@ -22,38 +22,32 @@
                     "type": "integer"
                 },
                 "nodes": {
-                    "items": {
-                        "properties": {
-                            "state-combination": {
-                                "description": "The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. \"run,ready\", \"stop,flushed\", etc.",
-                                "type": "integer"
-                            },
-                            "total": {
-                                "description": "The total number of nodes in the cluster",
-                                "example": 3,
-                                "type": "integer"
-                            }
+                    "properties": {
+                        "state-combination": {
+                            "description": "The total number of nodes in {state-combination} state, where {state-combination} is the node daemon and domain states in CSV format, e.g. \"run,ready\", \"stop,flushed\", etc.",
+                            "type": "integer"
                         },
-                        "type": "object"
+                        "total": {
+                            "description": "The total number of nodes in the cluster",
+                            "example": 3,
+                            "type": "integer"
+                        }
                     },
-                    "type": "array"
+                    "type": "object"
                 },
                 "osds": {
-                    "items": {
-                        "properties": {
-                            "state-combination": {
-                                "description": "The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. \"up,in\", \"down,out\", etc.",
-                                "type": "integer"
-                            },
-                            "total": {
-                                "description": "The total number of OSDs in the storage cluster",
-                                "example": 3,
-                                "type": "integer"
-                            }
+                    "properties": {
+                        "state-combination": {
+                            "description": "The total number of OSDs in {state-combination} state, where {state-combination} is the OSD up and in states in CSV format, e.g. \"up,in\", \"down,out\", etc.",
+                            "type": "integer"
                         },
-                        "type": "object"
+                        "total": {
+                            "description": "The total number of OSDs in the storage cluster",
+                            "example": 3,
+                            "type": "integer"
+                        }
                     },
-                    "type": "array"
+                    "type": "object"
                 },
                 "pools": {
                     "description": "The total number of pools in the storage cluster",
@@ -74,21 +68,18 @@
                     "type": "string"
                 },
                 "vms": {
-                    "items": {
-                        "properties": {
-                            "state": {
-                                "description": "The total number of VMs in {state} state, e.g. \"start\", \"stop\", etc.",
-                                "type": "integer"
-                            },
-                            "total": {
-                                "description": "The total number of VMs in the cluster",
-                                "example": 6,
-                                "type": "integer"
-                            }
+                    "properties": {
+                        "state": {
+                            "description": "The total number of VMs in {state} state, e.g. \"start\", \"stop\", etc.",
+                            "type": "integer"
                         },
-                        "type": "object"
+                        "total": {
+                            "description": "The total number of VMs in the cluster",
+                            "example": 6,
+                            "type": "integer"
+                        }
                     },
-                    "type": "array"
+                    "type": "object"
                 },
                 "volumes": {
                     "description": "The total number of volumes in the storage cluster",
