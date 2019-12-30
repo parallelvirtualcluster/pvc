@@ -276,8 +276,8 @@ def cluster_list():
 
         click.echo(
             '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
-                bold=ansiprint.bold(),
-                end_bold=ansiprint.end(),
+                bold='',
+                end_bold='',
                 name=cluster,
                 name_length=name_length,
                 address=address,
