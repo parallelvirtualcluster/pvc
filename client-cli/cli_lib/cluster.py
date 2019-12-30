@@ -116,7 +116,9 @@ def format_info(cluster_information, oformat):
     ainformation.append('{}Total volumes:{}   {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['volumes']))
     ainformation.append('{}Total snapshots:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['snapshots']))
 
-    nodes_string = '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['run,ready'], cluster_information['nodes']['total'], ansiprint.green(), ansiprint.end())
+    nodes_string = ''
+    if cluster_information['nodes'].get('run,ready', None):
+        nodes_string += '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['run,ready'], cluster_information['nodes']['total'], ansiprint.green(), ansiprint.end())
     for state, count in cluster_information['nodes'].items():
         if state == 'total' or state == 'run,ready':
             continue
@@ -126,7 +128,9 @@ def format_info(cluster_information, oformat):
     ainformation.append('')
     ainformation.append(nodes_string)
 
-    vms_string = '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['start'], cluster_information['vms']['total'], ansiprint.green(), ansiprint.end())
+    vms_string = ''
+    if cluster_information['vms'].get('start', None):
+        vms_string += '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['start'], cluster_information['vms']['total'], ansiprint.green(), ansiprint.end())
     for state, count in cluster_information['vms'].items():
         if state == 'total' or state == 'start':
             continue
