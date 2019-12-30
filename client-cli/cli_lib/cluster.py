@@ -22,8 +22,69 @@
 
 import click
 import json
+import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def get_request_uri(config, endpoint):
+    """
+    Return the fully-formed URI for {endpoint}
+    """
+    uri = '{}://{}{}{}'.format(
+        config['api_scheme'],
+        config['api_host'],
+        config['api_prefix'],
+        endpoint
+    )
+    return uri
+
+def initialize(config):
+    """
+    Initialize the PVC cluster
+
+    API endpoint: GET /api/v1/initialize
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/initialize')
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def get_info(config):
+    """
+    Get status of the PVC cluster
+
+    API endpoint: GET /api/v1/status
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/status')
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
 
 def format_info(cluster_information, oformat):
     if oformat == 'json':

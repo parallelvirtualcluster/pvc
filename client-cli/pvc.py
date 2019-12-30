@@ -237,7 +237,7 @@ def vm_define(config, target_node, node_limit, node_selector, node_autostart):
     config_data = config.read()
     config.close()
 
-    retcode, retmsg = pvc_vm.define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart)
+    retcode, retmsg = pvc_vm.define_vm(config, config_data, target_node, node_limit, node_selector, node_autostart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -1099,28 +1099,26 @@ def ceph_status():
     Show detailed status of the storage cluster.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_status(zk_conn)
+    retcode, retdata = pvc_ceph.ceph_status(config)
     if retcode:
         pvc_ceph.format_raw_output(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph df
+# pvc storage ceph util
 ###############################################################################
-@click.command(name='df', short_help='Show storage cluster utilization.')
-def ceph_radosdf():
+@click.command(name='util', short_help='Show storage cluster utilization.')
+def ceph_util():
     """
     Show utilization of the storage cluster.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_radosdf(zk_conn)
+    retcode, retdata = pvc_ceph.ceph_util(config)
     if retcode:
         pvc_ceph.format_raw_output(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage ceph osd
@@ -1163,9 +1161,8 @@ def ceph_osd_add(node, device, weight, yes):
         if choice != 'y' and choice != 'Y':
             exit(0)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_osd(zk_conn, node, device, weight)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd remove
@@ -1190,9 +1187,8 @@ def ceph_osd_remove(osdid, yes):
         if choice != 'y' and choice != 'Y':
             exit(0)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.remove_osd(zk_conn, osdid)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd in
@@ -1206,9 +1202,8 @@ def ceph_osd_in(osdid):
     Set a Ceph OSD with ID OSDID online in the cluster.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.in_osd(zk_conn, osdid)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'in')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd out
@@ -1222,9 +1217,8 @@ def ceph_osd_out(osdid):
     Set a Ceph OSD with ID OSDID offline in the cluster.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.out_osd(zk_conn, osdid)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'out')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd set
@@ -1242,9 +1236,8 @@ def ceph_osd_set(osd_property):
       full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.set_osd(zk_conn, osd_property)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'set')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd unset
@@ -1262,9 +1255,8 @@ def ceph_osd_unset(osd_property):
       full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.unset_osd(zk_conn, osd_property)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'unset')
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph osd list
@@ -1278,12 +1270,11 @@ def ceph_osd_list(limit):
     List all Ceph OSDs in the cluster; optionally only match elements matching ID regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_list_osd(zk_conn, limit)
+    retcode, retdata = pvc_ceph.ceph_osd_list(config, limit)
     if retcode:
         pvc_ceph.format_list_osd(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage ceph pool
@@ -1319,9 +1310,8 @@ def ceph_pool_add(name, pgs, replcfg):
 
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_pool(zk_conn, name, pgs, replcfg)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph pool remove
@@ -1348,9 +1338,8 @@ def ceph_pool_remove(name, yes):
             if pool_name_check != name:
                 exit(0)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.remove_pool(zk_conn, name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_pool_remove(config, name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph pool list
@@ -1364,12 +1353,11 @@ def ceph_pool_list(limit):
     List all Ceph RBD pools in the cluster; optionally only match elements matching name regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_list_pool(zk_conn, limit)
+    retcode, retdata = pvc_ceph.ceph_pool_list(config, limit)
     if retcode:
         pvc_ceph.format_list_pool(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage ceph volume
@@ -1399,9 +1387,8 @@ def ceph_volume_add(pool, name, size):
     Add a new Ceph RBD volume with name NAME and size SIZE [in human units, e.g. 1024M, 20G, etc.] to pool POOL.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_volume(zk_conn, pool, name, size)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_volume_add(config, pool, name, size)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume remove
@@ -1429,9 +1416,8 @@ def ceph_volume_remove(pool, name, yes):
         if choice != 'y' and choice != 'Y':
             exit(0)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.remove_volume(zk_conn, pool, name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_volume_remove(config, pool, name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume resize
@@ -1450,9 +1436,8 @@ def ceph_volume_resize(pool, name, size):
     """
     Resize an existing Ceph RBD volume with name NAME in pool POOL to size SIZE [in human units, e.g. 1024M, 20G, etc.].
     """
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.resize_volume(zk_conn, pool, name, size)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_volume_modify(config, pool, name, new_size=size)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume rename
@@ -1471,14 +1456,13 @@ def ceph_volume_rename(pool, name, new_name):
     """
     Rename an existing Ceph RBD volume with name NAME in pool POOL to name NEW_NAME.
     """
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.rename_volume(zk_conn, pool, name, new_name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_volume_modify(config, pool, name, new_name=new_name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume clone
 ###############################################################################
-@click.command(name='rename', short_help='Clone RBD volume.')
+@click.command(name='clone', short_help='Clone RBD volume.')
 @click.argument(
     'pool'
 )
@@ -1492,9 +1476,8 @@ def ceph_volume_clone(pool, name, new_name):
     """
     Clone a Ceph RBD volume with name NAME in pool POOL to name NEW_NAME in pool POOL.
     """
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.clone_volume(zk_conn, pool, name, new_name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_volume_clone(config, pool, name, new_name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume list
@@ -1513,12 +1496,11 @@ def ceph_volume_list(limit, pool):
     List all Ceph RBD volumes in the cluster; optionally only match elements matching name regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit)
+    retcode, retdata = pvc_ceph.ceph_volume_list(config, limit, pool)
     if retcode:
         pvc_ceph.format_list_volume(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage ceph volume snapshot
@@ -1548,9 +1530,8 @@ def ceph_volume_snapshot_add(pool, volume, name):
     Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_snapshot_add(config, pool, volume, name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume snapshot rename
@@ -1572,9 +1553,8 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     Rename an existing Ceph RBD volume snapshot with name NAME to name NEW_NAME for volume VOLUME in pool POOL.
     """
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.rename_snapshot(zk_conn, pool, volume, name, new_name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_snapshot_modify(config, pool, volume, name, new_name=new_name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume snapshot remove
@@ -1605,9 +1585,8 @@ def ceph_volume_snapshot_remove(pool, volume, name, yes):
         if choice != 'y' and choice != 'Y':
             exit(0)
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retmsg = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
-    cleanup(retcode, retmsg, zk_conn)
+    retcode, retmsg = pvc_ceph.ceph_snapshot_remove(config, pool, volume, name)
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc storage ceph volume snapshot list
@@ -1631,12 +1610,11 @@ def ceph_volume_snapshot_list(pool, volume, limit):
     List all Ceph RBD volume snapshots; optionally only match elements matching name regex LIMIT.
     """
 
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit)
+    retcode, retdata = pvc_ceph.ceph_snapshot_list(config, limit, volume, pool)
     if retcode:
         pvc_ceph.format_list_snapshot(retdata)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 
 ###############################################################################
@@ -1652,12 +1630,11 @@ def status_cluster(oformat):
     """
     Show basic information and health for the active PVC cluster.
     """
-    zk_conn = pvc_common.startZKConnection(zk_host)
-    retcode, retdata = pvc_cluster.get_info(zk_conn)
+    retcode, retdata = pvc_cluster.get_info(config)
     if retcode:
         pvc_cluster.format_info(retdata, oformat)
         retdata = ''
-    cleanup(retcode, retdata, zk_conn)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc init
@@ -1684,40 +1661,8 @@ def init_cluster(yes):
     # Easter-egg
     click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
 
-    # Open a Zookeeper connection
-    zk_conn = pvc_common.startZKConnection(zk_host)
-
-    # Destroy the existing data
-    try:
-        zk_conn.delete('/networks', recursive=True)
-        zk_conn.delete('/domains', recursive=True)
-        zk_conn.delete('/nodes', recursive=True)
-        zk_conn.delete('/primary_node', recursive=True)
-        zk_conn.delete('/ceph', recursive=True)
-    except:
-        pass
-
-    # Create the root keys
-    transaction = zk_conn.transaction()
-    transaction.create('/nodes', ''.encode('ascii'))
-    transaction.create('/primary_node', 'none'.encode('ascii'))
-    transaction.create('/domains', ''.encode('ascii'))
-    transaction.create('/networks', ''.encode('ascii'))
-    transaction.create('/ceph', ''.encode('ascii'))
-    transaction.create('/ceph/osds', ''.encode('ascii'))
-    transaction.create('/ceph/pools', ''.encode('ascii'))
-    transaction.create('/ceph/volumes', ''.encode('ascii'))
-    transaction.create('/ceph/snapshots', ''.encode('ascii'))
-    transaction.create('/cmd', ''.encode('ascii'))
-    transaction.create('/cmd/domains', ''.encode('ascii'))
-    transaction.create('/cmd/ceph', ''.encode('ascii'))
-    transaction.commit()
-
-    # Close the Zookeeper connection
-    pvc_common.stopZKConnection(zk_conn)
-
-    click.echo('Successfully initialized new cluster. Any running PVC daemons will need to be restarted.')
-
+    retcode, retmsg = pvc_cluster.initialize()
+    cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc
@@ -1823,6 +1768,7 @@ ceph_pool.add_command(ceph_pool_list)
 ceph_volume.add_command(ceph_volume_add)
 ceph_volume.add_command(ceph_volume_resize)
 ceph_volume.add_command(ceph_volume_rename)
+ceph_volume.add_command(ceph_volume_clone)
 ceph_volume.add_command(ceph_volume_remove)
 ceph_volume.add_command(ceph_volume_list)
 ceph_volume.add_command(ceph_volume_snapshot)
@@ -1833,7 +1779,7 @@ ceph_volume_snapshot.add_command(ceph_volume_snapshot_remove)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
 
 cli_ceph.add_command(ceph_status)
-cli_ceph.add_command(ceph_radosdf)
+cli_ceph.add_command(ceph_util)
 cli_ceph.add_command(ceph_osd)
 cli_ceph.add_command(ceph_pool)
 cli_ceph.add_command(ceph_volume)

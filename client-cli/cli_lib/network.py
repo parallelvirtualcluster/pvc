@@ -82,7 +82,7 @@ def net_info(config, net):
     )
 
     if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
+        print('API endpoint: GET {}'.format(request_uri))
         print('Response code: {}'.format(response.status_code))
         print('Response headers: {}'.format(response.headers))
 
@@ -110,7 +110,7 @@ def net_list(config, limit):
     )
 
     if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
+        print('API endpoint: GET {}'.format(request_uri))
         print('Response code: {}'.format(response.status_code))
         print('Response headers: {}'.format(response.headers))
 
@@ -716,6 +716,9 @@ def format_list_dhcp(dhcp_lease_list):
     click.echo('\n'.join(sorted(dhcp_lease_list_output)))
 
 def format_list_acl(acl_list):
+    # Handle when we get an empty entry
+    if not acl_list:
+        acl_list = list()
     # Handle when we get a single entry
     if isinstance(acl_list, dict):
         acl_list = [ acl_list ]

@@ -25,12 +25,25 @@ import click
 import json
 import time
 import math
+import requests
 
 import cli_lib.ansiprint as ansiprint
 
 #
 # Supplemental functions
 #
+
+def get_request_uri(config, endpoint):
+    """
+    Return the fully-formed URI for {endpoint}
+    """
+    uri = '{}://{}{}{}'.format(
+        config['api_scheme'],
+        config['api_host'],
+        config['api_prefix'],
+        endpoint
+    )
+    return uri
 
 # Format byte sizes to/from human-readable units
 byte_unit_matrix = {
@@ -99,6 +112,52 @@ def format_pct_tohuman(datapct):
 #
 # Status functions
 #
+def ceph_status(config):
+    """
+    Get status of the Ceph cluster
+
+    API endpoint: GET /api/v1/storage/ceph/status
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/status')
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+	
+def ceph_util(config):
+    """
+    Get utilization of the Ceph cluster
+
+    API endpoint: GET /api/v1/storage/ceph/utilization
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/utilization')
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+	
 def format_raw_output(status_data):
     click.echo('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
     click.echo(status_data['ceph_data'])
@@ -107,6 +166,172 @@ def format_raw_output(status_data):
 #
 # OSD functions
 #
+def ceph_osd_info(config, osd):
+    """
+    Get information about Ceph OSD
+
+    API endpoint: GET /api/v1/storage/ceph/osd/{osd}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/osd/{osd}'.format(osd=osd))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_osd_list(config, limit):
+    """
+    Get list information about Ceph OSDs (limited by {limit})
+
+    API endpoint: GET /api/v1/storage/ceph/osd
+    API arguments: limit={limit}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+
+    request_uri = get_request_uri(config, '/storage/ceph/osd')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_osd_add(config, node, device, weight):
+    """
+    Add new Ceph OSD
+
+    API endpoint: POST /api/v1/storage/ceph/osd
+    API arguments: node={node}, device={device}, weight={weight}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/osd')
+    response = requests.post(
+        request_uri,
+        params={
+            'node': node,
+            'device': device,
+            'weight': weight
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_osd_remove(config, osdid):
+    """
+    Remove Ceph OSD
+
+    API endpoint: POST /api/v1/storage/ceph/osd/{osdid}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/osd/{osdid}'.format(osdid=osdid))
+    response = requests.post(
+        request_uri,
+        params={
+            'yes-i-really-mean-it': 'yes'
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_osd_state(config, osdid, state):
+    """
+    Set state of Ceph OSD
+
+    API endpoint: POST /api/v1/storage/ceph/osd/{osdid}/state
+    API arguments: state={state}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/osd/{osdid}/state'.format(osdid=osdid))
+    response = requests.post(
+        request_uri,
+        params={
+            'state': state
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_osd_option(config, option, action):
+    """
+    Set cluster option of Ceph OSDs
+
+    API endpoint: POST /api/v1/storage/ceph/option
+    API arguments: option={option}, action={action}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/option')
+    response = requests.post(
+        request_uri,
+        params={
+            'option': option,
+            'action': action
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def getOutputColoursOSD(osd_information):
     # Set the UP status
     if osd_information['stats']['up'] == 1:
@@ -127,6 +352,13 @@ def getOutputColoursOSD(osd_information):
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
 
 def format_list_osd(osd_list):
+    # Handle empty list
+    if not osd_list:
+        osd_list = list()
+    # Handle single-item list
+    if isinstance(osd_list, dict):
+        osd_list = [ osd_list ]
+
     osd_list_output = []
 
     osd_id_length = 3
@@ -363,7 +595,123 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
 #
 # Pool functions
 #
+def ceph_pool_info(config, pool):
+    """
+    Get information about Ceph OSD
+
+    API endpoint: GET /api/v1/storage/ceph/pool/{pool}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/pool/{pool}'.format(pool=pool))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_pool_list(config, limit):
+    """
+    Get list information about Ceph OSDs (limited by {limit})
+
+    API endpoint: GET /api/v1/storage/ceph/pool
+    API arguments: limit={limit}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+
+    request_uri = get_request_uri(config, '/storage/ceph/pool')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_pool_add(config, pool, pgs, replcfg):
+    """
+    Add new Ceph OSD
+
+    API endpoint: POST /api/v1/storage/ceph/pool
+    API arguments: pool={pool}, pgs={pgs}, replcfg={replcfg}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/pool')
+    response = requests.post(
+        request_uri,
+        params={
+            'pool': pool,
+            'pgs': pgs,
+            'replcfg': replcfg
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_pool_remove(config, pool):
+    """
+    Remove Ceph OSD
+
+    API endpoint: POST /api/v1/storage/ceph/pool/{pool}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/pool/{pool}'.format(pool=pool))
+    response = requests.post(
+        request_uri,
+        params={
+            'yes-i-really-mean-it': 'yes'
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def format_list_pool(pool_list):
+    # Handle empty list
+    if not pool_list:
+        pool_list = list()
+    # Handle single-entry list
+    if isinstance(pool_list, dict):
+        pool_list = [ pool_list ]
+
     pool_list_output = []
 
     pool_name_length = 5
@@ -554,11 +902,186 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
 
     click.echo('\n'.join(sorted(pool_list_output)))
 
-
 #
 # Volume functions
 #
+def ceph_volume_info(config, pool, volume):
+    """
+    Get information about Ceph volume
+
+    API endpoint: GET /api/v1/storage/ceph/volume/{pool}/{volume}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_volume_list(config, limit, pool):
+    """
+    Get list information about Ceph volumes (limited by {limit} and by {pool})
+
+    API endpoint: GET /api/v1/storage/ceph/volume
+    API arguments: limit={limit}, pool={pool}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+    if pool:
+        params['pool'] = pool
+
+    request_uri = get_request_uri(config, '/storage/ceph/volume')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_volume_add(config, pool, volume, size):
+    """
+    Add new Ceph volume
+
+    API endpoint: POST /api/v1/storage/ceph/volume
+    API arguments: volume={volume}, pool={pool}, size={size}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/volume')
+    response = requests.post(
+        request_uri,
+        params={
+            'volume': volume,
+            'pool': pool,
+            'size': size
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_volume_remove(config, pool, volume):
+    """
+    Remove Ceph volume
+
+    API endpoint: DELETE /api/v1/storage/ceph/volume/{pool}/{volume}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
+    response = requests.delete(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
+    """
+    Modify Ceph volume
+
+    API endpoint: PUT /api/v1/storage/ceph/volume/{pool}/{volume}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+
+    params = dict()
+    if new_name:
+        params['new_name'] = new_name
+    if new_size:
+        params['new_size'] = new_size
+
+    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
+    response = requests.put(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: PUT {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_volume_clone(config, pool, volume, new_volume):
+    """
+    Clone Ceph volume
+
+    API endpoint: POST /api/v1/storage/ceph/volume/{pool}/{volume}
+    API arguments: new_volume={new_volume
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}/clone'.format(volume=volume, pool=pool))
+    response = requests.post(
+        request_uri,
+        params={
+            'new_volume': new_volume
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def format_list_volume(volume_list):
+    # Handle empty list
+    if not volume_list:
+        volume_list = list()
+    # Handle single-entry list
+    if isinstance(volume_list, dict):
+        volume_list = [ volume_list ]
+
     volume_list_output = []
 
     volume_name_length = 5
@@ -669,7 +1192,155 @@ def format_list_volume(volume_list):
 #
 # Snapshot functions
 #
+def ceph_snapshot_info(config, pool, volume, snapshot):
+    """
+    Get information about Ceph snapshot
+
+    API endpoint: GET /api/v1/storage/ceph/snapshot/{pool}/{volume}/{snapshot}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_snapshot_list(config, limit, volume, pool):
+    """
+    Get list information about Ceph snapshots (limited by {limit}, by {pool}, or by {volume})
+
+    API endpoint: GET /api/v1/storage/ceph/snapshot
+    API arguments: limit={limit}, volume={volume}, pool={pool}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+    if volume:
+        params['volume'] = volume
+    if pool:
+        params['pool'] = pool
+
+    request_uri = get_request_uri(config, '/storage/ceph/snapshot')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ceph_snapshot_add(config, pool, volume, snapshot):
+    """
+    Add new Ceph snapshot
+
+    API endpoint: POST /api/v1/storage/ceph/snapshot
+    API arguments: snapshot={snapshot}, volume={volume}, pool={pool}
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/snapshot')
+    response = requests.post(
+        request_uri,
+        params={
+            'snapshot': snapshot,
+            'volume': volume,
+            'pool': pool
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_snapshot_remove(config, pool, volume, snapshot):
+    """
+    Remove Ceph snapshot
+
+    API endpoint: DELETE /api/v1/storage/ceph/snapshot/{pool}/{volume}/{snapshot}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
+    response = requests.delete(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
+    """
+    Modify Ceph snapshot
+
+    API endpoint: PUT /api/v1/storage/ceph/snapshot/{pool}/{volume}/{snapshot}
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+
+    params = dict()
+    if new_name:
+        params['new_name'] = new_name
+
+    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
+    response = requests.put(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: PUT {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def format_list_snapshot(snapshot_list):
+    # Handle empty list
+    if not snapshot_list:
+        snapshot_list = list()
+    # Handle single-entry list
+    if isinstance(snapshot_list, dict):
+        snapshot_list = [ snapshot_list ]
+
     snapshot_list_output = []
 
     snapshot_name_length = 5
@@ -677,8 +1348,9 @@ def format_list_snapshot(snapshot_list):
     snapshot_pool_length = 5
 
     for snapshot in snapshot_list:
-        volume, snapshot_name = snapshot.split('@')
-        snapshot_pool, snapshot_volume = volume.split('/')
+        snapshot_name = snapshot['snapshot']
+        snapshot_volume = snapshot['volume']
+        snapshot_pool = snapshot['pool']
 
         # Set the Snapshot name length
         _snapshot_name_length = len(snapshot_name) + 1
@@ -713,8 +1385,9 @@ def format_list_snapshot(snapshot_list):
     )
 
     for snapshot in snapshot_list:
-        volume, snapshot_name = snapshot.split('@')
-        snapshot_pool, snapshot_volume = volume.split('/')
+        snapshot_name = snapshot['snapshot']
+        snapshot_volume = snapshot['volume']
+        snapshot_pool = snapshot['pool']
         snapshot_list_output.append('{bold}\
 {snapshot_name: <{snapshot_name_length}} \
 {snapshot_volume: <{snapshot_volume_length}} \
