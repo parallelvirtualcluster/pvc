@@ -80,10 +80,8 @@ def get_config(store_data, cluster=None):
         if os.path.isfile(cfgfile):
             host, port, scheme = read_from_yaml(cfgfile)
         else:
-            print('Attempted to load API configuration from a nonexistent file; using defaults')
-            host = 'localhost'
-            port = '7370'
-            scheme = 'http'
+            print('No cluster specified and no local pvc-api.yaml configuration found.')
+            return { 'badcfg': True }
     else:
         # This is a static configuration, get the raw details
         host = cluster_details['host']
@@ -299,7 +297,9 @@ def cli_node():
     """
     Manage the state of a node in the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc node secondary
@@ -433,7 +433,9 @@ def cli_vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc vm define
@@ -888,7 +890,9 @@ def cli_network():
     """
     Manage the state of a VXLAN network in the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc network add
@@ -1113,7 +1117,9 @@ def net_dhcp():
     """
     Manage host IPv4 DHCP leases of a VXLAN network in the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc network dhcp add
@@ -1190,7 +1196,9 @@ def net_acl():
     """
     Manage firewall ACLs of a VXLAN network in the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc network acl add
@@ -1307,7 +1315,9 @@ def cli_storage():
     """
     Manage the storage of the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph
@@ -1319,7 +1329,9 @@ def cli_ceph():
 
     NOTE: The PVC Ceph interface is limited to the most common tasks. Any other administrative tasks must be performed on a node directly.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph status
@@ -1359,7 +1371,9 @@ def ceph_osd():
     """
     Manage the Ceph OSDs of the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph osd add
@@ -1515,7 +1529,9 @@ def ceph_pool():
     """
     Manage the Ceph RBD pools of the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph pool add
@@ -1598,7 +1614,9 @@ def ceph_volume():
     """
     Manage the Ceph RBD volumes of the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph volume add
@@ -1741,7 +1759,9 @@ def ceph_volume_snapshot():
     """
     Manage the Ceph RBD volume snapshots of the PVC cluster.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc storage ceph volume snapshot add
@@ -1856,7 +1876,9 @@ def cli_provisioner():
     """
     Manage the PVC provisioner.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 ###############################################################################
 # pvc provisioner template
@@ -1866,7 +1888,9 @@ def provisioner_template():
     """
     Manage the PVC provisioner template system.
     """
-    pass
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
 
 ###############################################################################
@@ -1976,8 +2000,9 @@ def cli(_cluster, _debug):
     global config
     store_data = get_store(store_path)
     config = get_config(store_data, _cluster)
-    config['debug'] = _debug
-    click.echo('Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(config['cluster'], config['api_host'], config['api_scheme'], config['api_prefix']))
+    if not config.get('badcfg', None):
+        config['debug'] = _debug
+        click.echo('Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(config['cluster'], config['api_host'], config['api_scheme'], config['api_prefix']))
     click.echo()
 
 config = dict()
