@@ -225,6 +225,8 @@ def cluster_list():
             cfgfile = cluster_details.get('cfgfile')
             if os.path.isfile(cfgfile):
                 address, port, scheme = read_from_yaml(cfgfile)
+            else:
+                address, port, scheme = 'N/A', 'N/A', 'N/A'
         else:
             address = cluster_details.get('host', None)
             port = cluster_details.get('port', None)
@@ -1938,6 +1940,10 @@ def status_cluster(oformat):
     """
     Show basic information and health for the active PVC cluster.
     """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
     retcode, retdata = pvc_cluster.get_info(config)
     if retcode:
         pvc_cluster.format_info(retdata, oformat)
@@ -1957,6 +1963,9 @@ def init_cluster(yes):
     """
     Perform initialization of a new PVC cluster.
     """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
 
     if not yes:
         click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.')
