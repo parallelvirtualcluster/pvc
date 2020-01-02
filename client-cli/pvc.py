@@ -41,6 +41,7 @@ import cli_lib.node as pvc_node
 import cli_lib.vm as pvc_vm
 import cli_lib.network as pvc_network
 import cli_lib.ceph as pvc_ceph
+import cli_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
@@ -1848,6 +1849,59 @@ def ceph_volume_snapshot_list(pool, volume, limit):
 
 
 ###############################################################################
+# pvc provisioner
+###############################################################################
+@click.group(name='provisioner', short_help='Manage PVC provisioner.', context_settings=CONTEXT_SETTINGS)
+def cli_provisioner():
+    """
+    Manage the PVC provisioner.
+    """
+    pass
+
+###############################################################################
+# pvc provisioner template
+###############################################################################
+@click.group(name='template', short_help='Manage PVC provisioner templates.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template():
+    """
+    Manage the PVC provisioner template system.
+    """
+    pass
+
+
+###############################################################################
+# pvc provisioner template list
+###############################################################################
+@click.command(name='list', short_help='List all templates in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def template_list(limit):
+    """
+    List all templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_list(config, limit)
+    if retcode:
+        pvc_provisioner.format_list_template(retdata)
+        retdata = ''
+    cleanup(retcode, retdata)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################
 # pvc status
 ###############################################################################
 @click.command(name='status', short_help='Show current cluster status.')
@@ -1931,6 +1985,10 @@ config = dict()
 #
 # Click command tree
 #
+cli_cluster.add_command(cluster_add)
+cli_cluster.add_command(cluster_remove)
+cli_cluster.add_command(cluster_list)
+
 cli_node.add_command(node_secondary)
 cli_node.add_command(node_primary)
 cli_node.add_command(node_flush)
@@ -2007,15 +2065,16 @@ cli_ceph.add_command(ceph_volume)
 
 cli_storage.add_command(cli_ceph)
 
-cli_cluster.add_command(cluster_add)
-cli_cluster.add_command(cluster_remove)
-cli_cluster.add_command(cluster_list)
+provisioner_template.add_command(template_list)
 
+cli_provisioner.add_command(provisioner_template)
+
+cli.add_command(cli_cluster)
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
-cli.add_command(cli_cluster)
+cli.add_command(cli_provisioner)
 cli.add_command(status_cluster)
 cli.add_command(init_cluster)
 
