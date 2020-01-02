@@ -77,6 +77,8 @@ def cluster_status():
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_cluster.get_info(zk_conn)
+    pvc_common.stopZKConnection(zk_conn)
+
     return retdata, 200
 
 #
@@ -88,6 +90,8 @@ def node_list(limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zk_conn, limit, is_fuzzy=is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -98,8 +102,6 @@ def node_list(limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
-
-    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -113,6 +115,8 @@ def node_daemon_state(node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -128,7 +132,6 @@ def node_daemon_state(node):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def node_coordinator_state(node):
@@ -137,6 +140,8 @@ def node_coordinator_state(node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -152,7 +157,6 @@ def node_coordinator_state(node):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def node_domain_state(node):
@@ -161,6 +165,8 @@ def node_domain_state(node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zk_conn, node, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -176,7 +182,6 @@ def node_domain_state(node):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def node_secondary(node):
@@ -185,12 +190,13 @@ def node_secondary(node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
     retflag, retdata = pvc_node.secondary_node(zk_conn, node)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -202,12 +208,13 @@ def node_primary(node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
     retflag, retdata = pvc_node.primary_node(zk_conn, node)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -219,12 +226,13 @@ def node_flush(node, wait):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.flush_node(zk_conn, node, wait)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -236,12 +244,13 @@ def node_ready(node, wait):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.ready_node(zk_conn, node, wait)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -256,6 +265,8 @@ def vm_is_migrated(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retdata = pvc_vm.is_migrated(zk_conn, vm)
+    pvc_common.stopZKConnection(zk_conn)
+
     return retdata
 
 def vm_state(vm):
@@ -264,6 +275,7 @@ def vm_state(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -284,7 +296,6 @@ def vm_state(vm):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def vm_node(vm):
@@ -293,6 +304,7 @@ def vm_node(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -314,7 +326,6 @@ def vm_node(vm):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def vm_console(vm, lines=None):
@@ -329,6 +340,7 @@ def vm_console(vm, lines=None):
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_console_log(zk_conn, vm, lines)
+    pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
         if retdata:
@@ -345,7 +357,6 @@ def vm_console(vm, lines=None):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata ,retcode
 
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
@@ -354,6 +365,7 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit, is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -370,8 +382,6 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
-
     return retdata, retcode
 
 def vm_define(xml, node, limit, selector, autostart):
@@ -380,12 +390,13 @@ def vm_define(xml, node, limit, selector, autostart):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.define_vm(zk_conn, xml, node, limit, selector, autostart, profile=None)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -397,6 +408,7 @@ def get_vm_meta(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -419,7 +431,6 @@ def get_vm_meta(vm):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def update_vm_meta(vm, limit, selector, autostart):
@@ -428,12 +439,13 @@ def update_vm_meta(vm, limit, selector, autostart):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, strtobool(autostart))
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -445,12 +457,13 @@ def vm_modify(name, restart, xml):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, xml)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -462,12 +475,13 @@ def vm_undefine(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.undefine_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -479,12 +493,13 @@ def vm_remove(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.remove_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -496,12 +511,13 @@ def vm_start(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.start_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -513,12 +529,13 @@ def vm_restart(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.restart_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -530,12 +547,13 @@ def vm_shutdown(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.shutdown_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -547,12 +565,13 @@ def vm_stop(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.stop_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -564,12 +583,13 @@ def vm_move(name, node):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.move_vm(zk_conn, name, node)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -581,12 +601,13 @@ def vm_migrate(name, node, flag_force):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, flag_force)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -598,12 +619,13 @@ def vm_unmigrate(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.unmigrate_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -615,6 +637,7 @@ def vm_flush_locks(vm):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -623,13 +646,15 @@ def vm_flush_locks(vm):
     if retdata['state'] not in ['stop', 'disable']:
         return {"message":"VM must be stopped to flush locks"}, 400
 
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.flush_locks(zk_conn, vm)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -644,6 +669,7 @@ def net_list(limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list(zk_conn, limit, is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -660,7 +686,6 @@ def net_list(limit=None, is_fuzzy=True):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def net_add(vni, description, nettype, domain, name_servers,
@@ -673,12 +698,13 @@ def net_add(vni, description, nettype, domain, name_servers,
     retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -695,12 +721,13 @@ def net_modify(vni, description, domain, name_servers,
     retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain, name_servers,
                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                               dhcp4_flag, dhcp4_start, dhcp4_end)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -712,12 +739,13 @@ def net_remove(network):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_network(zk_conn, network)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -729,6 +757,8 @@ def net_dhcp_list(network, limit=None, static=False):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list_dhcp(zk_conn, network, limit, static)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -740,7 +770,6 @@ def net_dhcp_list(network, limit=None, static=False):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def net_dhcp_add(network, ipaddress, macaddress, hostname):
@@ -749,12 +778,13 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -766,12 +796,13 @@ def net_dhcp_remove(network, macaddress):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_dhcp_reservation(zk_conn, network, macaddress)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -783,6 +814,8 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -798,7 +831,6 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
     if isinstance(retdata, list) and len(retdata) == 1:
         retdata = retdata[0]
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def net_acl_add(network, direction, description, rule, order):
@@ -807,12 +839,13 @@ def net_acl_add(network, direction, description, rule, order):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_acl(zk_conn, network, direction, description, rule, order)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -824,12 +857,13 @@ def net_acl_remove(network, description):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_acl(zk_conn, network, description)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -844,12 +878,13 @@ def ceph_status():
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_status(zk_conn)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def ceph_radosdf():
@@ -858,12 +893,13 @@ def ceph_radosdf():
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_radosdf(zk_conn)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def ceph_osd_list(limit=None):
@@ -873,6 +909,7 @@ def ceph_osd_list(limit=None):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zk_conn, limit)
     pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -890,6 +927,7 @@ def ceph_osd_state(osd):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zk_conn, osd)
     pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         if retdata:
             retcode = 200
@@ -913,6 +951,7 @@ def ceph_osd_add(node, device, weight):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_osd(zk_conn, node, device, weight)
     pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
@@ -929,12 +968,13 @@ def ceph_osd_remove(osd_id):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_osd(zk_conn, osd_id)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -946,12 +986,13 @@ def ceph_osd_in(osd_id):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.in_osd(zk_conn, osd_id)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -963,12 +1004,13 @@ def ceph_osd_out(osd_id):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.out_osd(zk_conn, osd_id)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -980,12 +1022,13 @@ def ceph_osd_set(option):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.set_osd(zk_conn, option)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -997,12 +1040,13 @@ def ceph_osd_unset(option):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.unset_osd(zk_conn, option)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1014,6 +1058,7 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_pool(zk_conn, limit, is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -1030,7 +1075,6 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def ceph_pool_add(name, pgs, replcfg):
@@ -1039,12 +1083,13 @@ def ceph_pool_add(name, pgs, replcfg):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_pool(zk_conn, name, pgs, replcfg)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1056,12 +1101,13 @@ def ceph_pool_remove(name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_pool(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1073,6 +1119,7 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit, is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -1089,7 +1136,6 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def ceph_volume_add(pool, name, size):
@@ -1098,12 +1144,13 @@ def ceph_volume_add(pool, name, size):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, name, size)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1115,12 +1162,13 @@ def ceph_volume_clone(pool, name, source_volume):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.clone_volume(zk_conn, pool, source_volume, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1132,12 +1180,13 @@ def ceph_volume_resize(pool, name, size):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.resize_volume(zk_conn, pool, name, size)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1149,12 +1198,13 @@ def ceph_volume_rename(pool, name, new_name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.rename_volume(zk_conn, pool, name, new_name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1166,12 +1216,13 @@ def ceph_volume_remove(pool, name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1183,6 +1234,7 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy)
+    pvc_common.stopZKConnection(zk_conn)
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -1199,7 +1251,6 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     return retdata, retcode
 
 def ceph_volume_snapshot_add(pool, volume, name):
@@ -1208,12 +1259,13 @@ def ceph_volume_snapshot_add(pool, volume, name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_snapshot(zk_conn, pool, volume, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1225,12 +1277,13 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.rename_snapshot(zk_conn, pool, volume, name, new_name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
@@ -1242,12 +1295,13 @@ def ceph_volume_snapshot_remove(pool, volume, name):
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_snapshot(zk_conn, pool, volume, name)
+    pvc_common.stopZKConnection(zk_conn)
+
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    pvc_common.stopZKConnection(zk_conn)
     output = {
         'message': retdata.replace('\"', '\'')
     }
