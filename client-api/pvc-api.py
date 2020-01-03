@@ -3551,7 +3551,7 @@ class API_Provisioner_Template_System_Root(Resource):
         { 'name': 'node_autostart' }
     ])
     @Authenticator
-    def post(self):
+    def post(self, reqargs):
         """
         Create a new system template
         ---
