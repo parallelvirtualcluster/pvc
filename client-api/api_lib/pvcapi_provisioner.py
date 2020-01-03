@@ -184,7 +184,7 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
     if list_template_system(name, is_fuzzy=False):
         retmsg = { "message": "The system template {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
     args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart)
@@ -198,13 +198,13 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def create_template_network(name, mac_template=None):
     if list_template_network(name, is_fuzzy=False):
         retmsg = { "message": "The network template {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -217,13 +217,13 @@ def create_template_network(name, mac_template=None):
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def create_template_network_element(name, vni):
     if not list_template_network(name, is_fuzzy=False):
         retmsg = { "message": "The network template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     networks = list_template_network_vnis(name)
     found_vni = False
@@ -233,7 +233,7 @@ def create_template_network_element(name, vni):
     if found_vni:
         retmsg = { "message": "The VNI {} in network template {} already exists".format(vni, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -250,13 +250,13 @@ def create_template_network_element(name, vni):
         retmsg = { "message": "Failed to create entry {}".format(vni), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def create_template_storage(name):
     if list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -269,13 +269,13 @@ def create_template_storage(name):
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     disks = list_template_storage_disks(name)
     found_disk = False
@@ -285,12 +285,12 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
     if found_disk:
         retmsg = { "message": "The disk {} in storage template {} already exists".format(disk_id, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     if mountpoint and not filesystem:
         retmsg = { "message": "A filesystem must be specified along with a mountpoint." }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -307,7 +307,7 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
         retmsg = { "message": "Failed to create entry {}".format(disk_id), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 #
 # Template Delete functions
@@ -316,7 +316,7 @@ def delete_template_system(name):
     if not list_template_system(name, is_fuzzy=False):
         retmsg = { "message": "The system template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -329,13 +329,13 @@ def delete_template_system(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_template_network(name):
     if not list_template_network(name, is_fuzzy=False):
         retmsg = { "message": "The network template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -355,13 +355,13 @@ def delete_template_network(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_template_network_element(name, vni):
     if not list_template_network(name, is_fuzzy=False):
         retmsg = { "message": "The network template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     networks = list_template_network_vnis(name)
     found_vni = False
@@ -371,7 +371,7 @@ def delete_template_network_element(name, vni):
     if not found_vni:
         retmsg = { "message": "The VNI {} in network template {} does not exist".format(vni, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -388,13 +388,13 @@ def delete_template_network_element(name, vni):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_template_storage(name):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -414,13 +414,13 @@ def delete_template_storage(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_template_storage_element(name, disk_id):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { "message": "The storage template {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     disks = list_template_storage_disks(name)
     found_disk = False
@@ -430,7 +430,7 @@ def delete_template_storage_element(name, disk_id):
     if not found_disk:
         retmsg = { "message": "The disk {} in storage template {} does not exist".format(disk_id, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -447,7 +447,7 @@ def delete_template_storage_element(name, disk_id):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 #
 # Userdata functions
@@ -481,7 +481,7 @@ def create_userdata(name, userdata):
     if list_userdata(name, is_fuzzy=False):
         retmsg = { "message": "The userdata {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -494,13 +494,13 @@ def create_userdata(name, userdata):
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def update_userdata(name, userdata):
     if not list_userdata(name, is_fuzzy=False):
         retmsg = { "message": "The userdata {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     tid = list_userdata(name, is_fuzzy=False)[0]['id']
 
@@ -515,13 +515,13 @@ def update_userdata(name, userdata):
         retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_userdata(name):
     if not list_userdata(name, is_fuzzy=False):
         retmsg = { "message": "The userdata {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -534,7 +534,7 @@ def delete_userdata(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 #
 # Script functions
@@ -568,7 +568,7 @@ def create_script(name, script):
     if list_script(name, is_fuzzy=False):
         retmsg = { "message": "The script {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -581,13 +581,13 @@ def create_script(name, script):
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def update_script(name, script):
     if not list_script(name, is_fuzzy=False):
         retmsg = { "message": "The script {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     tid = list_script(name, is_fuzzy=False)[0]['id']
 
@@ -602,13 +602,13 @@ def update_script(name, script):
         retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_script(name):
     if not list_script(name, is_fuzzy=False):
         retmsg = { "message": "The script {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -621,7 +621,7 @@ def delete_script(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 #
 # Profile functions
@@ -671,7 +671,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if list_profile(name, is_fuzzy=False):
         retmsg = { "message": "The profile {} already exists".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     system_templates = list_template_system(None)
     system_template_id = None
@@ -681,7 +681,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if not system_template_id:
         retmsg = { "message": "The system template {} for profile {} does not exist".format(system_template, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     network_templates = list_template_network(None)
     network_template_id = None
@@ -691,7 +691,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if not network_template_id:
         retmsg = { "message": "The network template {} for profile {} does not exist".format(network_template, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     storage_templates = list_template_storage(None)
     storage_template_id = None
@@ -701,7 +701,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if not storage_template_id:
         retmsg = { "message": "The storage template {} for profile {} does not exist".format(storage_template, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     userdata_templates = list_template_userdata(None)
     userdata_template_id = None
@@ -711,7 +711,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if not userdata_template_id:
         retmsg = { "message": "The userdata template {} for profile {} does not exist".format(userdata_template, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     scripts = list_script(None)
     script_id = None
@@ -721,7 +721,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     if not script_id:
         retmsg = { "message": "The script {} for profile {} does not exist".format(script, name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     arguments_formatted = '|'.join(arguments)
 
@@ -736,13 +736,13 @@ def create_profile(name, system_template, network_template, storage_template, us
         retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 def delete_profile(name):
     if not list_profile(name, is_fuzzy=False):
         retmsg = { "message": "The profile {} does not exist".format(name) }
         retcode = 400
-        return flask.jsonify(retmsg), retcode
+        return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
@@ -755,7 +755,7 @@ def delete_profile(name):
         retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
         retcode = 400
     close_database(conn, cur)
-    return flask.jsonify(retmsg), retcode
+    return retmsg, retcode
 
 #
 # VM provisioning helper functions
