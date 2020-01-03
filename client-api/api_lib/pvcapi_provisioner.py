@@ -182,7 +182,7 @@ def template_list(limit):
 #
 def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False):
     if list_template_system(name, is_fuzzy=False):
-        retmsg = { "message": "The system template {} already exists".format(name) }
+        retmsg = { 'message': 'The system template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -192,17 +192,17 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
     conn, cur = open_database(config)
     try:
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { 'message': 'Added new system template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create system template "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def create_template_network(name, mac_template=None):
     if list_template_network(name, is_fuzzy=False):
-        retmsg = { "message": "The network template {} already exists".format(name) }
+        retmsg = { 'message': 'The network template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -211,17 +211,17 @@ def create_template_network(name, mac_template=None):
         query = "INSERT INTO network_template (name, mac_template) VALUES (%s, %s);"
         args = (name, mac_template)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { 'message': 'Added new network template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create network template "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def create_template_network_element(name, vni):
     if not list_template_network(name, is_fuzzy=False):
-        retmsg = { "message": "The network template {} does not exist".format(name) }
+        retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -231,7 +231,7 @@ def create_template_network_element(name, vni):
         if int(network['vni']) == vni:
             found_vni = True
     if found_vni:
-        retmsg = { "message": "The VNI {} in network template {} already exists".format(vni, name) }
+        retmsg = { 'message': 'The VNI "{}" in network template "{}" already exists'.format(vni, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -244,17 +244,17 @@ def create_template_network_element(name, vni):
         query = "INSERT INTO network (network_template, vni) VALUES (%s, %s);"
         args = (template_id, vni)
         cur.execute(query, args)
-        retmsg = { "name": name, "vni": vni }
+        retmsg = { 'message': 'Added new network "{}" to network template "{}"'.format(vni, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(vni), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(vni), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def create_template_storage(name):
     if list_template_storage(name, is_fuzzy=False):
-        retmsg = { "message": "The storage template {} already exists".format(name) }
+        retmsg = { 'message': 'The storage template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -263,17 +263,17 @@ def create_template_storage(name):
         query = "INSERT INTO storage_template (name) VALUES (%s);"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { 'message': 'Added new storage template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
     if not list_template_storage(name, is_fuzzy=False):
-        retmsg = { "message": "The storage template {} does not exist".format(name) }
+        retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -283,7 +283,7 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
         if disk['disk_id'] == disk_id:
             found_disk = True
     if found_disk:
-        retmsg = { "message": "The disk {} in storage template {} already exists".format(disk_id, name) }
+        retmsg = { 'message': 'The disk "{}" in storage template "{}" already exists'.format(disk_id, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -301,10 +301,10 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
         query = "INSERT INTO storage (storage_template, pool, disk_id, disk_size_gb, mountpoint, filesystem, filesystem_args) VALUES (%s, %s, %s, %s, %s, %s, %s);"
         args = (template_id, pool, disk_id, disk_size_gb, mountpoint, filesystem, ' '.join(filesystem_args))
         cur.execute(query, args)
-        retmsg = { "name": name, "disk_id": disk_id }
+        retmsg = { 'message': 'Added new disk "{}" to storage template "{}"'.format(disk_id, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(disk_id), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(disk_id), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -314,7 +314,7 @@ def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesyste
 #
 def delete_template_system(name):
     if not list_template_system(name, is_fuzzy=False):
-        retmsg = { "message": "The system template {} does not exist".format(name) }
+        retmsg = { 'message': 'The system template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -323,17 +323,17 @@ def delete_template_system(name):
         query = "DELETE FROM system_template WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed system template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_template_network(name):
     if not list_template_network(name, is_fuzzy=False):
-        retmsg = { "message": "The network template {} does not exist".format(name) }
+        retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -349,17 +349,17 @@ def delete_template_network(name):
         query = "DELETE FROM network_template WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed network template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_template_network_element(name, vni):
     if not list_template_network(name, is_fuzzy=False):
-        retmsg = { "message": "The network template {} does not exist".format(name) }
+        retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -369,7 +369,7 @@ def delete_template_network_element(name, vni):
         if network['vni'] == int(vni):
             found_vni = True
     if not found_vni:
-        retmsg = { "message": "The VNI {} in network template {} does not exist".format(vni, name) }
+        retmsg = { 'message': 'The VNI "{}" in network template "{}" does not exist'.format(vni, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -382,17 +382,17 @@ def delete_template_network_element(name, vni):
         query = "DELETE FROM network WHERE network_template = %s and vni = %s;"
         args = (template_id, vni)
         cur.execute(query, args)
-        retmsg = { "name": name, "vni": vni }
+        retmsg = { "message": 'Removed network "{}" from network template "{}"'.format(vni, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_template_storage(name):
     if not list_template_storage(name, is_fuzzy=False):
-        retmsg = { "message": "The storage template {} does not exist".format(name) }
+        retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -408,17 +408,17 @@ def delete_template_storage(name):
         query = "DELETE FROM storage_template WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed storage template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_template_storage_element(name, disk_id):
     if not list_template_storage(name, is_fuzzy=False):
-        retmsg = { "message": "The storage template {} does not exist".format(name) }
+        retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -428,7 +428,7 @@ def delete_template_storage_element(name, disk_id):
         if disk['disk_id'] == disk_id:
             found_disk = True
     if not found_disk:
-        retmsg = { "message": "The disk {} in storage template {} does not exist".format(disk_id, name) }
+        retmsg = { 'message': 'The disk "{}" in storage template "{}" does not exist'.format(disk_id, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -441,10 +441,10 @@ def delete_template_storage_element(name, disk_id):
         query = "DELETE FROM storage WHERE storage_template = %s and disk_id = %s;"
         args = (template_id, disk_id)
         cur.execute(query, args)
-        retmsg = { "name": name, "disk_id": disk_id }
+        retmsg = { "message": 'Removed disk "{}" from storage template "{}"'.format(disk_id, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -479,7 +479,7 @@ def list_userdata(limit, is_fuzzy=True):
 
 def create_userdata(name, userdata):
     if list_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata {} already exists".format(name) }
+        retmsg = { 'message': 'The userdata document "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -488,17 +488,17 @@ def create_userdata(name, userdata):
         query = "INSERT INTO userdata (name, userdata) VALUES (%s, %s);"
         args = (name, userdata)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Created userdata document "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def update_userdata(name, userdata):
     if not list_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata {} does not exist".format(name) }
+        retmsg = { 'message': 'The userdata "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -509,17 +509,17 @@ def update_userdata(name, userdata):
         query = "UPDATE userdata SET userdata = %s WHERE id = %s;"
         args = (userdata, tid)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Updated userdata document "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to update entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_userdata(name):
     if not list_userdata(name, is_fuzzy=False):
-        retmsg = { "message": "The userdata {} does not exist".format(name) }
+        retmsg = { 'message': 'The userdata "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -528,10 +528,10 @@ def delete_userdata(name):
         query = "DELETE FROM userdata WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed userdata document "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': str(e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -566,7 +566,7 @@ def list_script(limit, is_fuzzy=True):
 
 def create_script(name, script):
     if list_script(name, is_fuzzy=False):
-        retmsg = { "message": "The script {} already exists".format(name) }
+        retmsg = { 'message': 'The script "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -575,17 +575,17 @@ def create_script(name, script):
         query = "INSERT INTO script (name, script) VALUES (%s, %s);"
         args = (name, script)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Created provisioning script "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def update_script(name, script):
     if not list_script(name, is_fuzzy=False):
-        retmsg = { "message": "The script {} does not exist".format(name) }
+        retmsg = { 'message': 'The script "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -596,17 +596,17 @@ def update_script(name, script):
         query = "UPDATE script SET script = %s WHERE id = %s;"
         args = (script, tid)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Updated provisioning script "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to update entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to update entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_script(name):
     if not list_script(name, is_fuzzy=False):
-        retmsg = { "message": "The script {} does not exist".format(name) }
+        retmsg = { 'message': 'The script "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -615,10 +615,10 @@ def delete_script(name):
         query = "DELETE FROM script WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed provisioning script "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": str(e) }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': str(e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -669,7 +669,7 @@ def list_profile(limit, is_fuzzy=True):
 
 def create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments=[]):
     if list_profile(name, is_fuzzy=False):
-        retmsg = { "message": "The profile {} already exists".format(name) }
+        retmsg = { 'message': 'The profile "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -679,7 +679,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         if template['name'] == system_template:
             system_template_id = template['id']
     if not system_template_id:
-        retmsg = { "message": "The system template {} for profile {} does not exist".format(system_template, name) }
+        retmsg = { 'message': 'The system template "{}" for profile "{}" does not exist'.format(system_template, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -689,7 +689,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         if template['name'] == network_template:
             network_template_id = template['id']
     if not network_template_id:
-        retmsg = { "message": "The network template {} for profile {} does not exist".format(network_template, name) }
+        retmsg = { 'message': 'The network template "{}" for profile "{}" does not exist'.format(network_template, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -699,7 +699,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         if template['name'] == storage_template:
             storage_template_id = template['id']
     if not storage_template_id:
-        retmsg = { "message": "The storage template {} for profile {} does not exist".format(storage_template, name) }
+        retmsg = { 'message': 'The storage template "{}" for profile "{}" does not exist'.format(storage_template, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -709,7 +709,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         if template['name'] == userdata_template:
             userdata_template_id = template['id']
     if not userdata_template_id:
-        retmsg = { "message": "The userdata template {} for profile {} does not exist".format(userdata_template, name) }
+        retmsg = { 'message': 'The userdata template "{}" for profile "{}" does not exist'.format(userdata_template, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -719,7 +719,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         if scr['name'] == script:
             script_id = scr['id']
     if not script_id:
-        retmsg = { "message": "The script {} for profile {} does not exist".format(script, name) }
+        retmsg = { 'message': 'The script "{}" for profile "{}" does not exist'.format(script, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -730,17 +730,17 @@ def create_profile(name, system_template, network_template, storage_template, us
         query = "INSERT INTO profile (name, system_template, network_template, storage_template, userdata_template, script, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s);"
         args = (name, system_template_id, network_template_id, storage_template_id, userdata_template_id, script_id, arguments_formatted)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Created VM profile "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to create entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
 
 def delete_profile(name):
     if not list_profile(name, is_fuzzy=False):
-        retmsg = { "message": "The profile {} does not exist".format(name) }
+        retmsg = { 'message': 'The profile "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -749,10 +749,10 @@ def delete_profile(name):
         query = "DELETE FROM profile WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
-        retmsg = { "name": name }
+        retmsg = { "message": 'Removed VM profile "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { "message": "Failed to delete entry {}".format(name), "error": e }
+        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -905,14 +905,14 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     if not target_node:
         raise ClusterError("No ready cluster node contains at least {}+512 MB of free RAM".format(vm_data['system_details']['vram_mb']))
 
-    print("Selecting target node {} with {} MB free RAM".format(target_node, last_free))
+    print('Selecting target node "{}" with "{}" MB free RAM'.format(target_node, last_free))
 
     # Verify that all configured networks are present on the cluster
     cluster_networks, _discard = pvc_network.getClusterNetworkList(zk_conn)
     for network in vm_data['networks']:
         vni = str(network['vni'])
         if not vni in cluster_networks:
-            raise ClusterError("The network VNI {} is not present on the cluster".format(vni))
+            raise ClusterError('The network VNI "{}" is not present on the cluster'.format(vni))
 
     print("All configured networks for VM are valid")
 
@@ -927,12 +927,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     for pool in pools:
         pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
         if not pool_information:
-            raise ClusterError("Pool {} is not present on the cluster".format(pool))
+            raise ClusterError('Pool "{}" is not present on the cluster'.format(pool))
         pool_free_space_gb = int(pool_information['stats']['free_bytes'] / 1024 / 1024 / 1024)
         pool_vm_usage_gb = int(pools[pool])
 
         if pool_vm_usage_gb >= pool_free_space_gb:
-            raise ClusterError("Pool {} has only {} GB free and VM requires {} GB".format(pool, pool_free_space_gb, pool_vm_usage_gb))
+            raise ClusterError('Pool "{}" has only {} GB free and VM requires {} GB'.format(pool, pool_free_space_gb, pool_vm_usage_gb))
 
     print("There is enough space on cluster to store VM volumes")
 
@@ -985,7 +985,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
         print(message)
         if not success:
-            raise ClusterError("Failed to create volume {}".format(volume['disk_id']))
+            raise ClusterError('Failed to create volume "{}"'.format(volume['disk_id']))
 
     # Phase 5 - disk mapping
     #  * Map each volume to the local host in order
@@ -1011,12 +1011,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         # Map the RBD device
         retcode, stdout, stderr = run_os_command("rbd map {}".format(rbd_volume))
         if retcode:
-            raise ProvisioningError("Failed to map volume {}: {}".format(rbd_volume, stderr))
+            raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
 
         # Create the filesystem
         retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
         if retcode:
-            raise ProvisioningError("Failed to create {} filesystem on {}: {}".format(volume['filesystem'], rbd_volume, stderr))
+            raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
 
         print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
 
@@ -1036,12 +1036,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         # Ensure the mount path exists (within the filesystems)
         retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
         if retcode:
-            raise ProvisioningError("Failed to create mountpoint {}: {}".format(mount_path, stderr))
+            raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
 
         # Mount filesystems to temporary directory
         retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
         if retcode:
-            raise ProvisioningError("Failed to mount {} on {}: {}".format(mapped_rbd_volume, mount_path, stderr))
+            raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
 
         print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
 
@@ -1082,7 +1082,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
             retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
             if retcode:
-                raise ProvisioningError("Failed to unmount {}: {}".format(mount_path, stderr))
+                raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
 
         # Unmap the RBD device
         if volume['filesystem']:
@@ -1091,19 +1091,19 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
             retcode, stdout, stderr = run_os_command("rbd unmap {}".format(rbd_volume))
             if retcode:
-                raise ProvisioningError("Failed to unmap volume {}: {}".format(rbd_volume, stderr))
+                raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
 
     print("Cleaning up temporary directories and files")
 
     # Remove temporary mount directory (don't fail if not removed)
     retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
     if retcode:
-        print("Failed to delete temporary directory {}: {}".format(temp_dir, stderr))
+        print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
 
     # Remote temporary script (don't fail if not removed)
     retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
     if retcode:
-        print("Failed to delete temporary script file {}: {}".format(script_file, stderr))
+        print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
 
     # Phase 8 - configuration creation
     #  * Create the libvirt XML configuration
@@ -1247,5 +1247,5 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         print(retmsg)
 
     pvc_common.stopZKConnection(zk_conn)
-    return {"status": "VM '{}' with profile '{}' has been provisioned and started successfully".format(vm_name, vm_profile), "current": 10, "total": 10}
+    return {'status': 'VM "{}" with profile "{}" has been provisioned and started successfully'.format(vm_name, vm_profile), 'current': 10, 'total': 10}
 
