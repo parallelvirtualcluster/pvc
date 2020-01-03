@@ -3616,30 +3616,34 @@ class API_Provisioner_Template_System_Root(Resource):
               id: Message
         """
         # Validate arguments
-        if not isinstance(reqargs.get('vcpus'), int):
+        try:
+            vcpus = int(reqargs.get('vcpus'))
+        except:
             return { "message": "A vcpus value must be an integer" }, 400
-        if not isinstance(reqargs.get('vram'), int):
+        try:
+            vram = int(reqargs.get('vram'))
+        except:
             return { "message": "A vram value must be an integer" }, 400
         # Cast boolean arguments
-        if bool(strtobool(reqargs.get('serial'))):
+        if bool(strtobool(reqargs.get('serial', False))):
             serial = True
         else:
             serial = False
-        if bool(strtobool(reqargs.get('vnc'))):
+        if bool(strtobool(reqargs.get('vnc', False))):
             vnc = True
             vnc_bind = reqargs.get('vnc_bind', None)
         else:
             vnc = False
             vnc_bind = None
-        if bool(strtobool(reqargs.get('node_autostart'))):
+        if bool(strtobool(reqargs.get('node_autostart', False))):
             node_autostart = True
         else:
             node_autostart = False
 
         return api_provisioner.create_template_system(
             reqargs.get('name'),
-            reqargs.get('vcpus'),
-            reqargs.get('vram'),
+            vcpus,
+            vram,
             serial,
             vnc,
             vnc_bind,
@@ -3745,30 +3749,34 @@ class API_Provisioner_Template_System_Element(Resource):
               id: Message
         """
         # Validate arguments
-        if not isinstance(reqargs.get('vcpus'), int):
+        try:
+            vcpus = int(reqargs.get('vcpus'))
+        except:
             return { "message": "A vcpus value must be an integer" }, 400
-        if not isinstance(reqargs.get('vram'), int):
+        try:
+            vram = int(reqargs.get('vram'))
+        except:
             return { "message": "A vram value must be an integer" }, 400
         # Cast boolean arguments
-        if bool(strtobool(reqargs.get('serial'))):
+        if bool(strtobool(reqargs.get('serial', False))):
             serial = True
         else:
             serial = False
-        if bool(strtobool(reqargs.get('vnc'))):
+        if bool(strtobool(reqargs.get('vnc', False))):
             vnc = True
             vnc_bind = reqargs.get('vnc_bind', None)
         else:
             vnc = False
             vnc_bind = None
-        if bool(strtobool(reqargs.get('node_autostart'))):
+        if bool(strtobool(reqargs.get('node_autostart', False))):
             node_autostart = True
         else:
             node_autostart = False
 
         return api_provisioner.create_template_system(
             template,
-            reqargs.get('vcpus'),
-            reqargs.get('vram'),
+            vcpus,
+            vram,
             serial,
             vnc,
             vnc_bind,
