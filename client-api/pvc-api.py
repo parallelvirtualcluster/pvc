@@ -3635,7 +3635,7 @@ class API_Provisioner_Template_System_Root(Resource):
         else:
             vnc = False
             vnc_bind = None
-        if bool(strtobool(reqargs.get('node_autostart', False))):
+        if reqargs.get('node_autostart', None) and bool(strtobool(reqargs.get('node_autostart', False))):
             node_autostart = True
         else:
             node_autostart = False
@@ -3768,7 +3768,7 @@ class API_Provisioner_Template_System_Element(Resource):
         else:
             vnc = False
             vnc_bind = None
-        if bool(strtobool(reqargs.get('node_autostart', False))):
+        if reqargs.get('node_autostart', None) and bool(strtobool(reqargs.get('node_autostart', False))):
             node_autostart = True
         else:
             node_autostart = False
