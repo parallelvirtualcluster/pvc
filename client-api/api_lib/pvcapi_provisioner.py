@@ -1139,9 +1139,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
         vm_id_hex = '{:x}'.format(int(vm_id % 16))
         net_id_hex = '{:x}'.format(int(network_id % 16))
-        mac_prefix = '52:54:00'
 
         if vm_data['mac_template']:
+            mac_prefix = '52:54:01'
             mactemplate = "{prefix}:ff:f6:{vmid}{netid}"
             macgen_template = vm_data['mac_template']
             eth_macaddr = macgen_template.format(
@@ -1150,6 +1150,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
                 netid=net_id_hex,
             )
         else:
+            mac_prefix = '52:54:00'
             random_octet_A = '{:x}'.format(random.randint(16,238))
             random_octet_B = '{:x}'.format(random.randint(16,238))
             random_octet_C = '{:x}'.format(random.randint(16,238))
