@@ -636,16 +636,23 @@ def task_status(config, task_id):
         retvalue = True
         respjson = response.json()
         job_state = respjson['state']
-        if job_state == 'PENDING':
-            retdata = 'Job state: PENDING'
         if job_state == 'RUNNING':
             retdata = 'Job state: RUNNING\nStage: {}/{}\nStatus: {}'.format(
                 respjson['current'],
                 respjson['total'],
                 respjson['status']
             )
-        if job_state == 'FAILED':
+        elif job_state == 'FAILED':
             retdata = 'Job state: FAILED\nStatus: {}'.format(
+                respjson['status']
+            )
+        elif job_state == 'COMPLETED':
+            retdata = 'Job state: COMPLETED\nStatus: {}'.format(
+                respjson['status']
+            )
+        else:
+            retdata = 'Job state: {}\nStatus: {}'.format(
+                respjson['state'],
                 respjson['status']
             )
     else:
