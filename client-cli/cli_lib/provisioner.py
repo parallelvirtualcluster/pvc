@@ -583,15 +583,46 @@ def profile_remove(config, name):
         
     return retvalue, response.json()['message']
 
-def profile_info(config, profile):
+def vm_create(config, name, profile):
     """
-    Get information about profile
+    Create a new VM named {name} with profile {profile}
 
-    API endpoint: GET /api/v1/provisioner/profile/{profile}
+    API endpoint: POST /api/v1/provisioner/create
+    API_arguments: name={name}, profile={profile}
+    API schema: {message}
+    """
+    request_uri = get_request_uri(config, '/provisioner/create')
+    response = requests.post(
+        request_uri,
+        params={
+            'name': name,
+            'profile': profile
+        }
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 202:
+        retvalue = True
+        retdata = 'Task ID: {}'.format(response.json()['task_id'])
+    else:
+        retvalue = False
+        retdata = response.json()['message']
+        
+    return retvalue, retdata
+
+def task_status(config, task_id):
+    """
+    Get information about provisioner job {task_id}
+
+    API endpoint: GET /api/v1/provisioner/status
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/profile/{profile}'.format(profile=profile))
+    request_uri = get_request_uri(config, '/provisioner/status/{task_id}'.format(task_id=task_id))
     response = requests.get(
         request_uri
     )
@@ -602,9 +633,26 @@ def profile_info(config, profile):
         print('Response headers: {}'.format(response.headers))
 
     if response.status_code == 200:
-        return True, response.json()[0]
+        retvalue = True
+        respjson = response.json()
+        job_state = respjson['state']
+        if job_state == 'PENDING':
+            retdata = 'Job state: PENDING'
+        if job_state == 'RUNNING':
+            retdata = 'Job state: RUNNING\nStage: {}/{}\nStatus: {}'.format(
+                respjson['current'],
+                respjson['total'],
+                respjson['status']
+            )
+        if job_state == 'FAILED':
+            retdata = 'Job state: FAILED\nStatus: {}'.format(
+                respjson['status']
+            )
     else:
-        return False, response.json()['message']
+        retvalue = False
+        retdata = response.json()['message']
+
+    return retvalue, retdata
 
 #
 # Format functions

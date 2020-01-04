@@ -2810,6 +2810,37 @@ def provisioner_profile_remove(name):
     cleanup(retcode, retdata)
 
 
+###############################################################################
+# pvc provisioner create
+###############################################################################
+@click.command(name='create', short_help='Create new VM.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'profile'
+)
+def provisioner_create(name, profile):
+    """
+    Create a new VM NAME with profile PROFILE.
+    """
+    retcode, retdata = pvc_provisioner.vm_create(config, name, profile)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc provisioner status
+###############################################################################
+@click.command(name='status', short_help='Show status of provisioner job.')
+@click.argument(
+    'job'
+)
+def provisioner_status(job):
+    """
+    Show status of provisioner job JOB.
+    """
+    retcode, retdata = pvc_provisioner.task_status(config, job)
+    cleanup(retcode, retdata)
 
 
 
@@ -3039,6 +3070,8 @@ cli_provisioner.add_command(provisioner_template)
 cli_provisioner.add_command(provisioner_userdata)
 cli_provisioner.add_command(provisioner_script)
 cli_provisioner.add_command(provisioner_profile)
+cli_provisioner.add_command(provisioner_create)
+cli_provisioner.add_command(provisioner_status)
 
 cli.add_command(cli_cluster)
 cli.add_command(cli_node)
