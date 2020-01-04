@@ -699,7 +699,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    userdatas = list_template_userdata(None)
+    userdatas = list_userdata(None)
     userdata_id = None
     for template in userdatas:
         if template['name'] == userdata:
