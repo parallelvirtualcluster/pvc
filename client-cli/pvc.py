@@ -2929,8 +2929,7 @@ def cli(_cluster, _debug):
       "PVC_CLUSTER": Set the cluster to access instead of using --cluster/-c
 
     If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
-    for an API configuration in "/etc/pvc/pvc-api.yaml". If this is also not found, connection defaults
-    to "http://localhost:7370" as a last restort.
+    for an API configuration in "/etc/pvc/pvc-api.yaml". If this is also not found, abort.
     """
 
     global config
