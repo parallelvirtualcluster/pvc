@@ -418,7 +418,7 @@ def node_info(node, long_output):
 )
 def node_list(limit):
     """
-    List all nodes in the cluster; optionally only match names matching regex LIMIT.
+    List all nodes; optionally only match names matching regex LIMIT.
     """
 
     retcode, retdata = pvc_node.node_list(config, limit)
@@ -534,7 +534,7 @@ def vm_modify(domain, cfgfile, editor, restart):
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
     if not retcode and not vm_information.get('name', None):
-        cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
     dom_uuid = vm_information.get('uuid')
     dom_name = vm_information.get('name')
@@ -612,7 +612,7 @@ def vm_modify(domain, cfgfile, editor, restart):
 )
 def vm_undefine(domain):
     """
-    Stop virtual machine DOMAIN and remove it from the cluster database, preserving disks. DOMAIN may be a UUID or name.
+    Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
     """
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=False)
@@ -627,7 +627,7 @@ def vm_undefine(domain):
 )
 def vm_remove(domain):
     """
-    Stop virtual machine DOMAIN and remove it, along with all disks, from the cluster. DOMAIN may be a UUID or name.
+    Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
     """
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=True)
@@ -844,7 +844,7 @@ def vm_dump(domain):
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
     if not retcode and not vm_information.get('name', None):
-        cleanup(False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain))
+        cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
     # Grab the current config
     current_vm_cfg_raw = vm_information.get('xml')
@@ -873,7 +873,7 @@ def vm_dump(domain):
 )
 def vm_list(target_node, target_state, limit, raw):
     """
-    List all virtual machines in the cluster; optionally only match names matching regex LIMIT.
+    List all virtual machines; optionally only match names matching regex LIMIT.
 
     NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
@@ -899,7 +899,7 @@ def cli_network():
 ###############################################################################
 # pvc network add
 ###############################################################################
-@click.command(name='add', short_help='Add a new virtual network to the cluster.')
+@click.command(name='add', short_help='Add a new virtual network.')
 @click.option(
     '-d', '--description', 'description',
     required=True,
@@ -962,7 +962,7 @@ def cli_network():
 )
 def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
     """
-    Add a new virtual network with VXLAN identifier VNI to the cluster.
+    Add a new virtual network with VXLAN identifier VNI.
 
     Examples:
 
@@ -1056,13 +1056,13 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
 ###############################################################################
 # pvc network remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a virtual network from the cluster.')
+@click.command(name='remove', short_help='Remove a virtual network.')
 @click.argument(
     'net'
 )
 def net_remove(net):
     """
-    Remove an existing virtual network NET from the cluster; NET must be a VNI.
+    Remove an existing virtual network NET; NET must be a VNI.
 
     WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
@@ -1102,7 +1102,7 @@ def net_info(vni, long_output):
 )
 def net_list(limit):
     """
-    List all virtual networks in the cluster; optionally only match VNIs or Descriptions matching regex LIMIT.
+    List all virtual networks; optionally only match VNIs or Descriptions matching regex LIMIT.
     """
 
     retcode, retdata = pvc_network.net_list(config, limit)
@@ -1399,7 +1399,7 @@ def ceph_osd():
 )
 def ceph_osd_add(node, device, weight, yes):
     """
-    Add a new Ceph OSD on node NODE with block device DEVICE to the cluster.
+    Add a new Ceph OSD on node NODE with block device DEVICE.
     """
 
     if not yes:
@@ -1425,7 +1425,7 @@ def ceph_osd_add(node, device, weight, yes):
 )
 def ceph_osd_remove(osdid, yes):
     """
-    Remove a Ceph OSD with ID OSDID from the cluster.
+    Remove a Ceph OSD with ID OSDID.
     """
 
     if not yes:
@@ -1446,7 +1446,7 @@ def ceph_osd_remove(osdid, yes):
 )
 def ceph_osd_in(osdid):
     """
-    Set a Ceph OSD with ID OSDID online in the cluster.
+    Set a Ceph OSD with ID OSDID online.
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'in')
@@ -1461,7 +1461,7 @@ def ceph_osd_in(osdid):
 )
 def ceph_osd_out(osdid):
     """
-    Set a Ceph OSD with ID OSDID offline in the cluster.
+    Set a Ceph OSD with ID OSDID offline.
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'out')
@@ -1514,7 +1514,7 @@ def ceph_osd_unset(osd_property):
 )
 def ceph_osd_list(limit):
     """
-    List all Ceph OSDs in the cluster; optionally only match elements matching ID regex LIMIT.
+    List all Ceph OSDs; optionally only match elements matching ID regex LIMIT.
     """
 
     retcode, retdata = pvc_ceph.ceph_osd_list(config, limit)
@@ -1599,7 +1599,7 @@ def ceph_pool_remove(name, yes):
 )
 def ceph_pool_list(limit):
     """
-    List all Ceph RBD pools in the cluster; optionally only match elements matching name regex LIMIT.
+    List all Ceph RBD pools; optionally only match elements matching name regex LIMIT.
     """
 
     retcode, retdata = pvc_ceph.ceph_pool_list(config, limit)
@@ -1744,7 +1744,7 @@ def ceph_volume_clone(pool, name, new_name):
 )
 def ceph_volume_list(limit, pool):
     """
-    List all Ceph RBD volumes in the cluster; optionally only match elements matching name regex LIMIT.
+    List all Ceph RBD volumes; optionally only match elements matching name regex LIMIT.
     """
 
     retcode, retdata = pvc_ceph.ceph_volume_list(config, limit, pool)
@@ -1898,7 +1898,7 @@ def provisioner_template():
 ###############################################################################
 # pvc provisioner template list
 ###############################################################################
-@click.command(name='list', short_help='List all templates in the cluster.')
+@click.command(name='list', short_help='List all templates.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -1927,7 +1927,7 @@ def provisioner_template_system():
 ###############################################################################
 # pvc provisioner template system list
 ###############################################################################
-@click.command(name='list', short_help='List all system templates in the cluster.')
+@click.command(name='list', short_help='List all system templates.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -1944,7 +1944,7 @@ def provisioner_template_system_list(limit):
 ###############################################################################
 # pvc provisioner template system add
 ###############################################################################
-@click.command(name='add', short_help='Add new system template to the cluster.')
+@click.command(name='add', short_help='Add new system template.')
 @click.argument(
     'name'
 )
@@ -2014,7 +2014,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 ###############################################################################
 # pvc provisioner template system remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove system template from the cluster.')
+@click.command(name='remove', short_help='Remove system template.')
 @click.argument(
     'name'
 )
@@ -2041,7 +2041,7 @@ def provisioner_template_network():
 ###############################################################################
 # pvc provisioner template network list
 ###############################################################################
-@click.command(name='list', short_help='List all network templates in the cluster.')
+@click.command(name='list', short_help='List all network templates.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -2058,7 +2058,7 @@ def provisioner_template_network_list(limit):
 ###############################################################################
 # pvc provisioner template network add
 ###############################################################################
-@click.command(name='add', short_help='Add new network template to the cluster.')
+@click.command(name='add', short_help='Add new network template.')
 @click.argument(
     'name'
 )
@@ -2107,7 +2107,7 @@ def provisioner_template_network_add(name, mac_template):
 ###############################################################################
 # pvc provisioner template network remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove network template from the cluster.')
+@click.command(name='remove', short_help='Remove network template.')
 @click.argument(
     'name'
 )
@@ -2184,7 +2184,7 @@ def provisioner_template_storage():
 ###############################################################################
 # pvc provisioner template storage list
 ###############################################################################
-@click.command(name='list', short_help='List all storage templates in the cluster.')
+@click.command(name='list', short_help='List all storage templates.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -2201,7 +2201,7 @@ def provisioner_template_storage_list(limit):
 ###############################################################################
 # pvc provisioner template storage add
 ###############################################################################
-@click.command(name='add', short_help='Add new storage template to the cluster.')
+@click.command(name='add', short_help='Add new storage template.')
 @click.argument(
     'name'
 )
@@ -2218,7 +2218,7 @@ def provisioner_template_storage_add(name):
 ###############################################################################
 # pvc provisioner template storage remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove storage template from the cluster.')
+@click.command(name='remove', short_help='Remove storage template.')
 @click.argument(
     'name'
 )
@@ -2339,7 +2339,7 @@ def provisioner_userdata():
 ###############################################################################
 # pvc provisioner userdata list
 ###############################################################################
-@click.command(name='list', short_help='List all userdata documents in the cluster.')
+@click.command(name='list', short_help='List all userdata documents.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -2474,7 +2474,7 @@ def provisioner_userdata_modify(name, filename, editor):
 ###############################################################################
 # pvc provisioner userdata remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove userdata document from the cluster.')
+@click.command(name='remove', short_help='Remove userdata document.')
 @click.argument(
     'name'
 )
@@ -2501,7 +2501,7 @@ def provisioner_script():
 ###############################################################################
 # pvc provisioner script list
 ###############################################################################
-@click.command(name='list', short_help='List all scripts in the cluster.')
+@click.command(name='list', short_help='List all scripts.')
 @click.argument(
     'limit', default=None, required=False
 )
@@ -2636,7 +2636,7 @@ def provisioner_script_modify(name, filename, editor):
 ###############################################################################
 # pvc provisioner script remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove script from the cluster.')
+@click.command(name='remove', short_help='Remove script.')
 @click.argument(
     'name'
 )
@@ -2647,6 +2647,167 @@ def provisioner_script_remove(name):
     retcode, retdata = pvc_provisioner.script_remove(config, name)
     cleanup(retcode, retdata)
 
+
+###############################################################################
+# pvc provisioner profile
+###############################################################################
+@click.group(name='profile', short_help='Manage PVC provisioner profiless.', context_settings=CONTEXT_SETTINGS)
+def provisioner_profile():
+    """
+    Manage profiles in the PVC provisioner.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner profile list
+###############################################################################
+@click.command(name='list', short_help='List all profiles.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def provisioner_profile_list(limit):
+    """
+    List all profiles in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.profile_list(config, limit)
+    if retcode:
+        pvc_provisioner.format_list_profile(retdata)
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner profile add
+###############################################################################
+@click.command(name='add', short_help='Add provisioner profile.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-s', '--system-template', 'system_template',
+    required=True,
+    help='The system template for the profile.'
+)
+@click.option(
+    '-n', '--network-template', 'network_template',
+    required=True,
+    help='The network template for the profile.'
+)
+@click.option(
+    '-t', '--storage-template', 'storage_template',
+    required=True,
+    help='The storage template for the profile.'
+)
+@click.option(
+    '-u', '--userdata', 'userdata',
+    required=True,
+    help='The userdata document for the profile.'
+)
+@click.option(
+    '-x', '--script', 'script',
+    required=True,
+    help='The script for the profile.'
+)
+@click.option(
+    '-a', '--script-arg', 'script_args',
+    default=[], multiple=True,
+    help='Additional argument to the script install() function in key=value format.'
+)
+def provisioner_profile_add(name, system_template, network_template, storage_template, userdata, script, script_args):
+    """
+    Add a new provisioner profile NAME.
+    """
+    params = dict()
+    params['name'] = name
+    params['system_template'] = system_template
+    params['network_template'] = network_template
+    params['storage_template'] = storage_template
+    params['userdata'] = userdata
+    params['script'] = script
+    params['arg'] = script_args
+
+    retcode, retdata = pvc_provisioner.profile_add(config, params)
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner profile modify
+###############################################################################
+@click.command(name='modify', short_help='Modify provisioner profile.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-s', '--system-template', 'system_template',
+    default=None,
+    help='The system template for the profile.'
+)
+@click.option(
+    '-n', '--network-template', 'network_template',
+    default=None,
+    help='The network template for the profile.'
+)
+@click.option(
+    '-t', '--storage-template', 'storage_template',
+    default=None,
+    help='The storage template for the profile.'
+)
+@click.option(
+    '-u', '--userdata', 'userdata',
+    default=None,
+    help='The userdata document for the profile.'
+)
+@click.option(
+    '-x', '--script', 'script',
+    default=None,
+    help='The script for the profile.'
+)
+@click.option(
+    '-d', '--delete-script-args', 'delete_script_args',
+    default=False, is_flag=True,
+    help="Delete any existing script arguments."
+)
+@click.option(
+    '-a', '--script-arg', 'script_args',
+    default=None, multiple=True,
+    help='Additional argument to the script install() function in key=value format.'
+)
+def provisioner_profile_modify(name, system_template, network_template, storage_template, userdata, script, delete_script_args, script_args):
+    """
+    Modify existing provisioner profile NAME.
+    """
+    params = dict()
+    if system_template is not None:
+        params['system_template'] = system_template
+    if network_template is not None:
+        params['network_template'] = network_template
+    if storage_template is not None:
+        params['storage_template'] = storage_template
+    if userdata is not None:
+        params['userdata'] = userdata
+    if script is not None:
+        params['script'] = script
+    if delete_script_args:
+        params['arg'] = []
+    if script_args is not None:
+        params['arg'] = script_args
+
+    retcode, retdata = pvc_provisioner.profile_modify(config, name, params)
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner profile remove
+###############################################################################
+@click.command(name='remove', short_help='Remove profile.')
+@click.argument(
+    'name'
+)
+def provisioner_profile_remove(name):
+    """
+    Remove profile NAME from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.profile_remove(config, name)
+    cleanup(retcode, retdata)
 
 
 
@@ -2869,9 +3030,15 @@ provisioner_script.add_command(provisioner_script_add)
 provisioner_script.add_command(provisioner_script_modify)
 provisioner_script.add_command(provisioner_script_remove)
 
+provisioner_profile.add_command(provisioner_profile_list)
+provisioner_profile.add_command(provisioner_profile_add)
+provisioner_profile.add_command(provisioner_profile_modify)
+provisioner_profile.add_command(provisioner_profile_remove)
+
 cli_provisioner.add_command(provisioner_template)
 cli_provisioner.add_command(provisioner_userdata)
 cli_provisioner.add_command(provisioner_script)
+cli_provisioner.add_command(provisioner_profile)
 
 cli.add_command(cli_cluster)
 cli.add_command(cli_node)

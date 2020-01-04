@@ -226,7 +226,7 @@ def userdata_list(config, limit):
     """
     Get list information about userdatas (limited by {limit})
 
-    API endpoint: GET /api/v1/provisioner/userdata/{userdata_type}
+    API endpoint: GET /api/v1/provisioner/userdata
     API arguments: limit={limit}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
@@ -354,7 +354,7 @@ def script_list(config, limit):
     """
     Get list information about scripts (limited by {limit})
 
-    API endpoint: GET /api/v1/provisioner/script/{script_type}
+    API endpoint: GET /api/v1/provisioner/script
     API arguments: limit={limit}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
@@ -455,10 +455,161 @@ def script_remove(config, name):
         
     return retvalue, response.json()['message']
 
+def profile_info(config, profile):
+    """
+    Get information about profile
+
+    API endpoint: GET /api/v1/provisioner/profile/{profile}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/provisioner/profile/{profile}'.format(profile=profile))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()[0]
+    else:
+        return False, response.json()['message']
+
+def profile_list(config, limit):
+    """
+    Get list information about profiles (limited by {limit})
+
+    API endpoint: GET /api/v1/provisioner/profile/{profile_type}
+    API arguments: limit={limit}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+
+    request_uri = get_request_uri(config, '/provisioner/profile')
+    response = requests.get(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def profile_add(config, params):
+    """
+    Add a new profile with {params}
+
+    API endpoint: POST /api/v1/provisioner/profile
+    API_arguments: args
+    API schema: {message}
+    """
+    request_uri = get_request_uri(config, '/provisioner/profile')
+    response = requests.post(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: POST {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retvalue = True
+    else:
+        retvalue = False
+        
+    return retvalue, response.json()['message']
+
+def profile_modify(config, name, params):
+    """
+    Modify profile {name} with {params}
+
+    API endpoint: PUT /api/v1/provisioner/profile/{name}
+    API_arguments: args
+    API schema: {message}
+    """
+    request_uri = get_request_uri(config, '/provisioner/profile/{name}'.format(name=name))
+    response = requests.put(
+        request_uri,
+        params=params
+    )
+
+    if config['debug']:
+        print('API endpoint: PUT {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retvalue = True
+    else:
+        retvalue = False
+        
+    return retvalue, response.json()['message']
+
+def profile_remove(config, name):
+    """
+    Remove profile {name}
+
+    API endpoint: DELETE /api/v1/provisioner/profile/{name}
+    API_arguments:
+    API schema: {message}
+    """
+    request_uri = get_request_uri(config, '/provisioner/profile/{name}'.format(name=name))
+    response = requests.delete(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: DELETE {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        retvalue = True
+    else:
+        retvalue = False
+        
+    return retvalue, response.json()['message']
+
+def profile_info(config, profile):
+    """
+    Get information about profile
+
+    API endpoint: GET /api/v1/provisioner/profile/{profile}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    request_uri = get_request_uri(config, '/provisioner/profile/{profile}'.format(profile=profile))
+    response = requests.get(
+        request_uri
+    )
+
+    if config['debug']:
+        print('API endpoint: GET {}'.format(request_uri))
+        print('Response code: {}'.format(response.status_code))
+        print('Response headers: {}'.format(response.headers))
+
+    if response.status_code == 200:
+        return True, response.json()[0]
+    else:
+        return False, response.json()['message']
+
 #
 # Format functions
 #
-def format_list_template(template_template, template_type=None):
+def format_list_template(template_data, template_type=None):
     """
     Format the returned template template
 
@@ -466,43 +617,43 @@ def format_list_template(template_template, template_type=None):
     reuse with more limited output options.
     """
     template_types = [ 'system', 'network', 'storage' ]
-    normalized_template_template = dict()
+    normalized_template_data = dict()
 
     if template_type in template_types:
         template_types = [ template_type ]
-        template_template_type = '{}_templates'.format(template_type)
-        normalized_template_template[template_template_type] = template_template
+        template_data_type = '{}_templates'.format(template_type)
+        normalized_template_data[template_data_type] = template_data
     else:
-        normalized_template_template = template_template
+        normalized_template_data = template_data
 
     if 'system' in template_types:
         click.echo('System templates:')
         click.echo()
-        format_list_template_system(normalized_template_template['system_templates'])
+        format_list_template_system(normalized_template_data['system_templates'])
         if len(template_types) > 1:
             click.echo()
 
     if 'network' in template_types:
         click.echo('Network templates:')
         click.echo()
-        format_list_template_network(normalized_template_template['network_templates'])
+        format_list_template_network(normalized_template_data['network_templates'])
         if len(template_types) > 1:
             click.echo()
 
     if 'storage' in template_types:
         click.echo('Storage templates:')
         click.echo()
-        format_list_template_storage(normalized_template_template['storage_templates'])
+        format_list_template_storage(normalized_template_data['storage_templates'])
 
-def format_list_template_system(template_template):
-    if isinstance(template_template, dict):
-        template_template = [ template_template ]
+def format_list_template_system(template_data):
+    if isinstance(template_data, dict):
+        template_data = [ template_data ]
 
     template_list_output = []
 
     # Determine optimal column widths
     template_name_length = 5
-    template_id_length = 4
+    template_id_length = 3
     template_vcpu_length = 6
     template_vram_length = 10
     template_serial_length = 7
@@ -512,7 +663,7 @@ def format_list_template_system(template_template):
     template_node_selector_length = 11
     template_node_autostart_length = 11
 
-    for template in template_template:
+    for template in template_data:
         # template_name column
         _template_name_length = len(str(template['name'])) + 1
         if _template_name_length > template_name_length:
@@ -594,7 +745,7 @@ Metatemplate: {template_node_limit: <{template_node_limit_length}} \
     valid_net_list = []
     # Format the string (elements)
 
-    for template in sorted(template_template, key=lambda i: i.get('name', None)):
+    for template in sorted(template_data, key=lambda i: i.get('name', None)):
         template_list_output.append(
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_vcpu: <{template_vcpu_length}} \
@@ -642,7 +793,7 @@ def format_list_template_network(template_template):
 
     # Determine optimal column widths
     template_name_length = 5
-    template_id_length = 4
+    template_id_length = 3
     template_mac_template_length = 13
     template_networks_length = 10
 
@@ -718,7 +869,7 @@ def format_list_template_storage(template_template):
 
     # Determine optimal column widths
     template_name_length = 5
-    template_id_length = 4
+    template_id_length = 3
     template_disk_id_length = 8
     template_disk_pool_length = 8
     template_disk_size_length = 10
@@ -842,157 +993,264 @@ def format_list_template_storage(template_template):
 
     return True, ''
 
-def format_list_userdata(userdata, lines=None):
-    if isinstance(userdata, dict):
-        userdata = [ userdata ]
+def format_list_userdata(userdata_data, lines=None):
+    if isinstance(userdata_data, dict):
+        userdata_data = [ userdata_data ]
 
-    data_list_output = []
+    userdata_list_output = []
 
     # Determine optimal column widths
-    data_name_length = 5
-    data_id_length = 4
-    data_userdata_length = 8
+    userdata_name_length = 5
+    userdata_id_length = 3
+    userdata_useruserdata_length = 8
 
-    for data in userdata:
-        # data_name column
-        _data_name_length = len(str(data['name'])) + 1
-        if _data_name_length > data_name_length:
-            data_name_length = _data_name_length
-        # data_id column
-        _data_id_length = len(str(data['id'])) + 1
-        if _data_id_length > data_id_length:
-            data_id_length = _data_id_length
+    for userdata in userdata_data:
+        # userdata_name column
+        _userdata_name_length = len(str(userdata['name'])) + 1
+        if _userdata_name_length > userdata_name_length:
+            userdata_name_length = _userdata_name_length
+        # userdata_id column
+        _userdata_id_length = len(str(userdata['id'])) + 1
+        if _userdata_id_length > userdata_id_length:
+            userdata_id_length = _userdata_id_length
 
     # Format the string (header)
-    data_list_output_header = '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_userdata}{end_bold}'.format(
-            data_name_length=data_name_length,
-            data_id_length=data_id_length,
+    userdata_list_output_header = '{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
+{userdata_data}{end_bold}'.format(
+            userdata_name_length=userdata_name_length,
+            userdata_id_length=userdata_id_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            data_name='Name',
-            data_id='ID',
-            data_userdata='Document'
+            userdata_name='Name',
+            userdata_id='ID',
+            userdata_data='Document'
         )
 
     # Format the string (elements)
-    for data in sorted(userdata, key=lambda i: i.get('name', None)):
+    for data in sorted(userdata_data, key=lambda i: i.get('name', None)):
         line_count = 0
         for line in data['userdata'].split('\n'):
             if line_count < 1:
-                data_name = data['name']
-                data_id = data['id']
+                userdata_name = data['name']
+                userdata_id = data['id']
             else:
-                data_name = ''
-                data_id = ''
+                userdata_name = ''
+                userdata_id = ''
             line_count += 1
 
             if lines and line_count > lines:
-                data_list_output.append(
-                    '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_script}{end_bold}'.format(
-                        data_name_length=data_name_length,
-                        data_id_length=data_id_length,
+                userdata_list_output.append(
+                    '{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
+{userdata_data}{end_bold}'.format(
+                        userdata_name_length=userdata_name_length,
+                        userdata_id_length=userdata_id_length,
                         bold='',
                         end_bold='',
-                        data_name=data_name,
-                        data_id=data_id,
-                        data_script='[...]'
+                        userdata_name=userdata_name,
+                        userdata_id=userdata_id,
+                        userdata_data='[...]'
                     )
                 )
                 break
 
-            data_list_output.append(
-                '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_userdata}{end_bold}'.format(
-                    data_name_length=data_name_length,
-                    data_id_length=data_id_length,
+            userdata_list_output.append(
+                '{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
+{userdata_data}{end_bold}'.format(
+                    userdata_name_length=userdata_name_length,
+                    userdata_id_length=userdata_id_length,
                     bold='',
                     end_bold='',
-                    data_name=data_name,
-                    data_id=data_id,
-                    data_userdata=str(line)
+                    userdata_name=userdata_name,
+                    userdata_id=userdata_id,
+                    userdata_data=str(line)
                 )
             )
 
-    click.echo('\n'.join([data_list_output_header] + data_list_output))
+    click.echo('\n'.join([userdata_list_output_header] + userdata_list_output))
 
     return True, ''
 
-def format_list_script(script, lines=None):
-    if isinstance(script, dict):
-        script = [ script ]
+def format_list_script(script_data, lines=None):
+    if isinstance(script_data, dict):
+        script_data = [ script_data ]
 
-    data_list_output = []
+    script_list_output = []
 
     # Determine optimal column widths
-    data_name_length = 5
-    data_id_length = 4
-    data_script_length = 8
+    script_name_length = 5
+    script_id_length = 3
+    script_script_length = 8
 
-    for data in script:
-        # data_name column
-        _data_name_length = len(str(data['name'])) + 1
-        if _data_name_length > data_name_length:
-            data_name_length = _data_name_length
-        # data_id column
-        _data_id_length = len(str(data['id'])) + 1
-        if _data_id_length > data_id_length:
-            data_id_length = _data_id_length
+    for script in script_data:
+        # script_name column
+        _script_name_length = len(str(script['name'])) + 1
+        if _script_name_length > script_name_length:
+            script_name_length = _script_name_length
+        # script_id column
+        _script_id_length = len(str(script['id'])) + 1
+        if _script_id_length > script_id_length:
+            script_id_length = _script_id_length
 
     # Format the string (header)
-    data_list_output_header = '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_script}{end_bold}'.format(
-            data_name_length=data_name_length,
-            data_id_length=data_id_length,
+    script_list_output_header = '{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
+{script_data}{end_bold}'.format(
+            script_name_length=script_name_length,
+            script_id_length=script_id_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            data_name='Name',
-            data_id='ID',
-            data_script='Script'
+            script_name='Name',
+            script_id='ID',
+            script_data='Script'
         )
 
     # Format the string (elements)
-    for data in sorted(script, key=lambda i: i.get('name', None)):
+    for script in sorted(script_data, key=lambda i: i.get('name', None)):
         line_count = 0
-        for line in data['script'].split('\n'):
+        for line in script['script'].split('\n'):
             if line_count < 1:
-                data_name = data['name']
-                data_id = data['id']
+                script_name = script['name']
+                script_id = script['id']
             else:
-                data_name = ''
-                data_id = ''
+                script_name = ''
+                script_id = ''
             line_count += 1
 
             if lines and line_count > lines:
-                data_list_output.append(
-                    '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_script}{end_bold}'.format(
-                        data_name_length=data_name_length,
-                        data_id_length=data_id_length,
+                script_list_output.append(
+                    '{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
+{script_data}{end_bold}'.format(
+                        script_name_length=script_name_length,
+                        script_id_length=script_id_length,
                         bold='',
                         end_bold='',
-                        data_name=data_name,
-                        data_id=data_id,
-                        data_script='[...]'
+                        script_name=script_name,
+                        script_id=script_id,
+                        script_data='[...]'
                     )
                 )
                 break
 
-            data_list_output.append(
-                '{bold}{data_name: <{data_name_length}} {data_id: <{data_id_length}} \
-{data_script}{end_bold}'.format(
-                    data_name_length=data_name_length,
-                    data_id_length=data_id_length,
+            script_list_output.append(
+                '{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
+{script_data}{end_bold}'.format(
+                    script_name_length=script_name_length,
+                    script_id_length=script_id_length,
                     bold='',
                     end_bold='',
-                    data_name=data_name,
-                    data_id=data_id,
-                    data_script=str(line)
+                    script_name=script_name,
+                    script_id=script_id,
+                    script_data=str(line)
                 )
             )
 
-    click.echo('\n'.join([data_list_output_header] + data_list_output))
+    click.echo('\n'.join([script_list_output_header] + script_list_output))
+
+    return True, ''
+
+def format_list_profile(profile_data):
+    if isinstance(profile_data, dict):
+        profile_data = [ profile_data ]
+
+    profile_list_output = []
+
+    # Determine optimal column widths
+    profile_name_length = 5
+    profile_id_length = 3
+
+    profile_system_template_length = 7
+    profile_network_template_length = 8
+    profile_storage_template_length = 8
+    profile_userdata_length = 9
+    profile_script_length = 7
+
+    for profile in profile_data:
+        # profile_name column
+        _profile_name_length = len(str(profile['name'])) + 1
+        if _profile_name_length > profile_name_length:
+            profile_name_length = _profile_name_length
+        # profile_id column
+        _profile_id_length = len(str(profile['id'])) + 1
+        if _profile_id_length > profile_id_length:
+            profile_id_length = _profile_id_length
+        # profile_system_template column
+        _profile_system_template_length = len(str(profile['system_template'])) + 1
+        if _profile_system_template_length > profile_system_template_length:
+            profile_system_template_length = _profile_system_template_length
+        # profile_network_template column
+        _profile_network_template_length = len(str(profile['network_template'])) + 1
+        if _profile_network_template_length > profile_network_template_length:
+            profile_network_template_length = _profile_network_template_length
+        # profile_storage_template column
+        _profile_storage_template_length = len(str(profile['storage_template'])) + 1
+        if _profile_storage_template_length > profile_storage_template_length:
+            profile_storage_template_length = _profile_storage_template_length
+        # profile_userdata column
+        _profile_userdata_length = len(str(profile['userdata'])) + 1
+        if _profile_userdata_length > profile_userdata_length:
+            profile_userdata_length = _profile_userdata_length
+        # profile_script column
+        _profile_script_length = len(str(profile['script'])) + 1
+        if _profile_script_length > profile_script_length:
+            profile_script_length = _profile_script_length
+
+    # Format the string (header)
+    profile_list_output_header = '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} \
+Templates: {profile_system_template: <{profile_system_template_length}} \
+{profile_network_template: <{profile_network_template_length}} \
+{profile_storage_template: <{profile_storage_template_length}} \
+Data: {profile_userdata: <{profile_userdata_length}} \
+{profile_script: <{profile_script_length}} \
+{profile_arguments}{end_bold}'.format(
+            profile_name_length=profile_name_length,
+            profile_id_length=profile_id_length,
+            profile_system_template_length=profile_system_template_length,
+            profile_network_template_length=profile_network_template_length,
+            profile_storage_template_length=profile_storage_template_length,
+            profile_userdata_length=profile_userdata_length,
+            profile_script_length=profile_script_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            profile_name='Name',
+            profile_id='ID',
+            profile_system_template='System',
+            profile_network_template='Network',
+            profile_storage_template='Storage',
+            profile_userdata='Userdata',
+            profile_script='Script',
+            profile_arguments='Script Arguments'
+        )
+
+    # Format the string (elements)
+    for profile in sorted(profile_data, key=lambda i: i.get('name', None)):
+        profile_list_output.append(
+            '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} \
+           {profile_system_template: <{profile_system_template_length}} \
+{profile_network_template: <{profile_network_template_length}} \
+{profile_storage_template: <{profile_storage_template_length}} \
+      {profile_userdata: <{profile_userdata_length}} \
+{profile_script: <{profile_script_length}} \
+{profile_arguments}{end_bold}'.format(
+                profile_name_length=profile_name_length,
+                profile_id_length=profile_id_length,
+                profile_system_template_length=profile_system_template_length,
+                profile_network_template_length=profile_network_template_length,
+                profile_storage_template_length=profile_storage_template_length,
+                profile_userdata_length=profile_userdata_length,
+                profile_script_length=profile_script_length,
+                bold='',
+                end_bold='',
+                profile_name=profile['name'],
+                profile_id=profile['id'],
+                profile_system_template=profile['system_template'],
+                profile_network_template=profile['network_template'],
+                profile_storage_template=profile['storage_template'],
+                profile_userdata=profile['userdata'],
+                profile_script=profile['script'],
+                profile_arguments=', '.join(profile['arguments'])
+            )
+        )
+
+    click.echo('\n'.join([profile_list_output_header] + profile_list_output))
 
     return True, ''
 
