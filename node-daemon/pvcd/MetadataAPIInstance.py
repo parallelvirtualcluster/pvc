@@ -140,7 +140,7 @@ class MetadataAPIInstance(object):
     # Obtain a list of templates
     def get_profile_userdata(self, vm_profile):
         query = """SELECT userdata FROM profile 
-        JOIN userdata_template ON profile.userdata_template = userdata_template.id
+        JOIN userdata ON profile.userdata = userdata.id
         WHERE profile.name = %s;
         """
         args = (vm_profile,)
