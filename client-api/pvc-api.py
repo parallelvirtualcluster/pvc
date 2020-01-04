@@ -5071,7 +5071,7 @@ class API_Provisioner_Profile_Root(Resource):
             reqargs.get('storage_template', None),
             reqargs.get('userdata', None),
             reqargs.get('script', None),
-            reqargs.get('arg', None)
+            reqargs.get('arg', [])
         )
 api.add_resource(API_Provisioner_Profile_Root, '/provisioner/profile')
 
@@ -5164,7 +5164,7 @@ class API_Provisioner_Profile_Element(Resource):
             reqargs.get('storage_template', None),
             reqargs.get('userdata', None),
             reqargs.get('script', None),
-            reqargs.get('arg', None)
+            reqargs.get('arg', [])
         )
 
     @Authenticator

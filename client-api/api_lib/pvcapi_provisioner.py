@@ -663,7 +663,7 @@ def list_profile(limit, is_fuzzy=True):
     close_database(conn, cur)
     return data
 
-def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=[]):
+def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
     if list_profile(name, is_fuzzy=False):
         retmsg = { 'message': 'The profile "{}" already exists'.format(name) }
         retcode = 400
@@ -719,7 +719,10 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    arguments_formatted = '|'.join(arguments)
+    if arguments is not None and isinstance(arguments, list):
+        arguments_formatted = '|'.join(arguments)
+    else:
+        arguments_formatted = ''
 
     conn, cur = open_database(config)
     try:
