@@ -4975,7 +4975,7 @@ class API_Provisioner_Profile_Root(Resource):
                 storage_template:
                   type: string
                   description: Storage template name
-                userdata_template:
+                userdata:
                   type: string
                   description: Userdata template name
                 arguments:
@@ -5006,7 +5006,7 @@ class API_Provisioner_Profile_Root(Resource):
         { 'name': 'system_template', 'required': True, 'helpmsg': "A system template name must be specified" },
         { 'name': 'network_template', 'required': True, 'helpmsg': "A network template name must be specified" },
         { 'name': 'storage_template', 'required': True, 'helpmsg': "A storage template name must be specified" },
-        { 'name': 'userdata_template', 'required': True, 'helpmsg': "A userdata template name must be specified (use 'empty' if no template is desired)" },
+        { 'name': 'userdata', 'required': True, 'helpmsg': "A userdata document name must be specified (use 'empty' if no template is desired)" },
         { 'name': 'script', 'required': True, 'helpmsg': "A system name must be specified" },
         { 'name': 'arg', 'action': 'append' }
     ])
@@ -5044,7 +5044,7 @@ class API_Provisioner_Profile_Root(Resource):
             required: true
             description: Storage template name
           - in: query
-            name: userdata_template
+            name: userdata
             type: string
             required: true
             description: Userdata template name
@@ -5069,7 +5069,7 @@ class API_Provisioner_Profile_Root(Resource):
             reqargs.get('system_template', None),
             reqargs.get('network_template', None),
             reqargs.get('storage_template', None),
-            reqargs.get('userdata_template', None),
+            reqargs.get('userdata', None),
             reqargs.get('script', None),
             reqargs.get('arg', None)
         )
@@ -5104,7 +5104,7 @@ class API_Provisioner_Profile_Element(Resource):
         { 'name': 'system_template', 'required': True, 'helpmsg': "A system template name must be specified" },
         { 'name': 'network_template', 'required': True, 'helpmsg': "A network template name must be specified" },
         { 'name': 'storage_template', 'required': True, 'helpmsg': "A storage template name must be specified" },
-        { 'name': 'userdata_template', 'required': True, 'helpmsg': "A userdata template name must be specified (use 'empty' if no template is desired)" },
+        { 'name': 'userdata', 'required': True, 'helpmsg': "A userdata document name must be specified (use 'empty' if no template is desired)" },
         { 'name': 'script', 'required': True, 'helpmsg': "A system name must be specified" },
         { 'name': 'arg', 'action': 'append' }
     ])
@@ -5137,7 +5137,7 @@ class API_Provisioner_Profile_Element(Resource):
             required: true
             description: Storage template name
           - in: query
-            name: userdata_template
+            name: userdata
             type: string
             required: true
             description: Userdata template name
@@ -5162,7 +5162,7 @@ class API_Provisioner_Profile_Element(Resource):
             reqargs.get('system_template', None),
             reqargs.get('network_template', None),
             reqargs.get('storage_template', None),
-            reqargs.get('userdata_template', None),
+            reqargs.get('userdata', None),
             reqargs.get('script', None),
             reqargs.get('arg', None)
         )

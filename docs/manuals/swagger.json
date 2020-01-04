@@ -571,7 +571,7 @@
                     "description": "System template name",
                     "type": "string"
                 },
-                "userdata_template": {
+                "userdata": {
                     "description": "Userdata template name",
                     "type": "string"
                 }
@@ -2159,7 +2159,7 @@
                     {
                         "description": "Userdata template name",
                         "in": "query",
-                        "name": "userdata_template",
+                        "name": "userdata",
                         "required": true,
                         "type": "string"
                     },
@@ -2267,7 +2267,7 @@
                     {
                         "description": "Userdata template name",
                         "in": "query",
-                        "name": "userdata_template",
+                        "name": "userdata",
                         "required": true,
                         "type": "string"
                     },
