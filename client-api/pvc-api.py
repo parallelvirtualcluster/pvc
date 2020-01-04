@@ -5243,7 +5243,7 @@ class API_Provisioner_Status_Element(Resource):
     @Authenticator
     def get(self, task_id):
         """
-        View status of a provisioner Celery worker job
+        View status of a provisioner Celery worker job {task_id}
         ---
         tags:
           - provisioner

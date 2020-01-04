@@ -2503,7 +2503,7 @@
                         }
                     }
                 },
-                "summary": "View status of a provisioner Celery worker job",
+                "summary": "View status of a provisioner Celery worker job {task_id}",
                 "tags": [
                     "provisioner"
                 ]
