@@ -1854,7 +1854,7 @@ def ceph_volume_snapshot_remove(pool, volume, name, yes):
     help='Show snapshots from this pool only.'
 )
 @click.option(
-    '-p', '--volume', 'volume',
+    '-o', '--volume', 'volume',
     default=None, show_default=True,
     help='Show snapshots from this volume only.'
 )
@@ -1902,7 +1902,7 @@ def provisioner_template():
 @click.argument(
     'limit', default=None, required=False
 )
-def template_list(limit):
+def provisioner_template_list(limit):
     """
     List all templates in the PVC cluster provisioner.
     """
@@ -1911,6 +1911,417 @@ def template_list(limit):
         pvc_provisioner.format_list_template(retdata)
         retdata = ''
     cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template system
+###############################################################################
+@click.group(name='system', short_help='Manage PVC provisioner system templates.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template_system():
+    """
+    Manage the PVC provisioner system templates.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner template system list
+###############################################################################
+@click.command(name='list', short_help='List all system templates in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def provisioner_template_system_list(limit):
+    """
+    List all system templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='system')
+    if retcode:
+        pvc_provisioner.format_list_template(retdata, template_type='system')
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template system add
+###############################################################################
+@click.command(name='add', short_help='Add new system template to the cluster.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-u', '--vcpus', 'vcpus',
+    required=True, type=int,
+    help='The number of vCPUs.'
+)
+@click.option(
+    '-m', '--vram', 'vram',
+    required=True, type=int,
+    help='The amount of vRAM (in MB).'
+)
+@click.option(
+    '-s', '--serial', 'serial',
+    is_flag=True, default=False,
+    help='Enable the virtual serial console.'
+)
+@click.option(
+    '-n', '--vnc', 'vnc',
+    is_flag=True, default=False,
+    help='Enable the VNC console.'
+)
+@click.option(
+    '-b', '--vnc-bind', 'vnc_bind',
+    default=None,
+    help='Bind VNC to this IP address instead of localhost.'
+)
+@click.option(
+    '--node-limit', 'node_limit',
+    default=None,
+    help='Limit VM operation to this CSV list of node(s).'
+)
+@click.option(
+    '--node-selector', 'node_selector',
+    type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
+    default=None, # Use cluster default
+    help='Use this selector to determine the optimal node during migrations.'
+)
+@click.option(
+    '--node-autostart', 'node_autostart',
+    is_flag=True, default=False,
+    help='Autostart VM with their parent Node on first/next boot.'
+)
+def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
+    """
+    Add a new system template NAME to the PVC cluster provisioner.
+    """
+    params = dict()
+    params['name'] = name
+    params['vcpus'] = vcpus
+    params['vram']  = vram
+    params['serial'] = serial
+    params['vnc'] = vnc
+    if vnc:
+        params['vnc_bind'] = vnc_bind
+    if node_limit:
+        params['node_limit'] = node_limit
+    if node_selector:
+        params['node_selector'] = node_selector
+    if node_autostart:
+        params['node_autostart'] = node_autostart
+
+    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='system')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template system remove
+###############################################################################
+@click.command(name='remove', short_help='Remove system template from the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_template_system_remove(name):
+    """
+    Remove a system template from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc provisioner template network
+###############################################################################
+@click.group(name='network', short_help='Manage PVC provisioner network templates.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template_network():
+    """
+    Manage the PVC provisioner network templates.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner template network list
+###############################################################################
+@click.command(name='list', short_help='List all network templates in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def provisioner_template_network_list(limit):
+    """
+    List all network templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='network')
+    if retcode:
+        pvc_provisioner.format_list_template(retdata, template_type='network')
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template network add
+###############################################################################
+@click.command(name='add', short_help='Add new network template to the cluster.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-m', '--mac-template', 'mac_template',
+    default=None,
+    help='Use this template for MAC addresses.'
+)
+def provisioner_template_network_add(name, mac_template):
+    """
+    Add a new network template to the PVC cluster provisioner.
+
+    MAC address templates are used to provide predictable MAC addresses for provisioned VMs.
+    The normal format of a MAC template is:
+
+      {prefix}:XX:XX:{vmid}{netid}
+
+    The {prefix} variable is replaced by the provisioner with a standard prefix ("52:54:01"),
+    which is different from the randomly-generated MAC prefix ("52:54:00") to avoid accidental
+    overlap of MAC addresses.
+
+    The {vmid} variable is replaced by a single hexidecimal digit representing the VM's ID,
+    the numerical suffix portion of its name; VMs without a suffix numeral have ID 0. VMs with
+    IDs greater than 15 (hexidecimal "f") will wrap back to 0.
+
+    The {netid} variable is replaced by the sequential identifier, starting at 0, of the
+    network VNI of the interface; for example, the first interface is 0, the second is 1, etc.
+
+    The four X digits are use-configurable. Use these digits to uniquely define the MAC
+    address.
+
+    Example: pvc provisioner template network add --mac-template "{prefix}:2f:1f:{vmid}{netid}" test-template
+
+    The location of the two per-VM variables can be adjusted at the administrator's discretion,
+    or removed if not required (e.g. a single-network template, or template for a single VM).
+    In such situations, be careful to avoid accidental overlap with other templates' variable
+    portions.
+    """
+    params = dict()
+    params['name'] = name
+    params['mac_template'] = mac_template
+
+    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='network')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template network remove
+###############################################################################
+@click.command(name='remove', short_help='Remove network template from the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_template_network_remove(name):
+    """
+    Remove a network template from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template network vni
+###############################################################################
+@click.group(name='vni', short_help='Manage PVC provisioner network template VNIs.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template_network_vni():
+    """
+    Manage the network VNIs in PVC provisioner network templates.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner template network vni add
+###############################################################################
+@click.command(name='add', short_help='Add network VNI to network template.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'vni'
+)
+def provisioner_template_network_vni_add(name, vni):
+    """
+    Add a new network VNI to network template NAME.
+    """
+    params = dict()
+
+    retcode, retdata = pvc_provisioner.template_element_add(config, name, vni, params, element_type='net', template_type='network')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template network vni remove
+###############################################################################
+@click.command(name='remove', short_help='Remove network VNI from network template.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'vni'
+)
+def provisioner_template_network_vni_remove(name, vni):
+    """
+    Remove a network VNI from network template NAME.
+    """
+    params = dict()
+
+    retcode, retdata = pvc_provisioner.template_element_remove(config, name, vni, element_type='net', template_type='network')
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc provisioner template storage
+###############################################################################
+@click.group(name='storage', short_help='Manage PVC provisioner storage templates.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template_storage():
+    """
+    Manage the PVC provisioner storage templates.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner template storage list
+###############################################################################
+@click.command(name='list', short_help='List all storage templates in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def provisioner_template_storage_list(limit):
+    """
+    List all storage templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='storage')
+    if retcode:
+        pvc_provisioner.format_list_template(retdata, template_type='storage')
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template storage add
+###############################################################################
+@click.command(name='add', short_help='Add new storage template to the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_template_storage_add(name):
+    """
+    Add a new storage template to the PVC cluster provisioner.
+    """
+    params = dict()
+    params['name'] = name
+
+    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='storage')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template storage remove
+###############################################################################
+@click.command(name='remove', short_help='Remove storage template from the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_template_storage_remove(name):
+    """
+    Remove a storage template from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template storage disk
+###############################################################################
+@click.group(name='disk', short_help='Manage PVC provisioner storage template disks.', context_settings=CONTEXT_SETTINGS)
+def provisioner_template_storage_disk():
+    """
+    Manage the disks in PVC provisioner storage templates.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner template storage disk add
+###############################################################################
+@click.command(name='add', short_help='Add disk to storage template.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'disk'
+)
+@click.option(
+    '-p', '--pool', 'pool',
+    required=True,
+    help='The storage pool for the disk.'
+)
+@click.option(
+    '-s', '--size', 'size',
+    required=True, type=int,
+    help='The size of the disk (in GB).'
+)
+@click.option(
+    '-f', '--filesystem', 'filesystem',
+    default=None,
+    help='The filesystem of the disk.'
+)
+@click.option(
+    '--fsarg', 'fsargs',
+    default=None, multiple=True,
+    help='Additional argument for filesystem creation, in arg=value format without leading dashes.'
+)
+@click.option(
+    '-m', '--mountpoint', 'mountpoint',
+    default=None,
+    help='The target Linux mountpoint of the disk; requires a filesystem.'
+)
+def provisioner_template_storage_disk_add(name, disk, pool, size, filesystem, fsargs, mountpoint):
+    """
+    Add a new DISK to storage template NAME.
+
+    DISK must be a Linux-style disk identifier such as "sda" or "vdb".
+    """
+    params = dict()
+    params['pool'] = pool
+    params['disk_size'] = size
+    if filesystem:
+        params['filesystem'] = filesystem
+    if filesystem and fsargs:
+        dash_fsargs = list()
+        for arg in fsargs:
+            arg_len = len(arg.split('=')[0])
+            if arg_len == 1:
+                dash_fsargs.append('-' + arg)
+            else:
+                dash_fsargs.append('--' + arg)
+        params['filesystem_arg'] = dash_fsargs
+    if filesystem and mountpoint:
+        params['mountpoint'] = mountpoint
+
+    retcode, retdata = pvc_provisioner.template_element_add(config, name, disk, params, element_type='disk', template_type='storage')
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner template storage disk remove
+###############################################################################
+@click.command(name='remove', short_help='Remove disk from storage template.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'disk'
+)
+def provisioner_template_storage_disk_remove(name, disk):
+    """
+    Remove a DISK from storage template NAME.
+    """
+    params = dict()
+
+    retcode, retdata = pvc_provisioner.template_element_remove(config, name, disk, element_type='disk', template_type='storage')
+    cleanup(retcode, retdata)
+
+
 
 
 
@@ -2099,7 +2510,30 @@ cli_ceph.add_command(ceph_volume)
 
 cli_storage.add_command(cli_ceph)
 
-provisioner_template.add_command(template_list)
+provisioner_template_system.add_command(provisioner_template_system_list)
+provisioner_template_system.add_command(provisioner_template_system_add)
+provisioner_template_system.add_command(provisioner_template_system_remove)
+
+provisioner_template_network.add_command(provisioner_template_network_list)
+provisioner_template_network.add_command(provisioner_template_network_add)
+provisioner_template_network.add_command(provisioner_template_network_remove)
+provisioner_template_network.add_command(provisioner_template_network_vni)
+
+provisioner_template_network_vni.add_command(provisioner_template_network_vni_add)
+provisioner_template_network_vni.add_command(provisioner_template_network_vni_remove)
+
+provisioner_template_storage.add_command(provisioner_template_storage_list)
+provisioner_template_storage.add_command(provisioner_template_storage_add)
+provisioner_template_storage.add_command(provisioner_template_storage_remove)
+provisioner_template_storage.add_command(provisioner_template_storage_disk)
+
+provisioner_template_storage_disk.add_command(provisioner_template_storage_disk_add)
+provisioner_template_storage_disk.add_command(provisioner_template_storage_disk_remove)
+
+provisioner_template.add_command(provisioner_template_system)
+provisioner_template.add_command(provisioner_template_network)
+provisioner_template.add_command(provisioner_template_storage)
+provisioner_template.add_command(provisioner_template_list)
 
 cli_provisioner.add_command(provisioner_template)
 
