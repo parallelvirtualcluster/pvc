@@ -4582,7 +4582,7 @@ class API_Provisioner_Userdata_Root(Resource):
               items:
                 $ref: '#/definitions/userdata'
         """
-        return api_provisioner.list_template_userdata(
+        return api_provisioner.list_userdata(
             reqargs.get('limit', None)
         )
 
@@ -4647,7 +4647,7 @@ class API_Provisioner_Userdata_Element(Resource):
               id: Message
         """
         return api_provisioner.list_userdata(
-            template,
+            userdata,
             is_fuzzy=False
         )
 
@@ -4688,7 +4688,7 @@ class API_Provisioner_Userdata_Element(Resource):
         { 'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified" }
     ])
     @Authenticator
-    def put(self, template):
+    def put(self, userdata, reqargs):
         """
         Update userdata document {userdata}
         ---
@@ -4718,7 +4718,7 @@ class API_Provisioner_Userdata_Element(Resource):
         )
 
     @Authenticator
-    def delete(self, template):
+    def delete(self, userdata):
         """
         Remove userdata document {userdata}
         ---
