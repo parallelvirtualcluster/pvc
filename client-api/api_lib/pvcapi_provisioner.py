@@ -650,7 +650,7 @@ def list_profile(limit, is_fuzzy=True):
         profile_data['id'] = profile['id']
         profile_data['name'] = profile['name']
         # Parse the name of each subelement
-        for etype in 'system_template', 'network_template', 'storage_template', 'userdata_template', 'script':
+        for etype in 'system_template', 'network_template', 'storage_template', 'userdata', 'script':
             query = 'SELECT name from {} WHERE id = %s'.format(etype)
             args = (profile[etype],)
             cur.execute(query, args)
@@ -663,7 +663,7 @@ def list_profile(limit, is_fuzzy=True):
     close_database(conn, cur)
     return data
 
-def create_profile(name, system_template, network_template, storage_template, userdata_template, script, arguments=[]):
+def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=[]):
     if list_profile(name, is_fuzzy=False):
         retmsg = { 'message': 'The profile "{}" already exists'.format(name) }
         retcode = 400
@@ -699,13 +699,13 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    userdata_templates = list_template_userdata(None)
-    userdata_template_id = None
-    for template in userdata_templates:
-        if template['name'] == userdata_template:
-            userdata_template_id = template['id']
-    if not userdata_template_id:
-        retmsg = { 'message': 'The userdata template "{}" for profile "{}" does not exist'.format(userdata_template, name) }
+    userdatas = list_template_userdata(None)
+    userdata_id = None
+    for template in userdatas:
+        if template['name'] == userdata:
+            userdata_id = template['id']
+    if not userdata_id:
+        retmsg = { 'message': 'The userdata template "{}" for profile "{}" does not exist'.format(userdata, name) }
         retcode = 400
         return retmsg, retcode
 
@@ -723,8 +723,8 @@ def create_profile(name, system_template, network_template, storage_template, us
 
     conn, cur = open_database(config)
     try:
-        query = "INSERT INTO profile (name, system_template, network_template, storage_template, userdata_template, script, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s);"
-        args = (name, system_template_id, network_template_id, storage_template_id, userdata_template_id, script_id, arguments_formatted)
+        query = "INSERT INTO profile (name, system_template, network_template, storage_template, userdata, script, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+        args = (name, system_template_id, network_template_id, storage_template_id, userdata_id, script_id, arguments_formatted)
         cur.execute(query, args)
         retmsg = { "message": 'Created VM profile "{}"'.format(name) }
         retcode = 200
