@@ -127,10 +127,6 @@ def list_template(limit, table, is_fuzzy=True):
 
     close_database(conn, cur)
 
-    # Strip outer list if only one element
-    if isinstance(data, list) and len(data) == 1:
-        data = data[0]
-
     return data
 
 def list_template_system(limit, is_fuzzy=True):
