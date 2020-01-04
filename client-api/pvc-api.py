@@ -5186,7 +5186,7 @@ class API_Provisioner_Profile_Element(Resource):
               type: object
               id: Message
         """
-        api_provisioner.delete_profile(
+        return api_provisioner.delete_profile(
             profile
         )
 api.add_resource(API_Provisioner_Profile_Element, '/provisioner/profile/<profile>')
