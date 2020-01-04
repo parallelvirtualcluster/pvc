@@ -267,7 +267,7 @@ def create_template_storage(name):
     close_database(conn, cur)
     return retmsg, retcode
 
-def create_template_storage_element(name, pool, disk_id, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
+def create_template_storage_element(name, disk_id, pool, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
