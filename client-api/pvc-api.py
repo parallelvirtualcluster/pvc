@@ -4536,7 +4536,7 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
               type: object
               id: Message
         """
-        api_provisioner.delete_template_storage_element(
+        return api_provisioner.delete_template_storage_element(
             template,
             disk_id
         )
