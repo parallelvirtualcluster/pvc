@@ -582,7 +582,7 @@ def vm_modify(domain, cfgfile, editor, restart):
                 click.echo(line)
         click.echo('')
 
-        click.confirm('Write modifications to Zookeeper?', abort=True)
+        click.confirm('Write modifications to cluster?', abort=True)
 
         if restart:
             click.echo('Writing modified configuration of VM "{}" and restarting.'.format(dom_name))
@@ -2020,7 +2020,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 )
 def provisioner_template_system_remove(name):
     """
-    Remove a system template from the PVC cluster provisioner.
+    Remove system template NAME from the PVC cluster provisioner.
     """
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
     cleanup(retcode, retdata)
@@ -2113,7 +2113,7 @@ def provisioner_template_network_add(name, mac_template):
 )
 def provisioner_template_network_remove(name):
     """
-    Remove a network template from the PVC cluster provisioner.
+    Remove network template MAME from the PVC cluster provisioner.
     """
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
     cleanup(retcode, retdata)
@@ -2161,7 +2161,7 @@ def provisioner_template_network_vni_add(name, vni):
 )
 def provisioner_template_network_vni_remove(name, vni):
     """
-    Remove a network VNI from network template NAME.
+    Remove network VNI from network template NAME.
     """
     params = dict()
 
@@ -2224,7 +2224,7 @@ def provisioner_template_storage_add(name):
 )
 def provisioner_template_storage_remove(name):
     """
-    Remove a storage template from the PVC cluster provisioner.
+    Remove storage template NAME from the PVC cluster provisioner.
     """
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
     cleanup(retcode, retdata)
@@ -2314,7 +2314,9 @@ def provisioner_template_storage_disk_add(name, disk, pool, size, filesystem, fs
 )
 def provisioner_template_storage_disk_remove(name, disk):
     """
-    Remove a DISK from storage template NAME.
+    Remove DISK from storage template NAME.
+
+    DISK must be a Linux-style disk identifier such as "sda" or "vdb".
     """
     params = dict()
 
@@ -2322,6 +2324,328 @@ def provisioner_template_storage_disk_remove(name, disk):
     cleanup(retcode, retdata)
 
 
+###############################################################################
+# pvc provisioner userdata
+###############################################################################
+@click.group(name='userdata', short_help='Manage PVC provisioner userdata documents.', context_settings=CONTEXT_SETTINGS)
+def provisioner_userdata():
+    """
+    Manage userdata documents in the PVC provisioner.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner userdata list
+###############################################################################
+@click.command(name='list', short_help='List all userdata documents in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+@click.option(
+    '-f', '--full', 'full',
+    is_flag=True, default=False,
+    help='Show all lines of the document instead of first 4.'
+)
+def provisioner_userdata_list(limit, full):
+    """
+    List all userdata documents in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.userdata_list(config, limit)
+    if retcode:
+        if not full:
+            lines = 4
+        else:
+            lines = None
+        pvc_provisioner.format_list_userdata(retdata, lines)
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner userdata add
+###############################################################################
+@click.command(name='add', short_help='Define userdata document from file.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'filename', type=click.File()
+)
+def provisioner_userdata_add(name, filename):
+    """
+    Add a new userdata document NAME from file FILENAME.
+    """
+
+    # Open the XML file
+    userdata = filename.read()
+    filename.close()
+
+    params = dict()
+    params['name'] = name
+    params['data'] = userdata
+
+    retcode, retmsg = pvc_provisioner.userdata_add(config, params)
+    cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc provisioner userdata modify
+###############################################################################
+@click.command(name='modify', short_help='Modify existing userdata document.')
+@click.option(
+    '-e', '--editor', 'editor', is_flag=True,
+    help='Use local editor to modify existing document.'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'filename', type=click.File(), default=None, required=False
+)
+def provisioner_userdata_modify(name, filename, editor):
+    """
+    Modify existing userdata document NAME, either in-editor or with replacement FILE.
+    """
+
+    if editor == False and filename == None:
+        cleanup(False, 'Either a file or the "--editor" option must be specified.')
+
+    if editor == True:
+        # Grab the current config
+        retcode, retdata = pvc_provisioner.userdata_info(config, name)
+        if not retcode:
+            click.echo(retdata)
+            exit(1)
+        current_userdata = retdata['userdata']
+
+        # Write it to a tempfile
+        fd, path = tempfile.mkstemp()
+        fw = os.fdopen(fd, 'w')
+        fw.write(current_userdata.strip())
+        fw.close()
+
+        # Edit it
+        editor = os.getenv('EDITOR', 'vi')
+        subprocess.call('%s %s' % (editor, path), shell=True)
+
+        # Open the tempfile to read
+        with open(path, 'r') as fr:
+            new_userdata = fr.read().strip()
+            fr.close()
+
+        # Delete the tempfile
+        os.unlink(path)
+
+        # Show a diff and confirm
+        diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        if len(diff) < 1:
+            click.echo('Aborting with no modifications.')
+            exit(0)
+
+        click.echo('Pending modifications:')
+        click.echo('')
+        for line in diff:
+            if re.match('^\+', line) != None:
+                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            elif re.match('^\-', line) != None:
+                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            elif re.match('^\^', line) != None:
+                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            else:
+                click.echo(line)
+        click.echo('')
+
+        click.confirm('Write modifications to cluster?', abort=True)
+
+        userdata = new_userdata
+
+    # We're operating in replace mode
+    else:
+        # Open the new file
+        userdata = filename.read().strip()
+        filename.close()
+
+    params = dict()
+    params['data'] = userdata
+
+    retcode, retmsg = pvc_provisioner.userdata_modify(config, name, params)
+    cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc provisioner userdata remove
+###############################################################################
+@click.command(name='remove', short_help='Remove userdata document from the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_userdata_remove(name):
+    """
+    Remove userdata document NAME from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.userdata_remove(config, name)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc provisioner script
+###############################################################################
+@click.group(name='script', short_help='Manage PVC provisioner scripts.', context_settings=CONTEXT_SETTINGS)
+def provisioner_script():
+    """
+    Manage scripts in the PVC provisioner.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        exit(1)
+
+###############################################################################
+# pvc provisioner script list
+###############################################################################
+@click.command(name='list', short_help='List all scripts in the cluster.')
+@click.argument(
+    'limit', default=None, required=False
+)
+@click.option(
+    '-f', '--full', 'full',
+    is_flag=True, default=False,
+    help='Show all lines of the document instead of first 4.'
+)
+def provisioner_script_list(limit, full):
+    """
+    List all scripts in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.script_list(config, limit)
+    if retcode:
+        if not full:
+            lines = 4
+        else:
+            lines = None
+        pvc_provisioner.format_list_script(retdata, lines)
+        retdata = ''
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner script add
+###############################################################################
+@click.command(name='add', short_help='Define script from file.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'filename', type=click.File()
+)
+def provisioner_script_add(name, filename):
+    """
+    Add a new script NAME from file FILENAME.
+    """
+
+    # Open the XML file
+    script = filename.read()
+    filename.close()
+
+    params = dict()
+    params['name'] = name
+    params['data'] = script
+
+    retcode, retmsg = pvc_provisioner.script_add(config, params)
+    cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc provisioner script modify
+###############################################################################
+@click.command(name='modify', short_help='Modify existing script.')
+@click.option(
+    '-e', '--editor', 'editor', is_flag=True,
+    help='Use local editor to modify existing document.'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'filename', type=click.File(), default=None, required=False
+)
+def provisioner_script_modify(name, filename, editor):
+    """
+    Modify existing script NAME, either in-editor or with replacement FILE.
+    """
+
+    if editor == False and filename == None:
+        cleanup(False, 'Either a file or the "--editor" option must be specified.')
+
+    if editor == True:
+        # Grab the current config
+        retcode, retdata = pvc_provisioner.script_info(config, name)
+        if not retcode:
+            click.echo(retdata)
+            exit(1)
+        current_script = retdata['script']
+
+        # Write it to a tempfile
+        fd, path = tempfile.mkstemp()
+        fw = os.fdopen(fd, 'w')
+        fw.write(current_script.strip())
+        fw.close()
+
+        # Edit it
+        editor = os.getenv('EDITOR', 'vi')
+        subprocess.call('%s %s' % (editor, path), shell=True)
+
+        # Open the tempfile to read
+        with open(path, 'r') as fr:
+            new_script = fr.read().strip()
+            fr.close()
+
+        # Delete the tempfile
+        os.unlink(path)
+
+        # Show a diff and confirm
+        diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        if len(diff) < 1:
+            click.echo('Aborting with no modifications.')
+            exit(0)
+
+        click.echo('Pending modifications:')
+        click.echo('')
+        for line in diff:
+            if re.match('^\+', line) != None:
+                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            elif re.match('^\-', line) != None:
+                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            elif re.match('^\^', line) != None:
+                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            else:
+                click.echo(line)
+        click.echo('')
+
+        click.confirm('Write modifications to cluster?', abort=True)
+
+        script = new_script
+
+    # We're operating in replace mode
+    else:
+        # Open the new file
+        script = filename.read().strip()
+        filename.close()
+
+    params = dict()
+    params['data'] = script
+
+    retcode, retmsg = pvc_provisioner.script_modify(config, name, params)
+    cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc provisioner script remove
+###############################################################################
+@click.command(name='remove', short_help='Remove script from the cluster.')
+@click.argument(
+    'name'
+)
+def provisioner_script_remove(name):
+    """
+    Remove script NAME from the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.script_remove(config, name)
+    cleanup(retcode, retdata)
 
 
 
@@ -2535,7 +2859,19 @@ provisioner_template.add_command(provisioner_template_network)
 provisioner_template.add_command(provisioner_template_storage)
 provisioner_template.add_command(provisioner_template_list)
 
+provisioner_userdata.add_command(provisioner_userdata_list)
+provisioner_userdata.add_command(provisioner_userdata_add)
+provisioner_userdata.add_command(provisioner_userdata_modify)
+provisioner_userdata.add_command(provisioner_userdata_remove)
+
+provisioner_script.add_command(provisioner_script_list)
+provisioner_script.add_command(provisioner_script_add)
+provisioner_script.add_command(provisioner_script_modify)
+provisioner_script.add_command(provisioner_script_remove)
+
 cli_provisioner.add_command(provisioner_template)
+cli_provisioner.add_command(provisioner_userdata)
+cli_provisioner.add_command(provisioner_script)
 
 cli.add_command(cli_cluster)
 cli.add_command(cli_node)
