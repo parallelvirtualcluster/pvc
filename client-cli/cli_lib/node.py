@@ -214,6 +214,10 @@ def format_info(node_information, long_output):
     click.echo('')
 
 def format_list(node_list):
+    # Handle single-element lists
+    if not isinstance(node_list, list):
+        node_list = [ node_list ]
+
     node_list_output = []
 
     # Determine optimal column widths

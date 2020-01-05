@@ -448,6 +448,10 @@ def follow_console_log(config, vm, lines=10):
 # Output display functions
 #
 def format_info(config, domain_information, long_output):
+    # Handle single-element lists
+    if not isinstance(domain_information, list):
+        domain_information = [ domain_information ]
+
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
     ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))

@@ -538,6 +538,10 @@ def format_list(config, network_list):
         click.echo("No network found")
         return
 
+    # Handle single-element lists
+    if not isinstance(network_list, list):
+        network_list = [ network_list ]
+
     network_list_output = []
 
     # Determine optimal column widths

@@ -356,7 +356,7 @@ def format_list_osd(osd_list):
     if not osd_list:
         osd_list = list()
     # Handle single-item list
-    if isinstance(osd_list, dict):
+    if not isinstance(osd_list, list):
         osd_list = [ osd_list ]
 
     osd_list_output = []
@@ -709,7 +709,7 @@ def format_list_pool(pool_list):
     if not pool_list:
         pool_list = list()
     # Handle single-entry list
-    if isinstance(pool_list, dict):
+    if not isinstance(pool_list, list):
         pool_list = [ pool_list ]
 
     pool_list_output = []
@@ -1079,7 +1079,7 @@ def format_list_volume(volume_list):
     if not volume_list:
         volume_list = list()
     # Handle single-entry list
-    if isinstance(volume_list, dict):
+    if not isinstance(volume_list, list):
         volume_list = [ volume_list ]
 
     volume_list_output = []
@@ -1338,7 +1338,7 @@ def format_list_snapshot(snapshot_list):
     if not snapshot_list:
         snapshot_list = list()
     # Handle single-entry list
-    if isinstance(snapshot_list, dict):
+    if not isinstance(snapshot_list, list):
         snapshot_list = [ snapshot_list ]
 
     snapshot_list_output = []
