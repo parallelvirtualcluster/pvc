@@ -13,3 +13,4 @@ grant all privileges on all tables in schema public to pvcprov;
 grant all privileges on all sequences in schema public to pvcprov;
 
 insert into userdata(name, userdata) values ('empty', '');
+insert into script(name, script) values ('empty', '');
