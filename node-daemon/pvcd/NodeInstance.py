@@ -643,7 +643,7 @@ class NodeInstance(object):
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/node_autostart'.format(dom_uuid): 'True' })
 
                 # Wait for the VM to shut down
-                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'stop':
+                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['shutdown']:
                     time.sleep(1)
 
                 continue
@@ -656,7 +656,7 @@ class NodeInstance(object):
             })
 
             # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
-            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
+            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
                 time.sleep(1)
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
@@ -705,7 +705,7 @@ class NodeInstance(object):
             })
 
             # Wait for the VM to migrate back
-            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'start':
+            while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
                 time.sleep(1)
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'ready' })
