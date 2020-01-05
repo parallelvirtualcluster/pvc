@@ -2012,8 +2012,8 @@ class API_Network_Lease_Element(Resource):
               id: Message
         """
         return api_helper.net_dhcp_list(
-            network,
-            lease,
+            vni,
+            mac,
             False
         )
 
