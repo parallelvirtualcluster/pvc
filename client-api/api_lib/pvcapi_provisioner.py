@@ -965,9 +965,14 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             used_filesystems.append(volume['filesystem'])
 
     for filesystem in used_filesystems:
-        retcode, stdout, stderr = run_os_command("which mkfs.{}".format(filesystem))
-        if retcode:
-            raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
+        if filesystem == 'swap':
+            retcode, stdout, stderr = run_os_command("which mkswap")
+            if retcode:
+                raise ProvisioningError("Failed to find binary for mkswap: {}".format(filesystem, stderr))
+        else:
+            retcode, stdout, stderr = run_os_command("which mkfs.{}".format(filesystem))
+            if retcode:
+                raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
 
     print("All selected filesystems are valid")
 
@@ -1036,9 +1041,14 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
 
         # Create the filesystem
-        retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
-        if retcode:
-            raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
+        if filesystem == 'swap':
+            retcode, stdout, stderr = run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
+            if retcode:
+                raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
+        else:
+            retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
+            if retcode:
+                raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
 
         print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
 
