@@ -88,10 +88,10 @@ def get_info(config):
 
 def format_info(cluster_information, oformat):
     if oformat == 'json':
-        return json.dumps(cluster_information))
+        return json.dumps(cluster_information)
 
     if oformat == 'json-pretty':
-        return json.dumps(cluster_information, indent=4))
+        return json.dumps(cluster_information, indent=4)
 
     # Plain formatting, i.e. human-readable
     if cluster_information['health'] == 'Optimal':
