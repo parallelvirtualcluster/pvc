@@ -692,7 +692,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    system_templates = list_template_system(None)
+    system_templates, code = list_template_system(None)
     system_template_id = None
     for template in system_templates:
         if template['name'] == system_template:
@@ -702,7 +702,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    network_templates = list_template_network(None)
+    network_templates, code = list_template_network(None)
     network_template_id = None
     for template in network_templates:
         if template['name'] == network_template:
@@ -712,7 +712,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    storage_templates = list_template_storage(None)
+    storage_templates, code = list_template_storage(None)
     storage_template_id = None
     for template in storage_templates:
         if template['name'] == storage_template:
@@ -722,7 +722,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    userdatas = list_userdata(None)
+    userdatas, code = list_userdata(None)
     userdata_id = None
     for template in userdatas:
         if template['name'] == userdata:
@@ -732,7 +732,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retcode = 400
         return retmsg, retcode
 
-    scripts = list_script(None)
+    scripts, code = list_script(None)
     script_id = None
     for scr in scripts:
         if scr['name'] == script:
