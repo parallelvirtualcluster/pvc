@@ -892,7 +892,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     db_cur.execute(query, args)
     vm_data['script'] = db_cur.fetchone()['script']
 
-    if vm_data['script']['name'] == 'empty':
+    if not vm_data['script']:
         # We do not have a script; skip it
         is_script_install = False
     else:
