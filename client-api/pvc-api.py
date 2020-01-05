@@ -4359,7 +4359,8 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
     @RequestParser([
         { 'name': 'disk_id', 'required': True, 'helpmsg': "A disk identifier in sdX or vdX format must be specified" },
         { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
-        { 'name': 'disk_size', 'required': True, 'helpmsg': "A disk size in GB must be specified" },
+        { 'name': 'source_volume' },
+        { 'name': 'disk_size' },
         { 'name': 'filesystem' },
         { 'name': 'filesystem_arg', 'action': 'append' },
         { 'name': 'mountpoint' }
@@ -4383,15 +4384,20 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
             required: true
             description: ceph storage pool for disk
           - in: query
+            name: source_volume
+            type: string
+            required: false
+            description: Source storage volume; not compatible with other options
+          - in: query
             name: disk_size
             type: integer
-            required: true
-            description: Disk size in GB
+            required: false
+            description: Disk size in GB; not compatible with source_volume
           - in: query
             name: filesystem
             type: string
             required: false
-            description: Filesystem for disk
+            description: Filesystem for disk; not compatible with source_volume
           - in: query
             name: filesystem_arg
             type: string
@@ -4401,7 +4407,7 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
             name: mountpoint
             type: string
             required: false
-            description: In-VM mountpoint for disk
+            description: In-VM mountpoint for disk; not compatible with source_volume
         responses:
           200:
             description: OK
@@ -4418,6 +4424,7 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
             template,
             reqargs.get('disk_id', None),
             reqargs.get('pool', None),
+            reqargs.get('source_volume', None),
             reqargs.get('disk_size', None),
             reqargs.get('filesystem', None),
             reqargs.get('filesystem_arg', []),
@@ -4456,7 +4463,8 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
 
     @RequestParser([
         { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
-        { 'name': 'disk_size', 'required': True, 'helpmsg': "A disk size in GB must be specified" },
+        { 'name': 'source_volume' },
+        { 'name': 'disk_size' },
         { 'name': 'filesystem' },
         { 'name': 'filesystem_arg', 'action': 'append' },
         { 'name': 'mountpoint' }
@@ -4476,15 +4484,20 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
             required: true
             description: ceph storage pool for disk
           - in: query
+            name: source_volume
+            type: string
+            required: false
+            description: Source storage volume; not compatible with other options
+          - in: query
             name: disk_size
             type: integer
-            required: true
-            description: Disk size in GB
+            required: false
+            description: Disk size in GB; not compatible with source_volume
           - in: query
             name: filesystem
             type: string
             required: false
-            description: Filesystem for disk
+            description: Filesystem for disk; not compatible with source_volume
           - in: query
             name: filesystem_arg
             type: string
@@ -4494,7 +4507,7 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
             name: mountpoint
             type: string
             required: false
-            description: In-VM mountpoint for disk
+            description: In-VM mountpoint for disk; not compatible with source_volume
         responses:
           200:
             description: OK
@@ -4511,6 +4524,7 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
             template,
             disk_id,
             reqargs.get('pool', None),
+            reqargs.get('source_volume', None),
             reqargs.get('disk_size', None),
             reqargs.get('filesystem', None),
             reqargs.get('filesystem_arg', []),

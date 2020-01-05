@@ -282,7 +282,7 @@ def create_template_storage(name):
     close_database(conn, cur)
     return retmsg, retcode
 
-def create_template_storage_element(name, disk_id, pool, disk_size_gb, filesystem=None, filesystem_args=[], mountpoint=None):
+def create_template_storage_element(name, disk_id, pool, source_volume=None, disk_size_gb=None, filesystem=None, filesystem_args=[], mountpoint=None):
     if not list_template_storage(name, is_fuzzy=False):
         retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
@@ -303,14 +303,19 @@ def create_template_storage_element(name, disk_id, pool, disk_size_gb, filesyste
         retcode = 400
         return retmsg, retcode
 
+    if source_volume and (disk_size_gb or filesystem or mountpoint):
+        retmsg = { "message": "Clone volumes are not compatible with disk size, filesystem, or mountpoint specifications." }
+        retcode = 400
+        return retmsg, retcode
+
     conn, cur = open_database(config)
     try:
         query = "SELECT id FROM storage_template WHERE name = %s;"
         args = (name,)
         cur.execute(query, args)
         template_id = cur.fetchone()['id']
-        query = "INSERT INTO storage (storage_template, pool, disk_id, disk_size_gb, mountpoint, filesystem, filesystem_args) VALUES (%s, %s, %s, %s, %s, %s, %s);"
-        args = (template_id, pool, disk_id, disk_size_gb, mountpoint, filesystem, ' '.join(filesystem_args))
+        query = "INSERT INTO storage (storage_template, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, filesystem_args) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+        args = (template_id, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, ' '.join(filesystem_args))
         cur.execute(query, args)
         retmsg = { 'message': 'Added new disk "{}" to storage template "{}"'.format(disk_id, name) }
         retcode = 200

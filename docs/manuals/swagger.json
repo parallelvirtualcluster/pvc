@@ -2963,14 +2963,21 @@
                         "type": "string"
                     },
                     {
-                        "description": "Disk size in GB",
+                        "description": "Source storage volume; not compatible with other options",
+                        "in": "query",
+                        "name": "source_volume",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Disk size in GB; not compatible with source_volume",
                         "in": "query",
                         "name": "disk_size",
-                        "required": true,
+                        "required": false,
                         "type": "integer"
                     },
                     {
-                        "description": "Filesystem for disk",
+                        "description": "Filesystem for disk; not compatible with source_volume",
                         "in": "query",
                         "name": "filesystem",
                         "required": false,
@@ -2984,7 +2991,7 @@
                         "type": "string"
                     },
                     {
-                        "description": "In-VM mountpoint for disk",
+                        "description": "In-VM mountpoint for disk; not compatible with source_volume",
                         "in": "query",
                         "name": "mountpoint",
                         "required": false,
@@ -3065,14 +3072,21 @@
                         "type": "string"
                     },
                     {
-                        "description": "Disk size in GB",
+                        "description": "Source storage volume; not compatible with other options",
+                        "in": "query",
+                        "name": "source_volume",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Disk size in GB; not compatible with source_volume",
                         "in": "query",
                         "name": "disk_size",
-                        "required": true,
+                        "required": false,
                         "type": "integer"
                     },
                     {
-                        "description": "Filesystem for disk",
+                        "description": "Filesystem for disk; not compatible with source_volume",
                         "in": "query",
                         "name": "filesystem",
                         "required": false,
@@ -3086,7 +3100,7 @@
                         "type": "string"
                     },
                     {
-                        "description": "In-VM mountpoint for disk",
+                        "description": "In-VM mountpoint for disk; not compatible with source_volume",
                         "in": "query",
                         "name": "mountpoint",
                         "required": false,
