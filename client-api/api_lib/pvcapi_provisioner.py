@@ -516,7 +516,8 @@ def update_userdata(name, userdata):
         retcode = 400
         return retmsg, retcode
 
-    tid = list_userdata(name, is_fuzzy=False)[0]['id']
+    tid, code = list_userdata(name, is_fuzzy=False)
+    tid = data[0]['id']
 
     conn, cur = open_database(config)
     try:
@@ -606,7 +607,8 @@ def update_script(name, script):
         retcode = 400
         return retmsg, retcode
 
-    tid = list_script(name, is_fuzzy=False)[0]['id']
+    data, code = list_script(name, is_fuzzy=False)
+    tid = data[0]['id']
 
     conn, cur = open_database(config)
     try:
