@@ -159,6 +159,7 @@ def flush_node(zk_conn, node, wait):
     if wait:
         while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node)) == 'flush':
             time.sleep(1)
+        retmsg = 'Flushed hypervisor {} of running VMs.'.format(node)
 
     return True, retmsg
 
@@ -178,6 +179,7 @@ def ready_node(zk_conn, node, wait):
     if wait:
         while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node)) == 'unflush':
             time.sleep(1)
+        retmsg = 'Restored hypervisor {} to active service.'.format(node)
 
     return True, retmsg
 
