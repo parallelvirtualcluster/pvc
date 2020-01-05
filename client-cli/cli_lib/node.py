@@ -208,10 +208,8 @@ def format_info(node_information, long_output):
     ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['allocated']))
 
     # Join it all together
-    information = '\n'.join(ainformation)
-    click.echo(information)
-
-    click.echo('')
+    ainformation.append('')
+    return '\n'.join(ainformation)
 
 def format_list(node_list):
     # Handle single-element lists
@@ -354,4 +352,4 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             )
         )
 
-    click.echo('\n'.join(sorted(node_list_output)))
+    return '\n'.join(sorted(node_list_output))

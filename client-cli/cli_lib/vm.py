@@ -361,8 +361,10 @@ def view_console_log(config, vm, lines=100):
         pager = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
         pager.communicate(input=loglines.encode('utf8'))
     except FileNotFoundError:
-        click.echo("Error: `less` pager not found, dumping log ({} lines) to stdout".format(lines))
-        return True, loglines
+        ainformation = list()
+        ainformation.append("Error: `less` pager not found, dumping log ({} lines) to stdout".format(lines))
+        ainformation.append(loglines)
+        return False, '\n'.join(ainformation)
 
     return True, ''
 
@@ -556,10 +558,8 @@ def format_info(config, domain_information, long_output):
             ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], controller['model']))
 
     # Join it all together
-    information = '\n'.join(ainformation)
-    click.echo(information)
-
-    click.echo('')
+    ainformation.append('')
+    return '\n'.join(ainformation)
 
 def format_list(config, vm_list, raw):
     # Handle single-element lists
@@ -582,9 +582,10 @@ def format_list(config, vm_list, raw):
 
     # Handle raw mode since it just lists the names
     if raw:
+        ainformation = list()
         for vm in sorted(item['name'] for item in vm_list):
-            click.echo(vm)
-        return True, ''
+            ainformation.append(vm)
+        return '\n'.join(ainformation)
 
     vm_list_output = []
 
@@ -717,6 +718,4 @@ def format_list(config, vm_list, raw):
             )
         )
 
-    click.echo('\n'.join(sorted(vm_list_output)))
-
-    return True, ''
+    return '\n'.join(sorted(vm_list_output))

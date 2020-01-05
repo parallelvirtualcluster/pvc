@@ -159,9 +159,12 @@ def ceph_util(config):
         return False, response.json()['message']
 	
 def format_raw_output(status_data):
-    click.echo('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
-    click.echo(status_data['ceph_data'])
-    click.echo('')
+    ainformation = list()
+    ainformation.append('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
+    ainformation.append(status_data['ceph_data'])
+    ainformation.append('')
+
+    return '\n'.join(ainformation)
 
 #
 # OSD functions
@@ -589,7 +592,7 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
             )
         )
 
-    click.echo('\n'.join(sorted(osd_list_output)))
+    return '\n'.join(sorted(osd_list_output))
 
 
 #
@@ -900,7 +903,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
             )
         )
 
-    click.echo('\n'.join(sorted(pool_list_output)))
+    return '\n'.join(sorted(pool_list_output))
 
 #
 # Volume functions
@@ -1186,7 +1189,7 @@ def format_list_volume(volume_list):
             )
         )
 
-    click.echo('\n'.join(sorted(volume_list_output)))
+    return '\n'.join(sorted(volume_list_output))
 
 
 #
@@ -1404,4 +1407,4 @@ def format_list_snapshot(snapshot_list):
             )
         )
 
-    click.echo('\n'.join(sorted(snapshot_list_output)))
+    return '\n'.join(sorted(snapshot_list_output))

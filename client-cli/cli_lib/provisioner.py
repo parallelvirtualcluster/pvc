@@ -673,6 +673,7 @@ def format_list_template(template_data, template_type=None):
     """
     template_types = [ 'system', 'network', 'storage' ]
     normalized_template_data = dict()
+    ainformation = list()
 
     if template_type in template_types:
         template_types = [ template_type ]
@@ -682,23 +683,25 @@ def format_list_template(template_data, template_type=None):
         normalized_template_data = template_data
 
     if 'system' in template_types:
-        click.echo('System templates:')
-        click.echo()
-        format_list_template_system(normalized_template_data['system_templates'])
+        ainformation.append('System templates:')
+        ainformation.append('')
+        ainformation.append(format_list_template_system(normalized_template_data['system_templates']))
         if len(template_types) > 1:
-            click.echo()
+            ainformation.append('')
 
     if 'network' in template_types:
-        click.echo('Network templates:')
-        click.echo()
-        format_list_template_network(normalized_template_data['network_templates'])
+        ainformation.append('Network templates:')
+        ainformation.append('')
+        ainformation.append(format_list_template_network(normalized_template_data['network_templates']))
         if len(template_types) > 1:
-            click.echo()
+            ainformation.append('')
 
     if 'storage' in template_types:
-        click.echo('Storage templates:')
-        click.echo()
-        format_list_template_storage(normalized_template_data['storage_templates'])
+        ainformation.append('Storage templates:')
+        ainformation.append('')
+        ainformation.append(format_list_template_storage(normalized_template_data['storage_templates']))
+
+    return '\n'.join(ainformation)
 
 def format_list_template_system(template_data):
     if isinstance(template_data, dict):
@@ -836,7 +839,7 @@ Metatemplate: {template_node_limit: <{template_node_limit_length}} \
             )
         )
 
-    click.echo('\n'.join([template_list_output_header] + template_list_output))
+    return '\n'.join([template_list_output_header] + template_list_output)
 
     return True, ''
 
@@ -912,9 +915,7 @@ def format_list_template_network(template_template):
             )
         )
 
-    click.echo('\n'.join([template_list_output_header] + template_list_output))
-
-    return True, ''
+    return '\n'.join([template_list_output_header] + template_list_output)
 
 def format_list_template_storage(template_template):
     if isinstance(template_template, dict):
@@ -1044,9 +1045,7 @@ def format_list_template_storage(template_template):
                 )
             )
 
-    click.echo('\n'.join([template_list_output_header] + template_list_output))
-
-    return True, ''
+    return '\n'.join([template_list_output_header] + template_list_output)
 
 def format_list_userdata(userdata_data, lines=None):
     if isinstance(userdata_data, dict):
@@ -1121,9 +1120,7 @@ def format_list_userdata(userdata_data, lines=None):
                 )
             )
 
-    click.echo('\n'.join([userdata_list_output_header] + userdata_list_output))
-
-    return True, ''
+    return '\n'.join([userdata_list_output_header] + userdata_list_output)
 
 def format_list_script(script_data, lines=None):
     if isinstance(script_data, dict):
@@ -1198,9 +1195,7 @@ def format_list_script(script_data, lines=None):
                 )
             )
 
-    click.echo('\n'.join([script_list_output_header] + script_list_output))
-
-    return True, ''
+    return '\n'.join([script_list_output_header] + script_list_output)
 
 def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
@@ -1305,7 +1300,4 @@ Data: {profile_userdata: <{profile_userdata_length}} \
             )
         )
 
-    click.echo('\n'.join([profile_list_output_header] + profile_list_output))
-
-    return True, ''
-
+    return '\n'.join([profile_list_output_header] + profile_list_output)

@@ -483,8 +483,7 @@ def getOutputColours(network_information):
 
 def format_info(config, network_information, long_output):
     if not network_information:
-        click.echo("No network found")
-        return
+        return "No network found"
 
     v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour = getOutputColours(network_information)
 
@@ -513,30 +512,36 @@ def format_info(config, network_information, long_output):
                 ainformation.append('{}DHCPv4 range:{}   {} - {}'.format(ansiprint.purple(), ansiprint.end(), network_information['ip4']['dhcp_start'], network_information['ip4']['dhcp_end']))
 
         if long_output:
-            dhcp4_reservations_list = getNetworkDHCPReservations(zk_conn, vni)
+            retcode, dhcp4_reservations_list = net_dhcp_list(config, network_information['vni'], None)
             if dhcp4_reservations_list:
                 ainformation.append('')
                 ainformation.append('{}Client DHCPv4 reservations:{}'.format(ansiprint.bold(), ansiprint.end()))
                 ainformation.append('')
-                # Only show static reservations in the detailed information
-                dhcp4_reservations_string = formatDHCPLeaseList(zk_conn, vni, dhcp4_reservations_list, reservations=True)
-                for line in dhcp4_reservations_string.split('\n'):
-                    ainformation.append(line)
+                if retcode:
+                    dhcp4_reservations_string = format_list_dhcp(dhcp4_reservations_list)
+                    for line in dhcp4_reservations_string.split('\n'):
+                        ainformation.append(line)
+                else:
+                    ainformation.append("No leases found")
 
-            firewall_rules = zkhandler.listchildren(zk_conn, '/networks/{}/firewall_rules'.format(vni))
-            if firewall_rules:
+            retcode, firewall_rules_list = net_acl_list(config, network_information['vni'], None, None)
+            if firewall_rules_list:
                 ainformation.append('')
                 ainformation.append('{}Network firewall rules:{}'.format(ansiprint.bold(), ansiprint.end()))
                 ainformation.append('')
-                formatted_firewall_rules = get_list_firewall_rules(zk_conn, vni)
+                if retcode:
+                    firewall_rules_string = format_list_acl(firewall_rules_list)
+                    for line in firewall_rules_string.split('\n'):
+                        ainformation.append(line)
+                else:
+                    ainformation.append("No ACLs found")
 
     # Join it all together
-    click.echo('\n'.join(ainformation))
+    return '\n'.join(ainformation)
 
 def format_list(config, network_list):
     if not network_list:
-        click.echo("No network found")
-        return
+        return "No network found"
 
     # Handle single-element lists
     if not isinstance(network_list, list):
@@ -653,7 +658,7 @@ def format_list(config, network_list):
             )
         )
 
-    click.echo('\n'.join(sorted(network_list_output)))
+    return '\n'.join(sorted(network_list_output))
 
 def format_list_dhcp(dhcp_lease_list):
     dhcp_lease_list_output = []
@@ -665,15 +670,15 @@ def format_list_dhcp(dhcp_lease_list):
     lease_timestamp_length = 13
     for dhcp_lease_information in dhcp_lease_list:
         # hostname column
-        _lease_hostname_length = len(dhcp_lease_information['hostname']) + 1
+        _lease_hostname_length = len(str(dhcp_lease_information['hostname'])) + 1
         if _lease_hostname_length > lease_hostname_length:
             lease_hostname_length = _lease_hostname_length
         # ip4_address column
-        _lease_ip4_address_length = len(dhcp_lease_information['ip4_address']) + 1
+        _lease_ip4_address_length = len(str(dhcp_lease_information['ip4_address'])) + 1
         if _lease_ip4_address_length > lease_ip4_address_length:
             lease_ip4_address_length = _lease_ip4_address_length
         # mac_address column
-        _lease_mac_address_length = len(dhcp_lease_information['mac_address']) + 1
+        _lease_mac_address_length = len(str(dhcp_lease_information['mac_address'])) + 1
         if _lease_mac_address_length > lease_mac_address_length:
             lease_mac_address_length = _lease_mac_address_length
 
@@ -710,14 +715,14 @@ def format_list_dhcp(dhcp_lease_list):
                 lease_ip4_address_length=lease_ip4_address_length,
                 lease_mac_address_length=lease_mac_address_length,
                 lease_timestamp_length=12,
-                lease_hostname=dhcp_lease_information['hostname'],
-                lease_ip4_address=dhcp_lease_information['ip4_address'],
-                lease_mac_address=dhcp_lease_information['mac_address'],
-                lease_timestamp=dhcp_lease_information['timestamp']
+                lease_hostname=str(dhcp_lease_information['hostname']),
+                lease_ip4_address=str(dhcp_lease_information['ip4_address']),
+                lease_mac_address=str(dhcp_lease_information['mac_address']),
+                lease_timestamp=str(dhcp_lease_information['timestamp'])
             )
         )
 
-    click.echo('\n'.join(sorted(dhcp_lease_list_output)))
+    return '\n'.join(sorted(dhcp_lease_list_output))
 
 def format_list_acl(acl_list):
     # Handle when we get an empty entry
@@ -788,4 +793,4 @@ def format_list_acl(acl_list):
             )
         )
 
-    click.echo('\n'.join(sorted(acl_list_output)))
+    return '\n'.join(sorted(acl_list_output))

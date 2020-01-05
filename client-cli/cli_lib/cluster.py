@@ -156,8 +156,5 @@ def format_info(cluster_information, oformat):
         ainformation.append('')
         ainformation.append(osds_string)
 
-    information = '\n'.join(ainformation)
-    click.echo(information)
-
-    click.echo('')
-        
+    ainformation.append('')
+    return '\n'.join(ainformation)

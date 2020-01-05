@@ -405,8 +405,7 @@ def node_info(node, long_output):
 
     retcode, retdata = pvc_node.node_info(config, node)
     if retcode:
-        pvc_node.format_info(retdata, long_output)
-        retdata = ''
+        retdata = pvc_node.format_info(retdata, long_output)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -423,8 +422,7 @@ def node_list(limit):
 
     retcode, retdata = pvc_node.node_list(config, limit)
     if retcode:
-        pvc_node.format_list(retdata)
-        retdata = ''
+        retdata = pvc_node.format_list(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -826,8 +824,7 @@ def vm_info(domain, long_output):
 
     retcode, retdata = pvc_vm.vm_info(config, domain)
     if retcode:
-        pvc_vm.format_info(config, retdata, long_output)
-        retdata = ''
+        retdata = pvc_vm.format_info(config, retdata, long_output)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -880,8 +877,7 @@ def vm_list(target_node, target_state, limit, raw):
 
     retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state)
     if retcode:
-        pvc_vm.format_list(config, retdata, raw)
-        retdata = ''
+        retdata = pvc_vm.format_list(config, retdata, raw)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1089,8 +1085,7 @@ def net_info(vni, long_output):
 
     retcode, retdata = pvc_network.net_info(config, vni)
     if retcode:
-        pvc_network.format_info(config, retdata, long_output)
-        retdata = ''
+        retdata = pvc_network.format_info(config, retdata, long_output)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1107,8 +1102,7 @@ def net_list(limit):
 
     retcode, retdata = pvc_network.net_list(config, limit)
     if retcode:
-        pvc_network.format_list(config, retdata)
-        retdata = ''
+        retdata = pvc_network.format_list(config, retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1186,8 +1180,7 @@ def net_dhcp_list(net, limit, only_static):
 
     retcode, retdata = pvc_network.net_dhcp_list(config, net, limit, only_static)
     if retcode:
-        pvc_network.format_list_dhcp(retdata)
-        retdata = ''
+        retdata = pvc_network.format_list_dhcp(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1300,8 +1293,7 @@ def net_acl_list(net, limit, direction):
 
     retcode, retdata = pvc_network.net_acl_list(config, net, limit, direction)
     if retcode:
-        pvc_network.format_list_acl(retdata)
-        retdata = ''
+        retdata = pvc_network.format_list_acl(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1346,8 +1338,7 @@ def ceph_status():
 
     retcode, retdata = pvc_ceph.ceph_status(config)
     if retcode:
-        pvc_ceph.format_raw_output(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_raw_output(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1361,8 +1352,7 @@ def ceph_util():
 
     retcode, retdata = pvc_ceph.ceph_util(config)
     if retcode:
-        pvc_ceph.format_raw_output(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_raw_output(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1519,8 +1509,7 @@ def ceph_osd_list(limit):
 
     retcode, retdata = pvc_ceph.ceph_osd_list(config, limit)
     if retcode:
-        pvc_ceph.format_list_osd(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_list_osd(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1604,8 +1593,7 @@ def ceph_pool_list(limit):
 
     retcode, retdata = pvc_ceph.ceph_pool_list(config, limit)
     if retcode:
-        pvc_ceph.format_list_pool(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_list_pool(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1749,8 +1737,7 @@ def ceph_volume_list(limit, pool):
 
     retcode, retdata = pvc_ceph.ceph_volume_list(config, limit, pool)
     if retcode:
-        pvc_ceph.format_list_volume(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_list_volume(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1865,8 +1852,7 @@ def ceph_volume_snapshot_list(pool, volume, limit):
 
     retcode, retdata = pvc_ceph.ceph_snapshot_list(config, limit, volume, pool)
     if retcode:
-        pvc_ceph.format_list_snapshot(retdata)
-        retdata = ''
+        retdata = pvc_ceph.format_list_snapshot(retdata)
     cleanup(retcode, retdata)
 
 
@@ -1908,8 +1894,7 @@ def provisioner_template_list(limit):
     """
     retcode, retdata = pvc_provisioner.template_list(config, limit)
     if retcode:
-        pvc_provisioner.format_list_template(retdata)
-        retdata = ''
+        retdata = pvc_provisioner.format_list_template(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1937,8 +1922,7 @@ def provisioner_template_system_list(limit):
     """
     retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='system')
     if retcode:
-        pvc_provisioner.format_list_template(retdata, template_type='system')
-        retdata = ''
+        retdata = pvc_provisioner.format_list_template(retdata, template_type='system')
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2051,8 +2035,7 @@ def provisioner_template_network_list(limit):
     """
     retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='network')
     if retcode:
-        pvc_provisioner.format_list_template(retdata, template_type='network')
-        retdata = ''
+        retdata = pvc_provisioner.format_list_template(retdata, template_type='network')
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2194,8 +2177,7 @@ def provisioner_template_storage_list(limit):
     """
     retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='storage')
     if retcode:
-        pvc_provisioner.format_list_template(retdata, template_type='storage')
-        retdata = ''
+        retdata = pvc_provisioner.format_list_template(retdata, template_type='storage')
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2358,8 +2340,7 @@ def provisioner_userdata_list(limit, full):
             lines = 4
         else:
             lines = None
-        pvc_provisioner.format_list_userdata(retdata, lines)
-        retdata = ''
+        retdata = pvc_provisioner.format_list_userdata(retdata, lines)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2520,8 +2501,7 @@ def provisioner_script_list(limit, full):
             lines = 4
         else:
             lines = None
-        pvc_provisioner.format_list_script(retdata, lines)
-        retdata = ''
+        retdata = pvc_provisioner.format_list_script(retdata, lines)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2673,8 +2653,7 @@ def provisioner_profile_list(limit):
     """
     retcode, retdata = pvc_provisioner.profile_list(config, limit)
     if retcode:
-        pvc_provisioner.format_list_profile(retdata)
-        retdata = ''
+        retdata = pvc_provisioner.format_list_profile(retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -2873,8 +2852,7 @@ def status_cluster(oformat):
 
     retcode, retdata = pvc_cluster.get_info(config)
     if retcode:
-        pvc_cluster.format_info(retdata, oformat)
-        retdata = ''
+        retdata = pvc_cluster.format_info(retdata, oformat)
     cleanup(retcode, retdata)
 
 ###############################################################################
