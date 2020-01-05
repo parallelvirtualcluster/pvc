@@ -22,10 +22,16 @@
 
 import difflib
 import colorama
-import click
 import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 def get_request_uri(config, endpoint):
     """
@@ -81,10 +87,7 @@ def net_info(config, net):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -109,10 +112,7 @@ def net_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -146,10 +146,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -194,10 +191,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -219,10 +213,7 @@ def net_remove(config, net):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -247,10 +238,7 @@ def net_dhcp_info(config, net, mac):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -277,10 +265,7 @@ def net_dhcp_list(config, net, limit, only_static=False):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -305,10 +290,7 @@ def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -330,10 +312,7 @@ def net_dhcp_remove(config, net, mac):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -358,10 +337,7 @@ def net_acl_info(config, net, description):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -388,10 +364,7 @@ def net_acl_list(config, net, limit, direction):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -419,10 +392,7 @@ def net_acl_add(config, net, direction, description, rule, order):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -444,10 +414,7 @@ def net_acl_remove(config, net, description):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True

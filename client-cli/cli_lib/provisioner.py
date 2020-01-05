@@ -23,10 +23,16 @@
 import time
 import re
 import subprocess
-import click
 import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 def get_request_uri(config, endpoint):
     """
@@ -56,10 +62,7 @@ def template_info(config, template, template_type):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -87,10 +90,7 @@ def template_list(config, limit, template_type=None):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -111,10 +111,7 @@ def template_add(config, params, template_type=None):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -136,10 +133,7 @@ def template_remove(config, name, template_type=None):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -162,10 +156,7 @@ def template_element_add(config, name, element_id, params, element_type=None, te
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -187,10 +178,7 @@ def template_element_remove(config, name, element_id, element_type=None, templat
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -212,10 +200,7 @@ def userdata_info(config, userdata):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -240,10 +225,7 @@ def userdata_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -264,10 +246,7 @@ def userdata_add(config, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -290,10 +269,7 @@ def userdata_modify(config, name, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: PUT {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -315,10 +291,7 @@ def userdata_remove(config, name):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -340,10 +313,7 @@ def script_info(config, script):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -368,10 +338,7 @@ def script_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -392,10 +359,7 @@ def script_add(config, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -418,10 +382,7 @@ def script_modify(config, name, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: PUT {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -443,10 +404,7 @@ def script_remove(config, name):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -468,10 +426,7 @@ def profile_info(config, profile):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -496,10 +451,7 @@ def profile_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -520,10 +472,7 @@ def profile_add(config, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -546,10 +495,7 @@ def profile_modify(config, name, params):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: PUT {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -571,10 +517,7 @@ def profile_remove(config, name):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True
@@ -600,10 +543,7 @@ def vm_create(config, name, profile):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 202:
         retvalue = True
@@ -627,10 +567,7 @@ def task_status(config, task_id):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retvalue = True

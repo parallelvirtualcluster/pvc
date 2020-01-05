@@ -23,13 +23,19 @@
 import time
 import re
 import subprocess
-import click
 import requests
 
 from collections import deque
 
 import cli_lib.ansiprint as ansiprint
 import cli_lib.ceph as ceph
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 def get_request_uri(config, endpoint):
     """
@@ -59,10 +65,7 @@ def vm_info(config, vm):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -91,10 +94,7 @@ def vm_list(config, limit, target_node, target_state):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -121,10 +121,7 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -150,10 +147,7 @@ def vm_modify(config, vm, xml, restart):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -177,10 +171,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     metadata = response.json()
 
@@ -208,10 +199,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -236,10 +224,7 @@ def vm_remove(config, vm, delete_disks=False):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -264,10 +249,7 @@ def vm_state(config, vm, target_state):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -294,10 +276,7 @@ def vm_node(config, vm, target_node, action, force=False):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -319,10 +298,7 @@ def vm_locks(config, vm):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -345,10 +321,7 @@ def view_console_log(config, vm, lines=100):
         params={'lines': lines}
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     console_log = response.json()['data']
 
@@ -382,10 +355,7 @@ def follow_console_log(config, vm, lines=10):
         params={'lines': lines}
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     console_log = response.json()['data']
 
@@ -409,17 +379,7 @@ def follow_console_log(config, vm, lines=10):
             params={'lines': lines}
         )
     
-        if config['debug']:
-            print(
-                'Response code: {}'.format(
-                    response.status_code
-                )
-            )
-            print(
-                'Response headers: {}'.format(
-                    response.headers
-                )
-            )
+        debug_output(config, request_uri, response)
     
         new_console_log = response.json()['data']
         # Split the new and old log strings into constitutent lines

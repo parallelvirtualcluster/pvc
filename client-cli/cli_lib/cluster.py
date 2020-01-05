@@ -20,11 +20,17 @@
 #
 ###############################################################################
 
-import click
 import json
 import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 def get_request_uri(config, endpoint):
     """
@@ -51,10 +57,7 @@ def initialize(config):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -76,10 +79,7 @@ def get_info(config):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -88,12 +88,10 @@ def get_info(config):
 
 def format_info(cluster_information, oformat):
     if oformat == 'json':
-        print(json.dumps(cluster_information))
-        return
+        return json.dumps(cluster_information))
 
     if oformat == 'json-pretty':
-        print(json.dumps(cluster_information, indent=4))
-        return
+        return json.dumps(cluster_information, indent=4))
 
     # Plain formatting, i.e. human-readable
     if cluster_information['health'] == 'Optimal':

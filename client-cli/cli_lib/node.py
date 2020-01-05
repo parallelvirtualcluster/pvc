@@ -20,10 +20,16 @@
 #
 ###############################################################################
 
-import click
 import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 def get_request_uri(config, endpoint):
     """
@@ -56,10 +62,7 @@ def node_coordinator_state(config, node, action):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -85,10 +88,7 @@ def node_domain_state(config, node, action, wait):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -110,10 +110,7 @@ def node_info(config, node):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -141,10 +138,7 @@ def node_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()

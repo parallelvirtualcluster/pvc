@@ -21,13 +21,19 @@
 ###############################################################################
 
 import re
-import click
 import json
 import time
 import math
 import requests
 
 import cli_lib.ansiprint as ansiprint
+
+def debug_output(config, request_uri, response):
+    if config['debug']:
+        import click.echo
+        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('Response code: {}'.format(response.status_code), err=True)
+        click.echo('Response headers: {}'.format(response.headers), err=True)
 
 #
 # Supplemental functions
@@ -125,10 +131,7 @@ def ceph_status(config):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -148,10 +151,7 @@ def ceph_util(config):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -182,10 +182,7 @@ def ceph_osd_info(config, osd):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -210,10 +207,7 @@ def ceph_osd_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -238,10 +232,7 @@ def ceph_osd_add(config, node, device, weight):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -266,10 +257,7 @@ def ceph_osd_remove(config, osdid):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -294,10 +282,7 @@ def ceph_osd_state(config, osdid, state):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -323,10 +308,7 @@ def ceph_osd_option(config, option, action):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -611,10 +593,7 @@ def ceph_pool_info(config, pool):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -639,10 +618,7 @@ def ceph_pool_list(config, limit):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -667,10 +643,7 @@ def ceph_pool_add(config, pool, pgs, replcfg):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -695,10 +668,7 @@ def ceph_pool_remove(config, pool):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -921,10 +891,7 @@ def ceph_volume_info(config, pool, volume):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -951,10 +918,7 @@ def ceph_volume_list(config, limit, pool):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -979,10 +943,7 @@ def ceph_volume_add(config, pool, volume, size):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1004,10 +965,7 @@ def ceph_volume_remove(config, pool, volume):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1037,10 +995,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: PUT {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1065,10 +1020,7 @@ def ceph_volume_clone(config, pool, volume, new_volume):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1208,10 +1160,7 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -1240,10 +1189,7 @@ def ceph_snapshot_list(config, limit, volume, pool):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: GET {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         return True, response.json()
@@ -1268,10 +1214,7 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
         }
     )
 
-    if config['debug']:
-        print('API endpoint: POST {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1293,10 +1236,7 @@ def ceph_snapshot_remove(config, pool, volume, snapshot):
         request_uri
     )
 
-    if config['debug']:
-        print('API endpoint: DELETE {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
@@ -1324,10 +1264,7 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
         params=params
     )
 
-    if config['debug']:
-        print('API endpoint: PUT {}'.format(request_uri))
-        print('Response code: {}'.format(response.status_code))
-        print('Response headers: {}'.format(response.headers))
+    debug_output(config, request_uri, response)
 
     if response.status_code == 200:
         retstatus = True
