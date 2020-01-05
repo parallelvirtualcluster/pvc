@@ -102,6 +102,9 @@ def node_list(limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -131,6 +134,9 @@ def node_daemon_state(node):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -156,6 +162,9 @@ def node_coordinator_state(node):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -295,6 +304,9 @@ def vm_state(vm):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -325,6 +337,9 @@ def vm_node(vm):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -356,8 +371,11 @@ def vm_console(vm, lines=None):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
-    return retdata ,retcode
+    return retdata, retcode
 
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
@@ -381,6 +399,9 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -430,6 +451,9 @@ def get_vm_meta(vm):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -703,6 +727,9 @@ def net_list(limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -787,6 +814,9 @@ def net_dhcp_list(network, limit=None, static=False):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -844,6 +874,9 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     # If this is a single element, strip it out of the list
     if isinstance(retdata, list) and len(retdata) == 1:
@@ -938,6 +971,9 @@ def ceph_osd_list(limit=None):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -956,6 +992,9 @@ def ceph_osd_state(osd):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     in_state = retdata[0]['stats']['in']
     up_state = retdata[0]['stats']['up']
@@ -1092,6 +1131,9 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -1153,6 +1195,9 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
@@ -1268,6 +1313,9 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
             }
     else:
         retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
     return retdata, retcode
 
