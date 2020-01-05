@@ -368,24 +368,36 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
 
     match_description = ''
 
-    # Check if the reservation matches a description, a mac, or an IP address currently in the database
+    # Check if the reservation matches a static reservation description, a mac, or an IP address currently in the database
     dhcp4_reservations_list = getNetworkDHCPReservations(zk_conn, net_vni)
     for macaddr in dhcp4_reservations_list:
         hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/hostname'.format(net_vni, macaddr))
         ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(net_vni, macaddr))
         if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
+            lease_type_zk = 'reservations'
+            lease_type_human = 'static reservation'
+
+    # Check if the reservation matches a dynamic reservation description, a mac, or an IP address currently in the database
+    dhcp4_leases_list = getNetworkDHCPLeases(zk_conn, net_vni)
+    for macaddr in dhcp4_leases_list:
+        hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/hostname'.format(net_vni, macaddr))
+        ipaddress = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/ipaddr'.format(net_vni, macaddr))
+        if reservation == macaddr or reservation == hostname or reservation == ipaddress:
+            match_description = macaddr
+            lease_type_zk = 'leases'
+            lease_type_human = 'dynamic lease'
 
     if not match_description:
-        return False, 'ERROR: No DHCP reservation exists matching "{}"!'.format(reservation)
+        return False, 'ERROR: No DHCP reservation or lease exists matching "{}"!'.format(reservation)
 
     # Remove the entry from zookeeper
     try:
-        zkhandler.deletekey(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(net_vni, match_description))
+        zkhandler.deletekey(zk_conn, '/networks/{}/dhcp4_{}/{}'.format(net_vni, lease_type_zk, match_description))
     except:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
-    return True, 'DHCP reservation "{}" removed successfully!'.format(match_description)
+    return True, 'DHCP {} "{}" removed successfully!'.format(lease_type_human, match_description)
 
 def add_acl(zk_conn, network, direction, description, rule, order):
     # Validate and obtain standard passed value
