@@ -577,6 +577,24 @@ def vm_stop(name):
     }
     return output, retcode
 
+def vm_disable(name):
+    """
+    Disable a (stopped) VM in the PVC cluster.
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_vm.disable_vm(zk_conn, name)
+    pvc_common.stopZKConnection(zk_conn)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return output, retcode
+
 def vm_move(name, node):
     """
     Move a VM to another node.
