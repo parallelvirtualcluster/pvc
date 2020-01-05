@@ -358,17 +358,11 @@ def vm_console(vm, lines=None):
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
-        if retdata:
-            retcode = 200
-            retdata = {
-                'name': vm,
-                'data': retdata
-            }
-        else:
-            retcode = 404
-            retdata = {
-                'message': 'VM not found.'
-            }
+        retcode = 200
+        retdata = {
+            'name': vm,
+            'data': retdata
+        }
     else:
         retcode = 400
         retdata = {
