@@ -439,8 +439,8 @@ def move_vm(zk_conn, domain, target_node):
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
         # Check if node is within the limit
-        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
-        if node_limit and target_node not in node_limit:
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid))
+        if node_limit and target_node not in node_limit.split(','):
             return False, 'ERROR: Specified node "{}" is not in the allowed list of nodes for VM "{}".'.format(target_node, domain)
 
         # Verify if node is current node
@@ -500,8 +500,8 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
         # Check if node is within the limit
-        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
-        if node_limit and target_node not in node_limit:
+        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid))
+        if node_limit and target_node not in node_limit.split(','):
             return False, 'ERROR: Specified node "{}" is not in the allowed list of nodes for VM "{}".'.format(target_node, domain)
 
         # Verify if node is current node
