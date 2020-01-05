@@ -80,7 +80,7 @@ def get_config(store_data, cluster=None):
         if os.path.isfile(cfgfile):
             host, port, scheme = read_from_yaml(cfgfile)
         else:
-            print('No cluster specified and no local pvc-api.yaml configuration found.')
+            click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
             return { 'badcfg': True }
     else:
         # This is a static configuration, get the raw details
