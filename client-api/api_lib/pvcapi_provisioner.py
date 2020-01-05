@@ -134,14 +134,20 @@ def list_template_system(limit, is_fuzzy=True):
     Obtain a list of system templates.
     """
     data = list_template(limit, 'system_template', is_fuzzy)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No system templates found'}, 404
 
 def list_template_network(limit, is_fuzzy=True):
     """
     Obtain a list of network templates.
     """
     data = list_template(limit, 'network_template', is_fuzzy)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No network templates found'}, 404
 
 def list_template_network_vnis(name):
     """
@@ -149,14 +155,20 @@ def list_template_network_vnis(name):
     """
     data = list_template(name, 'network_template', is_fuzzy=False)[0]
     networks = data['networks']
-    return networks
+    if networks:
+        return networks, 200
+    else:
+        return {'message': 'No network template networks found'}, 404
 
 def list_template_storage(limit, is_fuzzy=True):
     """
     Obtain a list of storage templates.
     """
     data = list_template(limit, 'storage_template', is_fuzzy)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No storage templates found'}, 404
 
 def list_template_storage_disks(name):
     """
@@ -164,12 +176,15 @@ def list_template_storage_disks(name):
     """
     data = list_template(name, 'storage_template', is_fuzzy=False)[0]
     disks = data['disks']
-    return disks
+    if disks:
+        return disks, 200
+    else:
+        return {'message': 'No storage template disks found'}, 404
 
 def template_list(limit):
-    system_templates = list_template_system(limit)
-    network_templates = list_template_network(limit)
-    storage_templates = list_template_storage(limit)
+    system_templates, code = list_template_system(limit)
+    network_templates, code = list_template_network(limit)
+    storage_templates, code = list_template_storage(limit)
 
     return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates }
 
@@ -471,7 +486,10 @@ def list_userdata(limit, is_fuzzy=True):
     cur.execute(query, args)
     data = cur.fetchall()
     close_database(conn, cur)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No userdata documents found'}, 404
 
 def create_userdata(name, userdata):
     if list_userdata(name, is_fuzzy=False):
@@ -558,7 +576,10 @@ def list_script(limit, is_fuzzy=True):
     cur.execute(query, args)
     data = cur.fetchall()
     close_database(conn, cur)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No scripts found'}, 404
 
 def create_script(name, script):
     if list_script(name, is_fuzzy=False):
