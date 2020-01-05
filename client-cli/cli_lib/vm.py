@@ -448,10 +448,6 @@ def follow_console_log(config, vm, lines=10):
 # Output display functions
 #
 def format_info(config, domain_information, long_output):
-    # Handle single-element lists
-    if not isinstance(domain_information, list):
-        domain_information = [ domain_information ]
-
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
     ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))
@@ -566,6 +562,10 @@ def format_info(config, domain_information, long_output):
     click.echo('')
 
 def format_list(config, vm_list, raw):
+    # Handle single-element lists
+    if not isinstance(vm_list, list):
+        vm_list = [ vm_list ]
+
     # Function to strip the "br" off of nets and return a nicer list
     def getNiceNetID(domain_information):
         # Network list
