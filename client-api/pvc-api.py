@@ -4887,7 +4887,7 @@ class API_Provisioner_Script_Element(Resource):
         { 'name': 'data', 'required': True, 'helpmsg': "A script document must be specified" }
     ])
     @Authenticator
-    def put(self, script):
+    def put(self, script, reqargs):
         """
         Update script {script}
         ---
