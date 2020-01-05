@@ -1157,12 +1157,12 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
 @click.argument(
     'macaddr'
 )
-def net_dhcp_remove(net, reservation):
+def net_dhcp_remove(net, macaddr):
     """
     Remove a DHCP static reservation for MACADDR from virtual network NET; NET must be a VNI.
     """
 
-    retcode, retmsg = pvc_network.net_dhcp_remove(config, net, reservation)
+    retcode, retmsg = pvc_network.net_dhcp_remove(config, net, macaddr)
     cleanup(retcode, retmsg)
 
 ###############################################################################
