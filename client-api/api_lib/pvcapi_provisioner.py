@@ -891,6 +891,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     args = (profile_data['script'],)
     db_cur.execute(query, args)
     vm_data['script'] = db_cur.fetchone()['script']
+
+    if vm_data['script']['name'] == 'empty':
+        # We do not have a script; skip it
+        is_script_install = False
+    else:
+        is_script_install = True
+
   
     close_database(db_conn, db_cur)
 
@@ -982,26 +989,27 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     self.update_state(state='RUNNING', meta={'current': 3, 'total': 10, 'status': 'Preparing provisioning script'})
     time.sleep(1)
 
-    # Write the script out to a temporary file
-    retcode, stdout, stderr = run_os_command("mktemp")
-    if retcode:
-        raise ProvisioningError("Failed to create a temporary file: {}".format(stderr))
-    script_file = stdout.strip()
-    with open(script_file, 'w') as fh:
-        fh.write(vm_data['script'])
-        fh.write('\n')
+    if is_script_install:
+        # Write the script out to a temporary file
+        retcode, stdout, stderr = run_os_command("mktemp")
+        if retcode:
+            raise ProvisioningError("Failed to create a temporary file: {}".format(stderr))
+        script_file = stdout.strip()
+        with open(script_file, 'w') as fh:
+            fh.write(vm_data['script'])
+            fh.write('\n')
 
-    # Import the script file
-    loader = importlib.machinery.SourceFileLoader('installer_script', script_file)
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    installer_script = importlib.util.module_from_spec(spec)
-    loader.exec_module(installer_script)
+        # Import the script file
+        loader = importlib.machinery.SourceFileLoader('installer_script', script_file)
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        installer_script = importlib.util.module_from_spec(spec)
+        loader.exec_module(installer_script)
 
-    # Verify that the install() function is valid
-    if not "install" in dir(installer_script):
-        raise ProvisioningError("Specified script does not contain an install() function")
+        # Verify that the install() function is valid
+        if not "install" in dir(installer_script):
+            raise ProvisioningError("Specified script does not contain an install() function")
 
-    print("Provisioning script imported successfully")
+        print("Provisioning script imported successfully")
 
     # Phase 4 - disk creation
     #  * Create each Ceph storage volume for the disks
@@ -1052,53 +1060,55 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
         print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
 
-    # Create temporary directory
-    retcode, stdout, stderr = run_os_command("mktemp -d")
-    if retcode:
-        raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
-    temp_dir = stdout.strip()
-
-    for volume in vm_data['volumes']:
-        if not volume['mountpoint']:
-            continue
-
-        mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-        mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-
-        # Ensure the mount path exists (within the filesystems)
-        retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
+    if is_script_install:
+        # Create temporary directory
+        retcode, stdout, stderr = run_os_command("mktemp -d")
         if retcode:
-            raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
+            raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
+        temp_dir = stdout.strip()
 
-        # Mount filesystems to temporary directory
-        retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
-        if retcode:
-            raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
+        for volume in vm_data['volumes']:
+            if not volume['mountpoint']:
+                continue
 
-        print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
+            mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+            mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+
+            # Ensure the mount path exists (within the filesystems)
+            retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
+            if retcode:
+                raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
+
+            # Mount filesystems to temporary directory
+            retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
+            if retcode:
+                raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
+
+            print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
 
     # Phase 6 - provisioning script execution
     #  * Execute the provisioning script main function ("install") passing any custom arguments
     self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Executing provisioning script'})
     time.sleep(1)
 
-    print("Running installer script")
+    if is_script_install:
+        print("Running installer script")
 
-    # Parse the script arguments
-    script_arguments = dict()
-    for argument in vm_data['script_arguments']:
-        argument_name, argument_data = argument.split('=')
-        script_arguments[argument_name] = argument_data
+        # Parse the script arguments
+        script_arguments = dict()
+        for argument in vm_data['script_arguments']:
+            argument_name, argument_data = argument.split('=')
+            script_arguments[argument_name] = argument_data
 
-    # Run the script
-    installer_script.install(
-        vm_name=vm_name,
-        vm_id=vm_id,
-        temporary_directory=temp_dir,
-        disks=vm_data['volumes'],
-        networks=vm_data['networks'],
-        **script_arguments
-    )
+        # Run the script
+        installer_script.install(
+            vm_name=vm_name,
+            vm_id=vm_id,
+            temporary_directory=temp_dir,
+            disks=vm_data['volumes'],
+            networks=vm_data['networks'],
+            **script_arguments
+        )
 
     # Phase 7 - install cleanup
     #  * Unmount any mounted volumes
@@ -1107,14 +1117,15 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
 
     for volume in list(reversed(vm_data['volumes'])):
-        # Unmount the volume
-        if volume['mountpoint']:
-            print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
+        if is_script_install:
+            # Unmount the volume
+            if volume['mountpoint']:
+                print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
 
-            mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-            retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
-            if retcode:
-                raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
+                mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+                retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
+                if retcode:
+                    raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
 
         # Unmap the RBD device
         if volume['filesystem']:
@@ -1127,15 +1138,16 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     print("Cleaning up temporary directories and files")
 
-    # Remove temporary mount directory (don't fail if not removed)
-    retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
-    if retcode:
-        print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
+    if is_script_install:
+        # Remove temporary mount directory (don't fail if not removed)
+        retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
+        if retcode:
+            print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
 
-    # Remote temporary script (don't fail if not removed)
-    retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
-    if retcode:
-        print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
+        # Remote temporary script (don't fail if not removed)
+        retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
+        if retcode:
+            print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
 
     # Phase 8 - configuration creation
     #  * Create the libvirt XML configuration
