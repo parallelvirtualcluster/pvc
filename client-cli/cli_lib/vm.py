@@ -323,6 +323,9 @@ def view_console_log(config, vm, lines=100):
 
     debug_output(config, request_uri, response)
 
+    if response.status_code != 200:
+        return False, response.json()['message']
+
     console_log = response.json()['data']
 
     # Shrink the log buffer to length lines
