@@ -1139,7 +1139,7 @@ def update_zookeeper():
             retcode, stdout, stderr = common.run_os_command('ceph osd status', timeout=1)
             if debug:
                 print("Loop through OSD status data")
-            for line in stderr.split('\n'):
+            for line in stdout.split('\n'):
                 # Strip off colour
                 line = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line)
                 # Split it for parsing
@@ -1177,9 +1177,9 @@ def update_zookeeper():
                     this_dump.update(osd_df[osd])
                     this_dump.update(osd_status[osd])
                     osd_stats[osd] = this_dump
-                except KeyError:
+                except KeyError as e:
                     # One or more of the status commands timed out, just continue
-                    pass
+                    logger.out('Failed to parse OSD stats into dictionary: {}'.format(e), state='w')
 
             # Trigger updates for each OSD on this node
             if debug:
@@ -1191,9 +1191,9 @@ def update_zookeeper():
                         zkhandler.writedata(zk_conn, {
                             '/ceph/osds/{}/stats'.format(osd): str(stats)
                         })
-                    except KeyError:
+                    except KeyError as e:
                         # One or more of the status commands timed out, just continue
-                        pass
+                        logger.out('Failed to upload OSD stats from dictionary: {}'.format(e), state='w')
                     osds_this_node += 1
 
     memalloc = 0
