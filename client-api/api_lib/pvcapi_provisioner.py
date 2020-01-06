@@ -206,7 +206,7 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
         retmsg = { 'message': 'Added new system template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create system template "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create system template "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -225,7 +225,7 @@ def create_template_network(name, mac_template=None):
         retmsg = { 'message': 'Added new network template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create network template "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create network template "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -236,7 +236,9 @@ def create_template_network_element(name, vni):
         retcode = 400
         return retmsg, retcode
 
-    networks = list_template_network_vnis(name)
+    networks, code = list_template_network_vnis(name)
+    if code != 200:
+        networks = []
     found_vni = False
     for network in networks:
         if int(network['vni']) == vni:
@@ -258,7 +260,7 @@ def create_template_network_element(name, vni):
         retmsg = { 'message': 'Added new network "{}" to network template "{}"'.format(vni, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(vni), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(vni, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -277,7 +279,7 @@ def create_template_storage(name):
         retmsg = { 'message': 'Added new storage template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -289,6 +291,8 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         return retmsg, retcode
 
     disks, code = list_template_storage_disks(name)
+    if code != 200:
+        disks = []
     found_disk = False
     for disk in disks:
         if disk['disk_id'] == disk_id:
@@ -324,7 +328,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         retmsg = { 'message': 'Added new disk "{}" to storage template "{}"'.format(disk_id, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(disk_id), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}"'.format(disk_id, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -346,7 +350,7 @@ def delete_template_system(name):
         retmsg = { "message": 'Removed system template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -372,7 +376,7 @@ def delete_template_network(name):
         retmsg = { "message": 'Removed network template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -405,7 +409,7 @@ def delete_template_network_element(name, vni):
         retmsg = { "message": 'Removed network "{}" from network template "{}"'.format(vni, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -431,7 +435,7 @@ def delete_template_storage(name):
         retmsg = { "message": 'Removed storage template "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -464,7 +468,7 @@ def delete_template_storage_element(name, disk_id):
         retmsg = { "message": 'Removed disk "{}" from storage template "{}"'.format(disk_id, name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -514,7 +518,7 @@ def create_userdata(name, userdata):
         retmsg = { "message": 'Created userdata document "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -536,7 +540,7 @@ def update_userdata(name, userdata):
         retmsg = { "message": 'Updated userdata document "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to update entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to update entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -605,7 +609,7 @@ def create_script(name, script):
         retmsg = { "message": 'Created provisioning script "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -627,7 +631,7 @@ def update_script(name, script):
         retmsg = { "message": 'Updated provisioning script "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to update entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to update entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -764,7 +768,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         retmsg = { "message": 'Created VM profile "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to create entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -783,7 +787,7 @@ def delete_profile(name):
         retmsg = { "message": 'Removed VM profile "{}"'.format(name) }
         retcode = 200
     except psycopg2.IntegrityError as e:
-        retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': e }
+        retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
