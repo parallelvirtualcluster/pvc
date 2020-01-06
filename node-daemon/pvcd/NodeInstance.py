@@ -439,7 +439,7 @@ class NodeInstance(object):
                     switchover
                     --candidate {}
                     --force
-                    pvcdns
+                    pvc
                 """.format(self.name)
             )
 
