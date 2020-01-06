@@ -153,6 +153,8 @@ pvc:
       # networking: PVC networking configuration
       # OPTIONAL if enable_networking: False
       networking:
+        # bridge_device: Underlying device to use for bridged vLAN networks; usually the device underlying <cluster>
+        bridge_device: ens4
         # upstream: Upstream physical interface device
         upstream:
           # device: Upstream interface device name

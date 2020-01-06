@@ -200,6 +200,7 @@ def readConfig(pvcd_config_file, myhostname):
                 'metadata_postgresql_dbname': o_config['pvc']['coordinator']['metadata']['database']['name'],
                 'metadata_postgresql_user': o_config['pvc']['coordinator']['metadata']['database']['user'],
                 'metadata_postgresql_password': o_config['pvc']['coordinator']['metadata']['database']['pass'],
+                'bridge_dev': o_config['pvc']['system']['configuration']['networking']['bridge_device'],
                 'vni_dev': o_config['pvc']['system']['configuration']['networking']['cluster']['device'],
                 'vni_mtu': o_config['pvc']['system']['configuration']['networking']['cluster']['mtu'],
                 'vni_dev_ip': o_config['pvc']['system']['configuration']['networking']['cluster']['address'],

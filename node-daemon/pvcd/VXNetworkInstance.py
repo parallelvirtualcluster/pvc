@@ -40,6 +40,7 @@ class VXNetworkInstance(object):
         self.dns_aggregator = dns_aggregator
         self.vni_dev = config['vni_dev']
         self.vni_mtu = config['vni_mtu']
+        self.bridge_dev = config['bridge_dev']
 
         self.nettype = zkhandler.readdata(self.zk_conn, '/networks/{}/nettype'.format(self.vni))
         if self.nettype == 'bridged':
@@ -465,8 +466,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     # Create bridged network configuration
     def createNetworkBridged(self):
         self.logger.out(
-            'Creating VLAN device on interface {}'.format(
-                self.vni_dev
+            'Creating bridged vLAN device {} on interface {}'.format(
+                self.vlan_nic,
+                self.bridge_dev
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
@@ -475,7 +477,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         # Create vLAN interface
         common.run_os_command(
             'ip link add link {} name {} type vlan id {}'.format(
-                self.vni_dev,
+                self.bridge_dev,
                 self.vlan_nic,
                 self.vni
             )
