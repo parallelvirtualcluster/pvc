@@ -59,7 +59,7 @@ def install(**kwargs):
     try:
         deb_packages = kwargs['deb_packages'].split(',')
     except:
-        deb_packages = ["linux-image-amd64", "grub-pc", "cloud-init", "python3-cffi-backend"]
+        deb_packages = ["linux-image-amd64", "grub-pc", "cloud-init", "python3-cffi-backend", "wget"]
 
     # We need to know our root disk
     root_disk = None
