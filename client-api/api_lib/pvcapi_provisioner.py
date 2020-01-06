@@ -183,8 +183,14 @@ def list_template_storage_disks(name):
 
 def template_list(limit):
     system_templates, code = list_template_system(limit)
+    if code != 200:
+        system_templates = []
     network_templates, code = list_template_network(limit)
+    if code != 200:
+        network_templates = []
     storage_templates, code = list_template_storage(limit)
+    if code != 200:
+        storage_templates = []
 
     return { "system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates }
 
