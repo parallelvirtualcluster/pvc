@@ -2713,12 +2713,11 @@ class API_Storage_Ceph_Pool_Root(Resource):
               type: object
               id: Message
         """
-        api_helper.ceph_pool_add(
+        return api_helper.ceph_pool_add(
             reqargs.get('pool', None),
             reqargs.get('pgs', None),
             reqargs.get('replcfg', None)
         )
-        pass
 api.add_resource(API_Storage_Ceph_Pool_Root, '/storage/ceph/pool')
 
 # /storage/ceph/pool/<pool>
