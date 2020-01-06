@@ -245,12 +245,12 @@ def ceph_osd_remove(config, osdid):
     """
     Remove Ceph OSD
 
-    API endpoint: POST /api/v1/storage/ceph/osd/{osdid}
+    API endpoint: DELETE /api/v1/storage/ceph/osd/{osdid}
     API arguments:
     API schema: {"message":"{data}"}
     """
     request_uri = get_request_uri(config, '/storage/ceph/osd/{osdid}'.format(osdid=osdid))
-    response = requests.post(
+    response = requests.delete(
         request_uri,
         params={
             'yes-i-really-mean-it': 'yes'
