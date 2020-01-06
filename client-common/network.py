@@ -250,7 +250,7 @@ def add_network(zk_conn, vni, description, nettype,
     else:
         dhcp6_flag = 'False'
 
-    if not domain:
+    if nettype == 'managed' and not domain:
         domain = '{}.local'.format(description)
 
     # Make sure the DHCP4 flag is always boolean 
