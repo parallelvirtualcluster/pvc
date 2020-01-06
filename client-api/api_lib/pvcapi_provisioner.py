@@ -1300,7 +1300,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         print("Defining and starting VM on cluster")
 
     if define_vm:
-        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, vm_data['system_details']['node_limit'].split(','), vm_data['system_details']['node_selector'], vm_data['system_details']['node_autostart'], vm_profile)
+        node_limit = vm_data['system_details']['node_limit']
+        if node_limit:
+            node_limit = node_limit.split(',')
+        node_selector = vm_data['system_details']['node_selector']
+        node_autostart = vm_data['system_details']['node_autostart']
+        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, node_limit, node_selector, node_autostart, vm_profile)
         print(retmsg)
 
     if start_vm:
