@@ -80,7 +80,6 @@ def get_config(store_data, cluster=None):
         if os.path.isfile(cfgfile):
             host, port, scheme = read_from_yaml(cfgfile)
         else:
-            click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
             return { 'badcfg': True }
     else:
         # This is a static configuration, get the raw details
@@ -180,7 +179,7 @@ def cluster_add(address, port, ssl, name):
     }
     # Update the store
     update_store(store_path, existing_config)
-    click.echo('Added new cluster "{}" at host "{}" to local database'.format(name, address)
+    click.echo('Added new cluster "{}" at host "{}" to local database'.format(name, address))
 
 ###############################################################################
 # pvc cluster remove
@@ -202,7 +201,7 @@ def cluster_remove(name):
         print('No cluster with name "{}" found'.format(name))
     # Update the store
     update_store(store_path, existing_config)
-    click.echo('Removed cluster "{}" from local database'.format(name)
+    click.echo('Removed cluster "{}" from local database'.format(name))
 
 ###############################################################################
 # pvc cluster list
@@ -230,9 +229,9 @@ def cluster_list():
             else:
                 address, port, scheme = 'N/A', 'N/A', 'N/A'
         else:
-            address = cluster_details.get('host', None)
-            port = cluster_details.get('port', None)
-            scheme = cluster_details.get('scheme', None)
+            address = cluster_details.get('host', 'N/A')
+            port = cluster_details.get('port', 'N/A')
+            scheme = cluster_details.get('scheme', 'N/A')
 
         _name_length = len(cluster) + 1
         if _name_length > name_length:
@@ -269,13 +268,16 @@ def cluster_list():
         cluster_details = clusters[cluster]
         if cluster_details.get('cfgfile', None):
             # This is a reference to an API configuration; grab the details from its listen address
-            cfgfile = cluster_details.get('cfgfile')
             if os.path.isfile(cfgfile):
                 address, port, scheme = read_from_yaml(cfgfile)
+            else:
+                address = 'N/A'
+                port = 'N/A'
+                scheme = 'N/A'
         else:
-            address = cluster_details.get('host', None)
-            port = cluster_details.get('port', None)
-            scheme = cluster_details.get('scheme', None)
+            address = cluster_details.get('host', 'N/A')
+            port = cluster_details.get('port', 'N/A')
+            scheme = cluster_details.get('scheme', 'N/A')
 
         click.echo(
             '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
@@ -303,6 +305,7 @@ def cli_node():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -437,6 +440,7 @@ def cli_vm():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -892,6 +896,7 @@ def cli_network():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1117,6 +1122,7 @@ def net_dhcp():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1195,6 +1201,7 @@ def net_acl():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1313,6 +1320,7 @@ def cli_storage():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1327,6 +1335,7 @@ def cli_ceph():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1367,6 +1376,7 @@ def ceph_osd():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1524,6 +1534,7 @@ def ceph_pool():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1608,6 +1619,7 @@ def ceph_volume():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1752,6 +1764,7 @@ def ceph_volume_snapshot():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1868,6 +1881,7 @@ def cli_provisioner():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -1880,6 +1894,7 @@ def provisioner_template():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 
@@ -1909,6 +1924,7 @@ def provisioner_template_system():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2022,6 +2038,7 @@ def provisioner_template_network():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2113,6 +2130,7 @@ def provisioner_template_network_vni():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2164,6 +2182,7 @@ def provisioner_template_storage():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2223,6 +2242,7 @@ def provisioner_template_storage_disk():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2329,6 +2349,7 @@ def provisioner_userdata():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2490,6 +2511,7 @@ def provisioner_script():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2651,6 +2673,7 @@ def provisioner_profile():
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
 ###############################################################################
@@ -2861,6 +2884,7 @@ def status_cluster(oformat):
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
     retcode, retdata = pvc_cluster.get_info(config)
@@ -2883,6 +2907,7 @@ def init_cluster(yes):
     """
     # Abort commands under this group if config is bad
     if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
     if not yes:
