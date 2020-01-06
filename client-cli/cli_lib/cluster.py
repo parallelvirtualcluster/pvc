@@ -114,9 +114,7 @@ def format_info(cluster_information, oformat):
     ainformation.append('{}Total volumes:{}   {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['volumes']))
     ainformation.append('{}Total snapshots:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['snapshots']))
 
-    nodes_string = ''
-    if cluster_information['nodes'].get('run,ready', None):
-        nodes_string += '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['run,ready'], cluster_information['nodes']['total'], ansiprint.green(), ansiprint.end())
+    nodes_string = '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes'].get('run,ready', 0), cluster_information['nodes'].get('total', 0), ansiprint.green(), ansiprint.end())
     for state, count in cluster_information['nodes'].items():
         if state == 'total' or state == 'run,ready':
             continue
@@ -126,9 +124,7 @@ def format_info(cluster_information, oformat):
     ainformation.append('')
     ainformation.append(nodes_string)
 
-    vms_string = ''
-    if cluster_information['vms'].get('start', None):
-        vms_string += '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['start'], cluster_information['vms']['total'], ansiprint.green(), ansiprint.end())
+    vms_string = '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms'].get('start', 0), cluster_information['vms'].get('total', 0), ansiprint.green(), ansiprint.end())
     for state, count in cluster_information['vms'].items():
         if state == 'total' or state == 'start':
             continue
@@ -144,7 +140,7 @@ def format_info(cluster_information, oformat):
     ainformation.append(vms_string)
 
     if cluster_information['osds']['total'] > 0:
-        osds_string = '{}Ceph OSDs:{} {}/{} {}up,in{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds']['up,in'], cluster_information['osds']['total'], ansiprint.green(), ansiprint.end())
+        osds_string = '{}Ceph OSDs:{} {}/{} {}up,in{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds'].get('up,in', 0), cluster_information['osds'].get('total', 0), ansiprint.green(), ansiprint.end())
         for state, count in cluster_information['osds'].items():
             if state == 'total' or state == 'up,in':
                 continue
