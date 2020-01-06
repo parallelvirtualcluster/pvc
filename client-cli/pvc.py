@@ -604,7 +604,7 @@ def vm_modify(domain, cfgfile, editor, restart):
         else:
             click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
 
-    retcode, retmsg = pvc_vm.vm_modify(config, domain, new_vm_config, restart)
+    retcode, retmsg = pvc_vm.vm_modify(config, domain, new_vm_cfgfile, restart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
