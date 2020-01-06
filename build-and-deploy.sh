@@ -25,6 +25,7 @@ for HOST in ${HOSTS[@]}; do
     echo "****"
     echo "Deploying to host ${HOST}"
     echo "****"
+    ssh $HOST $SUDO rm -rf /tmp/pvc
     ssh $HOST mkdir /tmp/pvc
     scp ../*.deb $HOST:/tmp/pvc/
     ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb
