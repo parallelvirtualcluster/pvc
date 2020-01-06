@@ -1521,7 +1521,7 @@ class API_Network_Root(Resource):
         { 'name': 'dhcp4_end' }
     ])
     @Authenticator
-    def post(self):
+    def post(self, reqargs):
         """
         Create a new network
         ---
