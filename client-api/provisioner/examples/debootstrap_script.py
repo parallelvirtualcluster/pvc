@@ -96,15 +96,22 @@ def install(**kwargs):
 
     # Create an fstab entry for each disk
     fstab_file = "{}/etc/fstab".format(temporary_directory)
+    # The disk ID starts at zero and increments by one for each disk in the fixed-order
+    # disk list. This lets us work around the insanity of Libvirt IDs not matching guest IDs,
+    # while still letting us have some semblance of control here without enforcing things
+    # like labels. It increments in the for loop below at the end of each iteration, and is
+    # used to craft a /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-X device ID
+    # which will always match the correct order from Libvirt (unlike sdX/vdX names).
+    disk_id = 0
     for disk in disks:
         # We assume SSD-based/-like storage, and dislike atimes
         options = "defaults,discard,noatime,nodiratime"
 
-        # The root and var volumes have specific values
+        # The root, var, and log volumes have specific values
         if disk['mountpoint'] == "/":
             dump = 0
             cpass = 1
-        elif disk['mountpoint'] == '/var':
+        elif disk['mountpoint'] == '/var' or disk['mountpoint'] == '/var/log':
             dump = 0
             cpass = 2
         else:
@@ -113,8 +120,8 @@ def install(**kwargs):
 
         # Append the fstab line
         with open(fstab_file, 'a') as fh:
-            data = "/dev/{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
-                disk=disk['disk_id'],
+            data = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
+                disk=disk_id,
                 mountpoint=disk['mountpoint'],
                 filesystem=disk['filesystem'],
                 options=options,
@@ -122,6 +129,9 @@ def install(**kwargs):
                 cpass=cpass
             )
             fh.write(data)
+
+        # Increment the disk_id
+        disk_id += 1
 
     # Write the hostname
     hostname_file = "{}/etc/hostname".format(temporary_directory)
