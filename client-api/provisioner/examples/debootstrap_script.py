@@ -153,11 +153,9 @@ iface ens2 inet dhcp
     dhclient_file = "{}/etc/dhcp/dhclient.conf".format(temporary_directory)
     with open(dhclient_file, 'w') as fh:
         data = """# DHCP client configuration
-# Created by vminstall for host web1.i.bonilan.net
+# Written by the PVC provisioner
 option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
 interface "ens2" {
-        send host-name = "web1";
-        send fqdn.fqdn = "web1";
         request subnet-mask, broadcast-address, time-offset, routers,
                 domain-name, domain-name-servers, domain-search, host-name,
                 dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,
