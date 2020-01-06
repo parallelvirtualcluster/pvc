@@ -180,6 +180,7 @@ def cluster_add(address, port, ssl, name):
     }
     # Update the store
     update_store(store_path, existing_config)
+    click.echo('Added new cluster "{}" at host "{}" to local database'.format(name, address)
 
 ###############################################################################
 # pvc cluster remove
@@ -201,6 +202,7 @@ def cluster_remove(name):
         print('No cluster with name "{}" found'.format(name))
     # Update the store
     update_store(store_path, existing_config)
+    click.echo('Removed cluster "{}" from local database'.format(name)
 
 ###############################################################################
 # pvc cluster list
