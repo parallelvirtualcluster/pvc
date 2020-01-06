@@ -1035,7 +1035,9 @@ def update_zookeeper():
                 rados_pool_df_raw = []
 
             pool_count = len(ceph_pool_df_raw)
-            for pool_idx in range(0, pool_count - 1):
+            if debug:
+                print("Getting info for {} pools".format(pool_count))
+            for pool_idx in range(0, pool_count):
                 try:
                     # Combine all the data for this pool
                     ceph_pool_df = ceph_pool_df_raw[pool_idx]
@@ -1045,7 +1047,12 @@ def update_zookeeper():
 
                     # Ignore any pools that aren't in our pool list
                     if pool['name'] not in pool_list:
+                        if debug:
+                            print("Pool {} not in pool list {}".format(pool['name'], pool_list))
                         continue
+                    else:
+                        if debug:
+                            print("Parsing data for pool {}".format(pool['name']))
 
                     # Assemble a useful data structure
                     pool_df = {
