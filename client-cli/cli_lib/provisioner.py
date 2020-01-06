@@ -707,7 +707,7 @@ def format_list_template_system(template_data):
 Consoles: {template_serial: <{template_serial_length}} \
 {template_vnc: <{template_vnc_length}} \
 {template_vnc_bind: <{template_vnc_bind_length}} \
-Metatemplate: {template_node_limit: <{template_node_limit_length}} \
+Metadata: {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}}{end_bold}'.format(
             template_name_length=template_name_length,
