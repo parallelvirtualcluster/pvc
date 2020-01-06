@@ -1305,7 +1305,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             node_limit = node_limit.split(',')
         node_selector = vm_data['system_details']['node_selector']
         node_autostart = vm_data['system_details']['node_autostart']
-        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema, target_node, node_limit, node_selector, node_autostart, vm_profile)
+        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema.strip(), target_node, node_limit, node_selector, node_autostart, vm_profile)
         print(retmsg)
 
     if start_vm:
