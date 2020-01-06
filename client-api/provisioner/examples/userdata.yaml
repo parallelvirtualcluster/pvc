@@ -2,26 +2,18 @@ Content-Type: text/cloud-config; charset="us-ascii"
 MIME-Version: 1.0
 
 #cloud-config
-# Example user-data file to set up an alternate /var/home, a first user and some SSH keys, and some packages
+# Example user-data file. It will:
+#  1. Generate locales for us
+#  2. Update packages and install OpenSSH and sudo
+#  3. Disable the manually-enabled cloud-init target (see debootstrap_script.py)
+#  4. Reboot the system
+# You can, of course, do anything you want in here which cloud-init normally supports.
 bootcmd:
-  - "mv /home /var/"
   - "locale-gen"
 package_update: true
 packages:
   - openssh-server
   - sudo
-users:
-  - name: deploy
-    gecos: Deploy User
-    homedir: /var/home/deploy
-    sudo: "ALL=(ALL) NOPASSWD: ALL"
-    groups: adm, sudo
-    lock_passwd: true
-    ssh_authorized_keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBRBGPzlbh5xYD6k8DMZdPNEwemZzKSSpWGOuU72ehfN joshua@bonifacelabs.net 2017-04
 runcmd:
-  - "userdel debian"
-  - "groupmod -g 200 deploy"
-  - "usermod -u 200 deploy"
   - "systemctl disable cloud-init.target"
   - "reboot"
