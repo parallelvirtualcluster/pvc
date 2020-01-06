@@ -468,6 +468,92 @@
             },
             "type": "object"
         },
+        "osd": {
+            "properties": {
+                "id": {
+                    "description": "The Ceph ID of the OSD",
+                    "type": "string (containing integer)"
+                },
+                "stats": {
+                    "properties": {
+                        "avail": {
+                            "description": "The free space on the OSD in human-readable format",
+                            "type": "string"
+                        },
+                        "in": {
+                            "description": "Whether OSD is in \"in\" state",
+                            "type": "boolean integer"
+                        },
+                        "kb": {
+                            "description": "Size of the OSD in KB",
+                            "type": "integer"
+                        },
+                        "node": {
+                            "description": "The PVC node the OSD resides on",
+                            "type": "string"
+                        },
+                        "pgs": {
+                            "description": "The number of placement groups on this OSD",
+                            "type": "integer"
+                        },
+                        "primary_affinity": {
+                            "description": "The Ceph primary affinity of the OSD",
+                            "type": "integer"
+                        },
+                        "rd_data": {
+                            "description": "Cluster-lifetime read size from OSD",
+                            "type": "integer"
+                        },
+                        "rd_ops": {
+                            "description": "Cluster-lifetime read operations from OSD",
+                            "type": "integer"
+                        },
+                        "reweight": {
+                            "description": "The active cluster weight of the OSD",
+                            "type": "number"
+                        },
+                        "state": {
+                            "description": "CSV of the current state of the OSD",
+                            "type": "string"
+                        },
+                        "up": {
+                            "description": "Whether OSD is in \"up\" state",
+                            "type": "boolean integer"
+                        },
+                        "used": {
+                            "description": "The used space on the OSD in human-readable format",
+                            "type": "string"
+                        },
+                        "utilization": {
+                            "description": "The utilization percentage of the OSD",
+                            "type": "number"
+                        },
+                        "uuid": {
+                            "description": "The Ceph OSD UUID",
+                            "type": "string"
+                        },
+                        "var": {
+                            "description": "The usage variability among OSDs",
+                            "type": "number"
+                        },
+                        "weight": {
+                            "description": "The weight of the OSD in the CRUSH map",
+                            "type": "number"
+                        },
+                        "wr_data": {
+                            "description": "Cluster-lifetime write size to OSD",
+                            "type": "integer"
+                        },
+                        "wr_ops": {
+                            "description": "Cluster-lifetime write operations to OSD",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        },
         "pool": {
             "properties": {
                 "name": {
@@ -3599,6 +3685,33 @@
             }
         },
         "/api/v1/storage/ceph/osd": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A OSD ID search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/osd"
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "summary": "Return a list of Ceph OSDs in the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
             "post": {
                 "description": "Note: This task may take up to 30s to complete and return",
                 "parameters": [
@@ -3677,6 +3790,68 @@
                     }
                 },
                 "summary": "Remove Ceph OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/osd"
+                        }
+                    }
+                },
+                "summary": "Return information about Ceph OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/osd/{osdid}/state": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "state": {
+                                    "description": "The current OSD state",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "Return the current state of OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Set the OSD to this state",
+                        "in": "query",
+                        "name": "state",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the current state of OSD {osdid}",
                 "tags": [
                     "storage / ceph"
                 ]

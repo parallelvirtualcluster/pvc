@@ -2455,9 +2455,90 @@ class API_Storage_Ceph_OSD_Root(Resource):
     @Authenticator
     def get(self, reqargs):
         """
-        TODO
+        Return a list of Ceph OSDs in the cluster
+        ---
+        tags:
+          - storage / ceph
+        definitions:
+          - schema:
+              type: object
+              id: osd
+              properties:
+                id:
+                  type: string (containing integer)
+                  description: The Ceph ID of the OSD
+                stats:
+                  type: object
+                  properties:
+                    uuid:
+                      type: string
+                      description: The Ceph OSD UUID
+                    up:
+                      type: boolean integer
+                      description: Whether OSD is in "up" state
+                    in:
+                      type: boolean integer
+                      description: Whether OSD is in "in" state
+                    primary_affinity:
+                      type: integer
+                      description: The Ceph primary affinity of the OSD
+                    utilization:
+                      type: number
+                      description: The utilization percentage of the OSD
+                    var:
+                      type: number
+                      description: The usage variability among OSDs
+                    pgs:
+                      type: integer
+                      description: The number of placement groups on this OSD
+                    kb:
+                      type: integer
+                      description: Size of the OSD in KB
+                    weight:
+                      type: number
+                      description: The weight of the OSD in the CRUSH map
+                    reweight:
+                      type: number
+                      description: The active cluster weight of the OSD
+                    node:
+                      type: string
+                      description: The PVC node the OSD resides on
+                    used:
+                      type: string
+                      description: The used space on the OSD in human-readable format
+                    avail:
+                      type: string
+                      description: The free space on the OSD in human-readable format
+                    wr_ops:
+                      type: integer
+                      description: Cluster-lifetime write operations to OSD
+                    rd_ops:
+                      type: integer
+                      description: Cluster-lifetime read operations from OSD
+                    wr_data:
+                      type: integer
+                      description: Cluster-lifetime write size to OSD
+                    rd_data:
+                      type: integer
+                      description: Cluster-lifetime read size from OSD
+                    state:
+                      type: string
+                      description: CSV of the current state of the OSD
+        parameters:
+          - in: query
+            name: limit
+            type: string
+            required: false
+            description: A OSD ID search limit; fuzzy by default, use ^/$ to force exact matches
+        responses:
+          200:
+            description: OK
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/osd'
         """
-        api_helper.ceph_osd_list(
+        return api_helper.ceph_osd_list(
             reqargs.get('limit', None)
         )
 
@@ -2514,7 +2595,15 @@ class API_Storage_Ceph_OSD_Element(Resource):
     @Authenticator
     def get(self, osdid):
         """
-        TODO
+        Return information about Ceph OSD {osdid}
+        ---
+        tags:
+          - storage / ceph
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/osd'
         """
         return api_helper.ceph_osd_list(
             osdid
@@ -2565,7 +2654,19 @@ class API_Storage_Ceph_OSD_State(Resource):
     @Authenticator
     def get(self, osdid):
         """
-        TODO
+        Return the current state of OSD {osdid}
+        ---
+        tags:
+          - storage / ceph
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  description: The current OSD state
         """
         return api_helper.ceph_osd_state(
             osdid
@@ -2577,7 +2678,22 @@ class API_Storage_Ceph_OSD_State(Resource):
     @Authenticator
     def post(self, osdid, reqargs):
         """
-        TODO
+        Set the current state of OSD {osdid}
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: state
+            type: string
+            required: true
+            description: Set the OSD to this state
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
         """
         if reqargs.get('state', None) == 'in':
             return api_helper.ceph_osd_in(
