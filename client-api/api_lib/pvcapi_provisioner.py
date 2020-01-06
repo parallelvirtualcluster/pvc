@@ -529,7 +529,7 @@ def update_userdata(name, userdata):
         retcode = 400
         return retmsg, retcode
 
-    tid, code = list_userdata(name, is_fuzzy=False)
+    data, code = list_userdata(name, is_fuzzy=False)
     tid = data[0]['id']
 
     conn, cur = open_database(config)
