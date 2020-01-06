@@ -288,7 +288,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         retcode = 400
         return retmsg, retcode
 
-    disks = list_template_storage_disks(name)
+    disks, code = list_template_storage_disks(name)
     found_disk = False
     for disk in disks:
         if disk['disk_id'] == disk_id:
@@ -315,7 +315,11 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         cur.execute(query, args)
         template_id = cur.fetchone()['id']
         query = "INSERT INTO storage (storage_template, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, filesystem_args) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
-        args = (template_id, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, ' '.join(filesystem_args))
+        if filesystem_args:
+            fsargs = ' '.join(filesystem_args)
+        else:
+            fsargs = ''
+        args = (template_id, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, fsargs)
         cur.execute(query, args)
         retmsg = { 'message': 'Added new disk "{}" to storage template "{}"'.format(disk_id, name) }
         retcode = 200
@@ -379,7 +383,7 @@ def delete_template_network_element(name, vni):
         retcode = 400
         return retmsg, retcode
 
-    networks = list_template_network_vnis(name)
+    networks, code = list_template_network_vnis(name)
     found_vni = False
     for network in networks:
         if network['vni'] == int(vni):
@@ -438,7 +442,7 @@ def delete_template_storage_element(name, disk_id):
         retcode = 400
         return retmsg, retcode
 
-    disks = list_template_storage_disks(name)
+    disks, code = list_template_storage_disks(name)
     found_disk = False
     for disk in disks:
         if disk['disk_id'] == disk_id:
