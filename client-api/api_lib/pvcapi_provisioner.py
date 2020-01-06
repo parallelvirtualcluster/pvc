@@ -231,7 +231,7 @@ def create_template_network(name, mac_template=None):
     return retmsg, retcode
 
 def create_template_network_element(name, vni):
-    if not list_template_network(name, is_fuzzy=False):
+    if list_template_network(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -285,7 +285,7 @@ def create_template_storage(name):
     return retmsg, retcode
 
 def create_template_storage_element(name, disk_id, pool, source_volume=None, disk_size_gb=None, filesystem=None, filesystem_args=[], mountpoint=None):
-    if not list_template_storage(name, is_fuzzy=False):
+    if list_template_storage(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -337,7 +337,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
 # Template Delete functions
 #
 def delete_template_system(name):
-    if not list_template_system(name, is_fuzzy=False):
+    if list_template_system(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The system template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -356,7 +356,7 @@ def delete_template_system(name):
     return retmsg, retcode
 
 def delete_template_network(name):
-    if not list_template_network(name, is_fuzzy=False):
+    if list_template_network(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -382,7 +382,7 @@ def delete_template_network(name):
     return retmsg, retcode
 
 def delete_template_network_element(name, vni):
-    if not list_template_network(name, is_fuzzy=False):
+    if list_template_network(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The network template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -415,7 +415,7 @@ def delete_template_network_element(name, vni):
     return retmsg, retcode
 
 def delete_template_storage(name):
-    if not list_template_storage(name, is_fuzzy=False):
+    if list_template_storage(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -441,7 +441,7 @@ def delete_template_storage(name):
     return retmsg, retcode
 
 def delete_template_storage_element(name, disk_id):
-    if not list_template_storage(name, is_fuzzy=False):
+    if list_template_storage(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The storage template "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -524,7 +524,7 @@ def create_userdata(name, userdata):
     return retmsg, retcode
 
 def update_userdata(name, userdata):
-    if not list_userdata(name, is_fuzzy=False):
+    if list_userdata(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The userdata "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -546,7 +546,7 @@ def update_userdata(name, userdata):
     return retmsg, retcode
 
 def delete_userdata(name):
-    if not list_userdata(name, is_fuzzy=False):
+    if list_userdata(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The userdata "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -615,7 +615,7 @@ def create_script(name, script):
     return retmsg, retcode
 
 def update_script(name, script):
-    if not list_script(name, is_fuzzy=False):
+    if list_script(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The script "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -637,7 +637,7 @@ def update_script(name, script):
     return retmsg, retcode
 
 def delete_script(name):
-    if not list_script(name, is_fuzzy=False):
+    if list_script(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The script "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -777,7 +777,7 @@ def create_profile(name, system_template, network_template, storage_template, us
     return retmsg, retcode
 
 def delete_profile(name):
-    if not list_profile(name, is_fuzzy=False):
+    if list_profile(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The profile "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
