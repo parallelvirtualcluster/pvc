@@ -192,7 +192,7 @@ def template_list(limit):
 # Template Create functions
 #
 def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False):
-    if list_template_system(name, is_fuzzy=False):
+    if list_template_system(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The system template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -212,7 +212,7 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
     return retmsg, retcode
 
 def create_template_network(name, mac_template=None):
-    if list_template_network(name, is_fuzzy=False):
+    if list_template_network(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The network template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -264,7 +264,7 @@ def create_template_network_element(name, vni):
     return retmsg, retcode
 
 def create_template_storage(name):
-    if list_template_storage(name, is_fuzzy=False):
+    if list_template_storage(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The storage template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -501,7 +501,7 @@ def list_userdata(limit, is_fuzzy=True):
         return {'message': 'No userdata documents found'}, 404
 
 def create_userdata(name, userdata):
-    if list_userdata(name, is_fuzzy=False):
+    if list_userdata(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The userdata document "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -592,7 +592,7 @@ def list_script(limit, is_fuzzy=True):
         return {'message': 'No scripts found'}, 404
 
 def create_script(name, script):
-    if list_script(name, is_fuzzy=False):
+    if list_script(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The script "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
@@ -696,7 +696,7 @@ def list_profile(limit, is_fuzzy=True):
     return data
 
 def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
-    if list_profile(name, is_fuzzy=False):
+    if list_profile(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The profile "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
