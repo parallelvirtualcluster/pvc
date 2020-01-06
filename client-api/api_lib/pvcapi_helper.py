@@ -1145,7 +1145,7 @@ def ceph_pool_add(name, pgs, replcfg):
         retcode = 400
 
     output = {
-        'message': retdata.replace('\"', '\'')
+        'message': retdata
     }
     return output, retcode
 
