@@ -253,10 +253,6 @@ def add_network(zk_conn, vni, description, nettype,
     if nettype == 'managed' and not domain:
         domain = '{}.local'.format(description)
 
-    # Make sure the DHCP4 flag is always boolean 
-    if dhcp4_flag is None:
-        dhcp4_flag = False
-
     # Add the new network to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/networks/{}'.format(vni): description,

@@ -1608,7 +1608,7 @@ class API_Network_Root(Resource):
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
             reqargs.get('ip6_gateway', None),
-            reqargs.get('dhcp4_flag', None),
+            reqargs.get('dhcp4', None),
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
@@ -1732,7 +1732,7 @@ class API_Network_Element(Resource):
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
             reqargs.get('ip6_gateway', None),
-            reqargs.get('dhcp4_flag', None),
+            reqargs.get('dhcp4', None),
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
@@ -1828,7 +1828,7 @@ class API_Network_Element(Resource):
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
             reqargs.get('ip6_gateway', None),
-            reqargs.get('dhcp4_flag', None),
+            reqargs.get('dhcp4', None),
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
