@@ -355,7 +355,8 @@ class AXFRDaemonInstance(object):
                     z = dns.zone.from_xfr(axfr)
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
                 except Exception as e:
-                    print('{} {} ({})'.format(e, dnsmasq_ip, domain))
+                    if self.config['debug']:
+                        print('{} {} ({})'.format(e, dnsmasq_ip, domain))
                     continue
 
                 # Fix the formatting because it's useless
