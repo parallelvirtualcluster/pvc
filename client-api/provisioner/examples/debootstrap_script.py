@@ -156,7 +156,9 @@ iface ens2 inet dhcp
 # Written by the PVC provisioner
 option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
 interface "ens2" {
-        request subnet-mask, broadcast-address, time-offset, routers,
+""" + """        send fqdn.fqdn = "{hostname}";
+        send host-name = "{hostname}";
+""".format(hostname=vm_name) + """        request subnet-mask, broadcast-address, time-offset, routers,
                 domain-name, domain-name-servers, domain-search, host-name,
                 dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,
                 netbios-name-servers, netbios-scope, interface-mtu,
