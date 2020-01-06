@@ -2239,8 +2239,13 @@ def provisioner_template_storage_disk():
     help='The storage pool for the disk.'
 )
 @click.option(
-    '-s', '--size', 'size',
-    required=True, type=int,
+    '-i', '--source-volume', 'source_volume',
+    default=None,
+    help='The source volume to clone'
+)
+@click.option(
+    '-s', '--size', 'size', type=int,
+    default=None,
     help='The size of the disk (in GB).'
 )
 @click.option(
@@ -2258,14 +2263,20 @@ def provisioner_template_storage_disk():
     default=None,
     help='The target Linux mountpoint of the disk; requires a filesystem.'
 )
-def provisioner_template_storage_disk_add(name, disk, pool, size, filesystem, fsargs, mountpoint):
+def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size, filesystem, fsargs, mountpoint):
     """
     Add a new DISK to storage template NAME.
 
     DISK must be a Linux-style disk identifier such as "sda" or "vdb".
     """
+
+    if source_volume and (size or filesystem or mountpoint):
+        click.echo('The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.')
+        exit(1)
+
     params = dict()
     params['pool'] = pool
+    params['source_volume'] = source_volume
     params['disk_size'] = size
     if filesystem:
         params['filesystem'] = filesystem

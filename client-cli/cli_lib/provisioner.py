@@ -865,6 +865,7 @@ def format_list_template_storage(template_template):
     template_id_length = 3
     template_disk_id_length = 8
     template_disk_pool_length = 8
+    template_disk_source_length = 14
     template_disk_size_length = 10
     template_disk_filesystem_length = 11
     template_disk_fsargs_length = 10
@@ -889,6 +890,10 @@ def format_list_template_storage(template_template):
             _template_disk_pool_length = len(str(disk['pool'])) + 1
             if _template_disk_pool_length > template_disk_pool_length:
                 template_disk_pool_length = _template_disk_pool_length
+            # template_disk_source column
+            _template_disk_source_length = len(str(disk['source_volume'])) + 1
+            if _template_disk_source_length > template_disk_source_length:
+                template_disk_source_length = _template_disk_source_length
             # template_disk_size column
             _template_disk_size_length = len(str(disk['disk_size_gb'])) + 1
             if _template_disk_size_length > template_disk_size_length:
@@ -910,6 +915,7 @@ def format_list_template_storage(template_template):
     template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_disk_id: <{template_disk_id_length}} \
 {template_disk_pool: <{template_disk_pool_length}} \
+{template_disk_source: <{template_disk_source_length}} \
 {template_disk_size: <{template_disk_size_length}} \
 {template_disk_filesystem: <{template_disk_filesystem_length}} \
 {template_disk_fsargs: <{template_disk_fsargs_length}} \
@@ -918,6 +924,7 @@ def format_list_template_storage(template_template):
             template_id_length=template_id_length,
             template_disk_id_length=template_disk_id_length,
             template_disk_pool_length=template_disk_pool_length,
+            template_disk_source_length=template_disk_source_length,
             template_disk_size_length=template_disk_size_length,
             template_disk_filesystem_length=template_disk_filesystem_length,
             template_disk_fsargs_length=template_disk_fsargs_length,
@@ -928,6 +935,7 @@ def format_list_template_storage(template_template):
             template_id='ID',
             template_disk_id='Disk ID',
             template_disk_pool='Pool',
+            template_disk_source='Source Volume',
             template_disk_size='Size [GB]',
             template_disk_filesystem='Filesystem',
             template_disk_fsargs='Arguments',
@@ -940,12 +948,6 @@ def format_list_template_storage(template_template):
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}}{end_bold}'.format(
                 template_name_length=template_name_length,
                 template_id_length=template_id_length,
-                template_disk_id_length=template_disk_id_length,
-                template_disk_pool_length=template_disk_pool_length,
-                template_disk_size_length=template_disk_size_length,
-                template_disk_filesystem_length=template_disk_filesystem_length,
-                template_disk_fsargs_length=template_disk_fsargs_length,
-                template_disk_mountpoint_length=template_disk_mountpoint_length,
                 bold='',
                 end_bold='',
                 template_name=str(template['name']),
@@ -957,6 +959,7 @@ def format_list_template_storage(template_template):
                 '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_disk_id: <{template_disk_id_length}} \
 {template_disk_pool: <{template_disk_pool_length}} \
+{template_disk_source: <{template_disk_source_length}} \
 {template_disk_size: <{template_disk_size_length}} \
 {template_disk_filesystem: <{template_disk_filesystem_length}} \
 {template_disk_fsargs: <{template_disk_fsargs_length}} \
@@ -965,6 +968,7 @@ def format_list_template_storage(template_template):
                     template_id_length=template_id_length,
                     template_disk_id_length=template_disk_id_length,
                     template_disk_pool_length=template_disk_pool_length,
+                    template_disk_source_length=template_disk_source_length,
                     template_disk_size_length=template_disk_size_length,
                     template_disk_filesystem_length=template_disk_filesystem_length,
                     template_disk_fsargs_length=template_disk_fsargs_length,
@@ -975,6 +979,7 @@ def format_list_template_storage(template_template):
                     template_id='',
                     template_disk_id=str(disk['disk_id']),
                     template_disk_pool=str(disk['pool']),
+                    template_disk_source=str(disk['source_volume']),
                     template_disk_size=str(disk['disk_size_gb']),
                     template_disk_filesystem=str(disk['filesystem']),
                     template_disk_fsargs=str(disk['filesystem_args']),
