@@ -108,6 +108,8 @@ def read_lease_database(zk_conn, zk_leases_key):
     print('\n'.join(output_list))
 
 def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clientid):
+    if not hostname:
+        hostname = ''
     transaction = zk_conn.transaction()
     transaction.create('{}/{}'.format(zk_leases_key, macaddr), ''.encode('ascii'))
     transaction.create('{}/{}/expiry'.format(zk_leases_key, macaddr), expiry.encode('ascii'))
