@@ -2953,8 +2953,17 @@ def cli(_cluster, _debug):
     config = get_config(store_data, _cluster)
     if not config.get('badcfg', None):
         config['debug'] = _debug
-        click.echo('Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(config['cluster'], config['api_host'], config['api_scheme'], config['api_prefix']), err=True)
-    click.echo('', err=True)
+
+        click.echo(
+            'Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(
+                config['cluster'],
+                config['api_host'],
+                config['api_scheme'],
+                config['api_prefix']
+            ),
+            err=True
+        )
+        click.echo('', err=True)
 
 config = dict()
 
