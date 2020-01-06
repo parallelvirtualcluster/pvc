@@ -31,7 +31,7 @@ import cli_lib.ansiprint as ansiprint
 def debug_output(config, request_uri, response):
     if config['debug']:
         import click.echo
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
+        click.echo('API endpoint: {}'.format(request_uri), err=True)
         click.echo('Response code: {}'.format(response.status_code), err=True)
         click.echo('Response headers: {}'.format(response.headers), err=True)
 
@@ -656,12 +656,12 @@ def ceph_pool_remove(config, pool):
     """
     Remove Ceph OSD
 
-    API endpoint: POST /api/v1/storage/ceph/pool/{pool}
+    API endpoint: DELETE /api/v1/storage/ceph/pool/{pool}
     API arguments:
     API schema: {"message":"{data}"}
     """
     request_uri = get_request_uri(config, '/storage/ceph/pool/{pool}'.format(pool=pool))
-    response = requests.post(
+    response = requests.delete(
         request_uri,
         params={
             'yes-i-really-mean-it': 'yes'
