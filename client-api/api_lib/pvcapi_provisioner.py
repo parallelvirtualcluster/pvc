@@ -697,7 +697,10 @@ def list_profile(limit, is_fuzzy=True):
         # Append the new data to our actual output structure
         data.append(profile_data)
     close_database(conn, cur)
-    return data
+    if data:
+        return data, 200
+    else:
+        return {'message': 'No scripts found'}, 404
 
 def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 404:
