@@ -30,7 +30,7 @@ import cli_lib.ansiprint as ansiprint
 
 def debug_output(config, request_uri, response):
     if config['debug']:
-        from click import echo
+        import click
         click.echo('API endpoint: {}'.format(request_uri), err=True)
         click.echo('Response code: {}'.format(response.status_code), err=True)
         click.echo('Response headers: {}'.format(response.headers), err=True)
