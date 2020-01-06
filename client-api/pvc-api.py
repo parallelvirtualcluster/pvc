@@ -1594,12 +1594,16 @@ class API_Network_Root(Resource):
               type: object
               id: Message
         """
+        if reqargs.get('name_servers', None):
+            name_servers = reqargs.get('name_servers', None).split(',')
+        else:
+            name_servers = ''
         return api_helper.net_add(
             reqargs.get('vni', None),
             reqargs.get('description', None),
             reqargs.get('nettype', None),
             reqargs.get('domain', None),
-            reqargs.get('name_servers', None).split(','),
+            name_servers,
             reqargs.get('ip4_network', None),
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
@@ -1714,12 +1718,16 @@ class API_Network_Element(Resource):
               type: object
               id: Message
         """
+        if reqargs.get('name_servers', None):
+            name_servers = reqargs.get('name_servers', None).split(',')
+        else:
+            name_servers = ''
         return api_helper.net_add(
             reqargs.get('vni', None),
             reqargs.get('description', None),
             reqargs.get('nettype', None),
             reqargs.get('domain', None),
-            reqargs.get('name_servers', None),
+            name_servers,
             reqargs.get('ip4_network', None),
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
@@ -1807,11 +1815,15 @@ class API_Network_Element(Resource):
               type: object
               id: Message
         """
+        if reqargs.get('name_servers', None):
+            name_servers = reqargs.get('name_servers', None).split(',')
+        else:
+            name_servers = ''
         return api_helper.net_modify(
             vni,
             reqargs.get('description', None),
             reqargs.get('domain', None),
-            reqargs.get('name_servers', None),
+            name_servers,
             reqargs.get('ip4_network', None),
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
