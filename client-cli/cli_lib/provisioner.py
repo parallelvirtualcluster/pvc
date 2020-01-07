@@ -274,7 +274,7 @@ def userdata_modify(config, name, params):
     userdata_data = params.get('data')
 
     request_uri = get_request_uri(config, '/provisioner/userdata/{name}'.format(name=name))
-    response = requests.post(
+    response = requests.put(
         request_uri,
         params={
             'name': name
