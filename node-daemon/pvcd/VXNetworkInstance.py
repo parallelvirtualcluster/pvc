@@ -660,7 +660,6 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--leasefile-ro',
                 '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
-                '--interface={}'.format(self.bridge_nic),
                 '--bind-interfaces',
             ]
             dhcp_configuration_v4 = [
@@ -669,6 +668,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--auth-peer={}'.format(self.ip4_gateway),
                 '--auth-server={}'.format(self.ip4_gateway),
                 '--auth-sec-servers={}'.format(self.ip4_gateway),
+            ]
+            dhcp_configuration_v4_dhcp = [
                 '--dhcp-option=option:ntp-server,{}'.format(self.ip4_gateway),
                 '--dhcp-range={},{},48h'.format(self.dhcp4_start, self.dhcp4_end),
             ]
@@ -690,14 +691,16 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             # Assemble the DHCP configuration
             dhcp_configuration = dhcp_configuration_base
-            if self.dhcp4_flag:
-                dhcp_configuration += dhcp_configuration_v4 
             if self.dhcp6_flag:
                 dhcp_configuration += dhcp_configuration_v6
                 if self.dhcp4_flag:
                     dhcp_configuration += dhcp_configuration_v6_dualstack
                 else:
                     dhcp_configuration += dhcp_configuration_v6_only
+            else:
+                dhcp_configuration += dhcp_configuration_v4
+            if self.dhcp4_flag:
+                dhcp_configuration += dhcp_configuration_v4_dhcp 
 
             # Start the dnsmasq process in a thread
             print('/usr/sbin/dnsmasq {}'.format(' '.join(dhcp_configuration)))
