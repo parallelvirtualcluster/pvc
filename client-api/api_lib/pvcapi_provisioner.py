@@ -706,7 +706,7 @@ def list_profile(limit, is_fuzzy=True):
     if data:
         return data, 200
     else:
-        return {'message': 'No scripts found'}, 404
+        return {'message': 'No profiles found'}, 404
 
 def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 404:
