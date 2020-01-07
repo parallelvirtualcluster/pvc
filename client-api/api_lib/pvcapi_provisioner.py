@@ -882,7 +882,10 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     args = (vm_profile,)
     db_cur.execute(query, args)
     profile_data = db_cur.fetchone()
-    vm_data['script_arguments'] = profile_data['arguments'].split('|')
+    if profile_data['arguments']:
+        vm_data['script_arguments'] = profile_data['arguments'].split('|')
+    else:
+        vm_data['script_arguments'] = []
     
     # Get the system details
     query = 'SELECT * FROM system_template WHERE id = %s'
@@ -1052,14 +1055,14 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
     time.sleep(1)
 
-    for volume in reversed(vm_data['volumes']):
+    for volume in vm_data['volumes']:
         if not volume['filesystem']:
             continue
 
         rbd_volume = "{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
 
         filesystem_args_list = list()
-        for arg in volume['filesystem_args'].split(' '):
+        for arg in volume['filesystem_args'].split():
             arg_entry, arg_data = arg.split('=')
             filesystem_args_list.append(arg_entry)
             filesystem_args_list.append(arg_data)
@@ -1071,7 +1074,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
 
         # Create the filesystem
-        if filesystem == 'swap':
+        if volume['filesystem'] == 'swap':
             retcode, stdout, stderr = run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
             if retcode:
                 raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
@@ -1090,7 +1093,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         temp_dir = stdout.strip()
 
         for volume in vm_data['volumes']:
-            if not volume['mountpoint']:
+            if not volume['mountpoint'] or volume['mountpoint'] == 'swap':
                 continue
 
             mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
@@ -1141,7 +1144,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     for volume in list(reversed(vm_data['volumes'])):
         if is_script_install:
             # Unmount the volume
-            if volume['mountpoint']:
+            if volume['mountpoint'] and volume['mountpoint'] != 'swap':
                 print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
 
                 mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
