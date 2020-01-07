@@ -1073,7 +1073,7 @@
             "type": "object"
         }
     },
-    "host": "pvc.local:7570",
+    "host": "pvc.local:7370",
     "info": {
         "title": "PVC Client and Provisioner API",
         "version": "1.0"
