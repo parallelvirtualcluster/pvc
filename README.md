@@ -23,3 +23,5 @@ Your cloud, the best way; just add physical servers.
 [See the documentation here](https://parallelvirtualcluster.readthedocs.io/en/latest/)
 
 [See the API reference here](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/api-reference.html)
+
+**NOTICE FOR GITHUB**: This repository is a read-only mirror of the PVC repositories. Pull requests submitted here will not be merged.
