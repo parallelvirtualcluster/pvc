@@ -113,11 +113,13 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
     response = requests.post(
         request_uri,
         params={
-            'xml': xml,
             'node': node,
             'limit': node_limit,
             'selector': node_selector,
             'autostart': node_autostart
+        },
+        data={
+            'xml': xml
         }
     )
 

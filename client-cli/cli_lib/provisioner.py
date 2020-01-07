@@ -240,10 +240,18 @@ def userdata_add(config, params):
     API_arguments: args
     API schema: {message}
     """
+    name = params.get('name')
+    userdata_data = params.get('data')
+
     request_uri = get_request_uri(config, '/provisioner/userdata')
     response = requests.post(
         request_uri,
-        params=params
+        params={
+            'name': name
+        },
+        data={
+            'data': userdata_data
+        }
     )
 
     debug_output(config, request_uri, response)
@@ -263,10 +271,18 @@ def userdata_modify(config, name, params):
     API_arguments: args
     API schema: {message}
     """
+    name = params.get('name')
+    userdata_data = params.get('data')
+
     request_uri = get_request_uri(config, '/provisioner/userdata/{name}'.format(name=name))
-    response = requests.put(
+    response = requests.post(
         request_uri,
-        params=params
+        params={
+            'name': name
+        },
+        data={
+            'data': userdata_data
+        }
     )
 
     debug_output(config, request_uri, response)
@@ -353,10 +369,18 @@ def script_add(config, params):
     API_arguments: args
     API schema: {message}
     """
+    name = params.get('name')
+    script_data = params.get('data')
+
     request_uri = get_request_uri(config, '/provisioner/script')
     response = requests.post(
         request_uri,
-        params=params
+        params={
+            'name': name
+        },
+        data={
+            'data': script_data
+        }
     )
 
     debug_output(config, request_uri, response)
@@ -376,10 +400,18 @@ def script_modify(config, name, params):
     API_arguments: args
     API schema: {message}
     """
+    name = params.get('name')
+    script_data = params.get('data')
+
     request_uri = get_request_uri(config, '/provisioner/script/{name}'.format(name=name))
     response = requests.put(
         request_uri,
-        params=params
+        params={
+            'name': name
+        },
+        data={
+            'data': script_data
+        }
     )
 
     debug_output(config, request_uri, response)
