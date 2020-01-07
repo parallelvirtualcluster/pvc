@@ -2398,7 +2398,7 @@ def provisioner_userdata_add(name, filename):
 
     params = dict()
     params['name'] = name
-    params['data'] = userdata
+    params['data'] = userdata.strip()
 
     retcode, retmsg = pvc_provisioner.userdata_add(config, params)
     cleanup(retcode, retmsg)
@@ -2560,7 +2560,7 @@ def provisioner_script_add(name, filename):
 
     params = dict()
     params['name'] = name
-    params['data'] = script
+    params['data'] = script.strip()
 
     retcode, retmsg = pvc_provisioner.script_add(config, params)
     cleanup(retcode, retmsg)
