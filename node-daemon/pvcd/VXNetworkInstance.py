@@ -675,7 +675,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             ]
             dhcp_configuration_v6 = [
                 '--listen-address={}'.format(self.ip6_gateway),
+                '--auth-zone={}'.format(self.domain),
                 '--auth-peer={}'.format(self.ip6_gateway),
+                '--auth-server={}'.format(self.ip6_gateway),
                 '--auth-sec-servers={}'.format(self.ip6_gateway),
                 '--dhcp-option=option6:dns-server,[{}]'.format(self.ip6_gateway),
                 '--dhcp-option=option6:sntp-server,[{}]'.format(self.ip6_gateway),
