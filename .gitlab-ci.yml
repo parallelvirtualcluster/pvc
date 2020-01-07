@@ -9,8 +9,5 @@ build:
   script:
     - /bin/bash build-deb.sh
     - /usr/local/bin/deploy-package
-  artifacts:
-    paths:
-      - "../*.deb"
   only:
     - master
