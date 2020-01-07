@@ -666,7 +666,7 @@ def delete_script(name):
 #
 def list_profile(limit, is_fuzzy=True):
     if limit:
-        if not is_fuzzy:
+        if is_fuzzy:
             # Handle fuzzy vs. non-fuzzy limits
             if not re.match('\^.*', limit):
                 limit = '%' + limit
