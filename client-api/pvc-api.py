@@ -5372,6 +5372,11 @@ class API_Provisioner_Create_Root(Resource):
               type: object
               id: Message
         """
+        # Verify that the profile is valid
+        _list, code = api_provisioner.list_profile(reqargs.get('profile', None), is_fuzzy=False)
+        if code != 200:
+            return { 'message': 'Profile "{}" is not valid.'.format(reqargs.get('profile')) }, 400
+
         task = create_vm.delay(
             reqargs.get('name', None),
             reqargs.get('profile', None)
