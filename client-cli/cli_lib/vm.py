@@ -437,7 +437,8 @@ def format_info(config, domain_information, long_output):
         'disable': ansiprint.blue(),
         'fail': ansiprint.red(),
         'migrate': ansiprint.blue(),
-        'unmigrate': ansiprint.blue()
+        'unmigrate': ansiprint.blue(),
+        'provision': ansiprint.blue()
     }
     ainformation.append('{}State:{}              {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dstate_colour[domain_information['state']], domain_information['state'], ansiprint.end()))
     ainformation.append('{}Current Node:{}       {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node']))

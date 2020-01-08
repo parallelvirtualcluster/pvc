@@ -73,7 +73,7 @@ def getClusterInformation(zk_conn):
     vm_report_status = list(range(0, vm_count))
     for index, vm in enumerate(vm_list):
         vm_state = vm['state']
-        if vm_state not in ['start', 'disable', 'migrate', 'unmigrate']:
+        if vm_state not in ['start', 'disable', 'migrate', 'unmigrate', 'provision']:
             vm_healthy_status[index] = False
         else:
             vm_healthy_status[index] = True
@@ -114,7 +114,7 @@ def getClusterInformation(zk_conn):
         'stop,ready', 'stop,flush', 'stop,flushed', 'stop,unflush'
     ]
     vm_state_combinations = [
-        'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate'
+        'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision'
     ]
     ceph_osd_state_combinations = [
         'up,in', 'up,out', 'down,in', 'down,out'

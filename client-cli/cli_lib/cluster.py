@@ -129,7 +129,7 @@ def format_info(cluster_information, oformat):
         if state == 'total' or state == 'start':
             continue
 
-        if state in ['disable', 'migrate', 'unmigrate']:
+        if state in ['disable', 'migrate', 'unmigrate', 'provision']:
             colour = ansiprint.blue()
         else:
             colour = ansiprint.yellow()

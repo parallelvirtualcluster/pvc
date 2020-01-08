@@ -487,6 +487,9 @@ class VMInstance(object):
         #   restart
         #   shutdown
         #   stop
+        # States we don't (need to) handle are:
+        #   disable
+        #   provision
 
         # Conditional pass one - Are we already performing an action
         if self.instart == False \
