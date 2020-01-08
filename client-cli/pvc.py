@@ -2958,15 +2958,13 @@ def provisioner_create(name, profile, wait_flag):
         click.echo()
 
         # Start following the task state, updating progress as we go
-        with click.progressbar(length=task_status.get('total'), show_eta=False) as bar:
+        total_task = task_status.get('total')
+        with click.progressbar(length=total_task, show_eta=False) as bar:
             last_task = 0
             maxlen = 0
             while True:
                 time.sleep(1)
                 if task_status.get('state') != 'RUNNING':
-                    if task_status.get('state') == 'COMPLETED':
-                        time.sleep(1)
-                        bar.update(1)
                     break
                 if task_status.get('current') > last_task:
                     current_task = int(task_status.get('current'))
@@ -2980,6 +2978,8 @@ def provisioner_create(name, profile, wait_flag):
                     overwrite_whitespace = " " * lendiff
                     click.echo("  " + task_status.get('status') + overwrite_whitespace, nl=False)
                 task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
+            if task_status.get('state') == 'SUCCESS':
+                bar.update(total_task - last_task)
 
         click.echo()
         retdata = task_status.get('state') + ": " + task_status.get('status')
