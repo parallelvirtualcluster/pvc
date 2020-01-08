@@ -136,12 +136,12 @@ def vm_modify(config, vm, xml, restart):
     """
     Modify the configuration of VM
 
-    API endpoint: POST /vm/{vm}
+    API endpoint: PUT /vm/{vm}
     API arguments: xml={xml}, restart={restart}
     API schema: {"message":"{data}"}
     """
     request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
-    response = requests.post(
+    response = requests.put(
         request_uri,
         params={
             'xml': xml,
