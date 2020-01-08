@@ -157,7 +157,7 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
-def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, profile=None):
+def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, profile=None, initial_state='stop'):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -200,7 +200,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/domains/{}'.format(dom_uuid): dom_name,
-        '/domains/{}/state'.format(dom_uuid): 'stop',
+        '/domains/{}/state'.format(dom_uuid): initial_state,
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): '',
         '/domains/{}/node_limit'.format(dom_uuid): formatted_node_limit,
