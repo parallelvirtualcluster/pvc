@@ -1036,147 +1036,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
         print("Provisioning script imported successfully")
 
-    # Phase 4 - disk creation
-    #  * Create each Ceph storage volume for the disks
-    self.update_state(state='RUNNING', meta={'current': 4, 'total': 10, 'status': 'Creating storage volumes'})
-    time.sleep(1)
-    
-    for volume in vm_data['volumes']:
-        success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
-        print(message)
-        if not success:
-            raise ClusterError('Failed to create volume "{}"'.format(volume['disk_id']))
-
-    # Phase 5 - disk mapping
-    #  * Map each volume to the local host in order
-    #  * Format each volume with any specified filesystems
-    #  * If any mountpoints are specified, create a temporary mount directory
-    #  * Mount any volumes to their respective mountpoints
-    self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
-    time.sleep(1)
-
-    for volume in vm_data['volumes']:
-        if not volume['filesystem']:
-            continue
-
-        rbd_volume = "{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-
-        filesystem_args_list = list()
-        for arg in volume['filesystem_args'].split():
-            arg_entry, arg_data = arg.split('=')
-            filesystem_args_list.append(arg_entry)
-            filesystem_args_list.append(arg_data)
-        filesystem_args = ' '.join(filesystem_args_list)
-
-        # Map the RBD device
-        retcode, stdout, stderr = run_os_command("rbd map {}".format(rbd_volume))
-        if retcode:
-            raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
-
-        # Create the filesystem
-        if volume['filesystem'] == 'swap':
-            retcode, stdout, stderr = run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
-            if retcode:
-                raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
-        else:
-            retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
-            if retcode:
-                raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
-
-        print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
-
-    if is_script_install:
-        # Create temporary directory
-        retcode, stdout, stderr = run_os_command("mktemp -d")
-        if retcode:
-            raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
-        temp_dir = stdout.strip()
-
-        for volume in vm_data['volumes']:
-            if not volume['mountpoint'] or volume['mountpoint'] == 'swap':
-                continue
-
-            mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-            mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-
-            # Ensure the mount path exists (within the filesystems)
-            retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
-            if retcode:
-                raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
-
-            # Mount filesystems to temporary directory
-            retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
-            if retcode:
-                raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
-
-            print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
-
-    # Phase 6 - provisioning script execution
-    #  * Execute the provisioning script main function ("install") passing any custom arguments
-    self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Executing provisioning script'})
-    time.sleep(1)
-
-    if is_script_install:
-        print("Running installer script")
-
-        # Parse the script arguments
-        script_arguments = dict()
-        for argument in vm_data['script_arguments']:
-            argument_name, argument_data = argument.split('=')
-            script_arguments[argument_name] = argument_data
-
-        # Run the script
-        installer_script.install(
-            vm_name=vm_name,
-            vm_id=vm_id,
-            temporary_directory=temp_dir,
-            disks=vm_data['volumes'],
-            networks=vm_data['networks'],
-            **script_arguments
-        )
-
-    # Phase 7 - install cleanup
-    #  * Unmount any mounted volumes
-    #  * Remove any temporary directories
-    self.update_state(state='RUNNING', meta={'current': 7, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
-    time.sleep(1)
-
-    for volume in list(reversed(vm_data['volumes'])):
-        if is_script_install:
-            # Unmount the volume
-            if volume['mountpoint'] and volume['mountpoint'] != 'swap':
-                print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
-
-                mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-                retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
-                if retcode:
-                    raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
-
-        # Unmap the RBD device
-        if volume['filesystem']:
-            print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
-
-            rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-            retcode, stdout, stderr = run_os_command("rbd unmap {}".format(rbd_volume))
-            if retcode:
-                raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
-
-    print("Cleaning up temporary directories and files")
-
-    if is_script_install:
-        # Remove temporary mount directory (don't fail if not removed)
-        retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
-        if retcode:
-            print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
-
-        # Remote temporary script (don't fail if not removed)
-        retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
-        if retcode:
-            print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
-
-    # Phase 8 - configuration creation
+    # Phase 4 - configuration creation
     #  * Create the libvirt XML configuration
-    self.update_state(state='RUNNING', meta={'current': 8, 'total': 10, 'status': 'Preparing Libvirt XML configuration'})
+    self.update_state(state='RUNNING', meta={'current': 4, 'total': 10, 'status': 'Preparing Libvirt XML configuration'})
     time.sleep(1)
 
     print("Creating Libvirt configuration")
@@ -1296,26 +1158,165 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     print("Final VM schema:\n{}\n".format(vm_schema))
     
-    # Phase 9 - definition
+    # Phase 5 - definition
     #  * Create the VM in the PVC cluster
-    #  * Start the VM in the PVC cluster
-    self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Defining and starting VM on the cluster'})
+    self.update_state(state='RUNNING', meta={'current': 5, 'total': 10, 'status': 'Defining VM on the cluster'})
     time.sleep(1)
 
-    if start_vm and not define_vm:
-        start_vm = False
-
-    if define_vm or start_vm:
-        print("Defining and starting VM on cluster")
-
     if define_vm:
+        print("Defining VM on cluster")
         node_limit = vm_data['system_details']['node_limit']
         if node_limit:
             node_limit = node_limit.split(',')
         node_selector = vm_data['system_details']['node_selector']
         node_autostart = vm_data['system_details']['node_autostart']
-        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema.strip(), target_node, node_limit, node_selector, node_autostart, vm_profile)
+        retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema.strip(), target_node, node_limit, node_selector, node_autostart, vm_profile, initial_state='provision')
         print(retmsg)
+    else:
+        print("Skipping VM definition")
+
+    # Phase 6 - disk creation
+    #  * Create each Ceph storage volume for the disks
+    self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Creating storage volumes'})
+    time.sleep(1)
+    
+    for volume in vm_data['volumes']:
+        success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
+        print(message)
+        if not success:
+            raise ClusterError('Failed to create volume "{}"'.format(volume['disk_id']))
+
+    # Phase 7 - disk mapping
+    #  * Map each volume to the local host in order
+    #  * Format each volume with any specified filesystems
+    #  * If any mountpoints are specified, create a temporary mount directory
+    #  * Mount any volumes to their respective mountpoints
+    self.update_state(state='RUNNING', meta={'current': 7, 'total': 10, 'status': 'Mapping, formatting, and mounting storage volumes locally'})
+    time.sleep(1)
+
+    for volume in vm_data['volumes']:
+        if not volume['filesystem']:
+            continue
+
+        rbd_volume = "{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+
+        filesystem_args_list = list()
+        for arg in volume['filesystem_args'].split():
+            arg_entry, arg_data = arg.split('=')
+            filesystem_args_list.append(arg_entry)
+            filesystem_args_list.append(arg_data)
+        filesystem_args = ' '.join(filesystem_args_list)
+
+        # Map the RBD device
+        retcode, stdout, stderr = run_os_command("rbd map {}".format(rbd_volume))
+        if retcode:
+            raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
+
+        # Create the filesystem
+        if volume['filesystem'] == 'swap':
+            retcode, stdout, stderr = run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
+            if retcode:
+                raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
+        else:
+            retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
+            if retcode:
+                raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
+
+        print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
+
+    if is_script_install:
+        # Create temporary directory
+        retcode, stdout, stderr = run_os_command("mktemp -d")
+        if retcode:
+            raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
+        temp_dir = stdout.strip()
+
+        for volume in vm_data['volumes']:
+            if not volume['mountpoint'] or volume['mountpoint'] == 'swap':
+                continue
+
+            mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+            mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+
+            # Ensure the mount path exists (within the filesystems)
+            retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
+            if retcode:
+                raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
+
+            # Mount filesystems to temporary directory
+            retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
+            if retcode:
+                raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
+
+            print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
+
+    # Phase 8 - provisioning script execution
+    #  * Execute the provisioning script main function ("install") passing any custom arguments
+    self.update_state(state='RUNNING', meta={'current': 8, 'total': 10, 'status': 'Executing provisioning script'})
+    time.sleep(1)
+
+    if is_script_install:
+        print("Running installer script")
+
+        # Parse the script arguments
+        script_arguments = dict()
+        for argument in vm_data['script_arguments']:
+            argument_name, argument_data = argument.split('=')
+            script_arguments[argument_name] = argument_data
+
+        # Run the script
+        installer_script.install(
+            vm_name=vm_name,
+            vm_id=vm_id,
+            temporary_directory=temp_dir,
+            disks=vm_data['volumes'],
+            networks=vm_data['networks'],
+            **script_arguments
+        )
+
+    # Phase 9 - install cleanup
+    #  * Unmount any mounted volumes
+    #  * Remove any temporary directories
+    self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
+    time.sleep(1)
+
+    for volume in list(reversed(vm_data['volumes'])):
+        if is_script_install:
+            # Unmount the volume
+            if volume['mountpoint'] and volume['mountpoint'] != 'swap':
+                print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
+
+                mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+                retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
+                if retcode:
+                    raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
+
+        # Unmap the RBD device
+        if volume['filesystem']:
+            print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
+
+            rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+            retcode, stdout, stderr = run_os_command("rbd unmap {}".format(rbd_volume))
+            if retcode:
+                raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
+
+    print("Cleaning up temporary directories and files")
+
+    if is_script_install:
+        # Remove temporary mount directory (don't fail if not removed)
+        retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
+        if retcode:
+            print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
+
+        # Remote temporary script (don't fail if not removed)
+        retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
+        if retcode:
+            print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
+
+    # Phase 10 - startup
+    #  * Start the VM in the PVC cluster
+    self.update_state(state='RUNNING', meta={'current': 10, 'total': 10, 'status': 'Starting VM'})
+    time.sleep(1)
 
     if start_vm:
         retcode, retmsg = pvc_vm.start_vm(zk_conn, vm_name)
