@@ -211,7 +211,7 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
         cur.execute(query, args)
         retmsg = { 'message': 'Added new system template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create system template "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -230,7 +230,7 @@ def create_template_network(name, mac_template=None):
         cur.execute(query, args)
         retmsg = { 'message': 'Added new network template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create network template "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -265,7 +265,7 @@ def create_template_network_element(name, vni):
         cur.execute(query, args)
         retmsg = { 'message': 'Added new network "{}" to network template "{}"'.format(vni, name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}"'.format(vni, e) }
         retcode = 400
     close_database(conn, cur)
@@ -284,7 +284,7 @@ def create_template_storage(name):
         cur.execute(query, args)
         retmsg = { 'message': 'Added new storage template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -333,7 +333,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         cur.execute(query, args)
         retmsg = { 'message': 'Added new disk "{}" to storage template "{}"'.format(disk_id, name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}"'.format(disk_id, e) }
         retcode = 400
     close_database(conn, cur)
@@ -355,7 +355,7 @@ def delete_template_system(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed system template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -381,7 +381,7 @@ def delete_template_network(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed network template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -414,7 +414,7 @@ def delete_template_network_element(name, vni):
         cur.execute(query, args)
         retmsg = { "message": 'Removed network "{}" from network template "{}"'.format(vni, name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -440,7 +440,7 @@ def delete_template_storage(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed storage template "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -473,7 +473,7 @@ def delete_template_storage_element(name, disk_id):
         cur.execute(query, args)
         retmsg = { "message": 'Removed disk "{}" from storage template "{}"'.format(disk_id, name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -523,7 +523,7 @@ def create_userdata(name, userdata):
         cur.execute(query, args)
         retmsg = { "message": 'Created userdata document "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -545,7 +545,7 @@ def update_userdata(name, userdata):
         cur.execute(query, args)
         retmsg = { "message": 'Updated userdata document "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to update entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -564,7 +564,7 @@ def delete_userdata(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed userdata document "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': str(e) }
         retcode = 400
     close_database(conn, cur)
@@ -614,7 +614,7 @@ def create_script(name, script):
         cur.execute(query, args)
         retmsg = { "message": 'Created provisioning script "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -636,7 +636,7 @@ def update_script(name, script):
         cur.execute(query, args)
         retmsg = { "message": 'Updated provisioning script "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to update entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -655,7 +655,7 @@ def delete_script(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed provisioning script "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}"'.format(name), 'error': str(e) }
         retcode = 400
     close_database(conn, cur)
@@ -776,7 +776,7 @@ def create_profile(name, system_template, network_template, storage_template, us
         cur.execute(query, args)
         retmsg = { "message": 'Created VM profile "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
@@ -795,7 +795,7 @@ def delete_profile(name):
         cur.execute(query, args)
         retmsg = { "message": 'Removed VM profile "{}"'.format(name) }
         retcode = 200
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         retmsg = { 'message': 'Failed to delete entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
