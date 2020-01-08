@@ -24,6 +24,7 @@ import socket
 import click
 import tempfile
 import os
+import stat
 import subprocess
 import difflib
 import re
@@ -63,7 +64,12 @@ def read_from_yaml(cfgfile):
         scheme = 'https'
     else:
         scheme = 'http'
-    return host, port, scheme
+    if strtobool(api_config['pvc']['api']['authentication']['enabled']):
+        # Always use the first token
+        api_key = api_config['pvc']['api']['authentication']['tokens'][0]['token']
+    else:
+        api_key = 'N/A'
+    return host, port, scheme, api_key
 
 def get_config(store_data, cluster=None):
     # This is generally static
@@ -79,7 +85,7 @@ def get_config(store_data, cluster=None):
         # This is a reference to an API configuration; grab the details from its listen address
         cfgfile = cluster_details.get('cfgfile')
         if os.path.isfile(cfgfile):
-            host, port, scheme = read_from_yaml(cfgfile)
+            host, port, scheme, api_key = read_from_yaml(cfgfile)
         else:
             return { 'badcfg': True }
     else:
@@ -87,12 +93,14 @@ def get_config(store_data, cluster=None):
         host = cluster_details['host']
         port = cluster_details['port']
         scheme = cluster_details['scheme']
+        api_key = cluster_details['api_key']
 
     config = dict()
     config['debug'] = False
     config['cluster'] = cluster
     config['api_host'] = '{}:{}'.format(host, port)
     config['api_scheme'] = scheme
+    config['api_key'] = api_key
     config['api_prefix'] = prefix
 
     return config
@@ -107,6 +115,8 @@ def update_store(store_path, store_data):
     store_file = '{}/pvc-cli.json'.format(store_path)
     with open(store_file, 'w') as fh:
         fh.write(json.dumps(store_data, sort_keys=True, indent=4))
+    # Ensure file has 0600 permissions due to API key storage
+    os.chmod(store_file, 0o600)
 
 home_dir = os.environ.get('HOME', None)
 if home_dir:
@@ -158,10 +168,14 @@ def cli_cluster():
     '-s/-S', '--ssl/--no-ssl', 'ssl', is_flag=True, default=False, show_default=True,
     help='Whether to use SSL or not.'
 )
+@click.option(
+    '-k', '--api-key', 'api_key', required=False, default=None,
+    help='An API key to authenticate against the cluster.'
+)
 @click.argument(
     'name'
 )
-def cluster_add(address, port, ssl, name):
+def cluster_add(address, port, ssl, name, api_key):
     """
     Add a new PVC cluster NAME, via its API connection details, to the configuration of the local CLI client. Replaces any existing cluster with this name.
     """
@@ -176,7 +190,8 @@ def cluster_add(address, port, ssl, name):
     existing_config[name] = {
         'host': address,
         'port': port,
-        'scheme': scheme
+        'scheme': scheme,
+        'api_key': api_key
     }
     # Update the store
     update_store(store_path, existing_config)
@@ -218,7 +233,8 @@ def cluster_list():
     name_length = 5
     address_length = 10
     port_length = 5
-    scheme_length = 5
+    scheme_length = 7
+    api_key_length = 8
 
     for cluster in clusters:
         cluster_details = clusters[cluster]
@@ -226,13 +242,16 @@ def cluster_list():
             # This is a reference to an API configuration; grab the details from its listen address
             cfgfile = cluster_details.get('cfgfile')
             if os.path.isfile(cfgfile):
-                address, port, scheme = read_from_yaml(cfgfile)
+                address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
-                address, port, scheme = 'N/A', 'N/A', 'N/A'
+                address, port, scheme, api_key = 'N/A', 'N/A', 'N/A', 'N/A'
         else:
             address = cluster_details.get('host', 'N/A')
             port = cluster_details.get('port', 'N/A')
             scheme = cluster_details.get('scheme', 'N/A')
+            api_key = cluster_details.get('api_key', 'N/A')
+            if not api_key:
+                api_key = 'N/A'
 
         _name_length = len(cluster) + 1
         if _name_length > name_length:
@@ -246,12 +265,15 @@ def cluster_list():
         _scheme_length = len(scheme) + 1
         if _scheme_length > scheme_length:
             scheme_length = _scheme_length
+        _api_key_length = len(api_key) + 1
+        if _api_key_length > api_key_length:
+            api_key_length = _api_key_length
 
     # Display the data nicely
     click.echo("Available clusters:")
     click.echo()
     click.echo(
-        '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
+        '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             name="Name",
@@ -261,7 +283,9 @@ def cluster_list():
             port="Port",
             port_length=port_length,
             scheme="Scheme",
-            scheme_length=scheme_length
+            scheme_length=scheme_length,
+            api_key="API Key",
+            api_key_length=api_key_length
         )
     )
 
@@ -270,18 +294,22 @@ def cluster_list():
         if cluster_details.get('cfgfile', None):
             # This is a reference to an API configuration; grab the details from its listen address
             if os.path.isfile(cfgfile):
-                address, port, scheme = read_from_yaml(cfgfile)
+                address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
                 address = 'N/A'
                 port = 'N/A'
                 scheme = 'N/A'
+                api_key = 'N/A'
         else:
             address = cluster_details.get('host', 'N/A')
             port = cluster_details.get('port', 'N/A')
             scheme = cluster_details.get('scheme', 'N/A')
+            api_key = cluster_details.get('api_key', 'N/A')
+            if not api_key:
+                api_key = 'N/A'
 
         click.echo(
-            '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}}{end_bold}'.format(
+            '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
                 bold='',
                 end_bold='',
                 name=cluster,
@@ -291,7 +319,9 @@ def cluster_list():
                 port=port,
                 port_length=port_length,
                 scheme=scheme,
-                scheme_length=scheme_length
+                scheme_length=scheme_length,
+                api_key=api_key,
+                api_key_length=api_key_length
             )
         )
 
