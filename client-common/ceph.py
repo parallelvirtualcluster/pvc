@@ -238,7 +238,7 @@ def add_osd(zk_conn, node, device, weight):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(5)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -270,7 +270,7 @@ def remove_osd(zk_conn, osd_id):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(5)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -302,7 +302,7 @@ def in_osd(zk_conn, osd_id):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -334,7 +334,7 @@ def out_osd(zk_conn, osd_id):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -387,7 +387,7 @@ def unset_osd(zk_conn, option):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -687,7 +687,7 @@ def add_pool(zk_conn, name, pgs, replcfg):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(3)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -719,7 +719,7 @@ def remove_pool(zk_conn, name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(3)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -991,7 +991,7 @@ def add_volume(zk_conn, pool, name, size):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1021,7 +1021,7 @@ def resize_volume(zk_conn, pool, name, size):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1050,7 +1050,7 @@ def rename_volume(zk_conn, pool, name, new_name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1079,7 +1079,7 @@ def clone_volume(zk_conn, pool, name, new_name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1111,7 +1111,7 @@ def remove_volume(zk_conn, pool, name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1299,7 +1299,7 @@ def add_snapshot(zk_conn, pool, volume, name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1328,7 +1328,7 @@ def rename_snapshot(zk_conn, pool, volume, name, new_name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
@@ -1360,7 +1360,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
     # Acquire a write lock to ensure things go smoothly
     lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
     with lock:
-        time.sleep(1)
+        time.sleep(0.5)
         zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
 
     return success, message
