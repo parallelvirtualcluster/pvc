@@ -311,7 +311,7 @@ def vm_locks(config, vm):
 
 def view_console_log(config, vm, lines=100):
     """
-    Return console log lines from the API and display them in a pager
+    Return console log lines from the API (and display them in a pager in the main CLI)
 
     API endpoint: GET /vm/{vm}/console
     API arguments: lines={lines}
@@ -334,17 +334,7 @@ def view_console_log(config, vm, lines=100):
     shrunk_log = console_log.split('\n')[-lines:]
     loglines = '\n'.join(shrunk_log)
 
-    # Show it in the pager (less)
-    try:
-        pager = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
-        pager.communicate(input=loglines.encode('utf8'))
-    except FileNotFoundError:
-        ainformation = list()
-        ainformation.append("Error: `less` pager not found, dumping log ({} lines) to stdout".format(lines))
-        ainformation.append(loglines)
-        return False, '\n'.join(ainformation)
-
-    return True, ''
+    return True, loglines
 
 def follow_console_log(config, vm, lines=10):
     """

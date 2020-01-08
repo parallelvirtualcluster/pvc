@@ -779,7 +779,7 @@ def vm_flush_locks(domain):
     'domain'
 )
 @click.option(
-    '-l', '--lines', 'lines', default=100, show_default=True,
+    '-l', '--lines', 'lines', default=1000, show_default=True,
     help='Display this many log lines from the end of the log buffer.'
 )
 @click.option(
@@ -788,13 +788,15 @@ def vm_flush_locks(domain):
 )
 def vm_log(domain, lines, follow):
     """
-	Show console logs of virtual machine DOMAIN on its current node in the 'less' pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
+	Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
     """
 
     if follow:
         retcode, retmsg = pvc_vm.follow_console_log(config, domain, lines)
     else:
         retcode, retmsg = pvc_vm.view_console_log(config, domain, lines)
+        click.echo_via_pager(retmsg)
+        retmsg = ''
     cleanup(retcode, retmsg)
 
 ###############################################################################
