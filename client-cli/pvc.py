@@ -599,10 +599,20 @@ def vm_modify(domain, cfgfile, editor, restart):
 @click.argument(
     'domain'
 )
-def vm_undefine(domain):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def vm_undefine(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Undefine VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=False)
     cleanup(retcode, retmsg)
@@ -614,10 +624,20 @@ def vm_undefine(domain):
 @click.argument(
     'domain'
 )
-def vm_remove(domain):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def vm_remove(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Undefine VM {} and remove all disks'.format(domain), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=True)
     cleanup(retcode, retmsg)
@@ -657,7 +677,7 @@ def vm_restart(domain):
 ###############################################################################
 @click.command(name='shutdown', short_help='Gracefully shut down a running virtual machine.')
 @click.argument(
-	'domain'
+    'domain'
 )
 def vm_shutdown(domain):
     """
@@ -704,7 +724,7 @@ def vm_disable(domain):
 ###############################################################################
 @click.command(name='move', short_help='Permanently move a virtual machine to another node.')
 @click.argument(
-	'domain'
+    'domain'
 )
 @click.option(
     '-t', '--target', 'target_node', default=None,
@@ -788,7 +808,7 @@ def vm_flush_locks(domain):
 )
 def vm_log(domain, lines, follow):
     """
-	Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
+    Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
     """
 
     if follow:
@@ -812,7 +832,7 @@ def vm_log(domain, lines, follow):
 )
 def vm_info(domain, long_output):
     """
-	Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
     retcode, retdata = pvc_vm.vm_info(config, domain)
@@ -1050,13 +1070,23 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
 @click.argument(
     'net'
 )
-def net_remove(net):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def net_remove(net, confirm_flag):
     """
     Remove an existing virtual network NET; NET must be a VNI.
 
     WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove network {}'.format(net), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_network.net_remove(config, net)
     cleanup(retcode, retmsg)
@@ -1074,7 +1104,7 @@ def net_remove(net):
 )
 def net_info(vni, long_output):
     """
-	Show information about virtual network VNI.
+    Show information about virtual network VNI.
     """
 
     retcode, retdata = pvc_network.net_info(config, vni)
@@ -1146,10 +1176,20 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
 @click.argument(
     'macaddr'
 )
-def net_dhcp_remove(net, macaddr):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def net_dhcp_remove(net, macaddr, confirm_flag):
     """
-    Remove a DHCP static reservation for MACADDR from virtual network NET; NET must be a VNI.
+    Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove DHCP lease for {} in network {}'.format(macaddr, net), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_network.net_dhcp_remove(config, net, macaddr)
     cleanup(retcode, retmsg)
@@ -1251,10 +1291,20 @@ def net_acl_add(net, direction, description, rule, order):
 @click.argument(
     'rule',
 )
-def net_acl_remove(net, rule):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def net_acl_remove(net, rule, confirm_flag):
     """
     Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove ACL {} in network {}'.format(rule, net), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_network.net_acl_remove(config, net, rule)
     cleanup(retcode, retmsg)
@@ -1382,19 +1432,18 @@ def ceph_osd():
     help='Weight of the OSD within the CRUSH map.'
 )
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the disk destruction.'
+    help='Confirm the removal'
 )
-def ceph_osd_add(node, device, weight, yes):
+def ceph_osd_add(node, device, weight, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
     """
-
-    if not yes:
-        click.echo('DANGER: This will completely destroy all data on {} disk {}.'.format(node, device))
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
+    if not confirm_flag:
+        try:
+            click.confirm('Destroy all data and create a new OSD on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
+        except:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight)
@@ -1408,19 +1457,20 @@ def ceph_osd_add(node, device, weight, yes):
     'osdid'
 )
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the removal.'
+    help='Confirm the removal'
 )
-def ceph_osd_remove(osdid, yes):
+def ceph_osd_remove(osdid, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
+    
+    DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which may negatively affect performance or available space.
     """
-
-    if not yes:
-        click.echo('DANGER: This will completely remove OSD {} from cluster. OSDs will rebalance.'.format(osdid))
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
+    if not confirm_flag:
+        try:
+            click.confirm('Remove OSD {}'.format(osdid), prompt_suffix='? ', abort=True)
+        except:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid)
@@ -1559,22 +1609,21 @@ def ceph_pool_add(name, pgs, replcfg):
     'name'
 )
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the removal.'
+    help='Confirm the removal'
 )
-def ceph_pool_remove(name, yes):
+def ceph_pool_remove(name, confirm_flag):
     """
     Remove a Ceph RBD pool with name NAME and all volumes on it.
-    """
 
-    if not yes:
-        click.echo('DANGER: This will completely remove pool {} and all data contained in it.'.format(name))
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
-            pool_name_check = input('Please enter the pool name to confirm: ')
-            if pool_name_check != name:
-                exit(0)
+    DANGER: This will completely remove the pool and all volumes contained in it from the cluster.
+    """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove RBD pool {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_pool_remove(config, name)
     cleanup(retcode, retmsg)
@@ -1641,19 +1690,20 @@ def ceph_volume_add(pool, name, size):
     'name'
 )
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the removal.'
+    help='Confirm the removal'
 )
-def ceph_volume_remove(pool, name, yes):
+def ceph_volume_remove(pool, name, confirm_flag):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
+        
+    DANGER: This will completely remove the volume and all data contained in it.
     """
-
-    if not yes:
-        click.echo('DANGER: This will completely remove volume {} from pool {} and all data contained in it.'.format(name, pool))
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
+    if not confirm_flag:
+        try:
+            click.confirm('Remove volume {}/{}'.format(pool, name), prompt_suffix='? ', abort=True)
+        except:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_volume_remove(config, pool, name)
@@ -1812,19 +1862,20 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     'name'
 )
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the removal.'
+    help='Confirm the removal'
 )
-def ceph_volume_snapshot_remove(pool, volume, name, yes):
+def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     """
     Remove a Ceph RBD volume snapshot with name NAME from volume VOLUME in pool POOL.
-    """
 
-    if not yes:
-        click.echo('DANGER: This will completely remove snapshot {} from volume {}/{} and all data contained in it.'.format(name, pool, volume))
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
+    DANGER: This will completely remove the snapshot.
+    """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove snapshot {} for volume {}/{}'.format(name, pool, volume), prompt_suffix='? ', abort=True)
+        except:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_snapshot_remove(config, pool, volume, name)
@@ -2007,10 +2058,21 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 @click.argument(
     'name'
 )
-def provisioner_template_system_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_template_system_remove(name, confirm_flag):
     """
     Remove system template NAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove system template {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
     cleanup(retcode, retdata)
 
@@ -2100,10 +2162,21 @@ def provisioner_template_network_add(name, mac_template):
 @click.argument(
     'name'
 )
-def provisioner_template_network_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_template_network_remove(name, confirm_flag):
     """
     Remove network template MAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove network template {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
     cleanup(retcode, retdata)
 
@@ -2149,11 +2222,20 @@ def provisioner_template_network_vni_add(name, vni):
 @click.argument(
     'vni'
 )
-def provisioner_template_network_vni_remove(name, vni):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     """
     Remove network VNI from network template NAME.
     """
-    params = dict()
+    if not confirm_flag:
+        try:
+            click.confirm('Remove VNI {} from network template {}'.format(vni, name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, vni, element_type='net', template_type='network')
     cleanup(retcode, retdata)
@@ -2212,10 +2294,21 @@ def provisioner_template_storage_add(name):
 @click.argument(
     'name'
 )
-def provisioner_template_storage_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_template_storage_remove(name, confirm_flag):
     """
     Remove storage template NAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove storage template {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
     cleanup(retcode, retdata)
 
@@ -2314,13 +2407,22 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
 @click.argument(
     'disk'
 )
-def provisioner_template_storage_disk_remove(name, disk):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
     """
     Remove DISK from storage template NAME.
 
     DISK must be a Linux-style disk identifier such as "sda" or "vdb".
     """
-    params = dict()
+    if not confirm_flag:
+        try:
+            click.confirm('Remove disk {} from storage template {}'.format(disk, name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, disk, element_type='disk', template_type='storage')
     cleanup(retcode, retdata)
@@ -2465,10 +2567,21 @@ def provisioner_userdata_modify(name, filename, editor):
 @click.argument(
     'name'
 )
-def provisioner_userdata_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_userdata_remove(name, confirm_flag):
     """
     Remove userdata document NAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove userdata document {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
     retcode, retdata = pvc_provisioner.userdata_remove(config, name)
     cleanup(retcode, retdata)
 
@@ -2612,10 +2725,22 @@ def provisioner_script_modify(name, filename, editor):
 @click.argument(
     'name'
 )
-def provisioner_script_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_script_remove(name, confirm_flag):
     """
     Remove script NAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+    params = dict()
+
     retcode, retdata = pvc_provisioner.script_remove(config, name)
     cleanup(retcode, retdata)
 
@@ -2774,10 +2899,21 @@ def provisioner_profile_modify(name, system_template, network_template, storage_
 @click.argument(
     'name'
 )
-def provisioner_profile_remove(name):
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_profile_remove(name, confirm_flag):
     """
     Remove profile NAME from the PVC cluster provisioner.
     """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove profile {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
     retcode, retdata = pvc_provisioner.profile_remove(config, name)
     cleanup(retcode, retdata)
 
@@ -2854,11 +2990,11 @@ def status_cluster(oformat):
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
-    '--yes', 'yes',
+    '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Pre-confirm the initialization.'
+    help='Confirm the removal'
 )
-def init_cluster(yes):
+def init_cluster(confirm_flag):
     """
     Perform initialization of a new PVC cluster.
     """
@@ -2867,13 +3003,11 @@ def init_cluster(yes):
         click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
         exit(1)
 
-    if not yes:
-        click.echo('DANGER: This will remove any existing cluster on these coordinators and create a new cluster. Any existing resources on the old cluster will be left abandoned.')
-        choice = input('Are you sure you want to do this? (y/N) ')
-        if choice != 'y' and choice != 'Y':
+    if not confirm_flag:
+        try:
+            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster'.format(name), prompt_suffix='? ', abort=True)
+        except:
             exit(0)
-
-    click.echo('Initializing a new cluster with Zookeeper address "{}".'.format(zk_host))
 
     # Easter-egg
     click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
