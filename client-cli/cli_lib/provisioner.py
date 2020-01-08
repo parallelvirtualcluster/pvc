@@ -556,7 +556,7 @@ def profile_remove(config, name):
         
     return retvalue, response.json()['message']
 
-def vm_create(config, name, profile):
+def vm_create(config, name, profile, wait_flag):
     """
     Create a new VM named {name} with profile {profile}
 
@@ -577,14 +577,18 @@ def vm_create(config, name, profile):
 
     if response.status_code == 202:
         retvalue = True
-        retdata = 'Task ID: {}'.format(response.json()['task_id'])
+        if not wait_flag:
+            retdata = 'Task ID: {}'.format(response.json()['task_id'])
+        else:
+            # Just return the task_id raw, instead of formatting it
+            retdata = response.json()['task_id']
     else:
         retvalue = False
         retdata = response.json()['message']
         
     return retvalue, retdata
 
-def task_status(config, task_id):
+def task_status(config, task_id, is_watching=False):
     """
     Get information about provisioner job {task_id}
 
@@ -602,6 +606,11 @@ def task_status(config, task_id):
     if response.status_code == 200:
         retvalue = True
         respjson = response.json()
+
+        if is_watching:
+            # Just return the raw JSON to the watching process instead of formatting it
+            return respjson
+
         job_state = respjson['state']
         if job_state == 'RUNNING':
             retdata = 'Job state: RUNNING\nStage: {}/{}\nStatus: {}'.format(

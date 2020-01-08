@@ -27,6 +27,7 @@ import os
 import subprocess
 import difflib
 import re
+import time
 import colorama
 import yaml
 import json
@@ -2928,13 +2929,62 @@ def provisioner_profile_remove(name, confirm_flag):
 @click.argument(
     'profile'
 )
-def provisioner_create(name, profile):
+@click.option(
+    '-w', '--wait', 'wait_flag',
+    is_flag=True, default=False,
+    help='Wait for provisioning to complete, showing progress'
+)
+def provisioner_create(name, profile, wait_flag):
     """
     Create a new VM NAME with profile PROFILE.
     """
-    retcode, retdata = pvc_provisioner.vm_create(config, name, profile)
-    cleanup(retcode, retdata)
+    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag)
 
+    if retcode and wait_flag:
+        task_id = retdata
+
+        click.echo("Task ID: {}".format(task_id))
+        click.echo()
+
+        # Wait for the task to start
+        click.echo("Waiting for task to start...", nl=False)
+        while True:
+            time.sleep(1)
+            task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
+            if task_status.get('state') != 'PENDING':
+                break
+            click.echo(".", nl=False)
+        click.echo(" done.")
+        click.echo()
+
+        # Start following the task state, updating progress as we go
+        with click.progressbar(length=task_status.get('total'), show_eta=False) as bar:
+            last_task = 0
+            maxlen = 0
+            while True:
+                time.sleep(1)
+                if task_status.get('state') != 'RUNNING':
+                    if task_status.get('state') == 'COMPLETED':
+                        time.sleep(1)
+                        bar.update(1)
+                    break
+                if task_status.get('current') > last_task:
+                    current_task = int(task_status.get('current'))
+                    bar.update(current_task - last_task)
+                    last_task = current_task
+                    # The extensive spaces at the end cause this to overwrite longer previous messages
+                    curlen = len(str(task_status.get('status')))
+                    if curlen > maxlen:
+                        maxlen = curlen
+                    lendiff = maxlen - curlen
+                    overwrite_whitespace = " " * lendiff
+                    click.echo("  " + task_status.get('status') + overwrite_whitespace, nl=False)
+                task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
+
+        click.echo()
+        retdata = task_status.get('state') + ": " + task_status.get('status')
+
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc provisioner status
