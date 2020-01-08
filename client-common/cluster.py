@@ -73,7 +73,7 @@ def getClusterInformation(zk_conn):
     vm_report_status = list(range(0, vm_count))
     for index, vm in enumerate(vm_list):
         vm_state = vm['state']
-        if vm_state != 'start' and vm_state != 'disable':
+        if vm_state not in ['start', 'disable', 'migrate', 'unmigrate']:
             vm_healthy_status[index] = False
         else:
             vm_healthy_status[index] = True
