@@ -547,34 +547,19 @@ def vm_modify(domain, cfgfile, editor, restart):
         # Grab the current config
         current_vm_cfg_raw = vm_information.get('xml')
         xml_data = etree.fromstring(current_vm_cfg_raw)
-        current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+        current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8').strip()
 
-        # Write it to a tempfile
-        fd, path = tempfile.mkstemp()
-        fw = os.fdopen(fd, 'w')
-        fw.write(current_vm_cfgfile.strip())
-        fw.close()
-
-        # Edit it
-        editor = os.getenv('EDITOR', 'vi')
-        subprocess.call('%s %s' % (editor, path), shell=True)
-
-        # Open the tempfile to read
-        with open(path, 'r') as fr:
-            new_vm_cfgfile = fr.read()
-            fr.close()
-
-        # Delete the tempfile
-        os.unlink(path)
-
-        # Show a diff and confirm
-        diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
-        if len(diff) < 1:
+        new_vm_cfgfile = click.edit(text=current_vm_cfgfile, require_save=True, extension='.xml')
+        if new_vm_cfgfile is None:
             click.echo('Aborting with no modifications.')
             exit(0)
+        else:
+            new_vm_cfgfile = new_vm_cfgfile.strip()
 
+        # Show a diff and confirm
         click.echo('Pending modifications:')
         click.echo('')
+        diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
             if re.match('^\+', line) != None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
@@ -2431,34 +2416,19 @@ def provisioner_userdata_modify(name, filename, editor):
         if not retcode:
             click.echo(retdata)
             exit(1)
-        current_userdata = retdata['userdata']
+        current_userdata = retdata['userdata'].strip()
 
-        # Write it to a tempfile
-        fd, path = tempfile.mkstemp()
-        fw = os.fdopen(fd, 'w')
-        fw.write(current_userdata.strip())
-        fw.close()
-
-        # Edit it
-        editor = os.getenv('EDITOR', 'vi')
-        subprocess.call('%s %s' % (editor, path), shell=True)
-
-        # Open the tempfile to read
-        with open(path, 'r') as fr:
-            new_userdata = fr.read().strip()
-            fr.close()
-
-        # Delete the tempfile
-        os.unlink(path)
-
-        # Show a diff and confirm
-        diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
-        if len(diff) < 1:
+        new_userdata = click.edit(text=current_userdata, require_save=True, extension='.yaml')
+        if new_userdata is None:
             click.echo('Aborting with no modifications.')
             exit(0)
+        else:
+            new_userdata = new_userdata.strip()
 
+        # Show a diff and confirm
         click.echo('Pending modifications:')
         click.echo('')
+        diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
             if re.match('^\+', line) != None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
@@ -2593,34 +2563,19 @@ def provisioner_script_modify(name, filename, editor):
         if not retcode:
             click.echo(retdata)
             exit(1)
-        current_script = retdata['script']
+        current_script = retdata['script'].strip()
 
-        # Write it to a tempfile
-        fd, path = tempfile.mkstemp()
-        fw = os.fdopen(fd, 'w')
-        fw.write(current_script.strip())
-        fw.close()
-
-        # Edit it
-        editor = os.getenv('EDITOR', 'vi')
-        subprocess.call('%s %s' % (editor, path), shell=True)
-
-        # Open the tempfile to read
-        with open(path, 'r') as fr:
-            new_script = fr.read().strip()
-            fr.close()
-
-        # Delete the tempfile
-        os.unlink(path)
-
-        # Show a diff and confirm
-        diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
-        if len(diff) < 1:
+        new_script = click.edit(text=current_script, require_save=True, extension='.py')
+        if new_script is None:
             click.echo('Aborting with no modifications.')
             exit(0)
+        else:
+            new_script = new_script.strip()
 
+        # Show a diff and confirm
         click.echo('Pending modifications:')
         click.echo('')
+        diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
             if re.match('^\+', line) != None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
