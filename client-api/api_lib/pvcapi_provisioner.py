@@ -1301,7 +1301,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
                 **script_arguments
             )
         except:
-            continue
+            pass
 
     # Phase 9 - install cleanup
     #  * Unmount any mounted volumes
