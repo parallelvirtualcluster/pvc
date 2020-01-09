@@ -1291,14 +1291,17 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             script_arguments[argument_name] = argument_data
 
         # Run the script
-        installer_script.install(
-            vm_name=vm_name,
-            vm_id=vm_id,
-            temporary_directory=temp_dir,
-            disks=vm_data['volumes'],
-            networks=vm_data['networks'],
-            **script_arguments
-        )
+        try:
+            installer_script.install(
+                vm_name=vm_name,
+                vm_id=vm_id,
+                temporary_directory=temp_dir,
+                disks=vm_data['volumes'],
+                networks=vm_data['networks'],
+                **script_arguments
+            )
+        except:
+            continue
 
     # Phase 9 - install cleanup
     #  * Unmount any mounted volumes
