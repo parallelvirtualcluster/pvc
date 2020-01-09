@@ -23,28 +23,9 @@
 import time
 import re
 import subprocess
-import requests
 
 import cli_lib.ansiprint as ansiprint
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
+from cli_lib.common import call_api
 
 #
 # Primary functions
@@ -57,12 +38,7 @@ def template_info(config, template, template_type):
     API arguments:
     API schema: {json_template_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/template/{template_type}/{template}'.format(template_type=template_type, template=template))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/template/{template_type}/{template}'.format(template_type=template_type, template=template))
 
     if response.status_code == 200:
         return True, response.json()
@@ -82,15 +58,9 @@ def template_list(config, limit, template_type=None):
         params['limit'] = limit
 
     if template_type is not None:
-        request_uri = get_request_uri(config, '/provisioner/template/{template_type}'.format(template_type=template_type))
+        response = call_api(config, 'get', '/provisioner/template/{template_type}'.format(template_type=template_type), params=params)
     else:
-        request_uri = get_request_uri(config, '/provisioner/template')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+        response = call_api(config, 'get', '/provisioner/template', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -105,13 +75,7 @@ def template_add(config, params, template_type=None):
     API_arguments: args
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/template/{template_type}'.format(template_type=template_type))
-    response = requests.post(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'post', '/provisioner/template/{template_type}'.format(template_type=template_type), params=params)
 
     if response.status_code == 200:
         retvalue = True
@@ -128,12 +92,7 @@ def template_remove(config, name, template_type=None):
     API_arguments:
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/template/{template_type}/{name}'.format(template_type=template_type, name=name))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/provisioner/template/{template_type}/{name}'.format(template_type=template_type, name=name))
 
     if response.status_code == 200:
         retvalue = True
@@ -150,13 +109,7 @@ def template_element_add(config, name, element_id, params, element_type=None, te
     API_arguments: args
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/template/{template_type}/{name}/{element_type}/{element_id}'.format(template_type=template_type, name=name, element_type=element_type, element_id=element_id))
-    response = requests.post(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'post', '/provisioner/template/{template_type}/{name}/{element_type}/{element_id}'.format(template_type=template_type, name=name, element_type=element_type, element_id=element_id), params=params)
 
     if response.status_code == 200:
         retvalue = True
@@ -173,12 +126,7 @@ def template_element_remove(config, name, element_id, element_type=None, templat
     API_arguments:
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/template/{template_type}/{name}/{element_type}/{element_id}'.format(template_type=template_type, name=name, element_type=element_type, element_id=element_id))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/provisioner/template/{template_type}/{name}/{element_type}/{element_id}'.format(template_type=template_type, name=name, element_type=element_type, element_id=element_id))
 
     if response.status_code == 200:
         retvalue = True
@@ -195,12 +143,7 @@ def userdata_info(config, userdata):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/userdata/{userdata}'.format(userdata=userdata))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/userdata/{userdata}'.format(userdata=userdata))
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -219,13 +162,7 @@ def userdata_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/provisioner/userdata')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/userdata', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -243,18 +180,13 @@ def userdata_add(config, params):
     name = params.get('name')
     userdata_data = params.get('data')
 
-    request_uri = get_request_uri(config, '/provisioner/userdata')
-    response = requests.post(
-        request_uri,
-        params={
-            'name': name
-        },
-        data={
-            'data': userdata_data
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'name': name
+    }
+    data = {
+        'data': userdata_data
+    }
+    response = call_api(config, 'post', '/provisioner/userdata', params=params, data=data)
 
     if response.status_code == 200:
         retvalue = True
@@ -273,18 +205,13 @@ def userdata_modify(config, name, params):
     """
     userdata_data = params.get('data')
 
-    request_uri = get_request_uri(config, '/provisioner/userdata/{name}'.format(name=name))
-    response = requests.put(
-        request_uri,
-        params={
-            'name': name
-        },
-        data={
-            'data': userdata_data
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'name': name
+    }
+    data = {
+        'data': userdata_data
+    }
+    response = call_api(config, 'put', '/provisioner/userdata/{name}'.format(name=name), params=params, data=data)
 
     if response.status_code == 200:
         retvalue = True
@@ -301,12 +228,7 @@ def userdata_remove(config, name):
     API_arguments:
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/userdata/{name}'.format(name=name))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/provisioner/userdata/{name}'.format(name=name))
 
     if response.status_code == 200:
         retvalue = True
@@ -323,12 +245,7 @@ def script_info(config, script):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/script/{script}'.format(script=script))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/script/{script}'.format(script=script))
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -347,13 +264,7 @@ def script_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/provisioner/script')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/script', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -371,18 +282,13 @@ def script_add(config, params):
     name = params.get('name')
     script_data = params.get('data')
 
-    request_uri = get_request_uri(config, '/provisioner/script')
-    response = requests.post(
-        request_uri,
-        params={
-            'name': name
-        },
-        data={
-            'data': script_data
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'name': name
+    }
+    data = {
+        'data': script_data
+    }
+    response = call_api(config, 'post', '/provisioner/script', params=params, data=data)
 
     if response.status_code == 200:
         retvalue = True
@@ -401,18 +307,13 @@ def script_modify(config, name, params):
     """
     script_data = params.get('data')
 
-    request_uri = get_request_uri(config, '/provisioner/script/{name}'.format(name=name))
-    response = requests.put(
-        request_uri,
-        params={
-            'name': name
-        },
-        data={
-            'data': script_data
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'name': name
+    }
+    data = {
+        'data': script_data
+    }
+    response = call_api(config, 'put', '/provisioner/script/{name}'.format(name=name), params=params, data=data)
 
     if response.status_code == 200:
         retvalue = True
@@ -429,12 +330,7 @@ def script_remove(config, name):
     API_arguments:
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/script/{name}'.format(name=name))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/provisioner/script/{name}'.format(name=name))
 
     if response.status_code == 200:
         retvalue = True
@@ -451,12 +347,7 @@ def profile_info(config, profile):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/profile/{profile}'.format(profile=profile))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/profile/{profile}'.format(profile=profile))
 
     if response.status_code == 200:
         return True, response.json()[0]
@@ -475,13 +366,7 @@ def profile_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/provisioner/profile')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/profile', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -496,13 +381,7 @@ def profile_add(config, params):
     API_arguments: args
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/profile')
-    response = requests.post(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'post', '/provisioner/profile', params=params)
 
     if response.status_code == 200:
         retvalue = True
@@ -519,13 +398,7 @@ def profile_modify(config, name, params):
     API_arguments: args
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/profile/{name}'.format(name=name))
-    response = requests.put(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'put', '/provisioner/profile/{name}'.format(name=name), params=params)
 
     if response.status_code == 200:
         retvalue = True
@@ -542,12 +415,7 @@ def profile_remove(config, name):
     API_arguments:
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/profile/{name}'.format(name=name))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/provisioner/profile/{name}'.format(name=name))
 
     if response.status_code == 200:
         retvalue = True
@@ -564,16 +432,11 @@ def vm_create(config, name, profile, wait_flag):
     API_arguments: name={name}, profile={profile}
     API schema: {message}
     """
-    request_uri = get_request_uri(config, '/provisioner/create')
-    response = requests.post(
-        request_uri,
-        params={
-            'name': name,
-            'profile': profile
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'name': name,
+        'profile': profile
+    }
+    response = call_api(config, 'post', '/provisioner/create', params=params)
 
     if response.status_code == 202:
         retvalue = True
@@ -596,12 +459,7 @@ def task_status(config, task_id, is_watching=False):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/provisioner/status/{task_id}'.format(task_id=task_id))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/provisioner/status/{task_id}'.format(task_id=task_id))
 
     if response.status_code == 200:
         retvalue = True

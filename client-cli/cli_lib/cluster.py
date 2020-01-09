@@ -21,28 +21,9 @@
 ###############################################################################
 
 import json
-import requests
 
 import cli_lib.ansiprint as ansiprint
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
+from cli_lib.common import call_api
 
 def initialize(config):
     """
@@ -52,12 +33,7 @@ def initialize(config):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/initialize')
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/initialize')
 
     if response.status_code == 200:
         retstatus = True
@@ -74,12 +50,7 @@ def get_info(config):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/status')
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/status')
 
     if response.status_code == 200:
         return True, response.json()

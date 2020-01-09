@@ -23,31 +23,12 @@
 import time
 import re
 import subprocess
-import requests
 
 from collections import deque
 
 import cli_lib.ansiprint as ansiprint
 import cli_lib.ceph as ceph
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
+from cli_lib.common import call_api
 
 #
 # Primary functions
@@ -60,12 +41,7 @@ def vm_info(config, vm):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/vm/{vm}'.format(vm=vm))
 
     if response.status_code == 200:
         return True, response.json()
@@ -88,13 +64,7 @@ def vm_list(config, limit, target_node, target_state):
     if target_state:
         params['state'] = target_state
 
-    request_uri = get_request_uri(config, '/vm')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/vm', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -109,21 +79,16 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
     API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm')
-    response = requests.post(
-        request_uri,
-        params={
-            'node': node,
-            'limit': node_limit,
-            'selector': node_selector,
-            'autostart': node_autostart
-        },
-        data={
-            'xml': xml
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'node': node,
+        'limit': node_limit,
+        'selector': node_selector,
+        'autostart': node_autostart
+    }
+    data = {
+        'xml': xml
+    }
+    response = call_api(config, 'post', '/vm', params=params, data=data)
 
     if response.status_code == 200:
         retstatus = True
@@ -140,16 +105,13 @@ def vm_modify(config, vm, xml, restart):
     API arguments: xml={xml}, restart={restart}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
-    response = requests.put(
-        request_uri,
-        params={
-            'xml': xml,
-            'restart': restart
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'restart': restart
+    }
+    data = {
+        'xml': xml
+    }
+    response = call_api(config, 'put', '/vm/{vm}'.format(vm=vm), params=params, data=data)
 
     if response.status_code == 200:
         retstatus = True
@@ -166,14 +128,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
     API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/meta'.format(vm=vm))
-
-    # Get the existing metadata so we can perform a fully dynamic update
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/vm/{vm}/meta'.format(vm=vm))
 
     metadata = response.json()
 
@@ -191,17 +146,12 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
         metadata['node_autostart'] = node_autostart
 
     # Write the new metadata
-    print(metadata['node_limit'])
-    response = requests.post(
-        request_uri,
-        params={
-            'limit': metadata['node_limit'],
-            'selector': metadata['node_selector'],
-            'autostart': metadata['node_autostart']
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'limit': metadata['node_limit'],
+        'selector': metadata['node_selector'],
+        'autostart': metadata['node_autostart']
+    }
+    response = call_api(config, 'post', '/vm/{vm}/meta'.format(vm=vm), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -218,15 +168,10 @@ def vm_remove(config, vm, delete_disks=False):
     API arguments: delete_disks={delete_disks}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}'.format(vm=vm))
-    response = requests.delete(
-        request_uri,
-        params={
-            'delete_disks': delete_disks
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'delete_disks': delete_disks
+    }
+    response = call_api(config, 'delete', '/vm/{vm}'.format(vm=vm), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -243,15 +188,10 @@ def vm_state(config, vm, target_state):
     API arguments: state={state}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/state'.format(vm=vm))
-    response = requests.post(
-        request_uri,
-        params={
-            'state': target_state,
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'state': target_state,
+    }
+    response = call_api(config, 'post', '/vm/{vm}/state'.format(vm=vm), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -268,17 +208,12 @@ def vm_node(config, vm, target_node, action, force=False):
     API arguments: node={target_node}, action={action}, force={force}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/node'.format(vm=vm))
-    response = requests.post(
-        request_uri,
-        params={
-            'node': target_node,
-            'action': action,
-            'force': force
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'node': target_node,
+        'action': action,
+        'force': force
+    }
+    response = call_api(config, 'post', '/vm/{vm}/node'.format(vm=vm), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -295,12 +230,7 @@ def vm_locks(config, vm):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/locks'.format(vm=vm))
-    response = requests.post(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'post', '/vm/{vm}/locks'.format(vm=vm))
 
     if response.status_code == 200:
         retstatus = True
@@ -317,13 +247,10 @@ def view_console_log(config, vm, lines=100):
     API arguments: lines={lines}
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
-    response = requests.get(
-        request_uri,
-        params={'lines': lines}
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'lines': lines
+    }
+    response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
     if response.status_code != 200:
         return False, response.json()['message']
@@ -344,15 +271,10 @@ def follow_console_log(config, vm, lines=10):
     API arguments: lines={lines}
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
-    request_uri = get_request_uri(config, '/vm/{vm}/console'.format(vm=vm))
-    response = requests.get(
-        request_uri,
-        params={'lines': lines}
-    )
-
-    debug_output(config, request_uri, response)
-
-    console_log = response.json()['data']
+    params = {
+        'lines': lines
+    }
+    response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
@@ -363,19 +285,7 @@ def follow_console_log(config, vm, lines=10):
 
     while True:
         # Grab the next line set
-        # Get the (initial) data from the API
-        response = requests.get(
-            '{}://{}{}{}'.format(
-                config['api_scheme'],
-                config['api_host'],
-                config['api_prefix'],
-                '/vm/{}/console'.format(vm)
-            ),
-            params={'lines': lines}
-        )
-    
-        debug_output(config, request_uri, response)
-    
+        response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
         new_console_log = response.json()['data']
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')
@@ -480,10 +390,7 @@ def format_info(config, domain_information, long_output):
         else:
             net_vni = re.sub('br', '', net['source'])
 
-        request_uri = get_request_uri(config, '/network/{net}'.format(net=net_vni))
-        response = requests.get(
-            request_uri
-        )
+        response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
         if response.status_code != 200 and net_vni != 'cluster':
             net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
         else:
@@ -632,10 +539,7 @@ def format_list(config, vm_list, raw):
         vm_net_colour = ''
         for net_vni in raw_net_list:
             if not net_vni in valid_net_list:
-                request_uri = get_request_uri(config, '/network/{net}'.format(net=net_vni))
-                response = requests.get(
-                    request_uri
-                )
+                response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
                 if response.status_code != 200 and net_vni != 'cluster':
                     vm_net_colour = ansiprint.red()
                 else:

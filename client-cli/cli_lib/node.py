@@ -20,28 +20,8 @@
 #
 ###############################################################################
 
-import requests
-
 import cli_lib.ansiprint as ansiprint
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
+from cli_lib.common import call_api
 
 #
 # Primary functions
@@ -54,15 +34,10 @@ def node_coordinator_state(config, node, action):
     API arguments: action={action}
     API schema: {"message": "{data}"}
     """
-    request_uri = get_request_uri(config, '/node/{node}/coordinator-state'.format(node=node))
-    response = requests.post(
-        request_uri,
-        params={
-            'state': action
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'state': action
+    }
+    response = call_api(config, 'post', '/node/{node}/coordinator-state'.format(node=node), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -79,16 +54,11 @@ def node_domain_state(config, node, action, wait):
     API arguments: action={action}, wait={wait}
     API schema: {"message": "{data}"}
     """
-    request_uri = get_request_uri(config, '/node/{node}/domain-state'.format(node=node))
-    response = requests.post(
-        request_uri,
-        params={
-            'state': action,
-            'wait': wait
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params={
+        'state': action,
+        'wait': wait
+    }
+    response = call_api(config, 'post', '/node/{node}/domain-state'.format(node=node), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -105,12 +75,7 @@ def node_info(config, node):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/node/{node}'.format(node=node))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/node/{node}'.format(node=node))
 
     if response.status_code == 200:
         return True, response.json()
@@ -125,20 +90,11 @@ def node_list(config, limit):
     API arguments: limit={limit}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
+    params = dict()
     if limit:
-        params = {
-            'limit': limit
-        }
-    else:
-        params = {}
+        params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/node')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/node', params=params)
 
     if response.status_code == 200:
         return True, response.json()

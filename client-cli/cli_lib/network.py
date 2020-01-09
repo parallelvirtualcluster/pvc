@@ -22,28 +22,9 @@
 
 import difflib
 import colorama
-import requests
 
 import cli_lib.ansiprint as ansiprint
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: POST {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
+from cli_lib.common import call_api
 
 def isValidMAC(macaddr):
     allowed = re.compile(r"""
@@ -82,12 +63,7 @@ def net_info(config, net):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/network/{net}'.format(net=net))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network/{net}'.format(net=net))
 
     if response.status_code == 200:
         return True, response.json()
@@ -106,13 +82,7 @@ def net_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/network')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -127,26 +97,21 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
     API arguments: lots
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network')
-    response = requests.post(
-        request_uri,
-        params={
-            'vni': vni,
-            'description': description,
-            'nettype': nettype,
-            'domain': domain,
-            'name_servers': name_servers,
-            'ip4_network': ip4_network,
-            'ip4_gateway': ip4_gateway,
-            'ip6_network': ip6_network,
-            'ip6_gateway': ip6_gateway,
-            'dhcp4': dhcp4_flag,
-            'dhcp4_start': dhcp4_start,
-            'dhcp4_end': dhcp4_end
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'vni': vni,
+        'description': description,
+        'nettype': nettype,
+        'domain': domain,
+        'name_servers': name_servers,
+        'ip4_network': ip4_network,
+        'ip4_gateway': ip4_gateway,
+        'ip6_network': ip6_network,
+        'ip6_gateway': ip6_gateway,
+        'dhcp4': dhcp4_flag,
+        'dhcp4_start': dhcp4_start,
+        'dhcp4_end': dhcp4_end
+    }
+    response = call_api(config, 'post', '/network', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -163,7 +128,6 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
     API arguments: lots
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network/{net}'.format(net=net))
     params = dict()
     if description is not None:
         params['description'] = description
@@ -186,12 +150,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
     if dhcp4_end is not None:
         params['dhcp4_end'] = dhcp4_end
 
-    response = requests.put(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'put', '/network/{net}'.format(net=net), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -208,12 +167,7 @@ def net_remove(config, net):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network/{net}'.format(net=net))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/network/{net}'.format(net=net))
 
     if response.status_code == 200:
         retstatus = True
@@ -233,12 +187,7 @@ def net_dhcp_info(config, net, mac):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/network/{net}/lease/{mac}'.format(net=net, mac=mac))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network/{net}/lease/{mac}'.format(net=net, mac=mac))
 
     if response.status_code == 200:
         return True, response.json()
@@ -259,13 +208,7 @@ def net_dhcp_list(config, net, limit, only_static=False):
     if only_static:
         params['static'] = True
 
-    request_uri = get_request_uri(config, '/network/{net}/lease'.format(net=net))
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network/{net}/lease'.format(net=net), params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -280,17 +223,12 @@ def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
     API arguments: macaddress=macaddr, ipaddress=ipaddr, hostname=hostname
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network/{net}/lease'.format(net=net))
-    response = requests.post(
-        request_uri,
-        params={
-            'macaddress': macaddr,
-            'ipaddress': ipaddr,
-            'hostname': hostname
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'macaddress': macaddr,
+        'ipaddress': ipaddr,
+        'hostname': hostname
+    }
+    response = call_api(config, 'post', '/network/{net}/lease'.format(net=net), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -307,12 +245,7 @@ def net_dhcp_remove(config, net, mac):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network/{net}/lease/{mac}'.format(net=net, mac=mac))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/network/{net}/lease/{mac}'.format(net=net, mac=mac))
 
     if response.status_code == 200:
         retstatus = True
@@ -332,12 +265,7 @@ def net_acl_info(config, net, description):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/network/{net}/acl/{description}'.format(net=net, description=description))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network/{net}/acl/{description}'.format(net=net, description=description))
 
     if response.status_code == 200:
         return True, response.json()
@@ -358,13 +286,7 @@ def net_acl_list(config, net, limit, direction):
     if direction is not None:
         params['direction'] = direction
 
-    request_uri = get_request_uri(config, '/network/{net}/acl'.format(net=net))
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/network/{net}/acl'.format(net=net), params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -386,13 +308,7 @@ def net_acl_add(config, net, direction, description, rule, order):
     if order is not None:
         params['order'] = order
 
-    request_uri = get_request_uri(config, '/network/{net}/acl'.format(net=net))
-    response = requests.post(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'post', '/network/{net}/acl'.format(net=net), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -409,12 +325,7 @@ def net_acl_remove(config, net, description):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/network/{net}/acl/{description}'.format(net=net, description=description))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/network/{net}/acl/{description}'.format(net=net, description=description))
 
     if response.status_code == 200:
         retstatus = True

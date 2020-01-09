@@ -24,32 +24,13 @@ import re
 import json
 import time
 import math
-import requests
 
 import cli_lib.ansiprint as ansiprint
-
-def debug_output(config, request_uri, response):
-    if config['debug']:
-        import click
-        click.echo('API endpoint: {}'.format(request_uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
+from cli_lib.common import call_api
 
 #
 # Supplemental functions
 #
-
-def get_request_uri(config, endpoint):
-    """
-    Return the fully-formed URI for {endpoint}
-    """
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        endpoint
-    )
-    return uri
 
 # Format byte sizes to/from human-readable units
 byte_unit_matrix = {
@@ -126,12 +107,7 @@ def ceph_status(config):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/status')
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/status')
 
     if response.status_code == 200:
         return True, response.json()
@@ -146,12 +122,7 @@ def ceph_util(config):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/utilization')
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/utilization')
 
     if response.status_code == 200:
         return True, response.json()
@@ -177,12 +148,7 @@ def ceph_osd_info(config, osd):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/osd/{osd}'.format(osd=osd))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/osd/{osd}'.format(osd=osd))
 
     if response.status_code == 200:
         return True, response.json()
@@ -201,13 +167,7 @@ def ceph_osd_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/storage/ceph/osd')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/osd', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -222,17 +182,12 @@ def ceph_osd_add(config, node, device, weight):
     API arguments: node={node}, device={device}, weight={weight}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/osd')
-    response = requests.post(
-        request_uri,
-        params={
-            'node': node,
-            'device': device,
-            'weight': weight
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'node': node,
+        'device': device,
+        'weight': weight
+    }
+    response = call_api(config, 'post', '/storage/ceph/osd', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -249,15 +204,10 @@ def ceph_osd_remove(config, osdid):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/osd/{osdid}'.format(osdid=osdid))
-    response = requests.delete(
-        request_uri,
-        params={
-            'yes-i-really-mean-it': 'yes'
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'yes-i-really-mean-it': 'yes'
+    }
+    response = call_api(config, 'delete', '/storage/ceph/osd/{osdid}'.format(osdid=osdid), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -274,15 +224,10 @@ def ceph_osd_state(config, osdid, state):
     API arguments: state={state}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/osd/{osdid}/state'.format(osdid=osdid))
-    response = requests.post(
-        request_uri,
-        params={
-            'state': state
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'state': state
+    }
+    response = call_api(config, 'post', '/storage/ceph/osd/{osdid}/state'.format(osdid=osdid), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -299,16 +244,11 @@ def ceph_osd_option(config, option, action):
     API arguments: option={option}, action={action}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/option')
-    response = requests.post(
-        request_uri,
-        params={
-            'option': option,
-            'action': action
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'option': option,
+        'action': action
+    }
+    response = call_api(config, 'post', '/storage/ceph/option', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -588,12 +528,7 @@ def ceph_pool_info(config, pool):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/pool/{pool}'.format(pool=pool))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/pool/{pool}'.format(pool=pool))
 
     if response.status_code == 200:
         return True, response.json()
@@ -612,13 +547,7 @@ def ceph_pool_list(config, limit):
     if limit:
         params['limit'] = limit
 
-    request_uri = get_request_uri(config, '/storage/ceph/pool')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/pool', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -633,17 +562,12 @@ def ceph_pool_add(config, pool, pgs, replcfg):
     API arguments: pool={pool}, pgs={pgs}, replcfg={replcfg}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/pool')
-    response = requests.post(
-        request_uri,
-        params={
-            'pool': pool,
-            'pgs': pgs,
-            'replcfg': replcfg
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'pool': pool,
+        'pgs': pgs,
+        'replcfg': replcfg
+    }
+    response = call_api(config, 'post', '/storage/ceph/pool', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -660,15 +584,10 @@ def ceph_pool_remove(config, pool):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/pool/{pool}'.format(pool=pool))
-    response = requests.delete(
-        request_uri,
-        params={
-            'yes-i-really-mean-it': 'yes'
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'yes-i-really-mean-it': 'yes'
+    }
+    response = call_api(config, 'delete', '/storage/ceph/pool/{pool}'.format(pool=pool), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -886,12 +805,7 @@ def ceph_volume_info(config, pool, volume):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
 
     if response.status_code == 200:
         return True, response.json()
@@ -912,13 +826,7 @@ def ceph_volume_list(config, limit, pool):
     if pool:
         params['pool'] = pool
 
-    request_uri = get_request_uri(config, '/storage/ceph/volume')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/volume', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -933,17 +841,12 @@ def ceph_volume_add(config, pool, volume, size):
     API arguments: volume={volume}, pool={pool}, size={size}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/volume')
-    response = requests.post(
-        request_uri,
-        params={
-            'volume': volume,
-            'pool': pool,
-            'size': size
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'volume': volume,
+        'pool': pool,
+        'size': size
+    }
+    response = call_api(config, 'post', '/storage/ceph/volume', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -960,12 +863,7 @@ def ceph_volume_remove(config, pool, volume):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
 
     if response.status_code == 200:
         retstatus = True
@@ -989,13 +887,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
     if new_size:
         params['new_size'] = new_size
 
-    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
-    response = requests.put(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'put', '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -1012,15 +904,10 @@ def ceph_volume_clone(config, pool, volume, new_volume):
     API arguments: new_volume={new_volume
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/volume/{pool}/{volume}/clone'.format(volume=volume, pool=pool))
-    response = requests.post(
-        request_uri,
-        params={
-            'new_volume': new_volume
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'new_volume': new_volume
+    }
+    response = call_api(config, 'post', '/storage/ceph/volume/{pool}/{volume}/clone'.format(volume=volume, pool=pool), params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -1155,12 +1042,7 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
     API arguments:
     API schema: {json_data_object}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
-    response = requests.get(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
 
     if response.status_code == 200:
         return True, response.json()
@@ -1183,13 +1065,7 @@ def ceph_snapshot_list(config, limit, volume, pool):
     if pool:
         params['pool'] = pool
 
-    request_uri = get_request_uri(config, '/storage/ceph/snapshot')
-    response = requests.get(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'get', '/storage/ceph/snapshot', params=params)
 
     if response.status_code == 200:
         return True, response.json()
@@ -1204,17 +1080,12 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
     API arguments: snapshot={snapshot}, volume={volume}, pool={pool}
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/snapshot')
-    response = requests.post(
-        request_uri,
-        params={
-            'snapshot': snapshot,
-            'volume': volume,
-            'pool': pool
-        }
-    )
-
-    debug_output(config, request_uri, response)
+    params = {
+        'snapshot': snapshot,
+        'volume': volume,
+        'pool': pool
+    }
+    response = call_api(config, 'post', '/storage/ceph/snapshot', params=params)
 
     if response.status_code == 200:
         retstatus = True
@@ -1231,12 +1102,7 @@ def ceph_snapshot_remove(config, pool, volume, snapshot):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
-    response = requests.delete(
-        request_uri
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'delete', '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
 
     if response.status_code == 200:
         retstatus = True
@@ -1258,13 +1124,7 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     if new_name:
         params['new_name'] = new_name
 
-    request_uri = get_request_uri(config, '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
-    response = requests.put(
-        request_uri,
-        params=params
-    )
-
-    debug_output(config, request_uri, response)
+    response = call_api(config, 'put', '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool), params=params)
 
     if response.status_code == 200:
         retstatus = True
