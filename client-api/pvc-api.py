@@ -172,8 +172,8 @@ def Authenticator(function):
 # Job functions
 #
 @celery.task(bind=True)
-def create_vm(self, vm_name, profile_name):
-    return api_provisioner.create_vm(self, vm_name, profile_name)
+def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True):
+    return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm)
 
 
 ##########################################################
@@ -5336,7 +5336,9 @@ api.add_resource(API_Provisioner_Profile_Element, '/provisioner/profile/<profile
 class API_Provisioner_Create_Root(Resource):
     @RequestParser([
         { 'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified" },
-        { 'name': 'profile', 'required': True, 'helpmsg': "A profile name must be specified" }
+        { 'name': 'profile', 'required': True, 'helpmsg': "A profile name must be specified" },
+        { 'name': 'define_vm' },
+        { 'name': 'start_vm' }
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5357,6 +5359,16 @@ class API_Provisioner_Create_Root(Resource):
             type: string
             required: true
             description: Profile name
+          - in: query
+            name: define_vm
+            type: boolean
+            required: false
+            description: Whether to define the VM on the cluster during provisioning
+          - in: query
+            name: start_vm
+            type: boolean
+            required: false
+            description: Whether to start the VM after provisioning
         responses:
           200:
             description: OK
@@ -5377,9 +5389,21 @@ class API_Provisioner_Create_Root(Resource):
         if code != 200:
             return { 'message': 'Profile "{}" is not valid.'.format(reqargs.get('profile')) }, 400
 
+        if strtobool(reqargs.get('define_vm', 'True')):
+            define_vm = True
+        else:
+            define_vm = False
+
+        if strtobool(reqargs.get('start_vm', 'True')):
+            start_vm = True
+        else:
+            start_vm = False
+
         task = create_vm.delay(
             reqargs.get('name', None),
-            reqargs.get('profile', None)
+            reqargs.get('profile', None),
+            define_vm=define_vm,
+            start_vm=start_vm
         )
         return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
