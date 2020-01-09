@@ -47,6 +47,7 @@ def initialize_cluster():
     transaction = zk_conn.transaction()
     transaction.create('/primary_node', 'none'.encode('ascii'))
     transaction.create('/upstream_ip', 'none'.encode('ascii'))
+    transaction.create('/maintenance', 'False'.encode('ascii'))
     transaction.create('/nodes', ''.encode('ascii'))
     transaction.create('/domains', ''.encode('ascii'))
     transaction.create('/networks', ''.encode('ascii'))
@@ -69,7 +70,7 @@ def initialize_cluster():
     return True
 
 #
-# Status function
+# Cluster functions
 #
 def cluster_status():
     """
@@ -80,6 +81,24 @@ def cluster_status():
     pvc_common.stopZKConnection(zk_conn)
 
     return retdata, 200
+
+def cluster_maintenance(maint_state='false'):
+    """
+    Set the cluster in or out of maintenance state
+    """
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_cluster.set_maintenance(zk_conn, maint_state)
+    pvc_common.stopZKConnection(zk_conn)
+
+    retdata = {
+        'message': retdata
+    }
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    return retdata, retcode
 
 #
 # Node functions

@@ -3054,15 +3054,40 @@ def provisioner_status(job):
     cleanup(retcode, retdata)
 
 
+###############################################################################
+# pvc maintenance
+###############################################################################
+@click.group(name='maintenance', short_help='Manage PVC cluster maintenance state.', context_settings=CONTEXT_SETTINGS)
+def cli_maintenance():
+    """
+    Manage the maintenance mode of the PVC cluster.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
+        exit(1)
 
+###############################################################################
+# pvc maintenance on
+###############################################################################
+@click.command(name='on', short_help='Enable cluster maintenance mode.')
+def maintenance_on():
+    """
+    Enable maintenance mode on the PVC cluster.
+    """
+    retcode, retdata = pvc_cluster.maintenance_mode(config, 'true')
+    cleanup(retcode, retdata)
 
-
-
-
-
-
-
-
+###############################################################################
+# pvc maintenance off
+###############################################################################
+@click.command(name='off', short_help='Disable cluster maintenance mode.')
+def maintenance_off():
+    """
+    Disable maintenance mode on the PVC cluster.
+    """
+    retcode, retdata = pvc_cluster.maintenance_mode(config, 'false')
+    cleanup(retcode, retdata)
 
 
 ###############################################################################
@@ -3291,12 +3316,16 @@ cli_provisioner.add_command(provisioner_profile)
 cli_provisioner.add_command(provisioner_create)
 cli_provisioner.add_command(provisioner_status)
 
+cli_maintenance.add_command(maintenance_on)
+cli_maintenance.add_command(maintenance_off)
+
 cli.add_command(cli_cluster)
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
 cli.add_command(cli_provisioner)
+cli.add_command(cli_maintenance)
 cli.add_command(status_cluster)
 cli.add_command(init_cluster)
 

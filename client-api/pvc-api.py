@@ -390,6 +390,37 @@ class API_Status(Resource):
             description: Bad request
         """
         return api_helper.cluster_status()
+
+    @RequestParser([
+        { 'name': 'state', 'choices': ('true', 'false'), 'required': True, 'helpmsg': "A valid state must be specified" }
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Set the cluster maintenance mode
+        ---
+        tags:
+          - node
+        parameters:
+          - in: query
+            name: state
+            type: boolean
+            required: true
+            description: The cluster maintenance state
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.cluster_maintenance(reqargs.get('state', 'false'))
+
 api.add_resource(API_Status, '/status')
 
 

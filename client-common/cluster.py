@@ -20,8 +20,9 @@
 #
 ###############################################################################
 
-import click
 import json
+
+from distutils.util import strtobool
 
 import client_lib.ansiprint as ansiprint
 import client_lib.zkhandler as zkhandler
@@ -31,7 +32,24 @@ import client_lib.node as pvc_node
 import client_lib.network as pvc_network
 import client_lib.ceph as pvc_ceph
 
+def set_maintenance(zk_conn, maint_state):
+    try:
+        if maint_state == 'true':
+            zkhandler.writedata(zk_conn, {'/maintenance': 'true'})
+            return True, 'Successfully set cluster in maintenance mode'
+        else:
+            zkhandler.writedata(zk_conn, {'/maintenance': 'false'})
+            return True, 'Successfully set cluster in normal mode'
+    except:
+        return False, 'Failed to set cluster maintenance state'
+
 def getClusterInformation(zk_conn):
+    # Get cluster maintenance state
+    try:
+        maint_state = zkhandler.readdata(zk_conn, '/maintenance')
+    except:
+        maint_state = 'false'
+
     # Get node information object list
     retcode, node_list = pvc_node.get_list(zk_conn, None)
 
@@ -102,7 +120,9 @@ def getClusterInformation(zk_conn):
         ceph_osd_report_status[index] = up_texts[ceph_osd_up] + ',' + in_texts[ceph_osd_in]
 
     # Find out the overall cluster health; if any element of a healthy_status is false, it's unhealthy
-    if False in node_healthy_status or False in vm_healthy_status or False in ceph_osd_healthy_status:
+    if maint_state == 'true':
+        cluster_health = 'Maintenance'
+    elif False in node_healthy_status or False in vm_healthy_status or False in ceph_osd_healthy_status:
         cluster_health = 'Degraded'
     else:
         cluster_health = 'Optimal'
@@ -173,75 +193,3 @@ def get_info(zk_conn):
         return True, cluster_information
     else:
         return False, 'ERROR: Failed to obtain cluster information!'
-
-def format_info(cluster_information, oformat):
-    if oformat == 'json':
-        print(json.dumps(cluster_information))
-        return
-
-    if oformat == 'json-pretty':
-        print(json.dumps(cluster_information, indent=4))
-        return
-
-    # Plain formatting, i.e. human-readable
-    if cluster_information['health'] == 'Optimal':
-        health_colour = ansiprint.green()
-    else:
-        health_colour = ansiprint.yellow()
-
-    ainformation = []
-    ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
-    ainformation.append('')
-    ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
-    ainformation.append('{}Primary node:{}        {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['primary_node']))
-    ainformation.append('{}Cluster upstream IP:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['upstream_ip']))
-    ainformation.append('')
-    ainformation.append('{}Total nodes:{}     {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['total']))
-    ainformation.append('{}Total VMs:{}       {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['total']))
-    ainformation.append('{}Total networks:{}  {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['networks']))
-    ainformation.append('{}Total OSDs:{}      {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds']['total']))
-    ainformation.append('{}Total pools:{}     {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['pools']))
-    ainformation.append('{}Total volumes:{}   {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['volumes']))
-    ainformation.append('{}Total snapshots:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['snapshots']))
-
-    nodes_string = '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['run,ready'], cluster_information['nodes']['total'], ansiprint.green(), ansiprint.end())
-    for state, count in cluster_information['nodes'].items():
-        if state == 'total' or state == 'run,ready':
-            continue
-
-        nodes_string += ' {}/{} {}{}{}'.format(count, cluster_information['nodes']['total'], ansiprint.yellow(), state, ansiprint.end())
-
-    ainformation.append('')
-    ainformation.append(nodes_string)
-
-    vms_string = '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['start'], cluster_information['vms']['total'], ansiprint.green(), ansiprint.end())
-    for state, count in cluster_information['vms'].items():
-        if state == 'total' or state == 'start':
-            continue
-
-        if state == 'disable':
-            colour = ansiprint.blue()
-        else:
-            colour = ansiprint.yellow()
-
-        vms_string += ' {}/{} {}{}{}'.format(count, cluster_information['vms']['total'], colour, state, ansiprint.end())
-
-    ainformation.append('')
-    ainformation.append(vms_string)
-
-    if cluster_information['osds']['total'] > 0:
-        osds_string = '{}Ceph OSDs:{} {}/{} {}up,in{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds']['up,in'], cluster_information['osds']['total'], ansiprint.green(), ansiprint.end())
-        for state, count in cluster_information['osds'].items():
-            if state == 'total' or state == 'up,in':
-                continue
-
-            osds_string += ' {}/{} {}{}{}'.format(count, cluster_information['osds']['total'], ansiprint.yellow(), state, ansiprint.end())
-
-        ainformation.append('')
-        ainformation.append(osds_string)
-
-    information = '\n'.join(ainformation)
-    click.echo(information)
-
-    click.echo('')
-        

@@ -3653,6 +3653,36 @@
                 "tags": [
                     "root"
                 ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The cluster maintenance state",
+                        "in": "query",
+                        "name": "state",
+                        "required": true,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the cluster maintenance mode",
+                "tags": [
+                    "node"
+                ]
             }
         },
         "/api/v1/storage/ceph/option": {

@@ -42,6 +42,26 @@ def initialize(config):
 
     return retstatus, response.json()['message']
 
+def maintenance_mode(config, state):
+    """
+    Enable or disable PVC cluster maintenance mode
+
+    API endpoint: POST /api/v1/status
+    API arguments: {state}={state}
+    API schema: {json_data_object}
+    """
+    params = {
+        'state': state
+    }
+    response = call_api(config, 'post', '/status', params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def get_info(config):
     """
     Get status of the PVC cluster
@@ -67,6 +87,8 @@ def format_info(cluster_information, oformat):
     # Plain formatting, i.e. human-readable
     if cluster_information['health'] == 'Optimal':
         health_colour = ansiprint.green()
+    elif cluster_information['health'] == 'Maintenance':
+        health_colour = ansiprint.blue()
     else:
         health_colour = ansiprint.yellow()
 
