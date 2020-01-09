@@ -975,11 +975,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     for volume in vm_data['volumes']:
         if volume['source_volume'] is not None:
             if not volume['pool'] in pools:
-                pools[volume['pool']], status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])['disk_size_gb']
+                volume_data, status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
+                pools[volume['pool']] = volume_data['disk_size_gb']
                 if not status:
                     raise ClusterError('The source volume {}/{} could not be found'.format(volume['pool'], volume['source_volume']))
             else:
-                pools[volume['pool']], status += pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])['disk_size_gb']
+                volume_data, status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
+                pools[volume['pool']] += volume_data['disk_size_gb']
                 if not status:
                     raise ClusterError('The source volume {}/{} could not be found'.format(volume['pool'], volume['source_volume']))
         else:
