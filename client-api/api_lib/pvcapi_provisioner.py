@@ -973,10 +973,20 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     # Verify that there is enough disk space free to provision all VM disks
     pools = dict()
     for volume in vm_data['volumes']:
-        if not volume['pool'] in pools:
-            pools[volume['pool']] = volume['disk_size_gb']
+        if volume['source_volume'] is not None:
+            if not volume['pool'] in pools:
+                pools[volume['pool']], status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])['disk_size_gb']
+                if not status:
+                    raise ClusterError('The source volume {}/{} could not be found'.format(volume['pool'], volume['source_volume']))
+            else:
+                pools[volume['pool']], status += pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])['disk_size_gb']
+                if not status:
+                    raise ClusterError('The source volume {}/{} could not be found'.format(volume['pool'], volume['source_volume']))
         else:
-            pools[volume['pool']] += volume['disk_size_gb']
+            if not volume['pool'] in pools:
+                pools[volume['pool']] = volume['disk_size_gb']
+            else:
+                pools[volume['pool']] += volume['disk_size_gb']
 
     for pool in pools:
         pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
@@ -993,6 +1003,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     # Verify that every specified filesystem is valid
     used_filesystems = list()
     for volume in vm_data['volumes']:
+        if volume['source_volume'] is not None:
+            continue
         if volume['filesystem'] and volume['filesystem'] not in used_filesystems:
             used_filesystems.append(volume['filesystem'])
 
@@ -1181,10 +1193,16 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
     
     for volume in vm_data['volumes']:
-        success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
-        print(message)
-        if not success:
-            raise ClusterError('Failed to create volume "{}"'.format(volume['disk_id']))
+        if volume['source_volume'] is not None:
+            success, message = pvc_ceph.clone_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), volume['source_volume'])
+            print(message)
+            if not success:
+                raise ClusterError('Failed to clone volume "{}" to "{}"'.format(volume['source_volume'], volume['disk_id']))
+        else:
+            success, message = pvc_ceph.add_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), "{}G".format(volume['disk_size_gb']))
+            print(message)
+            if not success:
+                raise ClusterError('Failed to create volume "{}"'.format(volume['disk_id']))
 
     # Phase 7 - disk mapping
     #  * Map each volume to the local host in order
@@ -1195,6 +1213,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
 
     for volume in vm_data['volumes']:
+        if volume['source_volume'] is not None:
+            continue
+
         if not volume['filesystem']:
             continue
 
@@ -1232,6 +1253,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         temp_dir = stdout.strip()
 
         for volume in vm_data['volumes']:
+            if volume['source_volume'] is not None:
+                continue
+
             if not volume['mountpoint'] or volume['mountpoint'] == 'swap':
                 continue
 
@@ -1281,6 +1305,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
 
     for volume in list(reversed(vm_data['volumes'])):
+        if volume['source_volume'] is not None:
+            continue
+
         if is_script_install:
             # Unmount the volume
             if volume['mountpoint'] and volume['mountpoint'] != 'swap':
