@@ -2960,15 +2960,38 @@ def provisioner_profile_remove(name, confirm_flag):
     'profile'
 )
 @click.option(
+    '-d/-D', '--define/--no-define', 'define_flag',
+    is_flag=True, default=True, show_default=True,
+    help='Define the VM automatically during provisioning.'
+}
+@click.option(
+    '-s/-S', '--start/--no-start', 'start_flag',
+    is_flag=True, default=True, show_default=True,
+    help='Start the VM automatically upon completion of provisioning.'
+}
+@click.option(
     '-w', '--wait', 'wait_flag',
     is_flag=True, default=False,
     help='Wait for provisioning to complete, showing progress'
 )
-def provisioner_create(name, profile, wait_flag):
+def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
     """
     Create a new VM NAME with profile PROFILE.
+
+    The "--no-start" flag can be used to prevent automatic startup of the VM once provisioning
+    is completed. This can be useful for the administrator to preform additional actions to
+    the VM after provisioning is completed. Note that the VM will remain in "provision" state
+    until its state is explicitly changed (e.g. with "pvc vm start").
+
+    The "--no-define" flag implies "--no-start", and can be used to prevent definition of the
+    created VM on the PVC cluster. This can be useful for the administrator to create a "template"
+    set of VM disks via the normal provisioner, but without ever starting the resulting VM. The
+    resulting disk(s) can then be used as source volumes in other disk templates.
     """
-    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag)
+    if not define_flag:
+        start_flag = False
+
+    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag, define_flag, start_flag)
 
     if retcode and wait_flag:
         task_id = retdata
