@@ -77,6 +77,7 @@ def call_api(config, operation, request_uri, params=None, data=None):
         click.echo('API endpoint: {}'.format(uri), err=True)
         click.echo('Response code: {}'.format(response.status_code), err=True)
         click.echo('Response headers: {}'.format(response.headers), err=True)
+        click.echo(err=True)
     # Return the response object
     return response
 
