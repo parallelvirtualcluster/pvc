@@ -2963,12 +2963,12 @@ def provisioner_profile_remove(name, confirm_flag):
     '-d/-D', '--define/--no-define', 'define_flag',
     is_flag=True, default=True, show_default=True,
     help='Define the VM automatically during provisioning.'
-}
+)
 @click.option(
     '-s/-S', '--start/--no-start', 'start_flag',
     is_flag=True, default=True, show_default=True,
     help='Start the VM automatically upon completion of provisioning.'
-}
+)
 @click.option(
     '-w', '--wait', 'wait_flag',
     is_flag=True, default=False,
