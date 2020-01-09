@@ -2148,6 +2148,20 @@
                         "name": "profile",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "description": "Whether to define the VM on the cluster during provisioning",
+                        "in": "query",
+                        "name": "define_vm",
+                        "required": false,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to start the VM after provisioning",
+                        "in": "query",
+                        "name": "start_vm",
+                        "required": false,
+                        "type": "boolean"
                     }
                 ],
                 "responses": {
