@@ -1392,22 +1392,7 @@ def cli_storage():
         exit(1)
 
 ###############################################################################
-# pvc storage ceph
-###############################################################################
-@click.group(name='ceph', short_help='Manage the PVC Ceph storage cluster.', context_settings=CONTEXT_SETTINGS)
-def cli_ceph():
-    """
-    Manage the Ceph storage of the PVC cluster.
-
-    NOTE: The PVC Ceph interface is limited to the most common tasks. Any other administrative tasks must be performed on a node directly.
-    """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvc-api.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
-
-###############################################################################
-# pvc storage ceph status
+# pvc storage status
 ###############################################################################
 @click.command(name='status', short_help='Show storage cluster status.')
 def ceph_status():
@@ -1421,7 +1406,7 @@ def ceph_status():
     cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph util
+# pvc storage util
 ###############################################################################
 @click.command(name='util', short_help='Show storage cluster utilization.')
 def ceph_util():
@@ -1435,7 +1420,7 @@ def ceph_util():
     cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph osd
+# pvc storage osd
 ###############################################################################
 @click.group(name='osd', short_help='Manage OSDs in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
 def ceph_osd():
@@ -1448,7 +1433,7 @@ def ceph_osd():
         exit(1)
 
 ###############################################################################
-# pvc storage ceph osd add
+# pvc storage osd add
 ###############################################################################
 @click.command(name='add', short_help='Add new OSD.')
 @click.argument(
@@ -1481,7 +1466,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd remove
+# pvc storage osd remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove OSD.')
 @click.argument(
@@ -1508,7 +1493,7 @@ def ceph_osd_remove(osdid, confirm_flag):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd in
+# pvc storage osd in
 ###############################################################################
 @click.command(name='in', short_help='Online OSD.')
 @click.argument(
@@ -1523,7 +1508,7 @@ def ceph_osd_in(osdid):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd out
+# pvc storage osd out
 ###############################################################################
 @click.command(name='out', short_help='Offline OSD.')
 @click.argument(
@@ -1538,7 +1523,7 @@ def ceph_osd_out(osdid):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd set
+# pvc storage osd set
 ###############################################################################
 @click.command(name='set', short_help='Set property.')
 @click.argument(
@@ -1557,7 +1542,7 @@ def ceph_osd_set(osd_property):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd unset
+# pvc storage osd unset
 ###############################################################################
 @click.command(name='unset', short_help='Unset property.')
 @click.argument(
@@ -1576,7 +1561,7 @@ def ceph_osd_unset(osd_property):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph osd list
+# pvc storage osd list
 ###############################################################################
 @click.command(name='list', short_help='List cluster OSDs.')
 @click.argument(
@@ -1593,7 +1578,7 @@ def ceph_osd_list(limit):
     cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph pool
+# pvc storage pool
 ###############################################################################
 @click.group(name='pool', short_help='Manage RBD pools in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
 def ceph_pool():
@@ -1606,7 +1591,7 @@ def ceph_pool():
         exit(1)
 
 ###############################################################################
-# pvc storage ceph pool add
+# pvc storage pool add
 ###############################################################################
 @click.command(name='add', short_help='Add new RBD pool.')
 @click.argument(
@@ -1633,7 +1618,7 @@ def ceph_pool_add(name, pgs, replcfg):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph pool remove
+# pvc storage pool remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove RBD pool.')
 @click.argument(
@@ -1660,7 +1645,7 @@ def ceph_pool_remove(name, confirm_flag):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph pool list
+# pvc storage pool list
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD pools.')
 @click.argument(
@@ -1677,7 +1662,7 @@ def ceph_pool_list(limit):
     cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph volume
+# pvc storage volume
 ###############################################################################
 @click.group(name='volume', short_help='Manage RBD volumes in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
 def ceph_volume():
@@ -1690,7 +1675,7 @@ def ceph_volume():
         exit(1)
 
 ###############################################################################
-# pvc storage ceph volume add
+# pvc storage volume add
 ###############################################################################
 @click.command(name='add', short_help='Add new RBD volume.')
 @click.argument(
@@ -1711,7 +1696,7 @@ def ceph_volume_add(pool, name, size):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume remove
+# pvc storage volume remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove RBD volume.')
 @click.argument(
@@ -1741,7 +1726,7 @@ def ceph_volume_remove(pool, name, confirm_flag):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume resize
+# pvc storage volume resize
 ###############################################################################
 @click.command(name='resize', short_help='Resize RBD volume.')
 @click.argument(
@@ -1761,7 +1746,7 @@ def ceph_volume_resize(pool, name, size):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume rename
+# pvc storage volume rename
 ###############################################################################
 @click.command(name='rename', short_help='Rename RBD volume.')
 @click.argument(
@@ -1781,7 +1766,7 @@ def ceph_volume_rename(pool, name, new_name):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume clone
+# pvc storage volume clone
 ###############################################################################
 @click.command(name='clone', short_help='Clone RBD volume.')
 @click.argument(
@@ -1801,7 +1786,7 @@ def ceph_volume_clone(pool, name, new_name):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume list
+# pvc storage volume list
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volumes.')
 @click.argument(
@@ -1823,7 +1808,7 @@ def ceph_volume_list(limit, pool):
     cleanup(retcode, retdata)
 
 ###############################################################################
-# pvc storage ceph volume snapshot
+# pvc storage volume snapshot
 ###############################################################################
 @click.group(name='snapshot', short_help='Manage RBD volume snapshots in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
 def ceph_volume_snapshot():
@@ -1836,7 +1821,7 @@ def ceph_volume_snapshot():
         exit(1)
 
 ###############################################################################
-# pvc storage ceph volume snapshot add
+# pvc storage volume snapshot add
 ###############################################################################
 @click.command(name='add', short_help='Add new RBD volume snapshot.')
 @click.argument(
@@ -1857,7 +1842,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume snapshot rename
+# pvc storage volume snapshot rename
 ###############################################################################
 @click.command(name='rename', short_help='Rename RBD volume snapshot.')
 @click.argument(
@@ -1880,7 +1865,7 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume snapshot remove
+# pvc storage volume snapshot remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove RBD volume snapshot.')
 @click.argument(
@@ -1913,7 +1898,7 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     cleanup(retcode, retmsg)
 
 ###############################################################################
-# pvc storage ceph volume snapshot list
+# pvc storage volume snapshot list
 ###############################################################################
 @click.command(name='list', short_help='List cluster RBD volume shapshots.')
 @click.argument(
@@ -3261,13 +3246,11 @@ ceph_volume_snapshot.add_command(ceph_volume_snapshot_rename)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_remove)
 ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
 
-cli_ceph.add_command(ceph_status)
-cli_ceph.add_command(ceph_util)
-cli_ceph.add_command(ceph_osd)
-cli_ceph.add_command(ceph_pool)
-cli_ceph.add_command(ceph_volume)
-
-cli_storage.add_command(cli_ceph)
+cli_storage.add_command(ceph_status)
+cli_storage.add_command(ceph_util)
+cli_storage.add_command(ceph_osd)
+cli_storage.add_command(ceph_pool)
+cli_storage.add_command(ceph_volume)
 
 provisioner_template_system.add_command(provisioner_template_system_list)
 provisioner_template_system.add_command(provisioner_template_system_add)
