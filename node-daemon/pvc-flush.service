@@ -9,10 +9,10 @@ PartOf = pvcd.target
 Type = oneshot
 RemainAfterExit = true
 WorkingDirectory = /usr/share/pvc
-ExecPreStart = /bin/sleep 30
-ExecStart = /usr/bin/pvc node unflush --wait
-ExecStop = /usr/bin/pvc node flush --wait
-ExecPostStop = /bin/sleep 30
+ExecStartPre = /bin/sleep 30
+ExecStart = /usr/bin/pvc -c local node unflush --wait
+ExecStop = /usr/bin/pvc -c local node flush --wait
+ExecStopPost = /bin/sleep 30
 
 [Install]
 WantedBy = pvcd.target
