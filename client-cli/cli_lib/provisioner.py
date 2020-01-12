@@ -23,6 +23,7 @@
 import time
 import re
 import subprocess
+import ast
 
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
@@ -453,47 +454,55 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag):
         
     return retvalue, retdata
 
-def task_status(config, task_id, is_watching=False):
+def task_status(config, task_id=None, is_watching=False):
     """
-    Get information about provisioner job {task_id}
+    Get information about provisioner job {task_id} or all tasks if None
 
     API endpoint: GET /api/v1/provisioner/status
     API arguments:
     API schema: {json_data_object}
     """
-    response = call_api(config, 'get', '/provisioner/status/{task_id}'.format(task_id=task_id))
+    if task_id is not None:
+        response = call_api(config, 'get', '/provisioner/status/{task_id}'.format(task_id=task_id))
+    else:
+        response = call_api(config, 'get', '/provisioner/status')
 
-    if response.status_code == 200:
+    if task_id is not None:
+        if response.status_code == 200:
+            retvalue = True
+            respjson = response.json()
+
+            if is_watching:
+                # Just return the raw JSON to the watching process instead of formatting it
+                return respjson
+
+            job_state = respjson['state']
+            if job_state == 'RUNNING':
+                retdata = 'Job state: RUNNING\nStage: {}/{}\nStatus: {}'.format(
+                    respjson['current'],
+                    respjson['total'],
+                    respjson['status']
+                )
+            elif job_state == 'FAILED':
+                retdata = 'Job state: FAILED\nStatus: {}'.format(
+                    respjson['status']
+                )
+            elif job_state == 'COMPLETED':
+                retdata = 'Job state: COMPLETED\nStatus: {}'.format(
+                    respjson['status']
+                )
+            else:
+                retdata = 'Job state: {}\nStatus: {}'.format(
+                    respjson['state'],
+                    respjson['status']
+                )
+        else:
+            retvalue = False
+            retdata = response.json()['message']
+    else:
         retvalue = True
         respjson = response.json()
-
-        if is_watching:
-            # Just return the raw JSON to the watching process instead of formatting it
-            return respjson
-
-        job_state = respjson['state']
-        if job_state == 'RUNNING':
-            retdata = 'Job state: RUNNING\nStage: {}/{}\nStatus: {}'.format(
-                respjson['current'],
-                respjson['total'],
-                respjson['status']
-            )
-        elif job_state == 'FAILED':
-            retdata = 'Job state: FAILED\nStatus: {}'.format(
-                respjson['status']
-            )
-        elif job_state == 'COMPLETED':
-            retdata = 'Job state: COMPLETED\nStatus: {}'.format(
-                respjson['status']
-            )
-        else:
-            retdata = 'Job state: {}\nStatus: {}'.format(
-                respjson['state'],
-                respjson['status']
-            )
-    else:
-        retvalue = False
-        retdata = response.json()['message']
+        retdata = format_list_task(respjson)
 
     return retvalue, retdata
 
@@ -1142,3 +1151,123 @@ Data: {profile_userdata: <{profile_userdata_length}} \
         )
 
     return '\n'.join([profile_list_output_header] + profile_list_output)
+
+def format_list_task(task_data_raw):
+    # Format the Celery data into a more useful data structure
+    task_data = list()
+    for task_type in ['active', 'reserved', 'scheduled']:
+        type_data = task_data_raw[task_type]
+        if not type_data:
+            type_data = dict()
+        for task_host in type_data:
+            for task_job in task_data_raw[task_type][task_host]:
+                task = dict()
+                if task_type == 'reserved':
+                    task['type'] = 'pending'
+                else:
+                    task['type'] = task_type
+                task['worker'] = task_host
+                task['id'] = task_job.get('id')
+                task_args = ast.literal_eval(task_job.get('args'))
+                task['vm_name'] = task_args[0]
+                task['vm_profile'] = task_args[1]
+                task_kwargs = ast.literal_eval(task_job.get('kwargs'))
+                task['vm_define'] = str(bool(task_kwargs['define_vm']))
+                task['vm_start'] = str(bool(task_kwargs['start_vm']))
+                task_data.append(task)
+
+    task_list_output = []
+
+    # Determine optimal column widths
+    task_id_length = 3
+    task_type_length = 7
+    task_vm_name_length = 5
+    task_vm_profile_length = 8
+    task_vm_define_length = 8
+    task_vm_start_length = 7
+    task_worker_length = 8
+
+    for task in task_data:
+        # task_id column
+        _task_id_length = len(str(task['id'])) + 1
+        if _task_id_length > task_id_length:
+            task_id_length = _task_id_length
+        # task_type column
+        _task_type_length = len(str(task['type'])) + 1
+        if _task_type_length > task_type_length:
+            task_type_length = _task_type_length
+        # task_vm_name column
+        _task_vm_name_length = len(str(task['vm_name'])) + 1
+        if _task_vm_name_length > task_vm_name_length:
+            task_vm_name_length = _task_vm_name_length
+        # task_vm_profile column
+        _task_vm_profile_length = len(str(task['vm_profile'])) + 1
+        if _task_vm_profile_length > task_vm_profile_length:
+            task_vm_profile_length = _task_vm_profile_length
+        # task_vm_define column
+        _task_vm_define_length = len(str(task['vm_define'])) + 1
+        if _task_vm_define_length > task_vm_define_length:
+            task_vm_define_length = _task_vm_define_length
+        # task_vm_start column
+        _task_vm_start_length = len(str(task['vm_start'])) + 1
+        if _task_vm_start_length > task_vm_start_length:
+            task_vm_start_length = _task_vm_start_length
+        # task_worker column
+        _task_worker_length = len(str(task['worker'])) + 1
+        if _task_worker_length > task_worker_length:
+            task_worker_length = _task_worker_length
+
+    # Format the string (header)
+    task_list_output_header = '{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+{task_worker: <{task_worker_length}} \
+VM: {task_vm_name: <{task_vm_name_length}} \
+{task_vm_profile: <{task_vm_profile_length}} \
+{task_vm_define: <{task_vm_define_length}} \
+{task_vm_start: <{task_vm_start_length}}{end_bold}'.format(
+            task_id_length=task_id_length,
+            task_type_length=task_type_length,
+            task_worker_length=task_worker_length,
+            task_vm_name_length=task_vm_name_length,
+            task_vm_profile_length=task_vm_profile_length,
+            task_vm_define_length=task_vm_define_length,
+            task_vm_start_length=task_vm_start_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            task_id='ID',
+            task_type='Status',
+            task_worker='Worker',
+            task_vm_name='Name',
+            task_vm_profile='Profile',
+            task_vm_define='Define?',
+            task_vm_start='Start?'
+        )
+
+    # Format the string (elements)
+    for task in sorted(task_data, key=lambda i: i.get('type', None)):
+        task_list_output.append(
+            '{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+{task_worker: <{task_worker_length}} \
+    {task_vm_name: <{task_vm_name_length}} \
+{task_vm_profile: <{task_vm_profile_length}} \
+{task_vm_define: <{task_vm_define_length}} \
+{task_vm_start: <{task_vm_start_length}}{end_bold}'.format(
+                task_id_length=task_id_length,
+                task_type_length=task_type_length,
+                task_worker_length=task_worker_length,
+                task_vm_name_length=task_vm_name_length,
+                task_vm_profile_length=task_vm_profile_length,
+                task_vm_define_length=task_vm_define_length,
+                task_vm_start_length=task_vm_start_length,
+                bold='',
+                end_bold='',
+                task_id=task['id'],
+                task_type=task['type'],
+                task_worker=task['worker'],
+                task_vm_name=task['vm_name'],
+                task_vm_profile=task['vm_profile'],
+                task_vm_define=task['vm_define'],
+                task_vm_start=task['vm_start']
+            )
+        )
+
+    return '\n'.join([task_list_output_header] + task_list_output)

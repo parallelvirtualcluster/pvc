@@ -3029,11 +3029,11 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
 ###############################################################################
 @click.command(name='status', short_help='Show status of provisioner job.')
 @click.argument(
-    'job'
+    'job', required=False, default=None
 )
 def provisioner_status(job):
     """
-    Show status of provisioner job JOB.
+    Show status of provisioner job JOB or a list of jobs.
     """
     retcode, retdata = pvc_provisioner.task_status(config, job)
     cleanup(retcode, retdata)

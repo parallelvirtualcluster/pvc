@@ -2568,6 +2568,37 @@
                 ]
             }
         },
+        "/api/v1/provisioner/status": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "properties": {
+                                "active": {
+                                    "description": "Celery app.control.inspect active tasks",
+                                    "type": "object"
+                                },
+                                "reserved": {
+                                    "description": "Celery app.control.inspect reserved tasks",
+                                    "type": "object"
+                                },
+                                "scheduled": {
+                                    "description": "Celery app.control.inspect scheduled tasks",
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "View status of provisioner Celery queue",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
         "/api/v1/provisioner/status/{task_id}": {
             "get": {
                 "description": "",

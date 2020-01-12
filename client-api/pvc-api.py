@@ -35,6 +35,7 @@ from functools import wraps
 from flask_restful import Resource, Api, reqparse, abort
 
 from celery import Celery
+from celery.task.control import inspect
 
 import api_lib.pvcapi_helper as api_helper
 import api_lib.pvcapi_provisioner as api_provisioner
@@ -5438,6 +5439,40 @@ class API_Provisioner_Create_Root(Resource):
         )
         return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
+
+# /provisioner/status
+class API_Provisioner_Status_Root(Resource):
+    @Authenticator
+    def get(self):
+        """
+        View status of provisioner Celery queue
+        ---
+        tags:
+          - provisioner
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                active:
+                  type: object
+                  description: Celery app.control.inspect active tasks
+                reserved:
+                  type: object
+                  description: Celery app.control.inspect reserved tasks
+                scheduled:
+                  type: object
+                  description: Celery app.control.inspect scheduled tasks
+        """
+        queue = celery.control.inspect(timeout=0.1)
+        response = {
+            'scheduled': queue.scheduled(),
+            'active': queue.active(),
+            'reserved': queue.reserved()
+        }
+        return response
+api.add_resource(API_Provisioner_Status_Root, '/provisioner/status')
 
 # /provisioner/status/<task_id>
 class API_Provisioner_Status_Element(Resource):
