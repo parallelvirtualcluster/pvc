@@ -3036,6 +3036,8 @@ def provisioner_status(job):
     Show status of provisioner job JOB or a list of jobs.
     """
     retcode, retdata = pvc_provisioner.task_status(config, job)
+    if job is None and retcode:
+        retdata = pvc_provisioner.format_list_task(retdata)
     cleanup(retcode, retdata)
 
 

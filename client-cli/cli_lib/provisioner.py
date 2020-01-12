@@ -501,8 +501,30 @@ def task_status(config, task_id=None, is_watching=False):
             retdata = response.json()['message']
     else:
         retvalue = True
-        respjson = response.json()
-        retdata = format_list_task(respjson)
+        task_data_raw = response.json()
+        # Format the Celery data into a more useful data structure
+        task_data = list()
+        for task_type in ['active', 'reserved', 'scheduled']:
+            type_data = task_data_raw[task_type]
+            if not type_data:
+                type_data = dict()
+            for task_host in type_data:
+                for task_job in task_data_raw[task_type][task_host]:
+                    task = dict()
+                    if task_type == 'reserved':
+                        task['type'] = 'pending'
+                    else:
+                        task['type'] = task_type
+                    task['worker'] = task_host
+                    task['id'] = task_job.get('id')
+                    task_args = ast.literal_eval(task_job.get('args'))
+                    task['vm_name'] = task_args[0]
+                    task['vm_profile'] = task_args[1]
+                    task_kwargs = ast.literal_eval(task_job.get('kwargs'))
+                    task['vm_define'] = str(bool(task_kwargs['define_vm']))
+                    task['vm_start'] = str(bool(task_kwargs['start_vm']))
+                    task_data.append(task)
+        retdata = task_data
 
     return retvalue, retdata
 
@@ -1152,30 +1174,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
 
     return '\n'.join([profile_list_output_header] + profile_list_output)
 
-def format_list_task(task_data_raw):
-    # Format the Celery data into a more useful data structure
-    task_data = list()
-    for task_type in ['active', 'reserved', 'scheduled']:
-        type_data = task_data_raw[task_type]
-        if not type_data:
-            type_data = dict()
-        for task_host in type_data:
-            for task_job in task_data_raw[task_type][task_host]:
-                task = dict()
-                if task_type == 'reserved':
-                    task['type'] = 'pending'
-                else:
-                    task['type'] = task_type
-                task['worker'] = task_host
-                task['id'] = task_job.get('id')
-                task_args = ast.literal_eval(task_job.get('args'))
-                task['vm_name'] = task_args[0]
-                task['vm_profile'] = task_args[1]
-                task_kwargs = ast.literal_eval(task_job.get('kwargs'))
-                task['vm_define'] = str(bool(task_kwargs['define_vm']))
-                task['vm_start'] = str(bool(task_kwargs['start_vm']))
-                task_data.append(task)
-
+def format_list_task(task_data):
     task_list_output = []
 
     # Determine optimal column widths
