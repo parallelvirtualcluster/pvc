@@ -1179,7 +1179,7 @@ def format_list_task(task_data_raw):
     task_list_output = []
 
     # Determine optimal column widths
-    task_id_length = 3
+    task_id_length = 7
     task_type_length = 7
     task_vm_name_length = 5
     task_vm_profile_length = 8
@@ -1233,7 +1233,7 @@ VM: {task_vm_name: <{task_vm_name_length}} \
             task_vm_start_length=task_vm_start_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            task_id='ID',
+            task_id='Job ID',
             task_type='Status',
             task_worker='Worker',
             task_vm_name='Name',
