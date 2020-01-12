@@ -68,35 +68,35 @@ All steps in this and following sections can be performed using either the CLI c
 0. Determine the Ceph OSD block devices on each host, via an `ssh` shell. For instance, check `/dev/disk/by-path` to show the block devices by their physical SAS/SATA bus location, and obtain the relevant `/dev/sdX` name for each disk you wish to be a Ceph OSD on each host.
 
 0. Add each OSD device to each host. The general command is:  
-    `$ pvc storage ceph osd add --weight <weight> <node> <device>`
+    `$ pvc storage osd add --weight <weight> <node> <device>`
 
     For example, if each node has two data disks, as `/dev/sdb` and `/dev/sdc`, run the commands as follows:  
-    `$ pvc storage ceph osd add --weight 1.0 pvchv1 /dev/sdb`  
-    `$ pvc storage ceph osd add --weight 1.0 pvchv1 /dev/sdc`  
-    `$ pvc storage ceph osd add --weight 1.0 pvchv2 /dev/sdb`  
-    `$ pvc storage ceph osd add --weight 1.0 pvchv2 /dev/sdc`   
-    `$ pvc storage ceph osd add --weight 1.0 pvchv3 /dev/sdb`  
-    `$ pvc storage ceph osd add --weight 1.0 pvchv3 /dev/sdc`   
+    `$ pvc storage osd add --weight 1.0 pvchv1 /dev/sdb`  
+    `$ pvc storage osd add --weight 1.0 pvchv1 /dev/sdc`  
+    `$ pvc storage osd add --weight 1.0 pvchv2 /dev/sdb`  
+    `$ pvc storage osd add --weight 1.0 pvchv2 /dev/sdc`   
+    `$ pvc storage osd add --weight 1.0 pvchv3 /dev/sdb`  
+    `$ pvc storage osd add --weight 1.0 pvchv3 /dev/sdc`   
 
     **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
 
     **NOTE:** OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
 
 0. Verify that the OSDs were added and are functional (`up` and `in`):  
-    `$ pvc storage ceph osd list`
+    `$ pvc storage osd list`
 
 0. Create an RBD pool to store VM images on. The general command is:  
-    `$ pvc storage ceph pool add <name> <placement_groups>`
+    `$ pvc storage pool add <name> <placement_groups>`
 
     For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
-    `$ pvc storage ceph pool add vms 256`
+    `$ pvc storage pool add vms 256`
 
     **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
 
     **NOTE:** All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
 
 0. Verify that the pool was added:  
-    `$ pvc storage ceph pool list`
+    `$ pvc storage pool list`
 
 ### Part Five - Creating virtual networks
 
@@ -132,13 +132,13 @@ This section walks through deploying a simple Debian VM to the cluster with Debo
     `$ pvc node ready <node>`
 
 0. Create an RBD image for the VM. The general command is:  
-    `$ pvc storage ceph volume add <pool> <name> <size>`
+    `$ pvc storage volume add <pool> <name> <size>`
 
     For example, to create a 20GB disk for a VM called `test1` in the previously-configured pool `vms`, run the command as follows:  
-    `$ pvc storage ceph volume add vms test1_disk0 20G`
+    `$ pvc storage volume add vms test1_disk0 20G`
 
 0. Verify the RBD image was created:  
-    `$ pvc storage ceph volume list`
+    `$ pvc storage volume list`
 
 0. On one of the PVC nodes, for example `pvchv1`, map the RBD volume to the local system:  
     `$ ceph rbd map vms/test1_disk0`
