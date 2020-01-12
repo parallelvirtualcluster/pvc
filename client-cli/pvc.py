@@ -353,7 +353,7 @@ def node_secondary(node):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node. These will continue executing, but job status will not be visible until the current node returns to primary state.".format(len(task_retdata))
+        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node. These will continue executing, but job status will not be visible until the current node returns to primary state.".format(len(task_retdata)))
         click.echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
@@ -373,7 +373,7 @@ def node_primary(node):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node. These will continue executing, but job status will not be visible until the current node returns to primary state.".format(len(task_retdata))
+        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node. These will continue executing, but job status will not be visible until the current node returns to primary state.".format(len(task_retdata)))
         click.echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary')
