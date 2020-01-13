@@ -12,9 +12,9 @@ pvc:
     debug: True
     # coordinators: The list of cluster coordinator hostnames
     coordinators:
-      - hv1
-      - hv2
-      - hv3
+      - pvchv1
+      - pvchv2
+      - pvchv3
     # api: Configuration of the API listener
     api:
         # listen_address: IP address(es) to listen on; use 0.0.0.0 for all interfaces
@@ -46,7 +46,7 @@ pvc:
         # database: Backend database configuration
         database:
             # host: PostgreSQL hostname, usually 'localhost'
-            host: 10.100.0.252
+            host: localhost
             # port: PostgreSQL port, invariably '5432'
             port: 5432
             # name: PostgreSQL database name, invariably 'pvcprov'
@@ -63,18 +63,18 @@ pvc:
             port: 6379
             # path: Redis queue path, invariably '/0'
             path: /0
-        # ceph_cluster: Information about the Ceph storage cluster
-        ceph_cluster:
+        # pvchv_cluster: Information about the Ceph storage cluster
+        pvchv_cluster:
             # storage_hosts: The list of hosts that the Ceph monitors are valid on; if empty (the default),
             #                uses the list of coordinators
             storage_hosts:
-              - ceph1
-              - ceph2
-              - ceph2
+              - pvchv1
+              - pvchv2
+              - pvchv2
             # storage_domain: The storage domain name, concatenated with the coordinators list names
             #                 to form monitor access strings
-            storage_domain: "s.bonilan.net"
-            # ceph_monitor_port: The port that the Ceph monitor on each coordinator listens on
-            ceph_monitor_port: 6789
-            # ceph_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
-            ceph_storage_secret_uuid: "c416032b-2ce9-457f-a5c2-18704a3485f4"
+            storage_domain: "pvc.storage"
+            # pvchv_monitor_port: The port that the Ceph monitor on each coordinator listens on
+            pvchv_monitor_port: 6789
+            # pvchv_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
+            pvchv_storage_secret_uuid: ""

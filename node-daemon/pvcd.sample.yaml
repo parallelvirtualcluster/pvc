@@ -11,7 +11,7 @@
 
 pvc:
   # node: The (short) hostname of the node, set during provisioning
-  node: pvc-hv1
+  node: pvchv1
   # debug: Enable or disable debug output
   debug: False
   # functions: The daemon functions to enable
@@ -29,9 +29,9 @@ pvc:
   cluster:
     # coordinators: The list of cluster coordinator hostnames
     coordinators:
-      - pvc-hv1
-      - pvc-hv2
-      - pvc-hv3
+      - pvchv1
+      - pvchv2
+      - pvchv3
     # networks: Cluster-level network configuration
     # OPTIONAL if enable_networking: False
     networks:
@@ -113,7 +113,7 @@ pvc:
       # ipmi: Local system IPMI options
       ipmi:
         # host: Hostname/IP of the local system's IPMI interface, must be reachable
-        host: pvc-hv1-lom
+        host: pvchv1-lom
         # user: Local system IPMI username
         user: admin
         # pass: Local system IPMI password
