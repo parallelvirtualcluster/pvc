@@ -59,31 +59,34 @@ class MetadataAPIInstance(object):
         def api_metadata_instanceid(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
-            instance_id = vm_details['uuid']
+            instance_id = vm_details.get('uuid', None)
             return instance_id, 200
         
         @self.mdapi.route('/<version>/meta-data/name', methods=['GET'])
         def api_metadata_hostname(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
-            vm_name = vm_details['name']
+            vm_name = vm_details.get('name', None)
             return vm_name, 200
         
         @self.mdapi.route('/<version>/meta-data/profile', methods=['GET'])
         def api_metadata_profile(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
-            vm_profile = vm_details['profile']
+            vm_profile = vm_details.get('profile', None)
             return vm_profile, 200
         
         @self.mdapi.route('/<version>/user-data', methods=['GET'])
         def api_userdata(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
-            vm_profile = vm_details['profile']
+            vm_profile = vm_details.get('profile', None)
             # Get the userdata
-            userdata = self.get_profile_userdata(vm_profile)
-            self.logger.out("Returning userdata for profile {}".format(vm_profile), state='i', prefix='Metadata API')
+            if vm_profile:
+                userdata = self.get_profile_userdata(vm_profile)
+                self.logger.out("Returning userdata for profile {}".format(vm_profile), state='i', prefix='Metadata API')
+            else:
+                userdata = None
             return flask.Response(userdata)
         
     def launch_wsgi(self):
@@ -149,7 +152,7 @@ class MetadataAPIInstance(object):
         cur.execute(query, args)
         data_raw = cur.fetchone()
         self.close_database(conn, cur)
-        data = data_raw['userdata']
+        data = data_raw.get('userdata', None)
         return data
 
     # VM details function
@@ -159,13 +162,13 @@ class MetadataAPIInstance(object):
     
         # Figure out which server this is via the DHCP address
         host_information = dict()
-        networks_managed = (x for x in networks if x['type'] == 'managed')
+        networks_managed = (x for x in networks if x.get('type') == 'managed')
         for network in networks_managed:
-            network_leases = pvc_network.getNetworkDHCPLeases(self.zk_conn, network['vni'])
+            network_leases = pvc_network.getNetworkDHCPLeases(self.zk_conn, network.get('vni'))
             for network_lease in network_leases:
-                information = pvc_network.getDHCPLeaseInformation(self.zk_conn, network['vni'], network_lease)
+                information = pvc_network.getDHCPLeaseInformation(self.zk_conn, network.get('vni'), network_lease)
                 try:
-                    if information['ip4_address'] == source_address:
+                    if information.get('ip4_address', None) == source_address:
                         host_information = information
                 except:
                     pass
@@ -181,9 +184,9 @@ class MetadataAPIInstance(object):
         vm_details = dict()
         for vm in vm_list:
             try:
-                for network in vm['networks']:
-                    if network['mac'] == client_macaddr:
-                        vm_name = vm['name']
+                for network in vm.get('networks'):
+                    if network.get('mac', None) == client_macaddr:
+                        vm_name = vm.get('name')
                         vm_details = vm
             except:
                 pass
