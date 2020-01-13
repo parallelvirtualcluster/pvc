@@ -77,9 +77,7 @@ class PowerDNSInstance(object):
         self.dns_server_daemon = None
 
         # Floating upstreams
-        self.vni_dev = self.config['vni_dev']
         self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
-        self.upstream_dev = self.config['upstream_dev']
         self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
 
     def start(self):

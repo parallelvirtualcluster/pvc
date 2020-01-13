@@ -352,11 +352,11 @@ class NodeInstance(object):
             'Creating floating upstream IP {}/{} on interface {}'.format(
                 self.upstream_ipaddr,
                 self.upstream_cidrnetmask,
-                self.upstream_dev
+                'brupstream'
             ),
             state='o'
         )
-        common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, self.upstream_dev)
+        common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
         self.logger.out('Releasing write lock for synchronization C', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
@@ -540,11 +540,11 @@ class NodeInstance(object):
             'Removing floating upstream IP {}/{} from interface {}'.format(
                 self.upstream_ipaddr,
                 self.upstream_cidrnetmask,
-                self.upstream_dev
+                'brupstream'
             ),
             state='o'
         )
-        common.removeIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, self.upstream_dev)
+        common.removeIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
         self.logger.out('Releasing read lock for synchronization C', state='i')
         lock.release()
         self.logger.out('Released read lock for synchronization C', state='o')

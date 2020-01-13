@@ -365,7 +365,7 @@ if enable_networking:
     vni_dev = config['vni_dev']
     vni_mtu = config['vni_mtu']
     vni_dev_ip = config['vni_dev_ip']
-    logger.out('Setting up VNI network interface {}'.format(vni_dev, vni_dev_ip), state='i')
+    logger.out('Setting up VNI network interface {} with MTU {}'.format(vni_dev, vni_mtu), state='i')
     common.run_os_command('ip link set {} mtu {} up'.format(vni_dev, vni_mtu))
 
     # Cluster bridge configuration
@@ -378,25 +378,47 @@ if enable_networking:
     # Storage configuration
     storage_dev = config['storage_dev']
     storage_mtu = config['storage_mtu']
-    if storage_dev == vni_dev:
-        storage_dev = 'brcluster'
-        storage_mtu = vni_mtu
     storage_dev_ip = config['storage_dev_ip']
-    logger.out('Setting up Storage network on interface {} with IP {}'.format(storage_dev, storage_dev_ip), state='i')
+    logger.out('Setting up Storage network interface {} with MTU {}'.format(storage_dev, vni_mtu), state='i')
     common.run_os_command('ip link set {} mtu {} up'.format(storage_dev, storage_mtu))
-    common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, storage_dev))
+
+    # Storage bridge configuration
+    if storage_dev == vni_dev:
+        logger.out('Adding Storage network IP {} to VNI Cluster bridge brcluster'.format(storage_dev_ip), state='i')
+        common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, 'brcluster'))
+    else:
+        logger.out('Setting up Storage network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+        common.run_os_command('brctl addbr brstorage')
+        common.run_os_command('brctl addif brstorage {}'.format(storage_dev))
+        common.run_os_command('ip link set brstorage mtu {} up'.format(storage_mtu))
+        common.run_os_command('ip address add {} dev {}'.format(storage_dev_ip, 'brstorage'))
 
     # Upstream configuration
-    if config['upstream_dev']:
-        upstream_dev = config['upstream_dev']
-        upstream_mtu = config['upstream_mtu']
-        upstream_dev_ip = config['upstream_dev_ip']
-        upstream_dev_gateway = config['upstream_gateway']
-        logger.out('Setting up Upstream network on interface {} with IP {}'.format(upstream_dev, upstream_dev_ip), state='i')
-        common.run_os_command('ip link set {} mtu {} up'.format(upstream_dev, upstream_mtu))
-        common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, upstream_dev))
-        if upstream_dev_gateway:
-            common.run_os_command('ip route add default via {} dev {}'.format(upstream_dev_gateway, upstream_dev))
+    upstream_dev = config['upstream_dev']
+    upstream_mtu = config['upstream_mtu']
+    upstream_dev_ip = config['upstream_dev_ip']
+    logger.out('Setting up Upstream network interface {} with MTU {}'.format(upstream_dev, upstream_mtu), state='i')
+    common.run_os_command('ip link set {} mtu {} up'.format(upstream_dev, upstream_mtu))
+
+    # Upstream bridge configuration
+    if upstream_dev == vni_dev:
+        logger.out('Adding Upstream network IP {} to VNI Cluster bridge brcluster'.format(upstream_dev_ip), state='i')
+        common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, 'brcluster'))
+    else:
+        logger.out('Setting up Upstream network bridge on interface {} with IP {}'.format(vni_dev, vni_dev_ip), state='i')
+        common.run_os_command('brctl addbr brupstream')
+        common.run_os_command('brctl addif brupstream {}'.format(upstream_dev))
+        common.run_os_command('ip link set brupstream mtu {} up'.format(upstream_mtu))
+        common.run_os_command('ip address add {} dev {}'.format(upstream_dev_ip, 'brupstream'))
+
+    # Add upstream default gateway
+    upstream_gateway = config.get('upstream_gateway', None)
+    if upstream_gateway:
+        logger.out('Setting up Upstream default gateway IP {}'.format(upstream_gateway), state='i')
+        if upstream_dev == vni_dev:
+            common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brcluster'))
+        else:
+            common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brupstream'))
 
 ###############################################################################
 # PHASE 2b - Prepare sysctl for pvcd
@@ -419,13 +441,15 @@ if enable_networking:
     common.run_os_command('sysctl net.ipv6.conf.all.accept_source_route=1')
     common.run_os_command('sysctl net.ipv6.conf.default.accept_source_route=1')
 
-    # Disable RP filtering on the VNI dev and bridge interfaces (to allow traffic pivoting)
+    # Disable RP filtering on the VNI Cluster and Upstream interfaces (to allow traffic pivoting)
     common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['vni_dev']))
     common.run_os_command('sysctl net.ipv4.conf.{}.rp_filter=0'.format(config['upstream_dev']))
     common.run_os_command('sysctl net.ipv4.conf.brcluster.rp_filter=0')
+    common.run_os_command('sysctl net.ipv4.conf.brupstream.rp_filter=0')
     common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['vni_dev']))
     common.run_os_command('sysctl net.ipv6.conf.{}.rp_filter=0'.format(config['upstream_dev']))
     common.run_os_command('sysctl net.ipv6.conf.brcluster.rp_filter=0')
+    common.run_os_command('sysctl net.ipv6.conf.brupstream.rp_filter=0')
 
 ###############################################################################
 # PHASE 3a - Determine coordinator mode
