@@ -114,7 +114,7 @@ Future PVC versions may support other client network types, such as direct-routi
 
 ## Node Layout: Considering how nodes are laid out
 
-At a minimum, a PVC cluster requires at least 3 nodes running the PVC Daemon software. 1-node clusters are technically supported but provide no redundancy; they should be used only for testing purposes. Additionally, it's possible to configure a cluster with only 2 active, VM-containing nodes, and a 3rd node handling only coordinator quorum functionality, though this is more complex and less ideal.
+A production-grade PVC cluster requires 3 nodes running the PVC Daemon software. 1-node clusters are supported for very small clusters, homelabs, and testing, but provide no redundancy; they should not be used in production situations.
 
 ### Node Functions: Coordinators versus Hypervisors
 
@@ -122,7 +122,7 @@ Within PVC, a given node can have one of two main functions: it can be a "Coordi
 
 #### Coordinators
 
-Coordinators are a special set of 3, 5, or potentially 7, though no more, nodes with additional functionality. The coordinator nodes run, in addition to the PVC software itself, a number of databases and additional functions which are required by the whole cluster. An odd number of coordinators is *always* required to maintain quorum, though there are diminishing returns when creating more than 3. These additional functions are:
+Coordinators are a special set of 3 or 5 nodes with additional functionality. The coordinator nodes run, in addition to the PVC software itself, a number of databases and additional functions which are required by the whole cluster. An odd number of coordinators is *always* required to maintain quorum, though there are diminishing returns when creating more than 3. These additional functions are:
 
 0. The Zookeeper database containing the cluster state and configuration
 0. The DNS aggregation Patroni PostgreSQL database containing DNS records for all client networks
@@ -130,7 +130,7 @@ Coordinators are a special set of 3, 5, or potentially 7, though no more, nodes 
 
 In addition to these functions, coordinators can usually also run all other PVC node functions.
 
-The set of coordinator nodes is generally configured at cluster bootstrap, initially with 3 nodes, which are then bootstrapped together to form a basic 3-node cluster. Additional nodes, either as coordinators or as hypervisors, are then added to the running cluster.
+The set of coordinator nodes is generally configured at cluster bootstrap, initially with 3 nodes, which are then bootstrapped together to form a basic 3-node cluster. Additional nodes, either as coordinators or as hypervisors, can then be added to the running cluster to bring it up to its final size, either immediately or as the needs of the cluster change.
 
 ##### The Primary Coordinator
 
@@ -139,10 +139,11 @@ Within the set of coordinators, a single primary coordinator is elected and shuf
 0. The floating IPs in the main networks
 0. The default gateway IP for each managed client network
 0. The DNSMasq instance handling DHCP and DNS for each managed client network
+0. The API and provisioner clients and workers
 
 #### Hypervisors
 
-Hypervisors consist of all other PVC nodes in the cluster. For small clusters (3 nodes), there will generally not be any non-coordinator nodes, though adding a 4th would require it to be a hypervisor to preserve quorum between the coordinators. Larger clusters will generally add new nodes as Hypervisors rather than coordinators to preserve the small set of coordinator nodes previously mentioned.
+Hypervisors consist of all other PVC nodes in the cluster. For small clusters (3 nodes), there will generally not be any non-coordinator nodes, though adding a 4th would require it to be a hypervisor to preserve quorum between the coordinators. Larger clusters should generally add new nodes as Hypervisors rather than coordinators to preserve the small set of coordinator nodes previously mentioned.
 
 ## Example Configurations
 
