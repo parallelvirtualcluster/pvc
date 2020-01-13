@@ -20,7 +20,8 @@ Example configuration:
 
 ```
 pvc:
-  node: pvc-hv1
+  node: pvchv1
+  debug: False
   functions:
     enable_hypervisor: True
     enable_networking: True
@@ -28,9 +29,9 @@ pvc:
     enable_api: True
   cluster:
     coordinators:
-      - pvc-hv1
-      - pvc-hv2
-      - pvc-hv3
+      - pvchv1
+      - pvchv2
+      - pvchv3
     networks:
       upstream:
         domain: "mydomain.net"
@@ -52,7 +53,14 @@ pvc:
         port: 5432
         name: pvcdns
         user: pvcdns
-        pass: pvcdns
+        pass: pvcdnsPassw0rd
+    metadata:
+      database:
+        host: localhost
+        port: 5432
+        name: pvcprov
+        user: pvcprov
+        pass: pvcprovPassw0rd
   system:
     fencing:
       intervals:
@@ -63,7 +71,7 @@ pvc:
         successful_fence: migrate
         failed_fence: None
       ipmi:
-        host: pvc-hv1-lom
+        host: pvchv1-lom
         user: admin
         pass: Passw0rd
     migration:
@@ -83,6 +91,7 @@ pvc:
         log_keepalive_storage_details: True
         console_log_lines: 1000
       networking:
+        bridge_device: ens4
         upstream:
           device: ens4
           mtu: 1500
@@ -102,6 +111,12 @@ pvc:
 * *required*
 
 The (short) hostname of the node; host-specific.
+
+#### `debug`
+
+* *required*
+
+Whether to enable or disable debug mode. Debug mode enables additional logging of subtasks throughout the system.
 
 #### `functions` → `enable_hypervisor`
 
@@ -193,6 +208,36 @@ The username for the PVC node daemon to access the DNS aggregator database.
 * *required*
 
 The password for the PVC node daemon to access the DNS aggregator database.
+
+##### `metadata` → `database` → `host`
+
+* *required*
+
+The hostname of the PostgreSQL instance for the Provisioner database. Should always be `localhost` except in advanced deployment scenarios.
+
+##### `metadata` → `database` → `port`
+
+* *required*
+
+The port of the PostgreSQL instance for the Provisioner database. Should always be `5432`.
+
+##### `metadata` → `database` → `name`
+
+* *required*
+
+The database name for the Provisioner database. Should always be `pvcprov`.
+
+##### `metadata` → `database` → `user`
+
+* *required*
+
+The username for the PVC node daemon to access the Provisioner database.
+
+##### `metadata` → `database` → `pass`
+
+* *required*
+
+The password for the PVC node daemon to access the Provisioner database.
 
 #### `system` → `intervals` → `keepalive_interval`
 
@@ -315,6 +360,13 @@ Whether to log storage cluster status information during keepalives or not.
 * *required*
 
 How many lines of VM console logs to keep in the Zookeeper database for each VM.
+
+#### `system` → `configuration` → `networking` → `bridge_device`
+
+* *optional*
+* *requires* `functions` → `enable_networking`
+
+The network interface device used to create Bridged client network vLANs on. For most clusters, should match the underlying device of the various static networks (e.g. `ens4` or `bond0`), though may also use a separate network interface.
 
 #### `system` → `configuration` → `networking`
 

@@ -165,9 +165,9 @@ Example configuration:
 pvc:
     debug: True
     coordinators:
-      - pvc-hv1
-      - pvc-hv2
-      - pvc-hv3
+      - pvchv1
+      - pvchv2
+      - pvchv3
     api:
         listen_address: "127.0.0.1"
         listen_port: "7370"
@@ -181,6 +181,25 @@ pvc:
             enabled: False
             cert_file: ""
             key_file: ""
+    provisioner:
+        database:
+            host: 10.100.0.252
+            port: 5432
+            name: pvcprov
+            user: pvcprov
+            pass: pvcprov
+        queue:
+            host: localhost
+            port: 6379
+            path: /0
+        ceph_cluster:
+            storage_hosts:
+              - pvchv1
+              - pvchv2
+              - pvchv3
+            storage_domain: "s.bonilan.net"
+            ceph_monitor_port: 6789
+            ceph_storage_secret_uuid: "c416032b-2ce9-457f-a5c2-18704a3485f4"
 ```
 
 #### `debug`
@@ -250,6 +269,78 @@ The path to the SSL certificate file for the API to use.
 #### `api` → `ssl` → `key_file`
 
 The path to the SSL private key file for the API to use.
+
+##### `provisioner` → `database` → `host`
+
+* *required*
+
+The hostname of the PostgreSQL instance for the Provisioner database. Should always be `localhost` except in advanced deployment scenarios.
+
+##### `provisioner` → `database` → `port`
+
+* *required*
+
+The port of the PostgreSQL instance for the Provisioner database. Should always be `5432`.
+
+##### `provisioner` → `database` → `name`
+
+* *required*
+
+The database name for the Provisioner database. Should always be `pvcprov`.
+
+##### `provisioner` → `database` → `user`
+
+* *required*
+
+The username for the PVC API client to access the Provisioner database.
+
+##### `provisioner` → `database` → `pass`
+
+* *required*
+
+The password for the PVC API client to access the Provisioner database.
+
+#### `provisioner` → `queue` → `host`
+
+* *required*
+
+The hostname of the Redis instance for the Provisioner queue. Should always be `localhost` except in advanced deployment scenarios.
+
+#### `provisioner` → `queue` → `port`
+
+* *required*
+
+The port of the Redis innstance for the Provisioner queue. Should always be `6379`.
+
+#### `provisioner` → `queue` → `path`
+
+* *required*
+
+The Redis path for the Provisioner queue. Should always be `/0`.
+
+#### `provisioner` → `ceph_cluster` → `storage_hosts`
+
+* *required*
+
+A list of hosts which run the Ceph monitors for VM disks. Should usually be identical to the list of `coordinators` except in advanced deployments.
+
+#### `provisioner` → `ceph_cluster` → `storage_domain`
+
+* *required*
+
+The storage domain of the cluster, used with the `storage_hosts` entires to form FQDNs for the Ceph monitors. Should usually be identical to the cluster `storage_domain` except in advanced deployments.
+
+#### `provisioner` → `ceph_cluster` → `ceph_monitor_port`
+
+* *required*
+
+The Ceph monitor port. Should always be `6789`.
+
+#### `provisioner` → `ceph_cluster` → `ceph_storage_secret_uuid`
+
+* *required*
+
+The Libvirt storage secret UUID for the Ceph cluster.
 
 ## API Endpoint Documentation
 
