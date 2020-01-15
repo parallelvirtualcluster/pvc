@@ -276,6 +276,9 @@ def follow_console_log(config, vm, lines=10):
     }
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
+    if response.status_code != 200:
+        return False, response.json()['message']
+
     # Shrink the log buffer to length lines
     console_log = response.json()['data']
     shrunk_log = console_log.split('\n')[-lines:]
