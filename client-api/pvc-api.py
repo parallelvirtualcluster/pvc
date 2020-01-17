@@ -5340,6 +5340,73 @@ class API_Provisioner_Profile_Element(Resource):
             reqargs.get('arg', [])
         )
 
+    @RequestParser([
+        { 'name': 'system_template' },
+        { 'name': 'network_template' },
+        { 'name': 'storage_template' },
+        { 'name': 'userdata' },
+        { 'name': 'script' },
+        { 'name': 'arg', 'action': 'append' }
+    ])
+    @Authenticator
+    def put(self, profile, reqargs):
+        """
+        Modify profile {profile}
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: script
+            type: string
+            required: false
+            description: Script name
+          - in: query
+            name: system_template
+            type: string
+            required: false
+            description: System template name
+          - in: query
+            name: network_template
+            type: string
+            required: false
+            description: Network template name
+          - in: query
+            name: storage_template
+            type: string
+            required: false
+            description: Storage template name
+          - in: query
+            name: userdata
+            type: string
+            required: false
+            description: Userdata template name
+          - in: query
+            name: arg
+            type: string
+            description: Script install() function keywork argument in "arg=data" format; may be specified multiple times to add multiple arguments
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_provisioner.modify_profile(
+            profile,
+            reqargs.get('system_template', None),
+            reqargs.get('network_template', None),
+            reqargs.get('storage_template', None),
+            reqargs.get('userdata', None),
+            reqargs.get('script', None),
+            reqargs.get('arg', [])
+        )
+
     @Authenticator
     def delete(self, profile):
         """

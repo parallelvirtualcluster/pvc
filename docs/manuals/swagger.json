@@ -2396,6 +2396,70 @@
                 "tags": [
                     "provisioner"
                 ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "Script name",
+                        "in": "query",
+                        "name": "script",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "System template name",
+                        "in": "query",
+                        "name": "system_template",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Network template name",
+                        "in": "query",
+                        "name": "network_template",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Storage template name",
+                        "in": "query",
+                        "name": "storage_template",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Userdata template name",
+                        "in": "query",
+                        "name": "userdata",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Script install() function keywork argument in \"arg=data\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "arg",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Modify profile {profile}",
+                "tags": [
+                    "provisioner"
+                ]
             }
         },
         "/api/v1/provisioner/script": {

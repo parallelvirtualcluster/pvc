@@ -782,6 +782,96 @@ def create_profile(name, system_template, network_template, storage_template, us
     close_database(conn, cur)
     return retmsg, retcode
 
+def modify_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
+    if list_profile(name, is_fuzzy=False)[-1] != 200:
+        retmsg = { 'message': 'The profile "{}" does not exist'.format(name) }
+        retcode = 400
+        return retmsg, retcode
+
+    fields = []
+
+    if system_template is not None:
+        system_templates, code = list_template_system(None)
+        system_template_id = None
+        for template in system_templates:
+            if template['name'] == system_template:
+                system_template_id = template['id']
+        if not system_template_id:
+            retmsg = { 'message': 'The system template "{}" for profile "{}" does not exist'.format(system_template, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'system_template', 'data': system_template_id})
+
+    if network_template is not None:
+        network_templates, code = list_template_network(None)
+        network_template_id = None
+        for template in network_templates:
+            if template['name'] == network_template:
+                network_template_id = template['id']
+        if not network_template_id:
+            retmsg = { 'message': 'The network template "{}" for profile "{}" does not exist'.format(network_template, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'network_template', 'data': network_template_id})
+
+    if storage_template is not None:
+        storage_templates, code = list_template_storage(None)
+        storage_template_id = None
+        for template in storage_templates:
+            if template['name'] == storage_template:
+                storage_template_id = template['id']
+        if not storage_template_id:
+            retmsg = { 'message': 'The storage template "{}" for profile "{}" does not exist'.format(storage_template, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'storage_template', 'data': storage_template_id})
+
+    if userdata is not None:
+        userdatas, code = list_userdata(None)
+        userdata_id = None
+        for template in userdatas:
+            if template['name'] == userdata:
+                userdata_id = template['id']
+        if not userdata_id:
+            retmsg = { 'message': 'The userdata template "{}" for profile "{}" does not exist'.format(userdata, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'userdata', 'data': userdata_id})
+
+    if script is not None:
+        scripts, code = list_script(None)
+        script_id = None
+        for scr in scripts:
+            if scr['name'] == script:
+                script_id = scr['id']
+        if not script_id:
+            retmsg = { 'message': 'The script "{}" for profile "{}" does not exist'.format(script, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'script', 'data': script_id})
+
+    if arguments is not None:
+        if isinstance(arguments, list):
+            arguments_formatted = '|'.join(arguments)
+        else:
+            arguments_formatted = ''
+        fields.append({'field': 'arguments', 'data': arguments_formatted})
+
+
+    conn, cur = open_database(config)
+    try:
+        for field in fields:
+            query = "UPDATE profile SET {}=%s WHERE name=%s;".format(field.get('field'))
+            args = (field.get('data'), name)
+            cur.execute(query, args)
+        retmsg = { "message": 'Modified VM profile "{}"'.format(name) }
+        retcode = 200
+    except Exception as e:
+        retmsg = { 'message': 'Failed to modify entry "{}": {}'.format(name, e) }
+        retcode = 400
+    close_database(conn, cur)
+    return retmsg, retcode
+
 def delete_profile(name):
     if list_profile(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The profile "{}" does not exist'.format(name) }
