@@ -63,8 +63,8 @@ pvc:
             port: 6379
             # path: Redis queue path, invariably '/0'
             path: /0
-        # pvchv_cluster: Information about the Ceph storage cluster
-        pvchv_cluster:
+        # ceph_cluster: Information about the Ceph storage cluster
+        ceph_cluster:
             # storage_hosts: The list of hosts that the Ceph monitors are valid on; if empty (the default),
             #                uses the list of coordinators
             storage_hosts:
@@ -74,7 +74,7 @@ pvc:
             # storage_domain: The storage domain name, concatenated with the coordinators list names
             #                 to form monitor access strings
             storage_domain: "pvc.storage"
-            # pvchv_monitor_port: The port that the Ceph monitor on each coordinator listens on
-            pvchv_monitor_port: 6789
-            # pvchv_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
-            pvchv_storage_secret_uuid: ""
+            # ceph_monitor_port: The port that the Ceph monitor on each coordinator listens on
+            ceph_monitor_port: 6789
+            # ceph_storage_secret_uuid: Libvirt secret UUID for Ceph storage access
+            ceph_storage_secret_uuid: ""
