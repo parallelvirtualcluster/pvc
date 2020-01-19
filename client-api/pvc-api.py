@@ -710,9 +710,9 @@ class API_Node_DomainState(Resource):
               id: Message
         """
         if reqargs['state'] == 'flush':
-            return api_helper.node_flush(node, reqargs.get('wait', None))
+            return api_helper.node_flush(node, reqargs.get('wait', False))
         if reqargs['state'] == 'ready':
-            return api_helper.node_ready(node, reqargs.get('wait', None))
+            return api_helper.node_ready(node, reqargs.get('wait', False))
         abort(400)
 api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 
