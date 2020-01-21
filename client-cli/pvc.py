@@ -2236,6 +2236,8 @@ def provisioner_template_network_vni():
 def provisioner_template_network_vni_add(name, vni):
     """
     Add a new network VNI to network template NAME.
+
+    Networks will be added to VMs in the order they are added and displayed within the template.
     """
     params = dict()
 
@@ -2399,7 +2401,9 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     """
     Add a new DISK to storage template NAME.
 
-    DISK must be a Linux-style disk identifier such as "sda" or "vdb".
+    DISK must be a Linux-style sdX/vdX disk identifier, such as "sda" or "vdb". All disks in a template must use the same identifier format.
+    
+    Disks will be added to VMs in sdX/vdX order. For disks with mountpoints, ensure this order is sensible.
     """
 
     if source_volume and (size or filesystem or mountpoint):
