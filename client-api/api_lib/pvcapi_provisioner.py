@@ -996,7 +996,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     vm_data['networks'] = db_cur.fetchall()
 
     # Get the storage volumes
-    query = 'SELECT * FROM storage WHERE storage_template = %s'
+    # ORDER BY ensures disks are always in the sdX/vdX order, regardless of add order
+    query = 'SELECT * FROM storage WHERE storage_template = %s ORDER BY disk_id'
     args = (profile_data['storage_template'],)
     db_cur.execute(query, args)
     vm_data['volumes'] = db_cur.fetchall()
