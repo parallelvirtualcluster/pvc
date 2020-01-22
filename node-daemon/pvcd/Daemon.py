@@ -166,7 +166,7 @@ def readConfig(pvcd_config_file, myhostname):
             'ipmi_password': o_config['pvc']['system']['fencing']['ipmi']['pass']
         }
     except Exception as e:
-        print('ERROR: {}!'.format(e))
+        print('ERROR: Failed to load configuration: {}'.format(e))
         exit(1)
     config = config_general
 
@@ -217,7 +217,7 @@ def readConfig(pvcd_config_file, myhostname):
                 'upstream_dev_ip': o_config['pvc']['system']['configuration']['networking']['upstream']['address'],
             }
         except Exception as e:
-            print('ERROR: {}!'.format(e))
+            print('ERROR: Failed to load configuration: {}'.format(e))
             exit(1)
         config = {**config, **config_networking}
 
@@ -261,7 +261,7 @@ def readConfig(pvcd_config_file, myhostname):
         try:
             config_storage = dict()
         except Exception as e:
-            print('ERROR: {}!'.format(e))
+            print('ERROR: Failed to load configuration: {}'.format(e))
             exit(1)
         config = {**config, **config_storage}
 

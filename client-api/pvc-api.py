@@ -95,7 +95,7 @@ try:
     # Set the config object in the api_provisioner namespace
     api_provisioner.config = config
 except Exception as e:
-    print('ERROR: {}.'.format(e))
+    print('ERROR: Failed to load configuration: {}'.format(e))
     exit(1)
 
 # Create Flask app and set config values
