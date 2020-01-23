@@ -510,18 +510,18 @@ def cli_vm():
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
 @click.argument(
-    'config', type=click.File()
+    'vmconfig', type=click.File()
 )
-def vm_define(config, target_node, node_limit, node_selector, node_autostart):
+def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     """
-    Define a new virtual machine from Libvirt XML configuration file CONFIG.
+    Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
     """
 
     # Open the XML file
-    config_data = config.read()
-    config.close()
+    vmconfig_data = vmconfig.read()
+    vmconfig.close()
 
-    retcode, retmsg = pvc_vm.define_vm(config, config_data, target_node, node_limit, node_selector, node_autostart)
+    retcode, retmsg = pvc_vm.define_vm(config, vmconfig_data, target_node, node_limit, node_selector, node_autostart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
