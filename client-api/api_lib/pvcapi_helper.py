@@ -22,6 +22,7 @@
 
 import flask
 import json
+import lxml.etree as etree
 
 from distutils.util import strtobool
 
@@ -422,8 +423,15 @@ def vm_define(xml, node, limit, selector, autostart):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
+    # Verify our XML is sensible
+    try:
+        xml_data = etree.fromstring(xml)
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    except Exception as e:
+        return {'message': 'Error: XML is malformed or incorrect: {}'.format(e)}, 400
+
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.define_vm(zk_conn, xml, node, limit, selector, autostart, profile=None)
+    retflag, retdata = pvc_vm.define_vm(zk_conn, new_cfg, node, limit, selector, autostart, profile=None)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -492,8 +500,14 @@ def vm_modify(name, restart, xml):
     """
     Modify a VM Libvirt XML in the PVC cluster.
     """
+    # Verify our XML is sensible
+    try:
+        xml_data = etree.fromstring(xml)
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    except Exception as e:
+        return {'message': 'Error: XML is malformed or incorrect: {}'.format(e)}, 400
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, xml)
+    retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, new_cfg)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

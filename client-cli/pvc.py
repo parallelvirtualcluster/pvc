@@ -521,7 +521,14 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     vmconfig_data = vmconfig.read()
     vmconfig.close()
 
-    retcode, retmsg = pvc_vm.define_vm(config, vmconfig_data, target_node, node_limit, node_selector, node_autostart)
+    # Verify our XML is sensible
+    try:
+        xml_data = etree.fromstring(vmconfig_data)
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    except:
+        cleanup(False, 'Error: XML is malformed or invalid')
+
+    retcode, retmsg = pvc_vm.define_vm(config, new_cfg, target_node, node_limit, node_selector, node_autostart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -634,7 +641,14 @@ def vm_modify(domain, cfgfile, editor, restart):
         else:
             click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
 
-    retcode, retmsg = pvc_vm.vm_modify(config, domain, new_vm_cfgfile, restart)
+    # Verify our XML is sensible
+    try:
+        xml_data = etree.fromstring(new_vm_cfgfile)
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    except Exception as e:
+        cleanup(False, 'Error: XML is malformed or invalid: {}'.format(e))
+
+    retcode, retmsg = pvc_vm.vm_modify(config, domain, new_cfg, restart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
