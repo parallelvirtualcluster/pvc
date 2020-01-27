@@ -56,7 +56,7 @@ def node_domain_state(config, node, action, wait):
     """
     params={
         'state': action,
-        'wait': wait
+        'wait': str(wait).lower()
     }
     response = call_api(config, 'post', '/node/{node}/domain-state'.format(node=node), params=params)
 
