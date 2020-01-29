@@ -212,16 +212,16 @@ def findTargetNodeMem(zk_conn, node_limit, dom_uuid):
 
 # via load average
 def findTargetNodeLoad(zk_conn, node_limit, dom_uuid):
-    least_load = 9999
+    least_load = 9999.0
     target_node = None
 
     node_list = getNodes(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(node)))
+        load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node)))
 
         if load < least_load:
             least_load = load
-            target_hypevisor = node
+            target_node = node
 
     return target_node
 
