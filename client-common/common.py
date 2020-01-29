@@ -387,7 +387,7 @@ def findTargetNodeLoad(zk_conn, node_limit, dom_uuid):
 
     node_list = getNodes(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/load'.format(node)))
+        load = int(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node)))
 
         if load < least_load:
             least_load = load
