@@ -160,7 +160,7 @@ def Authenticator(function):
             return function(*args, **kwargs)
         # Key header-based authentication
         if 'X-Api-Key' in flask.request.headers:
-            if any(token for token in secret_tokens if flask.request.headers.get('X-Api-Key') == token):
+            if any(token for token in config['auth_tokens'] if flask.request.headers.get('X-Api-Key') == token.get('token')):
                 return function(*args, **kwargs)
             else:
                 return {"message":"X-Api-Key Authentication failed"}, 401
