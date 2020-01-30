@@ -289,8 +289,11 @@ def follow_console_log(config, vm, lines=10):
 
     while True:
         # Grab the next line set
-        response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
-        new_console_log = response.json()['data']
+        try:
+            response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
+            new_console_log = response.json()['data']
+        except:
+            break
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')
         new_console_loglines = new_console_log.split('\n')
