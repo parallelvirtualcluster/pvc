@@ -215,7 +215,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
-def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart):
+def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart, provisioner_profile):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
@@ -233,6 +233,11 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
     if node_autostart is not None:
         zkhandler.writedata(zk_conn, {
             '/domains/{}/node_autostart'.format(dom_uuid): node_autostart
+        })
+
+    if provisioner_profile is not None:
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/profile'.format(dom_uuid): provisioner_profile
         })
 
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)

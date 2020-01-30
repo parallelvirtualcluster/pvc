@@ -478,12 +478,17 @@ def get_vm_meta(vm):
 
     return retdata, retcode
 
-def update_vm_meta(vm, limit, selector, autostart):
+def update_vm_meta(vm, limit, selector, autostart, provisioner_profile):
     """
     Update metadata of a VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, bool(strtobool(autostart)))
+    if autostart is not None:
+        try:
+            autostart = bool(strtobool(autostart))
+        except:
+            autostart = False
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, autostart, provisioner_profile)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

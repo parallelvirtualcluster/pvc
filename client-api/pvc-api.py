@@ -1165,6 +1165,7 @@ class API_VM_Metadata(Resource):
         { 'name': 'limit' },
         { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
+        { 'name': 'profile' },
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1194,6 +1195,11 @@ class API_VM_Metadata(Resource):
             type: boolean
             required: false
             description: Whether to autostart the VM when its node returns to ready domain state
+          - in: query
+            name: profile
+            type: string
+            required: false
+            description: The PVC provisioner profile for the VM
         responses:
           200:
             description: OK
@@ -1210,7 +1216,8 @@ class API_VM_Metadata(Resource):
             vm,
             reqargs.get('limit', None),
             reqargs.get('selector', None),
-            reqargs.get('autostart', None)
+            reqargs.get('autostart', None),
+            reqargs.get('profile', None)
         )
 api.add_resource(API_VM_Metadata, '/vm/<vm>/meta')
 

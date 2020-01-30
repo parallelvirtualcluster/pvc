@@ -547,18 +547,22 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=None,
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
+@click.option(
+    '-p', '--profile', 'provisioner_profile', default=None, show_default=False,
+    help='PVC provisioner profile name for VM.'
+)
 @click.argument(
     'domain'
 )
-def vm_meta(domain, node_limit, node_selector, node_autostart):
+def vm_meta(domain, node_limit, node_selector, node_autostart, provisioner_profile):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
     """
 
-    if node_limit is None and node_selector is None and node_autostart is None:
+    if node_limit is None and node_selector is None and node_autostart is None and provisioner_profile is None:
         cleanup(False, 'At least one metadata option must be specified to update.')
 
-    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart)
+    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart, provisioner_profile)
     cleanup(retcode, retmsg)
 
 ###############################################################################

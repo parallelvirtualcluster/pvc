@@ -120,37 +120,30 @@ def vm_modify(config, vm, xml, restart):
 
     return retstatus, response.json()['message']
 
-def vm_metadata(config, vm, node_limit, node_selector, node_autostart):
+def vm_metadata(config, vm, node_limit, node_selector, node_autostart, provisioner_profile):
     """
     Modify PVC metadata of a VM
 
     API endpoint: GET /vm/{vm}/meta,  POST /vm/{vm}/meta
-    API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}
+    API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}, profile={provisioner_profile}
     API schema: {"message":"{data}"}
     """
-    response = call_api(config, 'get', '/vm/{vm}/meta'.format(vm=vm))
-
-    metadata = response.json()
+    params = dict()
 
     # Update any params that we've sent
     if node_limit is not None:
-        metadata['node_limit'] = node_limit
-    else:
-        # Collapse the existing list back down to a CSV
-        metadata['node_limit'] = ','.join(metadata['node_limit'])
+        params['limit'] = node_limit
 
     if node_selector is not None:
-        metadata['node_selector'] = node_selector
+        params['selector'] = node_selector
 
     if node_autostart is not None:
-        metadata['node_autostart'] = node_autostart
+        params['autostart'] = node_autostart
+
+    if provisioner_profile is not None:
+        params['profile'] = provisioner_profile
 
     # Write the new metadata
-    params={
-        'limit': metadata['node_limit'],
-        'selector': metadata['node_selector'],
-        'autostart': metadata['node_autostart']
-    }
     response = call_api(config, 'post', '/vm/{vm}/meta'.format(vm=vm), params=params)
 
     if response.status_code == 200:
