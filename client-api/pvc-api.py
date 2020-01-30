@@ -710,9 +710,9 @@ class API_Node_DomainState(Resource):
               id: Message
         """
         if reqargs['state'] == 'flush':
-            return api_helper.node_flush(node, strtobool(reqargs.get('wait', 'false')))
+            return api_helper.node_flush(node, bool(strtobool(reqargs.get('wait', 'false'))))
         if reqargs['state'] == 'ready':
-            return api_helper.node_ready(node, strtobool(reqargs.get('wait', 'false')))
+            return api_helper.node_ready(node, bool(strtobool(reqargs.get('wait', 'false'))))
         abort(400)
 api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 
@@ -951,7 +951,7 @@ class API_VM_Root(Resource):
             reqargs.get('node', None),
             reqargs.get('limit', None),
             reqargs.get('selector', 'mem'),
-            reqargs.get('autostart', False)
+            bool(strtobool(reqargs.get('autostart', 'false')))
         )
 api.add_resource(API_VM_Root, '/vm')
 
@@ -1042,7 +1042,7 @@ class API_VM_Element(Resource):
             reqargs.get('node', None),
             reqargs.get('limit', None),
             reqargs.get('selector', 'mem'),
-            reqargs.get('autostart', False)
+            bool(strtobool(reqargs.get('autostart', 'false')))
         )
 
     @RequestParser([
@@ -1080,7 +1080,7 @@ class API_VM_Element(Resource):
         """
         return api_helper.vm_modify(
             vm,
-            reqargs.get('restart', False),
+            bool(strtobool(reqargs.get('restart', 'false'))),
             reqargs.get('xml', None)
         )
 
@@ -1117,7 +1117,7 @@ class API_VM_Element(Resource):
               type: object
               id: Message
         """
-        if reqargs.get('delete_disks', False):
+        if bool(strtobool(reqargs.get('delete_disks', 'false'))):
             return api_helper.vm_remove(vm)
         else:
             return api_helper.vm_undefine(vm)
@@ -1370,7 +1370,7 @@ class API_VM_Node(Resource):
         """
         action = reqargs.get('action', None)
         node = reqargs.get('node', None)
-        force = reqargs.get('force', False)
+        force = bool(strtobool(reqargs.get('force', 'false')))
 
         if action == 'move':
             return api_helper.vm_move(vm, node)
@@ -1640,7 +1640,7 @@ class API_Network_Root(Resource):
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
             reqargs.get('ip6_gateway', None),
-            reqargs.get('dhcp4', None),
+            bool(strtobool(reqargs.get('dhcp4', 'false'))),
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
@@ -1764,7 +1764,7 @@ class API_Network_Element(Resource):
             reqargs.get('ip4_gateway', None),
             reqargs.get('ip6_network', None),
             reqargs.get('ip6_gateway', None),
-            reqargs.get('dhcp4', None),
+            bool(strtobool(reqargs.get('dhcp4', 'false'))),
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
@@ -1955,7 +1955,7 @@ class API_Network_Lease_Root(Resource):
         return api_helper.net_dhcp_list(
             vni,
             reqargs.get('limit', None),
-            reqargs.get('static', False)
+            bool(strtobool(reqargs.get('static', 'false')))
         )
 
     @RequestParser([
@@ -3784,17 +3784,17 @@ class API_Provisioner_Template_System_Root(Resource):
         except:
             return { "message": "A vram value must be an integer" }, 400
         # Cast boolean arguments
-        if bool(strtobool(reqargs.get('serial', False))):
+        if bool(strtobool(reqargs.get('serial', 'false'))):
             serial = True
         else:
             serial = False
-        if bool(strtobool(reqargs.get('vnc', False))):
+        if bool(strtobool(reqargs.get('vnc', 'false'))):
             vnc = True
             vnc_bind = reqargs.get('vnc_bind', None)
         else:
             vnc = False
             vnc_bind = None
-        if reqargs.get('node_autostart', None) and bool(strtobool(reqargs.get('node_autostart', False))):
+        if reqargs.get('node_autostart', None) and bool(strtobool(reqargs.get('node_autostart', 'false'))):
             node_autostart = True
         else:
             node_autostart = False
@@ -5488,12 +5488,12 @@ class API_Provisioner_Create_Root(Resource):
         if code != 200:
             return { 'message': 'Profile "{}" is not valid.'.format(reqargs.get('profile')) }, 400
 
-        if strtobool(reqargs.get('define_vm', 'True')):
+        if bool(strtobool(reqargs.get('define_vm', 'true'))):
             define_vm = True
         else:
             define_vm = False
 
-        if strtobool(reqargs.get('start_vm', 'True')):
+        if bool(strtobool(reqargs.get('start_vm', 'true'))):
             start_vm = True
         else:
             start_vm = False

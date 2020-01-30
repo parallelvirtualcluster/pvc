@@ -483,7 +483,7 @@ def update_vm_meta(vm, limit, selector, autostart):
     Update metadata of a VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, strtobool(autostart))
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, bool(strtobool(autostart)))
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -791,7 +791,7 @@ def net_modify(vni, description, domain, name_servers,
     """
     Modify a virtual client network in the PVC cluster.
     """
-    if dhcp4_flag:
+    if dhcp4_flag is not None:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain, name_servers,
