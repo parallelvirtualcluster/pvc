@@ -275,13 +275,13 @@ class NodeInstance(object):
     #
     # A ----------------------------------------------------------------- SYNC (candidate)
     # B ----------------------------------------------------------------- SYNC (current)
-    # 1. Stop client API                                                   ||
-    # 2. Stop metadata API                                                 ||
-    # 3. Stop DNS aggregator                                               ||
-    # 4. Stop DHCP servers                                                 ||
+    # 1. Stop DNS aggregator                                               ||
+    # 2. Stop DHCP servers                                                 ||
     #    4a) network 1                                                     ||
     #    4b) network 2                                                     ||
     #    etc.                                                              ||
+    # 3. Stop client API                                                   ||
+    # 4. Stop metadata API                                                 ||
     #                                                                      --
     # C ----------------------------------------------------------------- SYNC (candidate)
     # 5. Remove upstream floating IP    1. Add upstream floating IP        ||
@@ -300,13 +300,13 @@ class NodeInstance(object):
     #                                                                      --
     # G ----------------------------------------------------------------- SYNC (candidate)
     #                                   5. Transition Patroni primary      ||
-    #                                   6. Start DHCP servers              ||
+    #                                   6. Start client API                ||
+    #                                   7. Start metadata API              ||
+    #                                   8. Start DHCP servers              ||
     #                                      5a) network 1                   ||
     #                                      5b) network 2                   ||
     #                                      etc.                            ||
-    #                                   7. Start DNS aggregator            ||
-    #                                   8. Start metadata API              ||
-    #                                   9. Start client API                ||
+    #                                   9. Start DNS aggregator            ||
     #                                                                      --
     ######
     def become_primary(self):
@@ -468,22 +468,22 @@ class NodeInstance(object):
                 patroni_failed = False
                 time.sleep(0.2)
                 break
-        # 6. Start DHCP servers
-        for network in self.d_network:
-            self.d_network[network].startDHCPServer()
-        # 7. Start DNS aggregator; just continue if we fail
-        if not patroni_failed:
-            self.dns_aggregator.start_aggregator()
-        else:
-            self.logger.out('Not starting DNS aggregator due to Patroni failures', state='e')
-        # 8. Start metadata API; just continue if we fail
-        self.metadata_api.start()
-        # 9. Start client API (and provisioner worker)
+        # 6. Start client API (and provisioner worker)
         if self.config['enable_api']:
             self.logger.out('Starting PVC API client service', state='i')
             common.run_os_command("systemctl start pvc-api.service")
             self.logger.out('Starting PVC Provisioner Worker service', state='i')
             common.run_os_command("systemctl start pvc-provisioner-worker.service")
+        # 7. Start metadata API; just continue if we fail
+        self.metadata_api.start()
+        # 8. Start DHCP servers
+        for network in self.d_network:
+            self.d_network[network].startDHCPServer()
+        # 9. Start DNS aggregator; just continue if we fail
+        if not patroni_failed:
+            self.dns_aggregator.start_aggregator()
+        else:
+            self.logger.out('Not starting DNS aggregator due to Patroni failures', state='e')
         self.logger.out('Releasing write lock for synchronization G', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
@@ -513,21 +513,21 @@ class NodeInstance(object):
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization B', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
-        # 1. Stop client API
-        if self.config['enable_api']:
-            self.logger.out('Stopping PVC API client service', state='i')
-            common.run_os_command("systemctl stop pvc-api.service")
-        # 2. Stop metadata API
-        self.metadata_api.stop()
-        # 3. Stop DNS aggregator
+        # 1. Stop DNS aggregator
         self.dns_aggregator.stop_aggregator()
-        # 4. Stop DHCP servers
+        # 2. Stop DHCP servers
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
         self.logger.out('Releasing write lock for synchronization B', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
         self.logger.out('Released write lock for synchronization B', state='o')
+        # 3. Stop client API
+        if self.config['enable_api']:
+            self.logger.out('Stopping PVC API client service', state='i')
+            common.run_os_command("systemctl stop pvc-api.service")
+        # 4. Stop metadata API
+        self.metadata_api.stop()
         time.sleep(0.1) # Time for new writer to acquire the lock
 
         # Synchronize nodes C (I am reader)
