@@ -220,7 +220,6 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-
     if node_limit is not None:
         zkhandler.writedata(zk_conn, {
             '/domains/{}/node_limit'.format(dom_uuid): node_limit
@@ -249,9 +248,10 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
         '/domains/{}'.format(dom_uuid): dom_name,
         '/domains/{}/xml'.format(dom_uuid): new_vm_config
     }
-    if restart == True:
-        zk_data.update({'/domains/{}/state'.format(dom_uuid): 'restart'})
     zkhandler.writedata(zk_conn, zk_data)
+
+    if restart:
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
 
     return True, ''
 
