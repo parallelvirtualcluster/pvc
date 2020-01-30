@@ -33,7 +33,6 @@ import colorama
 import yaml
 import json
 import lxml.etree as etree
-import requests
 
 from distutils.util import strtobool
 

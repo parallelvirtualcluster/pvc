@@ -31,53 +31,61 @@ def call_api(config, operation, request_uri, params=None, data=None):
         config['api_prefix'],
         request_uri
     )
+
     # Craft the authentication header if required
     if config['api_key']:
         headers = {'X-Api-Key': config['api_key']}
     else:
         headers = None
+
     # Determine the request type and hit the API
-    if operation == 'get':
-        response = requests.get(
-            uri,
-            headers=headers,
-            params=params,
-            data=data
-        )
-    if operation == 'post':
-        response = requests.post(
-            uri,
-            headers=headers,
-            params=params,
-            data=data
-        )
-    if operation == 'put':
-        response = requests.put(
-            uri,
-            headers=headers,
-            params=params,
-            data=data
-        )
-    if operation == 'patch':
-        response = requests.patch(
-            uri,
-            headers=headers,
-            params=params,
-            data=data
-        )
-    if operation == 'delete':
-        response = requests.delete(
-            uri,
-            headers=headers,
-            params=params,
-            data=data
-        )
+    try:
+        if operation == 'get':
+            response = requests.get(
+                uri,
+                headers=headers,
+                params=params,
+                data=data
+            )
+        if operation == 'post':
+            response = requests.post(
+                uri,
+                headers=headers,
+                params=params,
+                data=data
+            )
+        if operation == 'put':
+            response = requests.put(
+                uri,
+                headers=headers,
+                params=params,
+                data=data
+            )
+        if operation == 'patch':
+            response = requests.patch(
+                uri,
+                headers=headers,
+                params=params,
+                data=data
+            )
+        if operation == 'delete':
+            response = requests.delete(
+                uri,
+                headers=headers,
+                params=params,
+                data=data
+            )
+    except Exception as e:
+        click.echo('Failed to connect to the API: {}'.format(e))
+        exit(1)
+
     # Display debug output
     if config['debug']:
         click.echo('API endpoint: {}'.format(uri), err=True)
         click.echo('Response code: {}'.format(response.status_code), err=True)
         click.echo('Response headers: {}'.format(response.headers), err=True)
         click.echo(err=True)
+
     # Return the response object
     return response
 
