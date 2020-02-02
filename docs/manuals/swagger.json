@@ -5065,6 +5065,13 @@
                         "name": "autostart",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "description": "The PVC provisioner profile for the VM",
+                        "in": "query",
+                        "name": "profile",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
