@@ -148,10 +148,14 @@ def findTargetNode(zk_conn, config, dom_uuid):
         node_limit = ''
         zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(dom_uuid): '' })
 
-    # Determine VM search field or use default; set config value if read fails
+    # Determine VM search field
     try:
         search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
-    except:
+    except Exception as e:
+        search_field = None
+
+    # If our search field is invalid, use and set the default (for next time)
+    if search_field is None or search_field == 'None':
         search_field = config['migration_target_selector']
         zkhandler.writedata(zk_conn, { '/domains/{}/node_selector'.format(dom_uuid): config['migration_target_selector'] })
 
