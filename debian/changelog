@@ -1,3 +1,9 @@
+pvc (0.6-0) unstable; urgency=medium
+
+  * Numerous improvements, implementation of provisioner and API client
+
+ -- Joshua Boniface <joshua@boniface.me>  Sat, 08 Feb 2019 18:26:58 -0500
+
 pvc (0.5-0) unstable; urgency=medium
 
   * First public release

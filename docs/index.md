@@ -24,6 +24,10 @@ To get started with PVC, read the [Cluster Architecture document](/architecture/
 
 ## Changelog
 
+#### v0.6
+
+Numerous improvements and bugfixes, full implementation of the provisioner, full implementation of the API CLI client (versus direct CLI client). This release is suitable for general use and is beta-quality software.
+
 #### v0.5
 
 First public release; fully implements the VM, network, and storage managers, the HTTP API, and the pvc-ansible framework for deploying and bootstrapping a cluster. This release is suitable for general use, though it is still alpha-quality software and should be expected to change significantly until 1.0 is released.
