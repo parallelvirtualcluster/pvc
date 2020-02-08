@@ -29,8 +29,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 # The metadata server requires client libraries
-import client_lib.vm as pvc_vm
-import client_lib.network as pvc_network
+import daemon_lib.vm as pvc_vm
+import daemon_lib.network as pvc_network
 
 class MetadataAPIInstance(object):
     mdapi = flask.Flask(__name__)

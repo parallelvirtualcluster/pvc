@@ -1,6 +1,0 @@
-client-api/pvc-api.py usr/share/pvc
-client-api/pvc-api.sample.yaml etc/pvc
-client-api/api_lib usr/share/pvc
-client-api/pvc-api.service lib/systemd/system
-client-api/pvc-provisioner-worker.service lib/systemd/system
-client-api/provisioner usr/share/pvc

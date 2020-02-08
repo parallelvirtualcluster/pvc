@@ -16,7 +16,7 @@ HOSTS=( ${@} )
 echo "${HOSTS[@]}"
 
 # Build the packages
-$SUDO ./build-deb.sh
+./build-deb.sh
 
 # Install the client(s) locally
 $SUDO dpkg -i ../pvc-client*.deb

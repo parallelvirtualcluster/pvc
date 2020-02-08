@@ -23,7 +23,7 @@
 import kazoo.client
 import uuid
 
-import client_lib.ansiprint as ansiprint
+import daemon_lib.ansiprint as ansiprint
 
 # Exists function
 def exists(zk_conn, key):

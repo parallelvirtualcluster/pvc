@@ -24,13 +24,13 @@ import json
 
 from distutils.util import strtobool
 
-import client_lib.ansiprint as ansiprint
-import client_lib.zkhandler as zkhandler
-import client_lib.common as common
-import client_lib.vm as pvc_vm
-import client_lib.node as pvc_node
-import client_lib.network as pvc_network
-import client_lib.ceph as pvc_ceph
+import daemon_lib.ansiprint as ansiprint
+import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
+import daemon_lib.vm as pvc_vm
+import daemon_lib.node as pvc_node
+import daemon_lib.network as pvc_network
+import daemon_lib.ceph as pvc_ceph
 
 def set_maintenance(zk_conn, maint_state):
     try:

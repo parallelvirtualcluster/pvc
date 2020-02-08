@@ -8,9 +8,9 @@ import os
 import sys
 import json
 
-os.environ['PVC_CONFIG_FILE'] = "./client-api/pvc-api.sample.yaml"
+os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvc-api.sample.yaml"
 
-sys.path.append('client-api')
+sys.path.append('api-daemon')
 
 pvc_api = __import__('pvc-api')
 

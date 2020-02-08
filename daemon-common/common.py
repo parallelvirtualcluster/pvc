@@ -27,7 +27,7 @@ import kazoo.client
 
 from distutils.util import strtobool
 
-import client_lib.zkhandler as zkhandler
+import daemon_lib.zkhandler as zkhandler
 
 ###############################################################################
 # Supplemental functions

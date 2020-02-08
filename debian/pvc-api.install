@@ -1,0 +1,6 @@
+api-daemon/pvc-api.py usr/share/pvc
+api-daemon/pvc-api.sample.yaml etc/pvc
+api-daemon/api_lib usr/share/pvc
+api-daemon/pvc-api.service lib/systemd/system
+api-daemon/pvc-provisioner-worker.service lib/systemd/system
+api-daemon/provisioner usr/share/pvc

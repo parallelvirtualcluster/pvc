@@ -35,11 +35,11 @@ import kazoo.client
 
 from collections import deque
 
-import client_lib.ansiprint as ansiprint
-import client_lib.zkhandler as zkhandler
-import client_lib.common as common
+import daemon_lib.ansiprint as ansiprint
+import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
-import client_lib.ceph as ceph
+import daemon_lib.ceph as ceph
 
 #
 # Cluster search functions

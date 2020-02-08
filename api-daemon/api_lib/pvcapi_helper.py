@@ -26,12 +26,12 @@ import lxml.etree as etree
 
 from distutils.util import strtobool
 
-import client_lib.common as pvc_common
-import client_lib.cluster as pvc_cluster
-import client_lib.node as pvc_node
-import client_lib.vm as pvc_vm
-import client_lib.network as pvc_network
-import client_lib.ceph as pvc_ceph
+import daemon_lib.common as pvc_common
+import daemon_lib.cluster as pvc_cluster
+import daemon_lib.node as pvc_node
+import daemon_lib.vm as pvc_vm
+import daemon_lib.network as pvc_network
+import daemon_lib.ceph as pvc_ceph
 
 #
 # Initialization function

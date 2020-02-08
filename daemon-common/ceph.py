@@ -26,9 +26,9 @@ import json
 import time
 import math
 
-import client_lib.ansiprint as ansiprint
-import client_lib.zkhandler as zkhandler
-import client_lib.common as common
+import daemon_lib.ansiprint as ansiprint
+import daemon_lib.zkhandler as zkhandler
+import daemon_lib.common as common
 
 #
 # Supplemental functions

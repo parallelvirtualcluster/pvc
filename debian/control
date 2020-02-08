@@ -8,28 +8,28 @@ X-Python3-Version: >= 3.2
 
 Package: pvc-daemon
 Architecture: all
-Depends: systemd, pvc-client-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
+Depends: systemd, pvc-daemon-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
 Suggests: pvc-client-api, pvc-client-cli
 Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC node daemon
 
-Package: pvc-client-common
+Package: pvc-api
+Architecture: all
+Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis
+Description: Parallel Virtual Cluster API (Python 3)
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
+ .
+ This package installs the PVC API daemon
+
+Package: pvc-daemon-common
 Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml
-Description: Parallel Virtual Cluster common client libraries (Python 3)
+Description: Parallel Virtual Cluster common libraries (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
- This package installs the common client libraries
-
-Package: pvc-client-api
-Architecture: all
-Depends: systemd, pvc-client-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis
-Description: Parallel Virtual Cluster API client (Python 3)
- A KVM/Zookeeper/Ceph-based VM and private cloud manager
- .
- This package installs the PVC API client daemon
+ This package installs the common libraries for the daemon and API
 
 Package: pvc-client-cli
 Architecture: all
