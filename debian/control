@@ -6,7 +6,7 @@ Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
 X-Python3-Version: >= 3.2
 
-Package: pvc-daemon
+Package: pvc-daemon-node
 Architecture: all
 Depends: systemd, pvc-daemon-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
 Suggests: pvc-client-api, pvc-client-cli
@@ -15,7 +15,7 @@ Description: Parallel Virtual Cluster virtualization daemon (Python 3)
  .
  This package installs the PVC node daemon
 
-Package: pvc-api
+Package: pvc-daemon-api
 Architecture: all
 Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis
 Description: Parallel Virtual Cluster API (Python 3)
