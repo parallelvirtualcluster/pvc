@@ -8,11 +8,11 @@ import os
 import sys
 import json
 
-os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvc-api.sample.yaml"
+os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvcapid.sample.yaml"
 
 sys.path.append('api-daemon')
 
-pvc_api = __import__('pvc-api')
+pvc_api = __import__('pvcapid')
 
 swagger_file = "docs/manuals/swagger.json"
 

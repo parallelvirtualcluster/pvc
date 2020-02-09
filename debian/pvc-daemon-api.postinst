@@ -1,20 +1,20 @@
 #!/bin/sh
 
 # Install client binary to /usr/bin via symlink
-ln -s /usr/share/pvc/api.py /usr/bin/pvc-api
+ln -s /usr/share/pvc/api.py /usr/bin/pvcapid
 
 # Reload systemd's view of the units
 systemctl daemon-reload
 
 # Restart the main daemon (or warn on first install)
-if systemctl is-active --quiet pvc-api.service; then
-    systemctl restart pvc-api.service
+if systemctl is-active --quiet pvcapid.service; then
+    systemctl restart pvcapid.service
 else
-    echo "NOTE: The PVC client API daemon (pvc-api.service) has not been started; create a config file at /etc/pvc/pvc-api.yaml then start it."
+    echo "NOTE: The PVC client API daemon (pvcapid.service) has not been started; create a config file at /etc/pvc/pvcapid.yaml then start it."
 fi
 # Restart the worker daemon (or warn on first install)
-if systemctl is-active --quiet pvc-provisioner-worker.service; then
-    systemctl restart pvc-provisioner-worker.service
+if systemctl is-active --quiet pvcapid-worker.service; then
+    systemctl restart pvcapid-worker.service
 else
-    echo "NOTE: The PVC provisioner worker daemon (pvc-provisioner-worker.service) has not been started; create a config file at /etc/pvc/pvc-api.yaml then start it."
+    echo "NOTE: The PVC provisioner worker daemon (pvcapid-worker.service) has not been started; create a config file at /etc/pvc/pvcapid.yaml then start it."
 fi

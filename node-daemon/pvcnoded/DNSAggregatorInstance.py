@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# DNSAggregatorInstance.py - Class implementing a DNS aggregator and run by pvcd
+# DNSAggregatorInstance.py - Class implementing a DNS aggregator and run by pvcnoded
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -28,9 +28,9 @@ import dns.zone
 import dns.query
 import psycopg2
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
 
 class DNSAggregatorInstance(object):
     # Initialization function

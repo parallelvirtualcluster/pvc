@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcapi_helper.py - PVC HTTP API functions
+# helper.py - PVC HTTP API helper functions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>

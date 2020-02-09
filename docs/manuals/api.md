@@ -8,7 +8,7 @@ The [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) frame
 
 ### SSL
 
-The API accepts SSL certificate and key files via the `pvc-api.yaml` configuration to enable SSL support for the API, which protects the data and query values from snooping or tampering. SSL is strongly recommended if using the API outside of a trusted local area network.
+The API accepts SSL certificate and key files via the `pvcapid.yaml` configuration to enable SSL support for the API, which protects the data and query values from snooping or tampering. SSL is strongly recommended if using the API outside of a trusted local area network.
 
 ### API authentication
 
@@ -148,7 +148,7 @@ curl -X GET http://localhost:7370/api/v1/provisioner/status/<task-id>
 
 ## API Daemon Configuration
 
-The API is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVC_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvc-api.yaml`.
+The API is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVC_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvcapid.yaml`.
 
 ### Conventions
 
@@ -156,7 +156,7 @@ The API is configured using a YAML configuration file which is passed in to the 
 
 * Settings may `depends` on other settings. This indicates that, if one setting is enabled, the other setting is very likely `required` by that setting.
 
-### `pvc-api.yaml`
+### `pvcapid.yaml`
 
 Example configuration:
 

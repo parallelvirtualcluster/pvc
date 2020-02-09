@@ -32,8 +32,8 @@ from collections import deque
 import fcntl
 import signal
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
 
 class VMConsoleWatcherInstance(object):
     # Initialization function

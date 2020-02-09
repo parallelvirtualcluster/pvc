@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcapi_provisioner.py - PVC Provisioner functions
+# provisioner.py - PVC API Provisioner functions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -36,7 +36,7 @@ import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
-import api_lib.libvirt_schema as libvirt_schema
+import pvcapid.libvirt_schema as libvirt_schema
 
 #
 # Exceptions (used by Celery tasks)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# VMInstance.py - Class implementing a PVC virtual machine in pvcd
+# VMInstance.py - Class implementing a PVC virtual machine in pvcnoded
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -30,11 +30,11 @@ import libvirt
 import kazoo.client
 import json
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
 
-import pvcd.VMConsoleWatcherInstance as VMConsoleWatcherInstance
+import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
 def flush_locks(zk_conn, logger, dom_uuid):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')

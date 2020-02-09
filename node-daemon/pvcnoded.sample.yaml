@@ -1,5 +1,5 @@
 ---
-# pvcd cluster configuration file example
+# pvcnoded configuration file example
 #
 # This configuration file specifies details for this node in PVC. Multiple node
 # blocks can be added but only the one matching the current system nodename will
@@ -7,7 +7,7 @@
 # this sample configuration are considered defaults and, with adjustment of the
 # nodename section and coordinators list, can be used as-is on a Debian system.
 #
-# Copy this example to /etc/pvc/pvcd.conf and edit to your needs
+# Copy this example to /etc/pvc/pvcnoded.conf and edit to your needs
 
 pvc:
   # node: The (short) hostname of the node, set during provisioning

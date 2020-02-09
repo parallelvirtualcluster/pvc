@@ -4,7 +4,7 @@ The PVC node daemon ins build with Python 3 and is run directly on nodes. For de
 
 ## Configuration
 
-The Daemon is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVCD_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvcd.yaml`.
+The Daemon is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVCD_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvcnoded.yaml`.
 
 For most deployments, the management of the configuration file is handled entirely by the [PVC Ansible framework](/manuals/ansible) and should not be modified directly. Many options from the Ansible framework map directly into the configuration options in this file.
 
@@ -14,7 +14,7 @@ For most deployments, the management of the configuration file is handled entire
 
 * Settings may `depends` on other settings. This indicates that, if one setting is enabled, the other setting is very likely `required` by that setting.
 
-### `pvcd.yaml`
+### `pvcnoded.yaml`
 
 Example configuration:
 

@@ -44,17 +44,17 @@ import apscheduler.schedulers.background
 
 from distutils.util import strtobool
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.fencing as fencing
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.fencing as fencing
+import pvcnoded.common as common
 
-import pvcd.VMInstance as VMInstance
-import pvcd.NodeInstance as NodeInstance
-import pvcd.VXNetworkInstance as VXNetworkInstance
-import pvcd.DNSAggregatorInstance as DNSAggregatorInstance
-import pvcd.CephInstance as CephInstance
-import pvcd.MetadataAPIInstance as MetadataAPIInstance
+import pvcnoded.VMInstance as VMInstance
+import pvcnoded.NodeInstance as NodeInstance
+import pvcnoded.VXNetworkInstance as VXNetworkInstance
+import pvcnoded.DNSAggregatorInstance as DNSAggregatorInstance
+import pvcnoded.CephInstance as CephInstance
+import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
 
 ###############################################################################
 # PVCD - node daemon startup program
@@ -99,9 +99,9 @@ def stopKeepaliveTimer():
 
 # Get the config file variable from the environment
 try:
-    pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
+    pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
 except:
-    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcd.')
+    print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcnoded.')
     exit(1)
 
 # Set local hostname and domain variables
@@ -126,10 +126,10 @@ staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout
 staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 
 # Read and parse the config file
-def readConfig(pvcd_config_file, myhostname):
-    print('Loading configuration from file "{}"'.format(pvcd_config_file))
+def readConfig(pvcnoded_config_file, myhostname):
+    print('Loading configuration from file "{}"'.format(pvcnoded_config_file))
 
-    with open(pvcd_config_file, 'r') as cfgfile:
+    with open(pvcnoded_config_file, 'r') as cfgfile:
         try:
             o_config = yaml.load(cfgfile)
         except Exception as e:
@@ -272,7 +272,7 @@ def readConfig(pvcd_config_file, myhostname):
     return config
 
 # Get the config object from readConfig()
-config = readConfig(pvcd_config_file, myhostname)
+config = readConfig(pvcnoded_config_file, myhostname)
 debug = config['debug']
 if debug:
     print('DEBUG MODE ENABLED')
@@ -335,7 +335,7 @@ logger.out('  CPUs: {}'.format(staticdata[0]))
 logger.out('  Arch: {}'.format(staticdata[3]))
 logger.out('  OS: {}'.format(staticdata[2]))
 logger.out('  Kernel: {}'.format(staticdata[1]))
-logger.out('Starting pvcd on host {}'.format(myfqdn), state='s')
+logger.out('Starting pvcnoded on host {}'.format(myfqdn), state='s')
 
 # Define some colours for future messages if applicable
 if config['log_colours']:
@@ -421,7 +421,7 @@ if enable_networking:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brupstream'))
 
 ###############################################################################
-# PHASE 2b - Prepare sysctl for pvcd
+# PHASE 2b - Prepare sysctl for pvcnoded
 ###############################################################################
 
 if enable_networking:
@@ -553,7 +553,7 @@ def cleanup():
     # Set shutdown state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
 
-    logger.out('Terminating pvcd and cleaning up', state='s')
+    logger.out('Terminating pvcnoded and cleaning up', state='s')
 
     # Stop keepalive thread
     try:

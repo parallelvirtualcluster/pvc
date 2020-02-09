@@ -14,15 +14,15 @@ During startup, the system scans the Zookeeper database and sets up the required
 
 ## Startup sequence
 
-The daemon startup sequence is documented below. The main daemon entry-point is `Daemon.py` inside the `pvcd` folder, which is called from the `pvcd.py` stub file.
+The daemon startup sequence is documented below. The main daemon entry-point is `Daemon.py` inside the `pvcnoded` folder, which is called from the `pvcnoded.py` stub file.
 
-0. The configuration is read from `/etc/pvc/pvcd.yaml` and the configuration object set up.
+0. The configuration is read from `/etc/pvc/pvcnoded.yaml` and the configuration object set up.
 
 0. Any required filesystem directories, mostly dynamic directories, are created.
 
 0. The logger is set up. If file logging is enabled, this is the state when the first log messages are written.
 
-0. Host networking is configured based on the `pvcd.yaml` configuration file. In a normal cluster, this is the point where the node will become reachable on the network as all networking is handled by the PVC node daemon.
+0. Host networking is configured based on the `pvcnoded.yaml` configuration file. In a normal cluster, this is the point where the node will become reachable on the network as all networking is handled by the PVC node daemon.
 
 0. Sysctl tweaks are applied to the host system, to enable routing/forwarding between nodes via the host.
 

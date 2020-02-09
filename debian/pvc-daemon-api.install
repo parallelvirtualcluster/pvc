@@ -1,6 +1,6 @@
-api-daemon/pvc-api.py usr/share/pvc
-api-daemon/pvc-api.sample.yaml etc/pvc
-api-daemon/api_lib usr/share/pvc
-api-daemon/pvc-api.service lib/systemd/system
-api-daemon/pvc-provisioner-worker.service lib/systemd/system
+api-daemon/pvcapid.py usr/share/pvc
+api-daemon/pvcapid.sample.yaml etc/pvc
+api-daemon/pvcapid usr/share/pvc
+api-daemon/pvcapid.service lib/systemd/system
+api-daemon/pvcapid-worker.service lib/systemd/system
 api-daemon/provisioner usr/share/pvc

@@ -25,9 +25,9 @@ import ast
 import json
 import psutil
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
 
 class CephOSDInstance(object):
     def __init__(self, zk_conn, this_node, osd_id):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# NodeInstance.py - Class implementing a PVC node in pvcd
+# NodeInstance.py - Class implementing a PVC node in pvcnoded
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -28,9 +28,9 @@ import time
 import libvirt
 import threading
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
 
 class NodeInstance(object):
     # Initialization function
@@ -471,9 +471,9 @@ class NodeInstance(object):
         # 6. Start client API (and provisioner worker)
         if self.config['enable_api']:
             self.logger.out('Starting PVC API client service', state='i')
-            common.run_os_command("systemctl start pvc-api.service")
+            common.run_os_command("systemctl start pvcapid.service")
             self.logger.out('Starting PVC Provisioner Worker service', state='i')
-            common.run_os_command("systemctl start pvc-provisioner-worker.service")
+            common.run_os_command("systemctl start pvcapid-worker.service")
         # 7. Start metadata API; just continue if we fail
         self.metadata_api.start()
         # 8. Start DHCP servers
@@ -525,7 +525,7 @@ class NodeInstance(object):
         # 3. Stop client API
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
-            common.run_os_command("systemctl stop pvc-api.service")
+            common.run_os_command("systemctl stop pvcapid.service")
         # 4. Stop metadata API
         self.metadata_api.stop()
         time.sleep(0.1) # Time for new writer to acquire the lock

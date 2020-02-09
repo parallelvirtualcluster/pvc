@@ -27,8 +27,8 @@ import os
 import time
 import shlex
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
 
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# pvcd.py - Node daemon startup stub
+# pvcnoded.py - Node daemon startup stub
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -20,4 +20,4 @@
 #
 ###############################################################################
 
-import pvcd.Daemon
+import pvcnoded.Daemon

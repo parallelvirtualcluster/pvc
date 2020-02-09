@@ -37,8 +37,8 @@ from flask_restful import Resource, Api, reqparse, abort
 from celery import Celery
 from celery.task.control import inspect
 
-import api_lib.pvcapi_helper as api_helper
-import api_lib.pvcapi_provisioner as api_provisioner
+import pvcapid.helper as api_helper
+import pvcapid.provisioner as api_provisioner
 
 API_VERSION = 1.0
 
@@ -46,7 +46,7 @@ API_VERSION = 1.0
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
 except:
-    print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvc-api.')
+    print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvcapid.')
     exit(1)
 
 print('Starting PVC API daemon')

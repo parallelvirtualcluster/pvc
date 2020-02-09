@@ -1,5 +1,5 @@
 #!/bin/sh
 
 # Disable the services
-systemctl disable pvcd.service
-systemctl disable pvcd.target
+systemctl disable pvcnoded.service
+systemctl disable pvc.target

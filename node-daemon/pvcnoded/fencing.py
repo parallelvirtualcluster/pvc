@@ -23,9 +23,9 @@
 import time
 import threading
 
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
-import pvcd.VMInstance as VMInstance
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
+import pvcnoded.VMInstance as VMInstance
 
 #
 # Fence thread entry function

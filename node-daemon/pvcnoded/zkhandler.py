@@ -23,8 +23,6 @@
 import kazoo.client
 import uuid
 
-#import pvcd.log as log
-
 # Child list function
 def listchildren(zk_conn, key):
     children = zk_conn.get_children(key)

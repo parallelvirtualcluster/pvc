@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# VXNetworkInstance.py - Class implementing a PVC VM network and run by pvcd
+# VXNetworkInstance.py - Class implementing a PVC VM network and run by pvcnoded
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -25,9 +25,9 @@ import sys
 import time
 from textwrap import dedent
 
-import pvcd.log as log
-import pvcd.zkhandler as zkhandler
-import pvcd.common as common
+import pvcnoded.log as log
+import pvcnoded.zkhandler as zkhandler
+import pvcnoded.common as common
 
 class VXNetworkInstance(object):
     # Initialization function
@@ -637,10 +637,10 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
 
             # Recreate the environment we need for dnsmasq
-            pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
+            pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
             dhcp_environment = {
                 'DNSMASQ_BRIDGE_INTERFACE': self.bridge_nic,
-                'PVCD_CONFIG_FILE': pvcd_config_file
+                'PVCD_CONFIG_FILE': pvcnoded_config_file
             }
 
             # Define the dnsmasq config fragments
@@ -658,7 +658,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 '--log-dhcp',
                 '--keep-in-foreground',
                 '--leasefile-ro',
-                '--dhcp-script={}/pvcd/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
+                '--dhcp-script={}/pvcnoded/dnsmasq-zookeeper-leases.py'.format(os.getcwd()),
                 '--dhcp-hostsdir={}'.format(self.dnsmasq_hostsdir),
                 '--bind-interfaces',
             ]

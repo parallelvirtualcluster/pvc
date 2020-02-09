@@ -1,11 +1,11 @@
 ---
-# pvc-api client configuration file example
+# pvcapid configuration file example
 #
-# This configuration file specifies details for the PVC API client running on
+# This configuration file specifies details for the PVC API daemon running on
 # this machine. Default values are not supported; the values in this sample
 # configuration are considered defaults and can be used as-is.
 #
-# Copy this example to /etc/pvc/pvc-api.conf and edit to your needs
+# Copy this example to /etc/pvc/pvcapid.conf and edit to your needs
 
 pvc:
     # debug: Enable/disable API debug mode

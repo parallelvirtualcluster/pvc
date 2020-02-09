@@ -50,7 +50,7 @@ The API client uses a dedicated, independent set of functions to perform the act
 
 ### CLI client
 
-The CLI client interface is a Click application, which provides a convenient CLI interface to the API client. It supports connecting to multiple clusters, over both HTTP and HTTPS and with authentication, including a special "local" cluster if the client determines that an `/etc/pvc/pvc-api.yaml` configuration exists on the host.
+The CLI client interface is a Click application, which provides a convenient CLI interface to the API client. It supports connecting to multiple clusters, over both HTTP and HTTPS and with authentication, including a special "local" cluster if the client determines that an `/etc/pvc/pvcapid.yaml` configuration exists on the host.
 
 The CLI client is self-documenting using the `-h`/`--help` arguments, though a short manual can be found at the [CLI manual page](/manuals/cli).
 

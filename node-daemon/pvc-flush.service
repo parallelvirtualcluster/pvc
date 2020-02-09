@@ -2,8 +2,8 @@
 
 [Unit]
 Description = Parallel Virtual Cluster autoflush daemon
-After = pvcd.service
-PartOf = pvcd.target
+After = pvcnoded.service
+PartOf = pvc.target
 
 [Service]
 Type = oneshot
@@ -15,4 +15,4 @@ ExecStop = /usr/bin/pvc -c local node flush --wait
 ExecStopPost = /bin/sleep 30
 
 [Install]
-WantedBy = pvcd.target
+WantedBy = pvc.target

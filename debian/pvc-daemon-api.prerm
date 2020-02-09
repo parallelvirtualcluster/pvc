@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # Remove client binary symlink
-rm -f /usr/bin/pvc-api
+rm -f /usr/bin/pvcapid

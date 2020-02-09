@@ -29,7 +29,8 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST mkdir /tmp/pvc
     scp ../*.deb $HOST:/tmp/pvc/
     ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb
-    ssh $HOST $SUDO systemctl restart pvcd
+    ssh $HOST $SUDO systemctl restart pvcnoded
+    ssh $HOST $SUDO systemctl restart pvcapid
     ssh $HOST rm -rf /tmp/pvc
     echo "****"
     echo "Waiting 10s for host ${HOST} to stabilize"

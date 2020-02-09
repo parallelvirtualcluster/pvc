@@ -61,12 +61,12 @@ def get_client_id():
 def connect_zookeeper():
     # We expect the environ to contain the config file
     try:
-        pvcd_config_file = os.environ['PVCD_CONFIG_FILE']
+        pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
     except:
         # Default place
-        pvcd_config_file = '/etc/pvc/pvcd.yaml'
+        pvcnoded_config_file = '/etc/pvc/pvcnoded.yaml'
 
-    with open(pvcd_config_file, 'r') as cfgfile:
+    with open(pvcnoded_config_file, 'r') as cfgfile:
         try:
             o_config = yaml.load(cfgfile)
         except Exception as e:

@@ -8,8 +8,8 @@ After = network-online.target
 Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
-Environment = PVC_CONFIG_FILE=/etc/pvc/pvc-api.yaml
-ExecStart = /usr/share/pvc/pvc-api.py
+Environment = PVC_CONFIG_FILE=/etc/pvc/pvcapid.yaml
+ExecStart = /usr/share/pvc/pvcapid.py
 Restart = on-failure
 
 [Install]
