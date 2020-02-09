@@ -12,10 +12,9 @@ os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvcapid.sample.yaml"
 
 sys.path.append('api-daemon')
 
-pvc_api = __import__('pvcapid')
+import pvcapid.api as pvc_api
 
 swagger_file = "docs/manuals/swagger.json"
-
 swagger_data = swagger(pvc_api.app)
 swagger_data['info']['version'] = "1.0"
 swagger_data['info']['title'] = "PVC Client and Provisioner API"
