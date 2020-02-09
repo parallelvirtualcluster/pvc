@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# api.py - PVC HTTP API interface
+# Daemon.py - PVC HTTP API daemon
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
@@ -5612,25 +5612,24 @@ api.add_resource(API_Provisioner_Status_Element, '/provisioner/status/<task_id>'
 ##########################################################
 # Entrypoint
 ##########################################################
-if __name__ == '__main__':
-    if config['debug']:
-        # Run in Flask standard mode
-        app.run(config['listen_address'], config['listen_port'])
+if config['debug']:
+    # Run in Flask standard mode
+    app.run(config['listen_address'], config['listen_port'])
+else:
+    if config['ssl_enabled']:
+        # Run the WSGI server with SSL
+        http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            app,
+            keyfile=config['ssl_key_file'],
+            certfile=config['ssl_cert_file']
+        )
     else:
-        if config['ssl_enabled']:
-            # Run the WSGI server with SSL
-            http_server = gevent.pywsgi.WSGIServer(
-                (config['listen_address'], config['listen_port']),
-                app,
-                keyfile=config['ssl_key_file'],
-                certfile=config['ssl_cert_file']
-            )
-        else:
-            # Run the ?WSGI server without SSL
-            http_server = gevent.pywsgi.WSGIServer(
-                (config['listen_address'], config['listen_port']),
-                app
-            )
+        # Run the ?WSGI server without SSL
+        http_server = gevent.pywsgi.WSGIServer(
+            (config['listen_address'], config['listen_port']),
+            app
+        )
 
-        print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
-        http_server.serve_forever()
+    print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(config['listen_address'], config['listen_port'], config['ssl_enabled'], config['auth_enabled']))
+    http_server.serve_forever()
