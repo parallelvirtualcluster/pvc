@@ -1,6 +1,6 @@
 node-daemon/pvcnoded.py usr/share/pvc
 node-daemon/pvcnoded.sample.yaml etc/pvc
 node-daemon/pvcnoded usr/share/pvc
-node-daemon/pvcnoded.target lib/systemd/system
 node-daemon/pvcnoded.service lib/systemd/system
+node-daemon/pvc.target lib/systemd/system
 node-daemon/pvc-flush.service lib/systemd/system
