@@ -34,6 +34,33 @@ import daemon_lib.zkhandler as zkhandler
 ###############################################################################
 
 #
+# Run a local OS command via shell
+#
+def run_os_command(command_string, background=False, environment=None, timeout=None):
+    command = shlex.split(command_string)
+    try:
+        command_output = subprocess.run(
+            command,
+            env=environment,
+            timeout=timeout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        retcode = command_output.returncode
+    except subprocess.TimeoutExpired:
+        retcode = 128
+
+    try:
+        stdout = command_output.stdout.decode('ascii')
+    except:
+        stdout = ''
+    try:
+        stderr = command_output.stderr.decode('ascii')
+    except:
+        stderr = ''
+    return retcode, stdout, stderr
+
+#
 # Validate a UUID
 #
 def validateUUID(dom_uuid):

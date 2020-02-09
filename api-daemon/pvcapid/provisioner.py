@@ -892,33 +892,6 @@ def delete_profile(name):
     return retmsg, retcode
 
 #
-# VM provisioning helper functions
-#
-def run_os_command(command_string, background=False, environment=None, timeout=None):
-    command = shlex.split(command_string)
-    try:
-        command_output = subprocess.run(
-            command,
-            env=environment,
-            timeout=timeout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        retcode = command_output.returncode
-    except subprocess.TimeoutExpired:
-        retcode = 128
-
-    try:
-        stdout = command_output.stdout.decode('ascii')
-    except:
-        stdout = ''
-    try:
-        stderr = command_output.stderr.decode('ascii')
-    except:
-        stderr = ''
-    return retcode, stdout, stderr
-
-#
 # Cloned VM provisioning function - executed by the Celery worker
 #
 def clone_vm(self, vm_name, vm_profile, source_volumes):
@@ -1103,11 +1076,11 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     for filesystem in used_filesystems:
         if filesystem == 'swap':
-            retcode, stdout, stderr = run_os_command("which mkswap")
+            retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
             if retcode:
                 raise ProvisioningError("Failed to find binary for mkswap: {}".format(filesystem, stderr))
         else:
-            retcode, stdout, stderr = run_os_command("which mkfs.{}".format(filesystem))
+            retcode, stdout, stderr = pvc_common.run_os_command("which mkfs.{}".format(filesystem))
             if retcode:
                 raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
 
@@ -1121,7 +1094,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     if is_script_install:
         # Write the script out to a temporary file
-        retcode, stdout, stderr = run_os_command("mktemp")
+        retcode, stdout, stderr = pvc_common.run_os_command("mktemp")
         if retcode:
             raise ProvisioningError("Failed to create a temporary file: {}".format(stderr))
         script_file = stdout.strip()
@@ -1152,7 +1125,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     vm_uuid = uuid.uuid4()
     vm_description = "PVC provisioner @ {}, profile '{}'".format(datetime.datetime.now(), vm_profile)
 
-    retcode, stdout, stderr = run_os_command("uname -m")
+    retcode, stdout, stderr = pvc_common.run_os_command("uname -m")
     system_architecture = stdout.strip()
 
     # Begin assembling libvirt schema
@@ -1322,17 +1295,17 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         filesystem_args = ' '.join(filesystem_args_list)
 
         # Map the RBD device
-        retcode, stdout, stderr = run_os_command("rbd map {}".format(rbd_volume))
+        retcode, stdout, stderr = pvc_common.run_os_command("rbd map {}".format(rbd_volume))
         if retcode:
             raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
 
         # Create the filesystem
         if volume['filesystem'] == 'swap':
-            retcode, stdout, stderr = run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
+            retcode, stdout, stderr = pvc_common.run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
             if retcode:
                 raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
         else:
-            retcode, stdout, stderr = run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
+            retcode, stdout, stderr = pvc_common.run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
             if retcode:
                 raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
 
@@ -1340,7 +1313,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     if is_script_install:
         # Create temporary directory
-        retcode, stdout, stderr = run_os_command("mktemp -d")
+        retcode, stdout, stderr = pvc_common.run_os_command("mktemp -d")
         if retcode:
             raise ProvisioningError("Failed to create a temporary directory: {}".format(stderr))
         temp_dir = stdout.strip()
@@ -1356,12 +1329,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
 
             # Ensure the mount path exists (within the filesystems)
-            retcode, stdout, stderr = run_os_command("mkdir -p {}".format(mount_path))
+            retcode, stdout, stderr = pvc_common.run_os_command("mkdir -p {}".format(mount_path))
             if retcode:
                 raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
 
             # Mount filesystems to temporary directory
-            retcode, stdout, stderr = run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
+            retcode, stdout, stderr = pvc_common.run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
             if retcode:
                 raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
 
@@ -1410,7 +1383,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
                 print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
 
                 mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-                retcode, stdout, stderr = run_os_command("umount {}".format(mount_path))
+                retcode, stdout, stderr = pvc_common.run_os_command("umount {}".format(mount_path))
                 if retcode:
                     raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
 
@@ -1419,7 +1392,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
 
             rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-            retcode, stdout, stderr = run_os_command("rbd unmap {}".format(rbd_volume))
+            retcode, stdout, stderr = pvc_common.run_os_command("rbd unmap {}".format(rbd_volume))
             if retcode:
                 raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
 
@@ -1427,12 +1400,12 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     if is_script_install:
         # Remove temporary mount directory (don't fail if not removed)
-        retcode, stdout, stderr = run_os_command("rmdir {}".format(temp_dir))
+        retcode, stdout, stderr = pvc_common.run_os_command("rmdir {}".format(temp_dir))
         if retcode:
             print('Failed to delete temporary directory "{}": {}'.format(temp_dir, stderr))
 
         # Remote temporary script (don't fail if not removed)
-        retcode, stdout, stderr = run_os_command("rm -f {}".format(script_file))
+        retcode, stdout, stderr = pvc_common.run_os_command("rm -f {}".format(script_file))
         if retcode:
             print('Failed to delete temporary script file "{}": {}'.format(script_file, stderr))
 
