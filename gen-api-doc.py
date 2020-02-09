@@ -12,7 +12,7 @@ os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvcapid.sample.yaml"
 
 sys.path.append('api-daemon')
 
-import pvcapid.api as pvc_api
+import pvcapid.flaskapi as pvc_api
 
 swagger_file = "docs/manuals/swagger.json"
 swagger_data = swagger(pvc_api.app)
