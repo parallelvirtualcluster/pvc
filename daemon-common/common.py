@@ -23,6 +23,8 @@
 import uuid
 import lxml
 import math
+import shlex
+import subprocess
 import kazoo.client
 
 from distutils.util import strtobool
