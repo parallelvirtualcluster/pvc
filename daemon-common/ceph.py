@@ -205,6 +205,8 @@ def getOutputColoursOSD(osd_information):
 
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
 
+# OSD addition and removal uses the /cmd/ceph pipe
+# These actions must occur on the specific node they reference
 def add_osd(zk_conn, node, device, weight):
     # Verify the target node exists
     if not common.verifyNode(zk_conn, node):
@@ -279,118 +281,35 @@ def in_osd(zk_conn, osd_id):
     if not verifyOSD(zk_conn, osd_id):
         return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
 
-    # Tell the cluster to online an OSD
-    in_osd_string = 'osd_in {}'.format(osd_id)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': in_osd_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-osd_in':
-                message = 'Set OSD {} online in the cluster.'.format(osd_id)
-                success = True
-            else:
-                message = 'ERROR: Failed to set OSD online; check node logs for details.'
-                success = False
-        except:
-            success = False
-            message = 'ERROR Command ignored by node.'
+    retcode, stdout, stderr = common.run_os_command('ceph osd in {}'.format(osd_id))
+    if retcode:
+        return False, 'ERROR: Failed to enable OSD {}: {}'.format(osd_id, stderr)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
-
-    return success, message
+    return True, 'Set OSD {} online.'.format(osd_id)
 
 def out_osd(zk_conn, osd_id):
     if not verifyOSD(zk_conn, osd_id):
         return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
 
-    # Tell the cluster to offline an OSD
-    out_osd_string = 'osd_out {}'.format(osd_id)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': out_osd_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-osd_out':
-                message = 'Set OSD {} offline in the cluster.'.format(osd_id)
-                success = True
-            else:
-                message = 'ERROR: Failed to set OSD offline; check node logs for details.'
-                success = False
-        except:
-            success = False
-            message = 'ERROR Command ignored by node.'
+    retcode, stdout, stderr = common.run_os_command('ceph osd out {}'.format(osd_id))
+    if retcode:
+        return False, 'ERROR: Failed to disable OSD {}: {}'.format(osd_id, stderr)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
-
-    return success, message
+    return True, 'Set OSD {} offline.'.format(osd_id)
 
 def set_osd(zk_conn, option):
-    # Tell the cluster to set an OSD property
-    set_osd_string = 'osd_set {}'.format(option)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': set_osd_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-osd_set':
-                message = 'Set OSD property {} on the cluster.'.format(option)
-                success = True
-            else:
-                message = 'ERROR: Failed to set OSD property; check node logs for details.'
-                success = False
-        except:
-            success = False
-            message = 'ERROR Command ignored by node.'
+    retcode, stdout, stderr = common.run_os_command('ceph osd set {}'.format(option))
+    if retcode:
+        return False, 'ERROR: Failed to set property "{}": {}'.format(option, stderr)
 
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
-    return success, message
+    return True, 'Set OSD property "{}".'.format(option)
 
 def unset_osd(zk_conn, option):
-    # Tell the cluster to unset an OSD property
-    unset_osd_string = 'osd_unset {}'.format(option)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': unset_osd_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-osd_unset':
-                message = 'Unset OSD property {} on the cluster.'.format(option)
-                success = True
-            else:
-                message = 'ERROR: Failed to unset OSD property; check node logs for details.'
-                success = False
-        except:
-            success = False
-            message = 'ERROR Command ignored by node.'
+    retcode, stdout, stderr = common.run_os_command('ceph osd unset {}'.format(option))
+    if retcode:
+        return False, 'ERROR: Failed to unset property "{}": {}'.format(option, stderr)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
-
-    return success, message
+    return True, 'Unset OSD property "{}".'.format(option)
 
 def get_list_osd(zk_conn, limit, is_fuzzy=True):
     osd_list = []
@@ -664,65 +583,66 @@ def getPoolInformation(zk_conn, pool):
     return pool_information
 
 def add_pool(zk_conn, name, pgs, replcfg):
-    # Tell the cluster to create a new pool
-    add_pool_string = 'pool_add {},{},{}'.format(name, pgs, replcfg)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_pool_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-pool_add':
-                message = 'Created new RBD pool "{}" with "{}" PGs and replication configuration {}.'.format(name, pgs, replcfg)
-                success = True
-            else:
-                message = 'ERROR: Failed to create new pool; check node logs for details.'
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    # Prepare the copies/mincopies variables
+    try:
+        copies, mincopies = replcfg.split(',')
+        copies = int(copies.replace('copies=', ''))
+        mincopies = int(mincopies.replace('mincopies=', ''))
+    except:
+        copies = None
+        mincopies = None
+    if not copies or not mincopies:
+        return False, 'ERROR: Replication configuration "{}" is not valid.'.format(replcfg)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 1. Create the pool
+    retcode, stdout, stderr = common.run_os_command('ceph osd pool create {} {} replicated'.format(name, pgs))
+    if retcode:
+        return False, 'ERROR: Failed to create pool "{}" with {} PGs: {}'.format(name, pgs, stderr)
+    
+    # 2. Set the size and minsize
+    retcode, stdout, stderr = common.run_os_command('ceph osd pool set {} size {}'.format(name, copies))
+    if retcode:
+        return False, 'ERROR: Failed to set pool "{}" size of {}: {}'.format(name, copies, stderr)
 
-    return success, message
+    retcode, stdout, stderr = common.run_os_command('ceph osd pool set {} min_size {}'.format(name, mincopies))
+    if retcode:
+        return False, 'ERROR: Failed to set pool "{}" minimum size of {}: {}'.format(name, mincopies, stderr)
+
+    # 3. Enable RBD application
+    retcode, stdout, stderr = common.run_os_command('ceph osd pool application enable {} rbd'.format(name))
+    if retcode:
+        return False, 'ERROR: Failed to enable RBD application on pool "{}" : {}'.format(name, stderr)
+
+    # 4. Add the new pool to Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/pools/{}'.format(name): '',
+        '/ceph/pools/{}/pgs'.format(name): pgs,
+        '/ceph/pools/{}/stats'.format(name): '{}',
+        '/ceph/volumes/{}'.format(name): '',
+        '/ceph/snapshots/{}'.format(name): '',
+    })
+
+    return True, 'Created RBD pool "{}" with {} PGs'.format(name, pgs)
 
 def remove_pool(zk_conn, name):
     if not verifyPool(zk_conn, name):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
 
-    # Tell the cluster to create a new pool
-    remove_pool_string = 'pool_remove {}'.format(name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_pool_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-pool_remove':
-                message = 'Removed RBD pool "{}" and all volumes.'.format(name)
-                success = True
-            else:
-                message = 'ERROR: Failed to remove pool; check node logs for details.'
-                success = False
-        except Exception as e:
-            message = 'ERROR: Command ignored by node: {}'.format(e)
-            success = False
+    # 1. Remove pool volumes
+    for volume in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(name)):
+        remove_volume(zk_conn, logger, name, volume)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 2. Remove the pool
+    retcode, stdout, stderr = common.run_os_command('ceph osd pool rm {pool} {pool} --yes-i-really-really-mean-it'.format(pool=name))
+    if retcode:
+        return False, 'ERROR: Failed to remove pool "{}": {}'.format(name, stderr)
 
-    return success, message
+    # 3. Delete pool from Zookeeper
+    zkhandler.deletekey(zk_conn, '/ceph/pools/{}'.format(name))
+    zkhandler.deletekey(zk_conn, '/ceph/volumes/{}'.format(name))
+    zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}'.format(name))
+
+    return True, 'Removed RBD pool "{}" and all volumes.'.format(name)
 
 def get_list_pool(zk_conn, limit, is_fuzzy=True):
     pool_list = []
@@ -967,154 +887,112 @@ def getVolumeInformation(zk_conn, pool, volume):
     return volume_information
 
 def add_volume(zk_conn, pool, name, size):
-    # Tell the cluster to create a new volume
-    databytes = format_bytes_fromhuman(size)
-    add_volume_string = 'volume_add {},{},{}'.format(pool, name, databytes)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_volume_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-volume_add':
-                message = 'Created new RBD volume "{}" of size "{}" on pool "{}".'.format(name, size, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to create new volume; check node logs for details.'
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    # 1. Create the volume
+    retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
+    if retcode:
+        return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 2. Get volume stats
+    retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
+    volstats = stdout
 
-    return success, message
+    # 3. Add the new volume to Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}'.format(pool, name): '',
+        '/ceph/volumes/{}/{}/stats'.format(pool, name): volstats,
+        '/ceph/snapshots/{}/{}'.format(pool, name): '',
+    })
+
+    return True, 'Created RBD volume "{}/{}" ({})'.format(pool, name, size)
+
+def clone_volume(zk_conn, pool, name_src, name_new):
+    if not verifyVolume(zk_conn, pool, name_src):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name_src, pool)
+
+    # 1. Clone the volume
+    retcode, stdout, stderr = common.run_os_command('rbd copy {}/{} {}/{}'.format(pool, name_src, pool, name_new))
+    if retcode:
+        return False, 'ERROR: Failed to clone RBD volume "{}" to "{}" in pool "{}": {}'.format(name_src, new_name, pool, stderr)
+
+    # 2. Get volume stats
+    retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name_new))
+    volstats = stdout
+
+    # 3. Add the new volume to Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}'.format(pool, name_new): '',
+        '/ceph/volumes/{}/{}/stats'.format(pool, name_new): volstats,
+        '/ceph/snapshots/{}/{}'.format(pool, name_new): '',
+    })
+
+    return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(name, name_new, pool)
 
 def resize_volume(zk_conn, pool, name, size):
-    # Tell the cluster to resize the volume
-    databytes = format_bytes_fromhuman(size)
-    resize_volume_string = 'volume_resize {},{},{}'.format(pool, name, databytes)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': resize_volume_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-volume_resize':
-                message = 'Resized RBD volume "{}" to size "{}" on pool "{}".'.format(name, size, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to resize volume; check node logs for details.'
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    if not verifyVolume(zk_conn, pool, name):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 1. Resize the volume
+    retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
+    if retcode:
+        return False, 'ERROR: Failed to resize RBD volume "{}" to size "{}" in pool "{}": {}'.format(name, size, pool, stderr)
 
-    return success, message
+    # 2. Get volume stats
+    retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
+    volstats = stdout
+
+    # 3. Add the new volume to Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}'.format(pool, name): '',
+        '/ceph/volumes/{}/{}/stats'.format(pool, name): volstats,
+        '/ceph/snapshots/{}/{}'.format(pool, name): '',
+    })
+
+    return True, 'Resized RBD volume "{}" to size "{}" in pool "{}".'.format(name, size, pool)
 
 def rename_volume(zk_conn, pool, name, new_name):
-    # Tell the cluster to rename
-    rename_volume_string = 'volume_rename {},{},{}'.format(pool, name, new_name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': rename_volume_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-volume_rename':
-                message = 'Renamed RBD volume "{}" to "{}" on pool "{}".'.format(name, new_name, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to rename volume {} to {}; check node logs for details.'.format(name, new_name)
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    if not verifyVolume(zk_conn, pool, name):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 1. Rename the volume
+    retcode, stdout, stderr = common.run_os_command('rbd rename {}/{} {}'.format(pool, name, new_name))
+    if retcode:
+        return False, 'ERROR: Failed to rename volume "{}" to "{}" in pool "{}": {}'.format(name, new_name, pool, stderr)
 
-    return success, message
+    # 2. Rename the volume in Zookeeper
+    zkhandler.renamekey(zk_conn, {
+        '/ceph/volumes/{}/{}'.format(pool, name): '/ceph/volumes/{}/{}'.format(pool, new_name),
+        '/ceph/snapshots/{}/{}'.format(pool, name): '/ceph/snapshots/{}/{}'.format(pool, new_name),
+    })
 
-def clone_volume(zk_conn, pool, name, new_name):
-    # Tell the cluster to clone
-    clone_volume_string = 'volume_clone {},{},{}'.format(pool, name, new_name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': clone_volume_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-volume_clone':
-                message = 'Cloned RBD volume "{}" to "{}" on pool "{}".'.format(name, new_name, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to clone volume {} to {}; check node logs for details.'.format(name, new_name)
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    # 3. Get volume stats
+    retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, new_name))
+    volstats = stdout
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 4. Update the volume stats in Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}/stats'.format(pool, new_name): volstats,
+    })
 
-    return success, message
+    return True, 'Renamed RBD volume "{}" to "{}" in pool "{}".'.format(name, new_name, pool)
 
 def remove_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
-        return False, 'ERROR: No volume with name "{}" is present in pool {}.'.format(name, pool)
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
-    # Tell the cluster to create a new volume
-    remove_volume_string = 'volume_remove {},{}'.format(pool, name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_volume_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-volume_remove':
-                message = 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to remove volume; check node logs for details.'
-                success = False
-        except Exception as e:
-            message = 'ERROR: Command ignored by node: {}'.format(e)
-            success = False
+    # 1. Remove volume snapshots
+    for snapshot in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}/{}'.format(pool, name)):
+        remove_snapshot(zk_conn, logger, pool, volume, snapshot)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 2. Remove the volume
+    retcode, stdout, stderr = common.run_os_command('rbd rm {}/{}'.format(pool, name))
+    if retcode:
+        return False, 'ERROR: Failed to remove RBD volume "{}" in pool "{}": {}'.format(name, pool, stderr)
 
-    return success, message
+    # 3. Delete volume from Zookeeper
+    zkhandler.deletekey(zk_conn, '/ceph/volumes/{}/{}'.format(pool, name))
+    zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}'.format(pool, name))
+
+    return True, 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
 
 def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []
@@ -1276,94 +1154,55 @@ def getCephSnapshots(zk_conn, pool, volume):
     return snapshot_list
 
 def add_snapshot(zk_conn, pool, volume, name):
-    # Tell the cluster to create a new snapshot
-    add_snapshot_string = 'snapshot_add {},{},{}'.format(pool, volume, name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': add_snapshot_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-snapshot_add':
-                message = 'Created new RBD snapshot "{}" of volume "{}" on pool "{}".'.format(name, volume, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to create new snapshot; check node logs for details.'
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    if not verifyVolume(zk_conn, pool, volume):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(volume, pool)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 1. Create the snapshot
+    retcode, stdout, stderr = common.run_os_command('rbd snap create {}/{}@{}'.format(pool, volume, name))
+    if retcode:
+        return False, 'ERROR: Failed to create RBD snapshot "{}" of volume "{}" in pool "{}": {}'.format(name, volume, pool, stderr)
 
-    return success, message
+    # 2. Add the snapshot to Zookeeper
+    zkhandler.writedata(zk_conn, {
+        '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name): '',
+        '/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, name): '{}'
+    })
+    
+    return True, 'Created RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
 
 def rename_snapshot(zk_conn, pool, volume, name, new_name):
-    # Tell the cluster to rename
-    rename_snapshot_string = 'snapshot_rename {},{},{}'.format(pool, name, new_name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': rename_snapshot_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-snapshot_rename':
-                message = 'Renamed RBD volume snapshot "{}" to "{}" for volume {} on pool "{}".'.format(name, new_name, volume, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to rename volume {} to {}; check node logs for details.'.format(name, new_name)
-                success = False
-        except:
-            message = 'ERROR: Command ignored by node.'
-            success = False
+    if not verifyVolume(zk_conn, pool, volume):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(volume, pool)
+    if not verifySnapshot(zk_conn, pool, volume, name):
+        return False, 'ERROR: No snapshot with name "{}" is present for volume "{}" in pool "{}".'.format(name, volume, pool)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 1. Rename the snapshot
+    retcode, stdout, stderr = common.run_os_command('rbd snap rename {}/{}@{} {}'.format(pool, volume, name, new_name))
+    if retcode:
+        return False, 'ERROR: Failed to rename RBD snapshot "{}" to "{}" for volume "{}" in pool "{}": {}'.format(name, new_name, volume, pool, stderr)
 
-    return success, message
+    # 2. Rename the snapshot in ZK
+    zkhandler.renamekey(zk_conn, {
+        '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name): '/ceph/snapshots/{}/{}/{}'.format(pool, volume, new_name)
+    })
+
+    return True, 'Renamed RBD snapshot "{}" to "{}" for volume "{}" in pool "{}".'.format(name, new_name, volume, pool)
 
 def remove_snapshot(zk_conn, pool, volume, name):
+    if not verifyVolume(zk_conn, pool, volume):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(volume, pool)
     if not verifySnapshot(zk_conn, pool, volume, name):
-        return False, 'ERROR: No snapshot with name "{}" is present of volume {} on pool {}.'.format(name, volume, pool)
+        return False, 'ERROR: No snapshot with name "{}" is present of volume {} in pool {}.'.format(name, volume, pool)
 
-    # Tell the cluster to create a new snapshot
-    remove_snapshot_string = 'snapshot_remove {},{},{}'.format(pool, volume, name)
-    zkhandler.writedata(zk_conn, {'/cmd/ceph': remove_snapshot_string})
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock(zk_conn, '/cmd/ceph')
-    with lock:
-        try:
-            result = zkhandler.readdata(zk_conn, '/cmd/ceph').split()[0]
-            if result == 'success-snapshot_remove':
-                message = 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
-                success = True
-            else:
-                message = 'ERROR: Failed to remove snapshot; check node logs for details.'
-                success = False
-        except Exception as e:
-            message = 'ERROR: Command ignored by node: {}'.format(e)
-            success = False
+    # 1. Remove the snapshot
+    retcode, stdout, stderr = common.run_os_command('rbd snap rm {}/{}@{}'.format(pool, volume, name))
+    if retcode:
+        return False, 'Failed to remove RBD snapshot "{}" of volume "{}" in pool "{}": {}'.format(name, volume, pool, stderr)
 
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock(zk_conn, '/cmd/ceph')
-    with lock:
-        time.sleep(0.5)
-        zkhandler.writedata(zk_conn, {'/cmd/ceph': ''})
+    # 2. Delete snapshot from Zookeeper
+    zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
 
-    return success, message
+    return True, 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
 
 def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
     snapshot_list = []
