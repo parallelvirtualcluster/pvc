@@ -3334,6 +3334,53 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
         )
 api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<pool>/<volume>/clone')
 
+# /storage/ceph/volume/<pool>/<volume>/upload
+class API_Storage_Ceph_Volume_Element_Upload(Resource):
+    @Authenticator
+    def post(self, pool, volume):
+        """
+        Upload a disk image to Ceph volume {volume} in pool {pool}
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: file
+            type: binary
+            required: true
+            description: The raw binary contents of the file
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        from flask_restful import reqparse
+        from werkzeug.datastructures import FileStorage
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=FileStorage, location='files')
+        data = parser.parse_args()
+        image_data = data.get('file', None)
+        if not image_data:
+            return {'message':'An image file contents must be specified'}, 400
+        return api_helper.ceph_volume_upload(
+            pool,
+            volume,
+            image_data
+        )
+api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<pool>/<volume>/upload')
+
 # /storage/ceph/snapshot
 class API_Storage_Ceph_Snapshot_Root(Resource):
     @RequestParser([

@@ -20,6 +20,7 @@
 #
 ###############################################################################
 
+import os
 import re
 import click
 import json
@@ -903,7 +904,7 @@ def add_volume(zk_conn, pool, name, size):
         '/ceph/snapshots/{}/{}'.format(pool, name): '',
     })
 
-    return True, 'Created RBD volume "{}/{}" ({})'.format(pool, name, size)
+    return True, 'Created RBD volume "{}/{}" ({}).'.format(pool, name, size)
 
 def clone_volume(zk_conn, pool, name_src, name_new):
     if not verifyVolume(zk_conn, pool, name_src):
@@ -993,6 +994,41 @@ def remove_volume(zk_conn, pool, name):
     zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}'.format(pool, name))
 
     return True, 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
+
+def map_volume(zk_conn, pool, name):
+    if not verifyVolume(zk_conn, pool, name):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
+
+    # 1. Map the volume onto the local system
+    retcode, stdout, stderr = common.run_os_command('rbd map {}/{}'.format(pool, name))
+    if retcode:
+        return False, 'ERROR: Failed to map RBD volume "{}" in pool "{}": {}'.format(name, pool, stderr)
+
+    # 2. Calculate the absolute path to the mapped volume
+    mapped_volume = '/dev/rbd/{}/{}'.format(pool, name)
+
+    # 3. Ensure the volume exists
+    if not os.path.exists(mapped_volume):
+        return False, 'ERROR: Mapped volume not found at expected location "{}".'.format(mapped_volume)
+
+    return True, mapped_volume
+
+def unmap_volume(zk_conn, pool, name):
+    if not verifyVolume(zk_conn, pool, name):
+        return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
+
+    mapped_volume = '/dev/rbd/{}/{}'.format(pool, name)
+
+    # 1. Ensure the volume exists
+    if not os.path.exists(mapped_volume):
+        return False, 'ERROR: Mapped volume not found at expected location "{}".'.format(mapped_volume)
+
+    # 2. Unap the volume
+    retcode, stdout, stderr = common.run_os_command('rbd unmap {}'.format(mapped_volume))
+    if retcode:
+        return False, 'ERROR: Failed to unmap RBD volume at "{}": {}'.format(mapped_volume, stderr)
+
+    return True, 'Unmapped RBD volume at "{}".'.format(mapped_volume)
 
 def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []

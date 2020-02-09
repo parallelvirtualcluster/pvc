@@ -1327,6 +1327,49 @@ def ceph_volume_remove(pool, name):
     }
     return output, retcode
 
+def ceph_volume_upload(pool, volume, data):
+    """
+    Upload a raw file via HTTP post to a PVC Ceph volume
+    """
+    # Map the target blockdev
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
+    pvc_common.stopZKConnection(zk_conn)
+    if not retflag:
+        output = {
+            'message': retdata.replace('\"', '\'')
+        }
+        retcode = 400
+        return output, retcode
+    blockdev = retdata
+
+    output = {
+        'message': "Wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
+    }
+    retcode = 200
+
+    # Save the data to the blockdev
+    try:
+        data.save(blockdev)
+    except:
+        output = {
+            'message': "ERROR: Failed to write image file to volume."
+        }
+        retcode = 400
+
+    # Unmap the target blockdev
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
+    pvc_common.stopZKConnection(zk_conn)
+    if not retflag:
+        output = {
+            'message': retdata.replace('\"', '\'')
+        }
+        retcode = 400
+        return output, retcode
+
+    return output, retcode
+
 def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.

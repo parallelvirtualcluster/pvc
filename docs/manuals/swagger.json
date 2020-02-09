@@ -4691,6 +4691,44 @@
                 ]
             }
         },
+        "/api/v1/storage/ceph/volume/{pool}/{volume}/upload": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The raw binary contents of the file",
+                        "in": "query",
+                        "name": "file",
+                        "required": true,
+                        "type": "binary"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Upload a disk image to Ceph volume {volume} in pool {pool}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
         "/api/v1/vm": {
             "get": {
                 "description": "",
