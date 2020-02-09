@@ -30,7 +30,6 @@ for HOST in ${HOSTS[@]}; do
     scp ../*.deb $HOST:/tmp/pvc/
     ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb
     ssh $HOST $SUDO systemctl restart pvcnoded
-    ssh $HOST $SUDO systemctl restart pvcapid
     ssh $HOST rm -rf /tmp/pvc
     echo "****"
     echo "Waiting 10s for host ${HOST} to stabilize"
