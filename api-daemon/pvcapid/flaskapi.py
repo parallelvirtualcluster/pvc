@@ -3347,6 +3347,12 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: requestBody
+            content:
+              application/octet-stream:
+                schema:
+                  type: string
+                  format: binary
           - in: query
             name: image_format
             type: string
@@ -3359,11 +3365,6 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
               - qed
               - vdi
               - vpc
-          - in: formdata
-            name: file
-            type: binary
-            required: true
-            description: The raw binary contents of the file
         responses:
           200:
             description: OK

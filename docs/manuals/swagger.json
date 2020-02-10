@@ -4696,6 +4696,17 @@
                 "description": "",
                 "parameters": [
                     {
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "in": "requestBody"
+                    },
+                    {
                         "description": "The type of source image file",
                         "enum": [
                             "raw",
@@ -4709,13 +4720,6 @@
                         "name": "image_format",
                         "required": true,
                         "type": "string"
-                    },
-                    {
-                        "description": "The raw binary contents of the file",
-                        "in": "formdata",
-                        "name": "file",
-                        "required": true,
-                        "type": "binary"
                     }
                 ],
                 "responses": {
