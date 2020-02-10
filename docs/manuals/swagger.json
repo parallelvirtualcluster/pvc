@@ -4704,7 +4704,7 @@
                                 }
                             }
                         },
-                        "in": "request"
+                        "in": "body"
                     },
                     {
                         "description": "The type of source image file",

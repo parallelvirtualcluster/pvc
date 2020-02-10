@@ -3347,7 +3347,7 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
         tags:
           - storage / ceph
         parameters:
-          - in: request
+          - in: body
             content:
               application/octet-stream:
                 schema:
