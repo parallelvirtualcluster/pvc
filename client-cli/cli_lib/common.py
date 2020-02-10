@@ -23,7 +23,7 @@
 import requests
 import click
 
-def call_api(config, operation, request_uri, params=None, data=None):
+def call_api(config, operation, request_uri, params=None, data=None, files=None):
     # Craft the URI
     uri = '{}://{}{}{}'.format(
         config['api_scheme'],
@@ -52,14 +52,16 @@ def call_api(config, operation, request_uri, params=None, data=None):
                 uri,
                 headers=headers,
                 params=params,
-                data=data
+                data=data,
+                files=files
             )
         if operation == 'put':
             response = requests.put(
                 uri,
                 headers=headers,
                 params=params,
-                data=data
+                data=data,
+                files=files
             )
         if operation == 'patch':
             response = requests.patch(

@@ -855,6 +855,29 @@ def ceph_volume_add(config, pool, volume, size):
 
     return retstatus, response.json()['message']
 
+def ceph_volume_upload(config, pool, volume, image_format, image_file):
+    """
+    Upload a disk image to a Ceph volume
+
+    API endpoint: POST /api/v1/storage/ceph/volume/{pool}/{volume}/upload
+    API arguments: image_format={image_format}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        'image_format': image_format
+    }
+    files = {
+        'file': open(image_file,'rb')
+    }
+    response = call_api(config, 'post', '/storage/ceph/volume/{}/{}/upload'.format(pool, volume), params=params, files=files)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
 def ceph_volume_remove(config, pool, volume):
     """
     Remove Ceph volume

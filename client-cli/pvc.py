@@ -1727,6 +1727,40 @@ def ceph_volume_add(pool, name, size):
     cleanup(retcode, retmsg)
 
 ###############################################################################
+# pvc storage volume upload
+###############################################################################
+@click.command(name='upload', short_help='Upload a local image file to RBD volume.')
+@click.argument(
+    'pool'
+)
+@click.argument(
+    'name'
+)
+@click.argument(
+    'image_file'
+)
+@click.option(
+    '-f', '--format', 'image_format',
+    default='raw', show_default=True,
+    help='The format of the source image.'
+)
+def ceph_volume_upload(pool, name, image_format, image_file):
+    """
+    Upload a disk image file IMAGE_FILE to the RBD volume NAME in pool POOL.
+
+    The volume NAME must exist in the pool before uploading to it, and must be large enough to fit the disk image in raw format.
+
+    If the image format is "raw", the image is uploaded directly to the target volume without modification. Otherwise, it will be converted into raw format by "qemu-img convert" on the remote side before writing using a temporary volume. The image format must be a valid format recognized by "qemu-img", such as "vmdk" or "qcow2".
+    """
+
+    if not os.path.exists(image_file):
+        click.echo("ERROR: File '{}' does not exist!".format(image_file))
+        exit(1)
+
+    retcode, retmsg = pvc_ceph.ceph_volume_upload(config, pool, name, image_format, image_file)
+    cleanup(retcode, retmsg)
+
+###############################################################################
 # pvc storage volume remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove RBD volume.')
@@ -3271,6 +3305,7 @@ ceph_pool.add_command(ceph_pool_remove)
 ceph_pool.add_command(ceph_pool_list)
 
 ceph_volume.add_command(ceph_volume_add)
+ceph_volume.add_command(ceph_volume_upload)
 ceph_volume.add_command(ceph_volume_resize)
 ceph_volume.add_command(ceph_volume_rename)
 ceph_volume.add_command(ceph_volume_clone)
