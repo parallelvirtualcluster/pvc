@@ -4696,8 +4696,23 @@
                 "description": "",
                 "parameters": [
                     {
-                        "description": "The raw binary contents of the file",
+                        "description": "The type of source image file",
+                        "enum": [
+                            "raw",
+                            "vmdk",
+                            "qcow2",
+                            "qed",
+                            "vdi",
+                            "vpc"
+                        ],
                         "in": "query",
+                        "name": "image_format",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The raw binary contents of the file",
+                        "in": "formdata",
                         "name": "file",
                         "required": true,
                         "type": "binary"

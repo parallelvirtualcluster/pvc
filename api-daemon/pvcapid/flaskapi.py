@@ -3336,8 +3336,11 @@ api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<p
 
 # /storage/ceph/volume/<pool>/<volume>/upload
 class API_Storage_Ceph_Volume_Element_Upload(Resource):
+    @RequestParser([
+        { 'name': 'image_format' }
+    ])
     @Authenticator
-    def post(self, pool, volume):
+    def post(self, pool, volume, reqargs):
         """
         Upload a disk image to Ceph volume {volume} in pool {pool}
         ---
@@ -3345,6 +3348,18 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
           - storage / ceph
         parameters:
           - in: query
+            name: image_format
+            type: string
+            required: true
+            description: The type of source image file
+            enum:
+              - raw
+              - vmdk
+              - qcow2
+              - qed
+              - vdi
+              - vpc
+          - in: formdata
             name: file
             type: binary
             required: true
@@ -3374,10 +3389,12 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
         image_data = data.get('file', None)
         if not image_data:
             return {'message':'An image file contents must be specified'}, 400
+
         return api_helper.ceph_volume_upload(
             pool,
             volume,
-            image_data
+            image_data,
+            reqargs.get('image_format', None)
         )
 api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<pool>/<volume>/upload')
 

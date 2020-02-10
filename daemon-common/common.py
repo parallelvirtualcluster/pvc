@@ -38,11 +38,12 @@ import daemon_lib.zkhandler as zkhandler
 #
 # Run a local OS command via shell
 #
-def run_os_command(command_string, background=False, environment=None, timeout=None):
+def run_os_command(command_string, background=False, environment=None, timeout=None, shell=False):
     command = shlex.split(command_string)
     try:
         command_output = subprocess.run(
             command,
+            shell=shell,
             env=environment,
             timeout=timeout,
             stdout=subprocess.PIPE,

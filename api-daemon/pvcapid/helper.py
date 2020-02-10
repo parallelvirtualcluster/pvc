@@ -1327,48 +1327,143 @@ def ceph_volume_remove(pool, name):
     }
     return output, retcode
 
-def ceph_volume_upload(pool, volume, data):
+def ceph_volume_upload(pool, volume, data, img_type):
     """
     Upload a raw file via HTTP post to a PVC Ceph volume
     """
-    # Map the target blockdev
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
-    pvc_common.stopZKConnection(zk_conn)
-    if not retflag:
+    # Determine the image conversion options
+    if img_type not in ['raw', 'vmdk', 'qcow2', 'qed', 'vdi', 'vpc']:
         output = {
-            'message': retdata.replace('\"', '\'')
-        }
-        retcode = 400
-        return output, retcode
-    blockdev = retdata
-
-    output = {
-        'message': "Wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
-    }
-    retcode = 200
-
-    # Save the data to the blockdev
-    try:
-        data.save(blockdev)
-    except:
-        output = {
-            'message': "ERROR: Failed to write image file to volume."
-        }
-        retcode = 400
-
-    # Unmap the target blockdev
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
-    pvc_common.stopZKConnection(zk_conn)
-    if not retflag:
-        output = {
-            'message': retdata.replace('\"', '\'')
+            "message": "ERROR: Image type '{}' is not valid.".format(img_type)
         }
         retcode = 400
         return output, retcode
 
-    return output, retcode
+    # Get the size of the target block device
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retcode, retdata = pvc_ceph.get_list_volume(zk_conn, pool, volume, is_fuzzy=False)
+    pvc_common.stopZKConnection(zk_conn)
+    # If there's no target, return failure
+    if not retcode or len(retdata) < 1:
+        output = {
+            "message": "ERROR: Target volume '{}' does not exist in pool '{}'.".format(volume, pool)
+        }
+        retcode = 400
+        return output, retcode
+    dev_size = retdata[0]['stats']['size']
+
+    def cleanup_maps_and_volumes():
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        # Unmap the target blockdev
+        retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
+        # Unmap the temporary blockdev
+        retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, "{}_tmp".format(volume))
+        # Remove the temporary blockdev
+        retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "{}_tmp".format(volume))
+        pvc_common.stopZKConnection(zk_conn)
+
+    # Create a temporary block device to store non-raw images
+    if img_type == 'raw':
+        # Map the target blockdev
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
+        pvc_common.stopZKConnection(zk_conn)
+        if not retflag:
+            output = {
+                'message': retdata.replace('\"', '\'')
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+        dest_blockdev = retdata
+
+        # Save the data to the blockdev directly
+        try:
+            data.save(dest_blockdev)
+        except:
+            output = {
+                'message': "ERROR: Failed to write image file to volume."
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+
+        output = {
+            'message': "Wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
+        }
+        retcode = 200
+        cleanup_maps_and_volumes()
+        return output, retcode
+
+    # Write the image directly to the blockdev
+    else:
+        # Create a temporary blockdev
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, "{}_tmp".format(volume), dev_size)
+        pvc_common.stopZKConnection(zk_conn)
+        if not retflag:
+            output = {
+                'message': retdata.replace('\"', '\'')
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+
+        # Map the temporary target blockdev
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, "{}_tmp".format(volume))
+        pvc_common.stopZKConnection(zk_conn)
+        if not retflag:
+            output = {
+                'message': retdata.replace('\"', '\'')
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+        temp_blockdev = retdata
+
+        # Map the target blockdev
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
+        pvc_common.stopZKConnection(zk_conn)
+        if not retflag:
+            output = {
+                'message': retdata.replace('\"', '\'')
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+        dest_blockdev = retdata
+
+        # Save the data to the temporary blockdev directly
+        try:
+            data.save(temp_blockdev)
+        except:
+            output = {
+                'message': "ERROR: Failed to write image file to temporary volume."
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+
+        # Convert from the temporary to destination format on the blockdevs
+        retcode, stdout, stderr = pvc_common.run_os_command(
+            'qemu-img convert -C -f {} -O raw {} {}'.format(img_type, temp_blockdev, dest_blockdev)
+        )
+        if retcode:
+            output = {
+                'message': "ERROR: Failed to convert image format from '{}' to 'raw': {}".format(img_type, stderr)
+            }
+            retcode = 400
+            cleanup_maps_and_volumes()
+            return output, retcode
+
+        output = {
+            'message': "Converted and wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
+        }
+        retcode = 200
+        cleanup_maps_and_volumes()
+        return output, retcode
 
 def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True):
     """
