@@ -4693,19 +4693,8 @@
         },
         "/api/v1/storage/ceph/volume/{pool}/{volume}/upload": {
             "post": {
-                "description": "",
+                "description": "<br/>The body must be a form body containing a file that is the binary contents of the image.",
                 "parameters": [
-                    {
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "format": "binary",
-                                    "type": "string"
-                                }
-                            }
-                        },
-                        "in": "query"
-                    },
                     {
                         "description": "The type of source image file",
                         "enum": [

@@ -3343,16 +3343,12 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
     def post(self, pool, volume, reqargs):
         """
         Upload a disk image to Ceph volume {volume} in pool {pool}
+
+        The body must be a form body containing a file that is the binary contents of the image.
         ---
         tags:
           - storage / ceph
         parameters:
-          - in: query
-            content:
-              application/octet-stream:
-                schema:
-                  type: string
-                  format: binary
           - in: query
             name: image_format
             type: string
