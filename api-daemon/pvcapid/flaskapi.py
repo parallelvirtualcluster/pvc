@@ -3337,7 +3337,7 @@ api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<p
 # /storage/ceph/volume/<pool>/<volume>/upload
 class API_Storage_Ceph_Volume_Element_Upload(Resource):
     @RequestParser([
-        { 'name': 'image_format' }
+        { 'name': 'image_format', 'required': True, 'helpmsg': "A source image format must be specified" }
     ])
     @Authenticator
     def post(self, pool, volume, reqargs):
