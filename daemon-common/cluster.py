@@ -131,7 +131,8 @@ def getClusterInformation(zk_conn):
     node_state_combinations = [
         'run,ready', 'run,flush', 'run,flushed', 'run,unflush',
         'init,ready', 'init,flush', 'init,flushed', 'init,unflush',
-        'stop,ready', 'stop,flush', 'stop,flushed', 'stop,unflush'
+        'stop,ready', 'stop,flush', 'stop,flushed', 'stop,unflush',
+        'dead,ready', 'dead,flush', 'dead,flushed', 'dead,unflush'
     ]
     vm_state_combinations = [
         'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision'
