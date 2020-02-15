@@ -39,6 +39,7 @@ from celery.task.control import inspect
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
+import pvcapid.ova as api_ova
 
 API_VERSION = 1.0
 
@@ -94,6 +95,8 @@ try:
     api_helper.config = config
     # Set the config object in the api_provisioner namespace
     api_provisioner.config = config
+    # Set the config object in the api_ova namespace
+    api_ova.config = config
 except Exception as e:
     print('ERROR: Failed to load configuration: {}'.format(e))
     exit(1)
@@ -5574,6 +5577,98 @@ class API_Provisioner_Create_Root(Resource):
         )
         return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
+
+# /provisioner/upload
+class API_Provisioner_Upload(Resource):
+    @RequestParser([
+        { 'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified" },
+        { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
+        { 'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified" },
+        { 'name': 'define_vm' },
+        { 'name': 'start_vm' }
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Upload an OVA image to a new virtual machine
+
+        The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.
+
+        Even if define_vm is false, the name will be used to name the resulting disk volumes as it would with a normally-provisioned VM.
+
+        The resulting VM, even if defined, will not have an attached provisioner profile.
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: ova_size
+            type: string
+            required: true
+            description: Size of the OVA file in bytes
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: Storage pool name
+          - in: query
+            name: name
+            type: string
+            required: true
+            description: Virtual machine name
+          - in: query
+            name: define_vm
+            type: boolean
+            required: false
+            description: Whether to define the VM on the cluster during provisioning
+          - in: query
+            name: start_vm
+            type: boolean
+            required: false
+            description: Whether to start the VM after provisioning
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                  description: Task ID for the provisioner Celery worker
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        from flask_restful import reqparse
+        from werkzeug.datastructures import FileStorage
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=FileStorage, location='files')
+        data = parser.parse_args()
+        ova_data = data.get('file', None)
+        if not ova_data:
+            return {'message':'An OVA file contents must be specified'}, 400
+
+        if bool(strtobool(reqargs.get('define_vm', 'true'))):
+            define_vm = True
+        else:
+            define_vm = False
+
+        if bool(strtobool(reqargs.get('start_vm', 'true'))):
+            start_vm = True
+        else:
+            start_vm = False
+
+        return api_ova.upload_ova(
+            ova_data,
+            reqargs.get('ova_size', None),
+            reqargs.get('pool', None),
+            reqargs.get('name', None),
+            define_vm,
+            start_vm
+        )
+api.add_resource(API_Provisioner_Upload, '/provisioner/upload')
 
 # /provisioner/status
 class API_Provisioner_Status_Root(Resource):

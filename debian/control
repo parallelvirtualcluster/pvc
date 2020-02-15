@@ -17,7 +17,7 @@ Description: Parallel Virtual Cluster node daemon (Python 3)
 
 Package: pvc-daemon-api
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis
+Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-gevent, python3-celery, python-celery-common, python3-distutils, redis, python3-redis, python3-lxml
 Description: Parallel Virtual Cluster API daemon (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
