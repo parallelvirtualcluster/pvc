@@ -41,6 +41,8 @@ import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
 import pvcapid.ova as api_ova
 
+from flask_sqlalchemy import SQLAlchemy
+
 API_VERSION = 1.0
 
 # Parse the configuration file
@@ -105,12 +107,19 @@ except Exception as e:
 app = flask.Flask(__name__)
 app.config['CELERY_BROKER_URL'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
 app.config['CELERY_RESULT_BACKEND'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@{}:{}/{}'.format(config['database_user'], config['database_password'], config['database_host'], config['database_port'], config['database_name'])
 
 if config['debug']:
     app.config['DEBUG'] = True
 
 if config['auth_enabled']:
     app.config["SECRET_KEY"] = config['auth_secret_key']
+
+# Create SQLAlchemy database
+db = SQLAlchemy(app)
+
+# Import database models
+from pvcapid.models import DBSystemTemplate, DBNetworkTemplate, DBNetworkElement, DBStorageTemplate, DBStorageElement, DBUserdata, DBScript, DBProfile
 
 # Create Flask blueprint
 blueprint = flask.Blueprint('api', __name__, url_prefix='/api/v1')

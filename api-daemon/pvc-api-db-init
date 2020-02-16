@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Initialize the PVC database and migrations for future upgrades
+# Part of the Parallel Virtual Cluster (PVC) system
+
+export PVC_CONFIG_FILE="/etc/pvc/pvcapid.yaml"
+
+if [[ ! -f ${PVC_CONFIG_FILE} ]]; then
+    echo "Create a configuration file at ${PVC_CONFIG_FILE} before initializing the database."
+    exit 1
+fi
+
+pushd /usr/share/pvc
+./pvcapid-manage.py db init
+./pvcapid-manage.py db migrate
+./pvcapid-manage.py db upgrade
+popd
