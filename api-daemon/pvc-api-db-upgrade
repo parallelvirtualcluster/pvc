@@ -11,6 +11,5 @@ if [[ ! -f ${PVC_CONFIG_FILE} ]]; then
 fi
 
 pushd /usr/share/pvc
-./pvcapid-manage.py db migrate
 ./pvcapid-manage.py db upgrade
 popd

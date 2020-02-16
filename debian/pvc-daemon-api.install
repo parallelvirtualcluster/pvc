@@ -7,3 +7,4 @@ api-daemon/pvcapid usr/share/pvc
 api-daemon/pvcapid.service lib/systemd/system
 api-daemon/pvcapid-worker.service lib/systemd/system
 api-daemon/provisioner usr/share/pvc
+api-daemon/migrations usr/share/pvc
