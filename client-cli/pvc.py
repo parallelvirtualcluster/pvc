@@ -87,6 +87,9 @@ def get_config(store_data, cluster=None):
             host, port, scheme, api_key = read_from_yaml(cfgfile)
         else:
             return { 'badcfg': True }
+        # Handle an all-wildcard address
+        if host == '0.0.0.0':
+            host = '127.0.0.1'
     else:
         # This is a static configuration, get the raw details
         host = cluster_details['host']
