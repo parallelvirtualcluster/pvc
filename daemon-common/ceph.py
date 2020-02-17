@@ -97,8 +97,8 @@ def format_bytes_tohuman(databytes):
 
 def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
-    dataunit = datahuman[-1]
-    datasize = int(datahuman[:-1])
+    dataunit = str(datahuman)[-1]
+    datasize = int(str(datahuman)[:-1])
     if not re.match('[A-Z]', dataunit):
         dataunit = 'B'
         datasize = int(datahuman)
