@@ -68,7 +68,7 @@ class DBNetworkElement(db.Model):
     __tablename__ = 'network'
 
     id = db.Column(db.Integer, primary_key=True)
-    network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"))
+    network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"), nullable=False)
     vni = db.Column(db.Integer, nullable=False)
 
     def __init__(self, network_template, vni):
@@ -94,7 +94,7 @@ class DBStorageElement(db.Model):
     __tablename__ = 'storage'
 
     id = db.Column(db.Integer, primary_key=True)
-    storage_template = db.Column(db.Integer, db.ForeignKey("storage_template.id"))
+    storage_template = db.Column(db.Integer, db.ForeignKey("storage_template.id"), nullable=False)
     pool = db.Column(db.Text, nullable=False)
     disk_id = db.Column(db.Text, nullable=False)
     source_volume = db.Column(db.Text)
