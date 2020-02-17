@@ -119,7 +119,7 @@ if config['auth_enabled']:
 db = SQLAlchemy(app)
 
 # Import database models
-from pvcapid.models import DBSystemTemplate, DBNetworkTemplate, DBNetworkElement, DBStorageTemplate, DBStorageElement, DBUserdata, DBScript, DBProfile
+from pvcapid.models import *
 
 # Create Flask blueprint
 blueprint = flask.Blueprint('api', __name__, url_prefix='/api/v1')
