@@ -7,7 +7,4 @@ VERSION="$( head -1 debian/changelog | awk -F'[()-]' '{ print $2 }' )"
 pushd api-daemon
 ./pvcapid-manage.py db migrate -m "PVC version ${VERSION}"
 ./pvcapid-manage.py db upgrade
-git reset
-git add migrations
-git commit -v "[gen-api-migrations] New database migration"
 popd
