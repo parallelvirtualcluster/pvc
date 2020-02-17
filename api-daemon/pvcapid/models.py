@@ -35,8 +35,9 @@ class DBSystemTemplate(db.Model):
     node_limit = db.Column(db.Text)
     node_selector = db.Column(db.Text)
     node_autostart = db.Column(db.Boolean, nullable=False)
+    ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
-    def __init__(self, name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
+    def __init__(self, name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova=None):
         self.name = name
         self.vcpu_count = vcpu_count
         self.vram_mb = vram_mb
@@ -46,6 +47,7 @@ class DBSystemTemplate(db.Model):
         self.node_limit = node_limit
         self.node_selector = node_selector
         self.node_autostart = node_autostart
+        self.ova = ova
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -56,10 +58,12 @@ class DBNetworkTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
     mac_template = db.Column(db.Text)
+    ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
-    def __init__(self, name, mac_template):
+    def __init__(self, name, mac_template, ova=None):
         self.name = name
         self.mac_template = mac_template
+        self.ova = ova
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -83,9 +87,11 @@ class DBStorageTemplate(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
+    ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
-    def __init__(self, name):
+    def __init__(self, name, ova=None):
         self.name = name
+        self.ova = ova
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
@@ -144,25 +150,65 @@ class DBScript(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+class DBOva(db.Model):
+    __tablename__ = 'ova'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Text, nullable=False, unique=True)
+    ovf = db.Column(db.Text, nullable=False)
+
+    def __init__(self, name, ovf):
+        self.name = name
+        self.ovf = ovf
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
+class DBOvaVolume(db.Model):
+    __tablename__ = 'ova_volume'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=False)
+    pool = db.Column(db.Text, nullable=False)
+    volume_name = db.Column(db.Text, nullable=False)
+    volume_format = db.Column(db.Text, nullable=False)
+    disk_id = db.Column(db.Text, nullable=False)
+    disk_size_gb = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, ova, pool, volume_name, volume_format, disk_id, disk_size_gb):
+        self.ova = ova
+        self.pool = pool
+        self.volume_name = volume_name
+        self.volume_format = volume_format
+        self.disk_id = disk_id
+        self.disk_size_gb = disk_size_gb
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+
 class DBProfile(db.Model):
     __tablename__ = 'profile'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
+    profile_type = db.Column(db.Text, nullable=False)
     system_template = db.Column(db.Integer, db.ForeignKey("system_template.id"))
     network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"))
     storage_template = db.Column(db.Integer, db.ForeignKey("storage_template.id"))
     userdata = db.Column(db.Integer, db.ForeignKey("userdata.id"))
     script = db.Column(db.Integer, db.ForeignKey("script.id"))
+    ova = db.Column(db.Integer, db.ForeignKey("ova.id"))
     arguments = db.Column(db.Text)
 
-    def __init__(self, name, system_template, network_template, storage_template, userdata, script, arguments):
+    def __init__(self, name, profile_type, system_template, network_template, storage_template, userdata, script, ova, arguments):
         self.name = name
+        self.profile_type = profile_type
         self.system_template = system_template
         self.network_template = network_template
         self.storage_template = storage_template
         self.userdata = userdata
         self.script = script
+        self.ova = ova
         self.arguments = arguments
 
     def __repr__(self):
