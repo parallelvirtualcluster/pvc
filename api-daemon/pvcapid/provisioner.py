@@ -662,6 +662,10 @@ def delete_script(name):
     return retmsg, retcode
 
 #
+# OVA functions
+#
+
+#
 # Profile functions
 #
 def list_profile(limit, is_fuzzy=True):
@@ -691,12 +695,16 @@ def list_profile(limit, is_fuzzy=True):
         profile_data = dict()
         profile_data['id'] = profile['id']
         profile_data['name'] = profile['name']
+        profile_data['type'] = profile['profile_type']
         # Parse the name of each subelement
-        for etype in 'system_template', 'network_template', 'storage_template', 'userdata', 'script':
+        for etype in 'system_template', 'network_template', 'storage_template', 'userdata', 'script', 'ova':
             query = 'SELECT name from {} WHERE id = %s'.format(etype)
             args = (profile[etype],)
             cur.execute(query, args)
-            name = cur.fetchone()['name']
+            try:
+                name = cur.fetchone()['name']
+            except:
+                name = "N/A"
             profile_data[etype] = name
         # Split the arguments back into a list
         profile_data['arguments'] = profile['arguments'].split('|')
@@ -708,9 +716,14 @@ def list_profile(limit, is_fuzzy=True):
     else:
         return {'message': 'No profiles found'}, 404
 
-def create_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
+def create_profile(name, profile_type, system_template, network_template, storage_template, userdata=None, script=None, ova=None, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The profile "{}" already exists'.format(name) }
+        retcode = 400
+        return retmsg, retcode
+
+    if profile_type not in ['script', 'clone', 'ova']:
+        retmsg = { 'message': 'A valid profile type (script, clone, ova) must be specified' }
         retcode = 400
         return retmsg, retcode
 
@@ -749,20 +762,18 @@ def create_profile(name, system_template, network_template, storage_template, us
     for template in userdatas:
         if template['name'] == userdata:
             userdata_id = template['id']
-    if not userdata_id:
-        retmsg = { 'message': 'The userdata template "{}" for profile "{}" does not exist'.format(userdata, name) }
-        retcode = 400
-        return retmsg, retcode
 
     scripts, code = list_script(None)
     script_id = None
     for scr in scripts:
         if scr['name'] == script:
             script_id = scr['id']
-    if not script_id:
-        retmsg = { 'message': 'The script "{}" for profile "{}" does not exist'.format(script, name) }
-        retcode = 400
-        return retmsg, retcode
+
+    ovas, code = list_ova(None)
+    ova_id = None
+    for ov in ovas:
+        if ov['name'] == ova:
+            ova_id = ov['id']
 
     if arguments is not None and isinstance(arguments, list):
         arguments_formatted = '|'.join(arguments)
@@ -771,8 +782,8 @@ def create_profile(name, system_template, network_template, storage_template, us
 
     conn, cur = open_database(config)
     try:
-        query = "INSERT INTO profile (name, system_template, network_template, storage_template, userdata, script, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s);"
-        args = (name, system_template_id, network_template_id, storage_template_id, userdata_id, script_id, arguments_formatted)
+        query = "INSERT INTO profile (name, type, system_template, network_template, storage_template, userdata, script, ova, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
+        args = (name, profile_type, system_template_id, network_template_id, storage_template_id, userdata_id, script_id, ova_id, arguments_formatted)
         cur.execute(query, args)
         retmsg = { "message": 'Created VM profile "{}"'.format(name) }
         retcode = 200
@@ -782,13 +793,20 @@ def create_profile(name, system_template, network_template, storage_template, us
     close_database(conn, cur)
     return retmsg, retcode
 
-def modify_profile(name, system_template, network_template, storage_template, userdata, script, arguments=None):
+def modify_profile(name, profile_type, system_template, network_template, storage_template, userdata, script, ova, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The profile "{}" does not exist'.format(name) }
         retcode = 400
         return retmsg, retcode
 
     fields = []
+
+    if profile_type is not None:
+        if profile_type not in ['script', 'clone', 'ova']:
+            retmsg = { 'message': 'A valid profile type (script, clone, ova) must be specified' }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'type', 'data': profile_type})
 
     if system_template is not None:
         system_templates, code = list_template_system(None)
@@ -850,13 +868,24 @@ def modify_profile(name, system_template, network_template, storage_template, us
             return retmsg, retcode
         fields.append({'field': 'script', 'data': script_id})
 
+    if ova is not None:
+        ovas, code = list_ova(None)
+        ova_id = None
+        for ov in ovas:
+            if ov['name'] == ova:
+                ova_id = ov['id']
+        if not ova_id:
+            retmsg = { 'message': 'The OVA "{}" for profile "{}" does not exist'.format(ova, name) }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'ova', 'data': ova_id})
+
     if arguments is not None:
         if isinstance(arguments, list):
             arguments_formatted = '|'.join(arguments)
         else:
             arguments_formatted = ''
         fields.append({'field': 'arguments', 'data': arguments_formatted})
-
 
     conn, cur = open_database(config)
     try:

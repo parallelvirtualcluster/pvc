@@ -1073,11 +1073,22 @@ def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
         profile_data = [ profile_data ]
 
+    # Format the profile "source" from the type and, if applicable, OVA profile name
+    for profile in profile_data:
+        profile_type = profile['type']
+        if 'ova' in profile_type:
+            # Set the source to the name of the OVA:
+            profile['source'] = profile_data['ova']
+        else:
+            # Set the source to be the type
+            profile['source'] = profile_type
+
     profile_list_output = []
 
     # Determine optimal column widths
     profile_name_length = 5
     profile_id_length = 3
+    profile_source_length = 7
 
     profile_system_template_length = 7
     profile_network_template_length = 8
@@ -1094,6 +1105,10 @@ def format_list_profile(profile_data):
         _profile_id_length = len(str(profile['id'])) + 1
         if _profile_id_length > profile_id_length:
             profile_id_length = _profile_id_length
+        # profile_source column
+        _profile_source_length = len(str(profile['source'])) + 1
+        if _profile_source_length > profile_source_length:
+            profile_source_length = _profile_source_length
         # profile_system_template column
         _profile_system_template_length = len(str(profile['system_template'])) + 1
         if _profile_system_template_length > profile_system_template_length:
@@ -1116,7 +1131,7 @@ def format_list_profile(profile_data):
             profile_script_length = _profile_script_length
 
     # Format the string (header)
-    profile_list_output_header = '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} \
+    profile_list_output_header = '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} {profile_source: <{profile_source_length}} \
 Templates: {profile_system_template: <{profile_system_template_length}} \
 {profile_network_template: <{profile_network_template_length}} \
 {profile_storage_template: <{profile_storage_template_length}} \
@@ -1125,6 +1140,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
 {profile_arguments}{end_bold}'.format(
             profile_name_length=profile_name_length,
             profile_id_length=profile_id_length,
+            profile_source_length=profile_source_length,
             profile_system_template_length=profile_system_template_length,
             profile_network_template_length=profile_network_template_length,
             profile_storage_template_length=profile_storage_template_length,
@@ -1134,6 +1150,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
             end_bold=ansiprint.end(),
             profile_name='Name',
             profile_id='ID',
+            profile_source='Source',
             profile_system_template='System',
             profile_network_template='Network',
             profile_storage_template='Storage',
@@ -1145,7 +1162,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
     # Format the string (elements)
     for profile in sorted(profile_data, key=lambda i: i.get('name', None)):
         profile_list_output.append(
-            '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} \
+            '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} {profile_source: <{profile_source_length}} \
            {profile_system_template: <{profile_system_template_length}} \
 {profile_network_template: <{profile_network_template_length}} \
 {profile_storage_template: <{profile_storage_template_length}} \
@@ -1154,6 +1171,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
 {profile_arguments}{end_bold}'.format(
                 profile_name_length=profile_name_length,
                 profile_id_length=profile_id_length,
+                profile_source_length=profile_source_length,
                 profile_system_template_length=profile_system_template_length,
                 profile_network_template_length=profile_network_template_length,
                 profile_storage_template_length=profile_storage_template_length,
@@ -1163,6 +1181,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
                 end_bold='',
                 profile_name=profile['name'],
                 profile_id=profile['id'],
+                profile_source=profile['source'],
                 profile_system_template=profile['system_template'],
                 profile_network_template=profile['network_template'],
                 profile_storage_template=profile['storage_template'],
