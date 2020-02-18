@@ -340,6 +340,77 @@ def script_remove(config, name):
         
     return retvalue, response.json()['message']
 
+def ova_info(config, name):
+    """
+    Get information about OVA image {name}
+
+    API endpoint: GET /api/v1/provisioner/ova/{name}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    response = call_api(config, 'get', '/provisioner/ova/{name}'.format(name=name))
+
+    if response.status_code == 200:
+        return True, response.json()[0]
+    else:
+        return False, response.json()['message']
+
+def ova_list(config, limit):
+    """
+    Get list information about OVA images (limited by {limit})
+
+    API endpoint: GET /api/v1/provisioner/ova
+    API arguments: limit={limit}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    if limit:
+        params['limit'] = limit
+
+    response = call_api(config, 'get', '/provisioner/ova', params=params)
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def ova_upload(config, name, ova_file, params):
+    """
+    Upload an OVA image to the cluster
+
+    API endpoint: POST /api/v1/provisioner/ova/{name}
+    API arguments: pool={pool}, ova_size={ova_size}
+    API schema: {"message":"{data}"}
+    """
+    files = {
+        'file': open(ova_file,'rb')
+    }
+    response = call_api(config, 'post', '/provisioner/ova/{}'.format(name), params=params, files=files)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json()['message']
+
+def ova_remove(config, name):
+    """
+    Remove OVA image {name}
+
+    API endpoint: DELETE /api/v1/provisioner/ova/{name}
+    API_arguments:
+    API schema: {message}
+    """
+    response = call_api(config, 'delete', '/provisioner/ova/{name}'.format(name=name))
+
+    if response.status_code == 200:
+        retvalue = True
+    else:
+        retvalue = False
+        
+    return retvalue, response.json()['message']
+
 def profile_info(config, profile):
     """
     Get information about profile
@@ -1069,6 +1140,119 @@ def format_list_script(script_data, lines=None):
 
     return '\n'.join([script_list_output_header] + script_list_output)
 
+def format_list_ova(ova_data):
+    if isinstance(ova_data, dict):
+        ova_data = [ ova_data ]
+
+    ova_list_output = []
+
+    # Determine optimal column widths
+    ova_name_length = 5
+    ova_id_length = 3
+    ova_disk_id_length = 8
+    ova_disk_size_length = 10
+    ova_disk_pool_length = 5
+    ova_disk_volume_format_length = 7
+    ova_disk_volume_name_length = 13
+
+    for ova in ova_data:
+        # ova_name column
+        _ova_name_length = len(str(ova['name'])) + 1
+        if _ova_name_length > ova_name_length:
+            ova_name_length = _ova_name_length
+        # ova_id column
+        _ova_id_length = len(str(ova['id'])) + 1
+        if _ova_id_length > ova_id_length:
+            ova_id_length = _ova_id_length
+
+        for disk in ova['volumes']:
+            # ova_disk_id column
+            _ova_disk_id_length = len(str(disk['disk_id'])) + 1
+            if _ova_disk_id_length > ova_disk_id_length:
+                ova_disk_id_length = _ova_disk_id_length
+            # ova_disk_size column
+            _ova_disk_size_length = len(str(disk['disk_size_gb'])) + 1
+            if _ova_disk_size_length > ova_disk_size_length:
+                ova_disk_size_length = _ova_disk_size_length
+            # ova_disk_pool column
+            _ova_disk_pool_length = len(str(disk['pool'])) + 1
+            if _ova_disk_pool_length > ova_disk_pool_length:
+                ova_disk_pool_length = _ova_disk_pool_length
+            # ova_disk_volume_format column
+            _ova_disk_volume_format_length = len(str(disk['volume_format'])) + 1
+            if _ova_disk_volume_format_length > ova_disk_volume_format_length:
+                ova_disk_volume_format_length = _ova_disk_volume_format_length
+            # ova_disk_volume_name column
+            _ova_disk_volume_name_length = len(str(disk['volume_name'])) + 1
+            if _ova_disk_volume_name_length > ova_disk_volume_name_length:
+                ova_disk_volume_name_length = _ova_disk_volume_name_length
+
+    # Format the string (header)
+    ova_list_output_header = '{bold}{ova_name: <{ova_name_length}} {ova_id: <{ova_id_length}} \
+{ova_disk_id: <{ova_disk_id_length}} \
+{ova_disk_size: <{ova_disk_size_length}} \
+{ova_disk_pool: <{ova_disk_pool_length}} \
+{ova_disk_volume_format: <{ova_disk_volume_format_length}} \
+{ova_disk_volume_name: <{ova_disk_volume_name_length}}{end_bold}'.format(
+            ova_name_length=ova_name_length,
+            ova_id_length=ova_id_length,
+            ova_disk_id_length=ova_disk_id_length,
+            ova_disk_pool_length=ova_disk_pool_length,
+            ova_disk_size_length=ova_disk_size_length,
+            ova_disk_volume_format_length=ova_disk_volume_format_length,
+            ova_disk_volume_name_length=ova_disk_volume_name_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            ova_name='Name',
+            ova_id='ID',
+            ova_disk_id='Disk ID',
+            ova_disk_size='Size [GB]',
+            ova_disk_pool='Pool',
+            ova_disk_volume_format='Format',
+            ova_disk_volume_name='Source Volume',
+        )
+
+    # Format the string (elements)
+    for ova in sorted(ova_data, key=lambda i: i.get('name', None)):
+        ova_list_output.append(
+            '{bold}{ova_name: <{ova_name_length}} {ova_id: <{ova_id_length}}{end_bold}'.format(
+                ova_name_length=ova_name_length,
+                ova_id_length=ova_id_length,
+                bold='',
+                end_bold='',
+                ova_name=str(ova['name']),
+                ova_id=str(ova['id'])
+            )
+        )
+        for disk in sorted(ova['volumes'], key=lambda i: i.get('disk_id', None)):
+            ova_list_output.append(
+                '{bold}{ova_name: <{ova_name_length}} {ova_id: <{ova_id_length}} \
+{ova_disk_id: <{ova_disk_id_length}} \
+{ova_disk_size: <{ova_disk_size_length}} \
+{ova_disk_pool: <{ova_disk_pool_length}} \
+{ova_disk_volume_format: <{ova_disk_volume_format_length}} \
+{ova_disk_volume_name: <{ova_disk_volume_name_length}}{end_bold}'.format(
+                    ova_name_length=ova_name_length,
+                    ova_id_length=ova_id_length,
+                    ova_disk_id_length=ova_disk_id_length,
+                    ova_disk_size_length=ova_disk_size_length,
+                    ova_disk_pool_length=ova_disk_pool_length,
+                    ova_disk_volume_format_length=ova_disk_volume_format_length,
+                    ova_disk_volume_name_length=ova_disk_volume_name_length,
+                    bold='',
+                    end_bold='',
+                    ova_name='',
+                    ova_id='',
+                    ova_disk_id=str(disk['disk_id']),
+                    ova_disk_size=str(disk['disk_size_gb']),
+                    ova_disk_pool=str(disk['pool']),
+                    ova_disk_volume_format=str(disk['volume_format']),
+                    ova_disk_volume_name=str(disk['volume_name']),
+                )
+            )
+
+    return '\n'.join([ova_list_output_header] + ova_list_output)
+
 def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
         profile_data = [ profile_data ]
@@ -1078,7 +1262,7 @@ def format_list_profile(profile_data):
         profile_type = profile['type']
         if 'ova' in profile_type:
             # Set the source to the name of the OVA:
-            profile['source'] = profile_data['ova']
+            profile['source'] = 'OVA {}'.format(profile['ova'])
         else:
             # Set the source to be the type
             profile['source'] = profile_type

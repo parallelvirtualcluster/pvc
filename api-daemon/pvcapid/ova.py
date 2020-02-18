@@ -42,47 +42,167 @@ import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
 import pvcapid.libvirt_schema as libvirt_schema
+import pvcapid.provisioner as provisioner
 
 #
-# OVA upload function
+# Common functions
 #
-def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
-    # Upload flow is as follows:
-    # 1. Create temporary volume of ova_size
-    # 2. Map the temporary volume for reading
-    # 3. Write OVA upload file to temporary volume
-    # 4. Read tar from temporary volume, extract OVF
-    # 5. Parse OVF, obtain disk list and VM details
-    # 6. Extract and "upload" via API each disk image to Ceph
-    # 7. Unmap and remove the temporary volume
-    # 8. Define VM (if applicable)
-    # 9. Start VM (if applicable)
-    ###########################################################
+
+# Database connections
+def open_database(config):
+    conn = psycopg2.connect(
+        host=config['database_host'],
+        port=config['database_port'],
+        dbname=config['database_name'],
+        user=config['database_user'],
+        password=config['database_password']
+    )
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    return conn, cur
+
+def close_database(conn, cur, failed=False):
+    if not failed:
+        conn.commit()
+    cur.close()
+    conn.close()
+
+#
+# OVA functions
+#
+def list_ova(limit, is_fuzzy=True):
+    if limit:
+        if is_fuzzy:
+            # Handle fuzzy vs. non-fuzzy limits
+            if not re.match('\^.*', limit):
+                limit = '%' + limit
+            else:
+                limit = limit[1:]
+            if not re.match('.*\$', limit):
+                limit = limit + '%'
+            else:
+                limit = limit[:-1]
+
+        query = "SELECT id, name FROM {} WHERE name LIKE %s;".format('ova')
+        args = (limit, )
+    else:
+        query = "SELECT id, name FROM {};".format('ova')
+        args = ()
+
+    conn, cur = open_database(config)
+    cur.execute(query, args)
+    data = cur.fetchall()
+    close_database(conn, cur)
+
+    ova_data = list()
+
+    for ova in data:
+        ova_id = ova.get('id')
+        ova_name = ova.get('name')
+
+        query = "SELECT pool, volume_name, volume_format, disk_id, disk_size_gb FROM {} WHERE ova = %s;".format('ova_volume')
+        args = (ova_id,)
+        conn, cur = open_database(config)
+        cur.execute(query, args)
+        volumes = cur.fetchall()
+        close_database(conn, cur)
+
+        ova_data.append({'id': ova_id, 'name': ova_name, 'volumes': volumes})
+
+    if ova_data:
+        return ova_data, 200
+    else:
+        return {'message': 'No OVAs found'}, 404
+
+def delete_ova(name):
+    ova_data, retcode = list_ova(name, is_fuzzy=False)
+    if retcode != 200:
+        retmsg = { 'message': 'The OVA "{}" does not exist'.format(name) }
+        retcode = 400
+        return retmsg, retcode
+
+    conn, cur = open_database(config)
+    ova_id = ova_data[0].get('id')
+    try:
+        # Get the list of volumes for this OVA
+        query = "SELECT pool, volume_name FROM ova_volume WHERE ova = %s;"
+        args = (ova_id,)
+        cur.execute(query, args)
+        volumes = cur.fetchall()
+
+        # Remove each volume for this OVA
+        zk_conn = pvc_common.startZKConnection(config['coordinators'])
+        for volume in volumes:
+            pvc_ceph.remove_volume(zk_conn, volume.get('pool'), volume.get('volume_name'))
+
+        # Delete the volume entries from the database
+        query = "DELETE FROM ova_volume WHERE ova = %s;"
+        args = (ova_id,)
+        cur.execute(query, args)
+
+        # Delete the profile entries from the database
+        query = "DELETE FROM profile WHERE ova = %s;"
+        args = (ova_id,)
+        cur.execute(query, args)
+
+        # Delete the system_template entries from the database
+        query = "DELETE FROM system_template WHERE ova = %s;"
+        args = (ova_id,)
+        cur.execute(query, args)
+
+        # Delete the OVA entry from the database
+        query = "DELETE FROM ova WHERE id = %s;"
+        args = (ova_id,)
+        cur.execute(query, args)
+
+        retmsg = { "message": 'Removed OVA image "{}"'.format(name) }
+        retcode = 200
+    except Exception as e:
+        retmsg = { 'message': 'Failed to remove OVA "{}": {}'.format(name, e) }
+        retcode = 400
+    close_database(conn, cur)
+    return retmsg, retcode
+
+def upload_ova(ova_data, pool, name, ova_size):
+    ova_archive = None
 
     # Cleanup function
     def cleanup_ova_maps_and_volumes():
         # Close the OVA archive
-        ova_archive.close()
+        if ova_archive:
+            ova_archive.close()
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
         # Unmap the OVA temporary blockdev
-        retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, "{}_ova".format(name))
+        retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, "ova_{}".format(name))
         # Remove the OVA temporary blockdev
-        retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "{}_ova".format(name))
+        retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "ova_{}".format(name))
         pvc_common.stopZKConnection(zk_conn)
 
     # Normalize the OVA size to MB
-    print("Normalize the OVA size to MB")
     # The function always return XXXXB, so strip off the B and convert to an integer
     ova_size_bytes = int(pvc_ceph.format_bytes_fromhuman(ova_size)[:-1])
     # Put the size into KB which rbd --size can understand
     ova_size_kb = math.ceil(ova_size_bytes / 1024)
     ova_size = "{}K".format(ova_size_kb)
 
-    # Create a temporary OVA blockdev
-    print("Create a temporary OVA blockdev")
+    # Verify that the cluster has enough space to store the OVA volumes (2x OVA size, temporarily, 1x permanently)
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    print(ova_size)
-    retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, "{}_ova".format(name), ova_size)
+    pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
+    pvc_common.stopZKConnection(zk_conn)
+    pool_free_space_bytes = int(pool_information['stats']['free_bytes'])
+    if ova_size_bytes * 2 >= pool_free_space_bytes:
+        output = {
+            'message': "ERROR: The cluster does not have enough free space ({}) to store the OVA volume ({}).".format(
+                pvc_ceph.format_bytes_tohuman(pool_free_space_bytes),
+                pvc_ceph.format_bytes_tohuman(ova_size_bytes)
+            )
+        }
+        retcode = 400
+        cleanup_ova_maps_and_volumes()
+        return output, retcode
+
+    # Create a temporary OVA blockdev
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, "ova_{}".format(name), ova_size)
     pvc_common.stopZKConnection(zk_conn)
     if not retflag:
         output = {
@@ -93,9 +213,8 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
         return output, retcode
 
     # Map the temporary OVA blockdev
-    print("Map the temporary OVA blockdev")
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, "{}_ova".format(name))
+    retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, "ova_{}".format(name))
     pvc_common.stopZKConnection(zk_conn)
     if not retflag:
         output = {
@@ -107,7 +226,6 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
     ova_blockdev = retdata
 
     # Save the OVA data to the temporary blockdev directly
-    print("Save the OVA data to the temporary blockdev directly")
     try:
         ova_data.save(ova_blockdev)
     except:
@@ -120,10 +238,8 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
 
     try:
         # Set up the TAR reader for the OVA temporary blockdev
-        print("Set up the TAR reader for the OVA temporary blockdev")
         ova_archive = tarfile.open(name=ova_blockdev)
         # Determine the files in the OVA
-        print("Determine the files in the OVA")
         members = ova_archive.getmembers()
     except tarfile.TarError:
         output = {
@@ -134,109 +250,54 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
         return output, retcode
 
     # Parse through the members list and extract the OVF file
-    print("Parse through the members list and extract the OVF file")
     for element in set(x for x in members if re.match('.*\.ovf$', x.name)):
         ovf_file = ova_archive.extractfile(element)
-        print(ovf_file)
 
     # Parse the OVF file to get our VM details
-    print("Parse the OVF file to get our VM details")
     ovf_parser = OVFParser(ovf_file)
+    ovf_xml_raw = ovf_parser.getXML()
     virtual_system = ovf_parser.getVirtualSystems()[0]
     virtual_hardware = ovf_parser.getVirtualHardware(virtual_system)
     disk_map = ovf_parser.getDiskMap(virtual_system)
 
     # Close the OVF file
-    print("Close the OVF file")
     ovf_file.close()
-
-    print(virtual_hardware)
-    print(disk_map)
-
-    # Verify that the cluster has enough space to store all OVA disk volumes
-    total_size_bytes = 0
-    for disk in disk_map:
-        # Normalize the dev size to MB
-        print("Normalize the dev size to MB")
-        # The function always return XXXXB, so strip off the B and convert to an integer
-        dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(disk.get('capacity', 0))[:-1])
-        ova_size_bytes = int(pvc_ceph.format_bytes_fromhuman(ova_size)[:-1])
-        # Get the actual image size
-        total_size_bytes += dev_size_bytes
-        # Add on the OVA size to account for the VMDK
-        total_size_bytes += ova_size_bytes
-
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
-    pvc_common.stopZKConnection(zk_conn)
-    pool_free_space_bytes = int(pool_information['stats']['free_bytes'])
-    if total_size_bytes >= pool_free_space_bytes:
-        output = {
-            'message': "ERROR: The cluster does not have enough free space ({}) to store the VM ({}).".format(
-                pvc_ceph.format_bytes_tohuman(pool_free_space_bytes),
-                pvc_ceph.format_bytes_tohuman(total_size_bytes)
-            )
-        }
-        retcode = 400
-        cleanup_ova_maps_and_volumes()
-        return output, retcode
 
     # Create and upload each disk volume
     for idx, disk in enumerate(disk_map):
         disk_identifier = "sd{}".format(chr(ord('a') + idx))
-        volume = "{}_{}".format(name, disk_identifier)
-        dev_size = disk.get('capacity')
+        volume = "ova_{}_{}".format(name, disk_identifier)
+        dev_src = disk.get('src')
+        dev_type = dev_src.split('.')[-1]
+        dev_size_raw = ova_archive.getmember(dev_src).size
+        vm_volume_size = disk.get('capacity')
 
-        # Normalize the dev size to MB
-        print("Normalize the dev size to MB")
+        # Normalize the dev size to KB
         # The function always return XXXXB, so strip off the B and convert to an integer
-        dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(dev_size)[:-1])
-        dev_size_mb = math.ceil(dev_size_bytes / 1024 / 1024)
-        dev_size = "{}M".format(dev_size_mb)
+        dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(dev_size_raw)[:-1])
+        dev_size_kb = math.ceil(dev_size_bytes / 1024)
+        dev_size = "{}K".format(dev_size_kb)
 
-        def cleanup_img_maps_and_volumes():
+        def cleanup_img_maps():
             zk_conn = pvc_common.startZKConnection(config['coordinators'])
-            # Unmap the target blockdev
-            retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
             # Unmap the temporary blockdev
-            retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, "{}_tmp".format(volume))
-            # Remove the temporary blockdev
-            retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "{}_tmp".format(volume))
+            retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
             pvc_common.stopZKConnection(zk_conn)
 
-        # Create target blockdev
+        # Create the blockdev
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
-        pool_information = pvc_ceph.add_volume(zk_conn, pool, volume, dev_size)
-        pvc_common.stopZKConnection(zk_conn)
-       
-        # Create a temporary blockdev
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
-        retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, "{}_tmp".format(volume), ova_size)
+        retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, volume, dev_size)
         pvc_common.stopZKConnection(zk_conn)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
             }
             retcode = 400
-            cleanup_img_maps_and_volumes()
+            cleanup_img_maps()
             cleanup_ova_maps_and_volumes()
             return output, retcode
 
-        # Map the temporary target blockdev
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
-        retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, "{}_tmp".format(volume))
-        pvc_common.stopZKConnection(zk_conn)
-        if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
-            retcode = 400
-            cleanup_img_maps_and_volumes()
-            cleanup_ova_maps_and_volumes()
-            return output, retcode
-        temp_blockdev = retdata
-
-        # Map the target blockdev
+        # Map the blockdev
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
         retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
         pvc_common.stopZKConnection(zk_conn)
@@ -245,13 +306,10 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
                 'message': retdata.replace('\"', '\'')
             }
             retcode = 400
-            cleanup_img_maps_and_volumes()
+            cleanup_img_maps()
             cleanup_ova_maps_and_volumes()
             return output, retcode
-        dest_blockdev = retdata
-
-        # Save the data to the temporary blockdev directly
-        img_type = disk.get('src').split('.')[-1]
+        temp_blockdev = retdata
 
         try:
             # Open (extract) the TAR archive file and seek to byte 0
@@ -268,41 +326,86 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
             vmdk_file.close()
             # Perform an OS-level sync
             pvc_common.run_os_command('sync')
-            # Shrink the tmp RBD image to the exact size of the written file
-            # This works around a bug in this method where an EOF is never written to the end of the
-            # target blockdev, thus causing an "Invalid footer" error. Instead, if we just shrink the
-            # RBD volume to the exact size, this is treated as an EOF
-            pvc_common.run_os_command('rbd resize {}/{}_{}_tmp --size {}B --allow-shrink'.format(pool, name, disk_identifier, bytes_written))
         except:
             output = {
                 'message': "ERROR: Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
             }
             retcode = 400
-            cleanup_img_maps_and_volumes()
+            cleanup_img_maps()
             cleanup_ova_maps_and_volumes()
             return output, retcode
 
-        # Convert from the temporary to destination format on the blockdevs
-        retcode, stdout, stderr = pvc_common.run_os_command(
-            'qemu-img convert -C -f {} -O raw {} {}'.format(img_type, temp_blockdev, dest_blockdev)
-        )
-        if retcode:
-            output = {
-                'message': "ERROR: Failed to convert image '{}' format from '{}' to 'raw': {}".format(disk.get('src'), img_type, stderr)
-            }
-            retcode = 400
-            cleanup_img_maps_and_volumes()
-            cleanup_ova_maps_and_volumes()
-            return output, retcode
-
-        cleanup_img_maps_and_volumes()
+        cleanup_img_maps()
 
     cleanup_ova_maps_and_volumes()
 
-    # Prepare a VM configuration
+    # Prepare the database entries
+    query = "INSERT INTO ova (name, ovf) VALUES (%s, %s);"
+    args = (name, ovf_xml_raw)
+    conn, cur = open_database(config)
+    try:
+        cur.execute(query, args)
+        close_database(conn, cur)
+    except Exception as e:
+        output = {
+            'message': 'Failed to create OVA entry "{}": {}'.format(name, e)
+        }
+        retcode = 400
+        close_database(conn, cur)
+        return output, retcode
+
+    # Get the OVA database id
+    query = "SELECT id FROM ova WHERE name = %s;"
+    args = (name, )
+    conn, cur = open_database(config)
+    cur.execute(query, args)
+    ova_id = cur.fetchone()['id']
+    close_database(conn, cur)
+
+    # Prepare disk entries in ova_volume
+    for idx, disk in enumerate(disk_map):
+        disk_identifier = "sd{}".format(chr(ord('a') + idx))
+        volume_type = disk.get('src').split('.')[-1]
+        volume = "ova_{}_{}".format(name, disk_identifier)
+        vm_volume_size = disk.get('capacity')
+
+        # The function always return XXXXB, so strip off the B and convert to an integer
+        vm_volume_size_bytes = int(pvc_ceph.format_bytes_fromhuman(vm_volume_size)[:-1])
+        vm_volume_size_gb = math.ceil(vm_volume_size_bytes / 1024 / 1024 / 1024)
+
+        query = "INSERT INTO ova_volume (ova, pool, volume_name, volume_format, disk_id, disk_size_gb) VALUES (%s, %s, %s, %s, %s, %s);"
+        args = (ova_id, pool, volume, volume_type, disk_identifier, vm_volume_size_gb)
+
+        conn, cur = open_database(config)
+        try:
+            cur.execute(query, args)
+            close_database(conn, cur)
+        except Exception as e:
+            output = {
+                'message': 'Failed to create OVA volume entry "{}": {}'.format(volume, e)
+            }
+            retcode = 400
+            close_database(conn, cur)
+            return output, retcode
+
+    # Prepare a system_template for the OVA
+    vcpu_count = virtual_hardware.get('vcpus')
+    vram_mb = virtual_hardware.get('vram')
+    if virtual_hardware.get('graphics-controller') == 1:
+        vnc = True
+        serial = False
+    else:
+        vnc = False
+        serial = True
+    retdata, retcode = provisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind=None, ova=ova_id)
+    system_template, retcode = provisioner.list_template_system(name, is_fuzzy=False)
+    system_template_name = system_template[0].get('name')
+
+    # Prepare a barebones profile for the OVA
+    retdata, retcode = provisioner.create_profile(name, 'ova', system_template_name, None, None, userdata=None, script=None, ova=name, arguments=None)
 
     output = {
-        'message': "Imported OVA file to new VM '{}'".format(name)
+        'message': "Imported OVA image '{}'".format(name)
     }
     retcode = 200
     return output, retcode
@@ -310,46 +413,38 @@ def upload_ova(ova_data, ova_size, pool, name, define_vm, start_vm):
 #
 # OVF parser
 #
-OVF_SCHEMA = "http://schemas.dmtf.org/ovf/envelope/2"
-RASD_SCHEMA = "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData"
-SASD_SCHEMA = "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_StorageAllocationSettingData.xsd"
-VSSD_SCHEMA = "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData"
-XML_SCHEMA = "http://www.w3.org/2001/XMLSchema-instance"
-
-RASD_TYPE = { 
-    "3":  "vcpus",
-    "4":  "vram",
-    "5":  "ide-controller",
-    "6":  "scsi-controller",
-    "10": "ethernet-adapter",
-    "15": "cdrom",
-    "17": "disk",
-    "20": "other-storage-device",
-    "23": "usb-controller",
-    "24": "graphics-controller",
-    "35": "sound-controller"
-}
-SASD_TYPE = {
-    "15": "cdrom",
-    "17": "disk"
-}
-
 class OVFParser(object):
+    RASD_TYPE = {
+        "1":  "vmci",
+        "3":  "vcpus",
+        "4":  "vram",
+        "5":  "ide-controller",
+        "6":  "scsi-controller",
+        "10": "ethernet-adapter",
+        "15": "cdrom",
+        "17": "disk",
+        "20": "other-storage-device",
+        "23": "usb-controller",
+        "24": "graphics-controller",
+        "35": "sound-controller"
+    }
+
     def _getFilelist(self):
-        path = "{{{schema}}}References/{{{schema}}}File".format(schema=OVF_SCHEMA)
-        id_attr = "{{{schema}}}id".format(schema=OVF_SCHEMA)
-        href_attr = "{{{schema}}}href".format(schema=OVF_SCHEMA)
+        path = "{{{schema}}}References/{{{schema}}}File".format(schema=self.OVF_SCHEMA)
+        id_attr = "{{{schema}}}id".format(schema=self.OVF_SCHEMA)
+        href_attr = "{{{schema}}}href".format(schema=self.OVF_SCHEMA)
         current_list = self.xml.findall(path) 
         results = [(x.get(id_attr), x.get(href_attr)) for x in current_list]
         return results
 
     def _getDisklist(self):
-        path = "{{{schema}}}DiskSection/{{{schema}}}Disk".format(schema=OVF_SCHEMA)
-        id_attr = "{{{schema}}}diskId".format(schema=OVF_SCHEMA)
-        ref_attr = "{{{schema}}}fileRef".format(schema=OVF_SCHEMA)
-        cap_attr = "{{{schema}}}capacity".format(schema=OVF_SCHEMA)
+        path = "{{{schema}}}DiskSection/{{{schema}}}Disk".format(schema=self.OVF_SCHEMA)
+        id_attr = "{{{schema}}}diskId".format(schema=self.OVF_SCHEMA)
+        ref_attr = "{{{schema}}}fileRef".format(schema=self.OVF_SCHEMA)
+        cap_attr = "{{{schema}}}capacity".format(schema=self.OVF_SCHEMA)
+        cap_units = "{{{schema}}}capacityAllocationUnits".format(schema=self.OVF_SCHEMA)
         current_list = self.xml.findall(path) 
-        results = [(x.get(id_attr), x.get(ref_attr), x.get(cap_attr)) for x in current_list]
+        results = [(x.get(id_attr), x.get(ref_attr), x.get(cap_attr), x.get(cap_units)) for x in current_list]
         return results
 
     def _getAttributes(self, virtual_system, path, attribute):
@@ -359,59 +454,87 @@ class OVFParser(object):
 
     def __init__(self, ovf_file):
         self.xml = lxml.etree.parse(ovf_file)
+
+        # Define our schemas
+        envelope_tag = self.xml.find(".")
+        self.XML_SCHEMA = envelope_tag.nsmap.get('xsi')
+        self.OVF_SCHEMA = envelope_tag.nsmap.get('ovf')
+        self.RASD_SCHEMA = envelope_tag.nsmap.get('rasd')
+        self.SASD_SCHEMA = envelope_tag.nsmap.get('sasd')
+        self.VSSD_SCHEMA = envelope_tag.nsmap.get('vssd')
+
+        self.ovf_version = int(self.OVF_SCHEMA.split('/')[-1])
+
+        # Get the file and disk lists
         self.filelist = self._getFilelist()
         self.disklist = self._getDisklist()
 
     def getVirtualSystems(self):
-        return self.xml.findall("{{{schema}}}VirtualSystem".format(schema=OVF_SCHEMA))
+        return self.xml.findall("{{{schema}}}VirtualSystem".format(schema=self.OVF_SCHEMA))
+
+    def getXML(self):
+        return lxml.etree.tostring(self.xml, pretty_print=True).decode('utf8')
 
     def getVirtualHardware(self, virtual_system):
         hardware_list = virtual_system.findall(
-            "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(schema=OVF_SCHEMA)
+            "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(schema=self.OVF_SCHEMA)
         )
         virtual_hardware = {}
 
         for item in hardware_list:
             try:
-                item_type = RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=RASD_SCHEMA)).text]
+                item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
             except:
                 continue
-            quantity = item.find("{{{rasd}}}VirtualQuantity".format(rasd=RASD_SCHEMA))
+            quantity = item.find("{{{rasd}}}VirtualQuantity".format(rasd=self.RASD_SCHEMA))
             if quantity is None:
-                continue
-            print(item_type)
-            virtual_hardware[item_type] = quantity.text
+                virtual_hardware[item_type] = 1
+            else:
+                virtual_hardware[item_type] = quantity.text
 
         return virtual_hardware
 
     def getDiskMap(self, virtual_system):
-        hardware_list = virtual_system.findall(
-            "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(schema=OVF_SCHEMA)
-        )
+        # OVF v2 uses the StorageItem field, while v1 uses the normal Item field
+        if self.ovf_version < 2:
+            hardware_list = virtual_system.findall(
+                "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(schema=self.OVF_SCHEMA)
+            )
+        else:
+            hardware_list = virtual_system.findall(
+                "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(schema=self.OVF_SCHEMA)
+            )
         disk_list = []
         
         for item in hardware_list:
             item_type = None
-            try:
-                item_type = SASD_TYPE[item.find("{{{sasd}}}ResourceType".format(sasd=SASD_SCHEMA)).text]
-            except:
-                item_type = RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=RASD_SCHEMA)).text]
+
+            if self.SASD_SCHEMA is not None:
+                item_type = self.RASD_TYPE[item.find("{{{sasd}}}ResourceType".format(sasd=self.SASD_SCHEMA)).text]
+            else:
+                item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
 
             if item_type != 'disk':
                 continue
 
             hostref = None
-            try:
-                hostref = item.find("{{{sasd}}}HostResource".format(sasd=SASD_SCHEMA))
-            except:
-                hostref = item.find("{{{rasd}}}HostResource".format(rasd=RASD_SCHEMA))
+            if self.SASD_SCHEMA is not None:
+                hostref = item.find("{{{sasd}}}HostResource".format(sasd=self.SASD_SCHEMA))
+            else:
+                hostref = item.find("{{{rasd}}}HostResource".format(rasd=self.RASD_SCHEMA))
             if hostref is None:
                 continue
             disk_res = hostref.text
 
             # Determine which file this disk_res ultimately represents
-            (disk_id, disk_ref, disk_capacity) = [x for x in self.disklist if x[0] == disk_res.split('/')[-1]][0]
+            (disk_id, disk_ref, disk_capacity, disk_capacity_unit) = [x for x in self.disklist if x[0] == disk_res.split('/')[-1]][0]
             (file_id, disk_src) = [x for x in self.filelist if x[0] == disk_ref][0]
+
+            if disk_capacity_unit is not None:
+                # Handle the unit conversion
+                base_unit, action, multiple = disk_capacity_unit.split()
+                multiple_base, multiple_exponent = multiple.split('^')
+                disk_capacity = int(disk_capacity) * ( int(multiple_base) ** int(multiple_exponent) )
 
             # Append the disk with all details to the list
             disk_list.append({

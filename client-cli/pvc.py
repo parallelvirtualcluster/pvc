@@ -2834,6 +2834,99 @@ def provisioner_script_remove(name, confirm_flag):
 
 
 ###############################################################################
+# pvc provisioner ova
+###############################################################################
+@click.group(name='ova', short_help='Manage PVC provisioner OVA images.', context_settings=CONTEXT_SETTINGS)
+def provisioner_ova():
+    """
+    Manage ovas in the PVC provisioner.
+    """
+    # Abort commands under this group if config is bad
+    if config.get('badcfg', None):
+        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
+        exit(1)
+
+###############################################################################
+# pvc provisioner ova list
+###############################################################################
+@click.command(name='list', short_help='List all OVA images.')
+@click.argument(
+    'limit', default=None, required=False
+)
+def provisioner_ova_list(limit):
+    """
+    List all OVA images in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc_provisioner.ova_list(config, limit)
+    if retcode:
+        retdata = pvc_provisioner.format_list_ova(retdata)
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner ova upload
+###############################################################################
+@click.command(name='upload', short_help='Upload OVA file.')
+@click.argument(
+    'name'
+)
+@click.argument(
+    'filename'
+)
+@click.option(
+    '-p', '--pool', 'pool',
+    required=True,
+    help='The storage pool for the OVA images.'
+)
+def provisioner_ova_upload(name, filename, pool):
+    """
+    Upload a new OVA image NAME from FILENAME.
+
+    Only single-file (.ova) OVA/OVF images are supported. For multi-file (.ovf + .vmdk) OVF images, concatenate them with "tar" then upload the resulting file.
+
+    Once uploaded, a provisioner system template and OVA-type profile, each named NAME, will be created to store the configuration of the OVA.
+
+    Note that the provisioner profile for the OVA will not contain any network template definitions, and will ignore network definitions from the OVA itself. The administrator must modify the profile's network template as appropriate to set the desired network configuration.
+
+    Storage templates, provisioning scripts, and arguments for OVA-type profiles will be ignored and should not be set.
+    """
+    if not os.path.exists(filename):
+        click.echo("ERROR: File '{}' does not exist!".format(filename))
+        exit(1)
+
+    params = dict()
+    params['pool'] = pool
+    params['ova_size'] = os.path.getsize(filename)
+
+    retcode, retdata = pvc_provisioner.ova_upload(config, name, filename, params)
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner ova remove
+###############################################################################
+@click.command(name='remove', short_help='Remove OVA image.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the removal'
+)
+def provisioner_ova_remove(name, confirm_flag):
+    """
+    Remove OVA image NAME from the PVC cluster provisioner.
+    """
+    if not confirm_flag:
+        try:
+            click.confirm('Remove ova {}'.format(name), prompt_suffix='? ', abort=True)
+        except:
+            exit(0)
+
+    retcode, retdata = pvc_provisioner.ova_remove(config, name)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
 # pvc provisioner profile
 ###############################################################################
 @click.group(name='profile', short_help='Manage PVC provisioner profiless.', context_settings=CONTEXT_SETTINGS)
@@ -2870,46 +2963,53 @@ def provisioner_profile_list(limit):
     'name'
 )
 @click.option(
+    '-p', '--profile-type', 'profile_type',
+    default='provisioner', show_default=True,
+    type=click.Choice(['provisioner', 'ova'], case_sensitive=False),
+    help='The type of profile.'
+)
+@click.option(
     '-s', '--system-template', 'system_template',
-    required=True,
     help='The system template for the profile.'
 )
 @click.option(
     '-n', '--network-template', 'network_template',
-    required=True,
     help='The network template for the profile.'
 )
 @click.option(
     '-t', '--storage-template', 'storage_template',
-    required=True,
     help='The storage template for the profile.'
 )
 @click.option(
     '-u', '--userdata', 'userdata',
-    required=True,
     help='The userdata document for the profile.'
 )
 @click.option(
     '-x', '--script', 'script',
-    required=True,
     help='The script for the profile.'
+)
+@click.option(
+    '-o', '--ova', 'ova',
+    help='The OVA image for the profile.'
 )
 @click.option(
     '-a', '--script-arg', 'script_args',
     default=[], multiple=True,
     help='Additional argument to the script install() function in key=value format.'
 )
-def provisioner_profile_add(name, system_template, network_template, storage_template, userdata, script, script_args):
+def provisioner_profile_add(name, profile_type, system_template, network_template, storage_template, userdata, script, ova, script_args):
     """
     Add a new provisioner profile NAME.
     """
     params = dict()
     params['name'] = name
+    params['profile_type'] = profile_type
     params['system_template'] = system_template
     params['network_template'] = network_template
     params['storage_template'] = storage_template
     params['userdata'] = userdata
     params['script'] = script
+    params['ova'] = ova
     params['arg'] = script_args
 
     retcode, retdata = pvc_provisioner.profile_add(config, params)
@@ -3362,6 +3462,10 @@ provisioner_script.add_command(provisioner_script_add)
 provisioner_script.add_command(provisioner_script_modify)
 provisioner_script.add_command(provisioner_script_remove)
 
+provisioner_ova.add_command(provisioner_ova_list)
+provisioner_ova.add_command(provisioner_ova_upload)
+provisioner_ova.add_command(provisioner_ova_remove)
+
 provisioner_profile.add_command(provisioner_profile_list)
 provisioner_profile.add_command(provisioner_profile_add)
 provisioner_profile.add_command(provisioner_profile_modify)
@@ -3370,6 +3474,7 @@ provisioner_profile.add_command(provisioner_profile_remove)
 cli_provisioner.add_command(provisioner_template)
 cli_provisioner.add_command(provisioner_userdata)
 cli_provisioner.add_command(provisioner_script)
+cli_provisioner.add_command(provisioner_ova)
 cli_provisioner.add_command(provisioner_profile)
 cli_provisioner.add_command(provisioner_create)
 cli_provisioner.add_command(provisioner_status)

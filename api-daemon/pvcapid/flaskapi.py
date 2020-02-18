@@ -5194,6 +5194,228 @@ class API_Provisioner_Script_Element(Resource):
 api.add_resource(API_Provisioner_Script_Element, '/provisioner/script/<script>')
 
 # /provisioner/profile
+class API_Provisioner_OVA_Root(Resource):
+    @RequestParser([
+        { 'name': 'limit' }
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of OVA sources
+        ---
+        tags:
+          - provisioner
+        definitions:
+          - schema:
+              type: object
+              id: ova
+              properties:
+                id:
+                  type: integer
+                  description: Internal provisioner OVA ID
+                name:
+                  type: string
+                  description: OVA name
+                volumes:
+                  type: list
+                  items:
+                    type: object
+                    id: ova_volume
+                    properties:
+                      disk_id:
+                        type: string
+                        description: Disk identifier
+                      disk_size_gb:
+                        type: string
+                        description: Disk size in GB
+                      pool:
+                        type: string
+                        description: Pool containing the OVA volume
+                      volume_name:
+                        type: string
+                        description: Storage volume containing the OVA image
+                      volume_format:
+                        type: string
+                        description: OVA image format
+        parameters:
+          - in: query
+            name: limit
+            type: string
+            required: false
+            description: An OVA name search limit; fuzzy by default, use ^/$ to force exact matches
+        responses:
+          200:
+            description: OK
+            schema:
+              type: list
+              items:
+                $ref: '#/definitions/ova'
+        """
+        return api_ova.list_ova(
+            reqargs.get('limit', None)
+        )
+
+    @RequestParser([
+        { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
+        { 'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified" },
+        { 'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified" },
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Upload an OVA image to the cluster
+
+        The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: Storage pool name
+          - in: query
+            name: name
+            type: string
+            required: true
+            description: OVA name on the cluster (usually identical to the OVA file name)
+          - in: query
+            name: ova_size
+            type: string
+            required: true
+            description: Size of the OVA file in bytes
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        from flask_restful import reqparse
+        from werkzeug.datastructures import FileStorage
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=FileStorage, location='files')
+        data = parser.parse_args()
+        ova_data = data.get('file', None)
+        if not ova_data:
+            return {'message':'An OVA file contents must be specified'}, 400
+
+        return api_ova.upload_ova(
+            ova_data,
+            reqargs.get('pool', None),
+            reqargs.get('name', None),
+            reqargs.get('ova_size', None),
+        )
+api.add_resource(API_Provisioner_OVA_Root, '/provisioner/ova')
+
+# /provisioner/ova/<ova>
+class API_Provisioner_OVA_Element(Resource):
+    @Authenticator
+    def get(self, ova):
+        """
+        Return information about OVA image {ova}
+        ---
+        tags:
+          - provisioner
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/ova'
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_ova.list_ova(
+            ova,
+            is_fuzzy=False
+        )
+
+    @RequestParser([
+        { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
+        { 'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified" },
+    ])
+    @Authenticator
+    def post(self, ova, reqargs):
+        """
+        Upload an OVA image to the cluster
+
+        The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.
+        ---
+        tags:
+          - provisioner
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: Storage pool name
+          - in: query
+            name: ova_size
+            type: string
+            required: true
+            description: Size of the OVA file in bytes
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        from flask_restful import reqparse
+        from werkzeug.datastructures import FileStorage
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=FileStorage, location='files')
+        data = parser.parse_args()
+        ova_data = data.get('file', None)
+        if not ova_data:
+            return {'message':'An OVA file contents must be specified'}, 400
+
+        return api_ova.upload_ova(
+            ova_data,
+            reqargs.get('pool', None),
+            ova,
+            reqargs.get('ova_size', None),
+        )
+
+    @Authenticator
+    def delete(self, ova):
+        """
+        Remove ova {ova}
+        ---
+        tags:
+          - provisioner
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_ova.delete_ova(
+            ova
+        )
+api.add_resource(API_Provisioner_OVA_Element, '/provisioner/ova/<ova>')
+
+# /provisioner/profile
 class API_Provisioner_Profile_Root(Resource):
     @RequestParser([
         { 'name': 'limit' }
@@ -5256,11 +5478,13 @@ class API_Provisioner_Profile_Root(Resource):
 
     @RequestParser([
         { 'name': 'name', 'required': True, 'helpmsg': "A profile name must be specified" },
-        { 'name': 'system_template', 'required': True, 'helpmsg': "A system template name must be specified" },
-        { 'name': 'network_template', 'required': True, 'helpmsg': "A network template name must be specified" },
-        { 'name': 'storage_template', 'required': True, 'helpmsg': "A storage template name must be specified" },
-        { 'name': 'userdata', 'required': True, 'helpmsg': "A userdata document name must be specified (use 'empty' if no template is desired)" },
-        { 'name': 'script', 'required': True, 'helpmsg': "A system name must be specified" },
+        { 'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified" },
+        { 'name': 'system_template' },
+        { 'name': 'network_template' },
+        { 'name': 'storage_template' },
+        { 'name': 'userdata' },
+        { 'name': 'script' },
+        { 'name': 'ova' },
         { 'name': 'arg', 'action': 'append' }
     ])
     @Authenticator
@@ -5277,30 +5501,43 @@ class API_Provisioner_Profile_Root(Resource):
             required: true
             description: Profile name
           - in: query
-            name: script
+            name: profile_type
             type: string
             required: true
+            description: Profile type
+            enum:
+              - provisioner
+              - ova
+          - in: query
+            name: script
+            type: string
+            required: false
             description: Script name
           - in: query
             name: system_template
             type: string
-            required: true
+            required: false
             description: System template name
           - in: query
             name: network_template
             type: string
-            required: true
+            required: false
             description: Network template name
           - in: query
             name: storage_template
             type: string
-            required: true
+            required: false
             description: Storage template name
           - in: query
             name: userdata
             type: string
-            required: true
+            required: false
             description: Userdata template name
+          - in: query
+            name: ova
+            type: string
+            required: false
+            description: OVA image source
           - in: query
             name: arg
             type: string
@@ -5319,11 +5556,13 @@ class API_Provisioner_Profile_Root(Resource):
         """
         return api_provisioner.create_profile(
             reqargs.get('name', None),
+            reqargs.get('profile_type', None),
             reqargs.get('system_template', None),
             reqargs.get('network_template', None),
             reqargs.get('storage_template', None),
             reqargs.get('userdata', None),
             reqargs.get('script', None),
+            reqargs.get('ova', None),
             reqargs.get('arg', [])
         )
 api.add_resource(API_Provisioner_Profile_Root, '/provisioner/profile')
@@ -5354,11 +5593,13 @@ class API_Provisioner_Profile_Element(Resource):
         )
 
     @RequestParser([
-        { 'name': 'system_template', 'required': True, 'helpmsg': "A system template name must be specified" },
-        { 'name': 'network_template', 'required': True, 'helpmsg': "A network template name must be specified" },
-        { 'name': 'storage_template', 'required': True, 'helpmsg': "A storage template name must be specified" },
-        { 'name': 'userdata', 'required': True, 'helpmsg': "A userdata document name must be specified (use 'empty' if no template is desired)" },
-        { 'name': 'script', 'required': True, 'helpmsg': "A system name must be specified" },
+        { 'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified" },
+        { 'name': 'system_template' },
+        { 'name': 'network_template' },
+        { 'name': 'storage_template' },
+        { 'name': 'userdata' },
+        { 'name': 'script' },
+        { 'name': 'ova' },
         { 'name': 'arg', 'action': 'append' }
     ])
     @Authenticator
@@ -5369,6 +5610,14 @@ class API_Provisioner_Profile_Element(Resource):
         tags:
           - provisioner
         parameters:
+          - in: query
+            name: profile_type
+            type: string
+            required: true
+            description: Profile type
+            enum:
+              - provisioner
+              - ova
           - in: query
             name: script
             type: string
@@ -5395,6 +5644,11 @@ class API_Provisioner_Profile_Element(Resource):
             required: true
             description: Userdata template name
           - in: query
+            name: ova
+            type: string
+            required: false
+            description: OVA image source
+          - in: query
             name: arg
             type: string
             description: Script install() function keywork argument in "arg=data" format; may be specified multiple times to add multiple arguments
@@ -5412,11 +5666,13 @@ class API_Provisioner_Profile_Element(Resource):
         """
         return api_provisioner.create_profile(
             profile,
+            reqargs.get('profile_type', None),
             reqargs.get('system_template', None),
             reqargs.get('network_template', None),
             reqargs.get('storage_template', None),
             reqargs.get('userdata', None),
             reqargs.get('script', None),
+            reqargs.get('ova', None),
             reqargs.get('arg', [])
         )
 
@@ -5479,12 +5735,14 @@ class API_Provisioner_Profile_Element(Resource):
         """
         return api_provisioner.modify_profile(
             profile,
+            None, # Can't modify the profile type
             reqargs.get('system_template', None),
             reqargs.get('network_template', None),
             reqargs.get('storage_template', None),
             reqargs.get('userdata', None),
             reqargs.get('script', None),
-            reqargs.get('arg', [])
+            None, # Can't modify the OVA
+            reqargs.get('arg', []),
         )
 
     @Authenticator
@@ -5586,98 +5844,6 @@ class API_Provisioner_Create_Root(Resource):
         )
         return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
-
-# /provisioner/upload
-class API_Provisioner_Upload(Resource):
-    @RequestParser([
-        { 'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified" },
-        { 'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified" },
-        { 'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified" },
-        { 'name': 'define_vm' },
-        { 'name': 'start_vm' }
-    ])
-    @Authenticator
-    def post(self, reqargs):
-        """
-        Upload an OVA image to a new virtual machine
-
-        The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.
-
-        Even if define_vm is false, the name will be used to name the resulting disk volumes as it would with a normally-provisioned VM.
-
-        The resulting VM, even if defined, will not have an attached provisioner profile.
-        ---
-        tags:
-          - provisioner
-        parameters:
-          - in: query
-            name: ova_size
-            type: string
-            required: true
-            description: Size of the OVA file in bytes
-          - in: query
-            name: pool
-            type: string
-            required: true
-            description: Storage pool name
-          - in: query
-            name: name
-            type: string
-            required: true
-            description: Virtual machine name
-          - in: query
-            name: define_vm
-            type: boolean
-            required: false
-            description: Whether to define the VM on the cluster during provisioning
-          - in: query
-            name: start_vm
-            type: boolean
-            required: false
-            description: Whether to start the VM after provisioning
-        responses:
-          200:
-            description: OK
-            schema:
-              type: object
-              properties:
-                task_id:
-                  type: string
-                  description: Task ID for the provisioner Celery worker
-          400:
-            description: Bad request
-            schema:
-              type: object
-              id: Message
-        """
-        from flask_restful import reqparse
-        from werkzeug.datastructures import FileStorage
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', type=FileStorage, location='files')
-        data = parser.parse_args()
-        ova_data = data.get('file', None)
-        if not ova_data:
-            return {'message':'An OVA file contents must be specified'}, 400
-
-        if bool(strtobool(reqargs.get('define_vm', 'true'))):
-            define_vm = True
-        else:
-            define_vm = False
-
-        if bool(strtobool(reqargs.get('start_vm', 'true'))):
-            start_vm = True
-        else:
-            start_vm = False
-
-        return api_ova.upload_ova(
-            ova_data,
-            reqargs.get('ova_size', None),
-            reqargs.get('pool', None),
-            reqargs.get('name', None),
-            define_vm,
-            start_vm
-        )
-api.add_resource(API_Provisioner_Upload, '/provisioner/upload')
 
 # /provisioner/status
 class API_Provisioner_Status_Root(Resource):

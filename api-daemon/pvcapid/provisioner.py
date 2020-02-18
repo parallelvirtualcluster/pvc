@@ -38,6 +38,8 @@ import daemon_lib.ceph as pvc_ceph
 
 import pvcapid.libvirt_schema as libvirt_schema
 
+from pvcapid.ova import list_ova
+
 #
 # Exceptions (used by Celery tasks)
 #
@@ -197,14 +199,14 @@ def template_list(limit):
 #
 # Template Create functions
 #
-def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False):
+def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False, ova=None):
     if list_template_system(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The system template "{}" already exists'.format(name) }
         retcode = 400
         return retmsg, retcode
 
-    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
-    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart)
+    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova)
 
     conn, cur = open_database(config)
     try:
@@ -662,10 +664,6 @@ def delete_script(name):
     return retmsg, retcode
 
 #
-# OVA functions
-#
-
-#
 # Profile functions
 #
 def list_profile(limit, is_fuzzy=True):
@@ -703,7 +701,8 @@ def list_profile(limit, is_fuzzy=True):
             cur.execute(query, args)
             try:
                 name = cur.fetchone()['name']
-            except:
+            except Exception as e:
+                print(e)
                 name = "N/A"
             profile_data[etype] = name
         # Split the arguments back into a list
@@ -722,8 +721,8 @@ def create_profile(name, profile_type, system_template, network_template, storag
         retcode = 400
         return retmsg, retcode
 
-    if profile_type not in ['script', 'clone', 'ova']:
-        retmsg = { 'message': 'A valid profile type (script, clone, ova) must be specified' }
+    if profile_type not in ['provisioner', 'ova']:
+        retmsg = { 'message': 'A valid profile type (provisioner, ova) must be specified' }
         retcode = 400
         return retmsg, retcode
 
@@ -742,7 +741,7 @@ def create_profile(name, profile_type, system_template, network_template, storag
     for template in network_templates:
         if template['name'] == network_template:
             network_template_id = template['id']
-    if not network_template_id:
+    if not network_template_id and profile_type != 'ova':
         retmsg = { 'message': 'The network template "{}" for profile "{}" does not exist'.format(network_template, name) }
         retcode = 400
         return retmsg, retcode
@@ -752,7 +751,7 @@ def create_profile(name, profile_type, system_template, network_template, storag
     for template in storage_templates:
         if template['name'] == storage_template:
             storage_template_id = template['id']
-    if not storage_template_id:
+    if not storage_template_id and profile_type != 'ova':
         retmsg = { 'message': 'The storage template "{}" for profile "{}" does not exist'.format(storage_template, name) }
         retcode = 400
         return retmsg, retcode
@@ -782,7 +781,7 @@ def create_profile(name, profile_type, system_template, network_template, storag
 
     conn, cur = open_database(config)
     try:
-        query = "INSERT INTO profile (name, type, system_template, network_template, storage_template, userdata, script, ova, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
+        query = "INSERT INTO profile (name, profile_type, system_template, network_template, storage_template, userdata, script, ova, arguments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
         args = (name, profile_type, system_template_id, network_template_id, storage_template_id, userdata_id, script_id, ova_id, arguments_formatted)
         cur.execute(query, args)
         retmsg = { "message": 'Created VM profile "{}"'.format(name) }
@@ -802,8 +801,8 @@ def modify_profile(name, profile_type, system_template, network_template, storag
     fields = []
 
     if profile_type is not None:
-        if profile_type not in ['script', 'clone', 'ova']:
-            retmsg = { 'message': 'A valid profile type (script, clone, ova) must be specified' }
+        if profile_type not in ['provisioner', 'ova']:
+            retmsg = { 'message': 'A valid profile type (provisioner, ova) must be specified' }
             retcode = 400
             return retmsg, retcode
         fields.append({'field': 'type', 'data': profile_type})

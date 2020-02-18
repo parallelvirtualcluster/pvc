@@ -554,6 +554,48 @@
             },
             "type": "object"
         },
+        "ova": {
+            "properties": {
+                "id": {
+                    "description": "Internal provisioner OVA ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "OVA name",
+                    "type": "string"
+                },
+                "volumes": {
+                    "items": {
+                        "id": "ova_volume",
+                        "properties": {
+                            "disk_id": {
+                                "description": "Disk identifier",
+                                "type": "string"
+                            },
+                            "disk_size_gb": {
+                                "description": "Disk size in GB",
+                                "type": "string"
+                            },
+                            "pool": {
+                                "description": "Pool containing the OVA volume",
+                                "type": "string"
+                            },
+                            "volume_format": {
+                                "description": "OVA image format",
+                                "type": "string"
+                            },
+                            "volume_name": {
+                                "description": "Storage volume containing the OVA image",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "list"
+                }
+            },
+            "type": "object"
+        },
         "pool": {
             "properties": {
                 "name": {
@@ -2190,6 +2232,160 @@
                 ]
             }
         },
+        "/api/v1/provisioner/ova": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "An OVA name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "items": {
+                                "$ref": "#/definitions/ova"
+                            },
+                            "type": "list"
+                        }
+                    }
+                },
+                "summary": "Return a list of OVA sources",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "<br/>The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.",
+                "parameters": [
+                    {
+                        "description": "Storage pool name",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "OVA name on the cluster (usually identical to the OVA file name)",
+                        "in": "query",
+                        "name": "name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Size of the OVA file in bytes",
+                        "in": "query",
+                        "name": "ova_size",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Upload an OVA image to the cluster",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
+        "/api/v1/provisioner/ova/{ova}": {
+            "delete": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Remove ova {ova}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ova"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about OVA image {ova}",
+                "tags": [
+                    "provisioner"
+                ]
+            },
+            "post": {
+                "description": "<br/>The API client is responsible for determining and setting the ova_size value, as this value cannot be determined dynamically before the upload proceeds.",
+                "parameters": [
+                    {
+                        "description": "Storage pool name",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Size of the OVA file in bytes",
+                        "in": "query",
+                        "name": "ova_size",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Upload an OVA image to the cluster",
+                "tags": [
+                    "provisioner"
+                ]
+            }
+        },
         "/api/v1/provisioner/profile": {
             "get": {
                 "description": "",
@@ -2229,38 +2425,56 @@
                         "type": "string"
                     },
                     {
+                        "description": "Profile type",
+                        "enum": [
+                            "provisioner",
+                            "ova"
+                        ],
+                        "in": "query",
+                        "name": "profile_type",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
                         "description": "Script name",
                         "in": "query",
                         "name": "script",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "System template name",
                         "in": "query",
                         "name": "system_template",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "Network template name",
                         "in": "query",
                         "name": "network_template",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "Storage template name",
                         "in": "query",
                         "name": "storage_template",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "Userdata template name",
                         "in": "query",
                         "name": "userdata",
-                        "required": true,
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "OVA image source",
+                        "in": "query",
+                        "name": "ova",
+                        "required": false,
                         "type": "string"
                     },
                     {
@@ -2337,6 +2551,17 @@
                 "description": "",
                 "parameters": [
                     {
+                        "description": "Profile type",
+                        "enum": [
+                            "provisioner",
+                            "ova"
+                        ],
+                        "in": "query",
+                        "name": "profile_type",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
                         "description": "Script name",
                         "in": "query",
                         "name": "script",
@@ -2369,6 +2594,13 @@
                         "in": "query",
                         "name": "userdata",
                         "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "OVA image source",
+                        "in": "query",
+                        "name": "ova",
+                        "required": false,
                         "type": "string"
                     },
                     {
