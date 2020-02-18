@@ -2136,6 +2136,68 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     cleanup(retcode, retdata)
 
 ###############################################################################
+# pvc provisioner template system modify
+###############################################################################
+@click.command(name='modify', short_help='Modify an existing system template.')
+@click.argument(
+    'name'
+)
+@click.option(
+    '-u', '--vcpus', 'vcpus',
+    type=int,
+    help='The number of vCPUs.'
+)
+@click.option(
+    '-m', '--vram', 'vram',
+    type=int,
+    help='The amount of vRAM (in MB).'
+)
+@click.option(
+    '-s', '--serial', 'serial',
+    is_flag=True, default=None,
+    help='Enable the virtual serial console.'
+)
+@click.option(
+    '-n', '--vnc', 'vnc',
+    is_flag=True, default=None,
+    help='Enable the VNC console.'
+)
+@click.option(
+    '-b', '--vnc-bind', 'vnc_bind',
+    help='Bind VNC to this IP address instead of localhost.'
+)
+@click.option(
+    '--node-limit', 'node_limit',
+    help='Limit VM operation to this CSV list of node(s).'
+)
+@click.option(
+    '--node-selector', 'node_selector',
+    type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
+    help='Use this selector to determine the optimal node during migrations.'
+)
+@click.option(
+    '--node-autostart', 'node_autostart',
+    is_flag=True, default=None,
+    help='Autostart VM with their parent Node on first/next boot.'
+)
+def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
+    """
+    Add a new system template NAME to the PVC cluster provisioner.
+    """
+    params = dict()
+    params['vcpus'] = vcpus
+    params['vram']  = vram
+    params['serial'] = serial
+    params['vnc'] = vnc
+    params['vnc_bind'] = vnc_bind
+    params['node_limit'] = node_limit
+    params['node_selector'] = node_selector
+    params['node_autostart'] = node_autostart
+
+    retcode, retdata = pvc_provisioner.template_modify(config, params, name, template_type='system')
+    cleanup(retcode, retdata)
+
+###############################################################################
 # pvc provisioner template system remove
 ###############################################################################
 @click.command(name='remove', short_help='Remove system template.')
@@ -3429,6 +3491,7 @@ cli_storage.add_command(ceph_volume)
 
 provisioner_template_system.add_command(provisioner_template_system_list)
 provisioner_template_system.add_command(provisioner_template_system_add)
+provisioner_template_system.add_command(provisioner_template_system_modify)
 provisioner_template_system.add_command(provisioner_template_system_remove)
 
 provisioner_template_network.add_command(provisioner_template_network_list)

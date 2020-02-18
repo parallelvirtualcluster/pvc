@@ -85,7 +85,24 @@ def template_add(config, params, template_type=None):
         
     return retvalue, response.json()['message']
 
-def template_remove(config, name, template_type=None):
+def template_modify(config, params, name, template_type):
+    """
+    Modify an existing template of {template_type} with {params}
+
+    API endpoint: PUT /api/v1/provisioner/template/{template_type}/{name}
+    API_arguments: args
+    API schema: {message}
+    """
+    response = call_api(config, 'put', '/provisioner/template/{template_type}/{name}'.format(template_type=template_type, name=name), params=params)
+
+    if response.status_code == 200:
+        retvalue = True
+    else:
+        retvalue = False
+        
+    return retvalue, response.json()['message']
+
+def template_remove(config, name, template_type):
     """
     Remove template {name} of {template_type}
 

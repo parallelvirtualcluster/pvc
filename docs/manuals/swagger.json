@@ -3790,6 +3790,77 @@
                 "tags": [
                     "provisioner / template"
                 ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "vCPU count for VM",
+                        "in": "query",
+                        "name": "vcpus",
+                        "type": "integer"
+                    },
+                    {
+                        "description": "vRAM size in MB for VM",
+                        "in": "query",
+                        "name": "vram",
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Whether to enable serial console for VM",
+                        "in": "query",
+                        "name": "serial",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to enable VNC console for VM",
+                        "in": "query",
+                        "name": "vnc",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "VNC bind address when VNC console is enabled",
+                        "in": "query",
+                        "name": "vnc_bind",
+                        "type": "string"
+                    },
+                    {
+                        "description": "CSV list of node(s) to limit VM assignment to",
+                        "in": "query",
+                        "name": "node_limit",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Selector to use for VM node assignment on migration/move",
+                        "in": "query",
+                        "name": "node_selector",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Whether to start VM with node ready state (one-time)",
+                        "in": "query",
+                        "name": "node_autostart",
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Modify an existing system template {template}",
+                "tags": [
+                    "provisioner / template"
+                ]
             }
         },
         "/api/v1/provisioner/userdata": {

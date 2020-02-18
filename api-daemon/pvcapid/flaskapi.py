@@ -4024,12 +4024,79 @@ class API_Provisioner_Template_System_Element(Resource):
             node_autostart
         )
 
+    @RequestParser([
+        { 'name': 'vcpus' },
+        { 'name': 'vram' },
+        { 'name': 'serial' },
+        { 'name': 'vnc' },
+        { 'name': 'vnc_bind' },
+        { 'name': 'node_limit' },
+        { 'name': 'node_selector' },
+        { 'name': 'node_autostart' }
+    ])
     @Authenticator
-    def put(self, template):
+    def put(self, template, reqargs):
         """
-        TODO
+        Modify an existing system template {template}
+        ---
+        tags:
+          - provisioner / template
+        parameters:
+          - in: query
+            name: vcpus
+            type: integer
+            description: vCPU count for VM
+          - in: query
+            name: vram
+            type: integer
+            description: vRAM size in MB for VM
+          - in: query
+            name: serial
+            type: boolean
+            description: Whether to enable serial console for VM
+          - in: query
+            name: vnc
+            type: boolean
+            description: Whether to enable VNC console for VM
+          - in: query
+            name: vnc_bind
+            type: string
+            description: VNC bind address when VNC console is enabled
+          - in: query
+            name: node_limit
+            type: string
+            description: CSV list of node(s) to limit VM assignment to
+          - in: query
+            name: node_selector
+            type: string
+            description: Selector to use for VM node assignment on migration/move
+          - in: query
+            name: node_autostart
+            type: boolean
+            description: Whether to start VM with node ready state (one-time)
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
         """
-        pass
+        return api_provisioner.modify_template_system(
+            template,
+            reqargs.get('vcpus', None),
+            reqargs.get('vram', None),
+            reqargs.get('serial', None),
+            reqargs.get('vnc', None),
+            reqargs.get('vnc_bind'),
+            reqargs.get('node_limit', None),
+            reqargs.get('node_selector', None),
+            reqargs.get('node_autostart', None)
+        )
 
     @Authenticator
     def delete(self, template):

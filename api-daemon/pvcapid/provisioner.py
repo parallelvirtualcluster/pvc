@@ -30,6 +30,8 @@ import time
 import shlex
 import subprocess
 
+from distutils.util import strtobool
+
 import daemon_lib.common as pvc_common
 import daemon_lib.node as pvc_node
 import daemon_lib.vm as pvc_vm
@@ -337,6 +339,84 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         retcode = 200
     except Exception as e:
         retmsg = { 'message': 'Failed to create entry "{}"'.format(disk_id, e) }
+        retcode = 400
+    close_database(conn, cur)
+    return retmsg, retcode
+
+#
+# Template Modify functions
+#
+def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc=None, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=None):
+    if list_profile(name, is_fuzzy=False)[-1] != 200:
+        retmsg = { 'message': 'The system template "{}" does not exist'.format(name) }
+        retcode = 400
+        return retmsg, retcode
+
+    fields = []
+
+    if vcpu_count is not None:
+        try:
+            vcpu_count = int(vcpu_count)
+        except:
+            retmsg = { 'message': 'The vcpus value must be an integer' }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'vcpu_count', 'data': vcpu_count})
+
+    if vram_mb is not None:
+        try:
+            vram_mb = int(vram_mb)
+        except:
+            retmsg = { 'message': 'The vram value must be an integer' }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'vram_mb', 'data': vram_mb})
+
+    if serial is not None:
+        try:
+            serial = bool(strtobool(serial))
+        except:
+            retmsg = { 'message': 'The serial value must be a boolean' }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'serial', 'data': serial})
+
+    if vnc is not None:
+        try:
+            vnc = bool(strtobool(vnc))
+        except:
+            retmsg = { 'message': 'The vnc value must be a boolean' }
+            retcode = 400
+            return retmsg, retcode
+        fields.append({'field': 'vnc', 'data': vnc})
+
+    if vnc_bind is not None:
+        fields.append({'field': 'vnc_bind', 'data': vnc_bind})
+
+    if node_limit is not None:
+        fields.append({'field': 'node_limit', 'data': node_limit})
+
+    if node_selector is not None:
+        fields.append({'field': 'node_selector', 'data': node_selector})
+
+    if node_autostart is not None:
+        try:
+            node_autostart = bool(strtobool(node_autostart))
+        except:
+            retmsg = { 'message': 'The node_autostart value must be a boolean' }
+            retcode = 400
+        fields.append({'field': 'node_autostart', 'data': node_autostart})
+
+    conn, cur = open_database(config)
+    try:
+        for field in fields:
+            query = "UPDATE system_template SET {} = %s WHERE name = %s;".format(field.get('field'))
+            args = (field.get('data'), name)
+            cur.execute(query, args)
+        retmsg = { "message": 'Modified system template "{}"'.format(name) }
+        retcode = 200
+    except Exception as e:
+        retmsg = { 'message': 'Failed to modify entry "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
