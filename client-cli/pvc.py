@@ -2918,7 +2918,7 @@ def provisioner_ova_remove(name, confirm_flag):
     """
     if not confirm_flag:
         try:
-            click.confirm('Remove ova {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm('Remove OVA image {}'.format(name), prompt_suffix='? ', abort=True)
         except:
             exit(0)
 
