@@ -70,7 +70,7 @@ pvc:
             storage_hosts:
               - pvchv1
               - pvchv2
-              - pvchv2
+              - pvchv3
             # storage_domain: The storage domain name, concatenated with the coordinators list names
             #                 to form monitor access strings
             storage_domain: "pvc.storage"
