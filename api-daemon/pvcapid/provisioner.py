@@ -919,12 +919,6 @@ def delete_profile(name):
     return retmsg, retcode
 
 #
-# Cloned VM provisioning function - executed by the Celery worker
-#
-def clone_vm(self, vm_name, vm_profile, source_volumes):
-    pass
-
-#
 # Main VM provisioning function - executed by the Celery worker
 #
 def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
@@ -972,11 +966,17 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     args = (vm_profile,)
     db_cur.execute(query, args)
     profile_data = db_cur.fetchone()
-    if profile_data['arguments']:
-        vm_data['script_arguments'] = profile_data['arguments'].split('|')
+    if profile_data.get('arguments'):
+        vm_data['script_arguments'] = profile_data.get('arguments').split('|')
     else:
         vm_data['script_arguments'] = []
-    
+   
+    if profile_data.get('profile_type') == 'ova':
+        is_ova_install = True
+        is_script_install = False # By definition
+    else:
+        is_ova_install = False
+
     # Get the system details
     query = 'SELECT * FROM system_template WHERE id = %s'
     args = (profile_data['system_template'],)
@@ -984,10 +984,14 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     vm_data['system_details'] = db_cur.fetchone()
 
     # Get the MAC template
-    query = 'SELECT * FROM network_template WHERE id = %s'
+    query = 'SELECT mac_template FROM network_template WHERE id = %s'
     args = (profile_data['network_template'],)
     db_cur.execute(query, args)
-    vm_data['mac_template'] = db_cur.fetchone()['mac_template']
+    db_row = db_cur.fetchone()
+    if db_row:
+        vm_data['mac_template'] = db_row.get('mac_template')
+    else:
+        vm_data['mac_template'] = None
 
     # Get the networks
     query = 'SELECT * FROM network WHERE network_template = %s'
@@ -1003,18 +1007,28 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     vm_data['volumes'] = db_cur.fetchall()
 
     # Get the script
-    query = 'SELECT * FROM script WHERE id = %s'
+    query = 'SELECT script FROM script WHERE id = %s'
     args = (profile_data['script'],)
     db_cur.execute(query, args)
-    vm_data['script'] = db_cur.fetchone()['script']
+    vm_data['script'] = db_cur.fetchone()
 
-    if not vm_data['script']:
-        # We do not have a script; skip it
-        is_script_install = False
-    else:
+    if vm_data['script'] and not is_ova_install:
         is_script_install = True
+    else:
+        is_script_install = False
 
-  
+    # Get the OVA details
+    if is_ova_install:
+        query = 'SELECT * FROM ova WHERE id = %s'
+        args = (profile_data['ova'],)
+        db_cur.execute(query, args)
+        vm_data['ova_details'] = db_cur.fetchone()
+
+        query = 'SELECT * FROM ova_volume WHERE ova = %s'
+        args = (profile_data['ova'],)
+        db_cur.execute(query, args)
+        vm_data['volumes'] = db_cur.fetchall()
+
     close_database(db_conn, db_cur)
 
     print("VM configuration data:\n{}".format(json.dumps(vm_data, sort_keys=True, indent=2)))
@@ -1064,7 +1078,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     # Verify that there is enough disk space free to provision all VM disks
     pools = dict()
     for volume in vm_data['volumes']:
-        if volume['source_volume'] is not None:
+        if volume.get('source_volume') is not None:
             if not volume['pool'] in pools:
                 volume_data, status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
                 pools[volume['pool']] = volume_data['disk_size_gb']
@@ -1093,25 +1107,26 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
 
     print("There is enough space on cluster to store VM volumes")
 
-    # Verify that every specified filesystem is valid
-    used_filesystems = list()
-    for volume in vm_data['volumes']:
-        if volume['source_volume'] is not None:
-            continue
-        if volume['filesystem'] and volume['filesystem'] not in used_filesystems:
-            used_filesystems.append(volume['filesystem'])
+    if not is_ova_install:
+        # Verify that every specified filesystem is valid
+        used_filesystems = list()
+        for volume in vm_data['volumes']:
+            if volume['source_volume'] is not None:
+                continue
+            if volume['filesystem'] and volume['filesystem'] not in used_filesystems:
+                used_filesystems.append(volume['filesystem'])
+    
+        for filesystem in used_filesystems:
+            if filesystem == 'swap':
+                retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
+                if retcode:
+                    raise ProvisioningError("Failed to find binary for mkswap: {}".format(filesystem, stderr))
+            else:
+                retcode, stdout, stderr = pvc_common.run_os_command("which mkfs.{}".format(filesystem))
+                if retcode:
+                    raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
 
-    for filesystem in used_filesystems:
-        if filesystem == 'swap':
-            retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
-            if retcode:
-                raise ProvisioningError("Failed to find binary for mkswap: {}".format(filesystem, stderr))
-        else:
-            retcode, stdout, stderr = pvc_common.run_os_command("which mkfs.{}".format(filesystem))
-            if retcode:
-                raise ProvisioningError("Failed to find binary for mkfs.{}: {}".format(filesystem, stderr))
-
-    print("All selected filesystems are valid")
+        print("All selected filesystems are valid")
 
     # Phase 3 - provisioning script preparation
     #  * Import the provisioning script as a library with importlib
@@ -1176,9 +1191,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         vm_id_hex = '{:x}'.format(int(vm_id % 16))
         net_id_hex = '{:x}'.format(int(network_id % 16))
 
-        if vm_data['mac_template']:
+        if vm_data.get('mac_template') is not None:
             mac_prefix = '52:54:01'
-            mactemplate = "{prefix}:ff:f6:{vmid}{netid}"
             macgen_template = vm_data['mac_template']
             eth_macaddr = macgen_template.format(
                 prefix=mac_prefix,
@@ -1286,7 +1300,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
     
     for volume in vm_data['volumes']:
-        if volume['source_volume'] is not None:
+        if volume.get('source_volume') is not None:
             success, message = pvc_ceph.clone_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), volume['source_volume'])
             print(message)
             if not success:
@@ -1306,37 +1320,71 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     time.sleep(1)
 
     for volume in vm_data['volumes']:
-        if volume['source_volume'] is not None:
-            continue
+        dst_volume_name = "{}_{}".format(vm_name, volume['disk_id'])
+        dst_volume = "{}/{}".format(volume['pool'], dst_volume_name)
 
-        if not volume['filesystem']:
-            continue
+        if is_ova_install:
+            src_volume_name = volume['volume_name']
+            src_volume = "{}/{}".format(volume['pool'], src_volume_name)
 
-        rbd_volume = "{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-
-        filesystem_args_list = list()
-        for arg in volume['filesystem_args'].split():
-            arg_entry, arg_data = arg.split('=')
-            filesystem_args_list.append(arg_entry)
-            filesystem_args_list.append(arg_data)
-        filesystem_args = ' '.join(filesystem_args_list)
-
-        # Map the RBD device
-        retcode, stdout, stderr = pvc_common.run_os_command("rbd map {}".format(rbd_volume))
-        if retcode:
-            raise ProvisioningError('Failed to map volume "{}": {}'.format(rbd_volume, stderr))
-
-        # Create the filesystem
-        if volume['filesystem'] == 'swap':
-            retcode, stdout, stderr = pvc_common.run_os_command("mkswap -f /dev/rbd/{}".format(rbd_volume))
+            # Map the target RBD device
+            retcode, retmsg = pvc_ceph.map_volume(zk_conn, volume['pool'], dst_volume_name)
+            if not retcode:
+                raise ProvisioningError('Failed to map destination volume "{}": {}'.format(dst_volume_name, retmsg))
+            # Map the source RBD device
+            retcode, retmsg = pvc_ceph.map_volume(zk_conn, volume['pool'], src_volume_name)
+            if not retcode:
+                raise ProvisioningError('Failed to map source volume "{}": {}'.format(src_volume_name, retmsg))
+            # Convert from source to target
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                'qemu-img convert -C -f {} -O raw {} {}'.format(
+                    volume['volume_format'],
+                    "/dev/rbd/{}".format(src_volume),
+                    "/dev/rbd/{}".format(dst_volume)
+                )
+            )
             if retcode:
-                raise ProvisioningError('Failed to create swap on "{}": {}'.format(rbd_volume, stderr))
+                raise ProvisioningError('Failed to convert {} volume "{}" to raw volume "{}": {}'.format(volume['volume_format'], src_volume, dst_volume, stderr))
+
+            # Unmap the source RBD device (don't bother later)
+            retcode, retmsg = pvc_ceph.unmap_volume(zk_conn, volume['pool'], src_volume_name)
+            if not retcode:
+                raise ProvisioningError('Failed to unmap source volume "{}": {}'.format(src_volume_name, retmsg))
+            # Unmap the target RBD device (don't bother later)
+            retcode, retmsg = pvc_ceph.unmap_volume(zk_conn, volume['pool'], dst_volume_name)
+            if not retcode:
+                raise ProvisioningError('Failed to unmap destination volume "{}": {}'.format(dst_volume_name, retmsg))
+            print('Converted {} source volume {} to raw format on {}'.format(volume['volume_format'], src_volume, dst_volume))
         else:
-            retcode, stdout, stderr = pvc_common.run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, rbd_volume))
-            if retcode:
-                raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], rbd_volume, stderr))
+            if volume.get('source_volume') is not None:
+                continue
 
-        print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], rbd_volume, stdout))
+            if volume.get('filesystem') is None:
+                continue
+
+            filesystem_args_list = list()
+            for arg in volume['filesystem_args'].split():
+                arg_entry, arg_data = arg.split('=')
+                filesystem_args_list.append(arg_entry)
+                filesystem_args_list.append(arg_data)
+            filesystem_args = ' '.join(filesystem_args_list)
+
+            # Map the RBD device
+            retcode, retmsg = pvc_ceph.map_volume(zk_conn, volume['pool'], dst_volume_name)
+            if not retcode:
+                raise ProvisioningError('Failed to map volume "{}": {}'.format(dst_volume, retmsg))
+
+            # Create the filesystem
+            if volume['filesystem'] == 'swap':
+                retcode, stdout, stderr = pvc_common.run_os_command("mkswap -f /dev/rbd/{}".format(dst_volume))
+                if retcode:
+                    raise ProvisioningError('Failed to create swap on "{}": {}'.format(dst_volume, stderr))
+            else:
+                retcode, stdout, stderr = pvc_common.run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, dst_volume))
+                if retcode:
+                    raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], dst_volume, stderr))
+
+            print("Created {} filesystem on {}:\n{}".format(volume['filesystem'], dst_volume, stdout))
 
     if is_script_install:
         # Create temporary directory
@@ -1352,7 +1400,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
             if not volume['mountpoint'] or volume['mountpoint'] == 'swap':
                 continue
 
-            mapped_rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+            mapped_dst_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
             mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
 
             # Ensure the mount path exists (within the filesystems)
@@ -1361,11 +1409,11 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
                 raise ProvisioningError('Failed to create mountpoint "{}": {}'.format(mount_path, stderr))
 
             # Mount filesystems to temporary directory
-            retcode, stdout, stderr = pvc_common.run_os_command("mount {} {}".format(mapped_rbd_volume, mount_path))
+            retcode, stdout, stderr = pvc_common.run_os_command("mount {} {}".format(mapped_dst_volume, mount_path))
             if retcode:
-                raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_rbd_volume, mount_path, stderr))
+                raise ProvisioningError('Failed to mount "{}" on "{}": {}'.format(mapped_dst_volume, mount_path, stderr))
 
-            print("Successfully mounted {} on {}".format(mapped_rbd_volume, mount_path))
+            print("Successfully mounted {} on {}".format(mapped_dst_volume, mount_path))
 
     # Phase 8 - provisioning script execution
     #  * Execute the provisioning script main function ("install") passing any custom arguments
@@ -1400,28 +1448,29 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     self.update_state(state='RUNNING', meta={'current': 9, 'total': 10, 'status': 'Cleaning up local mounts and directories'})
     time.sleep(1)
 
-    for volume in list(reversed(vm_data['volumes'])):
-        if volume['source_volume'] is not None:
-            continue
+    if not is_ova_install:
+        for volume in list(reversed(vm_data['volumes'])):
+            if volume.get('source_volume') is not None:
+                continue
 
-        if is_script_install:
-            # Unmount the volume
-            if volume['mountpoint'] and volume['mountpoint'] != 'swap':
-                print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
+            if is_script_install:
+                # Unmount the volume
+                if volume.get('mountpoint') is not None and volume.get('mountpoint') != 'swap':
+                    print("Cleaning up mount {}{}".format(temp_dir, volume['mountpoint']))
 
-                mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
-                retcode, stdout, stderr = pvc_common.run_os_command("umount {}".format(mount_path))
+                    mount_path = "{}{}".format(temp_dir, volume['mountpoint'])
+                    retcode, stdout, stderr = pvc_common.run_os_command("umount {}".format(mount_path))
+                    if retcode:
+                        raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
+
+            # Unmap the RBD device
+            if volume['filesystem']:
+                print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
+
+                rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
+                retcode, stdout, stderr = pvc_common.run_os_command("rbd unmap {}".format(rbd_volume))
                 if retcode:
-                    raise ProvisioningError('Failed to unmount "{}": {}'.format(mount_path, stderr))
-
-        # Unmap the RBD device
-        if volume['filesystem']:
-            print("Cleaning up RBD mapping /dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id']))
-
-            rbd_volume = "/dev/rbd/{}/{}_{}".format(volume['pool'], vm_name, volume['disk_id'])
-            retcode, stdout, stderr = pvc_common.run_os_command("rbd unmap {}".format(rbd_volume))
-            if retcode:
-                raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
+                    raise ProvisioningError('Failed to unmap volume "{}": {}'.format(rbd_volume, stderr))
 
     print("Cleaning up temporary directories and files")
 

@@ -53,6 +53,7 @@ libvirt_header = """<domain type='kvm'>
   <on_reboot>restart</on_reboot>
   <on_crash>restart</on_crash>
   <devices>
+    <console type='pty'/>
 """
 
 # File footer, closing devices and domain elements
@@ -75,7 +76,6 @@ devices_default = """    <emulator>/usr/bin/kvm</emulator>
 devices_serial = """    <serial type='pty'>
       <log file='/var/log/libvirt/{vm_name}.log' append='on'/>
     </serial>
-    <console type='pty'/>
 """
 
 # VNC device
