@@ -702,7 +702,6 @@ def list_profile(limit, is_fuzzy=True):
             try:
                 name = cur.fetchone()['name']
             except Exception as e:
-                print(e)
                 name = "N/A"
             profile_data[etype] = name
         # Split the arguments back into a list
