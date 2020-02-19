@@ -173,16 +173,17 @@ def vm_remove(config, vm, delete_disks=False):
 
     return retstatus, response.json()['message']
 
-def vm_state(config, vm, target_state):
+def vm_state(config, vm, target_state, wait=False):
     """
     Modify the current state of VM
 
     API endpoint: POST /vm/{vm}/state
-    API arguments: state={state}
+    API arguments: state={state}, wait={wait}
     API schema: {"message":"{data}"}
     """
     params={
         'state': target_state,
+        'wait': str(wait).lower()
     }
     response = call_api(config, 'post', '/vm/{vm}/state'.format(vm=vm), params=params)
 
@@ -193,18 +194,19 @@ def vm_state(config, vm, target_state):
 
     return retstatus, response.json()['message']
 
-def vm_node(config, vm, target_node, action, force=False):
+def vm_node(config, vm, target_node, action, force=False, wait=False):
     """
     Modify the current node of VM via {action}
 
     API endpoint: POST /vm/{vm}/node
-    API arguments: node={target_node}, action={action}, force={force}
+    API arguments: node={target_node}, action={action}, force={force}, wait={wait}
     API schema: {"message":"{data}"}
     """
     params={
         'node': target_node,
         'action': action,
-        'force': force
+        'force': str(force).lower(),
+        'wait': str(wait).lower()
     }
     response = call_api(config, 'post', '/vm/{vm}/node'.format(vm=vm), params=params)
 

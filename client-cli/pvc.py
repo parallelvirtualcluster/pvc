@@ -729,12 +729,16 @@ def vm_start(domain):
 @click.argument(
     'domain'
 )
-def vm_restart(domain):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for restart to complete before returning.'
+)
+def vm_restart(domain, wait):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart')
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart', wait=wait)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -744,12 +748,16 @@ def vm_restart(domain):
 @click.argument(
     'domain'
 )
-def vm_shutdown(domain):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for shutdown to complete before returning.'
+)
+def vm_shutdown(domain, wait):
     """
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown')
+    retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown', wait=wait)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -795,12 +803,16 @@ def vm_disable(domain):
     '-t', '--target', 'target_node', default=None,
     help='Target node to migrate to; autodetect if unspecified.'
 )
-def vm_move(domain, target_node):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migration to complete before returning.'
+)
+def vm_move(domain, target_node, wait):
     """
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False, wait=wait)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -818,12 +830,16 @@ def vm_move(domain, target_node):
     '-f', '--force', 'force_migrate', is_flag=True, default=False,
     help='Force migrate an already migrated VM; does not replace an existing previous node value.'
 )
-def vm_migrate(domain, target_node, force_migrate):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migration to complete before returning.'
+)
+def vm_migrate(domain, target_node, force_migrate, wait):
     """
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate, wait=wait)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -833,12 +849,16 @@ def vm_migrate(domain, target_node, force_migrate):
 @click.argument(
     'domain'
 )
-def vm_unmigrate(domain):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for migration to complete before returning.'
+)
+def vm_unmigrate(domain, wait):
     """
     Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False, wait=wait)
     cleanup(retcode, retmsg)
 
 ###############################################################################
