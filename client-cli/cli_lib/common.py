@@ -23,6 +23,14 @@
 import requests
 import click
 
+class ErrorResponse(requests.Response):
+    def __init__(self, json_data, status_code):
+        self.json_data = json_data
+        self.status_code = status_code
+
+    def json(self):
+        return self.json_data
+
 def call_api(config, operation, request_uri, params=None, data=None, files=None):
     # Craft the URI
     uri = '{}://{}{}{}'.format(
@@ -78,7 +86,8 @@ def call_api(config, operation, request_uri, params=None, data=None, files=None)
                 data=data
             )
     except Exception as e:
-        return 'Failed to connect to the API: {}'.format(e)
+        message = 'Failed to connect to the API: {}'.format(e)
+        response = ErrorResponse({'message':message}, 500)
 
     # Display debug output
     if config['debug']:
