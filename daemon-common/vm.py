@@ -270,7 +270,7 @@ def dump_vm(zk_conn, domain):
 
     return True, vm_xml
 
-def undefine_vm(zk_conn, domain, is_cli=False):
+def undefine_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -279,30 +279,22 @@ def undefine_vm(zk_conn, domain, is_cli=False):
     # Shut down the VM
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state != 'stop':
-        if is_cli:
-            click.echo('Forcibly stopping VM "{}".'.format(domain))
         # Set the domain into stop mode
         zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
-        # Wait for 1 second to allow state to flow to all nodes
-        if is_cli:
-            click.echo('Waiting for cluster to update.')
+        # Wait for 2 seconds to allow state to flow to all nodes
         time.sleep(2)
 
     # Gracefully terminate the class instances
-    if is_cli:
-        click.echo('Deleting VM "{}" from nodes.'.format(domain))
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
     time.sleep(2)
 
     # Delete the configurations
-    if is_cli:
-        click.echo('Undefining VM "{}".'.format(domain))
     zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
 
     return True, 'Undefined VM "{}" from the cluster.'.format(domain)
 
-def remove_vm(zk_conn, domain, is_cli=False):
+def remove_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -313,25 +305,17 @@ def remove_vm(zk_conn, domain, is_cli=False):
     # Shut down the VM
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state != 'stop':
-        if is_cli:
-            click.echo('Forcibly stopping VM "{}".'.format(domain))
         # Set the domain into stop mode
         zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
 
-        # Wait for 1 second to allow state to flow to all nodes
-        if is_cli:
-            click.echo('Waiting for cluster to update.')
+        # Wait for 2 seconds to allow state to flow to all nodes
         time.sleep(2)
 
     # Gracefully terminate the class instances
-    if is_cli:
-        click.echo('Deleting VM "{}" from nodes.'.format(domain))
     zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'delete'})
     time.sleep(2)
 
     # Delete the configurations
-    if is_cli:
-        click.echo('Undefining VM "{}".'.format(domain))
     zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
     time.sleep(2)
 
@@ -341,8 +325,6 @@ def remove_vm(zk_conn, domain, is_cli=False):
         try:
             disk_pool, disk_name = disk.split('/')
             retcode, message = ceph.remove_volume(zk_conn, disk_pool, disk_name)
-            if is_cli and message:
-                click.echo('{}'.format(message))
         except ValueError:
             continue
 
@@ -484,13 +466,13 @@ def move_vm(zk_conn, domain, target_node, wait=False):
     })
 
     if wait:
-        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
             time.sleep(1)
         retmsg = 'Permanently migrated VM "{}" to node "{}"'.format(domain, target_node)
 
     return True, retmsg
 
-def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False, wait=False):
+def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -508,14 +490,7 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False, wait=F
     last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 
     if last_node and not force_migrate:
-        if is_cli:
-            click.echo('ERROR: VM "{}" has been previously migrated.'.format(domain))
-            click.echo('> Last node: {}'.format(last_node))
-            click.echo('> Current node: {}'.format(current_node))
-            click.echo('Run `vm unmigrate` to restore the VM to its previous node, or use `--force` to override this check.')
-            return False, ''
-        else:
-            return False, 'ERROR: VM "{}" has been previously migrated.'.format(domain)
+        return False, 'ERROR: VM "{}" has been previously migrated.'.format(domain)
 
     if not target_node:
         target_node = common.findTargetNode(zk_conn, dom_uuid)
@@ -550,7 +525,7 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False, wait=F
     })
 
     if wait:
-        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
             time.sleep(1)
         retmsg = 'Migrated VM "{}" to node "{}"'.format(domain, target_node)
 
@@ -584,7 +559,7 @@ def unmigrate_vm(zk_conn, domain, wait=False):
     })
 
     if wait:
-        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
             time.sleep(1)
         retmsg = 'Unmigrated VM "{}" back to node "{}"'.format(domain, target_node)
 
