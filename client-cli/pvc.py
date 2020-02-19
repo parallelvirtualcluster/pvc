@@ -348,7 +348,11 @@ def cli_node():
 @click.argument(
     'node'
 )
-def node_secondary(node):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for transition to complete before returning.'
+)
+def node_secondary(node, wait):
     """
     Take NODE out of primary router mode.
     """
@@ -361,6 +365,23 @@ def node_secondary(node):
         click.echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
+    if not retcode:
+        cleanup(retcode, retmsg)
+    else:
+        click.echo(retmsg)
+    if wait:
+        click.echo("Waiting for state transition... ", nl=False)
+        # Every half-second, check if the API is reachable and the node is in secondary state
+        while True:
+            try:
+                _retcode, _retmsg = pvc_node.node_info(config, node)
+                if _retmsg['coordinator_state'] == 'secondary':
+                    retmsg = "done."
+                    break
+                else:
+                    time.sleep(0.5)
+            except:
+                time.sleep(0.5)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -370,7 +391,11 @@ def node_secondary(node):
 @click.argument(
     'node'
 )
-def node_primary(node):
+@click.option(
+    '-w', '--wait', 'wait', is_flag=True, default=False,
+    help='Wait for transition to complete before returning.'
+)
+def node_primary(node, wait):
     """
     Put NODE into primary router mode.
     """
@@ -383,6 +408,23 @@ def node_primary(node):
         click.echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary')
+    if not retcode:
+        cleanup(retcode, retmsg)
+    else:
+        click.echo(retmsg)
+    if wait:
+        click.echo("Waiting for state transition... ", nl=False)
+        # Every half-second, check if the API is reachable and the node is in secondary state
+        while True:
+            try:
+                _retcode, _retmsg = pvc_node.node_info(config, node)
+                if _retmsg['coordinator_state'] == 'primary':
+                    retmsg = "done."
+                    break
+                else:
+                    time.sleep(0.5)
+            except:
+                time.sleep(0.5)
     cleanup(retcode, retmsg)
 
 ###############################################################################
