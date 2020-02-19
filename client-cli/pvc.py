@@ -368,21 +368,21 @@ def node_secondary(node, wait):
     if not retcode:
         cleanup(retcode, retmsg)
     else:
-        click.echo(retmsg)
-    if wait:
-        click.echo("Waiting for state transition... ", nl=False)
-        # Every half-second, check if the API is reachable and the node is in secondary state
-        while True:
-            try:
-                _retcode, _retmsg = pvc_node.node_info(config, node)
-                if _retmsg['coordinator_state'] == 'secondary':
-                    retmsg = "done."
-                    break
-                else:
+        if wait:
+            click.echo(retmsg)
+            click.echo("Waiting for state transition... ", nl=False)
+            # Every half-second, check if the API is reachable and the node is in secondary state
+            while True:
+                try:
+                    _retcode, _retmsg = pvc_node.node_info(config, node)
+                    if _retmsg['coordinator_state'] == 'secondary':
+                        retmsg = "done."
+                        break
+                    else:
+                        time.sleep(0.5)
+                except:
                     time.sleep(0.5)
-            except:
-                time.sleep(0.5)
-    cleanup(retcode, retmsg)
+        cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node primary
@@ -411,21 +411,21 @@ def node_primary(node, wait):
     if not retcode:
         cleanup(retcode, retmsg)
     else:
-        click.echo(retmsg)
-    if wait:
-        click.echo("Waiting for state transition... ", nl=False)
-        # Every half-second, check if the API is reachable and the node is in secondary state
-        while True:
-            try:
-                _retcode, _retmsg = pvc_node.node_info(config, node)
-                if _retmsg['coordinator_state'] == 'primary':
-                    retmsg = "done."
-                    break
-                else:
+        if wait:
+            click.echo(retmsg)
+            click.echo("Waiting for state transition... ", nl=False)
+            # Every half-second, check if the API is reachable and the node is in secondary state
+            while True:
+                try:
+                    _retcode, _retmsg = pvc_node.node_info(config, node)
+                    if _retmsg['coordinator_state'] == 'primary':
+                        retmsg = "done."
+                        break
+                    else:
+                        time.sleep(0.5)
+                except:
                     time.sleep(0.5)
-            except:
-                time.sleep(0.5)
-    cleanup(retcode, retmsg)
+        cleanup(retcode, retmsg)
 
 ###############################################################################
 # pvc node flush
