@@ -580,54 +580,6 @@ def get_console_log(zk_conn, domain, lines=1000):
 
     return True, loglines
 
-def follow_console_log(zk_conn, domain, lines=10):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zk_conn, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
-
-    # Get the initial data from ZK
-    console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
-
-    # Shrink the log buffer to length lines
-    shrunk_log = console_log.split('\n')[-lines:]
-    loglines = '\n'.join(shrunk_log)
-
-    # Print the initial data and begin following
-    print(loglines, end='')
-
-    try:
-        while True:
-            # Grab the next line set
-            new_console_log = zkhandler.readdata(zk_conn, '/domains/{}/consolelog'.format(dom_uuid))
-            # Split the new and old log strings into constitutent lines
-            old_console_loglines = console_log.split('\n')
-            new_console_loglines = new_console_log.split('\n')
-            # Set the console log to the new log value for the next iteration
-            console_log = new_console_log
-            # Remove the lines from the old log until we hit the first line of the new log; this
-            # ensures that the old log is a string that we can remove from the new log entirely
-            for index, line in enumerate(old_console_loglines, start=0):
-                if line == new_console_loglines[0]:
-                    del old_console_loglines[0:index]
-                    break
-            # Rejoin the log lines into strings
-            old_console_log = '\n'.join(old_console_loglines)
-            new_console_log = '\n'.join(new_console_loglines)
-            # Remove the old lines from the new log
-            diff_console_log = new_console_log.replace(old_console_log, "")
-            # If there's a difference, print it out
-            if diff_console_log:
-                print(diff_console_log, end='')
-            # Wait a second
-            time.sleep(1)
-    except kazoo.exceptions.NoNodeError:
-        return False, 'ERROR: VM has gone away.'
-    except:
-        return False, 'ERROR: Lost connection to Zookeeper node.'
-
-    return True, ''
-
 def get_info(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
