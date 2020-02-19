@@ -405,7 +405,7 @@ def shutdown_vm(zk_conn, domain, wait=False):
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'shutdown':
             time.sleep(1)
-        retmsg = 'Shutdown VM "{}"'.format(domain)
+        retmsg = 'Shut down VM "{}"'.format(domain)
 
     return True, retmsg
 
