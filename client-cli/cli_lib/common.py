@@ -78,7 +78,7 @@ def call_api(config, operation, request_uri, params=None, data=None, files=None)
                 data=data
             )
     except Exception as e:
-        return False, 'Failed to connect to the API: {}'.format(e)
+        return 'Failed to connect to the API: {}'.format(e)
 
     # Display debug output
     if config['debug']:
