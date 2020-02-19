@@ -348,11 +348,7 @@ def cli_node():
 @click.argument(
     'node'
 )
-@click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for transition to complete before returning.'
-)
-def node_secondary(node, wait):
+def node_secondary(node):
     """
     Take NODE out of primary router mode.
     """
@@ -364,7 +360,7 @@ def node_secondary(node, wait):
         click.echo("      node returns to primary state.")
         click.echo()
 
-    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary', wait)
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -374,11 +370,7 @@ def node_secondary(node, wait):
 @click.argument(
     'node'
 )
-@click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for transition to complete before returning.'
-)
-def node_primary(node, wait):
+def node_primary(node):
     """
     Put NODE into primary router mode.
     """
@@ -390,7 +382,7 @@ def node_primary(node, wait):
         click.echo("      node returns to primary state.")
         click.echo()
 
-    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary', wait)
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary')
     cleanup(retcode, retmsg)
 
 ###############################################################################

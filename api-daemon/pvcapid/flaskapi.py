@@ -618,8 +618,7 @@ class API_Node_CoordinatorState(Resource):
         return api_helper.node_coordinator_state(node)
 
     @RequestParser([
-        { 'name': 'state', 'choices': ('primary', 'secondary'), 'helptext': "A valid state must be specified", 'required': True },
-        { 'name': 'wait' }
+        { 'name': 'state', 'choices': ('primary', 'secondary'), 'helptext': "A valid state must be specified", 'required': True }
     ])
     @Authenticator
     def post(self, node, reqargs):
@@ -637,10 +636,6 @@ class API_Node_CoordinatorState(Resource):
             enum:
               - primary
               - secondary
-          - in: query
-            name: wait
-            type: boolean
-            description: Whether to block waiting for the full state transition
         responses:
           200:
             description: OK
@@ -653,11 +648,10 @@ class API_Node_CoordinatorState(Resource):
               type: object
               id: Message
         """
-        wait = bool(strtobool(reqargs.get('wait', 'false')))
         if reqargs['state'] == 'primary':
-            return api_helper.node_primary(node, wait)
+            return api_helper.node_primary(node)
         if reqargs['state'] == 'secondary':
-            return api_helper.node_secondary(node, wait)
+            return api_helper.node_secondary(node)
         abort(400)
 api.add_resource(API_Node_CoordinatorState, '/node/<node>/coordinator-state')
 
