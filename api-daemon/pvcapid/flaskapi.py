@@ -1264,7 +1264,8 @@ class API_VM_State(Resource):
         return api_helper.vm_state(vm)
 
     @RequestParser([
-        { 'name': 'state', 'choices': ('start', 'shutdown', 'stop', 'restart', 'disable'), 'helptext': "A valid state must be specified", 'required': True }
+        { 'name': 'state', 'choices': ('start', 'shutdown', 'stop', 'restart', 'disable'), 'helptext': "A valid state must be specified", 'required': True },
+        { 'name': 'wait' }
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1285,6 +1286,10 @@ class API_VM_State(Resource):
               - stop
               - restart
               - disable
+          - in: query
+            name: wait
+            type: boolean
+            description: Whether to block waiting for the state change to complete
         responses:
           200:
             description: OK
@@ -1298,15 +1303,16 @@ class API_VM_State(Resource):
               id: Message
         """
         state = reqargs.get('state', None)
+        wait = bool(strtobool(reqargs.get('wait', 'false')))
 
         if state == 'start':
             return api_helper.vm_start(vm)
         if state == 'shutdown':
-            return api_helper.vm_shutdown(vm)
+            return api_helper.vm_shutdown(vm, wait)
         if state == 'stop':
             return api_helper.vm_stop(vm)
         if state == 'restart':
-            return api_helper.vm_restart(vm)
+            return api_helper.vm_restart(vm, wait)
         if state == 'disable':
             return api_helper.vm_disable(vm)
         abort(400)
@@ -1348,7 +1354,8 @@ class API_VM_Node(Resource):
     @RequestParser([
         { 'name': 'action', 'choices': ('migrate', 'unmigrate', 'move'), 'helptext': "A valid action must be specified", 'required': True },
         { 'name': 'node' },
-        { 'name': 'force' }
+        { 'name': 'force' },
+        { 'name': 'wait' }
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1375,6 +1382,10 @@ class API_VM_Node(Resource):
             name: force
             type: boolean
             description: Whether to force an already-migrated VM to a new node
+          - in: query
+            name: wait
+            type: boolean
+            description: Whether to block waiting for the migration to complete
         responses:
           200:
             description: OK
@@ -1390,13 +1401,14 @@ class API_VM_Node(Resource):
         action = reqargs.get('action', None)
         node = reqargs.get('node', None)
         force = bool(strtobool(reqargs.get('force', 'false')))
+        wait = bool(strtobool(reqargs.get('wait', 'false')))
 
         if action == 'move':
-            return api_helper.vm_move(vm, node)
+            return api_helper.vm_move(vm, node, wait)
         if action == 'migrate':
-            return api_helper.vm_migrate(vm, node, force)
+            return api_helper.vm_migrate(vm, node, force, wait)
         if action == 'unmigrate':
-            return api_helper.vm_unmigrate(vm)
+            return api_helper.vm_unmigrate(vm, wait)
         abort(400)
 api.add_resource(API_VM_Node, '/vm/<vm>/node')
 

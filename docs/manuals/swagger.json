@@ -5491,6 +5491,12 @@
                         "in": "query",
                         "name": "force",
                         "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to block waiting for the migration to complete",
+                        "in": "query",
+                        "name": "wait",
+                        "type": "boolean"
                     }
                 ],
                 "responses": {
@@ -5551,6 +5557,12 @@
                         "name": "state",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "description": "Whether to block waiting for the state change to complete",
+                        "in": "query",
+                        "name": "wait",
+                        "type": "boolean"
                     }
                 ],
                 "responses": {
