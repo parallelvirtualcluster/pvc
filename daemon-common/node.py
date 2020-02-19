@@ -143,7 +143,7 @@ def primary_node(zk_conn, node):
 
     return True, retmsg
 
-def flush_node(zk_conn, node, wait):
+def flush_node(zk_conn, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -155,7 +155,6 @@ def flush_node(zk_conn, node, wait):
         '/nodes/{}/domainstate'.format(node): 'flush'
     })
 
-    # Wait cannot be triggered from the API
     if wait:
         while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node)) == 'flush':
             time.sleep(1)
@@ -163,7 +162,7 @@ def flush_node(zk_conn, node, wait):
 
     return True, retmsg
 
-def ready_node(zk_conn, node, wait):
+def ready_node(zk_conn, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -175,7 +174,6 @@ def ready_node(zk_conn, node, wait):
         '/nodes/{}/domainstate'.format(node): 'unflush'
     })
 
-    # Wait cannot be triggered from the API
     if wait:
         while zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node)) == 'unflush':
             time.sleep(1)
