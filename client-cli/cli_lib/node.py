@@ -26,7 +26,7 @@ from cli_lib.common import call_api
 #
 # Primary functions
 #
-def node_coordinator_state(config, node, action):
+def node_coordinator_state(config, node, action, wait):
     """
     Set node coordinator state state (primary/secondary)
 
@@ -35,7 +35,8 @@ def node_coordinator_state(config, node, action):
     API schema: {"message": "{data}"}
     """
     params={
-        'state': action
+        'state': action,
+        'wait': str(wait).lower()
     }
     response = call_api(config, 'post', '/node/{node}/coordinator-state'.format(node=node), params=params)
 

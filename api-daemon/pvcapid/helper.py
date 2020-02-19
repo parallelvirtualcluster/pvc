@@ -213,12 +213,12 @@ def node_domain_state(node):
 
     return retdata, retcode
 
-def node_secondary(node):
+def node_secondary(node, wait):
     """
     Take NODE out of primary router mode.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
-    retflag, retdata = pvc_node.secondary_node(zk_conn, node)
+    retflag, retdata = pvc_node.secondary_node(zk_conn, node, wait)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -231,12 +231,12 @@ def node_secondary(node):
     }
     return output, retcode
 
-def node_primary(node):
+def node_primary(node, wait):
     """
     Set NODE to primary router mode.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators']) 
-    retflag, retdata = pvc_node.primary_node(zk_conn, node)
+    retflag, retdata = pvc_node.primary_node(zk_conn, node, wait)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

@@ -89,7 +89,7 @@ def getNodeInformation(zk_conn, node_name):
 #
 # Direct Functions
 #
-def secondary_node(zk_conn, node):
+def secondary_node(zk_conn, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -111,12 +111,21 @@ def secondary_node(zk_conn, node):
         zkhandler.writedata(zk_conn, {
             '/primary_node': 'none'
         })
+
+        if wait:
+            # Wait 1 second for lock acquisition
+            time.sleep(1)
+            # Set up and block on a write lock of /primary_node
+            transition_lock = zkhandler.writelock(zk_conn, '/primary_node')
+            transition_lock.acquire()
+            transition_lock.release()
+            retmsg = 'Set node {} in secondary router mode.'.format(node)
     else:
         return False, 'Node "{}" is already in secondary router mode.'.format(node)
 
     return True, retmsg
 
-def primary_node(zk_conn, node):
+def primary_node(zk_conn, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -138,6 +147,15 @@ def primary_node(zk_conn, node):
         zkhandler.writedata(zk_conn, {
             '/primary_node': node
         })
+
+        if wait:
+            # Wait 1 second for lock acquisition
+            time.sleep(1)
+            # Set up and block on a write lock of /primary_node
+            transition_lock = zkhandler.writelock(zk_conn, '/primary_node')
+            transition_lock.acquire()
+            transition_lock.release()
+            retmsg = 'Set node {} in primary router mode.'.format(node)
     else:
         return False, 'Node "{}" is already in primary router mode.'.format(node)
 
