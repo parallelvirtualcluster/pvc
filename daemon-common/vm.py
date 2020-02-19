@@ -270,12 +270,6 @@ def dump_vm(zk_conn, domain):
 
     return True, vm_xml
 
-def purge_vm(zk_conn, domain, is_cli=False):
-    """
-    Helper function for both undefine and remove VM to perform the shutdown, termination,
-    and configuration deletion.
-    """
-
 def undefine_vm(zk_conn, domain, is_cli=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -365,7 +359,7 @@ def start_vm(zk_conn, domain):
 
     return True, 'Starting VM "{}".'.format(domain)
 
-def restart_vm(zk_conn, domain):
+def restart_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -376,12 +370,21 @@ def restart_vm(zk_conn, domain):
     if current_state != 'start':
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
 
-    # Set the VM to start
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
+    retmsg = 'Restarting VM "{}".'.format(domain)
 
-    return True, 'Restarting VM "{}".'.format(domain)
+    # Set the VM to restart
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}/state'.format(dom_uuid): 'restart'
+    })
 
-def shutdown_vm(zk_conn, domain):
+    if wait:
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'restart':
+            time.sleep(1)
+        retmsg = 'Restarted VM "{}"'.format(domain)
+
+    return True, retmsg
+
+def shutdown_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -391,11 +394,20 @@ def shutdown_vm(zk_conn, domain):
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
         return False, 'ERROR: VM "{}" is not in "start" state!'.format(domain)
+
+    retmsg = 'Shutting down VM "{}"'.format(domain)
 
     # Set the VM to shutdown
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown'})
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}/state'.format(dom_uuid): 'shutdown'
+    })
 
-    return True, 'Shutting down VM "{}".'.format(domain)
+    if wait:
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'shutdown':
+            time.sleep(1)
+        retmsg = 'Shutdown VM "{}"'.format(domain)
+
+    return True, retmsg
 
 def stop_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -427,11 +439,19 @@ def disable_vm(zk_conn, domain):
 
     return True, 'Marked VM "{}" as disable.'.format(domain)
 
-def move_vm(zk_conn, domain, target_node):
+def move_vm(zk_conn, domain, target_node, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Get state and verify we're OK to proceed
+    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
+    if current_state != 'start':
+        # If the current state isn't start, preserve it; we're not doing live migration
+        target_state = current_state
+    else:
+        target_state = 'migrate'
 
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
@@ -455,22 +475,22 @@ def move_vm(zk_conn, domain, target_node):
     if not target_node:
         return False, 'ERROR: Could not find a valid migration target for VM "{}".'.format(domain)
 
-    current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
-    if current_vm_state == 'start':
-        zkhandler.writedata(zk_conn, {
-            '/domains/{}/state'.format(dom_uuid): 'migrate',
-            '/domains/{}/node'.format(dom_uuid): target_node,
-            '/domains/{}/lastnode'.format(dom_uuid): ''
-        })
-    else:
-        zkhandler.writedata(zk_conn, {
-            '/domains/{}/node'.format(dom_uuid): target_node,
-            '/domains/{}/lastnode'.format(dom_uuid): ''
-        })
+    retmsg = 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
 
-    return True, 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
+    zkhandler.writedata(zk_conn, {
+        '/domains/{}/state'.format(dom_uuid): target_state,
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): ''
+    })
 
-def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
+    if wait:
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+            time.sleep(1)
+        retmsg = 'Permanently migrated VM "{}" to node "{}"'.format(domain, target_node)
+
+    return True, retmsg
+
+def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -479,7 +499,8 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
     # Get state and verify we're OK to proceed
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_state != 'start':
-        target_state = 'start'
+        # If the current state isn't start, preserve it; we're not doing live migration
+        target_state = current_state
     else:
         target_state = 'migrate'
 
@@ -520,15 +541,22 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, is_cli=False):
     if last_node and force_migrate:
         current_node = last_node
 
+    retmsg = 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
+
     zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): 'migrate',
+        '/domains/{}/state'.format(dom_uuid): target_state,
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): current_node
     })
 
-    return True, 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
+    if wait:
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+            time.sleep(1)
+        retmsg = 'Migrated VM "{}" to node "{}"'.format(domain, target_node)
 
-def unmigrate_vm(zk_conn, domain):
+    return True, retmsg
+
+def unmigrate_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -547,13 +575,20 @@ def unmigrate_vm(zk_conn, domain):
     if target_node == '':
         return False, 'ERROR: VM "{}" has not been previously migrated.'.format(domain)
 
+    retmsg = 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
+
     zkhandler.writedata(zk_conn, {
         '/domains/{}/state'.format(dom_uuid): target_state,
         '/domains/{}/node'.format(dom_uuid): target_node,
         '/domains/{}/lastnode'.format(dom_uuid): ''
     })
 
-    return True, 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
+    if wait:
+        while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'migrate':
+            time.sleep(1)
+        retmsg = 'Unmigrated VM "{}" back to node "{}"'.format(domain, target_node)
+
+    return True, retmsg
 
 def get_console_log(zk_conn, domain, lines=1000):
     # Validate that VM exists in cluster
