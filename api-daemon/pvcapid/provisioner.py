@@ -1090,7 +1090,11 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
     query = 'SELECT script FROM script WHERE id = %s'
     args = (profile_data['script'],)
     db_cur.execute(query, args)
-    vm_data['script'] = db_cur.fetchone()
+    db_row = db_cur.fetchone()
+    if db_row:
+        vm_data['script'] = db_row.get('script')
+    else:
+        vm_data['script'] = None
 
     if vm_data['script'] and not is_ova_install:
         is_script_install = True
