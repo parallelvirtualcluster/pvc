@@ -575,14 +575,17 @@ def cleanup():
                 pass
 
     # Force into secondary network state if needed
-    if zkhandler.readdata(zk_conn, '/nodes/{}/routerstate'.format(myhostname)) == 'primary':
-        is_primary = True
-        zkhandler.writedata(zk_conn, {
-            '/nodes/{}/routerstate'.format(myhostname): 'secondary',
-            '/primary_node': 'none'
-        })
-        logger.out('Waiting 5 seconds for primary migration', state='s')
-        time.sleep(5)
+    try:
+        if this_node.router_state == 'primary':
+            is_primary = True
+            zkhandler.writedata(zk_conn, {
+                '/primary_node': 'none'
+            })
+            logger.out('Waiting for primary migration', state='s')
+            while this_node.router_state != 'secondary':
+                time.sleep(1)
+    except:
+        pass
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
@@ -825,9 +828,10 @@ def update_primary(new_primary, stat, event=''):
                     logger.out('Contending for primary coordinator state', state='i')
                     zkhandler.writedata(zk_conn, {'/primary_node': myhostname})
             elif new_primary == myhostname:
-                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'primary'})
+                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'takeover'})
             else:
-                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'secondary'})
+                if this_node.router_state != 'secondary':
+                    zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'relinquish'})
         else:
             zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'client'})
 

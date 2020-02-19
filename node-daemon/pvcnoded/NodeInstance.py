@@ -117,16 +117,19 @@ class NodeInstance(object):
                 if data != self.router_state:
                     self.router_state = data
                     if self.config['enable_networking']:
-                        if self.router_state == 'primary':
+                        if self.router_state == 'takeover':
                             self.logger.out('Setting node {} to primary state'.format(self.name), state='i')
                             transition_thread = threading.Thread(target=self.become_primary, args=(), kwargs={})
                             transition_thread.start()
-                        else:
+                        if self.router_state == 'relinquish':
                             # Skip becoming secondary unless already running
                             if self.daemon_state == 'run' or self.daemon_state == 'shutdown':
                                 self.logger.out('Setting node {} to secondary state'.format(self.name), state='i')
                                 transition_thread = threading.Thread(target=self.become_secondary, args=(), kwargs={})
                                 transition_thread.start()
+                            else:
+                                # We did nothing, so just become secondary state
+                                zkhandler.writedata(self.zk_conn, {'/nodes/{}/routerstate'.format(self.name): 'secondary'})
 
         @self.zk_conn.DataWatch('/nodes/{}/domainstate'.format(self.name))
         def watch_node_domainstate(data, stat, event=''):
@@ -428,8 +431,8 @@ class NodeInstance(object):
         self.logger.out('Setting Patroni leader to this node', state='i')
         tick = 1
         patroni_failed = True
-        # As long as we're primary, keep trying to set the Patroni leader to us
-        while self.router_state == 'primary':
+        # As long as we're in takeover, keep trying to set the Patroni leader to us
+        while self.router_state == 'takeover':
             # Switch Patroni leader to the local instance
             retcode, stdout, stderr = common.run_os_command(
                 """
@@ -489,7 +492,10 @@ class NodeInstance(object):
         lock.release()
         self.logger.out('Released write lock for synchronization G', state='o')
 
+        # Wait 2 seconds for everything to stabilize before we declare all-done
+        time.sleep(2)
         primary_lock.release()
+        zkhandler.writedata(self.zk_conn, {'/nodes/{}/routerstate'.format(self.name): 'primary'})
         self.logger.out('Node {} transitioned to primary state'.format(self.name), state='o')
 
     def become_secondary(self):
@@ -611,6 +617,9 @@ class NodeInstance(object):
         lock.release()
         self.logger.out('Released read lock for synchronization G', state='o')
 
+        # Wait 2 seconds for everything to stabilize before we declare all-done
+        time.sleep(2)
+        zkhandler.writedata(self.zk_conn, {'/nodes/{}/routerstate'.format(self.name): 'secondary'})
         self.logger.out('Node {} transitioned to secondary state'.format(self.name), state='o')
 
     # Flush all VMs on the host
