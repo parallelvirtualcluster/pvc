@@ -336,7 +336,11 @@ class AXFRDaemonInstance(object):
                 zone_modified = False
 
                 # Set up our SQL cursor
-                sql_curs = self.sql_conn.cursor()
+                try:
+                    sql_curs = self.sql_conn.cursor()
+                except:
+                    time.sleep(0.5)
+                    continue
 
                 # Set up our basic variables
                 domain = network.domain
