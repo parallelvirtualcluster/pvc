@@ -428,7 +428,7 @@ def vm_define(xml, node, limit, selector, autostart):
         xml_data = etree.fromstring(xml)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
-        return {'message': 'Error: XML is malformed or incorrect: {}'.format(e)}, 400
+        return { 'message': 'XML is malformed or incorrect: {}'.format(e) }, 400
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.define_vm(zk_conn, new_cfg, node, limit, selector, autostart, profile=None)
@@ -510,7 +510,7 @@ def vm_modify(name, restart, xml):
         xml_data = etree.fromstring(xml)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
-        return {'message': 'Error: XML is malformed or incorrect: {}'.format(e)}, 400
+        return { 'message': 'XML is malformed or incorrect: {}'.format(e) }, 400
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, new_cfg)
     pvc_common.stopZKConnection(zk_conn)
@@ -1334,7 +1334,7 @@ def ceph_volume_upload(pool, volume, data, img_type):
     # Determine the image conversion options
     if img_type not in ['raw', 'vmdk', 'qcow2', 'qed', 'vdi', 'vpc']:
         output = {
-            "message": "ERROR: Image type '{}' is not valid.".format(img_type)
+            "message": "Image type '{}' is not valid.".format(img_type)
         }
         retcode = 400
         return output, retcode
@@ -1346,7 +1346,7 @@ def ceph_volume_upload(pool, volume, data, img_type):
     # If there's no target, return failure
     if not retcode or len(retdata) < 1:
         output = {
-            "message": "ERROR: Target volume '{}' does not exist in pool '{}'.".format(volume, pool)
+            "message": "Target volume '{}' does not exist in pool '{}'.".format(volume, pool)
         }
         retcode = 400
         return output, retcode
@@ -1382,7 +1382,7 @@ def ceph_volume_upload(pool, volume, data, img_type):
             data.save(dest_blockdev)
         except:
             output = {
-                'message': "ERROR: Failed to write image file to volume."
+                'message': "Failed to write image file to volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
@@ -1440,7 +1440,7 @@ def ceph_volume_upload(pool, volume, data, img_type):
             data.save(temp_blockdev)
         except:
             output = {
-                'message': "ERROR: Failed to write image file to temporary volume."
+                'message': "Failed to write image file to temporary volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
@@ -1452,7 +1452,7 @@ def ceph_volume_upload(pool, volume, data, img_type):
         )
         if retcode:
             output = {
-                'message': "ERROR: Failed to convert image format from '{}' to 'raw': {}".format(img_type, stderr)
+                'message': "Failed to convert image format from '{}' to 'raw': {}".format(img_type, stderr)
             }
             retcode = 400
             cleanup_maps_and_volumes()

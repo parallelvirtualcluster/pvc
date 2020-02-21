@@ -111,12 +111,12 @@ def list_ova(limit, is_fuzzy=True):
     if ova_data:
         return ova_data, 200
     else:
-        return {'message': 'No OVAs found'}, 404
+        return { 'message': 'No OVAs found.' }, 404
 
 def delete_ova(name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
     if retcode != 200:
-        retmsg = { 'message': 'The OVA "{}" does not exist'.format(name) }
+        retmsg = { 'message': 'The OVA "{}" does not exist.'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -154,7 +154,7 @@ def delete_ova(name):
         args = (ova_id,)
         cur.execute(query, args)
 
-        retmsg = { "message": 'Removed OVA image "{}"'.format(name) }
+        retmsg = { "message": 'Removed OVA image "{}".'.format(name) }
         retcode = 200
     except Exception as e:
         retmsg = { 'message': 'Failed to remove OVA "{}": {}'.format(name, e) }
@@ -191,7 +191,7 @@ def upload_ova(ova_data, pool, name, ova_size):
     pool_free_space_bytes = int(pool_information['stats']['free_bytes'])
     if ova_size_bytes * 2 >= pool_free_space_bytes:
         output = {
-            'message': "ERROR: The cluster does not have enough free space ({}) to store the OVA volume ({}).".format(
+            'message': "The cluster does not have enough free space ({}) to store the OVA volume ({}).".format(
                 pvc_ceph.format_bytes_tohuman(pool_free_space_bytes),
                 pvc_ceph.format_bytes_tohuman(ova_size_bytes)
             )
@@ -230,7 +230,7 @@ def upload_ova(ova_data, pool, name, ova_size):
         ova_data.save(ova_blockdev)
     except:
         output = {
-            'message': "ERROR: Failed to write OVA file to temporary volume."
+            'message': "Failed to write OVA file to temporary volume."
         }
         retcode = 400
         cleanup_ova_maps_and_volumes()
@@ -243,7 +243,7 @@ def upload_ova(ova_data, pool, name, ova_size):
         members = ova_archive.getmembers()
     except tarfile.TarError:
         output = {
-            'message': "ERROR: The uploaded OVA file is not readable."
+            'message': "The uploaded OVA file is not readable."
         }
         retcode = 400
         cleanup_ova_maps_and_volumes()
@@ -328,7 +328,7 @@ def upload_ova(ova_data, pool, name, ova_size):
             pvc_common.run_os_command('sync')
         except:
             output = {
-                'message': "ERROR: Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
+                'message': "Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
             }
             retcode = 400
             cleanup_img_maps()
@@ -405,7 +405,7 @@ def upload_ova(ova_data, pool, name, ova_size):
     retdata, retcode = provisioner.create_profile(name, 'ova', system_template_name, None, None, userdata=None, script=None, ova=name, arguments=None)
 
     output = {
-        'message': "Imported OVA image '{}'".format(name)
+        'message': "Imported OVA image '{}'.".format(name)
     }
     retcode = 200
     return output, retcode
