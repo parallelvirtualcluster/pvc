@@ -25,8 +25,10 @@ import re
 import subprocess
 import ast
 
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+
 import cli_lib.ansiprint as ansiprint
-from cli_lib.common import call_api
+from cli_lib.common import UploadProgressBar, call_api
 
 #
 # Primary functions
@@ -399,10 +401,22 @@ def ova_upload(config, name, ova_file, params):
     API arguments: pool={pool}, ova_size={ova_size}
     API schema: {"message":"{data}"}
     """
-    files = {
-        'file': open(ova_file,'rb')
+    import click
+
+    bar = UploadProgressBar(ova_file, end_message="Parsing file on remote side...", end_nl=False)
+    upload_data = MultipartEncoder(
+        fields={ 'file': ('filename', open(ova_file, 'rb'), 'text/plain')}
+    )
+    upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
+
+    headers = {
+        "Content-Type": upload_monitor.content_type
     }
-    response = call_api(config, 'post', '/provisioner/ova/{}'.format(name), params=params, files=files)
+
+    response = call_api(config, 'post', '/provisioner/ova/{}'.format(name), headers=headers, params=params, data=upload_monitor)
+
+    click.echo("done.")
+    click.echo()
 
     if response.status_code == 200:
         retstatus = True

@@ -25,8 +25,10 @@ import json
 import time
 import math
 
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+
 import cli_lib.ansiprint as ansiprint
-from cli_lib.common import call_api
+from cli_lib.common import UploadProgressBar, call_api
 
 #
 # Supplemental functions
@@ -863,13 +865,25 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
     API arguments: image_format={image_format}
     API schema: {"message":"{data}"}
     """
+    import click
+
+    bar = UploadProgressBar(image_file, end_message="Parsing file on remote side...", end_nl=False)
+    upload_data = MultipartEncoder(
+        fields={ 'file': ('filename', open(image_file, 'rb'), 'text/plain')}
+    )
+    upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
+
+    headers = {
+        "Content-Type": upload_monitor.content_type
+    }
     params = {
         'image_format': image_format
     }
-    files = {
-        'file': open(image_file,'rb')
-    }
-    response = call_api(config, 'post', '/storage/ceph/volume/{}/{}/upload'.format(pool, volume), params=params, files=files)
+
+    response = call_api(config, 'post', '/storage/ceph/volume/{}/{}/upload'.format(pool, volume), headers=headers, params=params, data=upload_monitor)
+
+    click.echo("done.")
+    click.echo()
 
     if response.status_code == 200:
         retstatus = True
