@@ -111,6 +111,9 @@ def list_template(limit, table, is_fuzzy=True):
     cur.execute(query, args)
     data = cur.fetchall()
 
+    if not isinstance(data, list):
+        data = [ data ]
+
     if table == 'network_template':
         for template_id, template_data in enumerate(data):
             # Fetch list of VNIs from network table
