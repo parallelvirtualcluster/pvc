@@ -810,6 +810,8 @@ def create_profile(name, profile_type, system_template, network_template, storag
 
     system_templates, code = list_template_system(None)
     system_template_id = None
+    if code != 200:
+        system_templates = []
     for template in system_templates:
         if template['name'] == system_template:
             system_template_id = template['id']
@@ -820,6 +822,8 @@ def create_profile(name, profile_type, system_template, network_template, storag
 
     network_templates, code = list_template_network(None)
     network_template_id = None
+    if code != 200:
+        network_templates = []
     for template in network_templates:
         if template['name'] == network_template:
             network_template_id = template['id']
@@ -830,6 +834,8 @@ def create_profile(name, profile_type, system_template, network_template, storag
 
     storage_templates, code = list_template_storage(None)
     storage_template_id = None
+    if code != 200:
+        storage_templates = []
     for template in storage_templates:
         if template['name'] == storage_template:
             storage_template_id = template['id']
@@ -840,18 +846,24 @@ def create_profile(name, profile_type, system_template, network_template, storag
 
     userdatas, code = list_userdata(None)
     userdata_id = None
+    if code != 200:
+        userdatas = []
     for template in userdatas:
         if template['name'] == userdata:
             userdata_id = template['id']
 
     scripts, code = list_script(None)
     script_id = None
+    if code != 200:
+        scripts = []
     for scr in scripts:
         if scr['name'] == script:
             script_id = scr['id']
 
     ovas, code = list_ova(None)
     ova_id = None
+    if code != 200:
+        ovas = []
     for ov in ovas:
         if ov['name'] == ova:
             ova_id = ov['id']
