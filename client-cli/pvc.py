@@ -2679,6 +2679,20 @@ def provisioner_userdata_list(limit, full):
     cleanup(retcode, retdata)
 
 ###############################################################################
+# pvc provisioner userdata show
+###############################################################################
+@click.command(name='show', short_help='Show contents of userdata documents.')
+@click.argument(
+    'name'
+)
+def provisioner_userdata_show(name):
+    """
+    Show the full contents of userdata document NAME.
+    """
+    retcode, retdata = pvc_provisioner.userdata_show(config, name)
+    cleanup(retcode, retdata)
+
+###############################################################################
 # pvc provisioner userdata add
 ###############################################################################
 @click.command(name='add', short_help='Define userdata document from file.')
@@ -2834,6 +2848,20 @@ def provisioner_script_list(limit, full):
         else:
             lines = None
         retdata = pvc_provisioner.format_list_script(retdata, lines)
+    cleanup(retcode, retdata)
+
+###############################################################################
+# pvc provisioner script show
+###############################################################################
+@click.command(name='show', short_help='Show contents of script documents.')
+@click.argument(
+    'name'
+)
+def provisioner_script_show(name):
+    """
+    Show the full contents of script document NAME.
+    """
+    retcode, retdata = pvc_provisioner.script_show(config, name)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -3578,11 +3606,13 @@ provisioner_template.add_command(provisioner_template_storage)
 provisioner_template.add_command(provisioner_template_list)
 
 provisioner_userdata.add_command(provisioner_userdata_list)
+provisioner_userdata.add_command(provisioner_userdata_show)
 provisioner_userdata.add_command(provisioner_userdata_add)
 provisioner_userdata.add_command(provisioner_userdata_modify)
 provisioner_userdata.add_command(provisioner_userdata_remove)
 
 provisioner_script.add_command(provisioner_script_list)
+provisioner_script.add_command(provisioner_script_show)
 provisioner_script.add_command(provisioner_script_add)
 provisioner_script.add_command(provisioner_script_modify)
 provisioner_script.add_command(provisioner_script_remove)

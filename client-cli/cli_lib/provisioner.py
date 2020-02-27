@@ -189,6 +189,21 @@ def userdata_list(config, limit):
     else:
         return False, response.json()['message']
 
+def userdata_show(config, name):
+    """
+    Get information about userdata name
+
+    API endpoint: GET /api/v1/provisioner/userdata/{name}
+    API arguments:
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    response = call_api(config, 'get', '/provisioner/userdata/{}'.format(name))
+
+    if response.status_code == 200:
+        return True, response.json()[0]['userdata']
+    else:
+        return False, response.json()['message']
+
 def userdata_add(config, params):
     """
     Add a new userdata with {params}
@@ -288,6 +303,21 @@ def script_list(config, limit):
 
     if response.status_code == 200:
         return True, response.json()
+    else:
+        return False, response.json()['message']
+
+def script_show(config, name):
+    """
+    Get information about script name
+
+    API endpoint: GET /api/v1/provisioner/script/{name}
+    API arguments:
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    response = call_api(config, 'get', '/provisioner/script/{}'.format(name))
+
+    if response.status_code == 200:
+        return True, response.json()[0]['script']
     else:
         return False, response.json()['message']
 
