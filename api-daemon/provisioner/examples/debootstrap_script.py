@@ -109,6 +109,7 @@ def install(**kwargs):
 
         # The root, var, and log volumes have specific values
         if disk['mountpoint'] == "/":
+            root_disk['scsi_id'] = disk_id
             dump = 0
             cpass = 1
         elif disk['mountpoint'] == '/var' or disk['mountpoint'] == '/var/log':
@@ -184,12 +185,12 @@ interface "ens2" {
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=1
 GRUB_DISTRIBUTOR="PVC Virtual Machine"
-GRUB_CMDLINE_LINUX_DEFAULT="root=/dev/{root_disk} console=tty0 console=ttyS0,115200n8"
+GRUB_CMDLINE_LINUX_DEFAULT="root=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{root_disk} console=tty0 console=ttyS0,115200n8"
 GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_DISABLE_LINUX_UUID=false
-""".format(root_disk=root_disk['disk_id'])
+""".format(root_disk=root_disk['scsi_id'])
         fh.write(data)
 
     # Chroot, do some in-root tasks, then exit the chroot
