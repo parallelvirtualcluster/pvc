@@ -56,13 +56,13 @@ def flush_locks(zk_conn, logger, dom_uuid):
         # If there's at least one lock
         if lock_list:
             # Loop through the locks
-            for lock, detail in lock_list.items():
+            for lock in lock_list:
                 # Free the lock
-                lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock, detail['locker']))
+                lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock['id'], lock['locker']))
                 if lock_remove_retcode != 0:
-                    logger.out('Failed to free RBD lock "{}" on volume "{}"\n{}'.format(lock, rbd, lock_remove_stderr), state='e')
+                    logger.out('Failed to free RBD lock "{}" on volume "{}"\n{}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
                     continue
-                logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock, rbd), state='o')
+                logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock['id'], rbd), state='o')
 
     return True
 
