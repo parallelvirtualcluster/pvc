@@ -74,6 +74,9 @@ def run_command(zk_conn, logger, this_node, data):
     # Flushing VM RBD locks
     if command == 'flush_locks':
         dom_uuid = args
+        # If this node is taking over primary state, wait until it's done
+        while this_node.router_state == 'takeover':
+            time.sleep(1)
         if this_node.router_state == 'primary':
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/cmd/domains')

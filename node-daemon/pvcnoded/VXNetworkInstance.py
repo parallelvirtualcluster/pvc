@@ -235,11 +235,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.ip6_gateway != data.decode('ascii'):
                 orig_gateway = self.ip6_gateway
-                if self.this_node.router_state == 'primary':
+                if self.this_node.router_state in ['primary', 'takeover']:
                     if orig_gateway:
                         self.removeGateway6Address()
                 self.ip6_gateway = data.decode('ascii')
-                if self.this_node.router_state == 'primary':
+                if self.this_node.router_state in ['primary', 'takeover']:
                     self.createGateway6Address()
                     if self.dhcp_server_daemon:
                         self.stopDHCPServer()
@@ -257,9 +257,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.dhcp6_flag != ( data.decode('ascii') == 'True' ):
                 self.dhcp6_flag = ( data.decode('ascii') == 'True' )
-                if self.dhcp6_flag and not self.dhcp_server_daemon and self.this_node.router_state == 'primary':
+                if self.dhcp6_flag and not self.dhcp_server_daemon and self.this_node.router_state in ['primary', 'takeover']:
                     self.startDHCPServer()
-                elif self.dhcp_server_daemon and not self.dhcp4_flag and self.this_node.router_state == 'primary':
+                elif self.dhcp_server_daemon and not self.dhcp4_flag and self.this_node.router_state in ['primary', 'takeover']:
                     self.stopDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip4_network'.format(self.vni))
@@ -286,11 +286,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.ip4_gateway != data.decode('ascii'):
                 orig_gateway = self.ip4_gateway
-                if self.this_node.router_state == 'primary':
+                if self.this_node.router_state in ['primary', 'takeover']:
                     if orig_gateway:
                         self.removeGateway4Address()
                 self.ip4_gateway = data.decode('ascii')
-                if self.this_node.router_state == 'primary':
+                if self.this_node.router_state in ['primary', 'takeover']:
                     self.createGateway4Address()
                     if self.dhcp_server_daemon:
                         self.stopDHCPServer()
@@ -308,9 +308,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
             if data and self.dhcp4_flag != ( data.decode('ascii') == 'True' ):
                 self.dhcp4_flag = ( data.decode('ascii') == 'True' )
-                if self.dhcp4_flag and not self.dhcp_server_daemon and self.this_node.router_state == 'primary':
+                if self.dhcp4_flag and not self.dhcp_server_daemon and self.this_node.router_state in ['primary', 'takeover']:
                     self.startDHCPServer()
-                elif self.dhcp_server_daemon and not self.dhcp6_flag and self.this_node.router_state == 'primary':
+                elif self.dhcp_server_daemon and not self.dhcp6_flag and self.this_node.router_state in ['primary', 'takeover']:
                     self.stopDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp4_start'.format(self.vni))
@@ -349,7 +349,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             if self.dhcp_reservations != new_reservations:
                 old_reservations = self.dhcp_reservations
                 self.dhcp_reservations = new_reservations
-                if self.this_node.router_state == 'primary':
+                if self.this_node.router_state in ['primary', 'takeover']:
                     self.updateDHCPReservations(old_reservations, new_reservations)
                 if self.dhcp_server_daemon:
                     self.stopDHCPServer()
@@ -601,7 +601,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.createGateway4Address()
 
     def createGateway6Address(self):
-        if self.this_node.router_state == 'primary':
+        if self.this_node.router_state in ['primary', 'takeover']:
             self.logger.out(
                 'Creating gateway {}/{} on interface {}'.format(
                     self.ip6_gateway,
@@ -614,7 +614,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             common.createIPAddress(self.ip6_gateway, self.ip6_cidrnetmask, self.bridge_nic)
 
     def createGateway4Address(self):
-        if self.this_node.router_state == 'primary':
+        if self.this_node.router_state in ['primary', 'takeover']:
             self.logger.out(
                 'Creating gateway {}/{} on interface {}'.format(
                     self.ip4_gateway,
@@ -627,7 +627,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             common.createIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
     def startDHCPServer(self):
-        if self.this_node.router_state == 'primary' and self.nettype == 'managed':
+        if self.this_node.router_state in ['primary', 'takeover'] and self.nettype == 'managed':
             self.logger.out(
                 'Starting dnsmasq DHCP server on interface {}'.format(
                     self.bridge_nic
