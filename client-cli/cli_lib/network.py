@@ -205,8 +205,11 @@ def net_dhcp_list(config, net, limit, only_static=False):
     params = dict()
     if limit:
         params['limit'] = limit
+
     if only_static:
         params['static'] = True
+    else:
+        params['static'] = False
 
     response = call_api(config, 'get', '/network/{net}/lease'.format(net=net), params=params)
 
