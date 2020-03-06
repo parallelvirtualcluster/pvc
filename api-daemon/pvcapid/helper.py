@@ -24,7 +24,7 @@ import flask
 import json
 import lxml.etree as etree
 
-from distutils.util import strtobool
+from distutils.util import strtobool as dustrtobool
 
 import daemon_lib.common as pvc_common
 import daemon_lib.cluster as pvc_cluster
@@ -32,6 +32,13 @@ import daemon_lib.node as pvc_node
 import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
+
+def strtobool(stringv):
+    if stringv is None:
+        return False
+    if isinstance(stringv, bool):
+        return bool(stringv)
+    return bool(dustrtobool(stringv))
 
 #
 # Initialization function

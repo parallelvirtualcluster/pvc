@@ -28,7 +28,7 @@ import gevent.pywsgi
 
 import flask
 
-from distutils.util import strtobool
+from distutils.util import strtobool as dustrtobool
 
 from functools import wraps
 
@@ -44,6 +44,13 @@ import pvcapid.ova as api_ova
 from flask_sqlalchemy import SQLAlchemy
 
 API_VERSION = 1.0
+
+def strtobool(stringv):
+    if stringv is None:
+        return False
+    if isinstance(stringv, bool):
+        return bool(stringv)
+    return bool(dustrtobool(stringv))
 
 # Parse the configuration file
 try:
