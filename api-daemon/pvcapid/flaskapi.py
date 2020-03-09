@@ -50,7 +50,10 @@ def strtobool(stringv):
         return False
     if isinstance(stringv, bool):
         return bool(stringv)
-    return bool(dustrtobool(stringv))
+    try:
+        return bool(dustrtobool(stringv))
+    except:
+        return False
 
 # Parse the configuration file
 try:

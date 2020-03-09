@@ -47,7 +47,10 @@ def strtobool(stringv):
         return False
     if isinstance(stringv, bool):
         return bool(stringv)
-    return bool(dustrtobool(stringv))
+    try:
+        return bool(dustrtobool(stringv))
+    except:
+        return False
 
 #
 # Exceptions (used by Celery tasks)
