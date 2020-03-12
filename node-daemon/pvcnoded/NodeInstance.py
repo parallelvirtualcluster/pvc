@@ -455,6 +455,7 @@ class NodeInstance(object):
             # Handle our current Patroni leader being us
             if stdout and stdout.split('\n')[-1].split() == ["Error:", "Switchover", "target", "and", "source", "are", "the", "same."]:
                 self.logger.out('Failed to switch Patroni leader to ourselves; this is fine\n{}'.format(stdout), state='w')
+                patroni_failed = False
                 break
             # Handle a failed switchover
             elif stdout and (stdout.split('\n')[-1].split()[:2] == ["Switchover", "failed,"] or stdout.strip().split('\n')[-1].split()[:1] == ["Error"]):
