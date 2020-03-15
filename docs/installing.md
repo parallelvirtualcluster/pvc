@@ -6,6 +6,8 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 ### Part One - Preparing for bootstrap
 
+0. Read through the [Cluster Architecture documentation](/architecture/cluster). This documentation details the requirements and conventions of a PVC cluster, and is important to understand before proceeding.
+
 0. Download the latest copy of the [`pvc-installer`](https://github.com/parallelvirtualcluster/pvc-installer) and [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) repositories to your local machine.
 
 0. In `pvc-ansible`, create an initial `hosts` inventory, using `hosts.default` as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various components.
@@ -124,122 +126,11 @@ All steps in this and following sections can be performed using either the CLI c
 
 0. Verify the client networks are reachable by pinging the managed gateway from outside the cluster.
 
-### Part Six - Setting nodes ready and deploying a VM
-
-This section walks through deploying a simple Debian VM to the cluster with Debootstrap. Note that as of PVC version `0.5`, this is still a manual process, though automated deployment of VMs based on configuration templates and image snapshots is planned for version `0.6`. This section can be used as a basis for a scripted installer, or a manual process as the administrator sees fit.
-
 0. Set all 3 nodes to `ready` state, allowing them to run virtual machines. The general command is:  
     `$ pvc node ready <node>`
 
-0. Create an RBD image for the VM. The general command is:  
-    `$ pvc storage volume add <pool> <name> <size>`
+### You're Done!
 
-    For example, to create a 20GB disk for a VM called `test1` in the previously-configured pool `vms`, run the command as follows:  
-    `$ pvc storage volume add vms test1_disk0 20G`
+Congratulations, you now have a basic PVC storage cluster, ready to run your VMs.
 
-0. Verify the RBD image was created:  
-    `$ pvc storage volume list`
-
-0. On one of the PVC nodes, for example `pvchv1`, map the RBD volume to the local system:  
-    `$ ceph rbd map vms/test1_disk0`
-
-    The resulting disk device will be available at `/dev/rbd/vms/test1_disk0` or `/dev/rbd0`.
-
-0. Create a filesystem on the block device, for example `ext4`:  
-    `$ mkfs -t ext4 /dev/rbd/vms/test1_disk0`
-
-0. Create a temporary directory and mount the block device to it, using `mount` to find the directory:  
-    `$ mount /dev/rbd/vms/test1_disk0 $( mktemp -d )`  
-    `$ mount | grep rbd`
-
-0. Run a `debootstrap` installation to the volume:  
-    `$ debootstrap buster <temporary_mountpoint> http://ftp.mirror.debian.org/debian`
-
-0. Bind mount the various required directories to the new system:  
-    `$ mount --bind /dev <temporary_mountpoint>/dev`  
-    `$ mount --bind /dev/pts <temporary_mountpoint>/dev/pts`  
-    `$ mount --bind /proc <temporary_mountpoint>/proc`  
-    `$ mount --bind /sys <temporary_mountpoint>/sys`  
-    `$ mount --bind /run <temporary_mountpoint>/run`  
-
-0. Using `chroot`, configure the VM system as required, for instance installing packages or adding users:  
-    `$ chroot <temporary_mountpoint>`  
-    `[chroot]$ ...`
-
-0. Install the GRUB bootloader in the VM system, and install Grub to the RBD device:  
-    `[chroot]$ apt install grub-pc`  
-    `[chroot]$ grub-install /dev/rbd/vms/test1_disk0`
-
-0. Exit the `chroot` environment, unmount the temporary mountpoint, and unmap the RBD device:  
-    `[chroot]$ exit`  
-    `$ umount <temporary_mountpoint>`  
-    `$ rbd unmap /dev/rd0`
-
-0. Prepare a Libvirt XML configuration, obtaining the required Ceph storage secret and a new random VM UUID first. This example provides a very simple VM with 1 vCPU, 1GB RAM, the previously-configured network `100`, and the previously-configured disk `vms/test1_disk0`:  
-    `$ virsh secret-list`  
-    `$ uuidgen`  
-    `$ $EDITOR /tmp/test1.xml`
-
-    ```
-    <domain type='kvm'>
-      <name>test1</name>
-      <uuid>[INSERT GENERATED UUID]</uuid>
-      <description>Testing VM</description>
-      <memory unit='MiB'>1024</memory>
-      <vcpu>1</vcpu>
-      <os>
-        <type arch='x86_64' machine='pc-i440fx-2.7'>hvm</type>
-        <boot dev='hd'/>
-      </os>
-      <features>
-        <acpi/>
-        <apic/>
-        <pae/>
-      </features>
-      <clock offset='utc'/>
-      <on_poweroff>destroy</on_poweroff>
-      <on_reboot>restart</on_reboot>
-      <on_crash>restart</on_crash>
-      <devices>
-        <emulator>/usr/bin/kvm</emulator>
-        <controller type='usb' index='0'/>
-        <controller type='pci' index='0' model='pci-root'/>
-        <serial type='pty'/>
-        <console type='pty'/>
-        <disk type='network' device='disk'>
-          <driver name='qemu' discard='unmap'/>
-          <auth username='libvirt'>
-             <secret type='ceph' uuid='[INSERT CEPH STORAGE SECRET]'/>
-          </auth>
-          <source protocol='rbd' name='vms/test1_disk0'>
-            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-            <host name='[INSERT FIRST COORDINATOR CLUSTER NETWORK FQDN' port='6789'/>
-          </source>
-          <target dev='sda' bus='scsi'/>
-        </disk>
-        <interface type='bridge'>
-          <mac address='52:54:00:12:34:56'/>
-          <source bridge='vmbr100'/>
-          <model type='virtio'/>
-        </interface>
-        <controller type='scsi' index='0' model='virtio-scsi'/>
-      </devices>
-    </domain>
-    ```
-
-    **NOTE:** This Libvirt XML is only a sample; it should be modified to fit the specifics of the VM. Alternatively to manual configuration, one can use a tool like `virt-manager` to generate valid Libvirt XML configurations for PVC to use.
-
-0. Define the VM in the PVC cluster:  
-    `$ pvc vm define /tmp/test1.xml`
-
-0. Verify the VM is present in the cluster:  
-    `$ pvc vm info test1`
-
-0. Start the VM and watch the console log:  
-    `$ pvc vm start test1`  
-    `$ pvc vm log -f test1`
-
-If all has gone well until this point, you should now be able to watch your new VM boot on the cluster, grab DHCP from the managed network, and run away doing its thing. You could now, for instance, move it permanently to another node with the `pvc vm move -t <node> test1` command, or temporarily with the `pvc vm migrate -t <node> test1` command and back again with the `pvc vm unmigrate test` command.
-
-For more details on what to do next, see the [CLI manual](/manuals/cli) for a full list of management functions, SSH into your new VM, and start provisioning more. Your new private cloud is now here!
+For next steps, see the [Provisioner manual](/manuals/provisioner) for details on how to use the PVC provisioner to create new Virtual Machines, as well as the [CLI manual](/manuals/cli) and [API manual](/manuals/api) for details on day-to-day usage of PVC.

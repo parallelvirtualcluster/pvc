@@ -10,9 +10,17 @@ The purpose of the Provisioner API is to provide a convenient way for administra
 
 The Provisioner allows the administrator to constuct descriptions of VMs, called profiles, which include system resource specifications, network interfaces, disks, cloud-init userdata, and installation scripts. These profiles are highly modular, allowing the administrator to specify arbitrary combinations of the mentioned VM features with which to build new VMs.
 
-Currently, the provisioner supports creating VMs based off of installation scripts, or by cloning existing volumes. Future versions of PVC will allow the uploading of arbitrary images (either disk or ISO images) to cluster volumes, permitting even more flexibility in the installation of VMs.
+The provisioner supports creating VMs based off of installation scripts, by cloning existing volumes, and by uploading OVA image templates to the cluster.
 
 Examples in the following sections use the CLI exclusively for demonstration purposes. For details of the underlying API calls, please see the [API interface reference](/manuals/api-reference.html).
+
+# Deploying VMs from OVA images
+
+PVC supports deploying virtual machines from industry-standard OVA images. OVA images can be uploaded to the cluster with the `pvc provisioner ova` commands, and deployed via the created profile(s) using the `pvc provisioner create` command. Additionally, the profile(s) can be modified to suite your specific needs via the provisioner template system detailed below.
+
+# Deploying VMs from provisioner scripts
+
+PVC supports deploying virtual machines using administrator-provided scripts, using templates, profiles, and Cloud-init userdata to control the deployment process as desired. This deployment method permits the administrator to deploy POSIX-like systems such as Linux or BSD directly from a companion tool such as `debootstrap` on-demand and with maximum flexibility.
 
 ## Templates
 
