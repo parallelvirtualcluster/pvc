@@ -1,4 +1,4 @@
-# PVC Provisioner API architecture
+# PVC Provisioner manual
 
 The PVC provisioner is a subsection of the main PVC API. IT interfaces directly with the Zookeeper database using the common client functions, and with the Patroni PostgreSQL database to store details. The provisioner also interfaces directly with the Ceph storage cluster, for mapping volumes, creating filesystems, and installing guests.
 

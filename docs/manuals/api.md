@@ -1,3 +1,11 @@
+# PVC API architecture
+
+The PVC API is a standalone client application for PVC. It interfaces directly with the Zookeeper database to manage state.
+
+The API is built using Flask and is packaged in the Debian package `pvc-client-api`. The API depends on the common client functions of the `pvc-client-common` package as does the CLI client.
+
+Details of the API interface can be found in [the manual](/manuals/api).
+
 # PVC HTTP API manual
 
 The PVC HTTP API client is built with Flask, a Python framework for creating API interfaces, and run directly with the PyWSGI framework. It interfaces directly with the Zookeeper cluster to send and receive information about the cluster. It supports authentication configured statically via tokens in the configuration file as well as SSL. It also includes the provisioner client, an optional section that can be used to create VMs automatically using a set of templates and standardized scripts.
