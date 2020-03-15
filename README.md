@@ -17,7 +17,7 @@ The major goal of PVC is to be administrator friendly, providing the power of En
 
 ## Getting Started
 
-To get started with PVC, read the [Cluster Architecture document](/architecture/cluster), then see [Installing](/installing) for details on setting up a set of PVC nodes, using [`pvc-ansible`](/manuals/ansible) to configure and bootstrap a cluster, and managing it with the [`pvc` cli](/manuals/cli) or [HTTP API](/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](/about).
+To get started with PVC, read the [Cluster Architecture document](https://parallelvirtualcluster.readthedocs.io/en/latest/architecture/cluster/), then see [Installing](https://parallelvirtualcluster.readthedocs.io/en/latest/installing) for details on setting up a set of PVC nodes, using the [PVC Ansible](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/ansible) framework to configure and bootstrap a cluster, and managing it with the [`pvc` CLI tool](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/cli) or [RESTful HTTP API](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](https://parallelvirtualcluster.readthedocs.io/en/latest/about).
 
 ## Changelog
 
