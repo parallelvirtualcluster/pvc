@@ -1,4 +1,4 @@
-# PVC - The Parallel Virtual Cluster suite
+# PVC - The Parallel Virtual Cluster system
 
 <p align="center">
 <img alt="Logo banner" src="https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png"/>
