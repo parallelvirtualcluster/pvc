@@ -1205,8 +1205,11 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
                 pools[volume['pool']] += volume['disk_size_gb']
 
     for pool in pools:
-        pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
-        if not pool_information:
+        try:
+            pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
+            if not pool_information:
+                raise
+        except:
             raise ClusterError('Pool "{}" is not present on the cluster.'.format(pool))
         pool_free_space_gb = int(pool_information['stats']['free_bytes'] / 1024 / 1024 / 1024)
         pool_vm_usage_gb = int(pools[pool])
