@@ -9,19 +9,35 @@
 <a href="https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
 </p>
 
-PVC is a suite of Python 3 tools to manage virtualized clusters. It provides a fully-functional private cloud based on four key principles:
-
-1. Be Free Software Forever (or Bust)
-2. Be Opinionated and Efficient and Pick The Best Software
-3. Be Scalable and Redundant but Not Hyperscale
-4. Be Simple To Use, Configure, and Maintain
-
-It is designed to be an administrator-friendly but extremely powerful and rich modern private cloud system, but without the feature bloat and complexity of tools like OpenStack. With PVC, an administrator can provision, manage, and update a cluster of dozens or more hypervisors running thousands of VMs using a simple CLI tool, HTTP API, or [eventually] web interface. PVC is based entirely on Debian GNU/Linux and Free-and-Open-Source tools, providing the glue to bootstrap, provision and manage the cluster, then getting out of the administrators' way.
-
-Your cloud, the best way; just add physical servers.
-
-[See the documentation here](https://parallelvirtualcluster.readthedocs.io/en/latest/)
-
-[See the API reference here](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/api-reference.html)
-
 **NOTICE FOR GITHUB**: This repository is a read-only mirror of the PVC repositories. Pull requests submitted here will not be merged.
+
+PVC is a KVM+Ceph-based, Free Software, scalable, redundant, self-healing, and self-managing private cloud solution designed with administrator simplicity in mind. It is built from the ground-up to be redundant at the host layer, allowing the cluster to gracefully handle the loss of nodes or their components, both due to hardware failure or due to maintenance. It is able to scale from a minimum of 3 nodes up to 12 or more nodes, while retaining performance and flexibility, allowing the administrator to build a small cluster today and grow it as needed.
+
+The major goal of PVC is to be administrator friendly, providing the power of Enterprise-grade private clouds like OpenStack, Nutanix, and VMWare to homelabbers, SMBs, and small ISPs, without the cost or complexity. It believes in picking the best tool for a job and abstracting it behind the cluster as a whole, freeing the administrator from the boring and time-consuming task of selecting the best component, and letting them get on with the things that really matter. Administration can be done from a simple CLI or via a RESTful API capable of building full-featured web frontends or additional applications, taking a self-documenting approach to keep the administrator learning curvet as low as possible. Setup is easy and straightforward with an [ISO-based node installer](https://git.bonifacelabs.ca/parallelvirtualcluster/pvc-installer) and [Ansible role framework](https://git.bonifacelabs.ca/parallelvirtualcluster/pvc-ansible) designed to get a cluster up and running as quickly as possible. Build your cloud in an hour, grow it as you need, and never worry about it: just add physical servers.
+
+## Getting Started
+
+To get started with PVC, read the [Cluster Architecture document](/architecture/cluster), then see [Installing](/installing) for details on setting up a set of PVC nodes, using [`pvc-ansible`](/manuals/ansible) to configure and bootstrap a cluster, and managing it with the [`pvc` cli](/manuals/cli) or [HTTP API](/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](/about).
+
+## Changelog
+
+#### v0.7
+
+Numerous improvements and bugfixes, revamped documentation. This release is suitable for general use and is beta-quality software.
+
+#### v0.6
+
+Numerous improvements and bugfixes, full implementation of the provisioner, full implementation of the API CLI client (versus direct CLI client). This release is suitable for general use and is beta-quality software.
+
+#### v0.5
+
+First public release; fully implements the VM, network, and storage managers, the HTTP API, and the pvc-ansible framework for deploying and bootstrapping a cluster. This release is suitable for general use, though it is still alpha-quality software and should be expected to change significantly until 1.0 is released.
+
+#### v0.4
+
+Full implementation of virtual management and virtual networking functionality. Partial implementation of storage functionality.
+
+#### v0.3
+
+Basic implementation of virtual management functionality.
+
