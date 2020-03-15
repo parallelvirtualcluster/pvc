@@ -50,7 +50,7 @@ More advanced physical network layouts are also possible. For instance, one coul
 
 The upstream network functions as the main upstream for the cluster nodes, providing Internet access and a way to route managed client network traffic out of the cluster. In most deployments, this should be an RFC1918 private subnet with an upstream router which can perform NAT translation and firewalling as required, both for the cluster nodes themselves, but also for the RFC1918 managed client networks.
 
-The floating IP address in the upstream network can be used as a single point of communication with the PVC cluster from other upstream sources, for instance to access the DNS aggregator instance or the API if configured. For this reason the network should generally be protected from unauthorized access via a firewall.
+The floating IP address in the cluster network can be used as a single point of communication with the active primary node, for instance to access the DNS aggregator instance or the API if configured. For this reason the network should generally be protected from unauthorized access via a firewall.
 
 Nodes in this network are generally assigned static IP addresses which are configured at node install time and in the [Ansible deployment configuration](/manuals/ansible).
 
@@ -82,33 +82,37 @@ For even larger clusters, a `/23` or even larger network may be used.
 
 ### Cluster: Connecting the nodes with each other
 
-The cluster network is an unrouted private network used by the PVC nodes to communicate with each other for database access, Libvirt migration, and storage client traffic. It is also used as the underlying interface for the BGP EVPN VXLAN interfaces used by managed client networks.
+The cluster network is an unrouted private network used by the PVC nodes to communicate with each other for database access and Libvirt migrations. It is also used as the underlying interface for the BGP EVPN VXLAN interfaces used by managed client networks.
 
-The floating IP address in the cluster network can be used as a single point of communication with the primary node.
+The floating IP address in the cluster network can be used as a single point of communication with the active primary node.
 
 Nodes in this network are generally assigned IPs automatically based on their node number (e.g. node1 at `.1`, node2 at `.2`, etc.). The network should be large enough to include all nodes sequentially.
 
-Generally the cluster network should be completely separate from the upstream network, either a separate physical interface (or set of bonded interfaces) or a dedicated vLAN on an underlying physical device.
+Generally the cluster network should be completely separate from the upstream network, either a separate physical interface (or set of bonded interfaces) or a dedicated vLAN on an underlying physical device, but they can be colocated if required.
 
 ### Storage: Connecting Ceph OSD with each other
 
 The storage network is an unrouted private network used by the PVC node storage OSDs to communicated with each other, without using the main cluster network and introducing potentially large amounts of traffic there.
 
-Nodes in this network are generally assigned IPs automatically based on their node number. The network should be large enough to include all nodes sequentially.
+The floating IP address in the storage network can be used as a single point of communication with the active primary node.
+
+Nodes in this network are generally assigned IPs automatically based on their node number (e.g. node1 at `.1`, node2 at `.2`, etc.). The network should be large enough to include all nodes sequentially.
 
 The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth.
 
 ### Bridged (unmanaged) Client Networks
 
-The first type of client network is the unmanaged bridged network. These networks have a separate vLAN on the device underlying the cluster network, which is created when the network is configured. VMs are then bridged into this vLAN.
+The first type of client network is the unmanaged bridged network. These networks have a separate vLAN on the device underlying the other networks, which is created when the network is configured. VMs are then bridged into this vLAN.
 
-With this client network type, PVC does no management of the network. This is left entirely to the administrator. It requires switch support and the configuration of the vLANs on the switchports of each node's cluster network before enabling the network.
+With this client network type, PVC does no management of the network. This is left entirely to the administrator. It requires switch support and the configuration of the vLANs on the switchports of each node's physical interfaces before enabling the network.
 
 ### VXLAN (managed) Client Networks
 
-The second type of client network is the managed VXLAN network. These networks make use of BGP EVPN, managed by route reflection on the coordinators, to create virtual layer 2 Ethernet tunnels between all nodes in the cluster. VXLANs are then run on top of these virtual layer 2 tunnels, with the primary PVC node providing routing, DHCP, and DNS functionality to the network via a single IP address.
+The second type of client network is the managed VXLAN network. These networks make use of BGP EVPN, managed by route reflection on the coordinators, to create virtual layer 2 Ethernet tunnels between all nodes in the cluster. VXLANs are then run on top of these virtual layer 2 tunnels, with the active primary PVC node providing routing, DHCP, and DNS functionality to the network via a single IP address.
 
-With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's cluster network as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network of the primary coordinator node; note that this may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when sizing the cluster network.
+With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's physical interfaces, as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network interface of the active primary coordinator node. NOTE: This may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when sizing the cluster network.
+
+### Other Client Networks
 
 Future PVC versions may support other client network types, such as direct-routing between VMs.
 
@@ -134,12 +138,14 @@ The set of coordinator nodes is generally configured at cluster bootstrap, initi
 
 ##### The Primary Coordinator
 
-Within the set of coordinators, a single primary coordinator is elected and shuffles around the cluster as nodes start and stop. Which coordinator is primary can be selected by the administrator manually, or via a simple election process within the cluster. Once a node becomes primary, it will remain so until told not to be. This coordinator is responsible for some additional functionality in addition to the other coordinators. These additional functions are:
+Within the set of coordinators, a single primary coordinator is elected at cluster startup and as nodes start and stop, or in response to administrative commands. Once a node becomes primary, it will remain so until it stops or is told not to be. This coordinator is responsible for some additional functionality in addition to the other coordinators. These additional functions are:
 
 0. The floating IPs in the main networks
 0. The default gateway IP for each managed client network
 0. The DNSMasq instance handling DHCP and DNS for each managed client network
 0. The API and provisioner clients and workers
+
+PVC gracefully handles transitioning primary coordinator state, to minimize downtime. Workers will continue to operate on the old coordinator if available after a switchover and the administrator should be aware of any active tasks before switching the active primary coordinator.
 
 #### Hypervisors
 
