@@ -572,7 +572,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     except:
         cleanup(False, 'Error: XML is malformed or invalid')
 
-    retcode, retmsg = pvc_vm.define_vm(config, new_cfg, target_node, node_limit, node_selector, node_autostart)
+    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart)
     cleanup(retcode, retmsg)
 
 ###############################################################################
