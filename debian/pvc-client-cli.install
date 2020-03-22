@@ -1,2 +1,3 @@
 client-cli/pvc.py usr/share/pvc
 client-cli/cli_lib usr/share/pvc
+client-cli/scripts usr/share/pvc

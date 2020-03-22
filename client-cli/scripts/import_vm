@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+# import_vm - Imports a VM to a PVC cluster from local files
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+set -o errexit
+set -o pipefail
+
+usage() {
+    echo -e "Import a VM to a PVC cluster from local files."
+    echo -e "Usage:"
+    echo -e "  $0 <destination_cluster> <destination_pool> <vm_configuration_file> <vm_disk_file_1> [<vm_disk_file_2>] [...]"
+    echo -e ""
+    echo -e "Important information:"
+    echo -e " * At least one disk must be specified; all disks that are present in vm_configuration_file"
+    echo -e "   should be specified, though this is not strictly requireda."
+    echo -e " * Do not switch the cluster primary coordinator while the script is running."
+    echo -e " * Ensure you have enough space on the destination cluster to store all VM disks."
+}
+
+fail() {
+    echo -e "$@"
+    exit 1
+}
+
+# Arguments
+if [[ -z ${1} || -z ${2} || -z ${3} || -z ${4} ]]; then
+    usage
+    exit 1
+fi
+destination_cluster="${1}"; shift
+destination_pool="${1}"; shift
+vm_config_file="${1}"; shift
+vm_disk_files=( ${@} )
+
+# Verify the cluster is reachable
+pvc -c ${destination_cluster} status &>/dev/null || fail "Specified destination_cluster is not accessible"
+
+# Determine the connection IP
+cluster_address="$( pvc cluster list 2>/dev/null | grep -i "^${destination_cluster}" | awk '{ print $2 }' )"
+
+echo "Verification complete."
+
+# Determine information about the VM from the config file
+parse_xml_field() {
+    field="${1}"
+    line="$( grep -F "<${field}>" ${vm_config_file} )"
+    awk -F '>|<' '{ print $3 }' <<<"${line}"
+}
+vm_name="$( parse_xml_field name )"
+echo "Importing VM ${vm_name}..."
+pvc -c ${destination_cluster} vm define ${vm_config_file} 2>/dev/null
+
+# Create the disks on the cluster
+for disk_file in ${vm_disk_files[@]}; do
+    disk_file_basename="$( basename ${disk_file} )"
+    disk_file_ext="${disk_file_basename##*.}"
+    disk_file_name="$( basename ${disk_file_basename} .${disk_file_ext} )"
+    disk_file_size="$( stat --format="%s" ${disk_file} )"
+
+    echo "Importing disk ${disk_file_name}... "
+    pvc -c ${destination_cluster} storage volume add ${destination_pool} ${disk_file_name} ${disk_file_size}B 2>/dev/null
+    pvc -c ${destination_cluster} storage volume upload ${destination_pool} ${disk_file_name} ${disk_file} 2>/dev/null
+done
