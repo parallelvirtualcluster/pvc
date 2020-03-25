@@ -24,9 +24,7 @@
     + [Mid-sized 8-node cluster with 3 coordinators](#mid-sized-8-node-cluster-with-3-coordinators)
     + [Large 17-node cluster with 5 coordinators](#large-17-node-cluster-with-5-coordinators)
 
-This document contains considerations the administrator should make when preparing for and building a PVC cluster. It includes four main subsections: node specifications, storage specifications, network layout, and node layout, plus a fifth section featuring diagrams of 3 example topologies.
-
-It is important that prospective PVC administrators read this document *thoroughly* before deploying a cluster to ensure they understand the requirements, caveats, and important details about how PVC operates.
+This document contains considerations the administrator should make when preparing for and building a PVC cluster. It is important that prospective PVC administrators read this document *thoroughly* before deploying a cluster to ensure they understand the requirements, caveats, and important details about how PVC operates.
 
 ## Node Specifications: Considering the size of nodes
 
