@@ -50,6 +50,10 @@ Of these totals, some amount of CPU and RAM will be used by the storage subsyste
 
 Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all the available resources, however the total cluster utilization should never exceed the "n-1" quantity otherwise automatic failure recovery of 1-node failures may be impacted.
 
+As an underlying OS, PVC supports only Debian 10 "Buster", and this is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported.
+
+Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems such as Raspbian as well, however this has not been tested by the author.
+
 ## Storage Layout: Ceph and OSDs
 
 The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" cluster whereby storage and VM hypervisor functions are collocated onto the same physical servers. The performance of the storage must be taken into account when sizing the nodes as mentioned above.
