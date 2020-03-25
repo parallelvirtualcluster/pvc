@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+# force_single_node - Manually promote a single coordinator node from a degraded cluster
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2020 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+set -o errexit
+set -o pipefail
+
+usage() {
+    echo -e "Manually promote a single coordinator node from a degraded cluster"
+    echo -e ""
+    echo -e "DANGER: This action will cause a permanent split-brain within the cluster"
+    echo -e "        which will have to be corrected manually upon cluster restoration."
+    echo -e ""
+    echo -e "This script is primarily designed for small clusters in situations where 2"
+    echo -e "of the 3 coordinators have become unreachable or shut down. It will promote"
+    echo -e "the remaining lone_node to act as a standalone coordinator, allowing basic"
+    echo -e "cluster functionality to continue in a heavily degraded state until the"
+    echo -e "situation can be rectified. This should only be done in exceptional cases"
+    echo -e "as a disaster recovery mechanism when the remaining nodes will remain down"
+    echo -e "for a significant amount of time but some VMs are required to run. In general,"
+    echo -e "use of this script is not advisable."
+    echo -e ""
+    echo -e "Usage:"
+    echo -e "  $0 <target_cluster> <lone_node>"
+    echo -e ""
+    echo -e "Important information:"
+    echo -e " * The lone_node must be a fully-qualified name that is directly reachable from"
+    echo -e "   the local system via SSH."
+    echo -e " * The local user must have valid SSH access to the lone_node in the cluster."
+    echo -e " * The user on the cluster node must have 'sudo' access."
+}
+
+fail() {
+    echo -e "$@"
+    exit 1
+}
+
+# Arguments
+if [[ -z ${1} || -z ${2} ]]; then
+    usage
+    exit 1
+fi
+target_cluster="${1}"
+lone_node="${2}"
+lone_node_shortname="${lone_node%%.*}"
+
+# Attempt to connect to the node
+ssh ${lone_node} which pvc &>/dev/null || fail "Could not SSH to the lone_node host"
+
+echo "Verification complete."
+
+echo -n "Allowing Ceph single-node operation... "
+temp_monmap="$( ssh ${lone_node} mktemp )"
+ssh ${lone_node} "sudo systemctl stop ceph-mon@${lone_node_shortname}" &>/dev/null
+ssh ${lone_node} "ceph-mon -i ${lone_node_shortname} --extract-monmap ${temp_monmap}" &>/dev/null
+ssh ${lone_node} "sudo cp ${tmp_monmap} /etc/ceph/monmap.orig" &>/dev/null
+mon_list="$( ssh ${lone_node} strings ${temp_monmap} | sort | uniq )"
+for mon in ${mon_list}; do
+    if [[ ${mon} == ${lone_node_shortname} ]]; then
+        continue
+    fi
+    ssh ${lone_node} "sudo monmaptool ${temp_monmap} --rm ${mon}" &>/dev/null
+done
+ssh ${lone_node} "sudo ceph-mon -i ${lone_node_shortname} --inject-monmap ${temp_monmap}" &>/dev/null
+ssh ${lone_node} "sudo systemctl start ceph-mon@${lone_node_shortname}" &>/dev/null
+sleep 5
+ssh ${lone_node} "sudo ceph osd set noout" &>/dev/null
+echo "done."
+echo -e "Restoration steps:"
+echo -e "  sudo systemctl stop ceph-mon@${lone_node_shortname}"
+echo -e "  sudo ceph-mon -i ${lone_node_shortname} --inject-monmap /etc/ceph/monmap.orig"
+echo -e "  sudo systemctl start ceph-mon@${lone_node_shortname}"
+echo -e "  sudo ceph osd unset noout"
+
+echo -n "Allowing Zookeeper single-node operation... "
+temp_zoocfg="$( ssh ${lone_node} mktemp )"
+ssh ${lone_node} "sudo systemctl stop zookeeper"
+ssh ${lone_node} "sudo awk -v lone_node=${lone_node_shortname} '{
+FS="=|:"
+if ( $1 ~ /^server/ ){
+    if ($2 == lone_node) {
+        print $0
+    } else {
+        print "#" $0
+    }
+} else {
+    print $0
+}
+}' /etc/zookeeper/conf/zoo.cfg > ${temp_zoocfg}"
+ssh ${lone_node} "sudo mv /etc/zookeeper/conf/zoo.cfg /etc/zookeeper/conf/zoo.cfg.orig"
+ssh ${lone_node} "sudo mv ${temp_zoocfg} /etc/zookeeper/conf/zoo.cfg"
+ssh ${lone_node} "sudo systemctl start zookeeper"
+echo "done."
+echo -e "Restoration steps:"
+echo -e "  sudo systemctl stop zookeeper"
+echo -e "  sudo mv /etc/zookeeper/conf/zoo.cfg.orig /etc/zookeeper/conf/zoo.cfg"
+echo -e "  sudo systemctl start zookeeper"
+ssh ${lone_node} "sudo systemctl stop ceph-mon@${lone_node_shortname}"
+
+echo ""
+ssh ${lone_node} "sudo pvc status 2>/dev/null"
