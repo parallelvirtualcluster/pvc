@@ -317,11 +317,17 @@ def format_list_osd(osd_list):
         osd_information['stats']['size'] = osd_information['stats']['kb'] * 1024
         for datatype in 'size', 'wr_data', 'rd_data':
             databytes = osd_information['stats'][datatype]
-            databytes_formatted = format_bytes_tohuman(int(databytes))
+            if isinstance(databytes, int):
+                databytes_formatted = format_bytes_tohuman(databytes)
+            else:
+                databytes_formatted = databytes
             osd_information['stats'][datatype] = databytes_formatted
         for datatype in 'wr_ops', 'rd_ops':
             dataops = osd_information['stats'][datatype]
-            dataops_formatted = format_ops_tohuman(int(dataops))
+            if isinstance(dataops, int):
+                dataops_formatted = format_ops_tohuman(dataops)
+            else:
+                dataops_formatted = dataops
             osd_information['stats'][datatype] = dataops_formatted
 
         # Set the OSD ID length
