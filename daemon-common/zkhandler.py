@@ -42,6 +42,45 @@ def listchildren(zk_conn, key):
 def deletekey(zk_conn, key, recursive=True):
     zk_conn.delete(key, recursive=recursive)
 
+# Rename key recursive function
+def rename_key_element(zk_conn, zk_transaction, source_key, destination_key):
+    data_raw = zk_conn.get(source_key)
+    data = data_raw[0]
+    zk_transaction.create(destination_key, data)
+
+    if zk_conn.get_children(source_key):
+        for child_key in zk_conn.get_children(source_key):
+            child_source_key = "{}/{}".format(source_key, child_key)
+            child_destination_key = "{}/{}".format(destination_key, child_key)
+            rename_key_element(zk_conn, zk_transaction, child_source_key, child_destination_key)
+
+    zk_transaction.delete(source_key)
+
+# Rename key function
+def renamekey(zk_conn, kv):
+    # Start up a transaction
+    zk_transaction = zk_conn.transaction()
+
+    # Proceed one KV pair at a time
+    for source_key in sorted(kv):
+        destination_key = kv[source_key]
+
+        # Check if the source key exists or fail out
+        if not zk_conn.exists(source_key):
+            raise
+        # Check if the destination key exists and fail out
+        if zk_conn.exists(destination_key):
+            raise
+
+        rename_key_element(zk_conn, zk_transaction, source_key, destination_key)
+
+    # Commit the transaction
+    try:
+        zk_transaction.commit()
+        return True
+    except Exception:
+        return False
+
 # Data read function
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)

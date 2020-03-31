@@ -965,7 +965,7 @@ def rename_volume(zk_conn, pool, name, new_name):
     # 2. Rename the volume in Zookeeper
     zkhandler.renamekey(zk_conn, {
         '/ceph/volumes/{}/{}'.format(pool, name): '/ceph/volumes/{}/{}'.format(pool, new_name),
-        '/ceph/snapshots/{}/{}'.format(pool, name): '/ceph/snapshots/{}/{}'.format(pool, new_name),
+        '/ceph/snapshots/{}/{}'.format(pool, name): '/ceph/snapshots/{}/{}'.format(pool, new_name)
     })
 
     # 3. Get volume stats
