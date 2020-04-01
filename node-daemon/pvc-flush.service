@@ -3,7 +3,7 @@
 [Unit]
 Description = Parallel Virtual Cluster autoflush daemon
 After = pvcnoded.service
-Requires = pvcnoded.service
+Wants = pvcnoded.service
 PartOf = pvc.target
 
 [Service]
