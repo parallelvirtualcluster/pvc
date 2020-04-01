@@ -9,6 +9,7 @@ PartOf = pvc.target
 Type = oneshot
 RemainAfterExit = true
 WorkingDirectory = /usr/share/pvc
+TimeoutSec = 30min
 ExecStartPre = /bin/sleep 30
 ExecStart = /usr/bin/pvc -c local node unflush --wait
 ExecStop = /usr/bin/pvc -c local node flush --wait
