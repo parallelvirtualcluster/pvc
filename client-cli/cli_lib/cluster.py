@@ -33,7 +33,7 @@ def initialize(config):
     API arguments:
     API schema: {json_data_object}
     """
-    response = call_api(config, 'get', '/initialize')
+    response = call_api(config, 'post', '/initialize')
 
     if response.status_code == 200:
         retstatus = True
