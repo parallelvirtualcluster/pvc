@@ -3451,7 +3451,7 @@ def init_cluster(confirm_flag):
     # Easter-egg
     click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
 
-    retcode, retmsg = pvc_cluster.initialize()
+    retcode, retmsg = pvc_cluster.initialize(config)
     cleanup(retcode, retmsg)
 
 ###############################################################################
