@@ -547,13 +547,18 @@ zk_conn.add_listener(zk_listener)
 def cleanup():
     global zk_conn, update_timer, d_domain
 
-    logger.out('Performing final keepalive update', state='s')
-    update_zookeeper()
+    logger.out('Terminating pvcnoded and cleaning up', state='s')
 
     # Set shutdown state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
 
-    logger.out('Terminating pvcnoded and cleaning up', state='s')
+    # Waiting for any flushes to complete
+    logger.out('Wait for any flushes', state='s')
+    while this_node.flush_thread is not None:
+        time.sleep(0.5)
+
+    logger.out('Performing final keepalive update', state='s')
+    update_zookeeper()
 
     # Stop keepalive thread
     try:
@@ -574,7 +579,7 @@ def cleanup():
             except AttributeError as e:
                 pass
 
-    # Force into secondary network state if needed
+    # Force into secondary coordinator state if needed
     try:
         if this_node.router_state == 'primary':
             is_primary = True
@@ -583,7 +588,7 @@ def cleanup():
             })
             logger.out('Waiting for primary migration', state='s')
             while this_node.router_state != 'secondary':
-                time.sleep(1)
+                time.sleep(0.5)
     except:
         pass
 
