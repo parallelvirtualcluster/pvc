@@ -553,7 +553,7 @@ def cleanup():
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
 
     # Waiting for any flushes to complete
-    logger.out('Wait for any flushes', state='s')
+    logger.out('Waiting for any active flushes', state='s')
     while this_node.flush_thread is not None:
         time.sleep(0.5)
 
