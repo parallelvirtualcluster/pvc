@@ -20,9 +20,9 @@ PVC might be right for you if your requirements are:
 
 I built PVC for my homelab first, found a perfect usecase with my employer, and think it might be useful to you too.
 
-### Is 3 hypervisor really the minimum?
+### Is 3 hypervisors really the minimum?
 
-For a redundant cluster, yes. PVC requires a majority quorum for several subsystems, and the smallest possible majority quorum is 2/3. That said, you can run PVC on a single node for testing/lab purposes without host-level reundancy.
+For a redundant cluster, yes. PVC requires a majority quorum for several subsystems, and the smallest possible majority quorum is 2/3. That said, you can run PVC on a single node for testing/lab purposes without host-level reundancy, should you wish to do so.
 
 ## Feature Questions
 
