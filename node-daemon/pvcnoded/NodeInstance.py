@@ -317,7 +317,7 @@ class NodeInstance(object):
         Acquire primary coordinator status from a peer node
         """
         # Lock the primary node until transition is complete
-        primary_lock = zkhandler.writelock(self.zk_conn, '/primary_node')
+        primary_lock = zkhandler.exclusivelock(self.zk_conn, '/primary_node')
         primary_lock.acquire()
 
         # Ensure our lock key is populated
