@@ -557,17 +557,6 @@ def cleanup():
     while this_node.flush_thread is not None:
         time.sleep(0.5)
 
-    logger.out('Performing final keepalive update', state='s')
-    update_zookeeper()
-
-    # Stop keepalive thread
-    try:
-        stopKeepaliveTimer()
-    except NameError:
-        pass
-    except AttributeError:
-        pass
-
     # Stop console logging on all VMs
     logger.out('Stopping domain console watchers', state='s')
     for domain in d_domain:
@@ -591,6 +580,17 @@ def cleanup():
                 time.sleep(0.5)
     except:
         pass
+
+    # Stop keepalive thread
+    try:
+        stopKeepaliveTimer()
+    except NameError:
+        pass
+    except AttributeError:
+        pass
+
+    logger.out('Performing final keepalive update', state='s')
+    update_zookeeper()
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
