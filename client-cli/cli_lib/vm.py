@@ -44,11 +44,15 @@ def vm_info(config, vm):
     response = call_api(config, 'get', '/vm/{vm}'.format(vm=vm))
 
     if response.status_code == 200:
-        if len(response.json()) > 1:
+        if isinstance(response.json(), list) and len(response.json()) > 1:
             # No exact match; return not found
             return False, "VM not found."
         else:
-            return True, response.json()[0]
+            if isinstance(response.json(), list):
+                response = response.json()[0]
+            else:
+                response = response.json()
+            return True, response
         return True, response.json()
     else:
         return False, response.json()['message']
