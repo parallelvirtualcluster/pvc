@@ -2,7 +2,7 @@
 
 [Unit]
 Description = Parallel Virtual Cluster autoflush daemon
-After = pvcnoded.service pvcapid.service
+After = pvcnoded.service pvcapid.service zookeeper.service libvirtd.service ssh.service ceph.target
 Wants = pvcnoded.service
 PartOf = pvc.target
 
