@@ -402,7 +402,7 @@ def format_info(config, domain_information, long_output):
             net_vni = re.sub('br', '', net['source'])
 
         response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-        if response.status_code != 200 and net_vni != 'cluster':
+        if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
             net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
         else:
             net_list.append(net_vni)
@@ -551,7 +551,7 @@ def format_list(config, vm_list, raw):
         for net_vni in raw_net_list:
             if not net_vni in valid_net_list:
                 response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-                if response.status_code != 200 and net_vni != 'cluster':
+                if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
                     vm_net_colour = ansiprint.red()
                 else:
                     valid_net_list.append(net_vni)
