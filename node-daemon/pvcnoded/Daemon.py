@@ -830,7 +830,7 @@ def update_primary(new_primary, stat, event=''):
         if config['daemon_mode'] == 'coordinator':
             # We're a coordinator and there is no primary
             if new_primary == 'none':
-                if this_node.daemon_state == 'run' and this_node.router_state == 'secondary':
+                if this_node.daemon_state == 'run' and this_node.router_state not in ['primary', 'takeover', 'relinquish']:
                     logger.out('Contending for primary coordinator state', state='i')
                     # Acquire an exclusive lock on the primary_node key
                     primary_lock = zkhandler.exclusivelock(zk_conn, '/primary_node')
@@ -849,8 +849,9 @@ def update_primary(new_primary, stat, event=''):
                     except kazoo.exceptions.LockTimeout:
                         pass
             elif new_primary == myhostname:
-                time.sleep(0.5)
-                zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'takeover'})
+                if this_node.router_state == 'secondary':
+                    time.sleep(0.5)
+                    zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(myhostname): 'takeover'})
             else:
                 if this_node.router_state == 'primary':
                     time.sleep(0.5)
