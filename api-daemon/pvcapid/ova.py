@@ -398,11 +398,17 @@ def upload_ova(ova_data, pool, name, ova_size):
         vnc = False
         serial = True
     retdata, retcode = provisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind=None, ova=ova_id)
+    if retcode != 200:
+        return retdata, retcode
     system_template, retcode = provisioner.list_template_system(name, is_fuzzy=False)
+    if retcode != 200:
+        return retdata, retcode
     system_template_name = system_template[0].get('name')
 
     # Prepare a barebones profile for the OVA
     retdata, retcode = provisioner.create_profile(name, 'ova', system_template_name, None, None, userdata=None, script=None, ova=name, arguments=None)
+    if retcode != 200:
+        return retdata, retcode
 
     output = {
         'message': "Imported OVA image '{}'.".format(name)
