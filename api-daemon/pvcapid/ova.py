@@ -177,12 +177,9 @@ def upload_ova(ova_data, pool, name, ova_size):
         retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "ova_{}".format(name))
         pvc_common.stopZKConnection(zk_conn)
 
-    # Normalize the OVA size to MB
-    # The function always return XXXXB, so strip off the B and convert to an integer
+    # Normalize the OVA size to bytes
     ova_size_bytes = int(pvc_ceph.format_bytes_fromhuman(ova_size)[:-1])
-    # Put the size into KB which rbd --size can understand
-    ova_size_kb = math.ceil(ova_size_bytes / 1024)
-    ova_size = "{}K".format(ova_size_kb)
+    ova_size = pvc_ceph.format_bytes_fromhuman(ova_size)
 
     # Verify that the cluster has enough space to store the OVA volumes (2x OVA size, temporarily, 1x permanently)
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
@@ -272,11 +269,9 @@ def upload_ova(ova_data, pool, name, ova_size):
         dev_size_raw = ova_archive.getmember(dev_src).size
         vm_volume_size = disk.get('capacity')
 
-        # Normalize the dev size to KB
-        # The function always return XXXXB, so strip off the B and convert to an integer
+        # Normalize the dev size to bytes
         dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(dev_size_raw)[:-1])
-        dev_size_kb = math.ceil(dev_size_bytes / 1024)
-        dev_size = "{}K".format(dev_size_kb)
+        dev_size = pvc_ceph.format_bytes_fromhuman(dev_size_raw)
 
         def cleanup_img_maps():
             zk_conn = pvc_common.startZKConnection(config['coordinators'])
