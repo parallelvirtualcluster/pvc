@@ -48,9 +48,9 @@ The following table provides bare-minimum, recommended, and optimal specificatio
 
 Of these totals, some amount of CPU and RAM will be used by the storage subsystem and the PVC daemons themselves, meaning that the total available for virtual machines is slightly less. Generally, each OSD data disk will consume 1 vCPU at load and 1-2GB RAM, so nodes should be sized not only according to the VM workload, but the number of storage disks per node. Additionally the coordinator databases will use additional RAM and CPU resources of up to 1-4GB per node, though there is generally little need to spec coordinators any larger than non-coordinator nodes and the VM automatic node selection process will take used RAM into account by default.
 
-Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all the available resources, however the total cluster utilization should never exceed the "n-1" quantity otherwise automatic failure recovery of 1-node failures may be impacted.
+Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining two hypervisors. Thus, care should be taken not to exceed the "n-1" quantity, plus approximately 15-20%, to prevent overloading other nodes in these cases. When in doubt, it is always safe to treat the "n-1" numbers as the total maximum cluster resource availability and plan accordingly. The general rule can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs".
 
-As an underlying OS, PVC supports only Debian 10 "Buster", and this is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported.
+As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported.
 
 Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems such as Raspbian as well, however this has not been tested by the author.
 
@@ -60,7 +60,7 @@ The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" cluster whereb
 
 The Ceph system is laid out similar to the other daemons. The Ceph Monitor and Manager functions are delegated to the Coordinators over the storage network, with all nodes connecting to these hosts to obtain the CRUSH maps and select OSD disks. OSDs are then distributed on all hosts, including non-coordinator hypervisors, and communicate with clients and each other over the storage network.
 
-PVC Ceph pools make use of the replication mechanism of Ceph to store multiple copies of each object, thus ensuring that data is always available even when a host is unavailable. Note that, mostly for performance reasons related to rewrites and random I/O, erasure coding is *not* supported in PVC.
+PVC Ceph pools make use of the replication mechanism of Ceph to store multiple copies of each object, thus ensuring that data is always available even when a host is unavailable. Only "replica"-based Ceph redundancy is supported by PVC; erasure coded pools are not supported due to major performance impacts related to rewrites and random I/O.
 
 The default replication level for a new pool is `copies=3, mincopies=2`. This will store 3 copies of each object, with a host-level failure domain, and will allow I/O as long as 2 copies are available. Thus, in a cluster of any size, all data is fully available even if a single host becomes unavailable. It will however use 3x the space for each piece of data stored, which must be considered when sizing the disk space for the cluster: a pool in this configuration, running on 3 nodes each with a single 400GB disk, will effectively have 400GB of total space available for use. Additionally, new disks must be added in groups of 3 spread across the nodes in order to be able to take advantage of the additional space, since each write will require creating 3 copies across each of the 3 hosts.
 
@@ -70,13 +70,13 @@ Replication levels cannot be changed within PVC once a pool is created, however 
 
 ## Physical network considerations
 
-At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as vLANs. PVC is be able to support configurations without 802.1q vLAN support using multiple physical interfaces and no bridged client networks, but this is strongly discouraged.
+At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks are be configured as 802.3q vLANs. PVC is be able to support configurations without 802.1q vLAN support using multiple physical interfaces and no bridged client networks, but this is strongly discouraged; the switches chosen for the cluster should include these requirements as a minimum.
 
 More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance. See the [Example Configurations](#example-configurations) section for some examples.
 
 ## Network Layout: Considering the required networks
 
-A PVC cluster needs, at minimum, 3 networks in order to function properly. Each of the three networks and its function is detailed below. An additional two sections cover the two kinds of client networks and the considerations for them.
+A PVC cluster needs several different networks to operate properly; they are described in detail below and the administrator should ensure they account for all the required networks when planning the cluster.
 
 ### PVC system networks
 
@@ -126,13 +126,13 @@ Generally the cluster network should be completely separate from the upstream ne
 
 #### Storage: Connecting Ceph OSD with each other
 
-The storage network is an unrouted private network used by the PVC node storage OSDs to communicated with each other, without using the main cluster network and introducing potentially large amounts of traffic there.
+The storage network is an unrouted private network used by the PVC node storage OSDs to communicated with each other, for Ceph management functionality, and for QEMU-to-Ceph disk access, without using the main cluster network and introducing potentially large amounts of traffic there.
 
-The floating IP address in the storage network can be used as a single point of communication with the active primary node.
+The floating IP address in the storage network can be used as a single point of communication with the active primary node, though this will generally be of little use.
 
 Nodes in this network are generally assigned IPs automatically based on their node number (e.g. node1 at `.1`, node2 at `.2`, etc.). The network should be large enough to include all nodes sequentially.
 
-The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth.
+The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth. If the administrator does choose to colocate these networks, they may also share the same IP address, thus eliminating any distinction between the Cluster and Storage networks. The PVC software handles this natively when the Cluster and Storage IPs of a node are identical.
 
 ### PVC client networks
 
