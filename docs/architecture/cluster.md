@@ -48,11 +48,11 @@ The following table provides bare-minimum, recommended, and optimal specificatio
 
 Of these totals, some amount of CPU and RAM will be used by the storage subsystem and the PVC daemons themselves, meaning that the total available for virtual machines is slightly less. Generally, each OSD data disk will consume 1 vCPU at load and 1-2GB RAM, so nodes should be sized not only according to the VM workload, but the number of storage disks per node. Additionally the coordinator databases will use additional RAM and CPU resources of up to 1-4GB per node, though there is generally little need to spec coordinators any larger than non-coordinator nodes and the VM automatic node selection process will take used RAM into account by default.
 
-Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining two hypervisors. Thus, care should be taken not to exceed the "n-1" quantity, plus approximately 15-20%, to prevent overloading other nodes in these cases. When in doubt, it is always safe to treat the "n-1" numbers as the total maximum cluster resource availability and plan accordingly. The general rule can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs".
+Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining hypervisors. Thus, care should be taken not to exceed the "n-1" quantity, plus approximately 15-20%, to prevent overloading other nodes in these cases. When in doubt, it is always safer to treat the "n-1" numbers as the total maximum cluster resource availability and plan accordingly. The general rule for available resource capacity planning can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs" for a 3-node cluster.
 
-As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported.
+As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and an update version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 "Buster".
 
-Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems such as Raspbian as well, however this has not been tested by the author.
+Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author.
 
 ## Storage Layout: Ceph and OSDs
 
@@ -60,9 +60,11 @@ The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" cluster whereb
 
 The Ceph system is laid out similar to the other daemons. The Ceph Monitor and Manager functions are delegated to the Coordinators over the storage network, with all nodes connecting to these hosts to obtain the CRUSH maps and select OSD disks. OSDs are then distributed on all hosts, including non-coordinator hypervisors, and communicate with clients and each other over the storage network.
 
+Disks must be balanced across all nodes. Therefore, adding 1 disk to 1 node is not sufficient; 1 disk must be added to all nodes at the same time for the available space to increase. Ideally, disk sizes should also be identical across all storage disks, though the weight of each disk can be configured when added to the cluster. Generally speaking, fewer larger disks are preferable to many smaller disks to minimize storage resource utilization, however slightly more storage performance can be gained from using many small disks; the administrator should therefore always aim to choose the biggest disks they can and grow by adding more identical disks as space or performance needs grow.
+
 PVC Ceph pools make use of the replication mechanism of Ceph to store multiple copies of each object, thus ensuring that data is always available even when a host is unavailable. Only "replica"-based Ceph redundancy is supported by PVC; erasure coded pools are not supported due to major performance impacts related to rewrites and random I/O.
 
-The default replication level for a new pool is `copies=3, mincopies=2`. This will store 3 copies of each object, with a host-level failure domain, and will allow I/O as long as 2 copies are available. Thus, in a cluster of any size, all data is fully available even if a single host becomes unavailable. It will however use 3x the space for each piece of data stored, which must be considered when sizing the disk space for the cluster: a pool in this configuration, running on 3 nodes each with a single 400GB disk, will effectively have 400GB of total space available for use. Additionally, new disks must be added in groups of 3 spread across the nodes in order to be able to take advantage of the additional space, since each write will require creating 3 copies across each of the 3 hosts.
+The default replication level for a new pool is `copies=3, mincopies=2`. This will store 3 copies of each object, with a host-level failure domain, and will allow I/O as long as 2 copies are available. Thus, in a cluster of any size, all data is fully available even if a single host becomes unavailable. It will however use 3x the space for each piece of data stored, which must be considered when sizing the disk space for the cluster: a pool in this configuration, running on 3 nodes each with a single 400GB disk, will effectively have 400GB of total space available for use. As mentioned above, new disks must also be added in groups across nodes equal to the total number of `copies` to ensure new space is usable.
 
 Non-default values can also be set at pool creation time. For instance, one could create a `copies=3, mincopies=1` pool, which would allow I/O with two hosts down but leaves the cluster susceptible to a write hole should a disk fail in this state. Alternatively, for more resilience, one could create a `copies=4, mincopies=2` pool, which will allow 2 hosts to fail without a write hole, but would consume 4x the space for each piece of data stored and require new disks to be added in groups of 4 instead. Practically any combination of values is possible, however these 3 are the most relevant for most use-cases, and for most, especially small, clusters, the default is sufficient to provide solid redundancy and guard against host failures until the administrator can respond.
 
@@ -70,9 +72,13 @@ Replication levels cannot be changed within PVC once a pool is created, however 
 
 ## Physical network considerations
 
-At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks are be configured as 802.3q vLANs. PVC is be able to support configurations without 802.1q vLAN support using multiple physical interfaces and no bridged client networks, but this is strongly discouraged; the switches chosen for the cluster should include these requirements as a minimum.
+At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks are configured as 802.3q vLANs. PVC is be able to support configurations without 802.1q vLAN support using multiple physical interfaces and no bridged client networks, but this is strongly discouraged due to the added complexity this introduces; the switches chosen for the cluster should include these requirements as a minimum.
 
 More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance. See the [Example Configurations](#example-configurations) section for some examples.
+
+Only Ethernet networks are supported by PVC. More exotic interconnects such as Infiniband are not supported by default, and must be manually set up with Ethernet (e.g. EoIB) layers on top to be usable with PVC.
+
+PVC manages the IP addressing of all nodes itself and creates the required addresses during node daemon startup; thus, the on-boot network configuration of each interface should be set to "manual" with no IP addresses configured.
 
 ## Network Layout: Considering the required networks
 
@@ -82,9 +88,9 @@ A PVC cluster needs several different networks to operate properly; they are des
 
 #### Upstream: Connecting the nodes to the wider world
 
-The upstream network functions as the main upstream for the cluster nodes, providing Internet access and a way to route managed client network traffic out of the cluster. In most deployments, this should be an RFC1918 private subnet with an upstream router which can perform NAT translation and firewalling as required, both for the cluster nodes themselves, but also for the RFC1918 managed client networks.
+The upstream network functions as the main upstream for the cluster nodes, providing Internet access and a way to route managed client network traffic out of the cluster. In most deployments, this should be an RFC1918 private subnet with an upstream router which can perform NAT translation and firewalling as required, both for the cluster nodes themselves, and also for any RFC1918 managed client networks.
 
-The floating IP address in the cluster network can be used as a single point of communication with the active primary node, for instance to access the DNS aggregator instance or the API if configured. For this reason the network should generally be protected from unauthorized access via a firewall.
+The floating IP address in the cluster network can be used as a single point of communication with the active primary node, for instance to access the DNS aggregator instance or the management API. PVC provides only limited access control mechanisms to the API interface, so the upstream network should always be protected by a firewall; running PVC directly accessible on the Internet is strongly discouraged and may post a serious security risk, and all access should be restricted to the smallest possible set of remote systems.
 
 Nodes in this network are generally assigned static IP addresses which are configured at node install time and in the [Ansible deployment configuration](/manuals/ansible).
 
@@ -124,7 +130,7 @@ Nodes in this network are generally assigned IPs automatically based on their no
 
 Generally the cluster network should be completely separate from the upstream network, either a separate physical interface (or set of bonded interfaces) or a dedicated vLAN on an underlying physical device, but they can be collocated if required.
 
-#### Storage: Connecting Ceph OSD with each other
+#### Storage: Connecting Ceph daemons with each other and with OSDs
 
 The storage network is an unrouted private network used by the PVC node storage OSDs to communicated with each other, for Ceph management functionality, and for QEMU-to-Ceph disk access, without using the main cluster network and introducing potentially large amounts of traffic there.
 
@@ -142,11 +148,15 @@ The first type of client network is the unmanaged bridged network. These network
 
 With this client network type, PVC does no management of the network. This is left entirely to the administrator. It requires switch support and the configuration of the vLANs on the switchports of each node's physical interfaces before enabling the network.
 
+Generally, the same physical network interface will underly both the cluster networks as well as bridged client networks. PVC does however support specifying a separate physical device for bridged client networks, for instance to separate these networks onto a different physical interface from the main cluster networks.
+
 #### VXLAN (managed) Client Networks
 
 The second type of client network is the managed VXLAN network. These networks make use of BGP EVPN, managed by route reflection on the coordinators, to create virtual layer 2 Ethernet tunnels between all nodes in the cluster. VXLANs are then run on top of these virtual layer 2 tunnels, with the active primary PVC node providing routing, DHCP, and DNS functionality to the network via a single IP address.
 
-With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's physical interfaces, as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network interface of the active primary coordinator node. NOTE: This may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when sizing the cluster network.
+With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's physical interfaces, as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network interface of the active primary coordinator node.
+
+NOTE: These networks may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when deciding whether to use managed or bridged networks and properly evaluate the inter-network traffic requirements.
 
 #### Other Client Networks
 
@@ -154,18 +164,18 @@ Future PVC versions may support other client network types, such as direct-routi
 
 ## Node Layout: Considering how nodes are laid out
 
-A production-grade PVC cluster requires 3 nodes running the PVC Daemon software. 1-node clusters are supported for very small clusters, home labs, and testing, but provide no redundancy; they should not be used in production situations.
+A production-grade PVC cluster requires at least 3 nodes running the PVC Daemon software. 1-node clusters are supported for very small clusters, home labs, and testing, but provide no redundancy; they should not be used in production situations.
 
 ### Node Functions: Coordinators versus Hypervisors
 
-Within PVC, a given node can have one of two main functions: it can be a "Coordinator" or a "Hypervisor".
+Within PVC, a given node can have one of two main functions: "Coordinator" or "Hypervisor".
 
 #### Coordinators
 
 Coordinators are a special set of 3 or 5 nodes with additional functionality. The coordinator nodes run, in addition to the PVC software itself, a number of databases and additional functions which are required by the whole cluster. An odd number of coordinators is *always* required to maintain quorum, though there are diminishing returns when creating more than 3. These additional functions are:
 
-0. The Zookeeper database containing the cluster state and configuration
-0. The DNS aggregation Patroni PostgreSQL database containing DNS records for all client networks
+0. The Zookeeper database cluster containing the cluster state and configuration
+0. The Patroni PostgreSQL database cluster containing DNS records for managed networks and provisioning configurations
 0. The FRR EBGP route reflectors and upstream BGP peers
 
 In addition to these functions, coordinators can usually also run all other PVC node functions.
@@ -193,11 +203,13 @@ PVC supports geographic redundancy of nodes in order to facilitate disaster reco
 
 When using geographic redundancy, there are several caveats to keep in mind:
 
-* The Ceph storage subsystem is latency-sensitive. With the default replication configuration, at least 2 writes must succeed for the write to return a success, so the total write latency of a write on any system may be equal to the maximum latency between any two nodes. It is recommended to keep all PVC nodes as "close" latency-wise as possible or storage performance may suffer.
+* The Ceph storage subsystem is latency-sensitive. With the default replication configuration, at least 2 writes must succeed for the write to return a success, so the total write latency of a write on any system will be equal to the maximum latency between any two nodes. It is recommended to keep all PVC nodes as "close" as possible latency-wise or storage performance may suffer.
 
 * The inter-node PVC networks must be layer-2 networks (broadcast domains). These networks must be spanned to all nodes in all locations.
 
-* The number of sites and positioning of coordinators at those sites is important. A majority (at least 2 in a 3-coordinator cluster, or 3 in a 5-coordinator) of coordinators must be able to reach each other in a failure scenario for the cluster as a whole to remain functional. Thus, configurations such as 2 + 1 or 3 + 2 split across 2 sites do *not* provide full redundancy, and the whole cluster will be down if the majority site is down. It is thus recommended to always have an odd number of sites to match the odd number of coordinators, for instance a 1 + 1 + 1 or 2 + 2 + 1 configuration. Also note that all hypervisors much be able to reach the majority coordinator group or their storage will be impacted as well.
+* The number of sites and positioning of coordinators at those sites is important. A majority (at least 2 in a 3-coordinator cluster, or 3 in a 5-coordinator) of coordinators must be able to reach each other in a failure scenario for the cluster as a whole to remain functional. Thus, configurations such as 2 + 1 or 3 + 2 splits across 2 sites do *not* provide full redundancy, and the whole cluster will be down if the majority site is down. It is thus recommended to always have an odd number of sites to match the odd number of coordinators, for instance a 1 + 1 + 1 or 2 + 2 + 1 configuration. Also note that all hypervisors much be able to reach the majority coordinator group or their storage will be impacted as well.
+
+* Even if the PVC software itself is in an unmanageable state, VMs will continue to run if at all possible. However, since the storage subsystem makes use of the same quorum, losing more than half of the nodes will very likely result in storage interruption as well, which will affect running VMs.
 
 If these requirements cannot be fulfilled, it may be best to have separate PVC clusters at each site and handle service redundancy at a higher layer to avoid a major disruption.
 
