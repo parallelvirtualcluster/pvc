@@ -351,6 +351,7 @@ else:
     fmt_end = ''
     fmt_bold = ''
     fmt_blue = ''
+    fmt_cyan = ''
     fmt_green = ''
     fmt_yellow = ''
     fmt_red = ''
