@@ -549,7 +549,8 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
         full_dhcp_list = getNetworkDHCPReservations(zk_conn, net_vni)
         reservations = True
     else:
-        full_dhcp_list = getNetworkDHCPLeases(zk_conn, net_vni)
+        full_dhcp_list = getNetworkDHCPReservations(zk_conn, net_vni)
+        full_dhcp_list += getNetworkDHCPLeases(zk_conn, net_vni)
         reservations = False
 
     if limit:
@@ -579,7 +580,6 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
         if valid_lease:
             dhcp_list.append(getDHCPLeaseInformation(zk_conn, net_vni, lease))
 
-    #output_string = formatDHCPLeaseList(zk_conn, net_vni, dhcp_list, reservations=reservations)
     return True, dhcp_list
 
 def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
