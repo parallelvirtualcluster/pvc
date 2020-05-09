@@ -168,11 +168,19 @@ def getNetworkInformation(zk_conn, vni):
     return network_information
 
 def getDHCPLeaseInformation(zk_conn, vni, mac_address):
-    hostname = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/hostname'.format(vni, mac_address))
-    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/ipaddr'.format(vni, mac_address))
+    # Check whether this is a dynamic or static lease
     try:
-        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}/expiry'.format(vni, mac_address))
-    except:
+        zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}'.format(vni, mac_address))
+        type_key = 'dhcp4_leases'
+    except kazoo.exceptions.NoNodeError:
+        zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(vni, mac_address))
+        type_key = 'dhcp4_reservations'
+        
+    hostname = zkhandler.readdata(zk_conn, '/networks/{}/{}/{}/hostname'.format(vni, type_key, mac_address))
+    ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/{}/{}/ipaddr'.format(vni, type_key, mac_address))
+    if type_key == 'dhcp4_leases':
+        timestamp = zkhandler.readdata(zk_conn, '/networks/{}/{}/{}/expiry'.format(vni, type_key, mac_address))
+    else:
         timestamp = 'static'
 
     # Construct a data structure to represent the data
@@ -565,7 +573,6 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
-
 
     for lease in full_dhcp_list:
         valid_lease = False
