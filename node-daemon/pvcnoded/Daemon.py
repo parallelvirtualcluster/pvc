@@ -1183,8 +1183,8 @@ def update_zookeeper():
             retcode, stdout, stderr = common.run_os_command('ceph osd df --format json', timeout=1)
             try:
                 osd_df_raw = json.loads(stdout)['nodes']
-            except:
-                logger.out('Failed to parse OSD list', state='w')
+            except Exception as e:
+                logger.out('Failed to parse OSD list: {}'.format(e), state='w')
                 osd_df_raw = []
 
             if debug:
