@@ -2047,7 +2047,7 @@ class API_Network_Lease_Root(Resource):
         return api_helper.net_dhcp_add(
             vni,
             reqargs.get('ipaddress', None),
-            reqargs.get('macaddres', None),
+            reqargs.get('macaddress', None),
             reqargs.get('hostname', None)
         )
 api.add_resource(API_Network_Lease_Root, '/network/<vni>/lease')
