@@ -339,7 +339,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zk_conn.ChildrenWatch('/networks/{}/dhcp_reservations'.format(self.vni))
+        @self.zk_conn.ChildrenWatch('/networks/{}/dhcp4_reservations'.format(self.vni))
         def watch_network_dhcp_reservations(new_reservations, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -392,7 +392,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
                 ipaddr = zkhandler.readdata(
                     self.zk_conn,
-                    '/networks/{}/dhcp_reservations/{}/ipaddr'.format(
+                    '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(
                         self.vni,
                         reservation
                     )
