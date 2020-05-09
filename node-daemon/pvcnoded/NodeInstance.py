@@ -639,35 +639,36 @@ class NodeInstance(object):
 
             self.logger.out('Selecting target to migrate VM "{}"'.format(dom_uuid), state='i')
 
-            target_node = common.findTargetNode(self.zk_conn, self.config, dom_uuid)
-
             # Don't replace the previous node if the VM is already migrated
             if zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid)):
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
             else:
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
 
+            target_node = common.findTargetNode(self.zk_conn, self.config, dom_uuid)
+            if target_node == current_node:
+                target_node = None
+
             if target_node is None:
                 self.logger.out('Failed to find migration target for VM "{}"; shutting down and setting autostart flag'.format(dom_uuid), state='e')
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/node_autostart'.format(dom_uuid): 'True' })
-
-                # Wait for the VM to shut down
-                while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['shutdown']:
-                    time.sleep(0.1)
-
-                continue
-
-            self.logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
-            zkhandler.writedata(self.zk_conn, {
-                '/domains/{}/state'.format(dom_uuid): 'migrate',
-                '/domains/{}/node'.format(dom_uuid): target_node,
-                '/domains/{}/lastnode'.format(dom_uuid): current_node
-            })
+            else:
+                self.logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
+                zkhandler.writedata(self.zk_conn, {
+                    '/domains/{}/state'.format(dom_uuid): 'migrate',
+                    '/domains/{}/node'.format(dom_uuid): target_node,
+                    '/domains/{}/lastnode'.format(dom_uuid): current_node
+                })
 
             # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
+            ticks = 0
             while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
-                time.sleep(0.1)
+                ticks += 1
+                if ticks > 600:
+                    # Abort if we've waited for 120 seconds, the VM is messed and just continue
+                    break
+                time.sleep(0.2)
 
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.name): '' })
         zkhandler.writedata(self.zk_conn, { '/nodes/{}/domainstate'.format(self.name): 'flushed' })
