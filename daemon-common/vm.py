@@ -248,9 +248,29 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
     dom_name = getDomainName(zk_conn, domain)
 
+    # Parse and valiate the XML
+    try:
+        parsed_xml = lxml.objectify.fromstring(new_vm_config)
+    except:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    # Obtain the RBD disk list using the common functions
+    ddisks = common.getDomainDisks(parsed_xml)
+    rbd_list = []
+    for disk in ddisks:
+        if disk['type'] == 'rbd':
+            rbd_list.append(disk['name'])
+
+    # Join the RBD list
+    if isinstance(rbd_list, list) and rbd_list:
+        formatted_rbd_list = ','.join(rbd_list)
+    else:
+        formatted_rbd_list = ''
+
     # Add the modified config to Zookeeper
     zk_data = {
         '/domains/{}'.format(dom_uuid): dom_name,
+        '/domains/{}/rbdlist'.format(dom_uuid): formatted_rbd_list,
         '/domains/{}/xml'.format(dom_uuid): new_vm_config
     }
     zkhandler.writedata(zk_conn, zk_data)
