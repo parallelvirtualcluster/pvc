@@ -451,7 +451,7 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
         )
     )
 
-    for osd_information in osd_list:
+    for osd_information in sorted(osd_list, key = lambda x: int(x['id'])):
         try:
             # If this happens, the node hasn't checked in fully yet, so just ignore it
             if osd_information['stats']['node'] == '|':
@@ -522,7 +522,7 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
             )
         )
 
-    return '\n'.join(sorted(osd_list_output))
+    return '\n'.join(osd_list_output)
 
 
 #
@@ -752,7 +752,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         )
     )
 
-    for pool_information in pool_list:
+    for pool_information in sorted(pool_list, key = lambda x: int(x['id'])):
         # Format the output header
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
@@ -800,7 +800,8 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
             )
         )
 
-    return '\n'.join(sorted(pool_list_output))
+    return '\n'.join(pool_list_output)
+
 
 #
 # Volume functions
@@ -1042,7 +1043,7 @@ def format_list_volume(volume_list):
         )
     )
 
-    for volume_information in volume_list:
+    for volume_information in sorted(volume_list, key = lambda x: int(x['id'])):
         volume_list_output.append('{bold}\
 {volume_name: <{volume_name_length}} \
 {volume_pool: <{volume_pool_length}} \
@@ -1071,7 +1072,7 @@ def format_list_volume(volume_list):
             )
         )
 
-    return '\n'.join(sorted(volume_list_output))
+    return '\n'.join(volume_list_output)
 
 
 #
@@ -1190,10 +1191,10 @@ def format_list_snapshot(snapshot_list):
     snapshot_volume_length = 7
     snapshot_pool_length = 5
 
-    for snapshot in snapshot_list:
-        snapshot_name = snapshot['snapshot']
-        snapshot_volume = snapshot['volume']
-        snapshot_pool = snapshot['pool']
+    for snapshot_information in snapshot_list:
+        snapshot_name = snapshot_information['snapshot']
+        snapshot_volume = snapshot_information['volume']
+        snapshot_pool = snapshot_information['pool']
 
         # Set the Snapshot name length
         _snapshot_name_length = len(snapshot_name) + 1
@@ -1227,10 +1228,10 @@ def format_list_snapshot(snapshot_list):
         )
     )
 
-    for snapshot in snapshot_list:
-        snapshot_name = snapshot['snapshot']
-        snapshot_volume = snapshot['volume']
-        snapshot_pool = snapshot['pool']
+    for snapshot_information in sorted(snapshot_list, key = lambda x: int(x['id'])):
+        snapshot_name = snapshot_information['snapshot']
+        snapshot_volume = snapshot_information['volume']
+        snapshot_pool = snapshot_information['pool']
         snapshot_list_output.append('{bold}\
 {snapshot_name: <{snapshot_name_length}} \
 {snapshot_volume: <{snapshot_volume_length}} \
@@ -1247,4 +1248,4 @@ def format_list_snapshot(snapshot_list):
             )
         )
 
-    return '\n'.join(sorted(snapshot_list_output))
+    return '\n'.join(snapshot_list_output)
