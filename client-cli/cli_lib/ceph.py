@@ -752,7 +752,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         )
     )
 
-    for pool_information in sorted(pool_list, key = lambda x: int(x['id'])):
+    for pool_information in sorted(pool_list, key = lambda x: int(x['stats']['id'])):
         # Format the output header
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
