@@ -1043,7 +1043,7 @@ def format_list_volume(volume_list):
         )
     )
 
-    for volume_information in sorted(volume_list, key = lambda x: int(x['id'])):
+    for volume_information in volume_list:
         volume_list_output.append('{bold}\
 {volume_name: <{volume_name_length}} \
 {volume_pool: <{volume_pool_length}} \
@@ -1072,7 +1072,7 @@ def format_list_volume(volume_list):
             )
         )
 
-    return '\n'.join(volume_list_output)
+    return '\n'.join(sorted(volume_list_output))
 
 
 #
@@ -1228,7 +1228,7 @@ def format_list_snapshot(snapshot_list):
         )
     )
 
-    for snapshot_information in sorted(snapshot_list, key = lambda x: int(x['id'])):
+    for snapshot_information in snapshot_list:
         snapshot_name = snapshot_information['snapshot']
         snapshot_volume = snapshot_information['volume']
         snapshot_pool = snapshot_information['pool']
@@ -1248,4 +1248,4 @@ def format_list_snapshot(snapshot_list):
             )
         )
 
-    return '\n'.join(snapshot_list_output)
+    return '\n'.join(sorted(snapshot_list_output))
