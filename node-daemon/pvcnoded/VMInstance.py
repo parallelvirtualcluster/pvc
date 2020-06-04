@@ -108,6 +108,7 @@ class VMInstance(object):
         self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        self.lastnode = zkhandler.readdata(self.zkconn, '/domains/{}/lastnode'.format(self.domuuid))
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
         except:
@@ -146,6 +147,9 @@ class VMInstance(object):
 
     def getnode(self):
         return self.node
+
+    def getlastnode(self):
+        return self.lastnode
 
     def getdom(self):
         return self.dom
@@ -368,6 +372,11 @@ class VMInstance(object):
 
     # Migrate the VM to a target host
     def migrate_vm(self):
+        # Don't try to migrate a node to itself, set back to start
+        if self.node == self.lastnode:
+            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+            return
+
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}:'.format(self.domuuid))
 
@@ -469,6 +478,7 @@ class VMInstance(object):
         # Update the current values from zookeeper
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        self.lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
 
         # Check the current state of the VM
         try:
