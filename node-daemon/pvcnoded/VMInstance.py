@@ -375,6 +375,7 @@ class VMInstance(object):
         # Don't try to migrate a node to itself, set back to start
         if self.node == self.lastnode:
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+            zkhandler.writedata(self.zk_conn, { '/domains/{}/lastnode'.format(self.domuuid): '' })
             return
 
         self.inmigrate = True
