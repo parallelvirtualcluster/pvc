@@ -336,6 +336,7 @@ def cluster_req(function):
         if config.get('badcfg', None):
             click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
             exit(1)
+        return function(*args, **kwargs)
     return validate_cluster
 
 
