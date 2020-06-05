@@ -36,6 +36,8 @@ import lxml.etree as etree
 
 from distutils.util import strtobool
 
+from functools import wraps
+
 import cli_lib.ansiprint as ansiprint
 import cli_lib.cluster as pvc_cluster
 import cli_lib.node as pvc_node
@@ -327,6 +329,15 @@ def cluster_list():
             )
         )
 
+# Validate that the cluster is set for a given command
+def cluster_req(function):
+    @wraps(function)
+    def validate_cluster(*args, **kwargs):
+        if config.get('badcfg', None):
+            click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
+            exit(1)
+    return validate_cluster
+
 
 ###############################################################################
 # pvc node
@@ -336,10 +347,6 @@ def cli_node():
     """
     Manage the state of a node in the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc node secondary
@@ -352,6 +359,7 @@ def cli_node():
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for transition to complete before returning.'
 )
+@cluster_req
 def node_secondary(node, wait):
     """
     Take NODE out of primary router mode.
@@ -395,6 +403,7 @@ def node_secondary(node, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for transition to complete before returning.'
 )
+@cluster_req
 def node_primary(node, wait):
     """
     Put NODE into primary router mode.
@@ -438,6 +447,7 @@ def node_primary(node, wait):
 @click.argument(
     'node', default=myhostname
 )
+@cluster_req
 def node_flush(node, wait):
     """
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
@@ -457,6 +467,7 @@ def node_flush(node, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migrations to complete before returning.'
 )
+@cluster_req
 def node_ready(node, wait):
     """
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
@@ -492,6 +503,7 @@ def node_unflush(node, wait):
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
+@cluster_req
 def node_info(node, long_output):
     """
     Show information about node NODE. If unspecified, defaults to this host.
@@ -509,6 +521,7 @@ def node_info(node, long_output):
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def node_list(limit):
     """
     List all nodes; optionally only match names matching regex LIMIT.
@@ -527,10 +540,6 @@ def cli_vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc vm define
@@ -556,6 +565,7 @@ def cli_vm():
 @click.argument(
     'vmconfig', type=click.File()
 )
+@cluster_req
 def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     """
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
@@ -599,6 +609,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_meta(domain, node_limit, node_selector, node_autostart, provisioner_profile):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
@@ -711,6 +722,7 @@ def vm_modify(domain, cfgfile, editor, restart):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def vm_undefine(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
@@ -736,6 +748,7 @@ def vm_undefine(domain, confirm_flag):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def vm_remove(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
@@ -756,6 +769,7 @@ def vm_remove(domain, confirm_flag):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_start(domain):
     """
     Start virtual machine DOMAIN on its configured node. DOMAIN may be a UUID or name.
@@ -775,6 +789,7 @@ def vm_start(domain):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for restart to complete before returning.'
 )
+@cluster_req
 def vm_restart(domain, wait):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -794,6 +809,7 @@ def vm_restart(domain, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for shutdown to complete before returning.'
 )
+@cluster_req
 def vm_shutdown(domain, wait):
     """
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -809,6 +825,7 @@ def vm_shutdown(domain, wait):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_stop(domain):
     """
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -824,6 +841,7 @@ def vm_stop(domain):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_disable(domain):
     """
     Prevent stopped virtual machine DOMAIN from being counted towards cluster health status. DOMAIN may be a UUID or name.
@@ -849,6 +867,7 @@ def vm_disable(domain):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@cluster_req
 def vm_move(domain, target_node, wait):
     """
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
@@ -876,6 +895,7 @@ def vm_move(domain, target_node, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@cluster_req
 def vm_migrate(domain, target_node, force_migrate, wait):
     """
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
@@ -895,6 +915,7 @@ def vm_migrate(domain, target_node, force_migrate, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@cluster_req
 def vm_unmigrate(domain, wait):
     """
     Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
@@ -910,6 +931,7 @@ def vm_unmigrate(domain, wait):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_flush_locks(domain):
     """
     Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in a stopped state before flushing locks.
@@ -933,6 +955,7 @@ def vm_flush_locks(domain):
     '-f', '--follow', 'follow', is_flag=True, default=False,
     help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
 )
+@cluster_req
 def vm_log(domain, lines, follow):
     """
     Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
@@ -957,6 +980,7 @@ def vm_log(domain, lines, follow):
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
+@cluster_req
 def vm_info(domain, long_output):
     """
     Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -974,6 +998,7 @@ def vm_info(domain, long_output):
 @click.argument(
     'domain'
 )
+@cluster_req
 def vm_dump(domain):
     """
     Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
@@ -1008,6 +1033,7 @@ def vm_dump(domain):
     '-r', '--raw', 'raw', is_flag=True, default=False,
     help='Display the raw list of VM names only.'
 )
+@cluster_req
 def vm_list(target_node, target_state, limit, raw):
     """
     List all virtual machines; optionally only match names matching regex LIMIT.
@@ -1028,10 +1054,6 @@ def cli_network():
     """
     Manage the state of a VXLAN network in the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc network add
@@ -1097,6 +1119,7 @@ def cli_network():
 @click.argument(
     'vni'
 )
+@cluster_req
 def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
     """
     Add a new virtual network with VXLAN identifier VNI.
@@ -1179,6 +1202,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
 @click.argument(
     'vni'
 )
+@cluster_req
 def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
@@ -1202,6 +1226,7 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def net_remove(net, confirm_flag):
     """
     Remove an existing virtual network NET; NET must be a VNI.
@@ -1229,6 +1254,7 @@ def net_remove(net, confirm_flag):
     '-l', '--long', 'long_output', is_flag=True, default=False,
     help='Display more detailed information.'
 )
+@cluster_req
 def net_info(vni, long_output):
     """
     Show information about virtual network VNI.
@@ -1246,6 +1272,7 @@ def net_info(vni, long_output):
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def net_list(limit):
     """
     List all virtual networks; optionally only match VNIs or Descriptions matching regex LIMIT.
@@ -1264,10 +1291,6 @@ def net_dhcp():
     """
     Manage host IPv4 DHCP leases of a VXLAN network in the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc network dhcp add
@@ -1285,6 +1308,7 @@ def net_dhcp():
 @click.argument(
     'macaddr'
 )
+@cluster_req
 def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
     Add a new DHCP static reservation of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET must be a VNI.
@@ -1308,6 +1332,7 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def net_dhcp_remove(net, macaddr, confirm_flag):
     """
     Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
@@ -1335,6 +1360,7 @@ def net_dhcp_remove(net, macaddr, confirm_flag):
     '-s', '--static', 'only_static', is_flag=True, default=False,
     help='Show only static leases.'
 )
+@cluster_req
 def net_dhcp_list(net, limit, only_static):
     """
     List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET must be a VNI.
@@ -1353,10 +1379,6 @@ def net_acl():
     """
     Manage firewall ACLs of a VXLAN network in the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc network acl add
@@ -1386,6 +1408,7 @@ def net_acl():
 @click.argument(
     'net'
 )
+@cluster_req
 def net_acl_add(net, direction, description, rule, order):
     """
     Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET must be a VNI.
@@ -1423,6 +1446,7 @@ def net_acl_add(net, direction, description, rule, order):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def net_acl_remove(net, rule, confirm_flag):
     """
     Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
@@ -1454,6 +1478,7 @@ def net_acl_remove(net, rule, confirm_flag):
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def net_acl_list(net, limit, direction):
     """
     List all NFT firewall rules in network NET; optionally only match elements matching description regex LIMIT; NET can be either a VNI or description.
@@ -1482,15 +1507,12 @@ def cli_storage():
     """
     Manage the storage of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc storage status
 ###############################################################################
 @click.command(name='status', short_help='Show storage cluster status.')
+@cluster_req
 def ceph_status():
     """
     Show detailed status of the storage cluster.
@@ -1505,6 +1527,7 @@ def ceph_status():
 # pvc storage util
 ###############################################################################
 @click.command(name='util', short_help='Show storage cluster utilization.')
+@cluster_req
 def ceph_util():
     """
     Show utilization of the storage cluster.
@@ -1523,10 +1546,6 @@ def ceph_osd():
     """
     Manage the Ceph OSDs of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc storage osd add
@@ -1548,6 +1567,7 @@ def ceph_osd():
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def ceph_osd_add(node, device, weight, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
@@ -1573,6 +1593,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def ceph_osd_remove(osdid, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
@@ -1595,6 +1616,7 @@ def ceph_osd_remove(osdid, confirm_flag):
 @click.argument(
     'osdid'
 )
+@cluster_req
 def ceph_osd_in(osdid):
     """
     Set a Ceph OSD with ID OSDID online.
@@ -1610,6 +1632,7 @@ def ceph_osd_in(osdid):
 @click.argument(
     'osdid'
 )
+@cluster_req
 def ceph_osd_out(osdid):
     """
     Set a Ceph OSD with ID OSDID offline.
@@ -1625,6 +1648,7 @@ def ceph_osd_out(osdid):
 @click.argument(
     'osd_property'
 )
+@cluster_req
 def ceph_osd_set(osd_property):
     """
     Set a Ceph OSD property OSD_PROPERTY on the cluster.
@@ -1644,6 +1668,7 @@ def ceph_osd_set(osd_property):
 @click.argument(
     'osd_property'
 )
+@cluster_req
 def ceph_osd_unset(osd_property):
     """
     Unset a Ceph OSD property OSD_PROPERTY on the cluster.
@@ -1663,6 +1688,7 @@ def ceph_osd_unset(osd_property):
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def ceph_osd_list(limit):
     """
     List all Ceph OSDs; optionally only match elements matching ID regex LIMIT.
@@ -1681,10 +1707,6 @@ def ceph_pool():
     """
     Manage the Ceph RBD pools of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc storage pool add
@@ -1704,6 +1726,7 @@ def ceph_pool():
     comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
     """
 )
+@cluster_req
 def ceph_pool_add(name, pgs, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
@@ -1725,6 +1748,7 @@ def ceph_pool_add(name, pgs, replcfg):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def ceph_pool_remove(name, confirm_flag):
     """
     Remove a Ceph RBD pool with name NAME and all volumes on it.
@@ -1747,6 +1771,7 @@ def ceph_pool_remove(name, confirm_flag):
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def ceph_pool_list(limit):
     """
     List all Ceph RBD pools; optionally only match elements matching name regex LIMIT.
@@ -1765,10 +1790,6 @@ def ceph_volume():
     """
     Manage the Ceph RBD volumes of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc storage volume add
@@ -1783,6 +1804,7 @@ def ceph_volume():
 @click.argument(
     'size'
 )
+@cluster_req
 def ceph_volume_add(pool, name, size):
     """
     Add a new Ceph RBD volume with name NAME and size SIZE [in human units, e.g. 1024M, 20G, etc.] to pool POOL.
@@ -1809,6 +1831,7 @@ def ceph_volume_add(pool, name, size):
     default='raw', show_default=True,
     help='The format of the source image.'
 )
+@cluster_req
 def ceph_volume_upload(pool, name, image_format, image_file):
     """
     Upload a disk image file IMAGE_FILE to the RBD volume NAME in pool POOL.
@@ -1840,6 +1863,7 @@ def ceph_volume_upload(pool, name, image_format, image_file):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def ceph_volume_remove(pool, name, confirm_flag):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
@@ -1868,6 +1892,7 @@ def ceph_volume_remove(pool, name, confirm_flag):
 @click.argument(
     'size'
 )
+@cluster_req
 def ceph_volume_resize(pool, name, size):
     """
     Resize an existing Ceph RBD volume with name NAME in pool POOL to size SIZE [in human units, e.g. 1024M, 20G, etc.].
@@ -1888,6 +1913,7 @@ def ceph_volume_resize(pool, name, size):
 @click.argument(
     'new_name'
 )
+@cluster_req
 def ceph_volume_rename(pool, name, new_name):
     """
     Rename an existing Ceph RBD volume with name NAME in pool POOL to name NEW_NAME.
@@ -1908,6 +1934,7 @@ def ceph_volume_rename(pool, name, new_name):
 @click.argument(
     'new_name'
 )
+@cluster_req
 def ceph_volume_clone(pool, name, new_name):
     """
     Clone a Ceph RBD volume with name NAME in pool POOL to name NEW_NAME in pool POOL.
@@ -1927,6 +1954,7 @@ def ceph_volume_clone(pool, name, new_name):
     default=None, show_default=True,
     help='Show volumes from this pool only.'
 )
+@cluster_req
 def ceph_volume_list(limit, pool):
     """
     List all Ceph RBD volumes; optionally only match elements matching name regex LIMIT.
@@ -1945,10 +1973,6 @@ def ceph_volume_snapshot():
     """
     Manage the Ceph RBD volume snapshots of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc storage volume snapshot add
@@ -1963,6 +1987,7 @@ def ceph_volume_snapshot():
 @click.argument(
     'name'
 )
+@cluster_req
 def ceph_volume_snapshot_add(pool, volume, name):
     """
     Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
@@ -1987,6 +2012,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
 @click.argument(
     'new_name'
 )
+@cluster_req
 def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     Rename an existing Ceph RBD volume snapshot with name NAME to name NEW_NAME for volume VOLUME in pool POOL.
@@ -2012,6 +2038,7 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     """
     Remove a Ceph RBD volume snapshot with name NAME from volume VOLUME in pool POOL.
@@ -2044,6 +2071,7 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     default=None, show_default=True,
     help='Show snapshots from this volume only.'
 )
+@cluster_req
 def ceph_volume_snapshot_list(pool, volume, limit):
     """
     List all Ceph RBD volume snapshots; optionally only match elements matching name regex LIMIT.
@@ -2063,10 +2091,6 @@ def cli_provisioner():
     """
     Manage the PVC provisioner.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template
@@ -2076,10 +2100,6 @@ def provisioner_template():
     """
     Manage the PVC provisioner template system.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 
 ###############################################################################
@@ -2089,6 +2109,7 @@ def provisioner_template():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_template_list(limit):
     """
     List all templates in the PVC cluster provisioner.
@@ -2106,10 +2127,6 @@ def provisioner_template_system():
     """
     Manage the PVC provisioner system templates.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template system list
@@ -2118,6 +2135,7 @@ def provisioner_template_system():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_template_system_list(limit):
     """
     List all system templates in the PVC cluster provisioner.
@@ -2175,6 +2193,7 @@ def provisioner_template_system_list(limit):
     is_flag=True, default=False,
     help='Autostart VM with their parent Node on first/next boot.'
 )
+@cluster_req
 def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
     """
     Add a new system template NAME to the PVC cluster provisioner.
@@ -2242,6 +2261,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     is_flag=True, default=None,
     help='Autostart VM with their parent Node on first/next boot.'
 )
+@cluster_req
 def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
     """
     Add a new system template NAME to the PVC cluster provisioner.
@@ -2271,6 +2291,7 @@ def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind,
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_template_system_remove(name, confirm_flag):
     """
     Remove system template NAME from the PVC cluster provisioner.
@@ -2293,10 +2314,6 @@ def provisioner_template_network():
     """
     Manage the PVC provisioner network templates.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template network list
@@ -2305,6 +2322,7 @@ def provisioner_template_network():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_template_network_list(limit):
     """
     List all network templates in the PVC cluster provisioner.
@@ -2326,6 +2344,7 @@ def provisioner_template_network_list(limit):
     default=None,
     help='Use this template for MAC addresses.'
 )
+@cluster_req
 def provisioner_template_network_add(name, mac_template):
     """
     Add a new network template to the PVC cluster provisioner.
@@ -2375,6 +2394,7 @@ def provisioner_template_network_add(name, mac_template):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_template_network_remove(name, confirm_flag):
     """
     Remove network template MAME from the PVC cluster provisioner.
@@ -2396,10 +2416,6 @@ def provisioner_template_network_vni():
     """
     Manage the network VNIs in PVC provisioner network templates.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template network vni add
@@ -2411,6 +2427,7 @@ def provisioner_template_network_vni():
 @click.argument(
     'vni'
 )
+@cluster_req
 def provisioner_template_network_vni_add(name, vni):
     """
     Add a new network VNI to network template NAME.
@@ -2437,6 +2454,7 @@ def provisioner_template_network_vni_add(name, vni):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     """
     Remove network VNI from network template NAME.
@@ -2459,10 +2477,6 @@ def provisioner_template_storage():
     """
     Manage the PVC provisioner storage templates.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template storage list
@@ -2471,6 +2485,7 @@ def provisioner_template_storage():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_template_storage_list(limit):
     """
     List all storage templates in the PVC cluster provisioner.
@@ -2487,6 +2502,7 @@ def provisioner_template_storage_list(limit):
 @click.argument(
     'name'
 )
+@cluster_req
 def provisioner_template_storage_add(name):
     """
     Add a new storage template to the PVC cluster provisioner.
@@ -2509,6 +2525,7 @@ def provisioner_template_storage_add(name):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_template_storage_remove(name, confirm_flag):
     """
     Remove storage template NAME from the PVC cluster provisioner.
@@ -2530,10 +2547,6 @@ def provisioner_template_storage_disk():
     """
     Manage the disks in PVC provisioner storage templates.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner template storage disk add
@@ -2575,6 +2588,7 @@ def provisioner_template_storage_disk():
     default=None,
     help='The target Linux mountpoint of the disk; requires a filesystem.'
 )
+@cluster_req
 def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size, filesystem, fsargs, mountpoint):
     """
     Add a new DISK to storage template NAME.
@@ -2624,6 +2638,7 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
     """
     Remove DISK from storage template NAME.
@@ -2648,10 +2663,6 @@ def provisioner_userdata():
     """
     Manage userdata documents in the PVC provisioner.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner userdata list
@@ -2665,6 +2676,7 @@ def provisioner_userdata():
     is_flag=True, default=False,
     help='Show all lines of the document instead of first 4.'
 )
+@cluster_req
 def provisioner_userdata_list(limit, full):
     """
     List all userdata documents in the PVC cluster provisioner.
@@ -2685,6 +2697,7 @@ def provisioner_userdata_list(limit, full):
 @click.argument(
     'name'
 )
+@cluster_req
 def provisioner_userdata_show(name):
     """
     Show the full contents of userdata document NAME.
@@ -2702,6 +2715,7 @@ def provisioner_userdata_show(name):
 @click.argument(
     'filename', type=click.File()
 )
+@cluster_req
 def provisioner_userdata_add(name, filename):
     """
     Add a new userdata document NAME from file FILENAME.
@@ -2732,6 +2746,7 @@ def provisioner_userdata_add(name, filename):
 @click.argument(
     'filename', type=click.File(), default=None, required=False
 )
+@cluster_req
 def provisioner_userdata_modify(name, filename, editor):
     """
     Modify existing userdata document NAME, either in-editor or with replacement FILE.
@@ -2798,6 +2813,7 @@ def provisioner_userdata_modify(name, filename, editor):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_userdata_remove(name, confirm_flag):
     """
     Remove userdata document NAME from the PVC cluster provisioner.
@@ -2820,10 +2836,6 @@ def provisioner_script():
     """
     Manage scripts in the PVC provisioner.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner script list
@@ -2837,6 +2849,7 @@ def provisioner_script():
     is_flag=True, default=False,
     help='Show all lines of the document instead of first 4.'
 )
+@cluster_req
 def provisioner_script_list(limit, full):
     """
     List all scripts in the PVC cluster provisioner.
@@ -2857,6 +2870,7 @@ def provisioner_script_list(limit, full):
 @click.argument(
     'name'
 )
+@cluster_req
 def provisioner_script_show(name):
     """
     Show the full contents of script document NAME.
@@ -2874,6 +2888,7 @@ def provisioner_script_show(name):
 @click.argument(
     'filename', type=click.File()
 )
+@cluster_req
 def provisioner_script_add(name, filename):
     """
     Add a new script NAME from file FILENAME.
@@ -2904,6 +2919,7 @@ def provisioner_script_add(name, filename):
 @click.argument(
     'filename', type=click.File(), default=None, required=False
 )
+@cluster_req
 def provisioner_script_modify(name, filename, editor):
     """
     Modify existing script NAME, either in-editor or with replacement FILE.
@@ -2970,6 +2986,7 @@ def provisioner_script_modify(name, filename, editor):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_script_remove(name, confirm_flag):
     """
     Remove script NAME from the PVC cluster provisioner.
@@ -2993,10 +3010,6 @@ def provisioner_ova():
     """
     Manage ovas in the PVC provisioner.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner ova list
@@ -3005,6 +3018,7 @@ def provisioner_ova():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_ova_list(limit):
     """
     List all OVA images in the PVC cluster provisioner.
@@ -3029,6 +3043,7 @@ def provisioner_ova_list(limit):
     required=True,
     help='The storage pool for the OVA images.'
 )
+@cluster_req
 def provisioner_ova_upload(name, filename, pool):
     """
     Upload a new OVA image NAME from FILENAME.
@@ -3064,6 +3079,7 @@ def provisioner_ova_upload(name, filename, pool):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_ova_remove(name, confirm_flag):
     """
     Remove OVA image NAME from the PVC cluster provisioner.
@@ -3086,10 +3102,6 @@ def provisioner_profile():
     """
     Manage profiles in the PVC provisioner.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc provisioner profile list
@@ -3098,6 +3110,7 @@ def provisioner_profile():
 @click.argument(
     'limit', default=None, required=False
 )
+@cluster_req
 def provisioner_profile_list(limit):
     """
     List all profiles in the PVC cluster provisioner.
@@ -3149,6 +3162,7 @@ def provisioner_profile_list(limit):
     default=[], multiple=True,
     help='Additional argument to the script install() function in key=value format.'
 )
+@cluster_req
 def provisioner_profile_add(name, profile_type, system_template, network_template, storage_template, userdata, script, ova, script_args):
     """
     Add a new provisioner profile NAME.
@@ -3209,6 +3223,7 @@ def provisioner_profile_add(name, profile_type, system_template, network_templat
     default=None, multiple=True,
     help='Additional argument to the script install() function in key=value format.'
 )
+@cluster_req
 def provisioner_profile_modify(name, system_template, network_template, storage_template, userdata, script, delete_script_args, script_args):
     """
     Modify existing provisioner profile NAME.
@@ -3244,6 +3259,7 @@ def provisioner_profile_modify(name, system_template, network_template, storage_
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def provisioner_profile_remove(name, confirm_flag):
     """
     Remove profile NAME from the PVC cluster provisioner.
@@ -3283,6 +3299,7 @@ def provisioner_profile_remove(name, confirm_flag):
     is_flag=True, default=False,
     help='Wait for provisioning to complete, showing progress'
 )
+@cluster_req
 def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
     """
     Create a new VM NAME with profile PROFILE.
@@ -3355,6 +3372,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
 @click.argument(
     'job', required=False, default=None
 )
+@cluster_req
 def provisioner_status(job):
     """
     Show status of provisioner job JOB or a list of jobs.
@@ -3373,15 +3391,12 @@ def cli_maintenance():
     """
     Manage the maintenance mode of the PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
 ###############################################################################
 # pvc maintenance on
 ###############################################################################
 @click.command(name='on', short_help='Enable cluster maintenance mode.')
+@cluster_req
 def maintenance_on():
     """
     Enable maintenance mode on the PVC cluster.
@@ -3393,6 +3408,7 @@ def maintenance_on():
 # pvc maintenance off
 ###############################################################################
 @click.command(name='off', short_help='Disable cluster maintenance mode.')
+@cluster_req
 def maintenance_off():
     """
     Disable maintenance mode on the PVC cluster.
@@ -3410,14 +3426,11 @@ def maintenance_off():
     type=click.Choice(['plain', 'json', 'json-pretty']),
     help='Output format of cluster status information.'
 )
+@cluster_req
 def status_cluster(oformat):
     """
     Show basic information and health for the active PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
     retcode, retdata = pvc_cluster.get_info(config)
     if retcode:
@@ -3433,14 +3446,11 @@ def status_cluster(oformat):
     is_flag=True, default=False,
     help='Confirm the removal'
 )
+@cluster_req
 def init_cluster(confirm_flag):
     """
     Perform initialization of a new PVC cluster.
     """
-    # Abort commands under this group if config is bad
-    if config.get('badcfg', None):
-        click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
-        exit(1)
 
     if not confirm_flag:
         try:
