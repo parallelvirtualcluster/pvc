@@ -203,19 +203,20 @@ def vm_state(config, vm, target_state, wait=False):
 
     return retstatus, response.json()['message']
 
-def vm_node(config, vm, target_node, action, force=False, wait=False):
+def vm_node(config, vm, target_node, action, force=False, wait=False, force_live=False):
     """
     Modify the current node of VM via {action}
 
     API endpoint: POST /vm/{vm}/node
-    API arguments: node={target_node}, action={action}, force={force}, wait={wait}
+    API arguments: node={target_node}, action={action}, force={force}, wait={wait}, force_live={force_live}
     API schema: {"message":"{data}"}
     """
     params={
         'node': target_node,
         'action': action,
         'force': str(force).lower(),
-        'wait': str(wait).lower()
+        'wait': str(wait).lower(),
+        'force_live': str(force_live).lower()
     }
     response = call_api(config, 'post', '/vm/{vm}/node'.format(vm=vm), params=params)
 

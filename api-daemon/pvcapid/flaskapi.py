@@ -1365,7 +1365,8 @@ class API_VM_Node(Resource):
         { 'name': 'action', 'choices': ('migrate', 'unmigrate', 'move'), 'helptext': "A valid action must be specified", 'required': True },
         { 'name': 'node' },
         { 'name': 'force' },
-        { 'name': 'wait' }
+        { 'name': 'wait' },
+        { 'name': 'force_live' }
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1396,6 +1397,10 @@ class API_VM_Node(Resource):
             name: wait
             type: boolean
             description: Whether to block waiting for the migration to complete
+          - in: query
+            name: force_live
+            type: boolean
+            description: Whether to enforce live migration and disable shutdown-based fallback migration
         responses:
           200:
             description: OK
@@ -1412,13 +1417,14 @@ class API_VM_Node(Resource):
         node = reqargs.get('node', None)
         force = bool(strtobool(reqargs.get('force', 'false')))
         wait = bool(strtobool(reqargs.get('wait', 'false')))
+        force_live = bool(strtobool(reqargs.get('force_live', 'false')))
 
         if action == 'move':
-            return api_helper.vm_move(vm, node, wait)
+            return api_helper.vm_move(vm, node, wait, force_live)
         if action == 'migrate':
-            return api_helper.vm_migrate(vm, node, force, wait)
+            return api_helper.vm_migrate(vm, node, force, wait, force_live)
         if action == 'unmigrate':
-            return api_helper.vm_unmigrate(vm, wait)
+            return api_helper.vm_unmigrate(vm, wait, force_live)
         abort(400)
 api.add_resource(API_VM_Node, '/vm/<vm>/node')
 

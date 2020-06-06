@@ -441,7 +441,7 @@ def disable_vm(zk_conn, domain):
 
     return True, 'Marked VM "{}" as disable.'.format(domain)
 
-def move_vm(zk_conn, domain, target_node, wait=False):
+def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -453,7 +453,10 @@ def move_vm(zk_conn, domain, target_node, wait=False):
         # If the current state isn't start, preserve it; we're not doing live migration
         target_state = current_state
     else:
-        target_state = 'migrate'
+        if force_live:
+            target_state = 'migrate-live'
+        else:
+            target_state = 'migrate'
 
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
 
@@ -497,7 +500,7 @@ def move_vm(zk_conn, domain, target_node, wait=False):
 
     return True, retmsg
 
-def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False):
+def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -509,7 +512,10 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False):
         # If the current state isn't start, preserve it; we're not doing live migration
         target_state = current_state
     else:
-        target_state = 'migrate'
+        if force_live:
+            target_state = 'migrate-live'
+        else:
+            target_state = 'migrate'
 
     current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
     last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
@@ -556,7 +562,7 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False):
 
     return True, retmsg
 
-def unmigrate_vm(zk_conn, domain, wait=False):
+def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -568,7 +574,10 @@ def unmigrate_vm(zk_conn, domain, wait=False):
         # If the current state isn't start, preserve it; we're not doing live migration
         target_state = current_state
     else:
-        target_state = 'migrate'
+        if force_live:
+            target_state = 'migrate-live'
+        else:
+            target_state = 'migrate'
 
     target_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
 

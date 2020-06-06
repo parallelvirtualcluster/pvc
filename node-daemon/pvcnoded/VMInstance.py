@@ -371,7 +371,7 @@ class VMInstance(object):
         return True
 
     # Migrate the VM to a target host
-    def migrate_vm(self):
+    def migrate_vm(self, force_live=False):
         # Don't try to migrate a node to itself, set back to start
         if self.node == self.lastnode:
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
@@ -383,8 +383,16 @@ class VMInstance(object):
 
         migrate_ret = self.live_migrate_vm()
         if not migrate_ret:
-            self.logger.out('Could not live migrate VM; shutting down to migrate instead', state='e', prefix='Domain {}:'.format(self.domuuid))
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'shutdown' })
+            if force_live:
+                self.logger.out('Could not live migrate VM; live migration enforced, aborting', state='e', prefix='Domain {}:'.format(self.domuuid))
+                zkhandler.writedata(self.zk_conn, {
+                    '/domains/{}/state'.format(self.domuuid): 'start',
+                    '/domains/{}/node'.format(self.domuuid): self.this_node.name,
+                    '/domains/{}/lastnode'.format(self.domuuid): ''
+                })
+            else:
+                self.logger.out('Could not live migrate VM; shutting down to migrate instead', state='e', prefix='Domain {}:'.format(self.domuuid))
+                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'shutdown' })
         else:
             self.removeDomainFromList()
             # Stop the log watcher
@@ -418,7 +426,7 @@ class VMInstance(object):
                     break
                 else:
                     # If the state is no longer migrate
-                    if self.state != 'migrate':
+                    if self.state not in ['migrate', 'migrate-live']:
                         # The receive was aborted before it timed out or was completed
                         self.logger.out('Receive aborted via state change', state='w', prefix='Domain {}:'.format(self.domuuid))
                         break
@@ -498,6 +506,7 @@ class VMInstance(object):
         # Valid states are:
         #   start
         #   migrate
+        #   migrate-live
         #   restart
         #   shutdown
         #   stop
@@ -523,7 +532,7 @@ class VMInstance(object):
                         # Add domain to running list
                         self.addDomainToList()
                     # VM is already running and should be but stuck in migrate state
-                    elif self.state == "migrate":
+                    elif self.state == "migrate" or self.state == "migrate-live":
                         # Start the log watcher
                         self.console_log_instance.start()
                         zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
@@ -544,7 +553,7 @@ class VMInstance(object):
                         # Start the domain
                         self.start_vm()
                     # VM should be migrated to this node
-                    elif self.state == "migrate":
+                    elif self.state == "migrate" or self.state == "migrate-live":
                         # Receive the migration
                         self.receive_migrate()
                     # VM should be restarted (i.e. started since it isn't running)
@@ -566,7 +575,10 @@ class VMInstance(object):
                 if running == libvirt.VIR_DOMAIN_RUNNING:
                     # VM should be migrated away from this node
                     if self.state == "migrate":
-                        self.migrate_vm()
+                        self.migrate_vm(force_live=False)
+                    # VM should be migrated away from this node, live only (no shutdown fallback)
+                    elif self.state == "migrate-live":
+                        self.migrate_vm(force_live=True)
                     # VM should be shutdown gracefully
                     elif self.state == 'shutdown':
                         self.shutdown_vm()

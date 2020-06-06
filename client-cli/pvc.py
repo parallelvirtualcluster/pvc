@@ -868,13 +868,17 @@ def vm_disable(domain):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@click.option(
+    '--force-live', 'force_live', is_flag=True, default=False,
+    help='Do not fall back to shutdown-based migration if live migration fails.'
+)
 @cluster_req
-def vm_move(domain, target_node, wait):
+def vm_move(domain, target_node, wait, force_live):
     """
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False, wait=wait)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -896,13 +900,17 @@ def vm_move(domain, target_node, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@click.option(
+    '--force-live', 'force_live', is_flag=True, default=False,
+    help='Do not fall back to shutdown-based migration if live migration fails.'
+)
 @cluster_req
-def vm_migrate(domain, target_node, force_migrate, wait):
+def vm_migrate(domain, target_node, force_migrate, wait, force_live):
     """
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate, wait=wait)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -916,13 +924,17 @@ def vm_migrate(domain, target_node, force_migrate, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for migration to complete before returning.'
 )
+@click.option(
+    '--force-live', 'force_live', is_flag=True, default=False,
+    help='Do not fall back to shutdown-based migration if live migration fails.'
+)
 @cluster_req
-def vm_unmigrate(domain, wait):
+def vm_unmigrate(domain, wait, force_live):
     """
     Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False, wait=wait)
+    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
 
 ###############################################################################

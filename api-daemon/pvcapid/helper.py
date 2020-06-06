@@ -661,12 +661,12 @@ def vm_disable(name):
     }
     return output, retcode
 
-def vm_move(name, node, wait):
+def vm_move(name, node, wait, force_live):
     """
     Move a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.move_vm(zk_conn, name, node, wait)
+    retflag, retdata = pvc_vm.move_vm(zk_conn, name, node, wait, force_live)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -679,12 +679,12 @@ def vm_move(name, node, wait):
     }
     return output, retcode
 
-def vm_migrate(name, node, flag_force, wait):
+def vm_migrate(name, node, flag_force, wait, force_live):
     """
     Temporarily migrate a VM to another node.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, flag_force, wait)
+    retflag, retdata = pvc_vm.migrate_vm(zk_conn, name, node, flag_force, wait, force_live)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -697,12 +697,12 @@ def vm_migrate(name, node, flag_force, wait):
     }
     return output, retcode
 
-def vm_unmigrate(name, wait):
+def vm_unmigrate(name, wait, force_live):
     """
     Unmigrate a migrated VM.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.unmigrate_vm(zk_conn, name, wait)
+    retflag, retdata = pvc_vm.unmigrate_vm(zk_conn, name, wait, force_live)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
