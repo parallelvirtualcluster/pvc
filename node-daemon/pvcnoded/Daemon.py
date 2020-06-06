@@ -1337,37 +1337,6 @@ def node_keepalive():
         logger.out('Failed to set keepalive data', state='e')
         return
 
-    # Look for dead nodes and fence them
-    if not maintenance:
-        if debug:
-            print("Look for dead nodes and fence them")
-        if config['daemon_mode'] == 'coordinator':
-            for node_name in d_node:
-                try:
-                    node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-                    node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
-                    node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
-                except:
-                    node_daemon_state = 'unknown'
-                    node_domain_state = 'unknown'
-                    node_keepalive = 0
-    
-                # Handle deadtime and fencng if needed
-                # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
-                # out-of-date while in 'start' state)
-                node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
-                if node_keepalive < node_deadtime and node_daemon_state == 'run':
-                    logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
-                    zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-                    with zk_lock:
-                        # Ensures that, if we lost the lock race and come out of waiting,
-                        # we won't try to trigger our own fence thread.
-                        if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name)) != 'dead':
-                            fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
-                            fence_thread.start()
-                        # Write the updated data after we start the fence thread
-                        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
-
     # Display node information to the terminal
     if config['log_keepalives']:
         if this_node.router_state == 'primary':
@@ -1424,6 +1393,37 @@ def node_keepalive():
                 ),
                 state='t'
             )
+
+    # Look for dead nodes and fence them
+    if not maintenance:
+        if debug:
+            print("Look for dead nodes and fence them")
+        if config['daemon_mode'] == 'coordinator':
+            for node_name in d_node:
+                try:
+                    node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
+                    node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
+                    node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
+                except:
+                    node_daemon_state = 'unknown'
+                    node_domain_state = 'unknown'
+                    node_keepalive = 0
+    
+                # Handle deadtime and fencng if needed
+                # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
+                # out-of-date while in 'start' state)
+                node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
+                if node_keepalive < node_deadtime and node_daemon_state == 'run':
+                    logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
+                    zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
+                    with zk_lock:
+                        # Ensures that, if we lost the lock race and come out of waiting,
+                        # we won't try to trigger our own fence thread.
+                        if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name)) != 'dead':
+                            fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
+                            fence_thread.start()
+                        # Write the updated data after we start the fence thread
+                        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
 
 # Start keepalive thread
