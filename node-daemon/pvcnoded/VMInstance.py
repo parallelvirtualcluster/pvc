@@ -108,7 +108,7 @@ class VMInstance(object):
         self.domname = zkhandler.readdata(zk_conn, '/domains/{}'.format(domuuid))
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
-        self.lastnode = zkhandler.readdata(self.zkconn, '/domains/{}/lastnode'.format(self.domuuid))
+        self.lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
         except:
