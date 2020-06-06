@@ -1302,6 +1302,9 @@ def node_keepalive():
             if domain_uuid not in this_node.domain_list:
                 this_node.domain_list.append(domain_uuid)
 
+        # Close the Libvirt connection
+        lv_conn.close()
+
     # Set our information in zookeeper
     if debug:
         print("Set our information in zookeeper")
@@ -1313,9 +1316,10 @@ def node_keepalive():
     this_node.vcpualloc = vcpualloc
     this_node.cpuload = os.getloadavg()[0]
     if enable_hypervisor:
-        this_node.domains_count = len(lv_conn.listDomainsID())
+        this_node.domains_count = len(running_domains)
     else:
         this_node.domains_count = 0
+
     keepalive_time = int(time.time())
     try:
         zkhandler.writedata(zk_conn, {
@@ -1332,10 +1336,6 @@ def node_keepalive():
     except:
         logger.out('Failed to set keepalive data', state='e')
         return
-
-    if enable_hypervisor:
-        # Close the Libvirt connection
-        lv_conn.close()
 
     # Look for dead nodes and fence them
     if not maintenance:
