@@ -80,9 +80,9 @@ def startKeepaliveTimer():
     update_timer = apscheduler.schedulers.background.BackgroundScheduler()
     interval = int(config['keepalive_interval'])
     logger.out('Starting keepalive timer ({} second interval)'.format(interval), state='s')
-    update_timer.add_job(update_zookeeper, 'interval', seconds=interval)
+    update_timer.add_job(node_keepalive, 'interval', seconds=interval)
     update_timer.start()
-    update_zookeeper()
+    node_keepalive()
     return update_timer
 
 def stopKeepaliveTimer():
@@ -591,7 +591,7 @@ def cleanup():
         pass
 
     logger.out('Performing final keepalive update', state='s')
-    update_zookeeper()
+    node_keepalive()
 
     # Set stop state in Zookeeper
     zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
@@ -1011,8 +1011,8 @@ if enable_storage:
 # PHASE 9 - Run the daemon
 ###############################################################################
 
-# Zookeeper keepalive update function
-def update_zookeeper():
+# Keepalive update function
+def node_keepalive():
     # Set the upstream IP in Zookeeper for clients to read
     if config['enable_networking']:
         if this_node.router_state == 'primary':
