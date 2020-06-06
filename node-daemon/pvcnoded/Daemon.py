@@ -1264,6 +1264,7 @@ def node_keepalive():
                         logger.out('Failed to upload OSD stats from dictionary: {}'.format(e), state='w')
                     osds_this_node += 1
 
+    # Normalize running VM status
     memalloc = 0
     vcpualloc = 0
     if enable_hypervisor:
@@ -1305,10 +1306,7 @@ def node_keepalive():
         # Close the Libvirt connection
         lv_conn.close()
 
-    # Set our information in zookeeper
-    if debug:
-        print("Set our information in zookeeper")
-    #this_node.name = lv_conn.getHostname()
+    # Get node performance statistics
     this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
     this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
@@ -1320,7 +1318,10 @@ def node_keepalive():
     else:
         this_node.domains_count = 0
 
+    # Set our information in zookeeper
     keepalive_time = int(time.time())
+    if debug:
+        print("Set our information in zookeeper")
     try:
         zkhandler.writedata(zk_conn, {
             '/nodes/{}/memtotal'.format(this_node.name): str(this_node.memtotal),
