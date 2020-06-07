@@ -28,7 +28,7 @@ from collections import deque
 
 import cli_lib.ansiprint as ansiprint
 import cli_lib.ceph as ceph
-from cli_lib.common import call_api
+from cli_lib.common import call_api, format_bytes, format_metric
 
 #
 # Primary functions
@@ -348,6 +348,24 @@ def format_info(config, domain_information, long_output):
         ainformation.append('{}Arch:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['arch']))
         ainformation.append('{}Machine:{}            {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['machine']))
         ainformation.append('{}Features:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ' '.join(domain_information['features'])))
+        ainformation.append('')
+        ainformation.append('{0}Memory stats:{1}       {2}Swap In  Swap Out  Faults (maj/min)  Available  Usable  Unused  RSS{3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
+        ainformation.append('                    {0: <7}  {1: <8}  {2: <16}  {3: <10} {4: <7} {5: <7} {6: <10}'.format(
+            format_metric(domain_information['memory_stats'].get('swap_in')),
+            format_metric(domain_information['memory_stats'].get('swap_out')),
+            '/'.join([format_metric(domain_information['memory_stats'].get('major_fault')), format_metric(domain_information['memory_stats'].get('minor_fault'))]),
+            format_bytes(domain_information['memory_stats'].get('available')*1024),
+            format_bytes(domain_information['memory_stats'].get('usable')*1024),
+            format_bytes(domain_information['memory_stats'].get('unused')*1024),
+            format_bytes(domain_information['memory_stats'].get('rss')*1024)
+        ))
+        ainformation.append('')
+        ainformation.append('{0}vCPU stats:{1}         {2}CPU time (ns)     User time (ns)    System time (ns){3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
+        ainformation.append('                    {0: <16}  {1: <16}  {2: <15}'.format(
+            str(domain_information['vcpu_stats'].get('cpu_time')),
+            str(domain_information['vcpu_stats'].get('user_time')),
+            str(domain_information['vcpu_stats'].get('system_time'))
+        ))
 
     # PVC cluster information
     ainformation.append('')
@@ -419,13 +437,31 @@ def format_info(config, domain_information, long_output):
             _name_length = len(disk['name']) + 1
             if _name_length > name_length:
                 name_length = _name_length
-        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus{4}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), 'Name', ansiprint.end(), width=name_length))
+        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus    Requests (r/w)   Data (r/w){4}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), 'Name', ansiprint.end(), width=name_length))
         for disk in domain_information['disks']:
-            ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(domain_information['disks'].index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
+            ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}  {5: <15}  {6}'.format(
+                domain_information['disks'].index(disk),
+                disk['type'],
+                disk['name'],
+                disk['dev'],
+                disk['bus'],
+                '/'.join([str(format_metric(disk['rd_req'])), str(format_metric(disk['wr_req']))]),
+                '/'.join([str(format_bytes(disk['rd_bytes'])), str(format_bytes(disk['wr_bytes']))]),
+                width=name_length
+            ))
         ainformation.append('')
-        ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
+        ainformation.append('{}Interfaces:{}   {}ID  Type    Source     Model    MAC                 Data (r/w)   Packets (r/w)   Errors (r/w){}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for net in domain_information['networks']:
-            ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(domain_information['networks'].index(net), net['type'], net['source'], net['model'], net['mac']))
+            ainformation.append('              {0: <3} {1: <7} {2: <10} {3: <8} {4: <18}  {5: <12} {6: <15} {7: <12}'.format(
+                domain_information['networks'].index(net),
+                net['type'],
+                net['source'],
+                net['model'],
+                net['mac'],
+                '/'.join([str(format_bytes(net['rd_bytes'])), str(format_bytes(net['wr_bytes']))]),
+                '/'.join([str(format_metric(net['rd_packets'])), str(format_metric(net['wr_packets']))]),
+                '/'.join([str(format_metric(net['rd_errors'])), str(format_metric(net['wr_errors']))]),
+            ))
         # Controller list
         ainformation.append('')
         ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))

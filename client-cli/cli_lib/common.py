@@ -44,6 +44,23 @@ def format_bytes(size_bytes):
             break
     return human_bytes
 
+def format_metric(integer):
+    integer_unit_matrix = {
+        '': 1,
+        'K': 1000,
+        'M': 1000*1000,
+        'B': 1000*1000*1000,
+        'T': 1000*1000*1000*1000,
+        'Q': 1000*1000*1000*1000*1000
+    }
+    human_integer = '0'
+    for unit in sorted(integer_unit_matrix, key=integer_unit_matrix.get):
+        formatted_integer = int(math.ceil(integer / integer_unit_matrix[unit]))
+        if formatted_integer < 10000:
+            human_integer = '{}{}'.format(formatted_integer, unit)
+            break
+    return human_integer
+
 class UploadProgressBar(object):
     def __init__(self, filename, end_message='', end_nl=True):
         file_size = os.path.getsize(filename)
