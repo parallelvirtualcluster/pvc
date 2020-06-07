@@ -179,7 +179,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
     # Obtain the RBD disk list using the common functions
-    ddisks = common.getDomainDisks(parsed_xml)
+    ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
     for disk in ddisks:
         if disk['type'] == 'rbd':
@@ -255,7 +255,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
         return False, 'ERROR: Failed to parse XML data.'
 
     # Obtain the RBD disk list using the common functions
-    ddisks = common.getDomainDisks(parsed_xml)
+    ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
     for disk in ddisks:
         if disk['type'] == 'rbd':

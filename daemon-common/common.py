@@ -26,6 +26,7 @@ import math
 import shlex
 import subprocess
 import kazoo.client
+from json import loads
 
 from distutils.util import strtobool
 
@@ -155,17 +156,41 @@ def getDomainCPUFeatures(parsed_xml):
 #
 # Get disk devices
 #
-def getDomainDisks(parsed_xml):
+def getDomainDisks(parsed_xml, stats_data):
     ddisks = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'disk':
             disk_attrib = device.source.attrib
             disk_target = device.target.attrib
             disk_type = device.attrib['type']
+            disk_stats_list = [x for x in stats_data.get('disk_stats', []) if x.get('name') == disk_attrib.get('name')]
+            try:
+                disk_stats = disk_stats_list[0]
+            except:
+                disk_stats = {}
+
             if disk_type == 'network':
-                disk_obj = { 'type': disk_attrib.get('protocol'), 'name': disk_attrib.get('name'), 'dev': disk_target.get('dev'), 'bus': disk_target.get('bus') }
+                disk_obj = {
+                    'type': disk_attrib.get('protocol'),
+                    'name': disk_attrib.get('name'),
+                    'dev': disk_target.get('dev'),
+                    'bus': disk_target.get('bus'),
+                    'rd_req': disk_stats.get('rd_req', 0),
+                    'rd_bytes': disk_stats.get('rd_bytes', 0),
+                    'wr_req': disk_stats.get('wr_req', 0),
+                    'wr_bytes': disk_stats.get('wr_bytes', 0)
+                }
             elif disk_type == 'file':
-                disk_obj = { 'type': 'file', 'name': disk_attrib.get('file'), 'dev': disk_target.get('dev'), 'bus': disk_target.get('bus') }
+                disk_obj = {
+                    'type': 'file',
+                    'name': disk_attrib.get('file'),
+                    'dev': disk_target.get('dev'),
+                    'bus': disk_target.get('bus'),
+                    'rd_req': disk_stats.get('rd_req', 0),
+                    'rd_bytes': disk_stats.get('rd_bytes', 0),
+                    'wr_req': disk_stats.get('wr_req', 0),
+                    'wr_bytes': disk_stats.get('wr_bytes', 0)
+                }
             else:
                 disk_obj = {}
             ddisks.append(disk_obj)
@@ -224,13 +249,18 @@ def getInformationFromXML(zk_conn, uuid):
 
     parsed_xml = getDomainXML(zk_conn, uuid)
 
+    try:
+        stats_data = loads(zkhandler.readdata(zk_conn, '/domains/{}/stats'.format(uuid)))
+    except:
+        stats_data = {}
+
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
-    domain_networks = getDomainNetworks(parsed_xml)
+    domain_networks = getDomainNetworks(parsed_xml, stats_data)
 
     domain_type, domain_arch, domain_machine, domain_console, domain_emulator = getDomainExtraDetails(parsed_xml)
 
     domain_features = getDomainCPUFeatures(parsed_xml)
-    domain_disks = getDomainDisks(parsed_xml)
+    domain_disks = getDomainDisks(parsed_xml, stats_data)
     domain_controllers = getDomainControllers(parsed_xml)
     
     if domain_lastnode:
@@ -252,8 +282,10 @@ def getInformationFromXML(zk_conn, uuid):
         'description': domain_description,
         'profile': domain_profile,
         'memory': int(domain_memory),
+        'memory_stats': stats_data.get('mem_stats', {}),
         'vcpu': int(domain_vcpu),
         'vcpu_topology': domain_vcputopo,
+        'vcpu_stats': stats_data.get('cpu_stats', {}),
         'networks': domain_networks,
         'type': domain_type,
         'arch': domain_arch,
@@ -271,7 +303,7 @@ def getInformationFromXML(zk_conn, uuid):
 #
 # Get network devices
 #
-def getDomainNetworks(parsed_xml):
+def getDomainNetworks(parsed_xml, stats_data):
     dnets = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'interface':
@@ -279,7 +311,33 @@ def getDomainNetworks(parsed_xml):
             net_mac = device.mac.attrib['address']
             net_bridge = device.source.attrib[net_type]
             net_model = device.model.attrib['type']
-            net_obj = { 'type': net_type, 'mac': net_mac, 'source': net_bridge, 'model': net_model }
+            net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
+            try:
+                net_stats = net_stats_list[0]
+            except:
+                net_stats = {}
+            net_rd_bytes = net_stats.get('rd_bytes', 0)
+            net_rd_packets = net_stats.get('rd_packets', 0)
+            net_rd_errors = net_stats.get('rd_errors', 0)
+            net_rd_drops = net_stats.get('rd_drops', 0)
+            net_wr_bytes = net_stats.get('wr_bytes', 0)
+            net_wr_packets = net_stats.get('wr_packets', 0)
+            net_wr_errors = net_stats.get('wr_errors', 0)
+            net_wr_drops = net_stats.get('wr_drops', 0)
+            net_obj = {
+                'type': net_type,
+                'mac': net_mac,
+                'source': net_bridge,
+                'model': net_model,
+                'rd_bytes': net_rd_bytes,
+                'rd_packets': net_rd_packets,
+                'rd_errors': net_rd_errors,
+                'rd_drops': net_rd_drops,
+                'wr_bytes': net_wr_bytes,
+                'wr_packets': net_wr_packets,
+                'wr_errors': net_wr_errors,
+                'wr_drops': net_wr_drops
+            }
             dnets.append(net_obj)
 
     return dnets
