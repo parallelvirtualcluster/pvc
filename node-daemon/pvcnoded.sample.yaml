@@ -179,3 +179,10 @@ pvc:
           mtu: 1500
           # address: Storage (Ceph OSD) interface IP address, options: None, by-id, <static>/<mask>
           address: by-id
+      # storage; PVC storage configuration
+      # OPTIONAL if enable_storage: False
+      storage:
+        # ceph_config_file: The config file containing the Ceph cluster configuration
+        ceph_config_file: "/etc/ceph/ceph.conf"
+        # ceph_admin_keyring: The file containing the Ceph client admin keyring
+        ceph_admin_keyring: "/etc/ceph/ceph.client.admin.keyring"

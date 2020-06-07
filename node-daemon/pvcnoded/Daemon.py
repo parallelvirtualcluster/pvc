@@ -43,10 +43,9 @@ import ipaddress
 import apscheduler.schedulers.background
 
 from distutils.util import strtobool
-
 from queue import Queue
-
 from xml.etree import ElementTree
+from rados import Rados
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
@@ -263,7 +262,10 @@ def readConfig(pvcnoded_config_file, myhostname):
     # Handle the storage config
     if config['enable_storage']:
         try:
-            config_storage = dict()
+            config_storage = {
+                'ceph_config_file': o_config['pvc']['cluster']['storage']['ceph_config_file'],
+                'ceph_admin_keyring': o_config['pvc']['cluster']['storage']['ceph_admin_keyring']
+            }
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
             exit(1)
