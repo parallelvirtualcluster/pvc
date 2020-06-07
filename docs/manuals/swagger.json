@@ -908,9 +908,25 @@
                                 "description": "The full name of the volume in \"pool/volume\" format",
                                 "type": "string"
                             },
+                            "rd_bytes": {
+                                "description": "The number of read bytes from the volume",
+                                "type": "integer"
+                            },
+                            "rd_req": {
+                                "description": "The number of read requests from the volume",
+                                "type": "integer"
+                            },
                             "type": {
                                 "description": "The type of volume",
                                 "type": "string"
+                            },
+                            "wr_bytes": {
+                                "description": "The number of write bytes to the volume",
+                                "type": "integer"
+                            },
+                            "wr_req": {
+                                "description": "The number of write requests to the volume",
+                                "type": "integer"
                             }
                         },
                         "type": "object"
@@ -944,6 +960,51 @@
                     "description": "The assigned RAM of the VM in MB",
                     "type": "integer"
                 },
+                "memory_stats": {
+                    "properties": {
+                        "actual": {
+                            "description": "The total active memory of the VM in kB",
+                            "type": "integer"
+                        },
+                        "available": {
+                            "description": "The total amount of usable memory as seen by the domain in kB",
+                            "type": "integer"
+                        },
+                        "last_update": {
+                            "description": "Timestamp of the last update of statistics, in seconds",
+                            "type": "integer"
+                        },
+                        "major_fault": {
+                            "description": "The number of major page faults",
+                            "type": "integer"
+                        },
+                        "minor_fault": {
+                            "description": "The number of minor page faults",
+                            "type": "integer"
+                        },
+                        "rss": {
+                            "description": "The Resident Set Size of the process running the domain in kB",
+                            "type": "integer"
+                        },
+                        "swap_in": {
+                            "description": "The amount of swapped in data in kB",
+                            "type": "integer"
+                        },
+                        "swap_out": {
+                            "description": "The amount of swapped out data in kB",
+                            "type": "integer"
+                        },
+                        "unused": {
+                            "description": "The amount of memory left completely unused by the system in kB",
+                            "type": "integer"
+                        },
+                        "usable": {
+                            "description": "How much the balloon can be inflated without pushing the guest system to swap in kB",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
+                },
                 "migrated": {
                     "description": "Whether the VM has been migrated, either \"no\" or \"from <last_node>\"",
                     "type": "string"
@@ -964,6 +1025,22 @@
                                 "description": "The virtual network device model",
                                 "type": "string"
                             },
+                            "rd_bytes": {
+                                "description": "The number of read bytes on the interface",
+                                "type": "integer"
+                            },
+                            "rd_drops": {
+                                "description": "The number of read drops on the interface",
+                                "type": "integer"
+                            },
+                            "rd_errors": {
+                                "description": "The number of read errors on the interface",
+                                "type": "integer"
+                            },
+                            "rd_packets": {
+                                "description": "The number of read packets on the interface",
+                                "type": "integer"
+                            },
                             "source": {
                                 "description": "The parent network bridge on the node",
                                 "type": "string"
@@ -971,6 +1048,22 @@
                             "type": {
                                 "description": "The PVC network type",
                                 "type": "string"
+                            },
+                            "wr_bytes": {
+                                "description": "The number of write bytes on the interface",
+                                "type": "integer"
+                            },
+                            "wr_drops": {
+                                "description": "The number of write drops on the interface",
+                                "type": "integer"
+                            },
+                            "wr_errors": {
+                                "description": "The number of write errors on the interface",
+                                "type": "integer"
+                            },
+                            "wr_packets": {
+                                "description": "The number of write packets on the interface",
+                                "type": "integer"
                             }
                         },
                         "type": "object"
@@ -1015,6 +1108,23 @@
                 "vcpu": {
                     "description": "The assigned vCPUs of the VM",
                     "type": "integer"
+                },
+                "vcpu_stats": {
+                    "properties": {
+                        "cpu_time": {
+                            "description": "The active CPU time for all vCPUs",
+                            "type": "integer"
+                        },
+                        "system_time": {
+                            "description": "vCPU system time",
+                            "type": "integer"
+                        },
+                        "user_time": {
+                            "description": "vCPU user time",
+                            "type": "integer"
+                        }
+                    },
+                    "type": "object"
                 },
                 "vcpu_topology": {
                     "description": "The topology of the assigned vCPUs in Sockets/Cores/Threads format",
@@ -5496,6 +5606,12 @@
                         "description": "Whether to block waiting for the migration to complete",
                         "in": "query",
                         "name": "wait",
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Whether to enforce live migration and disable shutdown-based fallback migration",
+                        "in": "query",
+                        "name": "force_live",
                         "type": "boolean"
                     }
                 ],

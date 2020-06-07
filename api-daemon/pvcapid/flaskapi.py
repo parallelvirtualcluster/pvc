@@ -803,12 +803,57 @@ class API_VM_Root(Resource):
                 memory:
                   type: integer
                   description: The assigned RAM of the VM in MB
+                memory_stats:
+                  type: object
+                  properties:
+                    actual:
+                      type: integer
+                      description: The total active memory of the VM in kB
+                    swap_in:
+                      type: integer
+                      description: The amount of swapped in data in kB
+                    swap_out:
+                      type: integer
+                      description: The amount of swapped out data in kB
+                    major_fault:
+                      type: integer
+                      description: The number of major page faults
+                    minor_fault:
+                      type: integer
+                      description: The number of minor page faults
+                    unused:
+                      type: integer
+                      description: The amount of memory left completely unused by the system in kB
+                    available:
+                      type: integer
+                      description: The total amount of usable memory as seen by the domain in kB
+                    usable:
+                      type: integer
+                      description: How much the balloon can be inflated without pushing the guest system to swap in kB
+                    last_update:
+                      type: integer
+                      description: Timestamp of the last update of statistics, in seconds
+                    rss:
+                      type: integer
+                      description: The Resident Set Size of the process running the domain in kB
                 vcpu:
                   type: integer
                   description: The assigned vCPUs of the VM
                 vcpu_topology:
                   type: string
                   description: The topology of the assigned vCPUs in Sockets/Cores/Threads format
+                vcpu_stats:
+                  type: object
+                  properties:
+                    cpu_time:
+                      type: integer
+                      description: The active CPU time for all vCPUs
+                    user_time:
+                      type: integer
+                      description: vCPU user time
+                    system_time:
+                      type: integer
+                      description: vCPU system time
                 type:
                   type: string
                   description: The type of the VM
@@ -847,6 +892,30 @@ class API_VM_Root(Resource):
                       model:
                         type: string
                         description: The virtual network device model
+                      rd_bytes:
+                        type: integer
+                        description: The number of read bytes on the interface
+                      rd_packets:
+                        type: integer
+                        description: The number of read packets on the interface
+                      rd_errors:
+                        type: integer
+                        description: The number of read errors on the interface
+                      rd_drops:
+                        type: integer
+                        description: The number of read drops on the interface
+                      wr_bytes:
+                        type: integer
+                        description: The number of write bytes on the interface
+                      wr_packets:
+                        type: integer
+                        description: The number of write packets on the interface
+                      wr_errors:
+                        type: integer
+                        description: The number of write errors on the interface
+                      wr_drops:
+                        type: integer
+                        description: The number of write drops on the interface
                 disks:
                   type: array
                   description: The PVC storage volumes attached to the VM
@@ -865,6 +934,18 @@ class API_VM_Root(Resource):
                       bus:
                         type: string
                         description: The virtual bus of the volume in the VM
+                      rd_req:
+                        type: integer
+                        description: The number of read requests from the volume
+                      rd_bytes:
+                        type: integer
+                        description: The number of read bytes from the volume
+                      wr_req:
+                        type: integer
+                        description: The number of write requests to the volume
+                      wr_bytes:
+                        type: integer
+                        description: The number of write bytes to the volume
                 controllers:
                   type: array
                   description: The device controllers attached to the VM
