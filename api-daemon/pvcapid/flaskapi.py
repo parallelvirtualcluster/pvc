@@ -2489,7 +2489,7 @@ class API_Storage_Ceph_Utilization(Resource):
                   type: string
                   description: The raw output data
         """
-        return api_helper.ceph_radosdf()
+        return api_helper.ceph_util()
 api.add_resource(API_Storage_Ceph_Utilization, '/storage/ceph/utilization')
 
 # /storage/ceph/option

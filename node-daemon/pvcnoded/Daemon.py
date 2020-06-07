@@ -1049,7 +1049,7 @@ def collect_ceph_stats(queue):
             print("Set ceph health information in zookeeper (primary only)")
 
         command = { "prefix": "status", "format": "pretty" }
-        ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1]
+        ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
                 '/ceph': str(ceph_status)
@@ -1062,14 +1062,14 @@ def collect_ceph_stats(queue):
             print("Set ceph rados df information in zookeeper (primary only)")
 
         # Get rados df info
-        retcode, stdout, stderr = common.run_os_command('rados df', timeout=1)
-        rados_df = stdout
+        command = { "prefix": "df", "format": "pretty" }
+        ceph_df = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
-                '/ceph/radosdf': str(rados_df)
+                '/ceph/util': str(ceph_df)
             })
         except Exception as e:
-            logger.out('Failed to set Rados space data: {}'.format(e), state='e')
+            logger.out('Failed to set Ceph utilization data: {}'.format(e), state='e')
             return
 
         if debug:
@@ -1337,10 +1337,13 @@ def collect_vm_stats(queue):
 
         # Get all the raw information about the VM
         if debug:
-            print("Getting statistics for VM {}".format(domain_name))
+            print("Getting general statistics for VM {}".format(domain_name))
         domain_state, domain_maxmem, domain_mem, domain_vcpus, domain_cputime = domain.info()
         domain_memory_stats = domain.memoryStats()
         domain_cpu_stats = domain.getCPUStats(True)[0]
+
+        if debug:
+            print("Getting disk statistics for VM {}".format(domain_name))
         domain_disk_stats = []
         for disk in tree.findall('devices/disk'):
             disk_name = disk.find('source').get('name')
@@ -1356,6 +1359,8 @@ def collect_vm_stats(queue):
                 "err": disk_stats[4]
             })
 
+        if debug:
+            print("Getting network statistics for VM {}".format(domain_name))
         domain_network_stats = []
         for interface in tree.findall('devices/interface'):
             interface_name = interface.find('target').get('dev')

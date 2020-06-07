@@ -154,9 +154,9 @@ def get_status(zk_conn):
     }
     return True, status_data
 
-def get_radosdf(zk_conn):
+def get_util(zk_conn):
     primary_node = zkhandler.readdata(zk_conn, '/primary_node')
-    ceph_df = zkhandler.readdata(zk_conn, '/ceph/radosdf').rstrip()
+    ceph_df = zkhandler.readdata(zk_conn, '/ceph/util').rstrip()
 
     # Create a data structure for the information
     status_data = {

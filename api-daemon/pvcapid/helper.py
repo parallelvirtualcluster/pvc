@@ -984,12 +984,12 @@ def ceph_status():
 
     return retdata, retcode
 
-def ceph_radosdf():
+def ceph_util():
     """
     Get the current Ceph cluster utilization.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.get_radosdf(zk_conn)
+    retflag, retdata = pvc_ceph.get_util(zk_conn)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
