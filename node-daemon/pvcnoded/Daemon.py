@@ -1326,21 +1326,26 @@ def collect_vm_stats(queue):
 
     # Get statistics from any running VMs
     for domain in running_domains:
-        # Get basic information about the VM
-        tree = ElementTree.fromstring(domain.XMLDesc())
-        domain_uuid = domain.UUIDString()
-        domain_name = domain.name()
+        try:
+            # Get basic information about the VM
+            tree = ElementTree.fromstring(domain.XMLDesc())
+            domain_uuid = domain.UUIDString()
+            domain_name = domain.name()
+
+            # Get all the raw information about the VM
+            if debug:
+                print("Getting general statistics for VM {}".format(domain_name))
+            domain_state, domain_maxmem, domain_mem, domain_vcpus, domain_cputime = domain.info()
+            domain_memory_stats = domain.memoryStats()
+            domain_cpu_stats = domain.getCPUStats(True)[0]
+        except Exception as e:
+            if debug:
+                print("Failed getting VM information for {}: {}".format(domain_name, e))
+            continue
 
         # Ensure VM is present in the domain_list
         if domain_uuid not in this_node.domain_list:
             this_node.domain_list.append(domain_uuid)
-
-        # Get all the raw information about the VM
-        if debug:
-            print("Getting general statistics for VM {}".format(domain_name))
-        domain_state, domain_maxmem, domain_mem, domain_vcpus, domain_cputime = domain.info()
-        domain_memory_stats = domain.memoryStats()
-        domain_cpu_stats = domain.getCPUStats(True)[0]
 
         if debug:
             print("Getting disk statistics for VM {}".format(domain_name))
