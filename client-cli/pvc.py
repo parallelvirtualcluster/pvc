@@ -122,11 +122,14 @@ def update_store(store_path, store_data):
     # Ensure file has 0600 permissions due to API key storage
     os.chmod(store_file, 0o600)
 
+pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
 home_dir = os.environ.get('HOME', None)
-if home_dir:
+if pvc_client_dir:
+    store_path = '{}'.format(pvc_client_dir)
+elif home_dir:
     store_path = '{}/.config/pvc'.format(home_dir)
 else:
-    print('No home dir found - not permanently saving any configurations as this user')
+    print('WARNING: No client or home config dir found, using /tmp instead')
     store_path = '/tmp/pvc'
 
 if not os.path.isdir(store_path):
