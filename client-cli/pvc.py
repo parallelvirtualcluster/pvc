@@ -525,15 +525,31 @@ def node_info(node, long_output):
 @click.argument(
     'limit', default=None, required=False
 )
+@click.option(
+    '-ds', '--daemon-state', 'target_daemon_state', default=None,
+    help='Limit list to nodes in the specified daemon state.'
+)
+@click.option(
+    '-cs', '--coordinator-state', 'target_coordinator_state', default=None,
+    help='Limit list to nodes in the specified coordinator state.'
+)
+@click.option(
+    '-vs', '--domain-state', 'target_domain_state', default=None,
+    help='Limit list to nodes in the specified domain state.'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw list of node names only.'
+)
 @cluster_req
-def node_list(limit):
+def node_list(limit, target_daemon_state, target_coordinator_state, target_domain_state, raw):
     """
     List all nodes; optionally only match names matching regex LIMIT.
     """
 
-    retcode, retdata = pvc_node.node_list(config, limit)
+    retcode, retdata = pvc_node.node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state)
     if retcode:
-        retdata = pvc_node.format_list(retdata)
+        retdata = pvc_node.format_list(retdata, raw)
     cleanup(retcode, retdata)
 
 ###############################################################################

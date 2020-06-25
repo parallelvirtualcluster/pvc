@@ -82,7 +82,7 @@ def node_info(config, node):
     else:
         return False, response.json()['message']
 
-def node_list(config, limit):
+def node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state):
     """
     Get list information about nodes (limited by {limit})
 
@@ -93,6 +93,12 @@ def node_list(config, limit):
     params = dict()
     if limit:
         params['limit'] = limit
+    if target_daemon_state:
+        params['daemon_state'] = target_daemon_state
+    if target_coordinator_state:
+        params['coordinator_state'] = target_coordinator_state
+    if target_domain_state:
+        params['domain_state'] = target_domain_state
 
     response = call_api(config, 'get', '/node', params=params)
 
@@ -161,10 +167,16 @@ def format_info(node_information, long_output):
     ainformation.append('')
     return '\n'.join(ainformation)
 
-def format_list(node_list):
+def format_list(node_list, raw):
     # Handle single-element lists
     if not isinstance(node_list, list):
         node_list = [ node_list ]
+
+    if raw:
+        ainformation = list()
+        for node in sorted(item['name'] for item in node_list):
+            ainformation.append(node)
+        return '\n'.join(ainformation)
 
     node_list_output = []
 

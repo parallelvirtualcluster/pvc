@@ -114,12 +114,12 @@ def cluster_maintenance(maint_state='false'):
 #
 # Node functions
 #
-def node_list(limit=None, is_fuzzy=True):
+def node_list(limit=None, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
     """
     Return a list of nodes with limit LIMIT.
     """
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_node.get_list(zk_conn, limit, is_fuzzy=is_fuzzy)
+    retflag, retdata = pvc_node.get_list(zk_conn, limit, daemon_state=daemon_state, coordinator_state=coordinator_state, domain_state=domain_state, is_fuzzy=is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

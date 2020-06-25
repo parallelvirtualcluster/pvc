@@ -2098,6 +2098,27 @@
                         "name": "limit",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "description": "Limit results to nodes in the specified daemon state",
+                        "in": "query",
+                        "name": "daemon_state",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Limit results to nodes in the specified coordinator state",
+                        "in": "query",
+                        "name": "coordinator_state",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Limit results to nodes in the specified domain state",
+                        "in": "query",
+                        "name": "domain_state",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {

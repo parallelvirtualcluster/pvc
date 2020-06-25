@@ -454,7 +454,10 @@ api.add_resource(API_Status, '/status')
 # /node
 class API_Node_Root(Resource):
     @RequestParser([
-        { 'name': 'limit' }
+        { 'name': 'limit' },
+        { 'name': 'daemon_state' },
+        { 'name': 'coordinator_state' },
+        { 'name': 'domain_state' }
     ])
     @Authenticator
     def get(self, reqargs):
@@ -532,6 +535,21 @@ class API_Node_Root(Resource):
             type: string
             required: false
             description: A search limit; fuzzy by default, use ^/$ to force exact matches
+          - in: query
+            name: daemon_state
+            type: string
+            required: false
+            description: Limit results to nodes in the specified daemon state
+          - in: query
+            name: coordinator_state
+            type: string
+            required: false
+            description: Limit results to nodes in the specified coordinator state
+          - in: query
+            name: domain_state
+            type: string
+            required: false
+            description: Limit results to nodes in the specified domain state
         responses:
           200:
             description: OK
@@ -540,7 +558,12 @@ class API_Node_Root(Resource):
               items:
                 $ref: '#/definitions/node'
         """
-        return api_helper.node_list(reqargs.get('limit', None))
+        return api_helper.node_list(
+            limit=reqargs.get('limit', None),
+            daemon_state=reqargs.get('daemon_state', None),
+            coordinator_state=reqargs.get('coordinator_state', None),
+            domain_state=reqargs.get('domain_state', None)
+        )
 api.add_resource(API_Node_Root, '/node')
 
 # /node/<node>

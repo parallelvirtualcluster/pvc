@@ -193,7 +193,7 @@ def get_info(zk_conn, node):
 
     return True, node_information
 
-def get_list(zk_conn, limit, is_fuzzy=True):
+def get_list(zk_conn, limit, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
     node_list = []
     full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
 
@@ -209,6 +209,20 @@ def get_list(zk_conn, limit, is_fuzzy=True):
                 return False, 'Regex Error: {}'.format(e)
         else:
             node_list.append(getNodeInformation(zk_conn, node))
+
+    if daemon_state or coordinator_state or domain_state:
+        limited_node_list = []
+        for node in node_list:
+            add_node = False
+            if daemon_state and node['daemon_state'] == daemon_state:
+                add_node = True
+            if coordinator_state and node['coordinator_state'] == coordinator_state:
+                add_node = True
+            if domain_state and node['domain_state'] == domain_state:
+                add_node = True
+            if add_node:
+                limited_node_list.append(node)
+        node_list = limited_node_list
 
     return True, node_list
 
