@@ -3492,7 +3492,11 @@ def init_cluster(confirm_flag):
     '-v', '--debug', '_debug', envvar='PVC_DEBUG', is_flag=True, default=False,
     help='Additional debug details.'
 )
-def cli(_cluster, _debug):
+@click.option(
+    '-q', '--quiet', '_quiet', envvar='PVC_QUIET', is_flag=True, default=False,
+    help='Suppress cluster connection information.'
+)
+def cli(_cluster, _debug, _quiet):
     """
     Parallel Virtual Cluster CLI management tool
 
@@ -3510,16 +3514,17 @@ def cli(_cluster, _debug):
     if not config.get('badcfg', None):
         config['debug'] = _debug
 
-        click.echo(
-            'Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(
-                config['cluster'],
-                config['api_host'],
-                config['api_scheme'],
-                config['api_prefix']
-            ),
-            err=True
-        )
-        click.echo('', err=True)
+        if not _quiet:
+            click.echo(
+                'Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(
+                    config['cluster'],
+                    config['api_host'],
+                    config['api_scheme'],
+                    config['api_prefix']
+                ),
+                err=True
+            )
+            click.echo('', err=True)
 
 config = dict()
 
