@@ -3317,6 +3317,11 @@ def provisioner_profile_remove(name, confirm_flag):
     'profile'
 )
 @click.option(
+    '-a', '--script-arg', 'script_args',
+    default=[], multiple=True,
+    help='Additional argument to the script install() function in key=value format.'
+)
+@click.option(
     '-d/-D', '--define/--no-define', 'define_flag',
     is_flag=True, default=True, show_default=True,
     help='Define the VM automatically during provisioning.'
@@ -3332,7 +3337,7 @@ def provisioner_profile_remove(name, confirm_flag):
     help='Wait for provisioning to complete, showing progress'
 )
 @cluster_req
-def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
+def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script_args):
     """
     Create a new VM NAME with profile PROFILE.
 
@@ -3345,11 +3350,14 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag):
     created VM on the PVC cluster. This can be useful for the administrator to create a "template"
     set of VM disks via the normal provisioner, but without ever starting the resulting VM. The
     resulting disk(s) can then be used as source volumes in other disk templates.
+
+    The "--script-arg" option can be specified as many times as required to pass additional,
+    VM-specific arguments to the provisioner install() function, beyond those set by the profile.
     """
     if not define_flag:
         start_flag = False
 
-    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag, define_flag, start_flag)
+    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args)
 
     if retcode and wait_flag:
         task_id = retdata

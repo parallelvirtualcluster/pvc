@@ -557,19 +557,20 @@ def profile_remove(config, name):
         
     return retvalue, response.json()['message']
 
-def vm_create(config, name, profile, wait_flag, define_flag, start_flag):
+def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
     """
     Create a new VM named {name} with profile {profile}
 
     API endpoint: POST /api/v1/provisioner/create
-    API_arguments: name={name}, profile={profile}
+    API_arguments: name={name}, profile={profile}, arg={script_args}
     API schema: {message}
     """
     params = {
         'name': name,
         'profile': profile,
         'start_vm': start_flag,
-        'define_vm': define_flag
+        'define_vm': define_flag,
+        'arg': script_args
     }
     response = call_api(config, 'post', '/provisioner/create', params=params)
 

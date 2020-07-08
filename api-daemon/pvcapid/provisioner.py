@@ -1026,7 +1026,7 @@ def delete_profile(name):
 #
 # Main VM provisioning function - executed by the Celery worker
 #
-def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
+def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_run_args=[]):
     # Runtime imports
     import time
     import importlib
@@ -1541,6 +1541,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True):
         for argument in vm_data['script_arguments']:
             argument_name, argument_data = argument.split('=')
             script_arguments[argument_name] = argument_data
+
+        # Parse the runtime arguments
+        for argument in script_run_args:
+            argument_name, argument_data = argument.split('=')
+            script_arguments[argument_name] = argument_data
+
+        print("Script arguments: {}".format(script_arguments))
 
         # Run the script
         try:

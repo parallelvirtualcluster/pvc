@@ -195,8 +195,9 @@ def Authenticator(function):
 # Job functions
 #
 @celery.task(bind=True)
-def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True):
-    return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm)
+def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True, script_run_args=[]):
+    print(script_run_args)
+    return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm, script_run_args=script_run_args)
 
 
 ##########################################################
@@ -5974,7 +5975,8 @@ class API_Provisioner_Create_Root(Resource):
         { 'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified." },
         { 'name': 'profile', 'required': True, 'helpmsg': "A profile name must be specified." },
         { 'name': 'define_vm' },
-        { 'name': 'start_vm' }
+        { 'name': 'start_vm' },
+        { 'name': 'arg', 'action': 'append' }
     ])
     @Authenticator
     def post(self, reqargs):
@@ -6005,6 +6007,10 @@ class API_Provisioner_Create_Root(Resource):
             type: boolean
             required: false
             description: Whether to start the VM after provisioning
+          - in: query
+            name: arg
+            type: string
+            description: Script install() function keywork argument in "arg=data" format; may be specified multiple times to add multiple arguments
         responses:
           200:
             description: OK
@@ -6039,7 +6045,8 @@ class API_Provisioner_Create_Root(Resource):
             reqargs.get('name', None),
             reqargs.get('profile', None),
             define_vm=define_vm,
-            start_vm=start_vm
+            start_vm=start_vm,
+            script_run_args=reqargs.get('arg', []),
         )
         return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
