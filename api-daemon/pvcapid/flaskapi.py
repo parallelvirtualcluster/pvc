@@ -196,7 +196,6 @@ def Authenticator(function):
 #
 @celery.task(bind=True)
 def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True, script_run_args=[]):
-    print(script_run_args)
     return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm, script_run_args=script_run_args)
 
 
