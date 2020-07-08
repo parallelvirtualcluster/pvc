@@ -148,8 +148,11 @@ def getDomainExtraDetails(parsed_xml):
 #
 def getDomainCPUFeatures(parsed_xml):
     dfeatures = []
-    for feature in parsed_xml.features.getchildren():
-        dfeatures.append(feature.tag)
+    try:
+        for feature in parsed_xml.features.getchildren():
+            dfeatures.append(feature.tag)
+    except:
+        pass
 
     return dfeatures
 
