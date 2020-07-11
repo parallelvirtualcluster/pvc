@@ -550,6 +550,9 @@ def node_list(limit, target_daemon_state, target_coordinator_state, target_domai
     retcode, retdata = pvc_node.node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state)
     if retcode:
         retdata = pvc_node.format_list(retdata, raw)
+    else:
+        if raw:
+            retdata = ""
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -1076,6 +1079,9 @@ def vm_list(target_node, target_state, limit, raw):
     retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state)
     if retcode:
         retdata = pvc_vm.format_list(config, retdata, raw)
+    else:
+        if raw:
+            retdata = ""
     cleanup(retcode, retdata)
 
 ###############################################################################
