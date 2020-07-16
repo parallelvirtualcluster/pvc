@@ -1543,9 +1543,10 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
             script_arguments[argument_name] = argument_data
 
         # Parse the runtime arguments
-        for argument in script_run_args:
-            argument_name, argument_data = argument.split('=')
-            script_arguments[argument_name] = argument_data
+        if script_run_args is not None:
+            for argument in script_run_args:
+                argument_name, argument_data = argument.split('=')
+                script_arguments[argument_name] = argument_data
 
         print("Script arguments: {}".format(script_arguments))
 
