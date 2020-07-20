@@ -46,7 +46,7 @@ def template_info(config, template, template_type):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def template_list(config, limit, template_type=None):
     """
@@ -68,7 +68,7 @@ def template_list(config, limit, template_type=None):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def template_add(config, params, template_type=None):
     """
@@ -85,7 +85,7 @@ def template_add(config, params, template_type=None):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def template_modify(config, params, name, template_type):
     """
@@ -102,7 +102,7 @@ def template_modify(config, params, name, template_type):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def template_remove(config, name, template_type):
     """
@@ -119,7 +119,7 @@ def template_remove(config, name, template_type):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def template_element_add(config, name, element_id, params, element_type=None, template_type=None):
     """
@@ -136,7 +136,7 @@ def template_element_add(config, name, element_id, params, element_type=None, te
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def template_element_remove(config, name, element_id, element_type=None, template_type=None):
     """
@@ -153,7 +153,7 @@ def template_element_remove(config, name, element_id, element_type=None, templat
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def userdata_info(config, userdata):
     """
@@ -168,7 +168,7 @@ def userdata_info(config, userdata):
     if response.status_code == 200:
         return True, response.json()[0]
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def userdata_list(config, limit):
     """
@@ -187,7 +187,7 @@ def userdata_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def userdata_show(config, name):
     """
@@ -202,7 +202,7 @@ def userdata_show(config, name):
     if response.status_code == 200:
         return True, response.json()[0]['userdata']
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def userdata_add(config, params):
     """
@@ -228,7 +228,7 @@ def userdata_add(config, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def userdata_modify(config, name, params):
     """
@@ -253,7 +253,7 @@ def userdata_modify(config, name, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def userdata_remove(config, name):
     """
@@ -270,7 +270,7 @@ def userdata_remove(config, name):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def script_info(config, script):
     """
@@ -285,7 +285,7 @@ def script_info(config, script):
     if response.status_code == 200:
         return True, response.json()[0]
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def script_list(config, limit):
     """
@@ -304,7 +304,7 @@ def script_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def script_show(config, name):
     """
@@ -319,7 +319,7 @@ def script_show(config, name):
     if response.status_code == 200:
         return True, response.json()[0]['script']
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def script_add(config, params):
     """
@@ -345,7 +345,7 @@ def script_add(config, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def script_modify(config, name, params):
     """
@@ -370,7 +370,7 @@ def script_modify(config, name, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def script_remove(config, name):
     """
@@ -387,7 +387,7 @@ def script_remove(config, name):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def ova_info(config, name):
     """
@@ -402,7 +402,7 @@ def ova_info(config, name):
     if response.status_code == 200:
         return True, response.json()[0]
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ova_list(config, limit):
     """
@@ -421,7 +421,7 @@ def ova_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ova_upload(config, name, ova_file, params):
     """
@@ -453,7 +453,7 @@ def ova_upload(config, name, ova_file, params):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ova_remove(config, name):
     """
@@ -470,7 +470,7 @@ def ova_remove(config, name):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def profile_info(config, profile):
     """
@@ -485,7 +485,7 @@ def profile_info(config, profile):
     if response.status_code == 200:
         return True, response.json()[0]
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def profile_list(config, limit):
     """
@@ -504,7 +504,7 @@ def profile_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def profile_add(config, params):
     """
@@ -521,7 +521,7 @@ def profile_add(config, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def profile_modify(config, name, params):
     """
@@ -538,7 +538,7 @@ def profile_modify(config, name, params):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def profile_remove(config, name):
     """
@@ -555,7 +555,7 @@ def profile_remove(config, name):
     else:
         retvalue = False
         
-    return retvalue, response.json()['message']
+    return retvalue, response.json().get('message', '')
 
 def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
     """
@@ -583,7 +583,7 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_
             retdata = response.json()['task_id']
     else:
         retvalue = False
-        retdata = response.json()['message']
+        retdata = response.json().get('message', '')
         
     return retvalue, retdata
 
@@ -631,7 +631,7 @@ def task_status(config, task_id=None, is_watching=False):
                 )
         else:
             retvalue = False
-            retdata = response.json()['message']
+            retdata = response.json().get('message', '')
     else:
         retvalue = True
         task_data_raw = response.json()

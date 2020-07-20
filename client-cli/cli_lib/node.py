@@ -44,7 +44,7 @@ def node_coordinator_state(config, node, action):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def node_domain_state(config, node, action, wait):
     """
@@ -65,7 +65,7 @@ def node_domain_state(config, node, action, wait):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def node_info(config, node):
     """
@@ -80,7 +80,7 @@ def node_info(config, node):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state):
     """
@@ -105,7 +105,7 @@ def node_list(config, limit, target_daemon_state, target_coordinator_state, targ
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 #
 # Output display functions

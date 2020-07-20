@@ -114,7 +114,7 @@ def ceph_status(config):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 	
 def ceph_util(config):
     """
@@ -129,7 +129,7 @@ def ceph_util(config):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 	
 def format_raw_output(status_data):
     ainformation = list()
@@ -155,7 +155,7 @@ def ceph_osd_info(config, osd):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_osd_list(config, limit):
     """
@@ -174,7 +174,7 @@ def ceph_osd_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_osd_add(config, node, device, weight):
     """
@@ -196,7 +196,7 @@ def ceph_osd_add(config, node, device, weight):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_osd_remove(config, osdid):
     """
@@ -216,7 +216,7 @@ def ceph_osd_remove(config, osdid):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_osd_state(config, osdid, state):
     """
@@ -236,7 +236,7 @@ def ceph_osd_state(config, osdid, state):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_osd_option(config, option, action):
     """
@@ -257,7 +257,7 @@ def ceph_osd_option(config, option, action):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def getOutputColoursOSD(osd_information):
     # Set the UP status
@@ -541,7 +541,7 @@ def ceph_pool_info(config, pool):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_pool_list(config, limit):
     """
@@ -560,7 +560,7 @@ def ceph_pool_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_pool_add(config, pool, pgs, replcfg):
     """
@@ -582,7 +582,7 @@ def ceph_pool_add(config, pool, pgs, replcfg):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_pool_remove(config, pool):
     """
@@ -602,7 +602,7 @@ def ceph_pool_remove(config, pool):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def format_list_pool(pool_list):
     # Handle empty list
@@ -819,7 +819,7 @@ def ceph_volume_info(config, pool, volume):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_volume_list(config, limit, pool):
     """
@@ -840,7 +840,7 @@ def ceph_volume_list(config, limit, pool):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_volume_add(config, pool, volume, size):
     """
@@ -862,7 +862,7 @@ def ceph_volume_add(config, pool, volume, size):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_volume_upload(config, pool, volume, image_format, image_file):
     """
@@ -897,7 +897,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_volume_remove(config, pool, volume):
     """
@@ -914,7 +914,7 @@ def ceph_volume_remove(config, pool, volume):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
     """
@@ -938,7 +938,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_volume_clone(config, pool, volume, new_volume):
     """
@@ -958,7 +958,7 @@ def ceph_volume_clone(config, pool, volume, new_volume):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def format_list_volume(volume_list):
     # Handle empty list
@@ -1091,7 +1091,7 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_snapshot_list(config, limit, volume, pool):
     """
@@ -1114,7 +1114,7 @@ def ceph_snapshot_list(config, limit, volume, pool):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def ceph_snapshot_add(config, pool, volume, snapshot):
     """
@@ -1136,7 +1136,7 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_snapshot_remove(config, pool, volume, snapshot):
     """
@@ -1153,7 +1153,7 @@ def ceph_snapshot_remove(config, pool, volume, snapshot):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     """
@@ -1175,7 +1175,7 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def format_list_snapshot(snapshot_list):
     # Handle empty list

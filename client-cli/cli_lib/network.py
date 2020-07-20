@@ -68,7 +68,7 @@ def net_info(config, net):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_list(config, limit):
     """
@@ -87,7 +87,7 @@ def net_list(config, limit):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_add(config, vni, description, nettype, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -118,7 +118,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -157,7 +157,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def net_remove(config, net):
     """
@@ -174,7 +174,7 @@ def net_remove(config, net):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 #
 # DHCP lease functions
@@ -192,7 +192,7 @@ def net_dhcp_info(config, net, mac):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_dhcp_list(config, net, limit, only_static=False):
     """
@@ -216,7 +216,7 @@ def net_dhcp_list(config, net, limit, only_static=False):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
     """
@@ -238,7 +238,7 @@ def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def net_dhcp_remove(config, net, mac):
     """
@@ -255,7 +255,7 @@ def net_dhcp_remove(config, net, mac):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 #
 # ACL functions
@@ -273,7 +273,7 @@ def net_acl_info(config, net, description):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_acl_list(config, net, limit, direction):
     """
@@ -294,7 +294,7 @@ def net_acl_list(config, net, limit, direction):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def net_acl_add(config, net, direction, description, rule, order):
     """
@@ -318,7 +318,7 @@ def net_acl_add(config, net, direction, description, rule, order):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def net_acl_remove(config, net, description):
     """
@@ -335,7 +335,7 @@ def net_acl_remove(config, net, description):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 
 #

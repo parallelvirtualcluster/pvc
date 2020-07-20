@@ -55,7 +55,7 @@ def vm_info(config, vm):
             return True, response
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def vm_list(config, limit, target_node, target_state):
     """
@@ -78,7 +78,7 @@ def vm_list(config, limit, target_node, target_state):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
     """
@@ -104,7 +104,7 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_modify(config, vm, xml, restart):
     """
@@ -127,7 +127,7 @@ def vm_modify(config, vm, xml, restart):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_metadata(config, vm, node_limit, node_selector, node_autostart, provisioner_profile):
     """
@@ -160,7 +160,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, provision
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_remove(config, vm, delete_disks=False):
     """
@@ -180,7 +180,7 @@ def vm_remove(config, vm, delete_disks=False):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_state(config, vm, target_state, wait=False):
     """
@@ -201,7 +201,7 @@ def vm_state(config, vm, target_state, wait=False):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_node(config, vm, target_node, action, force=False, wait=False, force_live=False):
     """
@@ -225,7 +225,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def vm_locks(config, vm):
     """
@@ -242,7 +242,7 @@ def vm_locks(config, vm):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def view_console_log(config, vm, lines=100):
     """
@@ -258,7 +258,7 @@ def view_console_log(config, vm, lines=100):
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
     if response.status_code != 200:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
     console_log = response.json()['data']
 
@@ -282,7 +282,7 @@ def follow_console_log(config, vm, lines=10):
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
     if response.status_code != 200:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
     # Shrink the log buffer to length lines
     console_log = response.json()['data']

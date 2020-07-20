@@ -40,7 +40,7 @@ def initialize(config):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def maintenance_mode(config, state):
     """
@@ -60,7 +60,7 @@ def maintenance_mode(config, state):
     else:
         retstatus = False
 
-    return retstatus, response.json()['message']
+    return retstatus, response.json().get('message', '')
 
 def get_info(config):
     """
@@ -75,7 +75,7 @@ def get_info(config):
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json()['message']
+        return False, response.json().get('message', '')
 
 def format_info(cluster_information, oformat):
     if oformat == 'json':
