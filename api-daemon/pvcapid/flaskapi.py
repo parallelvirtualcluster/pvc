@@ -3355,7 +3355,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
         )
 
     @RequestParser([
-        { 'name': 'size' },
+        { 'name': 'new_size' },
         { 'name': 'new_name' }
     ])
     @Authenticator
@@ -3393,14 +3393,14 @@ class API_Storage_Ceph_Volume_Element(Resource):
               type: object
               id: Message
         """
-        if reqargs.get('size', None) and reqargs.get('new_name', None):
+        if reqargs.get('new_size', None) and reqargs.get('new_name', None):
             return { "message": "Can only perform one modification at once" }, 400
 
-        if reqargs.get('size', None):
+        if reqargs.get('new_size', None):
             return api_helper.ceph_volume_resize(
                 pool,
                 volume,
-                reqargs.get('size')
+                reqargs.get('new_size')
             )
         if reqargs.get('new_name', None):
             return api_helper.ceph_volume_rename(
