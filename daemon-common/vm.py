@@ -477,7 +477,7 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
         if target_node == current_node:
             last_node = zkhandler.readdata(zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
             if last_node:
-                zkhandler.writedata(zk_conn, {'/domains/{}/lastnode'.format(dom_uuid), ''})
+                zkhandler.writedata(zk_conn, {'/domains/{}/lastnode'.format(dom_uuid): ''})
                 return True, 'Making temporary migration permanent for VM "{}".'.format(domain)
 
             return False, 'ERROR: VM "{}" is already running on node "{}".'.format(domain, current_node)
