@@ -77,8 +77,15 @@ def fenceNode(node_name, zk_conn, config, logger):
 # Migrate hosts away from a fenced node
 def migrateFromFencedNode(zk_conn, node_name, config, logger):
     logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
+
+    # Get the list of VMs
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
-    for dom_uuid in dead_node_running_domains:
+
+    # Set the node to a custom domainstate so we know what's happening
+    zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'fence-flush' })
+
+    # Migrate a VM after a flush
+    def fence_migrate_vm(dom_uuid):
         VMInstance.flush_locks(zk_conn, logger, dom_uuid)
 
         target_node = common.findTargetNode(zk_conn, config, dom_uuid)
@@ -96,6 +103,10 @@ def migrateFromFencedNode(zk_conn, node_name, config, logger):
                 '/domains/{}/state'.format(dom_uuid): 'stopped',
                 '/domains/{}/node_autostart'.format(dom_uuid): 'True'
             })
+
+    # Loop through the VMs
+    for dom_uuid in dead_node_running_domains:
+        fence_migrate_vm(dom_uuid)
 
     # Set node in flushed state for easy remigrating when it comes back
     zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })
