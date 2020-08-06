@@ -61,16 +61,17 @@ def fenceNode(node_name, zk_conn, config, logger):
 
     # Force into secondary network state if needed
     if node_name in config['coordinators']:
+        logger.out('Forcing secondary status for node "{}'.format(node_name), state='i')
         zkhandler.writedata(zk_conn, { '/nodes/{}/routerstate'.format(node_name): 'secondary' })
         if zkhandler.readdata(zk_conn, '/primary_node') == node_name:
             zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
 
     # If the fence succeeded and successful_fence is migrate
-    if fence_status == True and config['successful_fence'] == 'migrate':
+    if fence_status and config['successful_fence'] == 'migrate':
         migrateFromFencedNode(zk_conn, node_name, config, logger)
 
     # If the fence failed and failed_fence is migrate
-    if fence_status == False and config['failed_fence'] == 'migrate' and config['suicide_intervals'] != '0':
+    if not fence_status and config['failed_fence'] == 'migrate' and config['suicide_intervals'] != '0':
         migrateFromFencedNode(zk_conn, node_name, config, logger)
 
 # Migrate hosts away from a fenced node
