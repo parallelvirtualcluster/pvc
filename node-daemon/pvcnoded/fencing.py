@@ -31,9 +31,10 @@ import pvcnoded.VMInstance as VMInstance
 # Fence thread entry function
 #
 def fenceNode(node_name, zk_conn, config, logger):
+    # We allow exactly 6 saving throws (30 seconds) for the host to come back online or we kill it
+    failcount_limit = 6
     failcount = 0
-    # We allow exactly 3 saving throws for the host to come back online
-    while failcount < 3:
+    while failcount < failcount_limit:
         # Wait 5 seconds
         time.sleep(5)
         # Get the state
@@ -41,7 +42,7 @@ def fenceNode(node_name, zk_conn, config, logger):
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
-            logger.out('Node "{}" failed {} saving throws'.format(node_name, failcount), state='w')
+            logger.out('Node "{}" failed {}/{} saving throws'.format(node_name, failcount, failcount_limit), state='w')
         # It changed back to something else so it must be alive
         else:
             logger.out('Node "{}" passed a saving throw; canceling fence'.format(node_name), state='o')
