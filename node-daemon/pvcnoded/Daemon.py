@@ -1587,8 +1587,8 @@ def node_keepalive():
                         if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name)) != 'dead':
                             fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
                             fence_thread.start()
-                        # Write the updated data after we start the fence thread
-                        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
+                            # Write the updated data after we start the fence thread
+                            zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
 
 # Start keepalive thread
