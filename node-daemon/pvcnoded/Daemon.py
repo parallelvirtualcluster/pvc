@@ -1463,24 +1463,36 @@ def node_keepalive():
 
     # Join against running threads
     if enable_hypervisor:
-        vm_stats_thread.join()
+        vm_stats_thread.join(timeout=4.0)
+        if vm_stats_thread.is_alive():
+            logger.out('VM stats gathering exceeded 4s timeout, continuing', state='w')
     if enable_storage:
-        ceph_stats_thread.join()
+        ceph_stats_thread.join(timeout=4.0)
+        if ceph_stats_thread.is_alive():
+            logger.out('Ceph stats gathering exceeded 4s timeout, continuing', state='w')
 
     # Get information from thread queues
     if enable_hypervisor:
-        this_node.domains_count = vm_thread_queue.get()
-        this_node.memalloc = vm_thread_queue.get()
-        this_node.vcpualloc = vm_thread_queue.get()
+        try:
+            this_node.domains_count = vm_thread_queue.get()
+            this_node.memalloc = vm_thread_queue.get()
+            this_node.vcpualloc = vm_thread_queue.get()
+        except:
+            pass
     else:
         this_node.domains_count = 0
         this_node.memalloc = 0
         this_node.vcpualloc = 0
 
     if enable_storage:
-        ceph_health_colour = ceph_thread_queue.get()
-        ceph_health = ceph_thread_queue.get()
-        osds_this_node = ceph_thread_queue.get()
+        try:
+            ceph_health_colour = ceph_thread_queue.get()
+            ceph_health = ceph_thread_queue.get()
+            osds_this_node = ceph_thread_queue.get()
+        except:
+            ceph_health_colour = fmt_cyan
+            ceph_health = 'UNKNOWN'
+            osds_this_node = '?'
 
     # Set our information in zookeeper
     keepalive_time = int(time.time())
