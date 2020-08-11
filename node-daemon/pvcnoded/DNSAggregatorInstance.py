@@ -20,13 +20,12 @@
 #
 ###############################################################################
 
-import os
-import sys
 import time
-import threading
 import dns.zone
 import dns.query
 import psycopg2
+
+from threading import Thread, Event
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
@@ -292,7 +291,7 @@ class AXFRDaemonInstance(object):
         self.config = self.aggregator.config
         self.logger = self.aggregator.logger
         self.dns_networks = self.aggregator.dns_networks
-        self.thread_stopper = threading.Event()
+        self.thread_stopper = Event()
         self.thread = None
         self.sql_conn = None
 
@@ -302,7 +301,7 @@ class AXFRDaemonInstance(object):
     def start(self):
         # Create the thread
         self.thread_stopper.clear()
-        self.thread = threading.Thread(target=self.run, args=(), kwargs={})
+        self.thread = Thread(target=self.run, args=(), kwargs={})
 
         # Start a local instance of the SQL connection
         # Trying to use the instance from the main DNS Aggregator can result in connection failures

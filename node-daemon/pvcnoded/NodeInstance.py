@@ -20,13 +20,9 @@
 #
 ###############################################################################
 
-import os
-import sys
-import psutil
-import socket
 import time
-import libvirt
-import threading
+
+from threading import Thread
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
@@ -119,13 +115,13 @@ class NodeInstance(object):
                     if self.config['enable_networking']:
                         if self.router_state == 'takeover':
                             self.logger.out('Setting node {} to primary state'.format(self.name), state='i')
-                            transition_thread = threading.Thread(target=self.become_primary, args=(), kwargs={})
+                            transition_thread = Thread(target=self.become_primary, args=(), kwargs={})
                             transition_thread.start()
                         if self.router_state == 'relinquish':
                             # Skip becoming secondary unless already running
                             if self.daemon_state == 'run' or self.daemon_state == 'shutdown':
                                 self.logger.out('Setting node {} to secondary state'.format(self.name), state='i')
-                                transition_thread = threading.Thread(target=self.become_secondary, args=(), kwargs={})
+                                transition_thread = Thread(target=self.become_secondary, args=(), kwargs={})
                                 transition_thread.start()
                             else:
                                 # We did nothing, so just become secondary state
@@ -157,11 +153,11 @@ class NodeInstance(object):
 
                     # Do flushing in a thread so it doesn't block the migrates out
                     if self.domain_state == 'flush':
-                        self.flush_thread = threading.Thread(target=self.flush, args=(), kwargs={})
+                        self.flush_thread = Thread(target=self.flush, args=(), kwargs={})
                         self.flush_thread.start()
                     # Do unflushing in a thread so it doesn't block the migrates in
                     if self.domain_state == 'unflush':
-                        self.flush_thread = threading.Thread(target=self.unflush, args=(), kwargs={})
+                        self.flush_thread = Thread(target=self.unflush, args=(), kwargs={})
                         self.flush_thread.start()
 
         @self.zk_conn.DataWatch('/nodes/{}/memfree'.format(self.name))

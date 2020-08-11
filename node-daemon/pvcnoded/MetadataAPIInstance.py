@@ -22,13 +22,13 @@
 
 import gevent.pywsgi
 import flask
-import threading
 import sys
 import time
 import psycopg2
+
+from threading import Thread
 from psycopg2.extras import RealDictCursor
 
-# The metadata server requires client libraries
 import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 
@@ -105,7 +105,7 @@ class MetadataAPIInstance(object):
     def start(self):
         # Launch Metadata API
         self.logger.out('Starting Metadata API at 169.254.169.254:80', state='i')
-        self.thread = threading.Thread(target=self.launch_wsgi)
+        self.thread = Thread(target=self.launch_wsgi)
         self.thread.start()
         self.logger.out('Successfully started Metadata API thread', state='o')
 

@@ -21,18 +21,18 @@
 ###############################################################################
 
 import subprocess
-import threading
 import signal
-import os
 import time
-import shlex
+
+from threading import Thread
+from shlex import split as shlex_split
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):
-        command = shlex.split(command_string)
+        command = shlex_split(command_string)
         # Set stdout to be a logfile if set
         if logfile:
             stdout = open(logfile, 'a')
@@ -63,7 +63,7 @@ def run_os_daemon(command_string, environment=None, logfile=None):
 
 # Run a oneshot command, optionally without blocking
 def run_os_command(command_string, background=False, environment=None, timeout=None):
-    command = shlex.split(command_string)
+    command = shlex_split(command_string)
     if background:
         def runcmd():
             try:
@@ -76,7 +76,7 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
                 )
             except subprocess.TimeoutExpired:
                 pass
-        thread = threading.Thread(target=runcmd, args=())
+        thread = Thread(target=runcmd, args=())
         thread.start()
         return 0, None, None
     else:

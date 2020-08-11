@@ -20,7 +20,6 @@
 #
 ###############################################################################
 
-import kazoo.client
 import uuid
 
 # Child list function

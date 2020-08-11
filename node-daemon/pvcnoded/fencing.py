@@ -21,7 +21,6 @@
 ###############################################################################
 
 import time
-import threading
 
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common

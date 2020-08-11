@@ -21,16 +21,12 @@
 ###############################################################################
 
 import os
-import sys
 import uuid
 import time
-import threading
 import libvirt
 
+from threading import Thread, Event
 from collections import deque
-
-import fcntl
-import signal
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
@@ -62,12 +58,12 @@ class VMConsoleWatcherInstance(object):
 
         # Thread options
         self.thread = None
-        self.thread_stopper = threading.Event()
+        self.thread_stopper = Event()
 
     # Start execution thread
     def start(self):
         self.thread_stopper.clear()
-        self.thread = threading.Thread(target=self.run, args=(), kwargs={})
+        self.thread = Thread(target=self.run, args=(), kwargs={})
         self.logger.out('Starting VM log parser', state='i', prefix='Domain {}:'.format(self.domuuid))
         self.thread.start()
 

@@ -21,8 +21,8 @@
 ###############################################################################
 
 import os
-import sys
 import time
+
 from textwrap import dedent
 
 import pvcnoded.log as log

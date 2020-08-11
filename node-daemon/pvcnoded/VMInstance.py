@@ -20,15 +20,12 @@
 #
 ###############################################################################
 
-import os
-import sys
 import uuid
-import socket
 import time
-import threading
 import libvirt
-import kazoo.client
 import json
+
+from threading import Thread
 
 import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
@@ -138,7 +135,7 @@ class VMInstance(object):
 
             # Perform a management command
             self.logger.out('Updating state of VM {}'.format(self.domuuid), state='i')
-            state_thread = threading.Thread(target=self.manage_vm_state, args=(), kwargs={})
+            state_thread = Thread(target=self.manage_vm_state, args=(), kwargs={})
             state_thread.start()
 
     # Get data functions

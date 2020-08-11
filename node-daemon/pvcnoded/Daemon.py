@@ -28,20 +28,17 @@ import libvirt
 import sys
 import os
 import signal
-import atexit
-import socket
 import psutil
 import subprocess
-import uuid
 import time
 import re
-import configparser
-import threading
 import yaml
 import json
-import ipaddress
-import apscheduler.schedulers.background
 
+from socket import gethostname
+from threading import Thread
+from ipaddress import ip_address, ip_network
+from apscheduler.schedulers.background import BackgroundScheduler
 from distutils.util import strtobool
 from queue import Queue
 from xml.etree import ElementTree
@@ -80,7 +77,7 @@ import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
 # Create timer to update this node in Zookeeper
 def startKeepaliveTimer():
     # Create our timer object
-    update_timer = apscheduler.schedulers.background.BackgroundScheduler()
+    update_timer = BackgroundScheduler()
     interval = int(config['keepalive_interval'])
     logger.out('Starting keepalive timer ({} second interval)'.format(interval), state='s')
     update_timer.add_job(node_keepalive, 'interval', seconds=interval)
@@ -108,7 +105,7 @@ except:
     exit(1)
 
 # Set local hostname and domain variables
-myfqdn = socket.gethostname()
+myfqdn = gethostname()
 #myfqdn = 'pvc-hv1.domain.net'
 myhostname = myfqdn.split('.', 1)[0]
 mydomainname = ''.join(myfqdn.split('.', 1)[1:])
@@ -234,7 +231,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
             # Verify the network provided is valid
             try:
-                network = ipaddress.ip_network(config[network_key])
+                network = ip_network(config[network_key])
             except Exception as e:
                 print('ERROR: Network address {} for {} is not valid!'.format(config[network_key], network_key))
                 exit(1)
@@ -251,7 +248,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
             try:
                 # Set the ipaddr
-                floating_addr = ipaddress.ip_address(config[floating_key].split('/')[0])
+                floating_addr = ip_address(config[floating_key].split('/')[0])
                 # Verify we're in the network
                 if not floating_addr in list(network.hosts()):
                     raise
@@ -1446,13 +1443,13 @@ def node_keepalive():
     # Run VM statistics collection in separate thread for parallelization
     if enable_hypervisor:
         vm_thread_queue = Queue()
-        vm_stats_thread = threading.Thread(target=collect_vm_stats, args=(vm_thread_queue,), kwargs={})
+        vm_stats_thread = Thread(target=collect_vm_stats, args=(vm_thread_queue,), kwargs={})
         vm_stats_thread.start()
     
     # Run Ceph status collection in separate thread for parallelization
     if enable_storage:
         ceph_thread_queue = Queue()
-        ceph_stats_thread = threading.Thread(target=collect_ceph_stats, args=(ceph_thread_queue,), kwargs={})
+        ceph_stats_thread = Thread(target=collect_ceph_stats, args=(ceph_thread_queue,), kwargs={})
         ceph_stats_thread.start()
     
     # Get node performance statistics
@@ -1597,7 +1594,7 @@ def node_keepalive():
                         # Ensures that, if we lost the lock race and come out of waiting,
                         # we won't try to trigger our own fence thread.
                         if zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name)) != 'dead':
-                            fence_thread = threading.Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
+                            fence_thread = Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
                             fence_thread.start()
                             # Write the updated data after we start the fence thread
                             zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
