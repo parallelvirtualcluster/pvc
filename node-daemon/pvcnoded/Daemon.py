@@ -538,7 +538,10 @@ def zk_listener(state):
                 del _zk_conn
                 continue
 
+            # Overwrite global zk_conn with new connection
             zk_conn = _zk_conn
+            # Readd the listener
+            zk_conn.add_listener(zk_listener)
             break
 
 zk_conn.add_listener(zk_listener)
