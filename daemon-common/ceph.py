@@ -952,7 +952,7 @@ def resize_volume(zk_conn, pool, name, size):
                 active_node = vm_info['node']
                 volume_id = disk['dev']
     # 2b. Perform a live resize in libvirt if the VM is running
-    if vm_info['state'] == 'start' and active_node is not None:
+    if active_node is not None and vm_info.get('state', '') == 'start':
         import libvirt
         # Run the libvirt command against the target host
         try:
