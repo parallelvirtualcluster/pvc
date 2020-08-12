@@ -2759,9 +2759,14 @@ def provisioner_userdata_add(name, filename):
     Add a new userdata document NAME from file FILENAME.
     """
 
-    # Open the XML file
+    # Open the YAML file
     userdata = filename.read()
     filename.close()
+    try:
+        yaml.load(userdata, Loader=yaml.FullLoader)
+    except Exception as e:
+        click.echo("Error: Userdata document is malformed")
+        cleanup(False, e)
 
     params = dict()
     params['name'] = name
@@ -2832,6 +2837,12 @@ def provisioner_userdata_modify(name, filename, editor):
         # Open the new file
         userdata = filename.read().strip()
         filename.close()
+
+    try:
+        yaml.load(userdata, Loader=yaml.FullLoader)
+    except Exception as e:
+        click.echo("Error: Userdata document is malformed")
+        cleanup(False, e)
 
     params = dict()
     params['data'] = userdata
