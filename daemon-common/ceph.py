@@ -27,6 +27,7 @@ import json
 import time
 import math
 
+import daemon_lib.vm as vm
 import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
@@ -939,6 +940,30 @@ def resize_volume(zk_conn, pool, name, size):
     retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
     if retcode:
         return False, 'ERROR: Failed to resize RBD volume "{}" to size "{}" in pool "{}": {}'.format(name, size, pool, stderr)
+
+    # 2a. Determine the node running this VM if applicable
+    active_node = None
+    volume_vm_name = name.split('_')[0]
+    retcode, vm_info = vm.get_info(zk_conn, volume_vm_name)
+    if retcode:
+        for disk in vm_info['disks']:
+            # This block device is present in this VM so we can continue
+            if disk['name'] == '{}/{}'.format(pool, name):
+                active_node = vm_info['node']
+                volume_id = disk['dev']
+    # 2b. Perform a live resize in libvirt if the VM is running
+    if vm_info['state'] == 'start' and active_node is not None:
+        import libvirt
+        # Run the libvirt command against the target host
+        try:
+            dest_lv = 'qemu+tcp://{}/system'.format(active_node)
+            target_lv_conn = libvirt.open(dest_lv)
+            target_vm_conn = target_lv_conn.lookupByName(vm_info['name'])
+            if target_vm_conn:
+                target_vm_conn.blockResize(volume_id, int(format_bytes_fromhuman(size)[:-1]), libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+            target_lv_conn.close()
+        except:
+            pass
 
     # 2. Get volume stats
     retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
