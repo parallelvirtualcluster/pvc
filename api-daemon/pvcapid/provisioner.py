@@ -1591,7 +1591,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
 
                         # Make sure any bind mounts or submounts are unmounted first
                         if volume['mountpoint'] == '/':
-                            retcode, stdout, stderr = pvc_common.run_os_command('umount {}/**{/**,}'.format(mount_path))
+                            retcode, stdout, stderr = pvc_common.run_os_command('umount {}/**/**'.format(mount_path))
+                            retcode, stdout, stderr = pvc_common.run_os_command('umount {}/**'.format(mount_path))
 
                         retcode, stdout, stderr = pvc_common.run_os_command('umount {}'.format(mount_path))
                         if retcode:
