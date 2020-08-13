@@ -1149,7 +1149,8 @@ def collect_ceph_stats(queue):
 
         command = { "prefix": "osd dump", "format": "json" }
         try:
-            osd_dump_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['osds']
+            retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json --connect-timeout 2', timeout=2)
+            osd_dump_raw = json.loads(stdout)['osds']
         except Exception as e:
             logger.out('Failed to obtain OSD data: {}'.format(e), state='w')
             osd_dump_raw = []
