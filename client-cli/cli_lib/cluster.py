@@ -92,10 +92,19 @@ def format_info(cluster_information, oformat):
     else:
         health_colour = ansiprint.yellow()
 
+    if cluster_information['storage_health'] == 'Optimal':
+        storage_health_colour = ansiprint.green()
+    elif cluster_information['storage_health'] == 'Maintenance':
+        storage_health_colour = ansiprint.blue()
+    else:
+        storage_health_colour = ansiprint.yellow()
+
     ainformation = []
     ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
+    ainformation.append('{}Storage health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), storage_health_colour, cluster_information['storage_health'], ansiprint.end()))
+    ainformation.append('')
     ainformation.append('{}Primary node:{}        {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['primary_node']))
     ainformation.append('{}Cluster upstream IP:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['upstream_ip']))
     ainformation.append('')

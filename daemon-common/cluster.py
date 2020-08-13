@@ -127,6 +127,15 @@ def getClusterInformation(zk_conn):
     else:
         cluster_health = 'Optimal'
 
+    # Find out our storage health from Ceph
+    ceph_health = zkhandler.readdata(zk_conn, '/ceph').split('\n')[2].split()[-1]
+    if maint_state == 'true':
+        storage_health = 'Maintenance'
+    elif ceph_health != 'HEALTH_OK':
+        storage_health = 'Degraded'
+    else:
+        storage_health = 'Optimal'
+
     # State lists
     node_state_combinations = [
         'run,ready', 'run,flush', 'run,flushed', 'run,unflush',
@@ -174,6 +183,7 @@ def getClusterInformation(zk_conn):
     # Format the status data
     cluster_information = {
         'health': cluster_health,
+        'storage_health': storage_health,
         'primary_node': common.getPrimaryNode(zk_conn),
         'upstream_ip': zkhandler.readdata(zk_conn, '/upstream_ip'),
         'nodes': formatted_node_states,

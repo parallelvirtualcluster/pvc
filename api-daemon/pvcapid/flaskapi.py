@@ -359,6 +359,10 @@ class API_Status(Resource):
                   type: string
                   description: The overall cluster health
                   example: Optimal
+                storage_health:
+                  type: string
+                  description: The overall storage cluster health
+                  example: Optimal
                 primary_node:
                   type: string
                   description: The current primary coordinator node
