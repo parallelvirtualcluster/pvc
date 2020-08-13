@@ -693,7 +693,13 @@ else:
         zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
 
 ###############################################################################
-# PHASE 7 - Ensure Libvirt is working
+# PHASE 7a - Ensure IPMI is reachable and working
+###############################################################################
+if not fencing.verifyIPMI(config['ipmi_hostname'], config['ipmi_username'], config['ipmi_password']):
+    logger.out('Our IPMI is not reachable; fencing of this node will likely fail', state='w')
+
+###############################################################################
+# PHASE 7b - Ensure Libvirt is working
 ###############################################################################
 
 if enable_hypervisor:
