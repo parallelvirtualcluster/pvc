@@ -21,6 +21,7 @@
 ###############################################################################
 
 import json
+import re
 
 from distutils.util import strtobool
 
@@ -49,6 +50,10 @@ def getClusterInformation(zk_conn):
         maint_state = zkhandler.readdata(zk_conn, '/maintenance')
     except:
         maint_state = 'false'
+
+    # List of messages to display to the clients
+    cluster_health_msg = []
+    storage_health_msg = []
 
     # Get node information object list
     retcode, node_list = pvc_node.get_list(zk_conn, None)
@@ -82,6 +87,7 @@ def getClusterInformation(zk_conn):
         domain_state = node['domain_state']
         if daemon_state != 'run' and domain_state != 'ready':
             node_healthy_status[index] = False
+            cluster_health_msg.append("Node '{}' in {},{} state".format(node['name'], daemon_state, domain_state))
         else:
             node_healthy_status[index] = True
         node_report_status[index] = daemon_state + ',' +  domain_state
@@ -93,6 +99,7 @@ def getClusterInformation(zk_conn):
         vm_state = vm['state']
         if vm_state not in ['start', 'disable', 'migrate', 'unmigrate', 'provision']:
             vm_healthy_status[index] = False
+            cluster_health_msg.append("VM '{}' in {} state".format(vm['name'], vm_state))
         else:
             vm_healthy_status[index] = True
         vm_report_status[index] = vm_state
@@ -111,12 +118,14 @@ def getClusterInformation(zk_conn):
         except KeyError:
             ceph_osd_in = 0
 
-        if not ceph_osd_up or not ceph_osd_in:
-            ceph_osd_healthy_status[index] = False
-        else:
-            ceph_osd_healthy_status[index] = True
         up_texts = { 1: 'up', 0: 'down' }
         in_texts = { 1: 'in', 0: 'out' }
+
+        if not ceph_osd_up or not ceph_osd_in:
+            ceph_osd_healthy_status[index] = False
+            cluster_health_msg.append('OSD {} in {},{} state'.format(ceph_osd['id'], up_texts[ceph_osd_up], in_texts[ceph_osd_in]))
+        else:
+            ceph_osd_healthy_status[index] = True
         ceph_osd_report_status[index] = up_texts[ceph_osd_up] + ',' + in_texts[ceph_osd_in]
 
     # Find out the overall cluster health; if any element of a healthy_status is false, it's unhealthy
@@ -128,7 +137,19 @@ def getClusterInformation(zk_conn):
         cluster_health = 'Optimal'
 
     # Find out our storage health from Ceph
-    ceph_health = zkhandler.readdata(zk_conn, '/ceph').split('\n')[2].split()[-1]
+    ceph_status = zkhandler.readdata(zk_conn, '/ceph').split('\n')
+    ceph_health = ceph_status[2].split()[-1]
+
+    # Parse the status output to get the health indicators
+    line_record = False
+    for index, line in enumerate(ceph_status):
+        if re.search('services:', line):
+            line_record = False
+        if line_record and len(line.strip()) > 0:
+            storage_health_msg.append(line.strip())
+        if re.search('health:', line):
+            line_record = True
+
     if maint_state == 'true':
         storage_health = 'Maintenance'
     elif ceph_health != 'HEALTH_OK':
@@ -183,7 +204,9 @@ def getClusterInformation(zk_conn):
     # Format the status data
     cluster_information = {
         'health': cluster_health,
+        'health_msg': cluster_health_msg,
         'storage_health': storage_health,
+        'storage_health_msg': storage_health_msg,
         'primary_node': common.getPrimaryNode(zk_conn),
         'upstream_ip': zkhandler.readdata(zk_conn, '/upstream_ip'),
         'nodes': formatted_node_states,
