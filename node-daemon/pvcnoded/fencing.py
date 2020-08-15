@@ -35,7 +35,7 @@ def fenceNode(node_name, zk_conn, config, logger):
     failcount = 0
     while failcount < failcount_limit:
         # Wait 5 seconds
-        time.sleep(5)
+        time.sleep(config.keepalive_interval)
         # Get the state
         node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
         # Is it still 'dead'
@@ -56,8 +56,8 @@ def fenceNode(node_name, zk_conn, config, logger):
 
     # Shoot it in the head
     fence_status = rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password, logger)
-    # Hold to ensure the fence takes effect
-    time.sleep(3)
+    # Hold to ensure the fence takes effect and system stabilizes
+    time.sleep(config.keepalive_interval * 2)
 
     # Force into secondary network state if needed
     if node_name in config['coordinators']:
