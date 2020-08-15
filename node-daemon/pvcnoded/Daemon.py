@@ -1346,8 +1346,8 @@ def collect_vm_stats(queue):
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
         except Exception as e:
-            if debug:
-                print("Failed getting VM information for {}: {}".format(domain_name, e))
+            if debug and domain is defined:
+                print("Failed getting VM information for {}: {}".format(domain.name(), e))
             continue
 
         # Ensure VM is present in the domain_list
