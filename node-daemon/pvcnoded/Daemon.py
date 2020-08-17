@@ -1025,6 +1025,9 @@ if enable_storage:
 
 # Ceph stats update function
 def collect_ceph_stats(queue):
+    if debug:
+        logger.out("ceph-thread: Thread starting", state='d')
+
     # Connect to the Ceph cluster
     try:
         ceph_conn = Rados(conffile=config['ceph_config_file'], conf=dict(keyring=config['ceph_admin_keyring']))
@@ -1032,6 +1035,9 @@ def collect_ceph_stats(queue):
     except Exception as e:
         logger.out('Failed to open connection to Ceph cluster: {}'.format(e), state='e')
         return
+
+    if debug:
+        logger.out("ceph-thread: Getting health stats from monitor", state='d')
 
     # Get Ceph cluster health for local status output
     command = { "prefix": "health", "format": "json" }
@@ -1283,6 +1289,9 @@ def collect_ceph_stats(queue):
     queue.put(ceph_health)
     queue.put(osds_this_node)
 
+    if debug:
+        logger.out("ceph-thread: Thread finished", state='d')
+
 # State table for pretty stats
 libvirt_vm_states = {
     0: "NOSTATE",
@@ -1297,6 +1306,9 @@ libvirt_vm_states = {
 
 # VM stats update function
 def collect_vm_stats(queue):
+    if debug:
+        logger.out("vm-thread: Thread starting", state='d')
+
     # Connect to libvirt
     if debug:
         logger.out("vm-thread: Connect to libvirt", state='d')
@@ -1422,8 +1434,14 @@ def collect_vm_stats(queue):
     queue.put(memalloc)
     queue.put(vcpualloc)
 
+    if debug:
+        logger.out("vm-thread: Thread finished", state='d')
+
 # Keepalive update function
 def node_keepalive():
+    if debug:
+        logger.out("main-thread: Keepalive starting", state='d')
+
     # Set the upstream IP in Zookeeper for clients to read
     if config['enable_networking']:
         if this_node.router_state == 'primary':
@@ -1609,6 +1627,8 @@ def node_keepalive():
                             # Write the updated data after we start the fence thread
                             zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
+    if debug:
+        logger.out("main-thread: Keepalive finished", state='d')
 
 # Start keepalive thread
 update_timer = startKeepaliveTimer()
