@@ -1026,20 +1026,20 @@ if enable_storage:
 # Ceph stats update function
 def collect_ceph_stats(queue):
     if debug:
-        logger.out("ceph-thread: Thread starting", state='d')
+        logger.out("Thread starting", state='d', prefix='ceph-thread')
 
     # Connect to the Ceph cluster
     try:
         ceph_conn = Rados(conffile=config['ceph_config_file'], conf=dict(keyring=config['ceph_admin_keyring']))
         if debug:
-            logger.out("ceph-thread: Connecting to cluster", state='d')
+            logger.out("Connecting to cluster", state='d', prefix='ceph-thread')
         ceph_conn.connect(timeout=1)
     except Exception as e:
         logger.out('Failed to open connection to Ceph cluster: {}'.format(e), state='e')
         return
 
     if debug:
-        logger.out("ceph-thread: Getting health stats from monitor", state='d')
+        logger.out("Getting health stats from monitor", state='d', prefix='ceph-thread')
 
     # Get Ceph cluster health for local status output
     command = { "prefix": "health", "format": "json" }
@@ -1060,7 +1060,7 @@ def collect_ceph_stats(queue):
     # Primary-only functions
     if this_node.router_state == 'primary':
         if debug:
-            logger.out("ceph-thread: Set ceph health information in zookeeper (primary only)", state='d')
+            logger.out("Set ceph health information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         command = { "prefix": "status", "format": "pretty" }
         ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
@@ -1073,7 +1073,7 @@ def collect_ceph_stats(queue):
             return
 
         if debug:
-            logger.out("ceph-thread: Set ceph rados df information in zookeeper (primary only)", state='d')
+            logger.out("Set ceph rados df information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get rados df info
         command = { "prefix": "df", "format": "pretty" }
@@ -1087,7 +1087,7 @@ def collect_ceph_stats(queue):
             return
 
         if debug:
-            logger.out("ceph-thread: Set pool information in zookeeper (primary only)", state='d')
+            logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
         command = { "prefix": "df", "format": "json" }
@@ -1106,7 +1106,7 @@ def collect_ceph_stats(queue):
 
         pool_count = len(ceph_pool_df_raw)
         if debug:
-            logger.out("ceph-thread: Getting info for {} pools".format(pool_count), state='d')
+            logger.out("Getting info for {} pools".format(pool_count), state='d', prefix='ceph-thread')
         for pool_idx in range(0, pool_count):
             try:
                 # Combine all the data for this pool
@@ -1118,11 +1118,11 @@ def collect_ceph_stats(queue):
                 # Ignore any pools that aren't in our pool list
                 if pool['name'] not in pool_list:
                     if debug:
-                        logger.out("ceph-thread: Pool {} not in pool list {}".format(pool['name'], pool_list), state='d')
+                        logger.out("Pool {} not in pool list {}".format(pool['name'], pool_list), state='d', prefix='ceph-thread')
                     continue
                 else:
                     if debug:
-                        logger.out("ceph-thread: Parsing data for pool {}".format(pool['name']), state='d')
+                        logger.out("Parsing data for pool {}".format(pool['name']), state='d', prefix='ceph-thread')
 
                 # Assemble a useful data structure
                 pool_df = {
@@ -1156,7 +1156,7 @@ def collect_ceph_stats(queue):
     if len(osd_list) > 0:
         # Get data from Ceph OSDs
         if debug:
-            logger.out("ceph-thread: Get data from Ceph OSDs", state='d')
+            logger.out("Get data from Ceph OSDs", state='d', prefix='ceph-thread')
 
         # Parse the dump data
         osd_dump = dict()
@@ -1170,7 +1170,7 @@ def collect_ceph_stats(queue):
             osd_dump_raw = []
 
         if debug:
-            logger.out("ceph-thread: Loop through OSD dump", state='d')
+            logger.out("Loop through OSD dump", state='d', prefix='ceph-thread')
         for osd in osd_dump_raw:
             osd_dump.update({
                 str(osd['osd']): {
@@ -1183,7 +1183,7 @@ def collect_ceph_stats(queue):
 
         # Parse the df data
         if debug:
-            logger.out("ceph-thread: Parse the OSD df data", state='d')
+            logger.out("Parse the OSD df data", state='d', prefix='ceph-thread')
 
         osd_df = dict()
 
@@ -1195,7 +1195,7 @@ def collect_ceph_stats(queue):
             osd_df_raw = []
 
         if debug:
-            logger.out("ceph-thread: Loop through OSD df", state='d')
+            logger.out("Loop through OSD df", state='d', prefix='ceph-thread')
         for osd in osd_df_raw:
             osd_df.update({
                 str(osd['id']): {
@@ -1210,7 +1210,7 @@ def collect_ceph_stats(queue):
 
         # Parse the status data
         if debug:
-            logger.out("ceph-thread: Parse the OSD status data", state='d')
+            logger.out("Parse the OSD status data", state='d', prefix='ceph-thread')
 
         osd_status = dict()
 
@@ -1222,7 +1222,7 @@ def collect_ceph_stats(queue):
             osd_status_raw = []
 
         if debug:
-            logger.out("ceph-thread: Loop through OSD status data", state='d')
+            logger.out("Loop through OSD status data", state='d', prefix='ceph-thread')
 
         for line in osd_status_raw.split('\n'):
             # Strip off colour
@@ -1255,7 +1255,7 @@ def collect_ceph_stats(queue):
 
         # Merge them together into a single meaningful dict
         if debug:
-            logger.out("ceph-thread: Merge OSD data together", state='d')
+            logger.out("Merge OSD data together", state='d', prefix='ceph-thread')
 
         osd_stats = dict()
 
@@ -1271,7 +1271,7 @@ def collect_ceph_stats(queue):
 
         # Trigger updates for each OSD on this node
         if debug:
-            logger.out("ceph-thread: Trigger updates for each OSD on this node", state='d')
+            logger.out("Trigger updates for each OSD on this node", state='d', prefix='ceph-thread')
 
         for osd in osd_list:
             if d_osd[osd].node == myhostname:
@@ -1292,7 +1292,7 @@ def collect_ceph_stats(queue):
     queue.put(osds_this_node)
 
     if debug:
-        logger.out("ceph-thread: Thread finished", state='d')
+        logger.out("Thread finished", state='d', prefix='ceph-thread')
 
 # State table for pretty stats
 libvirt_vm_states = {
@@ -1309,12 +1309,12 @@ libvirt_vm_states = {
 # VM stats update function
 def collect_vm_stats(queue):
     if debug:
-        logger.out("vm-thread: Thread starting", state='d')
+        logger.out("Thread starting", state='d', prefix='vm-thread')
 
     # Connect to libvirt
-    if debug:
-        logger.out("vm-thread: Connect to libvirt", state='d')
     libvirt_name = "qemu:///system"
+    if debug:
+        logger.out("Connecting to libvirt", state='d', prefix='vm-thread')
     lv_conn = libvirt.open(libvirt_name)
     if lv_conn == None:
         logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
@@ -1324,7 +1324,7 @@ def collect_vm_stats(queue):
     vcpualloc = 0
     # Toggle state management of dead VMs to restart them
     if debug:
-        logger.out("vm-thread: Toggle state management of dead VMs to restart them", state='d')
+        logger.out("Toggle state management of dead VMs to restart them", state='d', prefix='vm-thread')
     for domain, instance in this_node.d_domain.items():
         if domain in this_node.domain_list:
             # Add the allocated memory to our memalloc value
@@ -1352,14 +1352,14 @@ def collect_vm_stats(queue):
 
             # Get all the raw information about the VM
             if debug:
-                logger.out("vm-thread: Getting general statistics for VM {}".format(domain_name), state='d')
+                logger.out("Getting general statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
             domain_state, domain_maxmem, domain_mem, domain_vcpus, domain_cputime = domain.info()
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
         except Exception as e:
             if debug:
                 try:
-                    logger.out("vm-thread: Failed getting VM information for {}: {}".format(domain.name(), e), state='d')
+                    logger.out("Failed getting VM information for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
                 except:
                     pass
             continue
@@ -1369,7 +1369,7 @@ def collect_vm_stats(queue):
             this_node.domain_list.append(domain_uuid)
 
         if debug:
-            logger.out("vm-thread: Getting disk statistics for VM {}".format(domain_name), state='d')
+            logger.out("Getting disk statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_disk_stats = []
         for disk in tree.findall('devices/disk'):
             disk_name = disk.find('source').get('name')
@@ -1386,7 +1386,7 @@ def collect_vm_stats(queue):
             })
 
         if debug:
-            logger.out("vm-thread: Getting network statistics for VM {}".format(domain_name), state='d')
+            logger.out("Getting network statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_network_stats = []
         for interface in tree.findall('devices/interface'):
             interface_name = interface.find('target').get('dev')
@@ -1419,7 +1419,7 @@ def collect_vm_stats(queue):
         }
 
         if debug:
-            logger.out("vm-thread: Writing statistics for VM {} to Zookeeper".format(domain_name), state='d')
+            logger.out("Writing statistics for VM {} to Zookeeper".format(domain_name), state='d', prefix='vm-thread')
 
         try:
             zkhandler.writedata(zk_conn, {
@@ -1427,7 +1427,7 @@ def collect_vm_stats(queue):
             })
         except Exception as e:
             if debug:
-                logger.out("vm-thread: {}".format(e), state='d')
+                logger.out("{}".format(e), state='d', prefix='vm-thread')
 
     # Close the Libvirt connection
     lv_conn.close()
@@ -1437,12 +1437,12 @@ def collect_vm_stats(queue):
     queue.put(vcpualloc)
 
     if debug:
-        logger.out("vm-thread: Thread finished", state='d')
+        logger.out("Thread finished", state='d', prefix='vm-thread')
 
 # Keepalive update function
 def node_keepalive():
     if debug:
-        logger.out("main-thread: Keepalive starting", state='d')
+        logger.out("Keepalive starting", state='d', prefix='main-thread')
 
     # Set the upstream IP in Zookeeper for clients to read
     if config['enable_networking']:
@@ -1455,7 +1455,7 @@ def node_keepalive():
 
     # Get past state and update if needed
     if debug:
-        logger.out("main-thread: Get past state and update if needed", state='d')
+        logger.out("Get past state and update if needed", state='d', prefix='main-thread')
     past_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(this_node.name))
     if past_state != 'run':
         this_node.daemon_state = 'run'
@@ -1465,7 +1465,7 @@ def node_keepalive():
 
     # Ensure the primary key is properly set
     if debug:
-        logger.out("main-thread: Ensure the primary key is properly set", state='d')
+        logger.out("Ensure the primary key is properly set", state='d', prefix='main-thread')
     if this_node.router_state == 'primary':
         if zkhandler.readdata(zk_conn, '/primary_node') != this_node.name:
             zkhandler.writedata(zk_conn, {'/primary_node': this_node.name})
@@ -1524,7 +1524,7 @@ def node_keepalive():
     # Set our information in zookeeper
     keepalive_time = int(time.time())
     if debug:
-        logger.out("main-thread: Set our information in zookeeper", state='d')
+        logger.out("Set our information in zookeeper", state='d', prefix='main-thread')
     try:
         zkhandler.writedata(zk_conn, {
             '/nodes/{}/memtotal'.format(this_node.name): str(this_node.memtotal),
@@ -1601,7 +1601,7 @@ def node_keepalive():
     # Look for dead nodes and fence them
     if not maintenance:
         if debug:
-            logger.out("main-thread: Look for dead nodes and fence them", state='d')
+            logger.out("Look for dead nodes and fence them", state='d', prefix='main-thread')
         if config['daemon_mode'] == 'coordinator':
             for node_name in d_node:
                 try:
@@ -1630,7 +1630,7 @@ def node_keepalive():
                             zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
     if debug:
-        logger.out("main-thread: Keepalive finished", state='d')
+        logger.out("Keepalive finished", state='d', prefix='main-thread')
 
 # Start keepalive thread
 update_timer = startKeepaliveTimer()
