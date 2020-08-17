@@ -4,3 +4,4 @@ node-daemon/pvcnoded usr/share/pvc
 node-daemon/pvcnoded.service lib/systemd/system
 node-daemon/pvc.target lib/systemd/system
 node-daemon/pvc-flush.service lib/systemd/system
+node-daemon/monitoring usr/share/pvc

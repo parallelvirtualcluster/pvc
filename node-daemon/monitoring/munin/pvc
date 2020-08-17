@@ -1,0 +1,164 @@
+#!/bin/bash
+# -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+pvc - Plugin to monitor a PVC cluster.
+
+=head1 CONFIGURATION
+
+Note that due to how Munin thresholds work, these values must always be slightly less than 1 or 2 respectively,
+or the alerts will never be triggered.
+
+Defaults (no config required):
+
+[pvc]
+env.warning 1.99
+env.critical 1.99
+
+Make degraded cluster WARN only (max value is 2, so 3 effectively disables):
+
+[pvc]
+env.pvc_cluster_warning 1.99
+env.pvc_cluster_critical 3
+
+=head1 AUTHOR
+
+Joshua Boniface <joshua@boniface.me>
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 BUGS
+
+=back
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+warning=1.99
+critical=1.99
+
+export PVC_CLIENT_DIR="/run/shm/munin-pvc"
+PVC_CMD="/usr/bin/pvc --quiet --cluster local status --format json-pretty"
+JQ_CMD="/usr/bin/jq"
+
+output_usage() {
+    echo "This plugin outputs numerical values based on the health of the PVC cluster."
+    echo
+    echo "There are separate outputs for both the PVC cluster itself as well as the Ceph storage cluster."
+    echo "In normal operation, i.e. when both clusters are in 'Optimal' state, the plugin returns 0 for"
+    echo "each cluster. When the cluster is placed into 'Maintenance' mode,the plugin returns 1 for each"
+    echo "cluster, and goes into WARN state (limit 0.99); this can be adjusted by overriding the WARNING"
+    echo "threshold of the plugin to something other than 0.99 - note that due to Munin's alerting design,"
+    echo "the warning value must always be very slightly below the whole number. When either cluster"
+    echo "element becomes 'Degraded', the plugin returns 2 for the relevant cluster, which is treated as a"
+    echo "critical. Like the WARNING threshold, this can be overridden, and with the same caveat about limit."
+    exit 0
+}
+
+output_autoconf() {
+    $PVC_CMD &>/dev/null
+    pvc_ret=$?
+    $JQ_CMD --version &>/dev/null
+    jq_ret=$?
+
+    if [[ ${pvc_ret} -eq 0 && ${jq_ret} -eq 0 ]]; then
+        echo "yes"
+    elif [[ ${pvc_ret} -ne 0 ]]; then
+        echo "no (no 'pvc' command found or local cluster not usable)"
+    elif [[ ${jq_ret} -ne 0 ]]; then
+        echo "no (no 'jq' command found)"
+    else
+        echo "no (generic failure)"
+    fi
+}
+
+output_config() {
+    echo 'graph_title PVC Clusters'
+    echo 'graph_args --base 1000'
+    echo 'graph_vlabel Count'
+    echo 'graph_category pvc'
+    echo 'graph_period second'
+    echo 'graph_info This graph shows the nodes in the PVC cluster.'
+
+    echo 'pvc_cluster.label Cluster Degradation'
+    echo 'pvc_cluster.type GAUGE'
+    echo 'pvc_cluster.max 2'
+    echo 'pvc_cluster.info Whether the PVC cluster is in a degraded state.'
+    print_warning pvc_cluster
+    print_critical pvc_cluster
+
+    echo 'pvc_storage.label Storage Degradation'
+    echo 'pvc_storage.type GAUGE'
+    echo 'pvc_storage.max 2'
+    echo 'pvc_storage.info Whether the storage cluster is in a degraded state.'
+    print_warning pvc_storage
+    print_critical pvc_storage
+
+    exit 0
+}
+
+output_values() {
+    PVC_OUTPUT="$( $PVC_CMD )"
+
+    cluster_health="$( $JQ_CMD '.health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    case $cluster_health in
+        "Optimal")
+            cluster_value="0"
+            ;;
+        "Maintenance")
+            cluster_value="1"
+            ;;
+        "Degraded")
+            cluster_value="2"
+    esac
+
+    storage_health="$( $JQ_CMD '.storage_health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    case $storage_health in
+        "Optimal")
+            storage_value="0"
+            ;;
+        "Maintenance")
+            storage_value="1"
+            ;;
+        "Degraded")
+            storage_value="2"
+    esac
+
+
+    echo "pvc_cluster.value $cluster_value"
+    echo "pvc_storage.value $storage_value"
+}
+
+case $# in
+    0)
+        output_values
+        ;;
+    1)
+        case $1 in
+            autoconf)
+                output_autoconf
+                ;;
+            config)
+                output_config
+                ;;
+            *)
+                output_usage
+                exit 1
+                ;;
+        esac
+        ;;
+    *)
+        output_usage
+        exit 1
+esac
