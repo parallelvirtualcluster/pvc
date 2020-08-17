@@ -29,11 +29,12 @@ class Logger(object):
 
     # ANSII colours for output
     fmt_red = '\033[91m'
-    fmt_blue = '\033[94m'
-    fmt_cyan = '\033[96m'
     fmt_green = '\033[92m'
     fmt_yellow = '\033[93m'
+    fmt_blue = '\033[94m'
     fmt_purple = '\033[95m'
+    fmt_cyan = '\033[96m'
+    fmt_white = '\033[97m'
     fmt_bold =  '\033[1m'
     fmt_end = '\033[0m'
 
@@ -49,6 +50,7 @@ class Logger(object):
         't': { 'colour': fmt_purple,  'prompt': '>>> '      },
         'i': { 'colour': fmt_blue,    'prompt': '>>> '      },
         's': { 'colour': fmt_cyan,    'prompt': '>>> '      },
+        'd': { 'colour': fmt_white,   'prompt': '>>> '      },
         'x': { 'colour': last_colour, 'prompt': last_prompt }
     }
     format_map_textual = {
@@ -59,6 +61,7 @@ class Logger(object):
         't': { 'colour': '', 'prompt': 'tick: '    },
         'i': { 'colour': '', 'prompt': 'info: '    },
         's': { 'colour': '', 'prompt': 'system: '  },
+        'd': { 'colour': '', 'prompt': 'debug: '   },
         'x': { 'colour': '', 'prompt': last_prompt }
     }
 
