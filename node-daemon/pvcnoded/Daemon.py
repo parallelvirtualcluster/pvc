@@ -1031,7 +1031,9 @@ def collect_ceph_stats(queue):
     # Connect to the Ceph cluster
     try:
         ceph_conn = Rados(conffile=config['ceph_config_file'], conf=dict(keyring=config['ceph_admin_keyring']))
-        ceph_conn.connect()
+        if debug:
+            logger.out("ceph-thread: Connecting to cluster", state='d')
+        ceph_conn.connect(timeout=1)
     except Exception as e:
         logger.out('Failed to open connection to Ceph cluster: {}'.format(e), state='e')
         return
