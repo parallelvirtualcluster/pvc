@@ -264,7 +264,7 @@ def create_template_network_element(name, vni):
         networks = []
     found_vni = False
     for network in networks:
-        if int(network['vni']) == vni:
+        if int(network['vni']) == int(vni):
             found_vni = True
     if found_vni:
         retmsg = { 'message': 'The VNI "{}" in network template "{}" already exists.'.format(vni, name) }
