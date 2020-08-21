@@ -155,7 +155,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             'log_keepalive_cluster_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_cluster_details'],
             'log_keepalive_storage_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_storage_details'],
             'console_log_lines': o_config['pvc']['system']['configuration']['logging']['console_log_lines'],
-            'vm_shutdown_timeout': int(o_config['pvc']['system'['intervals']['vm_shutdown_timeout']),
+            'vm_shutdown_timeout': int(o_config['pvc']['system']['intervals']['vm_shutdown_timeout']),
             'keepalive_interval': int(o_config['pvc']['system']['intervals']['keepalive_interval']),
             'fence_intervals': int(o_config['pvc']['system']['intervals']['fence_intervals']),
             'suicide_intervals': int(o_config['pvc']['system']['intervals']['suicide_intervals']),
