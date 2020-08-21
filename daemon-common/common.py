@@ -310,12 +310,24 @@ def getDomainNetworks(parsed_xml, stats_data):
     dnets = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'interface':
-            net_type = device.attrib.get('type')
-            net_mac = device.mac.attrib.get('address')
-            net_bridge = device.source.attrib.get(net_type)
-            net_model = device.model.attrib.get('type')
-            net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
             try:
+                net_type = device.attrib.get('type')
+            except:
+                net_type = None
+            try:
+                net_mac = device.mac.attrib.get('address')
+            except:
+                net_mac = None
+            try:
+                net_bridge = device.source.attrib.get(net_type)
+            except:
+                net_bridge = None
+            try:
+                net_model = device.model.attrib.get('type')
+            except:
+                net_model = None
+            try:
+                net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
                 net_stats = net_stats_list[0]
             except:
                 net_stats = {}
