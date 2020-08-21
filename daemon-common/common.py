@@ -118,14 +118,14 @@ def getDomainMainDetails(parsed_xml):
         ddescription = "N/A"
     dname = str(parsed_xml.name)
     dmemory = str(parsed_xml.memory)
-    dmemory_unit = str(parsed_xml.memory.attrib['unit'])
+    dmemory_unit = str(parsed_xml.memory.attrib.get('unit'))
     if dmemory_unit == 'KiB':
         dmemory = int(int(dmemory) / 1024)
     elif dmemory_unit == 'GiB':
         dmemory = int(int(dmemory) * 1024)
     dvcpu = str(parsed_xml.vcpu)
     try:
-        dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib['sockets'], parsed_xml.cpu.topology.attrib['cores'], parsed_xml.cpu.topology.attrib['threads'])
+        dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib.get('sockets'), parsed_xml.cpu.topology.attrib.get('cores'), parsed_xml.cpu.topology.attrib.get('threads'))
     except:
         dvcputopo = 'N/A'
 
@@ -165,7 +165,7 @@ def getDomainDisks(parsed_xml, stats_data):
         if device.tag == 'disk':
             disk_attrib = device.source.attrib
             disk_target = device.target.attrib
-            disk_type = device.attrib['type']
+            disk_type = device.attrib.get('type')
             disk_stats_list = [x for x in stats_data.get('disk_stats', []) if x.get('name') == disk_attrib.get('name')]
             try:
                 disk_stats = disk_stats_list[0]
@@ -310,10 +310,10 @@ def getDomainNetworks(parsed_xml, stats_data):
     dnets = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'interface':
-            net_type = device.attrib['type']
-            net_mac = device.mac.attrib['address']
-            net_bridge = device.source.attrib[net_type]
-            net_model = device.model.attrib['type']
+            net_type = device.attrib.get('type')
+            net_mac = device.mac.attrib.get('address')
+            net_bridge = device.source.attrib.get(net_type)
+            net_model = device.model.attrib.get('type')
             net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
             try:
                 net_stats = net_stats_list[0]
@@ -352,9 +352,9 @@ def getDomainControllers(parsed_xml):
     dcontrollers = []
     for device in parsed_xml.devices.getchildren():
         if device.tag == 'controller':
-            controller_type = device.attrib['type']
+            controller_type = device.attrib.get('type')
             try:
-                controller_model = device.attrib['model']
+                controller_model = device.attrib.get('model')
             except KeyError:
                 controller_model = 'none'
             controller_obj = { 'type': controller_type, 'model': controller_model }
