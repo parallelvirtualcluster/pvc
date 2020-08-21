@@ -301,8 +301,8 @@ class VMInstance(object):
         self.dom.shutdown()
         tick = 0
         while True:
-            tick += 2
-            time.sleep(2)
+            tick += 1
+            time.sleep(1)
 
             # Abort shutdown if the state changes to start
             current_state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
@@ -325,9 +325,8 @@ class VMInstance(object):
                 self.console_log_instance.stop()
                 break
 
-            # HARDCODE: 90s is a reasonable amount of time for any operating system to shut down cleanly
-            if tick >= 90:
-                self.logger.out('Shutdown timeout expired', state='e', prefix='Domain {}:'.format(self.domuuid))
+            if tick >= self.config['vm_shutdown_timeout']:
+                self.logger.out('Shutdown timeout ({}s) expired, forcing off'.format(self.config['vm_shutdown_timeout']), state='e', prefix='Domain {}:'.format(self.domuuid))
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'stop' })
                 break
 
