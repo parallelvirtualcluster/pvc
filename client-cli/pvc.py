@@ -1577,6 +1577,49 @@ def ceph_util():
     cleanup(retcode, retdata)
 
 ###############################################################################
+# pvc storage benchmark
+###############################################################################
+@click.group(name='benchmark', short_help='Run or view cluster storage benchmarks.')
+@cluster_req
+def ceph_benchmark():
+    """
+    Run or view benchmarks of the storage cluster.
+    """
+
+###############################################################################
+# pvc storage benchmark run
+###############################################################################
+@click.command(name='run', short_help='Run a storage benchmark.')
+@click.argument(
+    'pool'
+)
+@cluster_req
+def ceph_benchmark_run(pool):
+    """
+    Run a storage benchmark on POOL in the background.
+    """
+    retcode, retmsg = pvc_ceph.ceph_benchmark_run(config, pool)
+    cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc storage benchmark list
+###############################################################################
+@click.command(name='list', short_help='List storage benchmark results.')
+@click.argument(
+    'job', default=None, required=False
+)
+@cluster_req
+def ceph_benchmark_list(job):
+    """
+    List all Ceph storage benchmarks; optionally only match JOB.
+    """
+
+    retcode, retdata = pvc_ceph.ceph_benchmark_list(config, job)
+    if retcode:
+        retdata = pvc_ceph.format_list_benchmark(retdata)
+    cleanup(retcode, retdata)
+
+###############################################################################
 # pvc storage osd
 ###############################################################################
 @click.group(name='osd', short_help='Manage OSDs in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
@@ -3619,6 +3662,9 @@ net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
 
+ceph_benchmark.add_command(ceph_benchmark_run)
+ceph_benchmark.add_command(ceph_benchmark_list)
+
 ceph_osd.add_command(ceph_osd_add)
 ceph_osd.add_command(ceph_osd_remove)
 ceph_osd.add_command(ceph_osd_in)
@@ -3647,6 +3693,7 @@ ceph_volume_snapshot.add_command(ceph_volume_snapshot_list)
 
 cli_storage.add_command(ceph_status)
 cli_storage.add_command(ceph_util)
+cli_storage.add_command(ceph_benchmark)
 cli_storage.add_command(ceph_osd)
 cli_storage.add_command(ceph_pool)
 cli_storage.add_command(ceph_volume)

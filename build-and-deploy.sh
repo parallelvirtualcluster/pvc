@@ -32,9 +32,9 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb
     ssh $HOST rm -rf /tmp/pvc
     echo "Restarting PVC node daemon..."
-    ssh $HOST $SUDO systemctl restart pvcnoded
-    echo "****"
-    echo "Waiting 15s for host ${HOST} to stabilize"
-    echo "****"
-    sleep 15
+    ssh $HOST $SUDO systemctl restart pvcapid
+#    echo "****"
+#   echo "Waiting 15s for host ${HOST} to stabilize"
+#    echo "****"
+#    sleep 15
 done

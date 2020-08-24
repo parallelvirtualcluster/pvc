@@ -213,3 +213,17 @@ class DBProfile(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
+class DBStorageBenchmarks(db.Model):
+    __tablename__ = 'storage_benchmarks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    job = db.Column(db.Text, nullable=False)
+    result = db.Column(db.Text, nullable=False)
+
+    def __init__(self, job, result):
+        self.job = job
+        self.result = result
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)

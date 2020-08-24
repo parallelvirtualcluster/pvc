@@ -39,6 +39,7 @@ from celery.task.control import inspect
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
+import pvcapid.benchmark as api_benchmark
 import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
@@ -107,6 +108,8 @@ try:
     api_helper.config = config
     # Set the config object in the api_provisioner namespace
     api_provisioner.config = config
+    # Set the config object in the api_benchmark namespace
+    api_benchmark.config = config
     # Set the config object in the api_ova namespace
     api_ova.config = config
 except Exception as e:
@@ -197,6 +200,10 @@ def Authenticator(function):
 @celery.task(bind=True)
 def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True, script_run_args=[]):
     return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm, script_run_args=script_run_args)
+
+@celery.task(bind=True)
+def run_benchmark(self, pool):
+    return api_benchmark.run_benchmark(self, pool)
 
 
 ##########################################################
@@ -2599,6 +2606,64 @@ class API_Storage_Ceph_Utilization(Resource):
         """
         return api_helper.ceph_util()
 api.add_resource(API_Storage_Ceph_Utilization, '/storage/ceph/utilization')
+
+# /storage/ceph/benchmark
+class API_Storage_Ceph_Benchmark(Resource):
+    @RequestParser([
+        { 'name': 'job' }
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        List results from benchmark jobs
+        ---
+        tags:
+          - storage / ceph
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                tbd:
+                  type: object
+                  description: TBD
+        """
+        return api_benchmark.list_benchmarks(reqargs.get('job', None))
+
+    @RequestParser([
+        { 'name': 'pool', 'required': True, 'helpmsg': "A valid pool must be specified." },
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Execute a storage benchmark against a storage pool
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: pool
+            type: string
+            required: true
+            description: The PVC storage pool to benchmark
+        responses:
+          200:
+            description: OK
+            schema:
+                type: string
+                description: The job ID of the benchmark
+        """
+        # Verify that the pool is valid
+        _list, code = api_helper.ceph_pool_list(reqargs.get('pool', None), is_fuzzy=False)
+        if code != 200:
+            return { 'message': 'Pool "{}" is not valid.'.format(reqargs.get('pool')) }, 400
+
+        task = run_benchmark.delay(
+            reqargs.get('pool', None)
+        )
+        return { "task_id": task.id }, 202, { 'Location': Api.url_for(api, API_Storage_Ceph_Benchmark, task_id=task.id) }
+api.add_resource(API_Storage_Ceph_Benchmark, '/storage/ceph/benchmark')
 
 # /storage/ceph/option
 class API_Storage_Ceph_Option(Resource):

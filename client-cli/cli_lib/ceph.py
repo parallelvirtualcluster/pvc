@@ -1249,3 +1249,198 @@ def format_list_snapshot(snapshot_list):
         )
 
     return '\n'.join(sorted(snapshot_list_output))
+
+#
+# Benchmark functions
+#
+def ceph_benchmark_run(config, pool):
+    """
+    Run a storage benchmark against {pool}
+
+    API endpoint: POST /api/v1/storage/ceph/benchmark
+    API arguments: pool={pool}
+    API schema: {message}
+    """
+    params = {
+        'pool': pool
+    }
+    response = call_api(config, 'post', '/storage/ceph/benchmark', params=params)
+
+    if response.status_code == 202:
+        retvalue = True
+        retdata = 'Task ID: {}'.format(response.json()['task_id'])
+    else:
+        retvalue = False
+        retdata = response.json().get('message', '')
+        
+    return retvalue, retdata
+
+def ceph_benchmark_list(config, job):
+    """
+    View results of one or more previous benchmark runs
+
+    API endpoint: GET /api/v1/storage/ceph/benchmark
+    API arguments: job={job}
+    API schema: {results}
+    """
+    if job is not None:
+        params = {
+            'job': job
+        }
+    else:
+        params = {}
+
+    response = call_api(config, 'get', '/storage/ceph/benchmark', params=params)
+
+    if response.status_code == 200:
+        retvalue = True
+        retdata = response.json()
+    else:
+        retvalue = False
+        retdata = response.json()
+
+    return retvalue, retdata
+
+def format_list_benchmark(benchmark_information, detail=False):
+    if detail:
+        return format_list_benchmark_detailed(benchmark_information)
+
+    benchmark_list_output = []
+    
+    benchmark_id_length = 3
+    benchmark_job_length = 20
+    benchmark_bandwidth_length = dict()
+    benchmark_iops_length = dict()
+
+    for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+        benchmark_bandwidth_length[test] = 7
+        benchmark_iops_length[test] = 6
+
+    # For this output, we're only showing the Sequential (seq_read and seq_write) and 4k Random (rand_read_4K and rand_write_4K) results since we're showing them for each test result.
+
+#    print(benchmark_information)
+
+    for benchmark in benchmark_information:
+        benchmark_id = benchmark['id']
+        _benchmark_id_length = len(str(benchmark_id))
+        if _benchmark_id_length > benchmark_id_length:
+            benchmark_id_length = _benchmark_id_length
+
+        benchmark_job = benchmark['job']
+        _benchmark_job_length = len(benchmark_job)
+        if _benchmark_job_length > benchmark_job_length:
+            benchmark_job_length = _benchmark_job_length
+
+        if benchmark['benchmark_result'] == 'Running':
+            continue
+        benchmark_data = json.loads(benchmark['benchmark_result'])
+
+        benchmark_bandwidth = dict()
+        benchmark_iops = dict()
+        for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+            benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
+            benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
+
+            _benchmark_bandwidth_length = len(benchmark_bandwidth[test]) + 1
+            if _benchmark_bandwidth_length > benchmark_bandwidth_length[test]:
+                benchmark_bandwidth_length[test] = _benchmark_bandwidth_length
+
+            _benchmark_iops_length = len(benchmark_iops[test]) + 1
+            if _benchmark_iops_length > benchmark_bandwidth_length[test]:
+                benchmark_iops_length[test] = _benchmark_iops_length
+
+    # Format the output header line 1
+    benchmark_list_output.append('{bold}\
+{benchmark_id: <{benchmark_id_length}} \
+{benchmark_job: <{benchmark_job_length}} \
+ {seq_header: <{seq_header_length}} \
+{rand_header: <{rand_header_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            benchmark_id_length=benchmark_id_length,
+            benchmark_job_length=benchmark_job_length,
+            seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 2,
+            rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
+            benchmark_id='ID',
+            benchmark_job='Benchmark Job',
+            seq_header='Sequential (4M blocks):',
+            rand_header='Random (4K blocks):'
+        )
+    )
+
+    benchmark_list_output.append('{bold}\
+{benchmark_id: <{benchmark_id_length}} \
+{benchmark_job: <{benchmark_job_length}} \
+ {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
+{seq_benchmark_iops: <{seq_benchmark_iops_length}} \
+{rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
+{rand_benchmark_iops: <{rand_benchmark_iops_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            benchmark_id_length=benchmark_id_length,
+            benchmark_job_length=benchmark_job_length,
+            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 1,
+            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+            benchmark_id='',
+            benchmark_job='',
+            seq_benchmark_bandwidth='Bandwith (R/W)',
+            seq_benchmark_iops='IOPS (R/W)',
+            rand_benchmark_bandwidth='Bandwith (R/W)',
+            rand_benchmark_iops='IOPS (R/W)'
+        )
+    )
+
+    for benchmark in benchmark_information:
+        benchmark_id = benchmark['id']
+        benchmark_job = benchmark['job']
+
+        if benchmark['benchmark_result'] == 'Running':
+            seq_benchmark_bandwidth = 'Running'
+            seq_benchmark_iops = 'Running'
+            rand_benchmark_bandwidth = 'Running'
+            rand_benchmark_iops = 'Running'
+        else:
+            benchmark_bandwidth = dict()
+            benchmark_iops = dict()
+            for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+                benchmark_data = json.loads(benchmark['benchmark_result'])
+                benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
+                benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
+    
+            seq_benchmark_bandwidth = "{}/{}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
+            seq_benchmark_iops = "{}/{}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
+            rand_benchmark_bandwidth = "{}/{}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
+            rand_benchmark_iops = "{}/{}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
+            
+    
+        benchmark_list_output.append('{bold}\
+{benchmark_id: <{benchmark_id_length}} \
+{benchmark_job: <{benchmark_job_length}} \
+ {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
+{seq_benchmark_iops: <{seq_benchmark_iops_length}} \
+{rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
+{rand_benchmark_iops: <{rand_benchmark_iops_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                benchmark_id_length=benchmark_id_length,
+                benchmark_job_length=benchmark_job_length,
+                seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 1,
+                seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+                rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+                rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+                benchmark_id=benchmark_id,
+                benchmark_job=benchmark_job,
+                seq_benchmark_bandwidth=seq_benchmark_bandwidth,
+                seq_benchmark_iops=seq_benchmark_iops,
+                rand_benchmark_bandwidth=rand_benchmark_bandwidth,
+                rand_benchmark_iops=rand_benchmark_iops
+            )
+        )
+
+    return '\n'.join(benchmark_list_output)
+
