@@ -236,7 +236,6 @@ def run_benchmark(self, pool):
                 --rbdname={volume} \
                 --direct=1 \
                 --randrepeat=1 \
-                --gtod_reduce=1 \
                 --iodepth=64 \
                 --size=8G \
                 --name={test} \

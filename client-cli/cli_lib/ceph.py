@@ -1527,7 +1527,7 @@ def format_info_benchmark(config, benchmark_information):
             bandwidth_length=bandwidth_column_length,
             iops="IOPS",
             iops_length=iops_column_length,
-            latency="Latency",
+            latency="Latency (μs)",
             latency_length=latency_column_length,
             cpuutil_label='',
             cpuutil_label_length=cpuutil_label_length,
