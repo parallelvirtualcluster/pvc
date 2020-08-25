@@ -1438,17 +1438,17 @@ def format_info_benchmark(config, benchmark_information):
     ainformation.append('{}Storage Benchmark details:{}'.format(ansiprint.bold(), ansiprint.end()))
 
     nice_test_name_map = {
-        "seq_read": "Sequential Read (4M)",
-        "seq_write": "Sequential Write (4M)",
-        "rand_read_4M": "Random Read (4M)",
-        "rand_write_4M": "Random Write (4M)",
-        "rand_read_256K": "Random Read (256K)",
-        "rand_write_256K": "Random Write (256K)",
-        "rand_read_4K": "Random Read (4K)",
-        "rand_write_4K": "Random Write (4K)"
+        "seq_read": "Sequential Read (4M blocks)",
+        "seq_write": "Sequential Write (4M blocks)",
+        "rand_read_4M": "Random Read (4M blocks)",
+        "rand_write_4M": "Random Write (4M blocks)",
+        "rand_read_256K": "Random Read (256K blocks)",
+        "rand_write_256K": "Random Write (256K blocks)",
+        "rand_read_4K": "Random Read (4K blocks)",
+        "rand_write_4K": "Random Write (4K blocks)"
     }
 
-    test_name_length = 23
+    test_name_length = 30
     overall_label_length = 12
     overall_column_length = 8
     bandwidth_label_length = 9
@@ -1550,13 +1550,13 @@ def format_info_benchmark(config, benchmark_information):
             end_bold='',
             test_name=nice_test_name_map[test],
             test_name_length=test_name_length,
-            overall_label='Size:',
+            overall_label='Test Size:',
             overall_label_length=overall_label_length,
-            overall=format_bytes_tohuman(int(test_details['overall']['iosize'])),
+            overall=format_bytes_tohuman(int(test_details['overall']['iosize']) * 1024),
             overall_length=overall_column_length,
             bandwidth_label='Min:',
             bandwidth_label_length=bandwidth_label_length,
-            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['min'])),
+            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['min']) * 1024),
             bandwidth_length=bandwidth_column_length,
             iops=format_ops_tohuman(int(test_details['iops']['min'])),
             iops_length=iops_column_length,
@@ -1585,11 +1585,11 @@ def format_info_benchmark(config, benchmark_information):
             test_name_length=test_name_length,
             overall_label='Bandwidth/s:',
             overall_label_length=overall_label_length,
-            overall=format_bytes_tohuman(int(test_details['overall']['bandwidth'])),
+            overall=format_bytes_tohuman(int(test_details['overall']['bandwidth']) * 1024),
             overall_length=overall_column_length,
             bandwidth_label='Max:',
             bandwidth_label_length=bandwidth_label_length,
-            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['max'])),
+            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['max']) * 1024),
             bandwidth_length=bandwidth_column_length,
             iops=format_ops_tohuman(int(test_details['iops']['max'])),
             iops_length=iops_column_length,
@@ -1618,11 +1618,11 @@ def format_info_benchmark(config, benchmark_information):
             test_name_length=test_name_length,
             overall_label='IOPS:',
             overall_label_length=overall_label_length,
-            overall=format_bytes_tohuman(int(test_details['overall']['iops'])),
+            overall=format_ops_tohuman(int(test_details['overall']['iops'])),
             overall_length=overall_column_length,
             bandwidth_label='Mean:',
             bandwidth_label_length=bandwidth_label_length,
-            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['mean']))),
+            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['mean'])) * 1024),
             bandwidth_length=bandwidth_column_length,
             iops=format_ops_tohuman(int(float(test_details['iops']['mean']))),
             iops_length=iops_column_length,
@@ -1651,11 +1651,11 @@ def format_info_benchmark(config, benchmark_information):
             test_name_length=test_name_length,
             overall_label='Runtime (s):',
             overall_label_length=overall_label_length,
-            overall=int(test_details['overall']['iops'])/1000,
+            overall=int(test_details['overall']['runtime']) / 1000.0,
             overall_length=overall_column_length,
             bandwidth_label='StdDev:',
             bandwidth_label_length=bandwidth_label_length,
-            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['stdev']))),
+            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['stdev'])) * 1024),
             bandwidth_length=bandwidth_column_length,
             iops=format_ops_tohuman(int(float(test_details['iops']['stdev']))),
             iops_length=iops_column_length,
