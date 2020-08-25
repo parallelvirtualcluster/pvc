@@ -1387,10 +1387,10 @@ def format_list_benchmark(benchmark_information, detail=False):
             rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
             benchmark_id='',
             benchmark_job='',
-            seq_benchmark_bandwidth='Bandwith (R/W)',
-            seq_benchmark_iops='IOPS (R/W)',
-            rand_benchmark_bandwidth='Bandwith (R/W)',
-            rand_benchmark_iops='IOPS (R/W)'
+            seq_benchmark_bandwidth='R/W Bandwith',
+            seq_benchmark_iops='R/W IOPS',
+            rand_benchmark_bandwidth='R/W Bandwith',
+            rand_benchmark_iops='R/W IOPS'
         )
     )
 
