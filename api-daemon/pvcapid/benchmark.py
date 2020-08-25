@@ -332,7 +332,6 @@ def run_benchmark(self, pool):
             # Bandwidth
             #         41:  min 
             #         42:  max 
-            #         43:  agg % of total
             #         44:  mean
             #         45:  stdev
             #         46:  # samples
@@ -364,7 +363,6 @@ def run_benchmark(self, pool):
                 "bandwidth": {
                     "min": results[41],
                     "max": results[42],
-                    "aggrpct": results[43],
                     "mean": results[44],
                     "stdev": results[45],
                     "numsamples": results[46],
@@ -399,7 +397,6 @@ def run_benchmark(self, pool):
             # Bandwidth
             #         88:  min
             #         89:  max
-            #         90:  agg % of total
             #         91:  mean
             #         92:  stdev
             #         93:  # samples
@@ -431,7 +428,6 @@ def run_benchmark(self, pool):
                 "bandwidth": {
                     "min": results[88],
                     "max": results[89],
-                    "aggrpct": results[90],
                     "mean": results[91],
                     "stdev": results[92],
                     "numsamples": results[93],
