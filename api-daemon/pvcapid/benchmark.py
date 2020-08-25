@@ -161,7 +161,7 @@ def run_benchmark(self, pool):
     volume = 'pvcbenchmark'
 
     # Create the RBD volume
-    retcode, retmsg = pvc_ceph.add_volume(zk_conn, pool, volume, "4G")
+    retcode, retmsg = pvc_ceph.add_volume(zk_conn, pool, volume, "8G")
     if not retcode:
         raise BenchmarkError('Failed to create volume "{}": {}'.format(volume, retmsg), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zk_conn=zk_conn)
     else:
