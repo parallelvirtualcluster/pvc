@@ -172,14 +172,14 @@ def run_benchmark(self, pool):
     time.sleep(1)
 
     # We run a total of 8 tests, to give a generalized idea of performance on the cluster:
-    #   1. A sequential read test of 4GB with a 4M block size
-    #   2. A sequential write test of 4GB with a 4M block size
-    #   3. A random read test of 4GB with a 4M block size
-    #   4. A random write test of 4GB with a 4M block size
-    #   5. A random read test of 4GB with a 256k block size
-    #   6. A random write test of 4GB with a 256k block size
-    #   7. A random read test of 4GB with a 4k block size
-    #   8. A random write test of 4GB with a 4k block size
+    #   1. A sequential read test of 8GB with a 4M block size
+    #   2. A sequential write test of 8GB with a 4M block size
+    #   3. A random read test of 8GB with a 4M block size
+    #   4. A random write test of 8GB with a 4M block size
+    #   5. A random read test of 8GB with a 256k block size
+    #   6. A random write test of 8GB with a 256k block size
+    #   7. A random read test of 8GB with a 4k block size
+    #   8. A random write test of 8GB with a 4k block size
     # Taken together, these 8 results should give a very good indication of the overall storage performance
     # for a variety of workloads.
     test_matrix = {
@@ -238,7 +238,7 @@ def run_benchmark(self, pool):
                 --randrepeat=1 \
                 --gtod_reduce=1 \
                 --iodepth=64 \
-                --size=128M \
+                --size=8G \
                 --name={test} \
                 --bs={bs} \
                 --readwrite={rw}

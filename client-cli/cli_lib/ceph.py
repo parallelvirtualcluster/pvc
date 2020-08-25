@@ -1301,10 +1301,7 @@ def ceph_benchmark_list(config, job):
 
     return retvalue, retdata
 
-def format_list_benchmark(benchmark_information, detail=False):
-    if detail:
-        return format_list_benchmark_detailed(benchmark_information)
-
+def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
     
     benchmark_id_length = 3
@@ -1312,20 +1309,12 @@ def format_list_benchmark(benchmark_information, detail=False):
     benchmark_bandwidth_length = dict()
     benchmark_iops_length = dict()
 
+    # For this output, we're only showing the Sequential (seq_read and seq_write) and 4k Random (rand_read_4K and rand_write_4K) results since we're showing them for each test result.
     for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
         benchmark_bandwidth_length[test] = 7
         benchmark_iops_length[test] = 6
 
-    # For this output, we're only showing the Sequential (seq_read and seq_write) and 4k Random (rand_read_4K and rand_write_4K) results since we're showing them for each test result.
-
-#    print(benchmark_information)
-
     for benchmark in benchmark_information:
-        benchmark_id = benchmark['id']
-        _benchmark_id_length = len(str(benchmark_id))
-        if _benchmark_id_length > benchmark_id_length:
-            benchmark_id_length = _benchmark_id_length
-
         benchmark_job = benchmark['job']
         _benchmark_job_length = len(benchmark_job)
         if _benchmark_job_length > benchmark_job_length:
@@ -1351,18 +1340,15 @@ def format_list_benchmark(benchmark_information, detail=False):
 
     # Format the output header line 1
     benchmark_list_output.append('{bold}\
-{benchmark_id: <{benchmark_id_length}} \
 {benchmark_job: <{benchmark_job_length}} \
  {seq_header: <{seq_header_length}} \
 {rand_header: <{rand_header_length}} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            benchmark_id_length=benchmark_id_length,
             benchmark_job_length=benchmark_job_length,
-            seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 2,
+            seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
             rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
-            benchmark_id='ID',
             benchmark_job='Benchmark Job',
             seq_header='Sequential (4M blocks):',
             rand_header='Random (4K blocks):'
@@ -1370,7 +1356,6 @@ def format_list_benchmark(benchmark_information, detail=False):
     )
 
     benchmark_list_output.append('{bold}\
-{benchmark_id: <{benchmark_id_length}} \
 {benchmark_job: <{benchmark_job_length}} \
  {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
 {seq_benchmark_iops: <{seq_benchmark_iops_length}} \
@@ -1379,23 +1364,20 @@ def format_list_benchmark(benchmark_information, detail=False):
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            benchmark_id_length=benchmark_id_length,
             benchmark_job_length=benchmark_job_length,
-            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 1,
+            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
             seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
             rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
             rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-            benchmark_id='',
             benchmark_job='',
-            seq_benchmark_bandwidth='R/W Bandwith',
+            seq_benchmark_bandwidth='R/W Bandwith/s',
             seq_benchmark_iops='R/W IOPS',
-            rand_benchmark_bandwidth='R/W Bandwith',
+            rand_benchmark_bandwidth='R/W Bandwith/s',
             rand_benchmark_iops='R/W IOPS'
         )
     )
 
     for benchmark in benchmark_information:
-        benchmark_id = benchmark['id']
         benchmark_job = benchmark['job']
 
         if benchmark['benchmark_result'] == 'Running':
@@ -1411,14 +1393,13 @@ def format_list_benchmark(benchmark_information, detail=False):
                 benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
                 benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
     
-            seq_benchmark_bandwidth = "{}/{}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
-            seq_benchmark_iops = "{}/{}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
-            rand_benchmark_bandwidth = "{}/{}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
-            rand_benchmark_iops = "{}/{}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
+            seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
+            seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
+            rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
+            rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
             
     
         benchmark_list_output.append('{bold}\
-{benchmark_id: <{benchmark_id_length}} \
 {benchmark_job: <{benchmark_job_length}} \
  {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
 {seq_benchmark_iops: <{seq_benchmark_iops_length}} \
@@ -1427,13 +1408,11 @@ def format_list_benchmark(benchmark_information, detail=False):
 {end_bold}'.format(
                 bold='',
                 end_bold='',
-                benchmark_id_length=benchmark_id_length,
                 benchmark_job_length=benchmark_job_length,
-                seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 1,
+                seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
                 seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
                 rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
                 rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-                benchmark_id=benchmark_id,
                 benchmark_job=benchmark_job,
                 seq_benchmark_bandwidth=seq_benchmark_bandwidth,
                 seq_benchmark_iops=seq_benchmark_iops,
@@ -1444,3 +1423,283 @@ def format_list_benchmark(benchmark_information, detail=False):
 
     return '\n'.join(benchmark_list_output)
 
+def format_info_benchmark(config, benchmark_information):
+    # Load information from benchmark output
+    benchmark_id = benchmark_information[0]['id']
+    benchmark_job = benchmark_information[0]['job']
+
+    if benchmark_information[0]['benchmark_result'] == "Running":
+        return "Benchmark test is still running."
+
+    benchmark_details = json.loads(benchmark_information[0]['benchmark_result'])
+
+    # Format a nice output; do this line-by-line then concat the elements at the end
+    ainformation = []
+    ainformation.append('{}Storage Benchmark details:{}'.format(ansiprint.bold(), ansiprint.end()))
+
+    nice_test_name_map = {
+        "seq_read": "Sequential Read (4M)",
+        "seq_write": "Sequential Write (4M)",
+        "rand_read_4M": "Random Read (4M)",
+        "rand_write_4M": "Random Write (4M)",
+        "rand_read_256K": "Random Read (256K)",
+        "rand_write_256K": "Random Write (256K)",
+        "rand_read_4K": "Random Read (4K)",
+        "rand_write_4K": "Random Write (4K)"
+    }
+
+    test_name_length = 23
+    overall_label_length = 12
+    overall_column_length = 8
+    bandwidth_label_length = 9
+    bandwidth_column_length = 10
+    iops_column_length = 6
+    latency_column_length = 8
+    cpuutil_label_length = 11
+    cpuutil_column_length = 9
+
+    for test in benchmark_details:
+        _test_name_length = len(nice_test_name_map[test])
+        if _test_name_length > test_name_length:
+            test_name_length = _test_name_length
+
+        for element in benchmark_details[test]['overall']:
+            _element_length = len(benchmark_details[test]['overall'][element])
+            if _element_length > overall_column_length:
+                overall_column_length = _element_length
+
+        for element in benchmark_details[test]['bandwidth']:
+            try:
+                _element_length = len(format_bytes_tohuman(int(float(benchmark_details[test]['bandwidth'][element]))))
+            except:
+                _element_length = len(benchmark_details[test]['bandwidth'][element])
+            if _element_length > bandwidth_column_length:
+                bandwidth_column_length = _element_length
+
+        for element in benchmark_details[test]['iops']:
+            try:
+                _element_length = len(format_ops_tohuman(int(float(benchmark_details[test]['iops'][element]))))
+            except:
+                _element_length = len(benchmark_details[test]['iops'][element])
+            if _element_length > iops_column_length:
+                iops_column_length = _element_length
+
+        for element in benchmark_details[test]['latency']:
+            _element_length = len(benchmark_details[test]['latency'][element])
+            if _element_length > latency_column_length:
+                latency_column_length = _element_length
+
+        for element in benchmark_details[test]['cpu']:
+            _element_length = len(benchmark_details[test]['cpu'][element])
+            if _element_length > cpuutil_column_length:
+                cpuutil_column_length = _element_length
+
+
+
+    for test in benchmark_details:
+        ainformation.append('')
+
+        test_details = benchmark_details[test]
+
+        # Top row (Headers)
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: <{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: <{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: <{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            test_name='Test:',
+            test_name_length=test_name_length,
+            overall_label='',
+            overall_label_length=overall_label_length,
+            overall="General",
+            overall_length=overall_column_length,
+            bandwidth_label='',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth="Bandwidth",
+            bandwidth_length=bandwidth_column_length,
+            iops="IOPS",
+            iops_length=iops_column_length,
+            latency="Latency",
+            latency_length=latency_column_length,
+            cpuutil_label='',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil="CPU Util",
+            cpuutil_length=cpuutil_column_length
+        ))
+        # Second row (Test, Size, Min, User))
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: >{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            test_name=nice_test_name_map[test],
+            test_name_length=test_name_length,
+            overall_label='Size:',
+            overall_label_length=overall_label_length,
+            overall=format_bytes_tohuman(int(test_details['overall']['iosize'])),
+            overall_length=overall_column_length,
+            bandwidth_label='Min:',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['min'])),
+            bandwidth_length=bandwidth_column_length,
+            iops=format_ops_tohuman(int(test_details['iops']['min'])),
+            iops_length=iops_column_length,
+            latency=test_details['latency']['min'],
+            latency_length=latency_column_length,
+            cpuutil_label='User:',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil=test_details['cpu']['user'],
+            cpuutil_length=cpuutil_column_length
+        ))
+        # Third row (blank, BW/s, Max, System))
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: >{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            test_name='',
+            test_name_length=test_name_length,
+            overall_label='Bandwidth/s:',
+            overall_label_length=overall_label_length,
+            overall=format_bytes_tohuman(int(test_details['overall']['bandwidth'])),
+            overall_length=overall_column_length,
+            bandwidth_label='Max:',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth=format_bytes_tohuman(int(test_details['bandwidth']['max'])),
+            bandwidth_length=bandwidth_column_length,
+            iops=format_ops_tohuman(int(test_details['iops']['max'])),
+            iops_length=iops_column_length,
+            latency=test_details['latency']['max'],
+            latency_length=latency_column_length,
+            cpuutil_label='System:',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil=test_details['cpu']['system'],
+            cpuutil_length=cpuutil_column_length
+        ))
+        # Fourth row (blank, IOPS, Mean, CtxSq))
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: >{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            test_name='',
+            test_name_length=test_name_length,
+            overall_label='IOPS:',
+            overall_label_length=overall_label_length,
+            overall=format_bytes_tohuman(int(test_details['overall']['iops'])),
+            overall_length=overall_column_length,
+            bandwidth_label='Mean:',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['mean']))),
+            bandwidth_length=bandwidth_column_length,
+            iops=format_ops_tohuman(int(float(test_details['iops']['mean']))),
+            iops_length=iops_column_length,
+            latency=test_details['latency']['mean'],
+            latency_length=latency_column_length,
+            cpuutil_label='CtxSw:',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil=test_details['cpu']['ctxsw'],
+            cpuutil_length=cpuutil_column_length
+        ))
+        # Fifth row (blank, Runtime, StdDev, MajFault))
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: >{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            test_name='',
+            test_name_length=test_name_length,
+            overall_label='Runtime (s):',
+            overall_label_length=overall_label_length,
+            overall=int(test_details['overall']['iops'])/1000,
+            overall_length=overall_column_length,
+            bandwidth_label='StdDev:',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth=format_bytes_tohuman(int(float(test_details['bandwidth']['stdev']))),
+            bandwidth_length=bandwidth_column_length,
+            iops=format_ops_tohuman(int(float(test_details['iops']['stdev']))),
+            iops_length=iops_column_length,
+            latency=test_details['latency']['stdev'],
+            latency_length=latency_column_length,
+            cpuutil_label='MajFault:',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil=test_details['cpu']['majfault'],
+            cpuutil_length=cpuutil_column_length
+        ))
+        # Sixth row (blank, blank, Samples, MinFault))
+        ainformation.append('{bold}\
+{test_name: <{test_name_length}} \
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}} \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}} \
+{iops: <{iops_length}} \
+{latency: <{latency_length}} \
+{cpuutil_label: >{cpuutil_label_length}} \
+{cpuutil: <{cpuutil_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            test_name='',
+            test_name_length=test_name_length,
+            overall_label='',
+            overall_label_length=overall_label_length,
+            overall='',
+            overall_length=overall_column_length,
+            bandwidth_label='Samples:',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth=test_details['bandwidth']['numsamples'],
+            bandwidth_length=bandwidth_column_length,
+            iops=test_details['iops']['numsamples'],
+            iops_length=iops_column_length,
+            latency='',
+            latency_length=latency_column_length,
+            cpuutil_label='MinFault:',
+            cpuutil_label_length=cpuutil_label_length,
+            cpuutil=test_details['cpu']['minfault'],
+            cpuutil_length=cpuutil_column_length
+        ))
+
+        ainformation.append('')
+
+    return '\n'.join(ainformation)

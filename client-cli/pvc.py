@@ -1598,8 +1598,31 @@ def ceph_benchmark_run(pool):
     """
     Run a storage benchmark on POOL in the background.
     """
+    try:
+        click.confirm('NOTE: Storage benchmarks generate significant load on the cluster and can take a very long time to complete on slow storage. They should be run sparingly. Continue', prompt_suffix='? ', abort=True)
+    except:
+        exit(0)
+
     retcode, retmsg = pvc_ceph.ceph_benchmark_run(config, pool)
     cleanup(retcode, retmsg)
+
+###############################################################################
+# pvc storage benchmark info
+###############################################################################
+@click.command(name='info', short_help='Show detailed storage benchmark results.')
+@click.argument(
+    'job', required=True
+)
+@cluster_req
+def ceph_benchmark_info(job):
+    """
+    Show full details of storage benchmark JOB.
+    """
+
+    retcode, retdata = pvc_ceph.ceph_benchmark_list(config, job)
+    if retcode:
+        retdata = pvc_ceph.format_info_benchmark(config, retdata)
+    cleanup(retcode, retdata)
 
 ###############################################################################
 # pvc storage benchmark list
@@ -1616,7 +1639,7 @@ def ceph_benchmark_list(job):
 
     retcode, retdata = pvc_ceph.ceph_benchmark_list(config, job)
     if retcode:
-        retdata = pvc_ceph.format_list_benchmark(retdata)
+        retdata = pvc_ceph.format_list_benchmark(config, retdata)
     cleanup(retcode, retdata)
 
 ###############################################################################
@@ -3663,6 +3686,7 @@ net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
 
 ceph_benchmark.add_command(ceph_benchmark_run)
+ceph_benchmark.add_command(ceph_benchmark_info)
 ceph_benchmark.add_command(ceph_benchmark_list)
 
 ceph_osd.add_command(ceph_osd_add)
