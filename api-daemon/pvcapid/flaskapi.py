@@ -2619,15 +2619,115 @@ class API_Storage_Ceph_Benchmark(Resource):
         ---
         tags:
           - storage / ceph
+        parameters:
+          - in: query
+            name: job
+            type: string
+            required: false
+            description: A single job name to limit results to
         responses:
           200:
             description: OK
             schema:
               type: object
+              id: storagebenchmark
               properties:
-                tbd:
+                id:
+                  type: string (containing integer)
+                  description: The database ID of the test result
+                job:
+                  type: string
+                  description: The job name (an ISO date) of the test result
+                benchmark_result:
                   type: object
-                  description: TBD
+                  properties:
+                    test_name:
+                      type: object
+                      properties:
+                        overall:
+                          type: object
+                          properties:
+                            iosize:
+                              type: string (integer)
+                              description: The total size of the benchmark data
+                            bandwidth:
+                              type: string (integer)
+                              description: The average bandwidth (KiB/s)
+                            iops:
+                              type: string (integer)
+                              description: The average IOPS
+                            runtime:
+                              type: string (integer)
+                              description: The total test time in milliseconds
+                        latency:
+                          type: object
+                          properties:
+                            min:
+                              type: string (integer)
+                              description: The minimum latency measurement
+                            max:
+                              type: string (integer)
+                              description: The maximum latency measurement
+                            mean:
+                              type: string (float)
+                              description: The mean latency measurement
+                            stdev:
+                              type: string (float)
+                              description: The standard deviation of latency
+                        bandwidth:
+                          type: object
+                          properties:
+                            min:
+                              type: string (integer)
+                              description: The minimum bandwidth (KiB/s) measurement
+                            max:
+                              type: string (integer)
+                              description: The maximum bandwidth (KiB/s) measurement
+                            mean:
+                              type: string (float)
+                              description: The mean bandwidth (KiB/s) measurement
+                            stdev:
+                              type: string (float)
+                              description: The standard deviation of bandwidth
+                            numsamples:
+                              type: string (integer)
+                              description: The number of samples taken during the test
+                        iops:
+                          type: object
+                          properties:
+                            min:
+                              type: string (integer)
+                              description: The minimum IOPS measurement
+                            max:
+                              type: string (integer)
+                              description: The maximum IOPS measurement
+                            mean:
+                              type: string (float)
+                              description: The mean IOPS measurement
+                            stdev:
+                              type: string (float)
+                              description: The standard deviation of IOPS
+                            numsamples:
+                              type: string (integer)
+                              description: The number of samples taken during the test
+                        cpu:
+                          type: object
+                          properties:
+                            user:
+                              type: string (float percentage)
+                              description: The percentage of test time spent in user space
+                            system:
+                              type: string (float percentage)
+                              description: The percentage of test time spent in system (kernel) space
+                            ctxsw:
+                              type: string (integer)
+                              description: The number of context switches during the test
+                            majfault:
+                              type: string (integer)
+                              description: The number of major page faults during the test
+                            minfault:
+                              type: string (integer)
+                              description: The number of minor page faults during the test
         """
         return api_benchmark.list_benchmarks(reqargs.get('job', None))
 
@@ -2652,7 +2752,7 @@ class API_Storage_Ceph_Benchmark(Resource):
             description: OK
             schema:
                 type: string
-                description: The job ID of the benchmark
+                description: The Celery job ID of the benchmark (unused elsewhere)
         """
         # Verify that the pool is valid
         _list, code = api_helper.ceph_pool_list(reqargs.get('pool', None), is_fuzzy=False)

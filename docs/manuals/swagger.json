@@ -62,6 +62,11 @@
                     "description": "The total number of snapshots in the storage cluster",
                     "type": "integer"
                 },
+                "storage_health": {
+                    "description": "The overall storage cluster health",
+                    "example": "Optimal",
+                    "type": "string"
+                },
                 "upstream_ip": {
                     "description": "The cluster upstream IP address in CIDR format",
                     "example": "10.0.0.254/24",
@@ -795,6 +800,146 @@
                 "storage_template": {
                     "description": "Internal provisioner storage template ID",
                     "type": "integer"
+                }
+            },
+            "type": "object"
+        },
+        "storagebenchmark": {
+            "properties": {
+                "benchmark_result": {
+                    "properties": {
+                        "test_name": {
+                            "properties": {
+                                "bandwidth": {
+                                    "properties": {
+                                        "max": {
+                                            "description": "The maximum bandwidth (KiB/s) measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "mean": {
+                                            "description": "The mean bandwidth (KiB/s) measurement",
+                                            "type": "string (float)"
+                                        },
+                                        "min": {
+                                            "description": "The minimum bandwidth (KiB/s) measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "numsamples": {
+                                            "description": "The number of samples taken during the test",
+                                            "type": "string (integer)"
+                                        },
+                                        "stdev": {
+                                            "description": "The standard deviation of bandwidth",
+                                            "type": "string (float)"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "cpu": {
+                                    "properties": {
+                                        "ctxsw": {
+                                            "description": "The number of context switches during the test",
+                                            "type": "string (integer)"
+                                        },
+                                        "majfault": {
+                                            "description": "The number of major page faults during the test",
+                                            "type": "string (integer)"
+                                        },
+                                        "minfault": {
+                                            "description": "The number of minor page faults during the test",
+                                            "type": "string (integer)"
+                                        },
+                                        "system": {
+                                            "description": "The percentage of test time spent in system (kernel) space",
+                                            "type": "string (float percentage)"
+                                        },
+                                        "user": {
+                                            "description": "The percentage of test time spent in user space",
+                                            "type": "string (float percentage)"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "iops": {
+                                    "properties": {
+                                        "max": {
+                                            "description": "The maximum IOPS measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "mean": {
+                                            "description": "The mean IOPS measurement",
+                                            "type": "string (float)"
+                                        },
+                                        "min": {
+                                            "description": "The minimum IOPS measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "numsamples": {
+                                            "description": "The number of samples taken during the test",
+                                            "type": "string (integer)"
+                                        },
+                                        "stdev": {
+                                            "description": "The standard deviation of IOPS",
+                                            "type": "string (float)"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "latency": {
+                                    "properties": {
+                                        "max": {
+                                            "description": "The maximum latency measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "mean": {
+                                            "description": "The mean latency measurement",
+                                            "type": "string (float)"
+                                        },
+                                        "min": {
+                                            "description": "The minimum latency measurement",
+                                            "type": "string (integer)"
+                                        },
+                                        "stdev": {
+                                            "description": "The standard deviation of latency",
+                                            "type": "string (float)"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "overall": {
+                                    "properties": {
+                                        "bandwidth": {
+                                            "description": "The average bandwidth (KiB/s)",
+                                            "type": "string (integer)"
+                                        },
+                                        "iops": {
+                                            "description": "The average IOPS",
+                                            "type": "string (integer)"
+                                        },
+                                        "iosize": {
+                                            "description": "The total size of the benchmark data",
+                                            "type": "string (integer)"
+                                        },
+                                        "runtime": {
+                                            "description": "The total test time in milliseconds",
+                                            "type": "string (integer)"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
+                },
+                "id": {
+                    "description": "The database ID of the test result",
+                    "type": "string (containing integer)"
+                },
+                "job": {
+                    "description": "The job name (an ISO date) of the test result",
+                    "type": "string"
                 }
             },
             "type": "object"
@@ -2335,6 +2480,12 @@
                         "name": "start_vm",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "description": "Script install() function keywork argument in \"arg=data\" format; may be specified multiple times to add multiple arguments",
+                        "in": "query",
+                        "name": "arg",
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4211,6 +4362,57 @@
                 "summary": "Set the cluster maintenance mode",
                 "tags": [
                     "node"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/benchmark": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A single job name to limit results to",
+                        "in": "query",
+                        "name": "job",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/storagebenchmark"
+                        }
+                    }
+                },
+                "summary": "List results from benchmark jobs",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The PVC storage pool to benchmark",
+                        "in": "query",
+                        "name": "pool",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "description": "The Celery job ID of the benchmark (unused elsewhere)",
+                            "type": "string"
+                        }
+                    }
+                },
+                "summary": "Execute a storage benchmark against a storage pool",
+                "tags": [
+                    "storage / ceph"
                 ]
             }
         },
