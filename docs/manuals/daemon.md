@@ -112,9 +112,9 @@ pvc:
       database:
         host: localhost
         port: 5432
-        name: pvcprov
-        user: pvcprov
-        pass: pvcprovPassw0rd
+        name: pvcapi
+        user: pvcapi
+        pass: pvcapiPassw0rd
   system:
     fencing:
       intervals:
@@ -279,7 +279,7 @@ The port of the PostgreSQL instance for the Provisioner database. Should always 
 
 * *required*
 
-The database name for the Provisioner database. Should always be `pvcprov`.
+The database name for the Provisioner database. Should always be `pvcapi`.
 
 ##### `metadata` → `database` → `user`
 

@@ -49,12 +49,12 @@ pvc:
             host: localhost
             # port: PostgreSQL port, invariably '5432'
             port: 5432
-            # name: PostgreSQL database name, invariably 'pvcprov'
-            name: pvcprov
-            # user: PostgreSQL username, invariable 'pvcprov'
-            user: pvcprov
+            # name: PostgreSQL database name, invariably 'pvcapi'
+            name: pvcapi
+            # user: PostgreSQL username, invariable 'pvcapi'
+            user: pvcapi
             # pass: PostgreSQL user password, randomly generated
-            pass: pvcprov
+            pass: pvcapi
         # queue: Celery backend queue using the PVC Zookeeper cluster
         queue:
             # host: Redis hostname, usually 'localhost'
