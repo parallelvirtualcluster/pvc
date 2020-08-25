@@ -95,7 +95,7 @@ def close_database(conn, cur, failed=False):
     conn.close()
 
 def list_benchmarks(job=None):
-    if limit is not None:
+    if job is not None:
         query = "SELECT * FROM {} WHERE job = %s;".format('storage_benchmarks')
         args = (job, )
     else:
