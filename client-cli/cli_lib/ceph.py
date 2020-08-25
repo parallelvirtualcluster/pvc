@@ -1297,7 +1297,7 @@ def ceph_benchmark_list(config, job):
         retdata = response.json()
     else:
         retvalue = False
-        retdata = response.json()
+        retdata = response.json().get('message', '')
 
     return retvalue, retdata
 
