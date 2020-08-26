@@ -13,30 +13,35 @@ else
 fi
 
 HOSTS=( ${@} )
-echo "${HOSTS[@]}"
+echo "> Deploying to host(s): ${HOSTS[@]}"
 
 # Build the packages
-./build-deb.sh
+echo -n "Building packages... "
+version="$( ./build-unstable-deb.sh 2>/dev/null )"
+echo "done. Package version ${version}."
 
 # Install the client(s) locally
-$SUDO dpkg -i ../pvc-client*.deb
+echo -n "Installing client packages locally... "
+$SUDO dpkg -i ../pvc-client*_${version}*.deb &>/dev/null
+echo "done".
 
 for HOST in ${HOSTS[@]}; do
-    echo "****"
-    echo "Deploying to host ${HOST}"
-    echo "****"
-    ssh $HOST $SUDO rm -rf /tmp/pvc
-    ssh $HOST mkdir /tmp/pvc
-    scp ../*.deb $HOST:/tmp/pvc/
-    echo "Installing packages..."
-    ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb
-    ssh $HOST rm -rf /tmp/pvc
-    echo "Restarting PVC node daemon..."
-    ssh $HOST $SUDO systemctl restart pvcapid
-    ssh $HOST $SUDO systemctl restart pvcapid-worker
-    ssh $HOST $SUDO systemctl restart pvcnoded
-    echo "****"
-    echo "Waiting 15s for host ${HOST} to stabilize"
-    echo "****"
+    echo "> Deploying packages to host ${HOST}"
+    echo -n "Copying packages... "
+    ssh $HOST $SUDO rm -rf /tmp/pvc &>/dev/null
+    ssh $HOST mkdir /tmp/pvc &>/dev/null
+    scp ../pvc-*_${version}*.deb $HOST:/tmp/pvc/ &>/dev/null
+    echo "done."
+    echo -n "Installing packages... "
+    ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb &>/dev/null
+    ssh $HOST rm -rf /tmp/pvc &>/dev/null
+    echo "done."
+    echo -n "Restarting PVC daemons... "
+    ssh $HOST $SUDO systemctl restart pvcapid &>/dev/null
+    ssh $HOST $SUDO systemctl restart pvcapid-worker &>/dev/null
+    ssh $HOST $SUDO systemctl restart pvcnoded &>/dev/null
+    echo "done."
+    echo -n "Waiting 15s for host to stabilize... "
     sleep 15
+    echo "done."
 done

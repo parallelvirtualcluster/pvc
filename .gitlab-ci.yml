@@ -2,12 +2,14 @@ stages:
    - build
    - deploy
 
-build:
+build_releases:
   stage: build
   before_script: 
     - git submodule update --init
   script:
     - /bin/bash build-deb.sh
-    - /usr/local/bin/deploy-package
+    - /usr/local/bin/deploy-package -C pvc
   only:
-    - master
+    - tags
+  except:
+    - branches
