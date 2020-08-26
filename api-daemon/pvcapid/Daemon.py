@@ -34,7 +34,7 @@ else:
         # Run the WSGI server with SSL
         http_server = gevent.pywsgi.WSGIServer(
             (pvc_api.config['listen_address'], pvc_api.config['listen_port']),
-            app,
+            pvc_api.app,
             keyfile=pvc_api.config['ssl_key_file'],
             certfile=pvc_api.config['ssl_cert_file']
         )
