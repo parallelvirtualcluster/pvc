@@ -1,14 +1,20 @@
+pvc (0.8-0) unstable; urgency=medium
+
+  * Numerous bugfixes and improvements
+
+ -- Joshua Boniface <joshua@boniface.me>  Tue, 11 Aug 2020 12:12:07 -0400
+
 pvc (0.7-0) unstable; urgency=medium
 
   * Numerous bugfixes and improvements
 
- -- Joshua Boniface <joshua@boniface.me>  Sat, 15 Feb 2019 23:24:17 -0500
+ -- Joshua Boniface <joshua@boniface.me>  Sat, 15 Feb 2020 23:24:17 -0500
 
 pvc (0.6-0) unstable; urgency=medium
 
   * Numerous improvements, implementation of provisioner and API client
 
- -- Joshua Boniface <joshua@boniface.me>  Sat, 08 Feb 2019 18:26:58 -0500
+ -- Joshua Boniface <joshua@boniface.me>  Sat, 08 Feb 2020 18:26:58 -0500
 
 pvc (0.5-0) unstable; urgency=medium
 

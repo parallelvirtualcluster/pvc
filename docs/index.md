@@ -19,6 +19,10 @@ To get started with PVC, read the [Cluster Architecture document](https://parall
 
 ## Changelog
 
+#### v0.8
+
+Numerous improvements and bugfixes. This release is suitable for general use and is pre-release-quality software.
+
 #### v0.7
 
 Numerous improvements and bugfixes, revamped documentation. This release is suitable for general use and is beta-quality software.
