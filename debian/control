@@ -33,7 +33,7 @@ Description: Parallel Virtual Cluster common libraries (Python 3)
 
 Package: pvc-client-cli
 Architecture: all
-Depends: python3-requests, python3-requests-toolbelt, python3-yaml, python3-lxml
+Depends: python3-requests, python3-requests-toolbelt, python3-yaml, python3-lxml, python3-click
 Description: Parallel Virtual Cluster CLI client (Python 3)
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
