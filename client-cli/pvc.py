@@ -117,10 +117,14 @@ def get_store(store_path):
 
 def update_store(store_path, store_data):
     store_file = '{}/pvc-cli.json'.format(store_path)
-    with open(store_file, 'w') as fh:
-        fh.write(json.dumps(store_data, sort_keys=True, indent=4))
-    # Ensure file has 0600 permissions due to API key storage
-    os.chmod(store_file, 0o600)
+    if not os.path.exists(store_file):
+        with open(store_file, 'w') as fh:
+            fh.write(json.dumps(store_data, sort_keys=True, indent=4))
+        # Ensure file has sensible permissions due to API key storage, but only when created!
+        os.chmod(store_file, int(os.environ.get('PVC_CLIENT_DB_PERMS', 600), 8))
+    else:
+        with open(store_file, 'w') as fh:
+            fh.write(json.dumps(store_data, sort_keys=True, indent=4))
 
 pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
 home_dir = os.environ.get('HOME', None)
