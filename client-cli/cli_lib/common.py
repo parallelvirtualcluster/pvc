@@ -26,6 +26,7 @@ import math
 import time
 import requests
 import click
+from urllib3 import disable_warnings
 
 def format_bytes(size_bytes):
     byte_unit_matrix = {
@@ -125,13 +126,15 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         headers['X-Api-Key'] = config['api_key']
 
     # Determine the request type and hit the API
+    disable_warnings()
     try:
         if operation == 'get':
             response = requests.get(
                 uri,
                 headers=headers,
                 params=params,
-                data=data
+                data=data,
+                verify=config['verify_ssl']
             )
         if operation == 'post':
             response = requests.post(
@@ -139,7 +142,8 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
                 headers=headers,
                 params=params,
                 data=data,
-                files=files
+                files=files,
+                verify=config['verify_ssl']
             )
         if operation == 'put':
             response = requests.put(
@@ -147,21 +151,24 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
                 headers=headers,
                 params=params,
                 data=data,
-                files=files
+                files=files,
+                verify=config['verify_ssl']
             )
         if operation == 'patch':
             response = requests.patch(
                 uri,
                 headers=headers,
                 params=params,
-                data=data
+                data=data,
+                verify=config['verify_ssl']
             )
         if operation == 'delete':
             response = requests.delete(
                 uri,
                 headers=headers,
                 params=params,
-                data=data
+                data=data,
+                verify=config['verify_ssl']
             )
     except Exception as e:
         message = 'Failed to connect to the API: {}'.format(e)

@@ -106,6 +106,10 @@ def get_config(store_data, cluster=None):
     config['api_scheme'] = scheme
     config['api_key'] = api_key
     config['api_prefix'] = prefix
+    if cluster == 'local':
+        config['verify_ssl'] = False
+    else:
+        config['verify_ssl'] = bool(strtobool(os.environ.get('PVC_CLIENT_VERIFY_SSL', 'True')))
 
     return config
 
@@ -3626,11 +3630,16 @@ def cli(_cluster, _debug, _quiet):
         config['debug'] = _debug
 
         if not _quiet:
+            if config['api_scheme'] == 'https' and not config['verify_ssl']:
+                ssl_unverified_msg=' (unverified)'
+            else:
+                ssl_unverified_msg=''
             click.echo(
-                'Using cluster "{}" - Host: "{}"  Scheme: "{}"  Prefix: "{}"'.format(
+                'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
                     config['cluster'],
                     config['api_host'],
                     config['api_scheme'],
+                    ssl_unverified_msg,
                     config['api_prefix']
                 ),
                 err=True
