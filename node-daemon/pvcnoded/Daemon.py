@@ -1355,6 +1355,9 @@ def collect_vm_stats(queue):
             if debug:
                 logger.out("Getting general statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
             domain_state, domain_maxmem, domain_mem, domain_vcpus, domain_cputime = domain.info()
+            # We can't properly gather stats from a non-running VMs so continue
+            if domain_state != libvirt.VIR_DOMAIN_RUNNING:
+                continue
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
         except Exception as e:
