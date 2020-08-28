@@ -125,7 +125,7 @@ def update_store(store_path, store_data):
         with open(store_file, 'w') as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
         # Ensure file has sensible permissions due to API key storage, but only when created!
-        os.chmod(store_file, int(os.environ.get('PVC_CLIENT_DB_PERMS', 600), 8))
+        os.chmod(store_file, int(os.environ.get('PVC_CLIENT_DB_PERMS', '600'), 8))
     else:
         with open(store_file, 'w') as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
