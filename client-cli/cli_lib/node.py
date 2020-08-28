@@ -136,10 +136,15 @@ def getOutputColours(node_information):
     else:
         domain_state_colour = ansiprint.blue()
 
-    return daemon_state_colour, coordinator_state_colour, domain_state_colour
+    if node_information['memory']['allocated'] > node_information['memory']['total']:
+        mem_allocated_colour = ansiprint.yellow()
+    else:
+        mem_allocated_colour = ''
+
+    return daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour
 
 def format_info(node_information, long_output):
-    daemon_state_colour, coordinator_state_colour, domain_state_colour = getOutputColours(node_information)
+    daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour = getOutputColours(node_information)
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
@@ -161,7 +166,7 @@ def format_info(node_information, long_output):
     ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['total']))
     ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['used']))
     ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['free']))
-    ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['allocated']))
+    ainformation.append('{}Allocated RAM (MiB):{}  {}{}{}'.format(ansiprint.purple(), ansiprint.end(), mem_allocated_colour, node_information['memory']['allocated'], ansiprint.end()))
 
     # Join it all together
     ainformation.append('')
@@ -277,12 +282,12 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             
     # Format the string (elements)
     for node_information in node_list:
-        daemon_state_colour, coordinator_state_colour, domain_state_colour = getOutputColours(node_information)
+        daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour = getOutputColours(node_information)
         node_list_output.append(
             '{bold}{node_name: <{node_name_length}} \
     {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
      {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
-         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
+         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {mem_allocated_colour}{node_mem_allocated: <{mem_alloc_length}}{end_colour}{end_bold}'.format(
                 node_name_length=node_name_length,
                 daemon_state_length=daemon_state_length,
                 coordinator_state_length=coordinator_state_length,
@@ -299,6 +304,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 daemon_state_colour=daemon_state_colour,
                 coordinator_state_colour=coordinator_state_colour,
                 domain_state_colour=domain_state_colour,
+                mem_allocated_colour=mem_allocated_colour,
                 end_colour=ansiprint.end(),
                 node_name=node_information['name'],
                 node_daemon_state=node_information['daemon_state'],
