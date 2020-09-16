@@ -1326,7 +1326,9 @@ def collect_vm_stats(queue):
     # Toggle state management of dead VMs to restart them
     if debug:
         logger.out("Toggle state management of dead VMs to restart them", state='d', prefix='vm-thread')
-    for domain, instance in this_node.d_domain.items():
+    # Make a copy of the d_domain; if not, and it changes in flight, this can fail
+    fixed_d_domain = this_node.d_domain.copy()
+    for domain, instance in fixed_d_domain.items():
         if domain in this_node.domain_list:
             # Add the allocated memory to our memalloc value
             memalloc += instance.getmemory()
