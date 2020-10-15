@@ -511,9 +511,9 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
 
-        # Disable IPv6 DAD on bridge interface
+        # Disable IPv6 on bridge interface (prevents leakage)
         common.run_os_command(
-            'sysctl net.ipv6.conf.{}.accept_dad=0'.format(
+            'sysctl net.ipv6.conf.{}.disable_ipv6=1'.format(
                 self.bridge_nic
             )
         )
