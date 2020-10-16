@@ -435,7 +435,7 @@ def ova_upload(config, name, ova_file, params):
 
     bar = UploadProgressBar(ova_file, end_message="Parsing file on remote side...", end_nl=False)
     upload_data = MultipartEncoder(
-        fields={ 'file': ('filename', open(ova_file, 'rb'), 'text/plain')}
+        fields={ 'file': ('filename', open(ova_file, 'rb'), 'application/octet-stream')}
     )
     upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
 

@@ -876,7 +876,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
 
     bar = UploadProgressBar(image_file, end_message="Parsing file on remote side...", end_nl=False)
     upload_data = MultipartEncoder(
-        fields={ 'file': ('filename', open(image_file, 'rb'), 'text/plain')}
+        fields={ 'file': ('filename', open(image_file, 'rb'), 'application/octet-stream')}
     )
     upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
 
