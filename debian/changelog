@@ -1,3 +1,9 @@
+pvc (0.9-0) unstable; urgency=high
+
+  * Numerous bugfixes and improvements
+
+ -- Joshua Boniface <joshua@boniface.me>  Sun, 18 Oct 2020 14:31:00 -0400
+
 pvc (0.8-1) unstable; urgency=high
 
   * Fix bug with IPv6 being enabled on bridged interfaces
