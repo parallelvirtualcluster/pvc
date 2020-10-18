@@ -531,15 +531,18 @@ class API_Node_Root(Resource):
                     total:
                       type: integer
                       description: The total amount of node RAM in MB
-                    allocated:
-                      type: integer
-                      description: The total amount of RAM allocated to domains in MB
                     used:
                       type: integer
                       description: The total used RAM on the node in MB
                     free:
                       type: integer
                       description: The total free RAM on the node in MB
+                    allocated:
+                      type: integer
+                      description: The total amount of RAM allocated to running domains in MB
+                    provisioned:
+                      type: integer
+                      description: The total amount of RAM provisioned to all domains (regardless of state) on this node in MB
         parameters:
           - in: query
             name: limit

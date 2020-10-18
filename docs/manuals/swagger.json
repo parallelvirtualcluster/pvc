@@ -427,11 +427,15 @@
                 "memory": {
                     "properties": {
                         "allocated": {
-                            "description": "The total amount of RAM allocated to domains in MB",
+                            "description": "The total amount of RAM allocated to running domains in MB",
                             "type": "integer"
                         },
                         "free": {
                             "description": "The total free RAM on the node in MB",
+                            "type": "integer"
+                        },
+                        "provisioned": {
+                            "description": "The total amount of RAM provisioned to all domains (regardless of state) on this node in MB",
                             "type": "integer"
                         },
                         "total": {

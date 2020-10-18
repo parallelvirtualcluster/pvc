@@ -33,6 +33,8 @@ import pvcnoded.common as common
 
 import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
+import daemon_lib.common as daemon_common
+
 def flush_locks(zk_conn, logger, dom_uuid):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
     # Get the list of RBD images
@@ -153,7 +155,11 @@ class VMInstance(object):
 
     def getmemory(self):
         try:
-            memory = int(self.dom.info()[2] / 1024)
+            if self.dom is not None:
+                memory = int(self.dom.info()[2] / 1024)
+            else:
+                domain_information = daemon_common.getInformationFromXML(self.zk_conn, self.domuuid)
+                memory = int(domain_information['memory'])
         except:
             memory = 0
 

@@ -54,6 +54,7 @@ def getNodeInformation(zk_conn, node_name):
     node_vcpu_allocated = int(zkhandler.readdata(zk_conn, 'nodes/{}/vcpualloc'.format(node_name)))
     node_mem_total = int(zkhandler.readdata(zk_conn, '/nodes/{}/memtotal'.format(node_name)))
     node_mem_allocated = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node_name)))
+    node_mem_provisioned = int(zkhandler.readdata(zk_conn, '/nodes/{}/memprov'.format(node_name)))
     node_mem_used = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node_name)))
     node_mem_free = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node_name)))
     node_load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node_name)))
@@ -80,6 +81,7 @@ def getNodeInformation(zk_conn, node_name):
         'memory': {
             'total': node_mem_total,
             'allocated': node_mem_allocated,
+            'provisioned': node_mem_provisioned,
             'used': node_mem_used,
             'free': node_mem_free
         }
@@ -263,24 +265,25 @@ def format_info(node_information, long_output):
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
     # Basic information
-    ainformation.append('{}Name:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_information['name']))
-    ainformation.append('{}Daemon State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), daemon_state_colour, node_information['daemon_state'], ansiprint.end()))
-    ainformation.append('{}Coordinator State:{}    {}{}{}'.format(ansiprint.purple(), ansiprint.end(), coordinator_state_colour, node_information['coordinator_state'], ansiprint.end()))
-    ainformation.append('{}Domain State:{}         {}{}{}'.format(ansiprint.purple(), ansiprint.end(), domain_state_colour, node_information['domain_state'], ansiprint.end()))
-    ainformation.append('{}Active VM Count:{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_information['domains_count']))
+    ainformation.append('{}Name:{}                  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['name']))
+    ainformation.append('{}Daemon State:{}          {}{}{}'.format(ansiprint.purple(), ansiprint.end(), daemon_state_colour, node_information['daemon_state'], ansiprint.end()))
+    ainformation.append('{}Coordinator State:{}     {}{}{}'.format(ansiprint.purple(), ansiprint.end(), coordinator_state_colour, node_information['coordinator_state'], ansiprint.end()))
+    ainformation.append('{}Domain State:{}          {}{}{}'.format(ansiprint.purple(), ansiprint.end(), domain_state_colour, node_information['domain_state'], ansiprint.end()))
+    ainformation.append('{}Active VM Count:{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['domains_count']))
     if long_output:
         ainformation.append('')
-        ainformation.append('{}Architecture:{}         {}'.format(ansiprint.purple(), ansiprint.end(), node_information['arch']))
-        ainformation.append('{}Operating System:{}     {}'.format(ansiprint.purple(), ansiprint.end(), node_information['os']))
-        ainformation.append('{}Kernel Version:{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['kernel']))
+        ainformation.append('{}Architecture:{}          {}'.format(ansiprint.purple(), ansiprint.end(), node_information['arch']))
+        ainformation.append('{}Operating System:{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_information['os']))
+        ainformation.append('{}Kernel Version:{}        {}'.format(ansiprint.purple(), ansiprint.end(), node_information['kernel']))
     ainformation.append('')
-    ainformation.append('{}Host CPUs:{}            {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['total']))
-    ainformation.append('{}vCPUs:{}                {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['allocated']))
-    ainformation.append('{}Load:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_information['load']))
-    ainformation.append('{}Total RAM (MiB):{}      {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['total']))
-    ainformation.append('{}Used RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['used']))
-    ainformation.append('{}Free RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['free']))
-    ainformation.append('{}Allocated RAM (MiB):{}  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['allocated']))
+    ainformation.append('{}Host CPUs:{}             {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['total']))
+    ainformation.append('{}vCPUs:{}                 {}'.format(ansiprint.purple(), ansiprint.end(), node_information['vcpu']['allocated']))
+    ainformation.append('{}Load:{}                  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['load']))
+    ainformation.append('{}Total RAM (MiB):{}       {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['total']))
+    ainformation.append('{}Used RAM (MiB):{}        {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['used']))
+    ainformation.append('{}Free RAM (MiB):{}        {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['free']))
+    ainformation.append('{}Allocated RAM (MiB):{}   {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['allocated']))
+    ainformation.append('{}Provisioned RAM (MiB):{} {}'.format(ansiprint.purple(), ansiprint.end(), node_information['memory']['provisioned']))
 
     # Join it all together
     information = '\n'.join(ainformation)
@@ -303,6 +306,7 @@ def format_list(node_list):
     mem_used_length = 5
     mem_free_length = 5
     mem_alloc_length = 4
+    mem_prov_length = 4
     for node_information in node_list:
         # node_name column
         _node_name_length = len(node_information['name']) + 1
@@ -348,13 +352,18 @@ def format_list(node_list):
         _mem_alloc_length = len(str(node_information['memory']['allocated'])) + 1
         if _mem_alloc_length > mem_alloc_length:
             mem_alloc_length = _mem_alloc_length
+        # mem_prov column
+        _mem_prov_length = len(str(node_information['memory']['provisioned'])) + 1
+        if _mem_prov_length > mem_prov_length:
+            mem_prov_length = _mem_prov_length
+
 
     # Format the string (header)
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}} \
 St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
 Res: {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
-Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
+Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}} {node_mem_provisioned: <{mem_prov_length}}{end_bold}'.format(
             node_name_length=node_name_length,
             daemon_state_length=daemon_state_length,
             coordinator_state_length=coordinator_state_length,
@@ -366,6 +375,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             mem_used_length=mem_used_length,
             mem_free_length=mem_free_length,
             mem_alloc_length=mem_alloc_length,
+            mem_prov_length=mem_prov_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             daemon_state_colour='',
@@ -382,7 +392,8 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             node_mem_total='Total',
             node_mem_used='Used',
             node_mem_free='Free',
-            node_mem_allocated='VMs'
+            node_mem_allocated='VMs Run',
+            node_mem_provisioned='VMs Total'
         )
     )
             
@@ -393,7 +404,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             '{bold}{node_name: <{node_name_length}} \
     {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
      {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
-         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}}{end_bold}'.format(
+         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}} {node_mem_provisioned: <{mem_prov_length}}{end_bold}'.format(
                 node_name_length=node_name_length,
                 daemon_state_length=daemon_state_length,
                 coordinator_state_length=coordinator_state_length,
@@ -405,6 +416,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 mem_used_length=mem_used_length,
                 mem_free_length=mem_free_length,
                 mem_alloc_length=mem_alloc_length,
+                mem_prov_length=mem_prov_length,
                 bold='',
                 end_bold='',
                 daemon_state_colour=daemon_state_colour,
@@ -421,7 +433,8 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 node_mem_total=node_information['memory']['total'],
                 node_mem_used=node_information['memory']['used'],
                 node_mem_free=node_information['memory']['free'],
-                node_mem_allocated=node_information['memory']['allocated']
+                node_mem_allocated=node_information['memory']['allocated'],
+                node_mem_provisioned=node_information['memory']['provisioned']
             )
         )
 

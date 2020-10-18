@@ -668,6 +668,7 @@ else:
         '/nodes/{}/memfree'.format(myhostname): '0',
         '/nodes/{}/memused'.format(myhostname): '0',
         '/nodes/{}/memalloc'.format(myhostname): '0',
+        '/nodes/{}/memprov'.format(myhostname): '0',
         '/nodes/{}/vcpualloc'.format(myhostname): '0',
         '/nodes/{}/cpuload'.format(myhostname): '0.0',
         '/nodes/{}/networkscount'.format(myhostname): '0',
@@ -1322,6 +1323,7 @@ def collect_vm_stats(queue):
         return
 
     memalloc = 0
+    memprov = 0
     vcpualloc = 0
     # Toggle state management of dead VMs to restart them
     if debug:
@@ -1332,6 +1334,7 @@ def collect_vm_stats(queue):
         if domain in this_node.domain_list:
             # Add the allocated memory to our memalloc value
             memalloc += instance.getmemory()
+            memprov += instance.getmemory()
             vcpualloc += instance.getvcpus()
             if instance.getstate() == 'start' and instance.getnode() == this_node.name:
                 if instance.getdom() != None:
@@ -1341,6 +1344,8 @@ def collect_vm_stats(queue):
                     except Exception as e:
                         # Toggle a state "change"
                         zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
+        elif instance.getnode() == this_node.name:
+            memprov += instance.getmemory()
 
     # Get list of running domains from Libvirt
     running_domains = lv_conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
@@ -1440,6 +1445,7 @@ def collect_vm_stats(queue):
 
     queue.put(len(running_domains))
     queue.put(memalloc)
+    queue.put(memprov)
     queue.put(vcpualloc)
 
     if debug:
@@ -1509,12 +1515,14 @@ def node_keepalive():
         try:
             this_node.domains_count = vm_thread_queue.get()
             this_node.memalloc = vm_thread_queue.get()
+            this_node.memprov = vm_thread_queue.get()
             this_node.vcpualloc = vm_thread_queue.get()
         except:
             pass
     else:
         this_node.domains_count = 0
         this_node.memalloc = 0
+        this_node.memprov = 0
         this_node.vcpualloc = 0
 
     if enable_storage:
@@ -1537,6 +1545,7 @@ def node_keepalive():
             '/nodes/{}/memused'.format(this_node.name): str(this_node.memused),
             '/nodes/{}/memfree'.format(this_node.name): str(this_node.memfree),
             '/nodes/{}/memalloc'.format(this_node.name): str(this_node.memalloc),
+            '/nodes/{}/memprov'.format(this_node.name): str(this_node.memprov),
             '/nodes/{}/vcpualloc'.format(this_node.name): str(this_node.vcpualloc),
             '/nodes/{}/cpuload'.format(this_node.name): str(this_node.cpuload),
             '/nodes/{}/domainscount'.format(this_node.name): str(this_node.domains_count),
