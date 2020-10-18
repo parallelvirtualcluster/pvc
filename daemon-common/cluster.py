@@ -79,6 +79,36 @@ def getClusterInformation(zk_conn):
     ceph_volume_count = len(ceph_volume_list)
     ceph_snapshot_count = len(ceph_snapshot_list)
 
+    # Determinations for general cluster health
+    cluster_healthy_status = True
+    # Check for (n-1) overprovisioning
+    #   Assume X nodes. If the total VM memory allocation (counting only running VMss) is greater than
+    #   the total memory of the (n-1) smallest nodes, trigger this warning.
+    n_minus_1_total = 0
+    alloc_total = 0
+
+    node_largest_index = None
+    node_largest_count = 0
+    for index, node in enumerate(node_list):
+        node_mem_total = node['memory']['total']
+        node_mem_alloc = node['memory']['allocated']
+        alloc_total += node_mem_alloc
+
+        # Determine if this node is the largest seen so far
+        if node_mem_total > node_largest_count:
+            node_largest_index = index
+            node_largest_count = node_mem_total
+    n_minus_1_node_list = list()
+    for index, node in enumerate(node_list):
+        if index == node_largest_index:
+            continue
+        n_minus_1_node_list.append(node)
+    for index, node in enumerate(n_minus_1_node_list):
+        n_minus_1_total += node['memory']['total']
+    if alloc_total > n_minus_1_total:
+        cluster_healthy_status = False
+        cluster_health_msg.append("Total VM memory ({}) is overprovisioned (max {}) for (n-1) failure scenarios".format(alloc_total, n_minus_1_total))
+
     # Determinations for node health
     node_healthy_status = list(range(0, node_count))
     node_report_status = list(range(0, node_count))
@@ -131,7 +161,7 @@ def getClusterInformation(zk_conn):
     # Find out the overall cluster health; if any element of a healthy_status is false, it's unhealthy
     if maint_state == 'true':
         cluster_health = 'Maintenance'
-    elif False in node_healthy_status or False in vm_healthy_status or False in ceph_osd_healthy_status:
+    elif cluster_healthy_status is False or False in node_healthy_status or False in vm_healthy_status or False in ceph_osd_healthy_status:
         cluster_health = 'Degraded'
     else:
         cluster_health = 'Optimal'
