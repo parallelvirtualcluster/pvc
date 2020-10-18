@@ -197,19 +197,19 @@ def getNodes(zk_conn, node_limit, dom_uuid):
 
 # via free memory (relative to allocated memory)
 def findTargetNodeMem(zk_conn, node_limit, dom_uuid):
-    most_allocfree = 0
+    most_provfree = 0
     target_node = None
 
     node_list = getNodes(zk_conn, node_limit, dom_uuid)
     for node in node_list:
-        memalloc = int(zkhandler.readdata(zk_conn, '/nodes/{}/memalloc'.format(node)))
+        memprov = int(zkhandler.readdata(zk_conn, '/nodes/{}/memprov'.format(node)))
         memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node)))
         memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node)))
         memtotal = memused + memfree
-        allocfree = memtotal - memalloc
+        provfree = memtotal - memprov
 
-        if allocfree > most_allocfree:
-            most_allocfree = allocfree
+        if provfree > most_provfree:
+            most_provfree = provfree
             target_node = node
 
     return target_node
