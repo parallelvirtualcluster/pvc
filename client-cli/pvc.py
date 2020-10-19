@@ -1183,10 +1183,6 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
     """
 
-    if nettype == 'managed' and not ip_network and not ip6_network:
-        click.echo('Error: At least one of "-i" / "--ipnet" or "-i6" / "--ipnet6" must be specified.')
-        exit(1)
-
     retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg)
 
