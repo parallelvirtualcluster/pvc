@@ -166,7 +166,8 @@ class RequestParser(object):
                     required=reqarg.get('required', False),
                     action=reqarg.get('action', None),
                     choices=reqarg.get('choices', ()),
-                    help=reqarg.get('helptext', None)
+                    help=reqarg.get('helptext', None),
+                    location='args'
                 )
             reqargs = parser.parse_args()
             kwargs['reqargs'] = reqargs
@@ -3694,19 +3695,9 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
               type: object
               id: Message
         """
-        from flask_restful import reqparse
-        from werkzeug.datastructures import FileStorage
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', type=FileStorage, location='files')
-        data = parser.parse_args()
-        image_data = data.get('file', None)
-        if not image_data:
-            return { 'message': 'An image file contents must be specified.' }, 400
-
         return api_helper.ceph_volume_upload(
             pool,
             volume,
-            image_data,
             reqargs.get('image_format', None)
         )
 api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<pool>/<volume>/upload')
@@ -5668,17 +5659,7 @@ class API_Provisioner_OVA_Root(Resource):
               type: object
               id: Message
         """
-        from flask_restful import reqparse
-        from werkzeug.datastructures import FileStorage
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', type=FileStorage, location='files')
-        data = parser.parse_args()
-        ova_data = data.get('file', None)
-        if not ova_data:
-            return { 'message': 'An OVA file contents must be specified.' }, 400
-
         return api_ova.upload_ova(
-            ova_data,
             reqargs.get('pool', None),
             reqargs.get('name', None),
             reqargs.get('ova_size', None),
@@ -5746,17 +5727,7 @@ class API_Provisioner_OVA_Element(Resource):
               type: object
               id: Message
         """
-        from flask_restful import reqparse
-        from werkzeug.datastructures import FileStorage
-        parser = reqparse.RequestParser()
-        parser.add_argument('file', type=FileStorage, location='files')
-        data = parser.parse_args()
-        ova_data = data.get('file', None)
-        if not ova_data:
-            return { 'message': 'An OVA file contents must be specified.' }, 400
-
         return api_ova.upload_ova(
-            ova_data,
             reqargs.get('pool', None),
             ova,
             reqargs.get('ova_size', None),

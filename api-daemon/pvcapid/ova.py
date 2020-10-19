@@ -35,6 +35,8 @@ import subprocess
 
 import lxml.etree
 
+from werkzeug.formparser import parse_form_data
+
 import daemon_lib.common as pvc_common
 import daemon_lib.node as pvc_node
 import daemon_lib.vm as pvc_vm
@@ -162,7 +164,7 @@ def delete_ova(name):
     close_database(conn, cur)
     return retmsg, retcode
 
-def upload_ova(ova_data, pool, name, ova_size):
+def upload_ova(pool, name, ova_size):
     ova_archive = None
 
     # Cleanup function
@@ -224,10 +226,16 @@ def upload_ova(ova_data, pool, name, ova_size):
 
     # Save the OVA data to the temporary blockdev directly
     try:
-        ova_data.save(ova_blockdev)
+        # This sets up a custom stream_factory that writes directly into the ova_blockdev,
+        # rather than the standard stream_factory which writes to a temporary file waiting
+        # on a save() call. This will break if the API ever uploaded multiple files, but
+        # this is an acceptable workaround.
+        def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
+            return open(ova_blockdev, 'wb')
+        parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
     except:
         output = {
-            'message': "Failed to write OVA file to temporary volume."
+            'message': "Failed to upload or write OVA file to temporary volume."
         }
         retcode = 400
         cleanup_ova_maps_and_volumes()

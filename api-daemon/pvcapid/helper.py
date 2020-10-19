@@ -26,6 +26,8 @@ import lxml.etree as etree
 
 from distutils.util import strtobool as dustrtobool
 
+from werkzeug.formparser import parse_form_data
+
 import daemon_lib.common as pvc_common
 import daemon_lib.cluster as pvc_cluster
 import daemon_lib.node as pvc_node
@@ -1337,7 +1339,7 @@ def ceph_volume_remove(pool, name):
     }
     return output, retcode
 
-def ceph_volume_upload(pool, volume, data, img_type):
+def ceph_volume_upload(pool, volume, img_type):
     """
     Upload a raw file via HTTP post to a PVC Ceph volume
     """
@@ -1447,10 +1449,16 @@ def ceph_volume_upload(pool, volume, data, img_type):
 
         # Save the data to the temporary blockdev directly
         try:
-            data.save(temp_blockdev)
+            # This sets up a custom stream_factory that writes directly into the ova_blockdev,
+            # rather than the standard stream_factory which writes to a temporary file waiting
+            # on a save() call. This will break if the API ever uploaded multiple files, but
+            # this is an acceptable workaround.
+            def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
+                return open(temp_blockdev, 'wb')
+            parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
         except:
             output = {
-                'message': "Failed to write image file to temporary volume."
+                'message': "Failed to upload or write image file to temporary volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
