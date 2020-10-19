@@ -112,6 +112,7 @@ output_values() {
     PVC_OUTPUT="$( $PVC_CMD )"
 
     cluster_health="$( $JQ_CMD '.health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    cluster_failed_reason="$( $JQ_CMD -r '.health_msg | @csv' <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
     case $cluster_health in
         "Optimal")
             cluster_value="0"
@@ -124,6 +125,7 @@ output_values() {
     esac
 
     storage_health="$( $JQ_CMD '.storage_health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    storage_failed_reason="$( $JQ_CMD -r '.storage_health_msg | @csv' <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
     case $storage_health in
         "Optimal")
             storage_value="0"
@@ -137,7 +139,17 @@ output_values() {
 
 
     echo "pvc_cluster.value $cluster_value"
+    if [[ $cluster_value -eq 1 ]]; then
+        echo "pvc_cluster.extinfo Cluster in maintenance mode"
+    elif [[ $cluster_value -eq 2 ]]; then
+        echo "pvc_cluster.extinfo ${cluster_failed_reason}"
+    fi 
     echo "pvc_storage.value $storage_value"
+    if [[ $storage_value -eq 1 ]]; then
+        echo "pvc_storage.extinfo Cluster in maintenance mode"
+    elif [[ $storage_value -eq 2 ]]; then
+        echo "pvc_storage.extinfo ${storage_failed_reason}"
+    fi 
 }
 
 case $# in
