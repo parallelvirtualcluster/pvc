@@ -476,7 +476,6 @@ class VMInstance(object):
                 do_migrate_shutdown = True
 
         self.logger.out('Releasing write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
-        zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
         lock.release()
         self.logger.out('Released write lock for synchronization phase B', state='o')
 
@@ -494,7 +493,6 @@ class VMInstance(object):
             migrate_shutdown_result = migrate_shutdown()
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
-        zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
         lock.release()
         self.logger.out('Released write lock for synchronization phase C', state='o')
 
@@ -519,14 +517,11 @@ class VMInstance(object):
         if self.node == self.lastnode:
             return
 
-        # Slight delay before firing
-        time.sleep(0.2)
-
         # Wait for any in-progress migrations
         if zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
-                time.sleep(0.1)
+                time.sleep(0.2)
 
         self.inreceive = True
         live_receive = True
@@ -543,7 +538,6 @@ class VMInstance(object):
         self.logger.out('Acquired write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.5) # Time for reader to acquire the lock
         self.logger.out('Releasing write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
-        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': self.domuuid })
         lock.release()
         self.logger.out('Released write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.1) # Time for new writer to acquire the lock
