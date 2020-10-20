@@ -514,17 +514,20 @@ class VMInstance(object):
         if self.node == self.lastnode:
             return
 
+        # Slight delay before firing
+        time.sleep(0.2)
+
         # Wait for any in-progress migrations
         if zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
                 time.sleep(0.1)
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         self.inreceive = True
         live_receive = True
 
-        self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Receiving VM migration from node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
         # Ensure our lock key is populated
         zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': self.domuuid })
