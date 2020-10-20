@@ -364,6 +364,15 @@ class VMInstance(object):
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
+        aborted = False
+
+        def abort_migrate():
+            zkhandler.writedata(self.zk_conn, {
+                '/domains/{}/state'.format(self.domuuid): 'start',
+                '/domains/{}/node'.format(self.domuuid): self.this_node.name,
+                '/domains/{}/lastnode'.format(self.domuuid): ''
+            })
+
         # Acquire exclusive lock on the domain node key
         migrate_lock = zkhandler.exclusivelock(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
         migrate_lock.acquire()
@@ -375,9 +384,22 @@ class VMInstance(object):
         self.logger.out('Acquiring read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
+        if zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') == '':
+            self.logger.out('Waiting for peer', state='i', prefix='Domain {}'.format(self.domuuid))
+            ticks = 0
+            while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') == '':
+                time.sleep(0.1)
+                ticks += 1
+                if ticks > 300:
+                    self.logger.out('Timed out waiting 30s for peer, aborting migration', state='e', prefix='Domain {}'.format(self.domuuid))
+                    abort_migrate()
+                    aborted = True
         self.logger.out('Releasing read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
+
+        if aborted:
+            return
 
         # Synchronize nodes B (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
@@ -431,11 +453,8 @@ class VMInstance(object):
         if not migrate_live_result:
             if force_live:
                 self.logger.out('Could not live migrate VM; live migration enforced, aborting', state='e', prefix='Domain {}'.format(self.domuuid))
-                zkhandler.writedata(self.zk_conn, {
-                    '/domains/{}/state'.format(self.domuuid): 'start',
-                    '/domains/{}/node'.format(self.domuuid): self.this_node.name,
-                    '/domains/{}/lastnode'.format(self.domuuid): ''
-                })
+                abort_migrate()
+                aborted = True
             else:
                 do_migrate_shutdown = True
 
@@ -443,6 +462,9 @@ class VMInstance(object):
         zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
         lock.release()
         self.logger.out('Released write lock for synchronization phase B', state='o')
+
+        if aborted:
+            return
 
         # Synchronize nodes C (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
@@ -554,7 +576,7 @@ class VMInstance(object):
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
             else:
                 # The send failed catastrophically
-                self.logger.out('VM in undefined state: {}'.format(self.state), state='e', prefix='Domain {}'.format(self.domuuid))
+                self.logger.out('Migrate aborted or failed; VM in state {}'.format(self.state), state='w', prefix='Domain {}'.format(self.domuuid))
 
         self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': '' })
