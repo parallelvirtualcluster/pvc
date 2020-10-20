@@ -354,6 +354,13 @@ class VMInstance(object):
             zkhandler.writedata(self.zk_conn, { '/domains/{}/lastnode'.format(self.domuuid): '' })
             return
 
+        # Wait for any in-progress migrations
+        if zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
+            self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
+            while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
+                time.sleep(0.1)
+            time.sleep(0.5)
+
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
@@ -469,6 +476,17 @@ class VMInstance(object):
 
     # Receive the migration from another host
     def receive_migrate(self):
+        # Don't try to migrate a node to itself
+        if self.node == self.lastnode:
+            return
+
+        # Wait for any in-progress migrations
+        if zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
+            self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
+            while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
+                time.sleep(0.1)
+            time.sleep(0.5)
+
         self.inreceive = True
         live_receive = True
 
@@ -514,7 +532,7 @@ class VMInstance(object):
         self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
 
-        time.sleep(0.1)
+        time.sleep(0.3)
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.dom = self.lookupByUUID(self.domuuid)
         if self.dom:
@@ -536,7 +554,7 @@ class VMInstance(object):
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
             else:
                 # The send failed catastrophically
-                self.logger.out('Send failed catastrophically, VM in undefined state', state='e', prefix='Domain {}'.format(self.domuuid))
+                self.logger.out('VM in undefined state: {}'.format(self.state), state='e', prefix='Domain {}'.format(self.domuuid))
 
         self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': '' })
