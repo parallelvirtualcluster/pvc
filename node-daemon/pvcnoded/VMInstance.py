@@ -449,7 +449,19 @@ class VMInstance(object):
             return True
 
         do_migrate_shutdown = False
-        migrate_live_result = migrate_live()
+        migrate_live_result = False
+
+        # A live migrate is attemped 3 times in succession
+        ticks = 0
+        while True:
+            migrate_live_result = migrate_live()
+            if migrate_live_result:
+                break
+            time.sleep(0.5)
+            ticks += 1
+            if ticks > 2:
+                break
+
         if not migrate_live_result:
             if force_live:
                 self.logger.out('Could not live migrate VM; live migration enforced, aborting', state='e', prefix='Domain {}'.format(self.domuuid))
@@ -474,7 +486,7 @@ class VMInstance(object):
         time.sleep(0.5) # Time for reader to acquire the lock
 
         if do_migrate_shutdown:
-            migrate_shutdown_result = migrate_live()
+            migrate_shutdown_result = migrate_shutdown()
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
