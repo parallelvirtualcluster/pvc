@@ -359,7 +359,7 @@ class VMInstance(object):
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
                 time.sleep(0.1)
-            time.sleep(0.5)
+            time.sleep(0.2)
 
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
@@ -523,7 +523,7 @@ class VMInstance(object):
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
                 time.sleep(0.1)
-            time.sleep(0.3)
+            time.sleep(0.5)
 
         self.inreceive = True
         live_receive = True
