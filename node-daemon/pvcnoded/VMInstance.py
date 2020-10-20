@@ -108,6 +108,8 @@ class VMInstance(object):
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
         self.lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
+        self.last_currentnode = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
         except:
@@ -359,7 +361,6 @@ class VMInstance(object):
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
                 time.sleep(0.1)
-            time.sleep(0.2)
 
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
@@ -370,7 +371,7 @@ class VMInstance(object):
             zkhandler.writedata(self.zk_conn, {
                 '/domains/{}/state'.format(self.domuuid): 'start',
                 '/domains/{}/node'.format(self.domuuid): self.this_node.name,
-                '/domains/{}/lastnode'.format(self.domuuid): ''
+                '/domains/{}/lastnode'.format(self.domuuid): self.last_lastnode
             })
 
         # Acquire exclusive lock on the domain node key
@@ -439,6 +440,9 @@ class VMInstance(object):
             dest_lv_conn.close()
             self.console_log_instance.stop()
             self.removeDomainFromList()
+
+            self.last_currentnode = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+            self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
 
             return True
 
@@ -523,7 +527,6 @@ class VMInstance(object):
             self.logger.out('Queueing for completion of existing migration', state='i', prefix='Domain {}'.format(self.domuuid))
             while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate') != '':
                 time.sleep(0.1)
-            time.sleep(0.5)
 
         self.inreceive = True
         live_receive = True
