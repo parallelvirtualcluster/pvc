@@ -321,30 +321,30 @@ class NodeInstance(object):
 
         # Synchronize nodes A (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization A', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase A', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization A', state='o')
+        self.logger.out('Acquired write lock for synchronization phase A', state='o')
         time.sleep(1) # Time for reader to acquire the lock
-        self.logger.out('Releasing write lock for synchronization A', state='i')
+        self.logger.out('Releasing write lock for synchronization phase A', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization A', state='o')
+        self.logger.out('Released write lock for synchronization phase A', state='o')
         time.sleep(0.1) # Time for new writer to acquire the lock
 
         # Synchronize nodes B (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization B', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase B', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization B', state='o')
-        self.logger.out('Releasing read lock for synchronization B', state='i')
+        self.logger.out('Acquired read lock for synchronization phase B', state='o')
+        self.logger.out('Releasing read lock for synchronization phase B', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization B', state='o')
+        self.logger.out('Released read lock for synchronization phase B', state='o')
 
         # Synchronize nodes C (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization C', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase C', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization C', state='o')
+        self.logger.out('Acquired write lock for synchronization phase C', state='o')
         time.sleep(0.5) # Time for reader to acquire the lock
         # 1. Add Upstream floating IP
         self.logger.out(
@@ -356,16 +356,16 @@ class NodeInstance(object):
             state='o'
         )
         common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
-        self.logger.out('Releasing write lock for synchronization C', state='i')
+        self.logger.out('Releasing write lock for synchronization phase C', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization C', state='o')
+        self.logger.out('Released write lock for synchronization phase C', state='o')
 
         # Synchronize nodes D (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization D', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase D', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization D', state='o')
+        self.logger.out('Acquired write lock for synchronization phase D', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
         # 2. Add Cluster floating IP
         self.logger.out(
@@ -377,16 +377,16 @@ class NodeInstance(object):
             state='o'
         )
         common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
-        self.logger.out('Releasing write lock for synchronization D', state='i')
+        self.logger.out('Releasing write lock for synchronization phase D', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization D', state='o')
+        self.logger.out('Released write lock for synchronization phase D', state='o')
 
         # Synchronize nodes E (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization E', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase E', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization E', state='o')
+        self.logger.out('Acquired write lock for synchronization phase E', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
         # 3. Add Metadata link-local IP
         self.logger.out(
@@ -398,30 +398,30 @@ class NodeInstance(object):
             state='o'
         )
         common.createIPAddress('169.254.169.254', '32', 'lo')
-        self.logger.out('Releasing write lock for synchronization E', state='i')
+        self.logger.out('Releasing write lock for synchronization phase E', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization E', state='o')
+        self.logger.out('Released write lock for synchronization phase E', state='o')
 
         # Synchronize nodes F (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization F', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase F', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization F', state='o')
+        self.logger.out('Acquired write lock for synchronization phase F', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
         # 4. Add gateway IPs
         for network in self.d_network:
             self.d_network[network].createGateways()
-        self.logger.out('Releasing write lock for synchronization F', state='i')
+        self.logger.out('Releasing write lock for synchronization phase F', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization F', state='o')
+        self.logger.out('Released write lock for synchronization phase F', state='o')
 
         # Synchronize nodes G (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization G', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase G', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization G', state='o')
+        self.logger.out('Acquired write lock for synchronization phase G', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
         # 5. Transition Patroni primary
         self.logger.out('Setting Patroni leader to this node', state='i')
@@ -484,10 +484,10 @@ class NodeInstance(object):
             self.dns_aggregator.start_aggregator()
         else:
             self.logger.out('Not starting DNS aggregator due to Patroni failures', state='e')
-        self.logger.out('Releasing write lock for synchronization G', state='i')
+        self.logger.out('Releasing write lock for synchronization phase G', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization G', state='o')
+        self.logger.out('Released write lock for synchronization phase G', state='o')
 
         # Wait 2 seconds for everything to stabilize before we declare all-done
         time.sleep(2)
@@ -503,28 +503,28 @@ class NodeInstance(object):
 
         # Synchronize nodes A (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization A', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase A', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization A', state='o')
-        self.logger.out('Releasing read lock for synchronization A', state='i')
+        self.logger.out('Acquired read lock for synchronization phase A', state='o')
+        self.logger.out('Releasing read lock for synchronization phase A', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization A', state='o')
+        self.logger.out('Released read lock for synchronization phase A', state='o')
 
         # Synchronize nodes B (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring write lock for synchronization B', state='i')
+        self.logger.out('Acquiring write lock for synchronization phase B', state='i')
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization B', state='o')
+        self.logger.out('Acquired write lock for synchronization phase B', state='o')
         time.sleep(0.2) # Time for reader to acquire the lock
         # 1. Stop DNS aggregator
         self.dns_aggregator.stop_aggregator()
         # 2. Stop DHCP servers
         for network in self.d_network:
             self.d_network[network].stopDHCPServer()
-        self.logger.out('Releasing write lock for synchronization B', state='i')
+        self.logger.out('Releasing write lock for synchronization phase B', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
-        self.logger.out('Released write lock for synchronization B', state='o')
+        self.logger.out('Released write lock for synchronization phase B', state='o')
         # 3. Stop client API
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
@@ -535,9 +535,9 @@ class NodeInstance(object):
 
         # Synchronize nodes C (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization C', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase C', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization C', state='o')
+        self.logger.out('Acquired read lock for synchronization phase C', state='o')
         # 5. Remove Upstream floating IP
         self.logger.out(
             'Removing floating upstream IP {}/{} from interface {}'.format(
@@ -548,15 +548,15 @@ class NodeInstance(object):
             state='o'
         )
         common.removeIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
-        self.logger.out('Releasing read lock for synchronization C', state='i')
+        self.logger.out('Releasing read lock for synchronization phase C', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization C', state='o')
+        self.logger.out('Released read lock for synchronization phase C', state='o')
 
         # Synchronize nodes D (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization D', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase D', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization D', state='o')
+        self.logger.out('Acquired read lock for synchronization phase D', state='o')
         # 6. Remove Cluster floating IP
         self.logger.out(
             'Removing floating management IP {}/{} from interface {}'.format(
@@ -567,15 +567,15 @@ class NodeInstance(object):
             state='o'
         )
         common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
-        self.logger.out('Releasing read lock for synchronization D', state='i')
+        self.logger.out('Releasing read lock for synchronization phase D', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization D', state='o')
+        self.logger.out('Released read lock for synchronization phase D', state='o')
 
         # Synchronize nodes E (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization E', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase E', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization E', state='o')
+        self.logger.out('Acquired read lock for synchronization phase E', state='o')
         # 7. Remove Metadata link-local IP
         self.logger.out(
             'Removing Metadata link-local IP {}/{} from interface {}'.format(
@@ -586,33 +586,33 @@ class NodeInstance(object):
             state='o'
         )
         common.removeIPAddress('169.254.169.254', '32', 'lo')
-        self.logger.out('Releasing read lock for synchronization E', state='i')
+        self.logger.out('Releasing read lock for synchronization phase E', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization E', state='o')
+        self.logger.out('Released read lock for synchronization phase E', state='o')
 
         # Synchronize nodes F (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization F', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase F', state='i')
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization F', state='o')
+        self.logger.out('Acquired read lock for synchronization phase F', state='o')
         # 8. Remove gateway IPs
         for network in self.d_network:
             self.d_network[network].removeGateways()
-        self.logger.out('Releasing read lock for synchronization F', state='i')
+        self.logger.out('Releasing read lock for synchronization phase F', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization F', state='o')
+        self.logger.out('Released read lock for synchronization phase F', state='o')
 
         # Synchronize nodes G (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/primary_node')
-        self.logger.out('Acquiring read lock for synchronization G', state='i')
+        self.logger.out('Acquiring read lock for synchronization phase G', state='i')
         try:
             lock.acquire(timeout=60) # Don't wait forever and completely block us
-            self.logger.out('Acquired read lock for synchronization G', state='o')
+            self.logger.out('Acquired read lock for synchronization phase G', state='o')
         except:
             pass
-        self.logger.out('Releasing read lock for synchronization G', state='i')
+        self.logger.out('Releasing read lock for synchronization phase G', state='i')
         lock.release()
-        self.logger.out('Released read lock for synchronization G', state='o')
+        self.logger.out('Released read lock for synchronization phase G', state='o')
 
         # Wait 2 seconds for everything to stabilize before we declare all-done
         time.sleep(2)

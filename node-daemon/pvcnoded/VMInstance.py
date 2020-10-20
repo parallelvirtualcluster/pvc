@@ -365,18 +365,18 @@ class VMInstance(object):
 
         # Synchronize nodes A (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring read lock for synchronization A', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization A', state='o', prefix='Domain {}'.format(self.domuuid))
-        self.logger.out('Releasing read lock for synchronization A', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released read lock for synchronization A', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
 
         # Synchronize nodes B (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring write lock for synchronization B', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization B', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired write lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
 
         def migrate_live():
@@ -432,34 +432,34 @@ class VMInstance(object):
             else:
                 do_migrate_shutdown = True
 
-        self.logger.out('Releasing write lock for synchronization B', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
         lock.release()
-        self.logger.out('Released write lock for synchronization B', state='o')
+        self.logger.out('Released write lock for synchronization phase B', state='o')
 
         # Synchronize nodes C (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring write lock for synchronization C', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization C', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired write lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
 
         if do_migrate_shutdown:
             migrate_shutdown_result = migrate_live()
 
-        self.logger.out('Releasing write lock for synchronization C', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/primary_node': self.domuuid })
         lock.release()
-        self.logger.out('Released write lock for synchronization C', state='o')
+        self.logger.out('Released write lock for synchronization phase C', state='o')
 
         # Synchronize nodes D (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring read lock for synchronization D', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring read lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization D', state='o', prefix='Domain {}'.format(self.domuuid))
-        self.logger.out('Releasing read lock for synchronization D', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired read lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing read lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released read lock for synchronization D', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released read lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
 
         # Wait 0.5 seconds for everything to stabilize before we declare all-done
         time.sleep(0.5)
@@ -479,39 +479,39 @@ class VMInstance(object):
 
         # Synchronize nodes A (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring write lock for synchronization A', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization A', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
-        self.logger.out('Releasing write lock for synchronization A', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': self.domuuid })
         lock.release()
-        self.logger.out('Released write lock for synchronization A', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.1) # Time for new writer to acquire the lock
 
         # Synchronize nodes B (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring read lock for synchronization B', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring read lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization B', state='o', prefix='Domain {}'.format(self.domuuid))
-        self.logger.out('Releasing read lock for synchronization B', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired read lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing read lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released read lock for synchronization B', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released read lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
 
         # Synchronize nodes C (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring read lock for synchronization C', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring read lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired read lock for synchronization C', state='o', prefix='Domain {}'.format(self.domuuid))
-        self.logger.out('Releasing read lock for synchronization C', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired read lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing read lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released read lock for synchronization C', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released read lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
 
         # Synchronize nodes D (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate')
-        self.logger.out('Acquiring write lock for synchronization D', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        self.logger.out('Acquired write lock for synchronization D', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
 
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
@@ -537,10 +537,10 @@ class VMInstance(object):
                 # The send failed catastrophically
                 self.logger.out('Send failed catastrophically, VM in undefined state', state='e', prefix='Domain {}'.format(self.domuuid))
 
-        self.logger.out('Releasing write lock for synchronization D', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate': '' })
         lock.release()
-        self.logger.out('Released write lock for synchronization D', state='o', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Released write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.1) # Time for new writer to acquire the lock
 
         self.inreceive = False
