@@ -394,6 +394,7 @@ class VMInstance(object):
                     self.logger.out('Timed out waiting 30s for peer, aborting migration', state='e', prefix='Domain {}'.format(self.domuuid))
                     abort_migrate()
                     aborted = True
+                    break
         self.logger.out('Releasing read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
