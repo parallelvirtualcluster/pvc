@@ -514,6 +514,7 @@ class VMInstance(object):
         self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.2) # Time for reader to acquire the lock
 
+        time.sleep(0.1)
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.dom = self.lookupByUUID(self.domuuid)
         if self.dom:
