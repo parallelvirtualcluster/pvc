@@ -641,7 +641,7 @@ class NodeInstance(object):
             else:
                 current_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(dom_uuid))
 
-            target_node = common.findTargetNode(self.zk_conn, self.config, dom_uuid)
+            target_node = common.findTargetNode(self.zk_conn, self.config, self.logger, dom_uuid)
             if target_node == current_node:
                 target_node = None
 
