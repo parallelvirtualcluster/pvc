@@ -355,7 +355,7 @@ class VMInstance(object):
 
         aborted = False
 
-        def abort_migrate():
+        def abort_migrate(reason):
             zkhandler.writedata(self.zk_conn, {
                 '/domains/{}/state'.format(self.domuuid): 'start',
                 '/domains/{}/node'.format(self.domuuid): self.this_node.name,
@@ -363,6 +363,7 @@ class VMInstance(object):
             })
             migrate_lock_node.release()
             migrate_lock_state.release()
+            self.logger.out('Aborted migration: {}'.format(reason), state='i', prefix='Domain {}'.format(self.domuuid))
 
         # Acquire exclusive lock on the domain node key
         migrate_lock_node = zkhandler.exclusivelock(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
@@ -374,7 +375,7 @@ class VMInstance(object):
 
         # Don't try to migrate a node to itself, set back to start
         if self.node == self.lastnode or self.node == self.this_node.name:
-            abort_migrate()
+            abort_migrate('Target node matches the current active node during initial check')
             return
 
         # Synchronize nodes A (I am reader)
@@ -389,7 +390,7 @@ class VMInstance(object):
                 time.sleep(0.1)
                 ticks += 1
                 if ticks > 300:
-                    self.logger.out('Timed out waiting 30s for peer, aborting migration', state='e', prefix='Domain {}'.format(self.domuuid))
+                    self.logger.out('Timed out waiting 30s for peer', state='e', prefix='Domain {}'.format(self.domuuid))
                     aborted = True
                     break
         self.logger.out('Releasing read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
@@ -397,7 +398,7 @@ class VMInstance(object):
         self.logger.out('Released read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
 
         if aborted:
-            abort_migrate()
+            abort_migrate('Timed out waiting for peer')
             return
 
         # Synchronize nodes B (I am writer)
@@ -452,7 +453,7 @@ class VMInstance(object):
 
         # Do a final verification
         if self.node == self.lastnode or self.node == self.this_node.name:
-            abort_migrate()
+            abort_migrate('Target node matches the current active node during final check')
             return
 
         # A live migrate is attemped 3 times in succession
@@ -468,7 +469,7 @@ class VMInstance(object):
 
         if not migrate_live_result:
             if force_live:
-                self.logger.out('Could not live migrate VM; live migration enforced, aborting', state='e', prefix='Domain {}'.format(self.domuuid))
+                self.logger.out('Could not live migrate VM while live migration enforced', state='e', prefix='Domain {}'.format(self.domuuid))
                 aborted = True
             else:
                 do_migrate_shutdown = True
@@ -478,7 +479,7 @@ class VMInstance(object):
         self.logger.out('Released write lock for synchronization phase B', state='o')
 
         if aborted:
-            abort_migrate()
+            abort_migrate('Live migration failed and is required')
             return
 
         # Synchronize nodes C (I am writer)
