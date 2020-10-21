@@ -487,7 +487,7 @@ class VMInstance(object):
 
         self.logger.out('Releasing write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released write lock for synchronization phase B', state='o')
+        self.logger.out('Released write lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
 
         if aborted:
             abort_migrate('Live migration failed and is required')
@@ -510,7 +510,7 @@ class VMInstance(object):
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
-        self.logger.out('Released write lock for synchronization phase C', state='o')
+        self.logger.out('Released write lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
 
         # Synchronize nodes D (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate/{}'.format(self.domuuid))
