@@ -128,14 +128,34 @@ def writedata(zk_conn, kv):
 
 # Write lock function
 def writelock(zk_conn, key):
-    lock_id = str(uuid.uuid1())
-    lock = zk_conn.WriteLock('{}'.format(key), lock_id)
+    while True:
+        try:
+            lock_id = str(uuid.uuid1())
+            lock = zk_conn.WriteLock('{}'.format(key), lock_id)
+            break
+        except Exception:
+            count += 1
+            if count > 5:
+                break
+            else:
+                time.sleep(0.5)
+                continue
     return lock
 
 # Read lock function
 def readlock(zk_conn, key):
-    lock_id = str(uuid.uuid1())
-    lock = zk_conn.ReadLock('{}'.format(key), lock_id)
+    while True:
+        try:
+            lock_id = str(uuid.uuid1())
+            lock = zk_conn.ReadLock('{}'.format(key), lock_id)
+            break
+        except Exception:
+            count += 1
+            if count > 5:
+                break
+            else:
+                time.sleep(0.5)
+                continue
     return lock
 
 # Exclusive lock function
@@ -151,5 +171,6 @@ def exclusivelock(zk_conn, key):
             if count > 5:
                 break
             else:
+                time.sleep(0.5)
                 continue
     return lock
