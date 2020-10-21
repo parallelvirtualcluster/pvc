@@ -276,7 +276,8 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     zkhandler.writedata(zk_conn, zk_data)
 
     if restart:
-        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
+        with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+            zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
 
     return True, ''
 
@@ -300,7 +301,8 @@ def undefine_vm(zk_conn, domain):
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state != 'stop':
         # Set the domain into stop mode
-        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
+        with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+            zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
 
         # Wait for 2 seconds to allow state to flow to all nodes
         time.sleep(2)
@@ -326,7 +328,8 @@ def remove_vm(zk_conn, domain):
     current_vm_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
     if current_vm_state != 'stop':
         # Set the domain into stop mode
-        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
+        with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+            zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
 
         # Wait for 2 seconds to allow state to flow to all nodes
         time.sleep(2)
@@ -357,7 +360,8 @@ def start_vm(zk_conn, domain):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Set the VM to start
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'start'})
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'start' })
 
     return True, 'Starting VM "{}".'.format(domain)
 
@@ -375,9 +379,8 @@ def restart_vm(zk_conn, domain, wait=False):
     retmsg = 'Restarting VM "{}".'.format(domain)
 
     # Set the VM to restart
-    zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): 'restart'
-    })
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
 
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'restart':
@@ -400,9 +403,8 @@ def shutdown_vm(zk_conn, domain, wait=False):
     retmsg = 'Shutting down VM "{}"'.format(domain)
 
     # Set the VM to shutdown
-    zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): 'shutdown'
-    })
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
 
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == 'shutdown':
@@ -421,7 +423,8 @@ def stop_vm(zk_conn, domain):
     current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
 
     # Set the VM to start
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
 
     return True, 'Forcibly stopping VM "{}".'.format(domain)
 
@@ -437,7 +440,8 @@ def disable_vm(zk_conn, domain):
         return False, 'ERROR: VM "{}" must be stopped before disabling!'.format(domain)
 
     # Set the VM to start
-    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'disable'})
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'disable' })
 
     return True, 'Marked VM "{}" as disable.'.format(domain)
 
@@ -487,11 +491,12 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
 
     retmsg = 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
 
-    zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): target_state,
-        '/domains/{}/node'.format(dom_uuid): target_node,
-        '/domains/{}/lastnode'.format(dom_uuid): ''
-    })
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/state'.format(dom_uuid): target_state,
+            '/domains/{}/node'.format(dom_uuid): target_node,
+            '/domains/{}/lastnode'.format(dom_uuid): ''
+        })
 
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
@@ -549,11 +554,12 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_li
 
     retmsg = 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
 
-    zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): target_state,
-        '/domains/{}/node'.format(dom_uuid): target_node,
-        '/domains/{}/lastnode'.format(dom_uuid): current_node
-    })
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/state'.format(dom_uuid): target_state,
+            '/domains/{}/node'.format(dom_uuid): target_node,
+            '/domains/{}/lastnode'.format(dom_uuid): current_node
+        })
 
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
@@ -586,11 +592,12 @@ def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
 
     retmsg = 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
 
-    zkhandler.writedata(zk_conn, {
-        '/domains/{}/state'.format(dom_uuid): target_state,
-        '/domains/{}/node'.format(dom_uuid): target_node,
-        '/domains/{}/lastnode'.format(dom_uuid): ''
-    })
+    with zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid)):
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/state'.format(dom_uuid): target_state,
+            '/domains/{}/node'.format(dom_uuid): target_node,
+            '/domains/{}/lastnode'.format(dom_uuid): ''
+        })
 
     if wait:
         while zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) == target_state:
