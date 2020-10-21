@@ -350,6 +350,10 @@ class VMInstance(object):
 
     # Migrate the VM to a target host
     def migrate_vm(self, force_live=False):
+        # Wait for any previous migration
+        while self.inmigrate:
+            time.sleep(0.1)
+
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
@@ -525,9 +529,9 @@ class VMInstance(object):
 
     # Receive the migration from another host
     def receive_migrate(self):
-        # Don't try to migrate a node to itself
-        if self.node == self.lastnode:
-            return
+        # Wait for any previous migration
+        while self.inreceive:
+            time.sleep(0.1)
 
         self.inreceive = True
         live_receive = True
@@ -598,7 +602,7 @@ class VMInstance(object):
                 # The send was shutdown-based
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
             else:
-                # The send failed catastrophically
+                # The send failed or was aborted
                 self.logger.out('Migrate aborted or failed; VM in state {}'.format(self.state), state='w', prefix='Domain {}'.format(self.domuuid))
 
         self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
