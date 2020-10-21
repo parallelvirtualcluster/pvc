@@ -353,6 +353,9 @@ class VMInstance(object):
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
+        # Used for sanity checking later
+        target_node = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+
         aborted = False
 
         def abort_migrate(reason):
@@ -454,6 +457,9 @@ class VMInstance(object):
         # Do a final verification
         if self.node == self.lastnode or self.node == self.this_node.name:
             abort_migrate('Target node matches the current active node during final check')
+            return
+        if self.node != target_node:
+            abort_migrate('Target node changed during preparation')
             return
 
         # A live migrate is attemped 3 times in succession
