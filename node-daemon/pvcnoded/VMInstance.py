@@ -520,8 +520,8 @@ class VMInstance(object):
         lock.release()
         self.logger.out('Released read lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
 
-        # Wait 0.5 seconds for everything to stabilize before we declare all-done
-        time.sleep(0.5)
+        # Wait 1 second for everything to stabilize before we declare all-done and release locks
+        time.sleep(1)
         migrate_lock_node.release()
         migrate_lock_state.release()
 
@@ -596,21 +596,21 @@ class VMInstance(object):
                 # The receive somehow failed
                 zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'fail' })
         else:
-            if self.state in ['start']:
-                # The receive was aborted
-                self.logger.out('Receive aborted via state change', state='w', prefix='Domain {}'.format(self.domuuid))
-            elif self.state in ['stop']:
-                # The send was shutdown-based
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
-            else:
-                # The send failed or was aborted
-                self.logger.out('Migrate aborted or failed; VM in state {}'.format(self.state), state='w', prefix='Domain {}'.format(self.domuuid))
+            if self.node == self.this_node.name:
+                if self.state in ['start']:
+                    # The receive was aborted
+                    self.logger.out('Receive aborted via state change', state='w', prefix='Domain {}'.format(self.domuuid))
+                elif self.state in ['stop']:
+                    # The send was shutdown-based
+                    zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                else:
+                    # The send failed or was aborted
+                    self.logger.out('Migrate aborted or failed; VM in state {}'.format(self.state), state='w', prefix='Domain {}'.format(self.domuuid))
 
         self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
-        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): '' })
         lock.release()
         self.logger.out('Released write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.1) # Time for new writer to acquire the lock
+        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): '' })
 
         self.inreceive = False
         return
