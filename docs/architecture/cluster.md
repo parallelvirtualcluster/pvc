@@ -48,15 +48,25 @@ The following table provides bare-minimum, recommended, and optimal specificatio
 
 Of these totals, some amount of CPU and RAM will be used by the storage subsystem and the PVC daemons themselves, meaning that the total available for virtual machines is slightly less. Generally, each OSD data disk will consume 1 vCPU at load and 1-2GB RAM, so nodes should be sized not only according to the VM workload, but the number of storage disks per node. Additionally the coordinator databases will use additional RAM and CPU resources of up to 1-4GB per node, though there is generally little need to spec coordinators any larger than non-coordinator nodes and the VM automatic node selection process will take used RAM into account by default.
 
-Care should also be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining hypervisors. Thus, care should be taken not to exceed the "n-1" quantity, plus approximately 15-20%, to prevent overloading other nodes in these cases. When in doubt, it is always safer to treat the "n-1" numbers as the total maximum cluster resource availability and plan accordingly. The general rule for available resource capacity planning can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs" for a 3-node cluster.
-
-As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 "Buster".
-
-Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author.
+### System Disks
 
 The system disk(s) chosen are important to consider, especially for coordinators. Ideally, an SSD, or two SSDs in RAID-1/mirroring are recommended for system disks. This helps ensure optimal performance for the system (e.g. swap space) and PVC components such as databases as well as the Ceph caches.
 
 It is possible to run PVC on slower disks, for instance HDDs, USB drives, SD cards, or eMMC flash. For hypervisor-only nodes this will be acceptable; however for coordinators be advised that the performance of some aspects of the system may suffer as a result, and the longevity of the storage media must be carefully considered. RAID-1/mirroring is strongly recommended for these storage media as well, especially on coordinator nodes.
+
+### n-1 Redundancy
+
+Care should be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining hypervisors. Thus, care should be taken during planning to ensure there is sufficient resources for the expected workload of the cluster.
+
+The general rule for available resource capacity planning can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs" for a 3-node cluster.
+
+For memory provisioning of VMs, PVC will warn the administrator, via a Degraded cluster state, if the "n-1" RAM quantity is exceeded by the total maximum allocation of all running VMs. This situation can be worked around with sufficient swap space on nodes to ensure there is overflow, however the warning cannot be overridden. If nodes are of mismatched sizes, the "n-1" RAM quantity is calculated by removing (one of) the largest node in the cluster and adding the remaining nodes' RAM counts together.
+
+### Operating System and Architecture
+
+As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 "Buster".
+
+Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author.
 
 ## Storage Layout: Ceph and OSDs
 
