@@ -438,9 +438,6 @@ class VMInstance(object):
             self.console_log_instance.stop()
             self.removeDomainFromList()
 
-            self.last_currentnode = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
-            self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
-
             return True
 
         def migrate_shutdown():
@@ -493,6 +490,9 @@ class VMInstance(object):
 
         if do_migrate_shutdown:
             migrate_shutdown_result = migrate_shutdown()
+
+        self.last_currentnode = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
 
         migrate_lock_state.release()
 
@@ -554,6 +554,11 @@ class VMInstance(object):
         self.logger.out('Acquiring read lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired read lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
+
+        # Set the updated data
+        self.last_currentnode = zkhandler.readdata(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
+
         self.logger.out('Releasing read lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released read lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
