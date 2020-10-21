@@ -520,8 +520,9 @@ class VMInstance(object):
         lock.release()
         self.logger.out('Released read lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
 
-        # Wait 1 second for everything to stabilize before we declare all-done and release locks
-        time.sleep(1)
+        # Wait for the receive side to complete before we declare all-done and release locks
+        while zkhandler.readdata(self.zk_conn, '/locks/domain_migrate/{}'.format(self.domuuid)) != '':
+            time.sleep(0.5)
         migrate_lock_node.release()
         migrate_lock_state.release()
 
@@ -610,8 +611,8 @@ class VMInstance(object):
         self.logger.out('Releasing write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
-        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): '' })
 
+        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): '' })
         self.inreceive = False
         return
 
