@@ -350,12 +350,6 @@ class VMInstance(object):
 
     # Migrate the VM to a target host
     def migrate_vm(self, force_live=False):
-        # Don't try to migrate a node to itself, set back to start
-        if self.node == self.lastnode:
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/lastnode'.format(self.domuuid): '' })
-            return
-
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
@@ -367,12 +361,21 @@ class VMInstance(object):
                 '/domains/{}/node'.format(self.domuuid): self.this_node.name,
                 '/domains/{}/lastnode'.format(self.domuuid): self.last_lastnode
             })
+            migrate_lock_node.release()
+            migrate_lock_state.release()
 
         # Acquire exclusive lock on the domain node key
-        migrate_lock = zkhandler.exclusivelock(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
-        migrate_lock.acquire()
+        migrate_lock_node = zkhandler.exclusivelock(self.zk_conn, '/domains/{}/node'.format(self.domuuid))
+        migrate_lock_state = zkhandler.exclusivelock(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
+        migrate_lock_node.acquire()
+        migrate_lock_state.acquire()
 
         time.sleep(0.2) # Initial delay for the first writer to grab the lock
+
+        # Don't try to migrate a node to itself, set back to start
+        if self.node == self.lastnode or self.node == self.this_node.name:
+            abort_migrate()
+            return
 
         # Synchronize nodes A (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate/{}'.format(self.domuuid))
@@ -387,7 +390,6 @@ class VMInstance(object):
                 ticks += 1
                 if ticks > 300:
                     self.logger.out('Timed out waiting 30s for peer, aborting migration', state='e', prefix='Domain {}'.format(self.domuuid))
-                    abort_migrate()
                     aborted = True
                     break
         self.logger.out('Releasing read lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
@@ -395,6 +397,7 @@ class VMInstance(object):
         self.logger.out('Released read lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
 
         if aborted:
+            abort_migrate()
             return
 
         # Synchronize nodes B (I am writer)
@@ -450,6 +453,11 @@ class VMInstance(object):
         do_migrate_shutdown = False
         migrate_live_result = False
 
+        # Do a final verification
+        if self.node == self.lastnode or self.node == self.this_node.name:
+            abort_migrate()
+            return
+
         # A live migrate is attemped 3 times in succession
         ticks = 0
         while True:
@@ -464,7 +472,6 @@ class VMInstance(object):
         if not migrate_live_result:
             if force_live:
                 self.logger.out('Could not live migrate VM; live migration enforced, aborting', state='e', prefix='Domain {}'.format(self.domuuid))
-                abort_migrate()
                 aborted = True
             else:
                 do_migrate_shutdown = True
@@ -474,6 +481,7 @@ class VMInstance(object):
         self.logger.out('Released write lock for synchronization phase B', state='o')
 
         if aborted:
+            abort_migrate()
             return
 
         # Synchronize nodes C (I am writer)
@@ -485,6 +493,8 @@ class VMInstance(object):
 
         if do_migrate_shutdown:
             migrate_shutdown_result = migrate_shutdown()
+
+        migrate_lock_state.release()
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
@@ -501,7 +511,7 @@ class VMInstance(object):
 
         # Wait 0.5 seconds for everything to stabilize before we declare all-done
         time.sleep(0.5)
-        migrate_lock.release()
+        migrate_lock_node.release()
         self.inmigrate = False
         return
 
