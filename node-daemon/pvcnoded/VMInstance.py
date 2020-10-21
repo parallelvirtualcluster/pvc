@@ -442,7 +442,7 @@ class VMInstance(object):
             return True
 
         def migrate_shutdown():
-            self.logger.out('Shutting down VM for migration', state='i', prefix='Domain {}'.format(self.domuuid))
+            self.logger.out('Shutting down VM for offline migration', state='i', prefix='Domain {}'.format(self.domuuid))
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'shutdown' })
             while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid)) != 'stop':
                 time.sleep(0.5)
@@ -459,11 +459,12 @@ class VMInstance(object):
         # A live migrate is attemped 3 times in succession
         ticks = 0
         while True:
+            ticks += 1
+            self.logger.out('Attempting live migration try {}'.format(ticks), state='i', prefix='Domain {}'.format(self.domuuid))
             migrate_live_result = migrate_live()
             if migrate_live_result:
                 break
             time.sleep(0.5)
-            ticks += 1
             if ticks > 2:
                 break
 
