@@ -54,6 +54,10 @@ As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the op
 
 Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author.
 
+The system disk(s) chosen are important to consider, especially for coordinators. Ideally, an SSD, or two SSDs in RAID-1/mirroring are recommended for system disks. This helps ensure optimal performance for the system (e.g. swap space) and PVC components such as databases as well as the Ceph caches.
+
+It is possible to run PVC on slower disks, for instance HDDs, USB drives, SD cards, or eMMC flash. For hypervisor-only nodes this will be acceptable; however for coordinators be advised that the performance of some aspects of the system may suffer as a result, and the longevity of the storage media must be carefully considered. RAID-1/mirroring is strongly recommended for these storage media as well, especially on coordinator nodes.
+
 ## Storage Layout: Ceph and OSDs
 
 The Ceph subsystem of PVC, if enabled, creates a "hyperconverged" cluster whereby storage and VM hypervisor functions are collocated onto the same physical servers. The performance of the storage must be taken into account when sizing the nodes as mentioned above.
