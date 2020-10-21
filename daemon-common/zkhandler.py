@@ -137,3 +137,19 @@ def readlock(zk_conn, key):
     lock_id = str(uuid.uuid1())
     lock = zk_conn.ReadLock('{}'.format(key), lock_id)
     return lock
+
+# Exclusive lock function
+def exclusivelock(zk_conn, key):
+    count = 1
+    while True:
+        try:
+            lock_id = str(uuid.uuid1())
+            lock = zk_conn.Lock('{}'.format(key), lock_id)
+            break
+        except Exception:
+            count += 1
+            if count > 5:
+                break
+            else:
+                continue
+    return lock
