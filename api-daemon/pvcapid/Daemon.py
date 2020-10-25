@@ -20,18 +20,19 @@
 #
 ###############################################################################
 
+from gevent import monkey
+monkey.patch_all()
+
 import gevent.pywsgi
 import pvcapid.flaskapi as pvc_api
-from gevent import monkey
 
 ##########################################################
 # Entrypoint
 ##########################################################
 if pvc_api.config['debug']:
     # Run in Flask standard mode
-    pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'])
+    pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'], threaded=True)
 else:
-    monkey.patch_all()
     if pvc_api.config['ssl_enabled']:
         # Run the WSGI server with SSL
         http_server = gevent.pywsgi.WSGIServer(
