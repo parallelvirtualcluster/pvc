@@ -20,33 +20,16 @@
 #
 ###############################################################################
 
-from gevent import monkey
-monkey.patch_all()
-
-import gevent.pywsgi
 import pvcapid.flaskapi as pvc_api
 
 ##########################################################
 # Entrypoint
 ##########################################################
-if pvc_api.config['debug']:
-    # Run in Flask standard mode
-    pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'], threaded=True)
-else:
-    if pvc_api.config['ssl_enabled']:
-        # Run the WSGI server with SSL
-        http_server = gevent.pywsgi.WSGIServer(
-            (pvc_api.config['listen_address'], pvc_api.config['listen_port']),
-            pvc_api.app,
-            keyfile=pvc_api.config['ssl_key_file'],
-            certfile=pvc_api.config['ssl_cert_file']
-        )
-    else:
-        # Run the ?WSGI server without SSL
-        http_server = gevent.pywsgi.WSGIServer(
-            (pvc_api.config['listen_address'], pvc_api.config['listen_port']),
-            pvc_api.app
-        )
 
-    print('Starting PyWSGI server at {}:{} with SSL={}, Authentication={}'.format(pvc_api.config['listen_address'], pvc_api.config['listen_port'], pvc_api.config['ssl_enabled'], pvc_api.config['auth_enabled']))
-    http_server.serve_forever()
+if pvc_api.config['ssl_enabled']:
+    context = (pvc_api.config['ssl_cert_file'], pvc_api.config['ssl_key_file'])
+else:
+    context=None
+
+print('Starting PVC API daemon at {}:{} with SSL={}, Authentication={}'.format(pvc_api.config['listen_address'], pvc_api.config['listen_port'], pvc_api.config['ssl_enabled'], pvc_api.config['auth_enabled']))
+pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'], threaded=True, ssl_context=context)

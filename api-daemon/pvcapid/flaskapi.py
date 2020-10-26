@@ -124,6 +124,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@{}:{}/{}'.format(con
 
 if config['debug']:
     app.config['DEBUG'] = True
+else:
+    app.config['DEBUG'] = False
 
 if config['auth_enabled']:
     app.config["SECRET_KEY"] = config['auth_secret_key']
