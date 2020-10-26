@@ -21,7 +21,7 @@
 ###############################################################################
 
 # Version string for startup output
-version = '0.9'
+version = '0.9.0'
 
 import kazoo.client
 import libvirt
