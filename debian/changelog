@@ -1,3 +1,10 @@
+pvc (0.9.1-0) unstable; urgency=high
+
+  * Added per-VM migration method feature
+  * Fixed bug with provisioner system template listing
+
+ -- Joshua Boniface <joshua@boniface.me>  Thu, 29 Oct 2020 12:15:28 -0400
+
 pvc (0.9.0-0) unstable; urgency=high
 
   * Numerous bugfixes and improvements

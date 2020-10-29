@@ -21,6 +21,11 @@ To get started with PVC, read the [Cluster Architecture document](https://parall
 
 ## Changelog
 
+#### v0.9.1
+
+  * Added per-VM migration method feature
+  * Fixed bug with provisioner system template listing
+
 #### v0.9.0
 
 Numerous small improvements and bugfixes. This release is suitable for general use and is pre-release-quality software.
