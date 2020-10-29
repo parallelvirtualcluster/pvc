@@ -411,7 +411,7 @@ def format_info(config, domain_information, long_output):
         formatted_node_autostart = domain_information['node_autostart']
 
     if not domain_information.get('migration_method'):
-        formatted_migration_method = "default"
+        formatted_migration_method = "none"
     else:
         formatted_migration_method = domain_information['migration_method']
 
