@@ -360,9 +360,9 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
 # Template Modify functions
 #
 def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc=None, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=None, migration_method=None):
-    if list_profile(name, is_fuzzy=False)[-1] != 200:
+    if list_template_system(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The system template "{}" does not exist.'.format(name) }
-        retcode = 400
+        retcode = 404
         return retmsg, retcode
 
     fields = []
