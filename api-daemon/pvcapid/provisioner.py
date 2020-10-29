@@ -214,14 +214,14 @@ def template_list(limit):
 #
 # Template Create functions
 #
-def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False, ova=None):
+def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=False, migration_method=None, ova=None):
     if list_template_system(name, is_fuzzy=False)[-1] != 404:
         retmsg = { 'message': 'The system template "{}" already exists.'.format(name) }
         retcode = 400
         return retmsg, retcode
 
-    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
-    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova)
+    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova)
 
     conn, cur = open_database(config)
     try:
@@ -359,7 +359,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
 #
 # Template Modify functions
 #
-def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc=None, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=None):
+def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc=None, vnc_bind=None, node_limit=None, node_selector=None, node_autostart=None, migration_method=None):
     if list_profile(name, is_fuzzy=False)[-1] != 200:
         retmsg = { 'message': 'The system template "{}" does not exist.'.format(name) }
         retcode = 400
@@ -419,6 +419,9 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
             retmsg = { 'message': 'The node_autostart value must be a boolean.' }
             retcode = 400
         fields.append({'field': 'node_autostart', 'data': node_autostart})
+
+    if migration_method is not None:
+        fields.append({'field': 'migration_method', 'data': migration_method})
 
     conn, cur = open_database(config)
     try:
@@ -1403,7 +1406,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
                 node_limit = node_limit.split(',')
             node_selector = vm_data['system_details']['node_selector']
             node_autostart = vm_data['system_details']['node_autostart']
-            retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema.strip(), target_node, node_limit, node_selector, node_autostart, vm_profile, initial_state='provision')
+            migration_method = vm_data['system_details']['migration_method']
+            retcode, retmsg = pvc_vm.define_vm(zk_conn, vm_schema.strip(), target_node, node_limit, node_selector, node_autostart, migration_method, vm_profile, initial_state='provision')
             print(retmsg)
         else:
             print("Skipping VM definition")

@@ -593,11 +593,16 @@ def cli_vm():
     '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=False,
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
+@click.option(
+    '-m', '--method', 'migration_method', default='none', show_default=True,
+    type=click.Choice(['none','live','shutdown']),
+    help='The preferred migration method of the VM between nodes; saved with VM.'
+)
 @click.argument(
     'vmconfig', type=click.File()
 )
 @cluster_req
-def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
+def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, migration_method):
     """
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
     """
@@ -613,7 +618,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     except:
         cleanup(False, 'Error: XML is malformed or invalid')
 
-    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart)
+    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -634,6 +639,11 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
 )
 @click.option(
+    '-m', '--method', 'migration_method', default='none', show_default=True,
+    type=click.Choice(['none','live','shutdown']),
+    help='The preferred migration method of the VM between nodes; saved with VM.'
+)
+@click.option(
     '-p', '--profile', 'provisioner_profile', default=None, show_default=False,
     help='PVC provisioner profile name for VM.'
 )
@@ -641,15 +651,15 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart):
     'domain'
 )
 @cluster_req
-def vm_meta(domain, node_limit, node_selector, node_autostart, provisioner_profile):
+def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
     """
 
-    if node_limit is None and node_selector is None and node_autostart is None and provisioner_profile is None:
+    if node_limit is None and node_selector is None and node_autostart is None and migration_method is None and provisioner_profile is None:
         cleanup(False, 'At least one metadata option must be specified to update.')
 
-    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart, provisioner_profile)
+    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart, migration_method, provisioner_profile)
     cleanup(retcode, retmsg)
 
 ###############################################################################
@@ -2301,8 +2311,14 @@ def provisioner_template_system_list(limit):
     is_flag=True, default=False,
     help='Autostart VM with their parent Node on first/next boot.'
 )
+@click.option(
+    '--migration-method', 'migration_method',
+    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
+    default=None, # Use cluster default
+    help='The preferred migration method of the VM between nodes'
+)
 @cluster_req
-def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
+def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method):
     """
     Add a new system template NAME to the PVC cluster provisioner.
     """
@@ -2320,6 +2336,8 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
         params['node_selector'] = node_selector
     if node_autostart:
         params['node_autostart'] = node_autostart
+    if migration_method:
+        params['migration_method'] = migration_method
 
     retcode, retdata = pvc_provisioner.template_add(config, params, template_type='system')
     cleanup(retcode, retdata)
@@ -2369,8 +2387,14 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     is_flag=True, default=None,
     help='Autostart VM with their parent Node on first/next boot.'
 )
+@click.option(
+    '--migration-method', 'migration_method',
+    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
+    default=None, # Use cluster default
+    help='The preferred migration method of the VM between nodes'
+)
 @cluster_req
-def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart):
+def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method):
     """
     Add a new system template NAME to the PVC cluster provisioner.
     """
@@ -2383,6 +2407,7 @@ def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind,
     params['node_limit'] = node_limit
     params['node_selector'] = node_selector
     params['node_autostart'] = node_autostart
+    params['migration_method'] = migration_method
 
     retcode, retdata = pvc_provisioner.template_modify(config, params, name, template_type='system')
     cleanup(retcode, retdata)

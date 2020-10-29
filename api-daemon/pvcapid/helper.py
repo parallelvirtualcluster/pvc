@@ -431,7 +431,7 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
 
     return retdata, retcode
 
-def vm_define(xml, node, limit, selector, autostart):
+def vm_define(xml, node, limit, selector, autostart, migration_method):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
@@ -443,7 +443,7 @@ def vm_define(xml, node, limit, selector, autostart):
         return { 'message': 'XML is malformed or incorrect: {}'.format(e) }, 400
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_vm.define_vm(zk_conn, new_cfg, node, limit, selector, autostart, profile=None)
+    retflag, retdata = pvc_vm.define_vm(zk_conn, new_cfg, node, limit, selector, autostart, migration_method, profile=None)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -475,7 +475,8 @@ def get_vm_meta(vm):
                 'name': vm,
                 'node_limit': retdata['node_limit'],
                 'node_selector': retdata['node_selector'],
-                'node_autostart': retdata['node_autostart']
+                'node_autostart': retdata['node_autostart'],
+                'migration_method': retdata['migration_method']
             }
         else:
             retcode = 404
@@ -490,7 +491,7 @@ def get_vm_meta(vm):
 
     return retdata, retcode
 
-def update_vm_meta(vm, limit, selector, autostart, provisioner_profile):
+def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migration_method):
     """
     Update metadata of a VM.
     """
@@ -500,7 +501,7 @@ def update_vm_meta(vm, limit, selector, autostart, provisioner_profile):
             autostart = bool(strtobool(autostart))
         except:
             autostart = False
-    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, autostart, provisioner_profile)
+    retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, autostart, provisioner_profile, migration_method)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

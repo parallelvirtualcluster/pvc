@@ -236,6 +236,10 @@ def getInformationFromXML(zk_conn, uuid):
         domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
     except:
         domain_node_autostart = None
+    try:
+        domain_migration_method = zkhandler.readdata(zk_conn, '/domains/{}/migration_method'.format(uuid))
+    except:
+        domain_migration_method = None
 
     if not domain_node_limit:
         domain_node_limit = None
@@ -282,6 +286,7 @@ def getInformationFromXML(zk_conn, uuid):
         'node_limit': domain_node_limit,
         'node_selector': domain_node_selector,
         'node_autostart': bool(strtobool(domain_node_autostart)),
+        'migration_method': domain_migration_method,
         'description': domain_description,
         'profile': domain_profile,
         'memory': int(domain_memory),

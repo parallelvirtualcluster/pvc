@@ -834,6 +834,9 @@ class API_VM_Root(Resource):
                 node_autostart:
                   type: boolean
                   description: Whether to autostart the VM when its node returns to ready domain state
+                migration_method:
+                  type: string
+                  description: The preferred migration method (live, shutdown, none)
                 description:
                   type: string
                   description: The description of the VM
@@ -1036,6 +1039,7 @@ class API_VM_Root(Resource):
         { 'name': 'node' },
         { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
+        { 'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
         { 'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
     ])
     @Authenticator
@@ -1077,6 +1081,16 @@ class API_VM_Root(Resource):
             type: boolean
             required: false
             description: Whether to autostart the VM when its node returns to ready domain state
+          - in: query
+            name: migration_method
+            type: string
+            required: false
+            description: The preferred migration method (live, shutdown, none)
+            default: none
+            enum:
+              - live
+              - shutdown
+              - none
         responses:
           200:
             description: OK
@@ -1094,7 +1108,8 @@ class API_VM_Root(Resource):
             reqargs.get('node', None),
             reqargs.get('limit', None),
             reqargs.get('selector', 'mem'),
-            bool(strtobool(reqargs.get('autostart', 'false')))
+            bool(strtobool(reqargs.get('autostart', 'false'))),
+            reqargs.get('migration_method', 'none')
         )
 api.add_resource(API_VM_Root, '/vm')
 
@@ -1125,6 +1140,7 @@ class API_VM_Element(Resource):
         { 'name': 'node' },
         { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
+        { 'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
         { 'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
     ])
     @Authenticator
@@ -1168,6 +1184,16 @@ class API_VM_Element(Resource):
             type: boolean
             required: false
             description: Whether to autostart the VM when its node returns to ready domain state
+          - in: query
+            name: migration_method
+            type: string
+            required: false
+            description: The preferred migration method (live, shutdown, none)
+            default: none
+            enum:
+              - live
+              - shutdown
+              - none
         responses:
           200:
             description: OK
@@ -1185,7 +1211,8 @@ class API_VM_Element(Resource):
             reqargs.get('node', None),
             reqargs.get('limit', None),
             reqargs.get('selector', 'mem'),
-            bool(strtobool(reqargs.get('autostart', 'false')))
+            bool(strtobool(reqargs.get('autostart', 'false'))),
+            reqargs.get('migration_method', 'none')
         )
 
     @RequestParser([
@@ -1296,6 +1323,9 @@ class API_VM_Metadata(Resource):
                 node_autostart:
                   type: string
                   description: Whether to autostart the VM when its node returns to ready domain state
+                migration_method:
+                  type: string
+                  description: The preferred migration method (live, shutdown, none)
           404:
             description: Not found
             schema:
@@ -1309,6 +1339,7 @@ class API_VM_Metadata(Resource):
         { 'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
         { 'name': 'autostart' },
         { 'name': 'profile' },
+        { 'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1343,6 +1374,16 @@ class API_VM_Metadata(Resource):
             type: string
             required: false
             description: The PVC provisioner profile for the VM
+          - in: query
+            name: migration_method
+            type: string
+            required: false
+            description: The preferred migration method (live, shutdown, none)
+            default: none
+            enum:
+              - live
+              - shutdown
+              - none
         responses:
           200:
             description: OK
@@ -1360,7 +1401,8 @@ class API_VM_Metadata(Resource):
             reqargs.get('limit', None),
             reqargs.get('selector', None),
             reqargs.get('autostart', None),
-            reqargs.get('profile', None)
+            reqargs.get('profile', None),
+            reqargs.get('migration_method', None)
         )
 api.add_resource(API_VM_Metadata, '/vm/<vm>/meta')
 
@@ -4057,6 +4099,9 @@ class API_Provisioner_Template_System_Root(Resource):
                 node_autostart:
                   type: boolean
                   description: Whether to start VM with node ready state (one-time)
+                migration_method:
+                  type: string
+                  description: The preferred migration method (live, shutdown, none)
         parameters:
           - in: query
             name: limit
@@ -4084,7 +4129,8 @@ class API_Provisioner_Template_System_Root(Resource):
         { 'name': 'vnc_bind' },
         { 'name': 'node_limit' },
         { 'name': 'node_selector' },
-        { 'name': 'node_autostart' }
+        { 'name': 'node_autostart' },
+        { 'name': 'migration_method' }
     ])
     @Authenticator
     def post(self, reqargs):
@@ -4139,6 +4185,11 @@ class API_Provisioner_Template_System_Root(Resource):
             type: boolean
             required: false
             description: Whether to start VM with node ready state (one-time)
+          - in: query
+            name: migration_method
+            type: string
+            required: false
+            description: The preferred migration method (live, shutdown, none)
         responses:
           200:
             description: OK
@@ -4185,7 +4236,8 @@ class API_Provisioner_Template_System_Root(Resource):
             vnc_bind,
             reqargs.get('node_limit', None),
             reqargs.get('node_selector', None),
-            node_autostart
+            node_autostart,
+            reqargs.get('migration_method', None),
         )
 api.add_resource(API_Provisioner_Template_System_Root, '/provisioner/template/system')
 
@@ -4222,7 +4274,8 @@ class API_Provisioner_Template_System_Element(Resource):
         { 'name': 'vnc_bind' },
         { 'name': 'node_limit' },
         { 'name': 'node_selector' },
-        { 'name': 'node_autostart' }
+        { 'name': 'node_autostart' },
+        { 'name': 'migration_method' }
     ])
     @Authenticator
     def post(self, template, reqargs):
@@ -4272,6 +4325,11 @@ class API_Provisioner_Template_System_Element(Resource):
             type: boolean
             required: false
             description: Whether to start VM with node ready state (one-time)
+          - in: query
+            name: migration_method
+            type: string
+            required: false
+            description: The preferred migration method (live, shutdown, none)
         responses:
           200:
             description: OK
@@ -4318,7 +4376,8 @@ class API_Provisioner_Template_System_Element(Resource):
             vnc_bind,
             reqargs.get('node_limit', None),
             reqargs.get('node_selector', None),
-            node_autostart
+            node_autostart,
+            reqargs.get('migration_method', None),
         )
 
     @RequestParser([
@@ -4329,7 +4388,8 @@ class API_Provisioner_Template_System_Element(Resource):
         { 'name': 'vnc_bind' },
         { 'name': 'node_limit' },
         { 'name': 'node_selector' },
-        { 'name': 'node_autostart' }
+        { 'name': 'node_autostart' },
+        { 'name': 'migration_method' }
     ])
     @Authenticator
     def put(self, template, reqargs):
@@ -4371,6 +4431,10 @@ class API_Provisioner_Template_System_Element(Resource):
             name: node_autostart
             type: boolean
             description: Whether to start VM with node ready state (one-time)
+          - in: query
+            name: migration_method
+            type: string
+            description: The preferred migration method (live, shutdown, none)
         responses:
           200:
             description: OK
@@ -4392,7 +4456,8 @@ class API_Provisioner_Template_System_Element(Resource):
             reqargs.get('vnc_bind'),
             reqargs.get('node_limit', None),
             reqargs.get('node_selector', None),
-            reqargs.get('node_autostart', None)
+            reqargs.get('node_autostart', None),
+            reqargs.get('migration_method', None)
         )
 
     @Authenticator

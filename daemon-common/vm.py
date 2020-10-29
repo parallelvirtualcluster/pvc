@@ -157,7 +157,7 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
-def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, profile=None, initial_state='stop'):
+def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, migration_method=None, profile=None, initial_state='stop'):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -206,6 +206,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         '/domains/{}/node_limit'.format(dom_uuid): formatted_node_limit,
         '/domains/{}/node_selector'.format(dom_uuid): node_selector,
         '/domains/{}/node_autostart'.format(dom_uuid): node_autostart,
+        '/domains/{}/migration_method'.format(dom_uuid): migration_method,
         '/domains/{}/failedreason'.format(dom_uuid): '',
         '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/rbdlist'.format(dom_uuid): formatted_rbd_list,
@@ -215,7 +216,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
-def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart, provisioner_profile):
+def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
@@ -238,6 +239,11 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
     if provisioner_profile is not None:
         zkhandler.writedata(zk_conn, {
             '/domains/{}/profile'.format(dom_uuid): provisioner_profile
+        })
+
+    if migration_method is not None:
+        zkhandler.writedata(zk_conn, {
+            '/domains/{}/migration_method'.format(dom_uuid): migration_method
         })
 
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
@@ -781,9 +787,15 @@ def format_info(zk_conn, domain_information, long_output):
     else:
         formatted_node_autostart = domain_information['node_autostart']
 
+    if not domain_information['migration_method']:
+        formatted_migration_method = "False"
+    else:
+        formatted_migration_method = domain_information['migration_method']
+
     ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_selector))
     ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_limit))
     ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_autostart))
+    ainformation.append('{}Migration Method:{}   {}'.format(ansiprint.purple(), ansiprint.end(), formatted_migration_method))
 
     # Network list
     net_list = []

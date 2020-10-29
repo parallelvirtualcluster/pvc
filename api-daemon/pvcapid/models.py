@@ -35,9 +35,10 @@ class DBSystemTemplate(db.Model):
     node_limit = db.Column(db.Text)
     node_selector = db.Column(db.Text)
     node_autostart = db.Column(db.Boolean, nullable=False)
+    migration_method = db.Column(db.Text)
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
-    def __init__(self, name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, ova=None):
+    def __init__(self, name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova=None):
         self.name = name
         self.vcpu_count = vcpu_count
         self.vram_mb = vram_mb
@@ -47,6 +48,7 @@ class DBSystemTemplate(db.Model):
         self.node_limit = node_limit
         self.node_selector = node_selector
         self.node_autostart = node_autostart
+        self.migration_method = migration_method
         self.ova = ova
 
     def __repr__(self):

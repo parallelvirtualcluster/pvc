@@ -80,19 +80,20 @@ def vm_list(config, limit, target_node, target_state):
     else:
         return False, response.json().get('message', '')
 
-def vm_define(config, xml, node, node_limit, node_selector, node_autostart):
+def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migration_method):
     """
     Define a new VM on the cluster
 
     API endpoint: POST /vm
-    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}
+    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method}
     API schema: {"message":"{data}"}
     """
     params = {
         'node': node,
         'limit': node_limit,
         'selector': node_selector,
-        'autostart': node_autostart
+        'autostart': node_autostart,
+        'migration_method': migration_method
     }
     data = {
         'xml': xml
@@ -129,12 +130,12 @@ def vm_modify(config, vm, xml, restart):
 
     return retstatus, response.json().get('message', '')
 
-def vm_metadata(config, vm, node_limit, node_selector, node_autostart, provisioner_profile):
+def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
     """
     Modify PVC metadata of a VM
 
     API endpoint: GET /vm/{vm}/meta,  POST /vm/{vm}/meta
-    API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}, profile={provisioner_profile}
+    API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method} profile={provisioner_profile}
     API schema: {"message":"{data}"}
     """
     params = dict()
@@ -148,6 +149,9 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, provision
 
     if node_autostart is not None:
         params['autostart'] = node_autostart
+
+    if migration_method is not None:
+        params['migration_method'] = migration_method
 
     if provisioner_profile is not None:
         params['profile'] = provisioner_profile
@@ -391,24 +395,30 @@ def format_info(config, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
 
-    if not domain_information['node_selector']:
+    if not domain_information.get('node_selector'):
         formatted_node_selector = "False"
     else:
         formatted_node_selector = domain_information['node_selector']
 
-    if not domain_information['node_limit']:
+    if not domain_information.get('node_limit'):
         formatted_node_limit = "False"
     else:
         formatted_node_limit = ', '.join(domain_information['node_limit'])
 
-    if not domain_information['node_autostart']:
+    if not domain_information.get('node_autostart'):
         formatted_node_autostart = "False"
     else:
         formatted_node_autostart = domain_information['node_autostart']
 
+    if not domain_information.get('migration_method'):
+        formatted_migration_method = "default"
+    else:
+        formatted_migration_method = domain_information['migration_method']
+
     ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_selector))
     ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_limit))
     ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_autostart))
+    ainformation.append('{}Migration Method:{}   {}'.format(ansiprint.purple(), ansiprint.end(), formatted_migration_method))
 
     # Network list
     net_list = []

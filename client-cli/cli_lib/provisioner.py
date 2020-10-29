@@ -717,9 +717,10 @@ def format_list_template_system(template_data):
     template_serial_length = 7
     template_vnc_length = 4
     template_vnc_bind_length = 10
-    template_node_limit_length = 9
-    template_node_selector_length = 11
-    template_node_autostart_length = 11
+    template_node_limit_length = 6
+    template_node_selector_length = 9
+    template_node_autostart_length = 10
+    template_migration_method_length = 10
 
     for template in template_data:
         # template_name column
@@ -762,17 +763,22 @@ def format_list_template_system(template_data):
         _template_node_autostart_length = len(str(template['node_autostart'])) + 1
         if _template_node_autostart_length > template_node_autostart_length:
             template_node_autostart_length = _template_node_autostart_length
+        # template_migration_method column
+        _template_migration_method_length = len(str(template['migration_method'])) + 1
+        if _template_migration_method_length > template_migration_method_length:
+            template_migration_method_length = _template_migration_method_length
 
     # Format the string (header)
     template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_vcpu: <{template_vcpu_length}} \
 {template_vram: <{template_vram_length}} \
-Consoles: {template_serial: <{template_serial_length}} \
+Console: {template_serial: <{template_serial_length}} \
 {template_vnc: <{template_vnc_length}} \
 {template_vnc_bind: <{template_vnc_bind_length}} \
-Metadata: {template_node_limit: <{template_node_limit_length}} \
+Meta: {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
-{template_node_autostart: <{template_node_autostart_length}}{end_bold}'.format(
+{template_node_autostart: <{template_node_autostart_length}} \
+{template_migration_method: <{template_migration_method_length}}{end_bold}'.format(
             template_name_length=template_name_length,
             template_id_length=template_id_length,
             template_vcpu_length=template_vcpu_length,
@@ -783,6 +789,7 @@ Metadata: {template_node_limit: <{template_node_limit_length}} \
             template_node_limit_length=template_node_limit_length,
             template_node_selector_length=template_node_selector_length,
             template_node_autostart_length=template_node_autostart_length,
+            template_migration_method_length=template_migration_method_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             template_state_colour='',
@@ -796,7 +803,8 @@ Metadata: {template_node_limit: <{template_node_limit_length}} \
             template_vnc_bind='VNC bind',
             template_node_limit='Limit',
             template_node_selector='Selector',
-            template_node_autostart='Autostart'
+            template_node_autostart='Autostart',
+            template_migration_method='Migration'
         )
 
     # Keep track of nets we found to be valid to cut down on duplicate API hits
@@ -808,12 +816,13 @@ Metadata: {template_node_limit: <{template_node_limit_length}} \
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_vcpu: <{template_vcpu_length}} \
 {template_vram: <{template_vram_length}} \
-          {template_serial: <{template_serial_length}} \
+         {template_serial: <{template_serial_length}} \
 {template_vnc: <{template_vnc_length}} \
 {template_vnc_bind: <{template_vnc_bind_length}} \
-          {template_node_limit: <{template_node_limit_length}} \
+      {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
-{template_node_autostart: <{template_node_autostart_length}}{end_bold}'.format(
+{template_node_autostart: <{template_node_autostart_length}} \
+{template_migration_method: <{template_migration_method_length}}{end_bold}'.format(
                 template_name_length=template_name_length,
                 template_id_length=template_id_length,
                 template_vcpu_length=template_vcpu_length,
@@ -824,6 +833,7 @@ Metadata: {template_node_limit: <{template_node_limit_length}} \
                 template_node_limit_length=template_node_limit_length,
                 template_node_selector_length=template_node_selector_length,
                 template_node_autostart_length=template_node_autostart_length,
+                template_migration_method_length=template_migration_method_length,
                 bold='',
                 end_bold='',
                 template_name=str(template['name']),
@@ -835,7 +845,8 @@ Metadata: {template_node_limit: <{template_node_limit_length}} \
                 template_vnc_bind=str(template['vnc_bind']),
                 template_node_limit=str(template['node_limit']),
                 template_node_selector=str(template['node_selector']),
-                template_node_autostart=str(template['node_autostart'])
+                template_node_autostart=str(template['node_autostart']),
+                template_migration_method=str(template['migration_method'])
             )
         )
 

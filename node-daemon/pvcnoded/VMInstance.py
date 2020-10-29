@@ -113,7 +113,11 @@ class VMInstance(object):
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
         except:
-            self.pinpolicy = "None"
+            self.pinpolicy = "none"
+        try:
+            self.migration_method = zkhandler.readdata(self.zk_conn, '/domains/{}/migration_method'.format(self.domuuid))
+        except:
+            self.migration_method = 'none'
 
         # These will all be set later
         self.instart = False
@@ -349,10 +353,15 @@ class VMInstance(object):
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
 
     # Migrate the VM to a target host
-    def migrate_vm(self, force_live=False):
+    def migrate_vm(self, force_live=False, force_shutdown=False):
         # Wait for any previous migration
         while self.inmigrate:
             time.sleep(0.1)
+
+        if self.migration_method == 'live':
+            force_live = True
+        elif self.migration_method == 'shutdown':
+            force_shutdown = True
 
         self.inmigrate = True
         self.logger.out('Migrating VM to node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
@@ -466,17 +475,20 @@ class VMInstance(object):
             abort_migrate('Target node changed during preparation')
             return
 
-        # A live migrate is attemped 3 times in succession
-        ticks = 0
-        while True:
-            ticks += 1
-            self.logger.out('Attempting live migration try {}'.format(ticks), state='i', prefix='Domain {}'.format(self.domuuid))
-            migrate_live_result = migrate_live()
-            if migrate_live_result:
-                break
-            time.sleep(0.5)
-            if ticks > 2:
-                break
+        if not force_shutdown:
+            # A live migrate is attemped 3 times in succession
+            ticks = 0
+            while True:
+                ticks += 1
+                self.logger.out('Attempting live migration try {}'.format(ticks), state='i', prefix='Domain {}'.format(self.domuuid))
+                migrate_live_result = migrate_live()
+                if migrate_live_result:
+                    break
+                time.sleep(0.5)
+                if ticks > 2:
+                    break
+        else:
+            migrate_live_result = False
 
         if not migrate_live_result:
             if force_live:
