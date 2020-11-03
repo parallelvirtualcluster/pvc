@@ -1001,8 +1001,8 @@ def vm_flush_locks(domain):
     'domain'
 )
 @click.option(
-    '-l', '--lines', 'lines', default=1000, show_default=True,
-    help='Display this many log lines from the end of the log buffer.'
+    '-l', '--lines', 'lines', default=None, show_default=False,
+    help='Display this many log lines from the end of the log buffer.  [default: 1000]'
 )
 @click.option(
     '-f', '--follow', 'follow', is_flag=True, default=False,
@@ -1013,6 +1013,13 @@ def vm_log(domain, lines, follow):
     """
     Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
     """
+
+    # Set the default here so we can handle it
+    if lines is None:
+        if follow:
+            lines = 10
+        else:
+            lines = 1000
 
     if follow:
         retcode, retmsg = pvc_vm.follow_console_log(config, domain, lines)
