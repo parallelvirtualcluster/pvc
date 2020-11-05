@@ -1002,7 +1002,7 @@ def vm_flush_locks(domain):
 )
 @click.option(
     '-l', '--lines', 'lines', default=None, show_default=False,
-    help='Display this many log lines from the end of the log buffer.  [default: 1000]'
+    help='Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]'
 )
 @click.option(
     '-f', '--follow', 'follow', is_flag=True, default=False,
