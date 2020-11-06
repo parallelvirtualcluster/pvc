@@ -42,7 +42,7 @@ def strtobool(stringv):
         return bool(stringv)
     try:
         return bool(dustrtobool(stringv))
-    except:
+    except Exception:
         return False
 
 #
@@ -499,7 +499,7 @@ def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migratio
     if autostart is not None:
         try:
             autostart = bool(strtobool(autostart))
-        except:
+        except Exception:
             autostart = False
     retflag, retdata = pvc_vm.modify_vm_metadata(zk_conn, vm, limit, selector, autostart, provisioner_profile, migration_method)
     pvc_common.stopZKConnection(zk_conn)
@@ -1393,7 +1393,7 @@ def ceph_volume_upload(pool, volume, img_type):
         # Save the data to the blockdev directly
         try:
             data.save(dest_blockdev)
-        except:
+        except Exception:
             output = {
                 'message': "Failed to write image file to volume."
             }
@@ -1457,7 +1457,7 @@ def ceph_volume_upload(pool, volume, img_type):
             def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
                 return open(temp_blockdev, 'wb')
             parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
-        except:
+        except Exception:
             output = {
                 'message': "Failed to upload or write image file to temporary volume."
             }

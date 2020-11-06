@@ -94,11 +94,11 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
 
         try:
             stdout = command_output.stdout.decode('ascii')
-        except:
+        except Exception:
             stdout = ''
         try:
             stderr = command_output.stderr.decode('ascii')
-        except:
+        except Exception:
             stderr = ''
         return retcode, stdout, stderr
 
@@ -144,7 +144,7 @@ def findTargetNode(zk_conn, config, logger, dom_uuid):
         node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
         if not any(node_limit):
             node_limit = ''
-    except:
+    except Exception:
         node_limit = ''
         zkhandler.writedata(zk_conn, { '/domains/{}/node_limit'.format(dom_uuid): '' })
 

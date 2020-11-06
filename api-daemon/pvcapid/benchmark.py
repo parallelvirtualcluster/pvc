@@ -47,7 +47,7 @@ def strtobool(stringv):
         return bool(stringv)
     try:
         return bool(dustrtobool(stringv))
-    except:
+    except Exception:
         return False
 
 #
@@ -134,13 +134,13 @@ def run_benchmark(self, pool):
     # Phase 0 - connect to databases
     try:
         db_conn, db_cur = open_database(config)
-    except:
+    except Exception:
         print('FATAL - failed to connect to Postgres')
         raise Exception
 
     try:
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    except:
+    except Exception:
         print('FATAL - failed to connect to Zookeeper')
         raise Exception
 

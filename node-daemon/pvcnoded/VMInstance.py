@@ -112,11 +112,11 @@ class VMInstance(object):
         self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
-        except:
+        except Exception:
             self.pinpolicy = "none"
         try:
             self.migration_method = zkhandler.readdata(self.zk_conn, '/domains/{}/migration_method'.format(self.domuuid))
-        except:
+        except Exception:
             self.migration_method = 'none'
 
         # These will all be set later
@@ -166,7 +166,7 @@ class VMInstance(object):
             else:
                 domain_information = daemon_common.getInformationFromXML(self.zk_conn, self.domuuid)
                 memory = int(domain_information['memory'])
-        except:
+        except Exception:
             memory = 0
 
         return memory
@@ -174,7 +174,7 @@ class VMInstance(object):
     def getvcpus(self):
         try:
             vcpus = int(self.dom.info()[3])
-        except:
+        except Exception:
             vcpus = 0
 
         return vcpus
@@ -220,7 +220,7 @@ class VMInstance(object):
         try:
             self.dom = self.lookupByUUID(self.domuuid)
             curstate = self.dom.state()[0]
-        except:
+        except Exception:
             curstate = 'notstart'
 
         if curstate == libvirt.VIR_DOMAIN_RUNNING:
@@ -325,7 +325,7 @@ class VMInstance(object):
 
             try:
                 lvdomstate = self.dom.state()[0]
-            except:
+            except Exception:
                 lvdomstate = None
 
             if lvdomstate != libvirt.VIR_DOMAIN_RUNNING:
@@ -435,7 +435,7 @@ class VMInstance(object):
                 dest_lv_conn = libvirt.open(dest_lv)
                 if not dest_lv_conn:
                     raise
-            except:
+            except Exception:
                 self.logger.out('Failed to open connection to {}; aborting live migration.'.format(dest_lv), state='e', prefix='Domain {}'.format(self.domuuid))
                 return False
 
@@ -643,7 +643,7 @@ class VMInstance(object):
                 running, reason = self.dom.state()
             else:
                 raise
-        except:
+        except Exception:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
         self.logger.out('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.node), state='i')
@@ -761,7 +761,7 @@ class VMInstance(object):
             dom = lv_conn.lookupByUUID(buuid)
 
         # Fail
-        except:
+        except Exception:
             dom = None
 
         # After everything

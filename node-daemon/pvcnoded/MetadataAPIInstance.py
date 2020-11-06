@@ -170,7 +170,7 @@ class MetadataAPIInstance(object):
                 try:
                     if information.get('ip4_address', None) == source_address:
                         host_information = information
-                except:
+                except Exception:
                     pass
     
         # Get our real information on the host; now we can start querying about it
@@ -188,7 +188,7 @@ class MetadataAPIInstance(object):
                     if network.get('mac', None) == client_macaddr:
                         vm_name = vm.get('name')
                         vm_details = vm
-            except:
+            except Exception:
                 pass
         
         return vm_details

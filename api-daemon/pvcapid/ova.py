@@ -233,7 +233,7 @@ def upload_ova(pool, name, ova_size):
         def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
             return open(ova_blockdev, 'wb')
         parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
-    except:
+    except Exception:
         output = {
             'message': "Failed to upload or write OVA file to temporary volume."
         }
@@ -329,7 +329,7 @@ def upload_ova(pool, name, ova_size):
             vmdk_file.close()
             # Perform an OS-level sync
             pvc_common.run_os_command('sync')
-        except:
+        except Exception:
             output = {
                 'message': "Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
             }
@@ -493,7 +493,7 @@ class OVFParser(object):
         for item in hardware_list:
             try:
                 item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
-            except:
+            except Exception:
                 continue
             quantity = item.find("{{{rasd}}}VirtualQuantity".format(rasd=self.RASD_SCHEMA))
             if quantity is None:

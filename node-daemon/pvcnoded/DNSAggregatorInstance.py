@@ -337,7 +337,7 @@ class AXFRDaemonInstance(object):
                 # Set up our SQL cursor
                 try:
                     sql_curs = self.sql_conn.cursor()
-                except:
+                except Exception:
                     time.sleep(0.5)
                     continue
 

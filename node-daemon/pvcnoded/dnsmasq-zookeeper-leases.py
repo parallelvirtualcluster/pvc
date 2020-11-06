@@ -47,14 +47,14 @@ def get_zookeeper_key():
 def get_lease_expiry():
     try:
         expiry = os.environ['DNSMASQ_LEASE_EXPIRES']
-    except:
+    except Exception:
         expiry = '0'
     return expiry
 
 def get_client_id():
     try:
         client_id = os.environ['DNSMASQ_CLIENT_ID']
-    except:
+    except Exception:
         client_id = '*'
     return client_id
 
@@ -62,7 +62,7 @@ def connect_zookeeper():
     # We expect the environ to contain the config file
     try:
         pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
-    except:
+    except Exception:
         # Default place
         pvcnoded_config_file = '/etc/pvc/pvcnoded.yaml'
 

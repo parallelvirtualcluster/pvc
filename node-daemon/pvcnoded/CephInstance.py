@@ -223,7 +223,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
                    time.sleep(5)
                 else:
                    raise
-            except:
+            except Exception:
                 break
 
         # 3. Stop the OSD process and wait for it to be terminated

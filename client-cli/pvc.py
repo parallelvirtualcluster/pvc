@@ -400,7 +400,7 @@ def node_secondary(node, wait):
                         break
                     else:
                         time.sleep(0.5)
-                except:
+                except Exception:
                     time.sleep(0.5)
         cleanup(retcode, retmsg)
 
@@ -444,7 +444,7 @@ def node_primary(node, wait):
                         break
                     else:
                         time.sleep(0.5)
-                except:
+                except Exception:
                     time.sleep(0.5)
         cleanup(retcode, retmsg)
 
@@ -615,7 +615,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
     try:
         xml_data = etree.fromstring(vmconfig_data)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
-    except:
+    except Exception:
         cleanup(False, 'Error: XML is malformed or invalid')
 
     retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method)
@@ -771,7 +771,7 @@ def vm_undefine(domain, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Undefine VM {}'.format(domain), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=False)
@@ -797,7 +797,7 @@ def vm_remove(domain, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Undefine VM {} and remove all disks'.format(domain), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=True)
@@ -1296,7 +1296,7 @@ def net_remove(net, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove network {}'.format(net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_remove(config, net)
@@ -1399,7 +1399,7 @@ def net_dhcp_remove(net, macaddr, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove DHCP lease for {} in network {}'.format(macaddr, net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_dhcp_remove(config, net, macaddr)
@@ -1513,7 +1513,7 @@ def net_acl_remove(net, rule, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove ACL {} in network {}'.format(rule, net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_acl_remove(config, net, rule)
@@ -1621,7 +1621,7 @@ def ceph_benchmark_run(pool):
     """
     try:
         click.confirm('NOTE: Storage benchmarks generate significant load on the cluster and can take a very long time to complete on slow storage. They should be run sparingly. Continue', prompt_suffix='? ', abort=True)
-    except:
+    except Exception:
         exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_benchmark_run(config, pool)
@@ -1700,7 +1700,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Destroy all data and create a new OSD on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight)
@@ -1728,7 +1728,7 @@ def ceph_osd_remove(osdid, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove OSD {}'.format(osdid), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid)
@@ -1883,7 +1883,7 @@ def ceph_pool_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove RBD pool {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_pool_remove(config, name)
@@ -1998,7 +1998,7 @@ def ceph_volume_remove(pool, name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove volume {}/{}'.format(pool, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_volume_remove(config, pool, name)
@@ -2173,7 +2173,7 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove snapshot {} for volume {}/{}'.format(name, pool, volume), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_snapshot_remove(config, pool, volume, name)
@@ -2439,7 +2439,7 @@ def provisioner_template_system_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove system template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
@@ -2542,7 +2542,7 @@ def provisioner_template_network_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove network template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
@@ -2602,7 +2602,7 @@ def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove VNI {} from network template {}'.format(vni, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, vni, element_type='net', template_type='network')
@@ -2673,7 +2673,7 @@ def provisioner_template_storage_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove storage template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
@@ -2788,7 +2788,7 @@ def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove disk {} from storage template {}'.format(disk, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, disk, element_type='disk', template_type='storage')
@@ -2972,7 +2972,7 @@ def provisioner_userdata_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove userdata document {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.userdata_remove(config, name)
@@ -3145,7 +3145,7 @@ def provisioner_script_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
     params = dict()
 
@@ -3238,7 +3238,7 @@ def provisioner_ova_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove OVA image {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.ova_remove(config, name)
@@ -3418,7 +3418,7 @@ def provisioner_profile_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove profile {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.profile_remove(config, name)
@@ -3614,7 +3614,7 @@ def init_cluster(confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     # Easter-egg

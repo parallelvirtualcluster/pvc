@@ -53,13 +53,13 @@ def strtobool(stringv):
         return bool(stringv)
     try:
         return bool(dustrtobool(stringv))
-    except:
+    except Exception:
         return False
 
 # Parse the configuration file
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
-except:
+except Exception:
     print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvcapid.')
     exit(1)
 
@@ -4205,11 +4205,11 @@ class API_Provisioner_Template_System_Root(Resource):
         # Validate arguments
         try:
             vcpus = int(reqargs.get('vcpus'))
-        except:
+        except Exception:
             return { "message": "A vcpus value must be an integer" }, 400
         try:
             vram = int(reqargs.get('vram'))
-        except:
+        except Exception:
             return { "message": "A vram value must be an integer" }, 400
         # Cast boolean arguments
         if bool(strtobool(reqargs.get('serial', 'false'))):
@@ -4345,11 +4345,11 @@ class API_Provisioner_Template_System_Element(Resource):
         # Validate arguments
         try:
             vcpus = int(reqargs.get('vcpus'))
-        except:
+        except Exception:
             return { "message": "A vcpus value must be an integer" }, 400
         try:
             vram = int(reqargs.get('vram'))
-        except:
+        except Exception:
             return { "message": "A vram value must be an integer" }, 400
         # Cast boolean arguments
         if bool(strtobool(reqargs.get('serial', False))):

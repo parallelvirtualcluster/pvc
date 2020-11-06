@@ -301,7 +301,7 @@ def follow_console_log(config, vm, lines=10):
         try:
             response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
             new_console_log = response.json()['data']
-        except:
+        except Exception:
             break
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')

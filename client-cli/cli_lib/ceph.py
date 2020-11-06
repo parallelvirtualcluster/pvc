@@ -1471,7 +1471,7 @@ def format_info_benchmark(config, benchmark_information):
         for element in benchmark_details[test]['bandwidth']:
             try:
                 _element_length = len(format_bytes_tohuman(int(float(benchmark_details[test]['bandwidth'][element]))))
-            except:
+            except Exception:
                 _element_length = len(benchmark_details[test]['bandwidth'][element])
             if _element_length > bandwidth_column_length:
                 bandwidth_column_length = _element_length
@@ -1479,7 +1479,7 @@ def format_info_benchmark(config, benchmark_information):
         for element in benchmark_details[test]['iops']:
             try:
                 _element_length = len(format_ops_tohuman(int(float(benchmark_details[test]['iops'][element]))))
-            except:
+            except Exception:
                 _element_length = len(benchmark_details[test]['iops'][element])
             if _element_length > iops_column_length:
                 iops_column_length = _element_length

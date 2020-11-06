@@ -608,7 +608,7 @@ class NodeInstance(object):
         try:
             lock.acquire(timeout=60) # Don't wait forever and completely block us
             self.logger.out('Acquired read lock for synchronization phase G', state='o')
-        except:
+        except Exception:
             pass
         self.logger.out('Releasing read lock for synchronization phase G', state='i')
         lock.release()
@@ -698,7 +698,7 @@ class NodeInstance(object):
 
             try:
                 last_node = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(dom_uuid))
-            except:
+            except Exception:
                 continue
 
             if last_node != self.name:

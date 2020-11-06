@@ -49,7 +49,7 @@ def strtobool(stringv):
         return bool(stringv)
     try:
         return bool(dustrtobool(stringv))
-    except:
+    except Exception:
         return False
 
 #
@@ -370,7 +370,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     if vcpu_count is not None:
         try:
             vcpu_count = int(vcpu_count)
-        except:
+        except Exception:
             retmsg = { 'message': 'The vcpus value must be an integer.' }
             retcode = 400
             return retmsg, retcode
@@ -379,7 +379,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     if vram_mb is not None:
         try:
             vram_mb = int(vram_mb)
-        except:
+        except Exception:
             retmsg = { 'message': 'The vram value must be an integer.' }
             retcode = 400
             return retmsg, retcode
@@ -388,7 +388,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     if serial is not None:
         try:
             serial = bool(strtobool(serial))
-        except:
+        except Exception:
             retmsg = { 'message': 'The serial value must be a boolean.' }
             retcode = 400
             return retmsg, retcode
@@ -397,7 +397,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     if vnc is not None:
         try:
             vnc = bool(strtobool(vnc))
-        except:
+        except Exception:
             retmsg = { 'message': 'The vnc value must be a boolean.' }
             retcode = 400
             return retmsg, retcode
@@ -415,7 +415,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     if node_autostart is not None:
         try:
             node_autostart = bool(strtobool(node_autostart))
-        except:
+        except Exception:
             retmsg = { 'message': 'The node_autostart value must be a boolean.' }
             retcode = 400
         fields.append({'field': 'node_autostart', 'data': node_autostart})
@@ -1044,13 +1044,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     # Phase 0 - connect to databases
     try:
         db_conn, db_cur = open_database(config)
-    except:
+    except Exception:
         print('FATAL - failed to connect to Postgres')
         raise Exception
 
     try:
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    except:
+    except Exception:
         print('FATAL - failed to connect to Zookeeper')
         raise Exception
 
@@ -1212,7 +1212,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
             pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
             if not pool_information:
                 raise
-        except:
+        except Exception:
             raise ClusterError('Pool "{}" is not present on the cluster.'.format(pool))
         pool_free_space_gb = int(pool_information['stats']['free_bytes'] / 1024 / 1024 / 1024)
         pool_vm_usage_gb = int(pools[pool])

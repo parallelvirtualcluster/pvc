@@ -409,7 +409,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 try:
                     os.remove(filename)
                     self.dhcp_server_daemon.signal('hup')
-                except:
+                except Exception:
                     pass
 
     def updateFirewallRules(self):
@@ -802,7 +802,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
         try:
             os.remove(self.nftables_netconf_filename)
-        except:
+        except Exception:
             pass
 
         # Reload firewall rules

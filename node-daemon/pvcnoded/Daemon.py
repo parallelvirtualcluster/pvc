@@ -90,7 +90,7 @@ def stopKeepaliveTimer():
     try:
         update_timer.shutdown()
         logger.out('Stopping keepalive timer', state='s')
-    except:
+    except Exception:
         pass
 
 ###############################################################################
@@ -100,7 +100,7 @@ def stopKeepaliveTimer():
 # Get the config file variable from the environment
 try:
     pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
-except:
+except Exception:
     print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcnoded.')
     exit(1)
 
@@ -176,7 +176,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         config_debug = {
             'debug': o_config['pvc']['debug']
         }
-    except:
+    except Exception:
         config_debug = {
             'debug': False
         }
@@ -535,7 +535,7 @@ def zk_listener(state):
             _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
             try:
                 _zk_conn.start()
-            except:
+            except Exception:
                 del _zk_conn
                 continue
 
@@ -586,7 +586,7 @@ def cleanup():
             logger.out('Waiting for primary migration', state='s')
             while this_node.router_state != 'secondary':
                 time.sleep(0.5)
-    except:
+    except Exception:
         pass
 
     # Stop keepalive thread
@@ -610,7 +610,7 @@ def cleanup():
     try:
         zk_conn.stop()
         zk_conn.close()
-    except:
+    except Exception:
         pass
 
     logger.out('Terminated pvc daemon', state='s')
@@ -829,7 +829,7 @@ def set_maintenance(_maintenance, stat, event=''):
     global maintenance
     try:
         maintenance = bool(strtobool(_maintenance.decode('ascii')))
-    except:
+    except Exception:
         maintenance = False
 
 # Primary node
@@ -1371,7 +1371,7 @@ def collect_vm_stats(queue):
             if debug:
                 try:
                     logger.out("Failed getting VM information for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
-                except:
+                except Exception:
                     pass
             continue
 
@@ -1462,7 +1462,7 @@ def node_keepalive():
             try:
                 if zkhandler.readdata(zk_conn, '/upstream_ip') != config['upstream_floating_ip']:
                     raise
-            except:
+            except Exception:
                 zkhandler.writedata(zk_conn, {'/upstream_ip': config['upstream_floating_ip']})
 
     # Get past state and update if needed
@@ -1517,7 +1517,7 @@ def node_keepalive():
             this_node.memalloc = vm_thread_queue.get()
             this_node.memprov = vm_thread_queue.get()
             this_node.vcpualloc = vm_thread_queue.get()
-        except:
+        except Exception:
             pass
     else:
         this_node.domains_count = 0
@@ -1530,7 +1530,7 @@ def node_keepalive():
             ceph_health_colour = ceph_thread_queue.get()
             ceph_health = ceph_thread_queue.get()
             osds_this_node = ceph_thread_queue.get()
-        except:
+        except Exception:
             ceph_health_colour = fmt_cyan
             ceph_health = 'UNKNOWN'
             osds_this_node = '?'
@@ -1552,7 +1552,7 @@ def node_keepalive():
             '/nodes/{}/runningdomains'.format(this_node.name): ' '.join(this_node.domain_list),
             '/nodes/{}/keepalive'.format(this_node.name): str(keepalive_time)
         })
-    except:
+    except Exception:
         logger.out('Failed to set keepalive data', state='e')
         return
 
@@ -1623,7 +1623,7 @@ def node_keepalive():
                     node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
                     node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
                     node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
-                except:
+                except Exception:
                     node_daemon_state = 'unknown'
                     node_domain_state = 'unknown'
                     node_keepalive = 0
@@ -1654,5 +1654,5 @@ update_timer = startKeepaliveTimer()
 while True:
     try:
         time.sleep(1)
-    except:
+    except Exception:
         break
