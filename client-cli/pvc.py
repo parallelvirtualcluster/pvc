@@ -717,7 +717,7 @@ def vm_modify(domain, cfgfile, editor, restart):
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match('^\-', line) != None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) != None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -2924,7 +2924,7 @@ def provisioner_userdata_modify(name, filename, editor):
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match('^\-', line) != None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) != None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -3103,7 +3103,7 @@ def provisioner_script_modify(name, filename, editor):
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match('^\-', line) != None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) != None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
