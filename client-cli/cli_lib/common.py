@@ -171,7 +171,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
             )
     except Exception as e:
         message = 'Failed to connect to the API: {}'.format(e)
-        response = ErrorResponse({'message':message}, 500)
+        response = ErrorResponse({'message': message}, 500)
 
     # Display debug output
     if config['debug']:
