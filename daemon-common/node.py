@@ -346,7 +346,6 @@ def format_list(node_list):
         if _mem_prov_length > mem_prov_length:
             mem_prov_length = _mem_prov_length
 
-
     # Format the string (header)
     node_list_output.append(
         '{bold}{node_name: <{node_name_length}} \

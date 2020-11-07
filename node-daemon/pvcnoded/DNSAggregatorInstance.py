@@ -130,7 +130,6 @@ class PowerDNSInstance(object):
                 state='o'
             )
 
-
     def stop(self):
         if self.dns_server_daemon:
             self.logger.out(

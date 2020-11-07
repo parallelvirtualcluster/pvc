@@ -732,7 +732,6 @@ class VMInstance(object):
                     else:
                         self.terminate_vm()
 
-
     # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
     # 1. Takes a text UUID and handles converting it to bytes
     # 2. Try's it and returns a sensible value if not

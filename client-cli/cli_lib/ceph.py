@@ -1395,7 +1395,6 @@ def format_list_benchmark(config, benchmark_information):
             rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
             rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
 
-
         benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}} \
  {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
@@ -1486,8 +1485,6 @@ def format_info_benchmark(config, benchmark_information):
             _element_length = len(benchmark_details[test]['cpu'][element])
             if _element_length > cpuutil_column_length:
                 cpuutil_column_length = _element_length
-
-
 
     for test in benchmark_details:
         ainformation.append('')

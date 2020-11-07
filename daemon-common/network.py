@@ -694,7 +694,6 @@ def format_info(network_information, long_output):
                 for rule in formatted_firewall_rules:
                     ainformation.append(rule)
 
-
     # Join it all together
     click.echo('\n'.join(ainformation))
 

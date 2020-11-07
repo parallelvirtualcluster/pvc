@@ -132,7 +132,6 @@ def run_benchmark(self, pool):
         print('FATAL - failed to connect to Zookeeper')
         raise Exception
 
-
     print("Storing running status for job '{}' in database".format(cur_time))
     try:
         query = "INSERT INTO storage_benchmarks (job, result) VALUES (%s, %s);"
