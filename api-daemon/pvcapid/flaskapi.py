@@ -48,6 +48,7 @@ def strtobool(stringv):
     except Exception:
         return False
 
+
 # Parse the configuration file
 try:
     pvc_config_file = os.environ['PVC_CONFIG_FILE']
@@ -225,6 +226,8 @@ class API_Root(Resource):
                   example: "PVC API version 1.0"
         """
         return {"message": "PVC API version {}".format(API_VERSION)}
+
+
 api.add_resource(API_Root, '/')
 
 # /doc - NOTE: Until flask_swagger is packaged for Debian this must be disabled
@@ -244,7 +247,9 @@ api.add_resource(API_Root, '/')
 #         swagger_data['info']['title'] = "PVC Client and Provisioner API"
 #         swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
 #         return swagger_data
-# api.add_resource(API_Doc, '/doc')
+# 
+
+api.add_resource(API_Doc, '/doc')
 
 # /login
 class API_Login(Resource):
@@ -285,6 +290,8 @@ class API_Login(Resource):
             return {"message": "Authentication successful"}, 200
         else:
             {"message": "Authentication failed"}, 401
+
+
 api.add_resource(API_Login, '/login')
 
 # /logout
@@ -309,6 +316,8 @@ class API_Logout(Resource):
 
         flask.session.pop('token', None)
         return {"message": "Deauthentication successful"}, 200
+
+
 api.add_resource(API_Logout, '/logout')
 
 # /initialize
@@ -338,6 +347,8 @@ class API_Initialize(Resource):
             return {"message": "Successfully initialized a new PVC cluster"}, 200
         else:
             return {"message": "PVC cluster already initialized"}, 400
+
+
 api.add_resource(API_Initialize, '/initialize')
 
 # /status
@@ -448,6 +459,8 @@ class API_Status(Resource):
               id: Message
         """
         return api_helper.cluster_maintenance(reqargs.get('state', 'false'))
+
+
 
 api.add_resource(API_Status, '/status')
 
@@ -572,6 +585,8 @@ class API_Node_Root(Resource):
             coordinator_state=reqargs.get('coordinator_state', None),
             domain_state=reqargs.get('domain_state', None)
         )
+
+
 api.add_resource(API_Node_Root, '/node')
 
 # /node/<node>
@@ -595,6 +610,8 @@ class API_Node_Element(Resource):
               id: Message
         """
         return api_helper.node_list(node, is_fuzzy=False)
+
+
 api.add_resource(API_Node_Element, '/node/<node>')
 
 # /node/<node>/daemon-state
@@ -626,6 +643,8 @@ class API_Node_DaemonState(Resource):
               id: Message
         """
         return api_helper.node_daemon_state(node)
+
+
 api.add_resource(API_Node_DaemonState, '/node/<node>/daemon-state')
 
 # /node/<node>/coordinator-state
@@ -694,6 +713,8 @@ class API_Node_CoordinatorState(Resource):
         if reqargs['state'] == 'secondary':
             return api_helper.node_secondary(node)
         abort(400)
+
+
 api.add_resource(API_Node_CoordinatorState, '/node/<node>/coordinator-state')
 
 # /node/<node>/domain-state
@@ -767,6 +788,8 @@ class API_Node_DomainState(Resource):
         if reqargs['state'] == 'ready':
             return api_helper.node_ready(node, bool(strtobool(reqargs.get('wait', 'false'))))
         abort(400)
+
+
 api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 
 
@@ -1102,6 +1125,8 @@ class API_VM_Root(Resource):
             bool(strtobool(reqargs.get('autostart', 'false'))),
             reqargs.get('migration_method', 'none')
         )
+
+
 api.add_resource(API_VM_Root, '/vm')
 
 # /vm/<vm>
@@ -1282,6 +1307,8 @@ class API_VM_Element(Resource):
             return api_helper.vm_remove(vm)
         else:
             return api_helper.vm_undefine(vm)
+
+
 api.add_resource(API_VM_Element, '/vm/<vm>')
 
 # /vm/<vm>/meta
@@ -1395,6 +1422,8 @@ class API_VM_Metadata(Resource):
             reqargs.get('profile', None),
             reqargs.get('migration_method', None)
         )
+
+
 api.add_resource(API_VM_Metadata, '/vm/<vm>/meta')
 
 # /vm/<vm</state
@@ -1480,6 +1509,8 @@ class API_VM_State(Resource):
         if state == 'disable':
             return api_helper.vm_disable(vm)
         abort(400)
+
+
 api.add_resource(API_VM_State, '/vm/<vm>/state')
 
 # /vm/<vm>/node
@@ -1580,6 +1611,8 @@ class API_VM_Node(Resource):
         if action == 'unmigrate':
             return api_helper.vm_unmigrate(vm, wait, force_live)
         abort(400)
+
+
 api.add_resource(API_VM_Node, '/vm/<vm>/node')
 
 # /vm/<vm>/locks
@@ -1604,6 +1637,8 @@ class API_VM_Locks(Resource):
               id: Message
         """
         return api_helper.vm_flush_locks(vm)
+
+
 api.add_resource(API_VM_Locks, '/vm/<vm>/locks')
 
 # /vm/<vm</console
@@ -1647,6 +1682,8 @@ class API_VM_Console(Resource):
             vm,
             reqargs.get('lines', None)
         )
+
+
 api.add_resource(API_VM_Console, '/vm/<vm>/console')
 
 
@@ -1845,6 +1882,8 @@ class API_Network_Root(Resource):
             reqargs.get('dhcp4_start', None),
             reqargs.get('dhcp4_end', None),
         )
+
+
 api.add_resource(API_Network_Root, '/network')
 
 # /network/<vni>
@@ -2091,6 +2130,8 @@ class API_Network_Element(Resource):
               id: Message
         """
         return api_helper.net_remove(vni)
+
+
 api.add_resource(API_Network_Element, '/network/<vni>')
 
 # /network/<vni>/lease
@@ -2210,6 +2251,8 @@ class API_Network_Lease_Root(Resource):
             reqargs.get('macaddress', None),
             reqargs.get('hostname', None)
         )
+
+
 api.add_resource(API_Network_Lease_Root, '/network/<vni>/lease')
 
 # /network/<vni>/lease/{mac}
@@ -2336,6 +2379,8 @@ class API_Network_Lease_Element(Resource):
             vni,
             mac
         )
+
+
 api.add_resource(API_Network_Lease_Element, '/network/<vni>/lease/<mac>')
 
 # /network/<vni>/acl
@@ -2458,6 +2503,8 @@ class API_Network_ACL_Root(Resource):
             reqargs.get('rule', None),
             reqargs.get('order', None)
         )
+
+
 api.add_resource(API_Network_ACL_Root, '/network/<vni>/acl')
 
 # /network/<vni>/acl/<description>
@@ -2565,6 +2612,8 @@ class API_Network_ACL_Element(Resource):
             vni,
             description
         )
+
+
 api.add_resource(API_Network_ACL_Element, '/network/<vni>/acl/<description>')
 
 
@@ -2581,6 +2630,8 @@ class API_Storage_Root(Resource):
     @Authenticator
     def get(self):
         pass
+
+
 api.add_resource(API_Storage_Root, '/storage')
 
 # /storage/ceph
@@ -2588,6 +2639,8 @@ class API_Storage_Ceph_Root(Resource):
     @Authenticator
     def get(self):
         pass
+
+
 api.add_resource(API_Storage_Ceph_Root, '/storage/ceph')
 
 # /storage/ceph/status
@@ -2616,6 +2669,8 @@ class API_Storage_Ceph_Status(Resource):
                   description: The raw output data
         """
         return api_helper.ceph_status()
+
+
 api.add_resource(API_Storage_Ceph_Status, '/storage/ceph/status')
 
 # /storage/ceph/utilization
@@ -2644,6 +2699,8 @@ class API_Storage_Ceph_Utilization(Resource):
                   description: The raw output data
         """
         return api_helper.ceph_util()
+
+
 api.add_resource(API_Storage_Ceph_Utilization, '/storage/ceph/utilization')
 
 # /storage/ceph/benchmark
@@ -2802,6 +2859,8 @@ class API_Storage_Ceph_Benchmark(Resource):
             reqargs.get('pool', None)
         )
         return {"task_id": task.id}, 202, {'Location': Api.url_for(api, API_Storage_Ceph_Benchmark, task_id=task.id)}
+
+
 api.add_resource(API_Storage_Ceph_Benchmark, '/storage/ceph/benchmark')
 
 # /storage/ceph/option
@@ -2848,6 +2907,8 @@ class API_Storage_Ceph_Option(Resource):
         if reqargs.get('action') == 'unset':
             return api_helper.ceph_osd_unset(reqargs.get('option'))
         abort(400)
+
+
 api.add_resource(API_Storage_Ceph_Option, '/storage/ceph/option')
 
 # /storage/ceph/osd
@@ -2991,6 +3052,8 @@ class API_Storage_Ceph_OSD_Root(Resource):
             reqargs.get('device', None),
             reqargs.get('weight', None)
         )
+
+
 api.add_resource(API_Storage_Ceph_OSD_Root, '/storage/ceph/osd')
 
 # /storage/ceph/osd/<osdid>
@@ -3050,6 +3113,8 @@ class API_Storage_Ceph_OSD_Element(Resource):
         return api_helper.ceph_osd_remove(
             osdid
         )
+
+
 api.add_resource(API_Storage_Ceph_OSD_Element, '/storage/ceph/osd/<osdid>')
 
 # /storage/ceph/osd/<osdid>/state
@@ -3107,6 +3172,8 @@ class API_Storage_Ceph_OSD_State(Resource):
                 osdid
             )
         abort(400)
+
+
 api.add_resource(API_Storage_Ceph_OSD_State, '/storage/ceph/osd/<osdid>/state')
 
 # /storage/ceph/pool
@@ -3237,6 +3304,8 @@ class API_Storage_Ceph_Pool_Root(Resource):
             reqargs.get('pgs', None),
             reqargs.get('replcfg', None)
         )
+
+
 api.add_resource(API_Storage_Ceph_Pool_Root, '/storage/ceph/pool')
 
 # /storage/ceph/pool/<pool>
@@ -3346,6 +3415,8 @@ class API_Storage_Ceph_Pool_Element(Resource):
         return api_helper.ceph_pool_remove(
             pool
         )
+
+
 api.add_resource(API_Storage_Ceph_Pool_Element, '/storage/ceph/pool/<pool>')
 
 # /storage/ceph/volume
@@ -3495,6 +3566,8 @@ class API_Storage_Ceph_Volume_Root(Resource):
             reqargs.get('volume', None),
             reqargs.get('size', None)
         )
+
+
 api.add_resource(API_Storage_Ceph_Volume_Root, '/storage/ceph/volume')
 
 # /storage/ceph/volume/<pool>/<volume>
@@ -3642,6 +3715,8 @@ class API_Storage_Ceph_Volume_Element(Resource):
             pool,
             volume
         )
+
+
 api.add_resource(API_Storage_Ceph_Volume_Element, '/storage/ceph/volume/<pool>/<volume>')
 
 # /storage/ceph/volume/<pool>/<volume>/clone
@@ -3684,6 +3759,8 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
             reqargs.get('new_volume', None),
             volume
         )
+
+
 api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<pool>/<volume>/clone')
 
 # /storage/ceph/volume/<pool>/<volume>/upload
@@ -3735,6 +3812,8 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
             volume,
             reqargs.get('image_format', None)
         )
+
+
 api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<pool>/<volume>/upload')
 
 # /storage/ceph/snapshot
@@ -3840,6 +3919,8 @@ class API_Storage_Ceph_Snapshot_Root(Resource):
             reqargs.get('volume', None),
             reqargs.get('snapshot', None)
         )
+
+
 api.add_resource(API_Storage_Ceph_Snapshot_Root, '/storage/ceph/snapshot')
 
 # /storage/ceph/snapshot/<pool>/<volume>/<snapshot>
@@ -3980,6 +4061,8 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
             volume,
             snapshot
         )
+
+
 api.add_resource(API_Storage_Ceph_Snapshot_Element, '/storage/ceph/snapshot/<pool>/<volume>/<snapshot>')
 
 
@@ -3995,6 +4078,8 @@ class API_Provisioner_Root(Resource):
         Unused endpoint
         """
         abort(404)
+
+
 api.add_resource(API_Provisioner_Root, '/provisioner')
 
 # /provisioner/template
@@ -4041,6 +4126,8 @@ class API_Provisioner_Template_Root(Resource):
         return api_provisioner.template_list(
             reqargs.get('limit', None)
         )
+
+
 api.add_resource(API_Provisioner_Template_Root, '/provisioner/template')
 
 # /provisioner/template/system
@@ -4230,6 +4317,8 @@ class API_Provisioner_Template_System_Root(Resource):
             node_autostart,
             reqargs.get('migration_method', None),
         )
+
+
 api.add_resource(API_Provisioner_Template_System_Root, '/provisioner/template/system')
 
 # /provisioner/template/system/<template>
@@ -4473,6 +4562,8 @@ class API_Provisioner_Template_System_Element(Resource):
         return api_provisioner.delete_template_system(
             template
         )
+
+
 api.add_resource(API_Provisioner_Template_System_Element, '/provisioner/template/system/<template>')
 
 # /provisioner/template/network
@@ -4574,6 +4665,8 @@ class API_Provisioner_Template_Network_Root(Resource):
             reqargs.get('name', None),
             reqargs.get('mac_template', None)
         )
+
+
 api.add_resource(API_Provisioner_Template_Network_Root, '/provisioner/template/network')
 
 # /provisioner/template/network/<template>
@@ -4656,6 +4749,8 @@ class API_Provisioner_Template_Network_Element(Resource):
         return api_provisioner.delete_template_network(
             template
         )
+
+
 api.add_resource(API_Provisioner_Template_Network_Element, '/provisioner/template/network/<template>')
 
 # /provisioner/template/network/<template>/net
@@ -4721,6 +4816,8 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
             template,
             reqargs.get('vni', None)
         )
+
+
 api.add_resource(API_Provisioner_Template_Network_Net_Root, '/provisioner/template/network/<template>/net')
 
 # /provisioner/template/network/<template>/net/<vni>
@@ -4799,6 +4896,8 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
             template,
             vni
         )
+
+
 api.add_resource(API_Provisioner_Template_Network_Net_Element, '/provisioner/template/network/<template>/net/<vni>')
 
 # /provisioner/template/storage
@@ -4907,6 +5006,8 @@ class API_Provisioner_Template_Storage_Root(Resource):
         return api_provisioner.create_template_storage(
             reqargs.get('name', None)
         )
+
+
 api.add_resource(API_Provisioner_Template_Storage_Root, '/provisioner/template/storage')
 
 # /provisioner/template/storage/<template>
@@ -4979,6 +5080,8 @@ class API_Provisioner_Template_Storage_Element(Resource):
         return api_provisioner.delete_template_storage(
             template
         )
+
+
 api.add_resource(API_Provisioner_Template_Storage_Element, '/provisioner/template/storage/<template>')
 
 # /provisioner/template/storage/<template>/disk
@@ -5089,6 +5192,8 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
             reqargs.get('filesystem_arg', []),
             reqargs.get('mountpoint', None)
         )
+
+
 api.add_resource(API_Provisioner_Template_Storage_Disk_Root, '/provisioner/template/storage/<template>/disk')
 
 # /provisioner/template/storage/<template>/disk/<disk_id>
@@ -5213,6 +5318,8 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
             template,
             disk_id
         )
+
+
 api.add_resource(API_Provisioner_Template_Storage_Disk_Element, '/provisioner/template/storage/<template>/disk/<disk_id>')
 
 # /provisioner/userdata
@@ -5297,6 +5404,8 @@ class API_Provisioner_Userdata_Root(Resource):
             reqargs.get('name', None),
             reqargs.get('data', None)
         )
+
+
 api.add_resource(API_Provisioner_Userdata_Root, '/provisioner/userdata')
 
 # /provisioner/userdata/<userdata>
@@ -5412,6 +5521,8 @@ class API_Provisioner_Userdata_Element(Resource):
         return api_provisioner.delete_userdata(
             userdata
         )
+
+
 api.add_resource(API_Provisioner_Userdata_Element, '/provisioner/userdata/<userdata>')
 
 # /provisioner/script
@@ -5496,6 +5607,8 @@ class API_Provisioner_Script_Root(Resource):
             reqargs.get('name', None),
             reqargs.get('data', None)
         )
+
+
 api.add_resource(API_Provisioner_Script_Root, '/provisioner/script')
 
 # /provisioner/script/<script>
@@ -5611,6 +5724,8 @@ class API_Provisioner_Script_Element(Resource):
         return api_provisioner.delete_script(
             script
         )
+
+
 api.add_resource(API_Provisioner_Script_Element, '/provisioner/script/<script>')
 
 # /provisioner/profile
@@ -5722,6 +5837,8 @@ class API_Provisioner_OVA_Root(Resource):
             reqargs.get('name', None),
             reqargs.get('ova_size', None),
         )
+
+
 api.add_resource(API_Provisioner_OVA_Root, '/provisioner/ova')
 
 # /provisioner/ova/<ova>
@@ -5813,6 +5930,8 @@ class API_Provisioner_OVA_Element(Resource):
         return api_ova.delete_ova(
             ova
         )
+
+
 api.add_resource(API_Provisioner_OVA_Element, '/provisioner/ova/<ova>')
 
 # /provisioner/profile
@@ -5965,6 +6084,8 @@ class API_Provisioner_Profile_Root(Resource):
             reqargs.get('ova', None),
             reqargs.get('arg', [])
         )
+
+
 api.add_resource(API_Provisioner_Profile_Root, '/provisioner/profile')
 
 # /provisioner/profile/<profile>
@@ -6167,6 +6288,8 @@ class API_Provisioner_Profile_Element(Resource):
         return api_provisioner.delete_profile(
             profile
         )
+
+
 api.add_resource(API_Provisioner_Profile_Element, '/provisioner/profile/<profile>')
 
 # /provisioner/create
@@ -6249,6 +6372,8 @@ class API_Provisioner_Create_Root(Resource):
             script_run_args=reqargs.get('arg', []),
         )
         return {"task_id": task.id}, 202, {'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id)}
+
+
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
 
 # /provisioner/status
@@ -6283,6 +6408,8 @@ class API_Provisioner_Status_Root(Resource):
             'reserved': queue.reserved()
         }
         return response
+
+
 api.add_resource(API_Provisioner_Status_Root, '/provisioner/status')
 
 # /provisioner/status/<task_id>
@@ -6343,4 +6470,6 @@ class API_Provisioner_Status_Element(Resource):
                 'status': str(task.info)
             }
         return response
+
+
 api.add_resource(API_Provisioner_Status_Element, '/provisioner/status/<task_id>')

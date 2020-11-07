@@ -127,6 +127,7 @@ def update_store(store_path, store_data):
         with open(store_file, 'w') as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
 
+
 pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
 home_dir = os.environ.get('HOME', None)
 if pvc_client_dir:
@@ -3669,6 +3670,7 @@ def cli(_cluster, _debug, _quiet):
             )
             click.echo('', err=True)
 
+
 config = dict()
 
 #
@@ -3832,6 +3834,7 @@ cli.add_command(init_cluster)
 #
 def main():
     return cli(obj={})
+
 
 if __name__ == '__main__':
     main()

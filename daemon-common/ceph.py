@@ -73,6 +73,7 @@ def verifyOSDBlock(zk_conn, node, device):
             return osd
     return None
 
+
 # Format byte sizes to/from human-readable units
 byte_unit_matrix = {
     'B': 1,
@@ -105,6 +106,7 @@ def format_bytes_fromhuman(datahuman):
         datasize = int(datahuman)
     databytes = datasize * byte_unit_matrix[dataunit]
     return '{}B'.format(databytes)
+
 
 # Format ops sizes to/from human-readable units
 ops_unit_matrix = {

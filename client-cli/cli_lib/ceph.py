@@ -62,6 +62,7 @@ def format_bytes_fromhuman(datahuman):
     databytes = datasize * byte_unit_matrix[dataunit]
     return '{}B'.format(databytes)
 
+
 # Format ops sizes to/from human-readable units
 ops_unit_matrix = {
     '': 1,

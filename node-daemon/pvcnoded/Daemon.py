@@ -93,6 +93,7 @@ def stopKeepaliveTimer():
     except Exception:
         pass
 
+
 ###############################################################################
 # PHASE 1a - Configuration parsing
 ###############################################################################
@@ -271,6 +272,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         config['ipmi_hostname'] = myshorthostname + '-lom.' + mydomainname
 
     return config
+
 
 # Get the config object from readConfig()
 config = readConfig(pvcnoded_config_file, myhostname)
@@ -542,6 +544,7 @@ def zk_listener(state):
             zk_conn.add_listener(zk_listener)
             break
 
+
 zk_conn.add_listener(zk_listener)
 
 ###############################################################################
@@ -620,6 +623,7 @@ def term(signum='', frame=''):
 def hup(signum='', frame=''):
     if config['file_logging']:
         logger.hup()
+
 
 # Handle signals gracefully
 signal.signal(signal.SIGTERM, term)
@@ -816,6 +820,7 @@ def update_nodes(new_node_list):
     for node in d_node:
         d_node[node].update_node_list(d_node)
 
+
 # Alias for our local node (passed to network and domain objects)
 this_node = d_node[myhostname]
 
@@ -872,6 +877,7 @@ def update_primary(new_primary, stat, event=''):
 
         for node in d_node:
             d_node[node].primary_node = new_primary
+
 
 if enable_networking:
     # Network objects
@@ -1292,6 +1298,7 @@ def collect_ceph_stats(queue):
     if debug:
         logger.out("Thread finished", state='d', prefix='ceph-thread')
 
+
 # State table for pretty stats
 libvirt_vm_states = {
     0: "NOSTATE",
@@ -1640,6 +1647,7 @@ def node_keepalive():
 
     if debug:
         logger.out("Keepalive finished", state='d', prefix='main-thread')
+
 
 # Start keepalive thread
 update_timer = startKeepaliveTimer()

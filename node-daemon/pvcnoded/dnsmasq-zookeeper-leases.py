@@ -122,6 +122,7 @@ def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clienti
 def del_lease(zk_conn, zk_leases_key, macaddr, expiry):
     zk_conn.delete('{}/{}'.format(zk_leases_key, macaddr), recursive=True)
 
+
 #
 # Instantiate the parser
 #
