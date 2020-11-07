@@ -8,3 +8,8 @@ fi
 flake8 \
     --ignore=E501 \
     --exclude=api-daemon/migrations/versions,api-daemon/provisioner/examples
+ret=$?
+if [[ $ret -eq 0 ]]; then
+    echo "No linting issues found!"
+fi
+exit $ret
