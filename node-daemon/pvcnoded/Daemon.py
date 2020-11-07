@@ -772,13 +772,13 @@ d_network = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
-d_volume = dict() # Dict of Dicts
+d_volume = dict()  # Dict of Dicts
 node_list = []
 network_list = []
 domain_list = []
 osd_list = []
 pool_list = []
-volume_list = dict() # Dict of Lists
+volume_list = dict()  # Dict of Lists
 
 if enable_networking:
     # Create an instance of the DNS Aggregator and Metadata API if we're a coordinator

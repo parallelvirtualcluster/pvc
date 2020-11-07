@@ -20,4 +20,4 @@
 #
 ###############################################################################
 
-import pvcnoded.Daemon # noqa: F401
+import pvcnoded.Daemon  # noqa: F401

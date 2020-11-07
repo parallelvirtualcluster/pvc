@@ -20,4 +20,4 @@
 #
 ###############################################################################
 
-import pvcapid.Daemon # noqa: F401
+import pvcapid.Daemon  # noqa: F401

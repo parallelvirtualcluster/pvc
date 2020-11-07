@@ -47,7 +47,7 @@ myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
 default_store_data = {
-    'cfgfile': '/etc/pvc/pvcapid.yaml' # pvc/api/listen_address, pvc/api/listen_port
+    'cfgfile': '/etc/pvc/pvcapid.yaml'  # pvc/api/listen_address, pvc/api/listen_port
 }
 
 #
@@ -1442,7 +1442,7 @@ def net_acl():
 @click.option(
     '--in/--out', 'direction',
     is_flag=True,
-    default=True, # inbound
+    default=True,  # inbound
     help='Inbound or outbound ruleset.'
 )
 @click.option(
@@ -2306,7 +2306,7 @@ def provisioner_template_system_list(limit):
 @click.option(
     '--node-selector', 'node_selector',
     type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
-    default=None, # Use cluster default
+    default=None,  # Use cluster default
     help='Use this selector to determine the optimal node during migrations.'
 )
 @click.option(
@@ -2317,7 +2317,7 @@ def provisioner_template_system_list(limit):
 @click.option(
     '--migration-method', 'migration_method',
     type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
-    default=None, # Use cluster default
+    default=None,  # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
 @cluster_req
@@ -2393,7 +2393,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 @click.option(
     '--migration-method', 'migration_method',
     type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
-    default=None, # Use cluster default
+    default=None,  # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
 @cluster_req

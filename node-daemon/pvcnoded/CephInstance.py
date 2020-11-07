@@ -247,7 +247,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
 
         # 4. Determine the block devices
         retcode, stdout, stderr = common.run_os_command('readlink /var/lib/ceph/osd/ceph-{}/block'.format(osd_id))
-        vg_name = stdout.split('/')[-2] # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
+        vg_name = stdout.split('/')[-2]  # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
         retcode, stdout, stderr = common.run_os_command('vgs --separator , --noheadings -o pv_name {}'.format(vg_name))
         pv_block = stdout.strip()
 

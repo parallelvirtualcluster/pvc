@@ -1076,7 +1076,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
 
     if profile_data.get('profile_type') == 'ova':
         is_ova_install = True
-        is_script_install = False # By definition
+        is_script_install = False  # By definition
     else:
         is_ova_install = False
 
