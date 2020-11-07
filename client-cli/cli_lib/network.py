@@ -29,7 +29,7 @@ def isValidMAC(macaddr):
                             ^([0-9A-F]{2}[:]){5}([0-9A-F]{2})$
                          )
                          """,
-                         re.VERBOSE|re.IGNORECASE)
+                         re.VERBOSE | re.IGNORECASE)
 
     if allowed.match(macaddr):
         return True
