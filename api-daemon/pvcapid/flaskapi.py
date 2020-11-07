@@ -36,8 +36,6 @@ import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
 
-from pvcapid.models import *
-
 API_VERSION = 1.0
 
 def strtobool(stringv):
