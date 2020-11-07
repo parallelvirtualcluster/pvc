@@ -92,7 +92,7 @@ def net_list(config, limit):
 def net_add(config, vni, description, nettype, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Add new network
-    
+
     API endpoint: POST /api/v1/network
     API arguments: lots
     API schema: {"message":"{data}"}
@@ -123,7 +123,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
 def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Modify a network
-    
+
     API endpoint: POST /api/v1/network/{net}
     API arguments: lots
     API schema: {"message":"{data}"}
@@ -162,7 +162,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
 def net_remove(config, net):
     """
     Remove a network
-    
+
     API endpoint: DELETE /api/v1/network/{net}
     API arguments:
     API schema: {"message":"{data}"}
@@ -221,7 +221,7 @@ def net_dhcp_list(config, net, limit, only_static=False):
 def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
     """
     Add new network DHCP lease
-    
+
     API endpoint: POST /api/v1/network/{net}/lease
     API arguments: macaddress=macaddr, ipaddress=ipaddr, hostname=hostname
     API schema: {"message":"{data}"}
@@ -243,7 +243,7 @@ def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
 def net_dhcp_remove(config, net, mac):
     """
     Remove a network DHCP lease
-    
+
     API endpoint: DELETE /api/v1/network/{vni}/lease/{mac}
     API arguments:
     API schema: {"message":"{data}"}
@@ -299,7 +299,7 @@ def net_acl_list(config, net, limit, direction):
 def net_acl_add(config, net, direction, description, rule, order):
     """
     Add new network acl
-    
+
     API endpoint: POST /api/v1/network/{net}/acl
     API arguments: description=description, direction=direction, order=order, rule=rule
     API schema: {"message":"{data}"}
@@ -323,7 +323,7 @@ def net_acl_add(config, net, direction, description, rule, order):
 def net_acl_remove(config, net, description):
     """
     Remove a network ACL
-    
+
     API endpoint: DELETE /api/v1/network/{vni}/acl/{description}
     API arguments:
     API schema: {"message":"{data}"}

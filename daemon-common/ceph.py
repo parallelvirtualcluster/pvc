@@ -603,7 +603,7 @@ def add_pool(zk_conn, name, pgs, replcfg):
     retcode, stdout, stderr = common.run_os_command('ceph osd pool create {} {} replicated'.format(name, pgs))
     if retcode:
         return False, 'ERROR: Failed to create pool "{}" with {} PGs: {}'.format(name, pgs, stderr)
-    
+
     # 2. Set the size and minsize
     retcode, stdout, stderr = common.run_os_command('ceph osd pool set {} size {}'.format(name, copies))
     if retcode:
@@ -656,7 +656,7 @@ def get_list_pool(zk_conn, limit, is_fuzzy=True):
     if limit:
         if not is_fuzzy:
             limit = '^' + limit + '$'
-            
+
     for pool in full_pool_list:
         if limit:
             try:
@@ -1231,7 +1231,7 @@ def add_snapshot(zk_conn, pool, volume, name):
         '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name): '',
         '/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, name): '{}'
     })
-    
+
     return True, 'Created RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
 
 def rename_snapshot(zk_conn, pool, volume, name, new_name):

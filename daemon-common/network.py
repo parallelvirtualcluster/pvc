@@ -175,7 +175,7 @@ def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     except kazoo.exceptions.NoNodeError:
         zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(vni, mac_address))
         type_key = 'dhcp4_reservations'
-        
+
     hostname = zkhandler.readdata(zk_conn, '/networks/{}/{}/{}/hostname'.format(vni, type_key, mac_address))
     ip4_address = zkhandler.readdata(zk_conn, '/networks/{}/{}/{}/ipaddr'.format(vni, type_key, mac_address))
     if type_key == 'dhcp4_leases':

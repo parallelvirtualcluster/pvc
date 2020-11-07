@@ -84,7 +84,7 @@ def template_add(config, params, template_type=None):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def template_modify(config, params, name, template_type):
@@ -101,7 +101,7 @@ def template_modify(config, params, name, template_type):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def template_remove(config, name, template_type):
@@ -118,7 +118,7 @@ def template_remove(config, name, template_type):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def template_element_add(config, name, element_id, params, element_type=None, template_type=None):
@@ -135,7 +135,7 @@ def template_element_add(config, name, element_id, params, element_type=None, te
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def template_element_remove(config, name, element_id, element_type=None, template_type=None):
@@ -152,7 +152,7 @@ def template_element_remove(config, name, element_id, element_type=None, templat
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def userdata_info(config, userdata):
@@ -227,7 +227,7 @@ def userdata_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def userdata_modify(config, name, params):
@@ -252,7 +252,7 @@ def userdata_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def userdata_remove(config, name):
@@ -269,7 +269,7 @@ def userdata_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def script_info(config, script):
@@ -344,7 +344,7 @@ def script_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def script_modify(config, name, params):
@@ -369,7 +369,7 @@ def script_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def script_remove(config, name):
@@ -386,7 +386,7 @@ def script_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def ova_info(config, name):
@@ -469,7 +469,7 @@ def ova_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def profile_info(config, profile):
@@ -520,7 +520,7 @@ def profile_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def profile_modify(config, name, params):
@@ -537,7 +537,7 @@ def profile_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def profile_remove(config, name):
@@ -554,7 +554,7 @@ def profile_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
 
 def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
@@ -584,7 +584,7 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_
     else:
         retvalue = False
         retdata = response.json().get('message', '')
-        
+
     return retvalue, retdata
 
 def task_status(config, task_id=None, is_watching=False):

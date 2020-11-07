@@ -293,7 +293,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             node_mem_provisioned='Prov'
         )
     )
-            
+
     # Format the string (elements)
     for node_information in node_list:
         daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour, mem_provisioned_colour = getOutputColours(node_information)

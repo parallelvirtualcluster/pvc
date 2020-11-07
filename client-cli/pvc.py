@@ -1722,7 +1722,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
 def ceph_osd_remove(osdid, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
-    
+
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which may negatively affect performance or available space.
     """
     if not confirm_flag:
@@ -1992,7 +1992,7 @@ def ceph_volume_upload(pool, name, image_format, image_file):
 def ceph_volume_remove(pool, name, confirm_flag):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
-        
+
     DANGER: This will completely remove the volume and all data contained in it.
     """
     if not confirm_flag:
@@ -2734,7 +2734,7 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     Add a new DISK to storage template NAME.
 
     DISK must be a Linux-style sdX/vdX disk identifier, such as "sda" or "vdb". All disks in a template must use the same identifier format.
-    
+
     Disks will be added to VMs in sdX/vdX order. For disks with mountpoints, ensure this order is sensible.
     """
 

@@ -573,7 +573,7 @@ def format_list(config, vm_list, raw):
             vm_migrated='Migrated'
         )
     )
-    
+
     # Keep track of nets we found to be valid to cut down on duplicate API hits
     valid_net_list = []
     # Format the string (elements)

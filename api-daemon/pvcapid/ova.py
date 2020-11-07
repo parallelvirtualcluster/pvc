@@ -514,7 +514,7 @@ class OVFParser(object):
                 "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(schema=self.OVF_SCHEMA)
             )
         disk_list = []
-        
+
         for item in hardware_list:
             item_type = None
 

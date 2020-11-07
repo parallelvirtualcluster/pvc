@@ -927,7 +927,7 @@ def format_list(zk_conn, vm_list, raw):
             vm_migrated='Migrated'
         )
     )
-            
+
     # Format the string (elements)
     for domain_information in vm_list:
         if domain_information['state'] == 'start':

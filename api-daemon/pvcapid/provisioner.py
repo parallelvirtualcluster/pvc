@@ -1060,13 +1060,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     #  * Assemble a VM configuration dictionary
     self.update_state(state='RUNNING', meta={'current': 1, 'total': 10, 'status': 'Collecting configuration'})
     time.sleep(1)
-   
+
     vm_id = re.findall(r'/(\d+)$/', vm_name)
     if not vm_id:
         vm_id = 0
     else:
         vm_id = vm_id[0]
- 
+
     vm_data = dict()
 
     # Get the profile information
@@ -1078,7 +1078,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
         vm_data['script_arguments'] = profile_data.get('arguments').split('|')
     else:
         vm_data['script_arguments'] = []
-   
+
     if profile_data.get('profile_type') == 'ova':
         is_ova_install = True
         is_script_install = False # By definition
@@ -1230,7 +1230,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
                 continue
             if volume['filesystem'] and volume['filesystem'] not in used_filesystems:
                 used_filesystems.append(volume['filesystem'])
-    
+
         for filesystem in used_filesystems:
             if filesystem == 'swap':
                 retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
@@ -1416,7 +1416,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
         #  * Create each Ceph storage volume for the disks
         self.update_state(state='RUNNING', meta={'current': 6, 'total': 10, 'status': 'Creating storage volumes'})
         time.sleep(1)
-    
+
         for volume in vm_data['volumes']:
             if volume.get('source_volume') is not None:
                 success, message = pvc_ceph.clone_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), volume['source_volume'])
@@ -1477,7 +1477,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
             else:
                 if volume.get('source_volume') is not None:
                     continue
-    
+
                 if volume.get('filesystem') is None:
                     continue
 

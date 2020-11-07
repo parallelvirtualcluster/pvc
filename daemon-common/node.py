@@ -170,7 +170,7 @@ def ready_node(zk_conn, node, wait=False):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
     retmsg = 'Restoring hypervisor {} to active service.'.format(node)
-        
+
     # Add the new domain to Zookeeper
     zkhandler.writedata(zk_conn, {
         '/nodes/{}/domainstate'.format(node): 'unflush'
@@ -396,7 +396,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             node_mem_provisioned='VMs Total'
         )
     )
-            
+
     # Format the string (elements)
     for node_information in node_list:
         daemon_state_colour, coordinator_state_colour, domain_state_colour = getOutputColours(node_information)

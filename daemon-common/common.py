@@ -101,7 +101,7 @@ def getDomainXML(zk_conn, dom_uuid):
         xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
     except:
         return None
-    
+
     # Parse XML using lxml.objectify
     parsed_xml = lxml.objectify.fromstring(xml)
     return parsed_xml
@@ -208,7 +208,7 @@ def getDomainDiskList(zk_conn, dom_uuid):
     disk_list = []
     for disk in domain_information['disks']:
         disk_list.append(disk['name'])
-       
+
     return disk_list
 
 #
@@ -269,7 +269,7 @@ def getInformationFromXML(zk_conn, uuid):
     domain_features = getDomainCPUFeatures(parsed_xml)
     domain_disks = getDomainDisks(parsed_xml, stats_data)
     domain_controllers = getDomainControllers(parsed_xml)
-    
+
     if domain_lastnode:
         domain_migrated = 'from {}'.format(domain_lastnode)
     else:

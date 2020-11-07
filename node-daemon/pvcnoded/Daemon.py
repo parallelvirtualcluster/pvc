@@ -1143,7 +1143,7 @@ def collect_ceph_stats(queue):
                     'write_ops': pool['write_ops'],
                     'write_bytes': pool['write_bytes']
                 }
-                
+
                 # Write the pool data to Zookeeper
                 zkhandler.writedata(zk_conn, {
                     '/ceph/pools/{}/stats'.format(pool['name']): str(json.dumps(pool_df))
@@ -1487,13 +1487,13 @@ def node_keepalive():
         vm_thread_queue = Queue()
         vm_stats_thread = Thread(target=collect_vm_stats, args=(vm_thread_queue,), kwargs={})
         vm_stats_thread.start()
-    
+
     # Run Ceph status collection in separate thread for parallelization
     if enable_storage:
         ceph_thread_queue = Queue()
         ceph_stats_thread = Thread(target=collect_ceph_stats, args=(ceph_thread_queue,), kwargs={})
         ceph_stats_thread.start()
-    
+
     # Get node performance statistics
     this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
@@ -1627,7 +1627,7 @@ def node_keepalive():
                     node_daemon_state = 'unknown'
                     node_domain_state = 'unknown'
                     node_keepalive = 0
-    
+
                 # Handle deadtime and fencng if needed
                 # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
                 # out-of-date while in 'start' state)

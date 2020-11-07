@@ -115,7 +115,7 @@ def ceph_status(config):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
-	
+
 def ceph_util(config):
     """
     Get utilization of the Ceph cluster
@@ -130,7 +130,7 @@ def ceph_util(config):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
-	
+
 def format_raw_output(status_data):
     ainformation = list()
     ainformation.append('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
@@ -1272,7 +1272,7 @@ def ceph_benchmark_run(config, pool):
     else:
         retvalue = False
         retdata = response.json().get('message', '')
-        
+
     return retvalue, retdata
 
 def ceph_benchmark_list(config, job):
@@ -1303,7 +1303,7 @@ def ceph_benchmark_list(config, job):
 
 def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
-    
+
     benchmark_id_length = 3
     benchmark_job_length = 20
     benchmark_bandwidth_length = dict()
@@ -1392,13 +1392,13 @@ def format_list_benchmark(config, benchmark_information):
                 benchmark_data = json.loads(benchmark['benchmark_result'])
                 benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
                 benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
-    
+
             seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
             seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
             rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
             rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
-            
-    
+
+
         benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}} \
  {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \

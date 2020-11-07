@@ -446,7 +446,7 @@ def run_benchmark(self, pool):
                     "minfault": results[150]
                 }
             }
-        
+
     # Phase 3 - cleanup
     self.update_state(state='RUNNING', meta={'current': 3, 'total': 3, 'status': 'Cleaning up and storing results'})
     time.sleep(1)
