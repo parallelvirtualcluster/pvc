@@ -656,7 +656,7 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
             return False, 'Specified node "{}" is invalid.'.format(node)
 
     if state:
-        valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision' ]
+        valid_states = ['start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision' ]
         if state not in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
 

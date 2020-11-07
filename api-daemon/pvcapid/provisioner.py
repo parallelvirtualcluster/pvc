@@ -117,7 +117,7 @@ def list_template(limit, table, is_fuzzy=True):
     data = cur.fetchall()
 
     if not isinstance(data, list):
-        data = [ data ]
+        data = [data ]
 
     if table == 'network_template':
         for template_id, template_data in enumerate(data):

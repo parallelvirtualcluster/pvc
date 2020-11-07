@@ -282,7 +282,7 @@ def format_list_osd(osd_list):
         osd_list = list()
     # Handle single-item list
     if not isinstance(osd_list, list):
-        osd_list = [ osd_list ]
+        osd_list = [osd_list ]
 
     osd_list_output = []
 
@@ -608,7 +608,7 @@ def format_list_pool(pool_list):
         pool_list = list()
     # Handle single-entry list
     if not isinstance(pool_list, list):
-        pool_list = [ pool_list ]
+        pool_list = [pool_list ]
 
     pool_list_output = []
 
@@ -964,7 +964,7 @@ def format_list_volume(volume_list):
         volume_list = list()
     # Handle single-entry list
     if not isinstance(volume_list, list):
-        volume_list = [ volume_list ]
+        volume_list = [volume_list ]
 
     volume_list_output = []
 
@@ -1181,7 +1181,7 @@ def format_list_snapshot(snapshot_list):
         snapshot_list = list()
     # Handle single-entry list
     if not isinstance(snapshot_list, list):
-        snapshot_list = [ snapshot_list ]
+        snapshot_list = [snapshot_list ]
 
     snapshot_list_output = []
 
@@ -1307,7 +1307,7 @@ def format_list_benchmark(config, benchmark_information):
     benchmark_iops_length = dict()
 
     # For this output, we're only showing the Sequential (seq_read and seq_write) and 4k Random (rand_read_4K and rand_write_4K) results since we're showing them for each test result.
-    for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+    for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
         benchmark_bandwidth_length[test] = 7
         benchmark_iops_length[test] = 6
 
@@ -1323,7 +1323,7 @@ def format_list_benchmark(config, benchmark_information):
 
         benchmark_bandwidth = dict()
         benchmark_iops = dict()
-        for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+        for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
             benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
             benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
 
@@ -1385,7 +1385,7 @@ def format_list_benchmark(config, benchmark_information):
         else:
             benchmark_bandwidth = dict()
             benchmark_iops = dict()
-            for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+            for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
                 benchmark_data = json.loads(benchmark['benchmark_result'])
                 benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
                 benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
