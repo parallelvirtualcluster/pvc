@@ -252,7 +252,7 @@ def upload_ova(pool, name, ova_size):
         return output, retcode
 
     # Parse through the members list and extract the OVF file
-    for element in set(x for x in members if re.match('.*[.]ovf$', x.name)):
+    for element in set(x for x in members if re.match('.*\.ovf$', x.name)):
         ovf_file = ova_archive.extractfile(element)
 
     # Parse the OVF file to get our VM details
