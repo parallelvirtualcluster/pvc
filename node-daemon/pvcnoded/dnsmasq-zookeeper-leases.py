@@ -20,7 +20,8 @@
 #
 ###############################################################################
 import argparse
-import os, sys
+import os
+import sys
 import kazoo.client
 import re
 import yaml
