@@ -101,8 +101,9 @@ def renamekey(zk_conn, kv):
 
             old_data = zk_conn.get(old_name)[0]
 
-            # Find the children of old_name recursively
             child_keys = list()
+
+            # Find the children of old_name recursively
             def get_children(key):
                 children = zk_conn.get_children(key)
                 if not children:

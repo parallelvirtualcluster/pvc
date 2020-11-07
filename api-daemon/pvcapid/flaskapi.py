@@ -149,6 +149,7 @@ class RequestParser(object):
     def __call__(self, function):
         if not callable(function):
             return
+
         @wraps(function)
         def wrapped_function(*args, **kwargs):
             parser = reqparse.RequestParser()
