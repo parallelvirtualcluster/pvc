@@ -1393,7 +1393,13 @@ def ceph_volume_upload(pool, volume, img_type):
 
         # Save the data to the blockdev directly
         try:
-            data.save(dest_blockdev)
+            # This sets up a custom stream_factory that writes directly into the ova_blockdev,
+            # rather than the standard stream_factory which writes to a temporary file waiting
+            # on a save() call. This will break if the API ever uploaded multiple files, but
+            # this is an acceptable workaround.
+            def image_stream_factory(total_content_length, filename, content_type, content_length=None):
+                return open(dest_blockdev, 'wb')
+            parse_form_data(flask.request.environ, stream_factory=image_stream_factory)
         except Exception:
             output = {
                 'message': "Failed to write image file to volume."
