@@ -248,8 +248,8 @@ api.add_resource(API_Root, '/')
 #         swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
 #         return swagger_data
 # 
-
-api.add_resource(API_Doc, '/doc')
+#
+# api.add_resource(API_Doc, '/doc')
 
 # /login
 class API_Login(Resource):
