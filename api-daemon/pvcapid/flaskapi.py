@@ -3328,7 +3328,7 @@ class API_Storage_Ceph_Pool_Element(Resource):
               type: object
               id: Message
         """
-        return api_helper, ceph_pool_list(
+        return api_helper, api_helper.ceph_pool_list(
             pool,
             is_fuzzy=False
         )
