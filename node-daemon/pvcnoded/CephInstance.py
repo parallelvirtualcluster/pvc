@@ -343,7 +343,7 @@ class CephVolumeInstance(object):
                 self.stats = json.loads(data)
 
 class CephSnapshotInstance(object):
-    def __init__(self, zk_conn, this_node, name):
+    def __init__(self, zk_conn, this_node, pool, volume, name):
         self.zk_conn = zk_conn
         self.this_node = this_node
         self.pool = pool
