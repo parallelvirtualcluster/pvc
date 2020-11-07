@@ -170,7 +170,7 @@ def vm_remove(config, vm, delete_disks=False):
     API arguments: delete_disks={delete_disks}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'delete_disks': delete_disks
     }
     response = call_api(config, 'delete', '/vm/{vm}'.format(vm=vm), params=params)
@@ -190,7 +190,7 @@ def vm_state(config, vm, target_state, wait=False):
     API arguments: state={state}, wait={wait}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'state': target_state,
         'wait': str(wait).lower()
     }
@@ -211,7 +211,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     API arguments: node={target_node}, action={action}, force={force}, wait={wait}, force_live={force_live}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'node': target_node,
         'action': action,
         'force': str(force).lower(),

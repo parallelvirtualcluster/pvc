@@ -34,7 +34,7 @@ def node_coordinator_state(config, node, action):
     API arguments: action={action}
     API schema: {"message": "{data}"}
     """
-    params={
+    params = {
         'state': action
     }
     response = call_api(config, 'post', '/node/{node}/coordinator-state'.format(node=node), params=params)
@@ -54,7 +54,7 @@ def node_domain_state(config, node, action, wait):
     API arguments: action={action}, wait={wait}
     API schema: {"message": "{data}"}
     """
-    params={
+    params = {
         'state': action,
         'wait': str(wait).lower()
     }

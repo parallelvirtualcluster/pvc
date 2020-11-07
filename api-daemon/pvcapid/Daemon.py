@@ -29,7 +29,7 @@ import pvcapid.flaskapi as pvc_api
 if pvc_api.config['ssl_enabled']:
     context = (pvc_api.config['ssl_cert_file'], pvc_api.config['ssl_key_file'])
 else:
-    context=None
+    context = None
 
 print('Starting PVC API daemon at {}:{} with SSL={}, Authentication={}'.format(pvc_api.config['listen_address'], pvc_api.config['listen_port'], pvc_api.config['ssl_enabled'], pvc_api.config['auth_enabled']))
 pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'], threaded=True, ssl_context=context)

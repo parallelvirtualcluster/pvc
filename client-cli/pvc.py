@@ -3654,9 +3654,9 @@ def cli(_cluster, _debug, _quiet):
 
         if not _quiet:
             if config['api_scheme'] == 'https' and not config['verify_ssl']:
-                ssl_unverified_msg=' (unverified)'
+                ssl_unverified_msg = ' (unverified)'
             else:
-                ssl_unverified_msg=''
+                ssl_unverified_msg = ''
             click.echo(
                 'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
                     config['cluster'],
