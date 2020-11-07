@@ -91,8 +91,7 @@ class PowerDNSInstance(object):
             '--disable-syslog=yes',             # Log only to stdout (which is then captured)
             '--disable-axfr=no',                # Allow AXFRs
             '--allow-axfr-ips=0.0.0.0/0',       # Allow AXFRs to anywhere
-            '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),
-                                                # Listen on floating IPs
+            '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),  # Listen on floating IPs
             '--local-port=53',                  # On port 53
             '--log-dns-details=on',             # Log details
             '--loglevel=3',                     # Log info
@@ -101,19 +100,13 @@ class PowerDNSInstance(object):
             '--slave-renotify=yes',             # Renotify out for our slaved zones
             '--version-string=powerdns',        # Set the version string
             '--default-soa-name=dns.pvc.local', # Override dnsmasq's invalid name
-            '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),
-                                                # Standard socket directory
+            '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),  # Standard socket directory
             '--launch=gpgsql',                  # Use the PostgreSQL backend
-            '--gpgsql-host={}'.format(self.config['pdns_postgresql_host']),
-                                                # PostgreSQL instance
-            '--gpgsql-port={}'.format(self.config['pdns_postgresql_port']),
-                                                # Default port
-            '--gpgsql-dbname={}'.format(self.config['pdns_postgresql_dbname']),
-                                                # Database name
-            '--gpgsql-user={}'.format(self.config['pdns_postgresql_user']),
-                                                # User name
-            '--gpgsql-password={}'.format(self.config['pdns_postgresql_password']),
-                                                # User password
+            '--gpgsql-host={}'.format(self.config['pdns_postgresql_host']),  # PostgreSQL instance
+            '--gpgsql-port={}'.format(self.config['pdns_postgresql_port']),  # Default port
+            '--gpgsql-dbname={}'.format(self.config['pdns_postgresql_dbname']),  # Database name
+            '--gpgsql-user={}'.format(self.config['pdns_postgresql_user']),  # User name
+            '--gpgsql-password={}'.format(self.config['pdns_postgresql_password']),  # User password
             '--gpgsql-dnssec=no',               # Do DNSSEC elsewhere
         ]
         # Start the pdns process in a thread

@@ -43,7 +43,7 @@ class Logger(object):
 
     # Format maps
     format_map_colourized = {
-         # Colourized formatting with chevron prompts (log_colours = True)
+        # Colourized formatting with chevron prompts (log_colours = True)
         'o': { 'colour': fmt_green,   'prompt': '>>> '      },
         'e': { 'colour': fmt_red,     'prompt': '>>> '      },
         'w': { 'colour': fmt_yellow,  'prompt': '>>> '      },
@@ -54,7 +54,7 @@ class Logger(object):
         'x': { 'colour': last_colour, 'prompt': last_prompt }
     }
     format_map_textual = {
-         # Uncolourized formatting with text prompts (log_colours = False)
+        # Uncolourized formatting with text prompts (log_colours = False)
         'o': { 'colour': '', 'prompt': 'ok: '      },
         'e': { 'colour': '', 'prompt': 'failed: '  },
         'w': { 'colour': '', 'prompt': 'warning: ' },

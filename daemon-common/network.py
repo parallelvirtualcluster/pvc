@@ -146,14 +146,14 @@ def getNetworkInformation(zk_conn, vni):
             'network': ip6_network,
             'gateway': ip6_gateway,
             'dhcp_flag': dhcp6_flag,
-         },
-         'ip4': {
+        },
+        'ip4': {
             'network': ip4_network,
             'gateway': ip4_gateway,
             'dhcp_flag': dhcp4_flag,
             'dhcp_start': dhcp4_start,
             'dhcp_end': dhcp4_end
-         }
+        }
     }
     return network_information
 
