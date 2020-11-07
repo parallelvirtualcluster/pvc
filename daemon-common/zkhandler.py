@@ -125,6 +125,7 @@ def writedata(zk_conn, kv):
 
 # Write lock function
 def writelock(zk_conn, key):
+    count = 1
     while True:
         try:
             lock_id = str(uuid.uuid1())
@@ -141,6 +142,7 @@ def writelock(zk_conn, key):
 
 # Read lock function
 def readlock(zk_conn, key):
+    count = 1
     while True:
         try:
             lock_id = str(uuid.uuid1())
