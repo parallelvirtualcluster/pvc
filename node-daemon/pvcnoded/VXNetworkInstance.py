@@ -25,7 +25,6 @@ import time
 
 from textwrap import dedent
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 

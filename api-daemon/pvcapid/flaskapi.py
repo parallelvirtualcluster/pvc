@@ -20,22 +20,14 @@
 #
 ###############################################################################
 
-import json
 import yaml
 import os
-
-import gevent.pywsgi
-
 import flask
 
 from distutils.util import strtobool as dustrtobool
-
 from functools import wraps
-
 from flask_restful import Resource, Api, reqparse, abort
-
 from celery import Celery
-from celery.task.control import inspect
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner

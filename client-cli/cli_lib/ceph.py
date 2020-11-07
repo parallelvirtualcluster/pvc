@@ -20,9 +20,7 @@
 #
 ###############################################################################
 
-import re
 import json
-import time
 import math
 
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor

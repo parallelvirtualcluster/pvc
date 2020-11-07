@@ -21,7 +21,6 @@
 ###############################################################################
 
 import flask
-import json
 import lxml.etree as etree
 
 from distutils.util import strtobool as dustrtobool

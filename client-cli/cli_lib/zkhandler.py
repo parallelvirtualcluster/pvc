@@ -20,10 +20,7 @@
 #
 ###############################################################################
 
-import kazoo.client
 import uuid
-
-import daemon_lib.ansiprint as ansiprint
 
 # Exists function
 def exists(zk_conn, key):

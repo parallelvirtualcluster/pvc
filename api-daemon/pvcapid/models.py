@@ -20,7 +20,7 @@
 #
 ###############################################################################
 
-from pvcapid.flaskapi import app, db
+from pvcapid.flaskapi import db
 
 class DBSystemTemplate(db.Model):
     __tablename__ = 'system_template'

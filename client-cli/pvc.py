@@ -22,10 +22,7 @@
 
 import socket
 import click
-import tempfile
 import os
-import stat
-import subprocess
 import difflib
 import re
 import time

@@ -27,8 +27,6 @@ import psycopg2
 
 from threading import Thread, Event
 
-import pvcnoded.log as log
-import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 
 class DNSAggregatorInstance(object):

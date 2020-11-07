@@ -21,14 +21,11 @@
 ###############################################################################
 
 import os
-import uuid
 import time
-import libvirt
 
 from threading import Thread, Event
 from collections import deque
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 
 class VMConsoleWatcherInstance(object):

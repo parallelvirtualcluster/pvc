@@ -20,20 +20,10 @@
 #
 ###############################################################################
 
-import os
-import socket
 import time
-import uuid
 import re
-import subprocess
-import difflib
-import colorama
 import click
 import lxml.objectify
-import configparser
-import kazoo.client
-
-from collections import deque
 
 import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler

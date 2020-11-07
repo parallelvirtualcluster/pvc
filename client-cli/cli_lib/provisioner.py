@@ -20,9 +20,6 @@
 #
 ###############################################################################
 
-import time
-import re
-import subprocess
 import ast
 
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor

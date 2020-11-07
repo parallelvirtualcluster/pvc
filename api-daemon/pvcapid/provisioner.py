@@ -20,15 +20,10 @@
 #
 ###############################################################################
 
-import flask
 import json
 import psycopg2
 import psycopg2.extras
-import os
 import re
-import time
-import shlex
-import subprocess
 
 from distutils.util import strtobool as dustrtobool
 

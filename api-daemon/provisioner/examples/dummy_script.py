@@ -30,8 +30,6 @@
 # This script will run under root privileges as the provisioner does. Be careful
 # with that.
 
-import os
-
 # Installation function - performs a debootstrap install of a Debian system
 # Note that the only arguments are keyword arguments.
 def install(**kwargs):

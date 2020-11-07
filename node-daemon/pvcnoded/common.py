@@ -22,12 +22,10 @@
 
 import subprocess
 import signal
-import time
 
 from threading import Thread
 from shlex import split as shlex_split
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 
 class OSDaemon(object):

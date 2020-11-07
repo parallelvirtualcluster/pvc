@@ -20,24 +20,13 @@
 #
 ###############################################################################
 
-import os
-import socket
 import time
-import uuid
 import re
-import tempfile
-import subprocess
-import difflib
-import colorama
 import click
-import lxml.objectify
-import configparser
-import kazoo.client
 
 import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
-import daemon_lib.vm as pvc_vm
 
 def getNodeInformation(zk_conn, node_name):
     """

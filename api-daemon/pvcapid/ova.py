@@ -21,29 +21,19 @@
 ###############################################################################
 
 import flask
-import json
 import psycopg2
 import psycopg2.extras
-import os
 import re
-import time
 import math
 import tarfile
-import shutil
-import shlex
-import subprocess
 
 import lxml.etree
 
 from werkzeug.formparser import parse_form_data
 
 import daemon_lib.common as pvc_common
-import daemon_lib.node as pvc_node
-import daemon_lib.vm as pvc_vm
-import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
-import pvcapid.libvirt_schema as libvirt_schema
 import pvcapid.provisioner as provisioner
 
 #

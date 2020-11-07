@@ -20,9 +20,6 @@
 #
 ###############################################################################
 
-import difflib
-import colorama
-
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 

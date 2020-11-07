@@ -20,12 +20,8 @@
 #
 ###############################################################################
 
-import json
 import re
 
-from distutils.util import strtobool
-
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 import daemon_lib.vm as pvc_vm

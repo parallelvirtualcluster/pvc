@@ -24,7 +24,6 @@ import time
 
 from threading import Thread
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 

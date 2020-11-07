@@ -20,23 +20,13 @@
 #
 ###############################################################################
 
-import os
-import socket
-import time
-import uuid
 import re
-import tempfile
-import subprocess
-import difflib
-import colorama
 import click
-import lxml.objectify
-import configparser
-import kazoo.client
+
+from kazoo.exceptions import NoNodeError
 
 import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
-import daemon_lib.common as common
 
 #
 # Cluster search functions
@@ -172,7 +162,7 @@ def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     try:
         zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_leases/{}'.format(vni, mac_address))
         type_key = 'dhcp4_leases'
-    except kazoo.exceptions.NoNodeError:
+    except NoNodeError:
         zkhandler.readdata(zk_conn, '/networks/{}/dhcp4_reservations/{}'.format(vni, mac_address))
         type_key = 'dhcp4_reservations'
 

@@ -22,12 +22,8 @@
 
 import time
 import re
-import subprocess
-
-from collections import deque
 
 import cli_lib.ansiprint as ansiprint
-import cli_lib.ceph as ceph
 from cli_lib.common import call_api, format_bytes, format_metric
 
 #

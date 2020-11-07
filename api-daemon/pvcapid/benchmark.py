@@ -20,25 +20,13 @@
 #
 ###############################################################################
 
-import flask
-import json
 import psycopg2
 import psycopg2.extras
-import os
-import re
-import time
-import shlex
-import subprocess
 
 from distutils.util import strtobool as dustrtobool
 
 import daemon_lib.common as pvc_common
-import daemon_lib.node as pvc_node
 import daemon_lib.ceph as pvc_ceph
-
-import pvcapid.libvirt_schema as libvirt_schema
-
-from pvcapid.ova import list_ova
 
 def strtobool(stringv):
     if stringv is None:
