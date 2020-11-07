@@ -39,7 +39,7 @@ def get_zookeeper_key():
         print('ERROR: DNSMASQ_BRIDGE_INTERFACE environment variable not found: {}'.format(e), file=sys.stderr)
         exit(1)
     # Get the ID of the interface (the digits)
-    network_vni = re.findall('\d+', interface)[0]
+    network_vni = re.findall(r'\d+', interface)[0]
     # Create the key
     zookeeper_key = '/networks/{}/dhcp4_leases'.format(network_vni)
     return zookeeper_key
