@@ -919,7 +919,7 @@ def clone_volume(zk_conn, pool, name_src, name_new):
     # 1. Clone the volume
     retcode, stdout, stderr = common.run_os_command('rbd copy {}/{} {}/{}'.format(pool, name_src, pool, name_new))
     if retcode:
-        return False, 'ERROR: Failed to clone RBD volume "{}" to "{}" in pool "{}": {}'.format(name_src, new_name, pool, stderr)
+        return False, 'ERROR: Failed to clone RBD volume "{}" to "{}" in pool "{}": {}'.format(name_src, name_new, pool, stderr)
 
     # 2. Get volume stats
     retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name_new))
