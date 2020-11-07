@@ -733,11 +733,11 @@ def vm_modify(domain, cfgfile, editor, restart):
         click.echo('')
         diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) is not None:
+            if re.match(r'^\+', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) is not None:
+            elif re.match(r'^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) is not None:
+            elif re.match(r'^\^', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -3039,11 +3039,11 @@ def provisioner_userdata_modify(name, filename, editor):
         click.echo('')
         diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) is not None:
+            if re.match(r'^\+', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) is not None:
+            elif re.match(r'^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) is not None:
+            elif re.match(r'^\^', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -3224,11 +3224,11 @@ def provisioner_script_modify(name, filename, editor):
         click.echo('')
         diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) is not None:
+            if re.match(r'^\+', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) is not None:
+            elif re.match(r'^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) is not None:
+            elif re.match(r'^\^', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)

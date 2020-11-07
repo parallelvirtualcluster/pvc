@@ -118,7 +118,7 @@ def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = str(datahuman)[-1]
     datasize = int(str(datahuman)[:-1])
-    if not re.match('[A-Z]', dataunit):
+    if not re.match(r'[A-Z]', dataunit):
         dataunit = 'B'
         datasize = int(datahuman)
     databytes = datasize * byte_unit_matrix[dataunit]
@@ -322,9 +322,9 @@ def get_list_osd(zk_conn, limit, is_fuzzy=True):
 
     if is_fuzzy and limit:
         # Implicitly assume fuzzy limits
-        if not re.match('\^.*', limit):
+        if not re.match(r'\^.*', limit):
             limit = '.*' + limit
-        if not re.match('.*\$', limit):
+        if not re.match(r'.*\$', limit):
             limit = limit + '.*'
 
     for osd in full_osd_list:
@@ -658,9 +658,9 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
             limit = '^' + limit + '$'
         else:
             # Implicitly assume fuzzy limits
-            if not re.match('\^.*', limit):
+            if not re.match(r'\^.*', limit):
                 limit = '.*' + limit
-            if not re.match('.*\$', limit):
+            if not re.match(r'.*\$', limit):
                 limit = limit + '.*'
 
     for volume in full_volume_list:
@@ -764,9 +764,9 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
 
     if is_fuzzy and limit:
         # Implicitly assume fuzzy limits
-        if not re.match('\^.*', limit):
+        if not re.match(r'\^.*', limit):
             limit = '.*' + limit
-        if not re.match('.*\$', limit):
+        if not re.match(r'.*\$', limit):
             limit = limit + '.*'
 
     for snapshot in full_snapshot_list:

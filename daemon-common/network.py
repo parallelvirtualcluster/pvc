@@ -574,9 +574,9 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
                 limit = '^' + limit + '$'
 
             # Implcitly assume fuzzy limits
-            if not re.match('\^.*', limit):
+            if not re.match(r'\^.*', limit):
                 limit = '.*' + limit
-            if not re.match('.*\$', limit):
+            if not re.match(r'.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -620,9 +620,9 @@ def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
                 limit = '^' + limit + '$'
 
             # Implcitly assume fuzzy limits
-            if not re.match('\^.*', limit):
+            if not re.match(r'\^.*', limit):
                 limit = '.*' + limit
-            if not re.match('.*\$', limit):
+            if not re.match(r'.*\$', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
