@@ -1311,9 +1311,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
             )
         else:
             mac_prefix = '52:54:00'
-            random_octet_A = '{:x}'.format(random.randint(16,238))
-            random_octet_B = '{:x}'.format(random.randint(16,238))
-            random_octet_C = '{:x}'.format(random.randint(16,238))
+            random_octet_A = '{:x}'.format(random.randint(16, 238))
+            random_octet_B = '{:x}'.format(random.randint(16, 238))
+            random_octet_C = '{:x}'.format(random.randint(16, 238))
 
             macgen_template = '{prefix}:{octetA}:{octetB}:{octetC}'
             eth_macaddr = macgen_template.format(

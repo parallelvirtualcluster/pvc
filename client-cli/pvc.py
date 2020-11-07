@@ -583,7 +583,7 @@ def cli_vm():
 )
 @click.option(
     '-s', '--selector', 'node_selector', default='mem', show_default=True,
-    type=click.Choice(['mem','load','vcpus','vms']),
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
     help='Method to determine optimal target node during autoselect; saved with VM.'
 )
 @click.option(
@@ -592,7 +592,7 @@ def cli_vm():
 )
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none','live','shutdown']),
+    type=click.Choice(['none', 'live', 'shutdown']),
     help='The preferred migration method of the VM between nodes; saved with VM.'
 )
 @click.argument(
@@ -628,7 +628,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 )
 @click.option(
     '-s', '--selector', 'node_selector', default=None, show_default=False,
-    type=click.Choice(['mem','load','vcpus','vms']),
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
     help='Method to determine optimal target node during autoselect.'
 )
 @click.option(
@@ -637,7 +637,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 )
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none','live','shutdown']),
+    type=click.Choice(['none', 'live', 'shutdown']),
     help='The preferred migration method of the VM between nodes; saved with VM.'
 )
 @click.option(
@@ -2316,7 +2316,7 @@ def provisioner_template_system_list(limit):
 )
 @click.option(
     '--migration-method', 'migration_method',
-    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
+    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
     default=None, # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
@@ -2392,7 +2392,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 )
 @click.option(
     '--migration-method', 'migration_method',
-    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
+    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
     default=None, # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
