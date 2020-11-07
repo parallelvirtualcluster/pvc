@@ -682,7 +682,7 @@ def vm_modify(domain, cfgfile, editor, restart):
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
 
-    if editor is False and cfgfile == None:
+    if editor is False and cfgfile is None:
         cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
@@ -2894,7 +2894,7 @@ def provisioner_userdata_modify(name, filename, editor):
     Modify existing userdata document NAME, either in-editor or with replacement FILE.
     """
 
-    if editor is False and filename == None:
+    if editor is False and filename is None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
     if editor is True:
@@ -3073,7 +3073,7 @@ def provisioner_script_modify(name, filename, editor):
     Modify existing script NAME, either in-editor or with replacement FILE.
     """
 
-    if editor is False and filename == None:
+    if editor is False and filename is None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
     if editor is True:

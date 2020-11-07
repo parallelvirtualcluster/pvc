@@ -210,7 +210,7 @@ class VMInstance(object):
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         lv_conn = libvirt.open(libvirt_name)
-        if lv_conn == None:
+        if lv_conn is None:
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
             self.instart = False
             return
@@ -254,7 +254,7 @@ class VMInstance(object):
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         lv_conn = libvirt.open(libvirt_name)
-        if lv_conn == None:
+        if lv_conn is None:
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
             self.inrestart = False
             return
@@ -752,7 +752,7 @@ class VMInstance(object):
         try:
             # Open a libvirt connection
             lv_conn = libvirt.open(libvirt_name)
-            if lv_conn == None:
+            if lv_conn is None:
                 self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
                 return None
 

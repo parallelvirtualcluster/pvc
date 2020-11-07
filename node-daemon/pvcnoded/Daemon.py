@@ -1318,7 +1318,7 @@ def collect_vm_stats(queue):
     if debug:
         logger.out("Connecting to libvirt", state='d', prefix='vm-thread')
     lv_conn = libvirt.open(libvirt_name)
-    if lv_conn == None:
+    if lv_conn is None:
         logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
         return
 
