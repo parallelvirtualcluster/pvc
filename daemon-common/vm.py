@@ -20,26 +20,15 @@
 #
 ###############################################################################
 
-import os
-import socket
 import time
-import uuid
 import re
-import subprocess
-import difflib
-import colorama
-import click
 import lxml.objectify
-import configparser
-import kazoo.client
 
-from collections import deque
-
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 
 import daemon_lib.ceph as ceph
+
 
 #
 # Cluster search functions
@@ -52,6 +41,7 @@ def getClusterDomainList(zk_conn):
     for uuid in uuid_list:
         name_list.append(zkhandler.readdata(zk_conn, '/domains/%s' % uuid))
     return uuid_list, name_list
+
 
 def searchClusterByUUID(zk_conn, uuid):
     try:
@@ -67,6 +57,7 @@ def searchClusterByUUID(zk_conn, uuid):
 
     return name
 
+
 def searchClusterByName(zk_conn, name):
     try:
         # Get the lists
@@ -81,6 +72,7 @@ def searchClusterByName(zk_conn, name):
 
     return uuid
 
+
 def getDomainUUID(zk_conn, domain):
     # Validate that VM exists in cluster
     if common.validateUUID(domain):
@@ -92,6 +84,7 @@ def getDomainUUID(zk_conn, domain):
 
     return dom_uuid
 
+
 def getDomainName(zk_conn, domain):
     # Validate that VM exists in cluster
     if common.validateUUID(domain):
@@ -102,6 +95,7 @@ def getDomainName(zk_conn, domain):
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     return dom_name
+
 
 #
 # Direct functions
@@ -117,6 +111,7 @@ def is_migrated(zk_conn, domain):
         return True
     else:
         return False
+
 
 def flush_locks(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -145,7 +140,7 @@ def flush_locks(zk_conn, domain):
             else:
                 message = 'ERROR: Failed to flush locks on VM "{}"; check node logs for details.'.format(domain)
                 success = False
-        except:
+        except Exception:
             message = 'ERROR: Command ignored by node.'
             success = False
 
@@ -157,11 +152,12 @@ def flush_locks(zk_conn, domain):
 
     return success, message
 
+
 def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, migration_method=None, profile=None, initial_state='stop'):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
-    except:
+    except Exception:
         return False, 'ERROR: Failed to parse XML data.'
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
@@ -216,6 +212,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
+
 def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -248,6 +245,7 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
 
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
 
+
 def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -257,7 +255,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     # Parse and valiate the XML
     try:
         parsed_xml = lxml.objectify.fromstring(new_vm_config)
-    except:
+    except Exception:
         return False, 'ERROR: Failed to parse XML data.'
 
     # Obtain the RBD disk list using the common functions
@@ -284,10 +282,11 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     if restart:
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
         lock.release()
 
     return True, ''
+
 
 def dump_vm(zk_conn, domain):
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -298,6 +297,7 @@ def dump_vm(zk_conn, domain):
     vm_xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
 
     return True, vm_xml
+
 
 def undefine_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -311,7 +311,7 @@ def undefine_vm(zk_conn, domain):
         # Set the domain into stop mode
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
         lock.release()
 
         # Wait for 2 seconds to allow state to flow to all nodes
@@ -325,6 +325,7 @@ def undefine_vm(zk_conn, domain):
     zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
 
     return True, 'Undefined VM "{}" from the cluster.'.format(domain)
+
 
 def remove_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -340,7 +341,7 @@ def remove_vm(zk_conn, domain):
         # Set the domain into stop mode
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
         lock.release()
 
         # Wait for 2 seconds to allow state to flow to all nodes
@@ -365,6 +366,7 @@ def remove_vm(zk_conn, domain):
 
     return True, 'Removed VM "{}" and disks from the cluster.'.format(domain)
 
+
 def start_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -374,10 +376,11 @@ def start_vm(zk_conn, domain):
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'start' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'start'})
     lock.release()
 
     return True, 'Starting VM "{}".'.format(domain)
+
 
 def restart_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
@@ -395,7 +398,7 @@ def restart_vm(zk_conn, domain, wait=False):
     # Set the VM to restart
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
     lock.release()
 
     if wait:
@@ -404,6 +407,7 @@ def restart_vm(zk_conn, domain, wait=False):
         retmsg = 'Restarted VM "{}"'.format(domain)
 
     return True, retmsg
+
 
 def shutdown_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
@@ -421,7 +425,7 @@ def shutdown_vm(zk_conn, domain, wait=False):
     # Set the VM to shutdown
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown'})
     lock.release()
 
     if wait:
@@ -431,22 +435,21 @@ def shutdown_vm(zk_conn, domain, wait=False):
 
     return True, retmsg
 
+
 def stop_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    # Get state and verify we're OK to proceed
-    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
-
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop'})
     lock.release()
 
     return True, 'Forcibly stopping VM "{}".'.format(domain)
+
 
 def disable_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -462,10 +465,11 @@ def disable_vm(zk_conn, domain):
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'disable' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'disable'})
     lock.release()
 
     return True, 'Marked VM "{}" as disable.'.format(domain)
+
 
 def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
     # Validate that VM exists in cluster
@@ -516,10 +520,10 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
     zkhandler.writedata(zk_conn, {
-            '/domains/{}/state'.format(dom_uuid): target_state,
-            '/domains/{}/node'.format(dom_uuid): target_node,
-            '/domains/{}/lastnode'.format(dom_uuid): ''
-        })
+        '/domains/{}/state'.format(dom_uuid): target_state,
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): ''
+    })
     lock.release()
 
     if wait:
@@ -528,6 +532,7 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
         retmsg = 'Permanently migrated VM "{}" to node "{}"'.format(domain, target_node)
 
     return True, retmsg
+
 
 def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_live=False):
     # Validate that VM exists in cluster
@@ -594,6 +599,7 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_li
 
     return True, retmsg
 
+
 def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -634,6 +640,7 @@ def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
 
     return True, retmsg
 
+
 def get_console_log(zk_conn, domain, lines=1000):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -649,6 +656,7 @@ def get_console_log(zk_conn, domain, lines=1000):
 
     return True, loglines
 
+
 def get_info(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -662,6 +670,7 @@ def get_info(zk_conn, domain):
 
     return True, domain_information
 
+
 def get_list(zk_conn, node, state, limit, is_fuzzy=True):
     if node:
         # Verify node is valid
@@ -669,8 +678,8 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
             return False, 'Specified node "{}" is invalid.'.format(node)
 
     if state:
-        valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision' ]
-        if not state in valid_states:
+        valid_states = ['start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision']
+        if state not in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
 
     full_vm_list = zkhandler.listchildren(zk_conn, '/domains')
@@ -680,9 +689,9 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
     if limit and is_fuzzy:
         try:
             # Implcitly assume fuzzy limits
-            if not re.match('\^.*', limit):
+            if not re.match('[^].*', limit):
                 limit = '.*' + limit
-            if not re.match('.*\$', limit):
+            if not re.match('.*[$]', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
@@ -722,269 +731,3 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
                     vm_list.append(common.getInformationFromXML(zk_conn, vm))
 
     return True, vm_list
-
-#
-# CLI-specific functions
-#
-def format_info(zk_conn, domain_information, long_output):
-    # Format a nice output; do this line-by-line then concat the elements at the end
-    ainformation = []
-    ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))
-    ainformation.append('')
-    # Basic information
-    ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['uuid']))
-    ainformation.append('{}Name:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['name']))
-    ainformation.append('{}Description:{}        {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['description']))
-    ainformation.append('{}Profile:{}            {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['profile']))
-    ainformation.append('{}Memory (M):{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['memory']))
-    ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu']))
-    ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu_topology']))
-
-    if long_output == True:
-        # Virtualization information
-        ainformation.append('')
-        ainformation.append('{}Emulator:{}           {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['emulator']))
-        ainformation.append('{}Type:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['type']))
-        ainformation.append('{}Arch:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['arch']))
-        ainformation.append('{}Machine:{}            {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['machine']))
-        ainformation.append('{}Features:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ' '.join(domain_information['features'])))
-
-    # PVC cluster information
-    ainformation.append('')
-    dstate_colour = {
-        'start': ansiprint.green(),
-        'restart': ansiprint.yellow(),
-        'shutdown': ansiprint.yellow(),
-        'stop': ansiprint.red(),
-        'disable': ansiprint.blue(),
-        'fail': ansiprint.red(),
-        'migrate': ansiprint.blue(),
-        'unmigrate': ansiprint.blue()
-    }
-    ainformation.append('{}State:{}              {}{}{}'.format(ansiprint.purple(), ansiprint.end(), dstate_colour[domain_information['state']], domain_information['state'], ansiprint.end()))
-    ainformation.append('{}Current Node:{}       {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['node']))
-    if not domain_information['last_node']:
-        domain_information['last_node'] = "N/A"
-    ainformation.append('{}Previous Node:{}      {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['last_node']))
-
-    # Get a failure reason if applicable
-    if domain_information['failed_reason']:
-        ainformation.append('')
-        ainformation.append('{}Failure reason:{}     {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['failed_reason']))
-
-    if not domain_information['node_selector']:
-        formatted_node_selector = "False"
-    else:
-        formatted_node_selector = domain_information['node_selector']
-
-    if not domain_information['node_limit']:
-        formatted_node_limit = "False"
-    else:
-        formatted_node_limit = ', '.join(domain_information['node_limit'])
-
-    if not domain_information['node_autostart']:
-        formatted_node_autostart = "False"
-    else:
-        formatted_node_autostart = domain_information['node_autostart']
-
-    if not domain_information['migration_method']:
-        formatted_migration_method = "False"
-    else:
-        formatted_migration_method = domain_information['migration_method']
-
-    ainformation.append('{}Migration selector:{} {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_selector))
-    ainformation.append('{}Node limit:{}         {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_limit))
-    ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_autostart))
-    ainformation.append('{}Migration Method:{}   {}'.format(ansiprint.purple(), ansiprint.end(), formatted_migration_method))
-
-    # Network list
-    net_list = []
-    for net in domain_information['networks']:
-        # Split out just the numerical (VNI) part of the brXXXX name
-        net_vnis = re.findall(r'\d+', net['source'])
-        if net_vnis:
-            net_vni = net_vnis[0]
-        else:
-            net_vni = re.sub('br', '', net['source'])
-        net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
-        if not net_exists and net_vni != 'cluster':
-            net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
-        else:
-            net_list.append(net_vni)
-    ainformation.append('')
-    ainformation.append('{}Networks:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(net_list)))
-
-    if long_output == True:
-        # Disk list
-        ainformation.append('')
-        name_length = 0
-        for disk in domain_information['disks']:
-            _name_length = len(disk['name']) + 1
-            if _name_length > name_length:
-                name_length = _name_length
-        ainformation.append('{0}Disks:{1}        {2}ID  Type  {3: <{width}} Dev  Bus{4}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), 'Name', ansiprint.end(), width=name_length))
-        for disk in domain_information['disks']:
-            ainformation.append('              {0: <3} {1: <5} {2: <{width}} {3: <4} {4: <5}'.format(domain_information['disks'].index(disk), disk['type'], disk['name'], disk['dev'], disk['bus'], width=name_length))
-        ainformation.append('')
-        ainformation.append('{}Interfaces:{}   {}ID  Type     Source     Model    MAC{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
-        for net in domain_information['networks']:
-            ainformation.append('              {0: <3} {1: <8} {2: <10} {3: <8} {4}'.format(domain_information['networks'].index(net), net['type'], net['source'], net['model'], net['mac']))
-        # Controller list
-        ainformation.append('')
-        ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
-        for controller in domain_information['controllers']:
-            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], controller['model']))
-
-    # Join it all together
-    information = '\n'.join(ainformation)
-    click.echo(information)
-
-    click.echo('')
-
-def format_list(zk_conn, vm_list, raw):
-    # Function to strip the "br" off of nets and return a nicer list
-    def getNiceNetID(domain_information):
-        # Network list
-        net_list = []
-        for net in domain_information['networks']:
-            # Split out just the numerical (VNI) part of the brXXXX name
-            net_vnis = re.findall(r'\d+', net['source'])
-            if net_vnis:
-                net_vni = net_vnis[0]
-            else:
-                net_vni = re.sub('br', '', net['source'])
-            net_list.append(net_vni)
-        return net_list
-
-    # Handle raw mode since it just lists the names
-    if raw:
-        for vm in sorted(item['name'] for item in vm_list):
-            click.echo(vm)
-        return True, ''
-
-    vm_list_output = []
-
-    # Determine optimal column widths
-    # Dynamic columns: node_name, node, migrated
-    vm_name_length = 5
-    vm_uuid_length = 37
-    vm_state_length = 6
-    vm_nets_length = 9
-    vm_ram_length = 8
-    vm_vcpu_length = 6
-    vm_node_length = 8
-    vm_migrated_length = 10
-    for domain_information in vm_list:
-        net_list = getNiceNetID(domain_information)
-        # vm_name column
-        _vm_name_length = len(domain_information['name']) + 1
-        if _vm_name_length > vm_name_length:
-            vm_name_length = _vm_name_length
-        # vm_state column
-        _vm_state_length = len(domain_information['state']) + 1
-        if _vm_state_length > vm_state_length:
-            vm_state_length = _vm_state_length
-        # vm_nets column
-        _vm_nets_length = len(','.join(net_list)) + 1
-        if _vm_nets_length > vm_nets_length:
-            vm_nets_length = _vm_nets_length
-        # vm_node column
-        _vm_node_length = len(domain_information['node']) + 1
-        if _vm_node_length > vm_node_length:
-            vm_node_length = _vm_node_length
-        # vm_migrated column
-        _vm_migrated_length = len(domain_information['migrated']) + 1
-        if _vm_migrated_length > vm_migrated_length:
-            vm_migrated_length = _vm_migrated_length
-
-    # Format the string (header)
-    vm_list_output.append(
-        '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
-{vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
-{vm_networks: <{vm_nets_length}} \
-{vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
-{vm_node: <{vm_node_length}} \
-{vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
-            vm_name_length=vm_name_length,
-            vm_uuid_length=vm_uuid_length,
-            vm_state_length=vm_state_length,
-            vm_nets_length=vm_nets_length,
-            vm_ram_length=vm_ram_length,
-            vm_vcpu_length=vm_vcpu_length,
-            vm_node_length=vm_node_length,
-            vm_migrated_length=vm_migrated_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            vm_state_colour='',
-            end_colour='',
-            vm_name='Name',
-            vm_uuid='UUID',
-            vm_state='State',
-            vm_networks='Networks',
-            vm_memory='RAM (M)',
-            vm_vcpu='vCPUs',
-            vm_node='Node',
-            vm_migrated='Migrated'
-        )
-    )
-            
-    # Format the string (elements)
-    for domain_information in vm_list:
-        if domain_information['state'] == 'start':
-            vm_state_colour = ansiprint.green()
-        elif domain_information['state'] == 'restart':
-            vm_state_colour = ansiprint.yellow()
-        elif domain_information['state'] == 'shutdown':
-            vm_state_colour = ansiprint.yellow()
-        elif domain_information['state'] == 'stop':
-            vm_state_colour = ansiprint.red()
-        elif domain_information['state'] == 'fail':
-            vm_state_colour = ansiprint.red()
-        else:
-            vm_state_colour = ansiprint.blue()
-
-        # Handle colouring for an invalid network config
-        raw_net_list = getNiceNetID(domain_information)
-        net_list = []
-        vm_net_colour = ''
-        for net_vni in raw_net_list:
-            net_exists = zkhandler.exists(zk_conn, '/networks/{}'.format(net_vni))
-            if not net_exists and net_vni != 'cluster':
-                vm_net_colour = ansiprint.red()
-            net_list.append(net_vni)
-
-        vm_list_output.append(
-            '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
-{vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
-{vm_net_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
-{vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
-{vm_node: <{vm_node_length}} \
-{vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
-                vm_name_length=vm_name_length,
-                vm_uuid_length=vm_uuid_length,
-                vm_state_length=vm_state_length,
-                vm_nets_length=vm_nets_length,
-                vm_ram_length=vm_ram_length,
-                vm_vcpu_length=vm_vcpu_length,
-                vm_node_length=vm_node_length,
-                vm_migrated_length=vm_migrated_length,
-                bold='',
-                end_bold='',
-                vm_state_colour=vm_state_colour,
-                end_colour=ansiprint.end(),
-                vm_name=domain_information['name'],
-                vm_uuid=domain_information['uuid'],
-                vm_state=domain_information['state'],
-                vm_net_colour=vm_net_colour,
-                vm_networks=','.join(net_list),
-                vm_memory=domain_information['memory'],
-                vm_vcpu=domain_information['vcpu'],
-                vm_node=domain_information['node'],
-                vm_migrated=domain_information['migrated']
-            )
-        )
-
-    click.echo('\n'.join(sorted(vm_list_output)))
-
-    return True, ''
-

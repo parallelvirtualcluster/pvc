@@ -27,13 +27,13 @@ import json
 
 from threading import Thread
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 
 import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
 import daemon_lib.common as daemon_common
+
 
 def flush_locks(zk_conn, logger, dom_uuid):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
@@ -65,6 +65,7 @@ def flush_locks(zk_conn, logger, dom_uuid):
 
     return True
 
+
 # Primary command function
 def run_command(zk_conn, logger, this_node, data):
     # Get the command and args
@@ -93,6 +94,7 @@ def run_command(zk_conn, logger, this_node, data):
                 # Wait 1 seconds before we free the lock, to ensure the client hits the lock
                 time.sleep(1)
 
+
 class VMInstance(object):
     # Initialization function
     def __init__(self, domuuid, zk_conn, config, logger, this_node):
@@ -112,11 +114,11 @@ class VMInstance(object):
         self.last_lastnode = zkhandler.readdata(self.zk_conn, '/domains/{}/lastnode'.format(self.domuuid))
         try:
             self.pinpolicy = zkhandler.readdata(self.zk_conn, '/domains/{}/pinpolicy'.format(self.domuuid))
-        except:
+        except Exception:
             self.pinpolicy = "none"
         try:
             self.migration_method = zkhandler.readdata(self.zk_conn, '/domains/{}/migration_method'.format(self.domuuid))
-        except:
+        except Exception:
             self.migration_method = 'none'
 
         # These will all be set later
@@ -166,7 +168,7 @@ class VMInstance(object):
             else:
                 domain_information = daemon_common.getInformationFromXML(self.zk_conn, self.domuuid)
                 memory = int(domain_information['memory'])
-        except:
+        except Exception:
             memory = 0
 
         return memory
@@ -174,19 +176,19 @@ class VMInstance(object):
     def getvcpus(self):
         try:
             vcpus = int(self.dom.info()[3])
-        except:
+        except Exception:
             vcpus = 0
 
         return vcpus
 
     # Manage local node domain_list
     def addDomainToList(self):
-        if not self.domuuid in self.this_node.domain_list:
+        if self.domuuid not in self.this_node.domain_list:
             try:
                 # Add the domain to the domain_list array
                 self.this_node.domain_list.append(self.domuuid)
                 # Push the change up to Zookeeper
-                zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list) })
+                zkhandler.writedata(self.zk_conn, {'/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list)})
             except Exception as e:
                 self.logger.out('Error adding domain to list: {}'.format(e), state='e')
 
@@ -196,7 +198,7 @@ class VMInstance(object):
                 # Remove the domain from the domain_list array
                 self.this_node.domain_list.remove(self.domuuid)
                 # Push the change up to Zookeeper
-                zkhandler.writedata(self.zk_conn, { '/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list) })
+                zkhandler.writedata(self.zk_conn, {'/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list)})
             except Exception as e:
                 self.logger.out('Error removing domain from list: {}'.format(e), state='e')
 
@@ -211,7 +213,7 @@ class VMInstance(object):
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         lv_conn = libvirt.open(libvirt_name)
-        if lv_conn == None:
+        if lv_conn is None:
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
             self.instart = False
             return
@@ -220,13 +222,13 @@ class VMInstance(object):
         try:
             self.dom = self.lookupByUUID(self.domuuid)
             curstate = self.dom.state()[0]
-        except:
+        except Exception:
             curstate = 'notstart'
 
         if curstate == libvirt.VIR_DOMAIN_RUNNING:
             # If it is running just update the model
             self.addDomainToList()
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
+            zkhandler.writedata(self.zk_conn, {'/domains/{}/failedreason'.format(self.domuuid): ''})
         else:
             # Or try to create it
             try:
@@ -236,11 +238,11 @@ class VMInstance(object):
                 self.addDomainToList()
                 self.logger.out('Successfully started VM', state='o', prefix='Domain {}'.format(self.domuuid))
                 self.dom = dom
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): '' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/failedreason'.format(self.domuuid): ''})
             except libvirt.libvirtError as e:
                 self.logger.out('Failed to create VM', state='e', prefix='Domain {}'.format(self.domuuid))
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'fail' })
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/failedreason'.format(self.domuuid): str(e) })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'fail'})
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/failedreason'.format(self.domuuid): str(e)})
                 self.dom = None
 
         lv_conn.close()
@@ -255,7 +257,7 @@ class VMInstance(object):
         # Start up a new Libvirt connection
         libvirt_name = "qemu:///system"
         lv_conn = libvirt.open(libvirt_name)
-        if lv_conn == None:
+        if lv_conn is None:
             self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
             self.inrestart = False
             return
@@ -265,7 +267,7 @@ class VMInstance(object):
         self.start_vm()
         self.addDomainToList()
 
-        zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+        zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
         lv_conn.close()
         self.inrestart = False
 
@@ -295,8 +297,8 @@ class VMInstance(object):
             self.logger.out('Failed to stop VM', state='e', prefix='Domain {}'.format(self.domuuid))
         self.removeDomainFromList()
 
-        if self.inrestart == False:
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'stop' })
+        if self.inrestart is False:
+            zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'stop'})
 
         self.logger.out('Successfully stopped VM', state='o', prefix='Domain {}'.format(self.domuuid))
         self.dom = None
@@ -325,12 +327,12 @@ class VMInstance(object):
 
             try:
                 lvdomstate = self.dom.state()[0]
-            except:
+            except Exception:
                 lvdomstate = None
 
             if lvdomstate != libvirt.VIR_DOMAIN_RUNNING:
                 self.removeDomainFromList()
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'stop' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'stop'})
                 self.logger.out('Successfully shutdown VM', state='o', prefix='Domain {}'.format(self.domuuid))
                 self.dom = None
                 # Stop the log watcher
@@ -339,7 +341,7 @@ class VMInstance(object):
 
             if tick >= self.config['vm_shutdown_timeout']:
                 self.logger.out('Shutdown timeout ({}s) expired, forcing off'.format(self.config['vm_shutdown_timeout']), state='e', prefix='Domain {}'.format(self.domuuid))
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'stop' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'stop'})
                 break
 
         self.inshutdown = False
@@ -350,7 +352,7 @@ class VMInstance(object):
         if self.inrestart:
             # Wait to prevent race conditions
             time.sleep(1)
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+            zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
 
     # Migrate the VM to a target host
     def migrate_vm(self, force_live=False, force_shutdown=False):
@@ -387,7 +389,7 @@ class VMInstance(object):
         migrate_lock_node.acquire()
         migrate_lock_state.acquire()
 
-        time.sleep(0.2) # Initial delay for the first writer to grab the lock
+        time.sleep(0.2)  # Initial delay for the first writer to grab the lock
 
         # Don't try to migrate a node to itself, set back to start
         if self.node == self.lastnode or self.node == self.this_node.name:
@@ -422,7 +424,7 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5) # Time for reader to acquire the lock
+        time.sleep(0.5)  # Time fir reader to acquire the lock
 
         def migrate_live():
             self.logger.out('Setting up live migration', state='i', prefix='Domain {}'.format(self.domuuid))
@@ -435,7 +437,7 @@ class VMInstance(object):
                 dest_lv_conn = libvirt.open(dest_lv)
                 if not dest_lv_conn:
                     raise
-            except:
+            except Exception:
                 self.logger.out('Failed to open connection to {}; aborting live migration.'.format(dest_lv), state='e', prefix='Domain {}'.format(self.domuuid))
                 return False
 
@@ -459,7 +461,7 @@ class VMInstance(object):
 
         def migrate_shutdown():
             self.logger.out('Shutting down VM for offline migration', state='i', prefix='Domain {}'.format(self.domuuid))
-            zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'shutdown' })
+            zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'shutdown'})
             while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid)) != 'stop':
                 time.sleep(0.5)
             return True
@@ -510,10 +512,10 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5) # Time for reader to acquire the lock
+        time.sleep(0.5)  # Time fir reader to acquire the lock
 
         if do_migrate_shutdown:
-            migrate_shutdown_result = migrate_shutdown()
+            migrate_shutdown()
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
@@ -548,23 +550,22 @@ class VMInstance(object):
             time.sleep(0.1)
 
         self.inreceive = True
-        live_receive = True
 
         self.logger.out('Receiving VM migration from node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
         # Ensure our lock key is populated
-        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): self.domuuid })
+        zkhandler.writedata(self.zk_conn, {'/locks/domain_migrate/{}'.format(self.domuuid): self.domuuid})
 
         # Synchronize nodes A (I am writer)
         lock = zkhandler.writelock(self.zk_conn, '/locks/domain_migrate/{}'.format(self.domuuid))
         self.logger.out('Acquiring write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5) # Time for reader to acquire the lock
+        time.sleep(0.5)  # Time fir reader to acquire the lock
         self.logger.out('Releasing write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.1) # Time for new writer to acquire the lock
+        time.sleep(0.1)  # Time fir new writer to acquire the lock
 
         # Synchronize nodes B (I am reader)
         lock = zkhandler.readlock(self.zk_conn, '/locks/domain_migrate/{}'.format(self.domuuid))
@@ -594,7 +595,7 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5) # Time for reader to acquire the lock
+        time.sleep(0.5)  # Time fir reader to acquire the lock
 
         self.state = zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid))
         self.dom = self.lookupByUUID(self.domuuid)
@@ -603,11 +604,11 @@ class VMInstance(object):
             if lvdomstate == libvirt.VIR_DOMAIN_RUNNING:
                 # VM has been received and started
                 self.addDomainToList()
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
                 self.logger.out('Successfully received migrated VM', state='o', prefix='Domain {}'.format(self.domuuid))
             else:
                 # The receive somehow failed
-                zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'fail' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'fail'})
         else:
             if self.node == self.this_node.name:
                 if self.state in ['start']:
@@ -615,7 +616,7 @@ class VMInstance(object):
                     self.logger.out('Receive aborted via state change', state='w', prefix='Domain {}'.format(self.domuuid))
                 elif self.state in ['stop']:
                     # The send was shutdown-based
-                    zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                    zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
                 else:
                     # The send failed or was aborted
                     self.logger.out('Migrate aborted or failed; VM in state {}'.format(self.state), state='w', prefix='Domain {}'.format(self.domuuid))
@@ -624,7 +625,7 @@ class VMInstance(object):
         lock.release()
         self.logger.out('Released write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
 
-        zkhandler.writedata(self.zk_conn, { '/locks/domain_migrate/{}'.format(self.domuuid): '' })
+        zkhandler.writedata(self.zk_conn, {'/locks/domain_migrate/{}'.format(self.domuuid): ''})
         self.inreceive = False
         return
 
@@ -639,11 +640,11 @@ class VMInstance(object):
 
         # Check the current state of the VM
         try:
-            if self.dom != None:
+            if self.dom is not None:
                 running, reason = self.dom.state()
             else:
                 raise
-        except:
+        except Exception:
             running = libvirt.VIR_DOMAIN_NOSTATE
 
         self.logger.out('VM state change for "{}": {} {}'.format(self.domuuid, self.state, self.node), state='i')
@@ -663,12 +664,12 @@ class VMInstance(object):
         #   provision
 
         # Conditional pass one - Are we already performing an action
-        if self.instart == False \
-        and self.inrestart == False \
-        and self.inmigrate == False \
-        and self.inreceive == False \
-        and self.inshutdown == False \
-        and self.instop == False:
+        if self.instart is False \
+                and self.inrestart is False \
+                and self.inmigrate is False \
+                and self.inreceive is False \
+                and self.inshutdown is False \
+                and self.instop is False:
             # Conditional pass two - Is this VM configured to run on this node
             if self.node == self.this_node.name:
                 # Conditional pass three - Is this VM currently running on this node
@@ -683,7 +684,7 @@ class VMInstance(object):
                     elif self.state == "migrate" or self.state == "migrate-live":
                         # Start the log watcher
                         self.console_log_instance.start()
-                        zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                        zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
                         # Add domain to running list
                         self.addDomainToList()
                     # VM should be restarted
@@ -706,7 +707,7 @@ class VMInstance(object):
                         self.receive_migrate()
                     # VM should be restarted (i.e. started since it isn't running)
                     if self.state == "restart":
-                        zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'start' })
+                        zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'start'})
                     # VM should be shut down; ensure it's gone from this node's domain_list
                     elif self.state == "shutdown":
                         self.removeDomainFromList()
@@ -734,7 +735,6 @@ class VMInstance(object):
                     else:
                         self.terminate_vm()
 
-
     # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
     # 1. Takes a text UUID and handles converting it to bytes
     # 2. Try's it and returns a sensible value if not
@@ -753,7 +753,7 @@ class VMInstance(object):
         try:
             # Open a libvirt connection
             lv_conn = libvirt.open(libvirt_name)
-            if lv_conn == None:
+            if lv_conn is None:
                 self.logger.out('Failed to open local libvirt connection', state='e', prefix='Domain {}'.format(self.domuuid))
                 return None
 
@@ -761,13 +761,13 @@ class VMInstance(object):
             dom = lv_conn.lookupByUUID(buuid)
 
         # Fail
-        except:
+        except Exception:
             dom = None
 
         # After everything
         finally:
             # Close the libvirt connection
-            if lv_conn != None:
+            if lv_conn is not None:
                 lv_conn.close()
 
         # Return the dom object (or None)

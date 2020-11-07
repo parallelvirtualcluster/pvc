@@ -22,6 +22,7 @@
 
 import datetime
 
+
 class Logger(object):
     # Define a logger class for a daemon instance
     # Keeps record of where to log, and is passed messages which are
@@ -35,7 +36,7 @@ class Logger(object):
     fmt_purple = '\033[95m'
     fmt_cyan = '\033[96m'
     fmt_white = '\033[97m'
-    fmt_bold =  '\033[1m'
+    fmt_bold = '\033[1m'
     fmt_end = '\033[0m'
 
     last_colour = ''
@@ -43,26 +44,26 @@ class Logger(object):
 
     # Format maps
     format_map_colourized = {
-         # Colourized formatting with chevron prompts (log_colours = True)
-        'o': { 'colour': fmt_green,   'prompt': '>>> '      },
-        'e': { 'colour': fmt_red,     'prompt': '>>> '      },
-        'w': { 'colour': fmt_yellow,  'prompt': '>>> '      },
-        't': { 'colour': fmt_purple,  'prompt': '>>> '      },
-        'i': { 'colour': fmt_blue,    'prompt': '>>> '      },
-        's': { 'colour': fmt_cyan,    'prompt': '>>> '      },
-        'd': { 'colour': fmt_white,   'prompt': '>>> '      },
-        'x': { 'colour': last_colour, 'prompt': last_prompt }
+        # Colourized formatting with chevron prompts (log_colours = True)
+        'o': {'colour': fmt_green, 'prompt': '>>> '},
+        'e': {'colour': fmt_red, 'prompt': '>>> '},
+        'w': {'colour': fmt_yellow, 'prompt': '>>> '},
+        't': {'colour': fmt_purple, 'prompt': '>>> '},
+        'i': {'colour': fmt_blue, 'prompt': '>>> '},
+        's': {'colour': fmt_cyan, 'prompt': '>>> '},
+        'd': {'colour': fmt_white, 'prompt': '>>> '},
+        'x': {'colour': last_colour, 'prompt': last_prompt}
     }
     format_map_textual = {
-         # Uncolourized formatting with text prompts (log_colours = False)
-        'o': { 'colour': '', 'prompt': 'ok: '      },
-        'e': { 'colour': '', 'prompt': 'failed: '  },
-        'w': { 'colour': '', 'prompt': 'warning: ' },
-        't': { 'colour': '', 'prompt': 'tick: '    },
-        'i': { 'colour': '', 'prompt': 'info: '    },
-        's': { 'colour': '', 'prompt': 'system: '  },
-        'd': { 'colour': '', 'prompt': 'debug: '   },
-        'x': { 'colour': '', 'prompt': last_prompt }
+        # Uncolourized formatting with text prompts (log_colours = False)
+        'o': {'colour': '', 'prompt': 'ok: '},
+        'e': {'colour': '', 'prompt': 'failed: '},
+        'w': {'colour': '', 'prompt': 'warning: '},
+        't': {'colour': '', 'prompt': 'tick: '},
+        'i': {'colour': '', 'prompt': 'info: '},
+        's': {'colour': '', 'prompt': 'system: '},
+        'd': {'colour': '', 'prompt': 'debug: '},
+        'x': {'colour': '', 'prompt': last_prompt}
     }
 
     # Initialization of instance

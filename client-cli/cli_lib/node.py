@@ -23,6 +23,7 @@
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 
+
 #
 # Primary functions
 #
@@ -34,7 +35,7 @@ def node_coordinator_state(config, node, action):
     API arguments: action={action}
     API schema: {"message": "{data}"}
     """
-    params={
+    params = {
         'state': action
     }
     response = call_api(config, 'post', '/node/{node}/coordinator-state'.format(node=node), params=params)
@@ -46,6 +47,7 @@ def node_coordinator_state(config, node, action):
 
     return retstatus, response.json().get('message', '')
 
+
 def node_domain_state(config, node, action, wait):
     """
     Set node domain state state (flush/ready)
@@ -54,7 +56,7 @@ def node_domain_state(config, node, action, wait):
     API arguments: action={action}, wait={wait}
     API schema: {"message": "{data}"}
     """
-    params={
+    params = {
         'state': action,
         'wait': str(wait).lower()
     }
@@ -66,6 +68,7 @@ def node_domain_state(config, node, action, wait):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def node_info(config, node):
     """
@@ -81,6 +84,7 @@ def node_info(config, node):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state):
     """
@@ -106,6 +110,7 @@ def node_list(config, limit, target_daemon_state, target_coordinator_state, targ
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 #
 # Output display functions
@@ -148,6 +153,7 @@ def getOutputColours(node_information):
 
     return daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour, mem_provisioned_colour
 
+
 def format_info(node_information, long_output):
     daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour, mem_provisioned_colour = getOutputColours(node_information)
 
@@ -178,10 +184,11 @@ def format_info(node_information, long_output):
     ainformation.append('')
     return '\n'.join(ainformation)
 
+
 def format_list(node_list, raw):
     # Handle single-element lists
     if not isinstance(node_list, list):
-        node_list = [ node_list ]
+        node_list = [node_list]
 
     if raw:
         ainformation = list()
@@ -293,7 +300,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             node_mem_provisioned='Prov'
         )
     )
-            
+
     # Format the string (elements)
     for node_information in node_list:
         daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour, mem_provisioned_colour = getOutputColours(node_information)

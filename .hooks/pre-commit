@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+
+ex=0
+
+# Linting
+./lint
+if [[ $? -ne 0 ]]; then
+    echo "Aborting commit due to linting errors."
+    ex=1
+fi
+
+echo
+popd &>/dev/null
+exit $ex

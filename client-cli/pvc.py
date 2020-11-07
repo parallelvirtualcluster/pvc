@@ -22,10 +22,7 @@
 
 import socket
 import click
-import tempfile
 import os
-import stat
-import subprocess
 import difflib
 import re
 import time
@@ -50,8 +47,9 @@ myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
 default_store_data = {
-    'cfgfile': '/etc/pvc/pvcapid.yaml' # pvc/api/listen_address, pvc/api/listen_port
+    'cfgfile': '/etc/pvc/pvcapid.yaml'  # pvc/api/listen_address, pvc/api/listen_port
 }
+
 
 #
 # Data store handling functions
@@ -72,6 +70,7 @@ def read_from_yaml(cfgfile):
         api_key = 'N/A'
     return host, port, scheme, api_key
 
+
 def get_config(store_data, cluster=None):
     # This is generally static
     prefix = '/api/v1'
@@ -88,7 +87,7 @@ def get_config(store_data, cluster=None):
         if os.path.isfile(cfgfile):
             host, port, scheme, api_key = read_from_yaml(cfgfile)
         else:
-            return { 'badcfg': True }
+            return {'badcfg': True}
         # Handle an all-wildcard address
         if host == '0.0.0.0':
             host = '127.0.0.1'
@@ -113,11 +112,13 @@ def get_config(store_data, cluster=None):
 
     return config
 
+
 def get_store(store_path):
     store_file = '{}/pvc-cli.json'.format(store_path)
     with open(store_file, 'r') as fh:
-       store_data = json.loads(fh.read())
+        store_data = json.loads(fh.read())
     return store_data
+
 
 def update_store(store_path, store_data):
     store_file = '{}/pvc-cli.json'.format(store_path)
@@ -129,6 +130,7 @@ def update_store(store_path, store_data):
     else:
         with open(store_file, 'w') as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
+
 
 pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
 home_dir = os.environ.get('HOME', None)
@@ -147,8 +149,9 @@ if not os.path.isfile(store_path + '/pvc-cli.json'):
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
+
 def cleanup(retcode, retmsg):
-    if retcode == True:
+    if retcode is True:
         if retmsg != '':
             click.echo(retmsg)
         exit(0)
@@ -156,6 +159,7 @@ def cleanup(retcode, retmsg):
         if retmsg != '':
             click.echo(retmsg)
         exit(1)
+
 
 ###############################################################################
 # pvc cluster
@@ -166,6 +170,7 @@ def cli_cluster():
     Manage the PVC clusters this CLI can connect to.
     """
     pass
+
 
 ###############################################################################
 # pvc cluster add
@@ -212,6 +217,7 @@ def cluster_add(address, port, ssl, name, api_key):
     update_store(store_path, existing_config)
     click.echo('Added new cluster "{}" at host "{}" to local database'.format(name, address))
 
+
 ###############################################################################
 # pvc cluster remove
 ###############################################################################
@@ -233,6 +239,7 @@ def cluster_remove(name):
     # Update the store
     update_store(store_path, existing_config)
     click.echo('Removed cluster "{}" from local database'.format(name))
+
 
 ###############################################################################
 # pvc cluster list
@@ -340,6 +347,7 @@ def cluster_list():
             )
         )
 
+
 # Validate that the cluster is set for a given command
 def cluster_req(function):
     @wraps(function)
@@ -359,6 +367,8 @@ def cli_node():
     """
     Manage the state of a node in the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc node secondary
@@ -400,9 +410,10 @@ def node_secondary(node, wait):
                         break
                     else:
                         time.sleep(0.5)
-                except:
+                except Exception:
                     time.sleep(0.5)
         cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc node primary
@@ -444,9 +455,10 @@ def node_primary(node, wait):
                         break
                     else:
                         time.sleep(0.5)
-                except:
+                except Exception:
                     time.sleep(0.5)
         cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc node flush
@@ -468,6 +480,7 @@ def node_flush(node, wait):
     retcode, retmsg = pvc_node.node_domain_state(config, node, 'flush', wait)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc node ready/unflush
 ###############################################################################
@@ -488,6 +501,7 @@ def node_ready(node, wait):
     retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
     cleanup(retcode, retmsg)
 
+
 @click.command(name='unflush', short_help='Restore node to service.')
 @click.argument(
     'node', default=myhostname
@@ -503,6 +517,7 @@ def node_unflush(node, wait):
 
     retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc node info
@@ -525,6 +540,7 @@ def node_info(node, long_output):
     if retcode:
         retdata = pvc_node.format_info(retdata, long_output)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc node list
@@ -563,6 +579,7 @@ def node_list(limit, target_daemon_state, target_coordinator_state, target_domai
             retdata = ""
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc vm
 ###############################################################################
@@ -571,6 +588,8 @@ def cli_vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc vm define
@@ -586,7 +605,7 @@ def cli_vm():
 )
 @click.option(
     '-s', '--selector', 'node_selector', default='mem', show_default=True,
-    type=click.Choice(['mem','load','vcpus','vms']),
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
     help='Method to determine optimal target node during autoselect; saved with VM.'
 )
 @click.option(
@@ -595,7 +614,7 @@ def cli_vm():
 )
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none','live','shutdown']),
+    type=click.Choice(['none', 'live', 'shutdown']),
     help='The preferred migration method of the VM between nodes; saved with VM.'
 )
 @click.argument(
@@ -615,11 +634,12 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
     try:
         xml_data = etree.fromstring(vmconfig_data)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
-    except:
+    except Exception:
         cleanup(False, 'Error: XML is malformed or invalid')
 
     retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm meta
@@ -631,7 +651,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 )
 @click.option(
     '-s', '--selector', 'node_selector', default=None, show_default=False,
-    type=click.Choice(['mem','load','vcpus','vms']),
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
     help='Method to determine optimal target node during autoselect.'
 )
 @click.option(
@@ -640,7 +660,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 )
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none','live','shutdown']),
+    type=click.Choice(['none', 'live', 'shutdown']),
     help='The preferred migration method of the VM between nodes; saved with VM.'
 )
 @click.option(
@@ -661,6 +681,7 @@ def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method,
 
     retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart, migration_method, provisioner_profile)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm modify
@@ -685,17 +706,16 @@ def vm_modify(domain, cfgfile, editor, restart):
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
 
-    if editor == False and cfgfile == None:
+    if editor is False and cfgfile is None:
         cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
     if not retcode and not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    dom_uuid = vm_information.get('uuid')
     dom_name = vm_information.get('name')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         current_vm_cfg_raw = vm_information.get('xml')
         xml_data = etree.fromstring(current_vm_cfg_raw)
@@ -713,11 +733,11 @@ def vm_modify(domain, cfgfile, editor, restart):
         click.echo('')
         diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) != None:
+            if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) != None:
+            elif re.match('^[-]', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -751,6 +771,7 @@ def vm_modify(domain, cfgfile, editor, restart):
     retcode, retmsg = pvc_vm.vm_modify(config, domain, new_cfg, restart)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm undefine
 ###############################################################################
@@ -771,11 +792,12 @@ def vm_undefine(domain, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Undefine VM {}'.format(domain), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=False)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm remove
@@ -797,11 +819,12 @@ def vm_remove(domain, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Undefine VM {} and remove all disks'.format(domain), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_vm.vm_remove(config, domain, delete_disks=True)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm start
@@ -818,6 +841,7 @@ def vm_start(domain):
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'start')
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm restart
@@ -839,6 +863,7 @@ def vm_restart(domain, wait):
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart', wait=wait)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm shutdown
 ###############################################################################
@@ -859,6 +884,7 @@ def vm_shutdown(domain, wait):
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown', wait=wait)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm stop
 ###############################################################################
@@ -874,6 +900,7 @@ def vm_stop(domain):
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'stop')
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm disable
@@ -892,6 +919,7 @@ def vm_disable(domain):
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'disable')
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm move
@@ -920,6 +948,7 @@ def vm_move(domain, target_node, wait, force_live):
 
     retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm migrate
@@ -953,6 +982,7 @@ def vm_migrate(domain, target_node, force_migrate, wait, force_live):
     retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm unmigrate
 ###############################################################################
@@ -977,6 +1007,7 @@ def vm_unmigrate(domain, wait, force_live):
     retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False, wait=wait, force_live=force_live)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm flush-locks
 ###############################################################################
@@ -992,6 +1023,7 @@ def vm_flush_locks(domain):
 
     retcode, retmsg = pvc_vm.vm_locks(config, domain)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc vm log
@@ -1029,6 +1061,7 @@ def vm_log(domain, lines, follow):
         retmsg = ''
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc vm info
 ###############################################################################
@@ -1050,6 +1083,7 @@ def vm_info(domain, long_output):
     if retcode:
         retdata = pvc_vm.format_info(config, retdata, long_output)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc vm dump
@@ -1073,6 +1107,7 @@ def vm_dump(domain):
     xml_data = etree.fromstring(current_vm_cfg_raw)
     current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     click.echo(current_vm_cfgfile.strip())
+
 
 ###############################################################################
 # pvc vm list
@@ -1109,6 +1144,7 @@ def vm_list(target_node, target_state, limit, raw):
             retdata = ""
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc network
 ###############################################################################
@@ -1117,6 +1153,8 @@ def cli_network():
     """
     Manage the state of a VXLAN network in the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc network add
@@ -1203,6 +1241,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc network modify
 ###############################################################################
@@ -1273,6 +1312,7 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
     retcode, retmsg = pvc_network.net_modify(config, vni, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc network remove
 ###############################################################################
@@ -1296,11 +1336,12 @@ def net_remove(net, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove network {}'.format(net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_remove(config, net)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc network info
@@ -1324,6 +1365,7 @@ def net_info(vni, long_output):
         retdata = pvc_network.format_info(config, retdata, long_output)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc network list
 ###############################################################################
@@ -1342,6 +1384,7 @@ def net_list(limit):
         retdata = pvc_network.format_list(config, retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc network dhcp
 ###############################################################################
@@ -1350,6 +1393,8 @@ def net_dhcp():
     """
     Manage host IPv4 DHCP leases of a VXLAN network in the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc network dhcp add
@@ -1376,6 +1421,7 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
     retcode, retmsg = pvc_network.net_dhcp_add(config, net, ipaddr, macaddr, hostname)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc network dhcp remove
 ###############################################################################
@@ -1399,11 +1445,12 @@ def net_dhcp_remove(net, macaddr, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove DHCP lease for {} in network {}'.format(macaddr, net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_dhcp_remove(config, net, macaddr)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc network dhcp list
@@ -1430,6 +1477,7 @@ def net_dhcp_list(net, limit, only_static):
         retdata = pvc_network.format_list_dhcp(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc network acl
 ###############################################################################
@@ -1438,6 +1486,8 @@ def net_acl():
     """
     Manage firewall ACLs of a VXLAN network in the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc network acl add
@@ -1446,7 +1496,7 @@ def net_acl():
 @click.option(
     '--in/--out', 'direction',
     is_flag=True,
-    default=True, #inbound
+    default=True,  # inbound
     help='Inbound or outbound ruleset.'
 )
 @click.option(
@@ -1490,6 +1540,7 @@ def net_acl_add(net, direction, description, rule, order):
     retcode, retmsg = pvc_network.net_acl_add(config, net, direction, description, rule, order)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc network acl remove
 ###############################################################################
@@ -1513,7 +1564,7 @@ def net_acl_remove(net, rule, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove ACL {} in network {}'.format(rule, net), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_network.net_acl_remove(config, net, rule)
@@ -1553,6 +1604,7 @@ def net_acl_list(net, limit, direction):
         retdata = pvc_network.format_list_acl(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage
 ###############################################################################
@@ -1566,6 +1618,8 @@ def cli_storage():
     """
     Manage the storage of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage status
@@ -1582,6 +1636,7 @@ def ceph_status():
         retdata = pvc_ceph.format_raw_output(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage util
 ###############################################################################
@@ -1597,6 +1652,7 @@ def ceph_util():
         retdata = pvc_ceph.format_raw_output(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage benchmark
 ###############################################################################
@@ -1606,6 +1662,8 @@ def ceph_benchmark():
     """
     Run or view benchmarks of the storage cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage benchmark run
@@ -1621,11 +1679,12 @@ def ceph_benchmark_run(pool):
     """
     try:
         click.confirm('NOTE: Storage benchmarks generate significant load on the cluster and can take a very long time to complete on slow storage. They should be run sparingly. Continue', prompt_suffix='? ', abort=True)
-    except:
+    except Exception:
         exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_benchmark_run(config, pool)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage benchmark info
@@ -1645,6 +1704,7 @@ def ceph_benchmark_info(job):
         retdata = pvc_ceph.format_info_benchmark(config, retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage benchmark list
 ###############################################################################
@@ -1663,6 +1723,7 @@ def ceph_benchmark_list(job):
         retdata = pvc_ceph.format_list_benchmark(config, retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage osd
 ###############################################################################
@@ -1671,6 +1732,8 @@ def ceph_osd():
     """
     Manage the Ceph OSDs of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage osd add
@@ -1700,11 +1763,12 @@ def ceph_osd_add(node, device, weight, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Destroy all data and create a new OSD on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage osd remove
@@ -1722,17 +1786,18 @@ def ceph_osd_add(node, device, weight, confirm_flag):
 def ceph_osd_remove(osdid, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
-    
+
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which may negatively affect performance or available space.
     """
     if not confirm_flag:
         try:
             click.confirm('Remove OSD {}'.format(osdid), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage osd in
@@ -1750,6 +1815,7 @@ def ceph_osd_in(osdid):
     retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'in')
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage osd out
 ###############################################################################
@@ -1766,6 +1832,7 @@ def ceph_osd_out(osdid):
     retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'out')
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage osd set
 ###############################################################################
@@ -1780,11 +1847,12 @@ def ceph_osd_set(osd_property):
 
     Valid properties are:
 
-      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'set')
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage osd unset
@@ -1800,11 +1868,12 @@ def ceph_osd_unset(osd_property):
 
     Valid properties are:
 
-      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'unset')
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage osd list
@@ -1824,6 +1893,7 @@ def ceph_osd_list(limit):
         retdata = pvc_ceph.format_list_osd(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage pool
 ###############################################################################
@@ -1832,6 +1902,8 @@ def ceph_pool():
     """
     Manage the Ceph RBD pools of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage pool add
@@ -1861,6 +1933,7 @@ def ceph_pool_add(name, pgs, replcfg):
     retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage pool remove
 ###############################################################################
@@ -1883,11 +1956,12 @@ def ceph_pool_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove RBD pool {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_pool_remove(config, name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage pool list
@@ -1907,6 +1981,7 @@ def ceph_pool_list(limit):
         retdata = pvc_ceph.format_list_pool(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage volume
 ###############################################################################
@@ -1915,6 +1990,8 @@ def ceph_volume():
     """
     Manage the Ceph RBD volumes of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage volume add
@@ -1937,6 +2014,7 @@ def ceph_volume_add(pool, name, size):
 
     retcode, retmsg = pvc_ceph.ceph_volume_add(config, pool, name, size)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume upload
@@ -1973,6 +2051,7 @@ def ceph_volume_upload(pool, name, image_format, image_file):
     retcode, retmsg = pvc_ceph.ceph_volume_upload(config, pool, name, image_format, image_file)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage volume remove
 ###############################################################################
@@ -1992,17 +2071,18 @@ def ceph_volume_upload(pool, name, image_format, image_file):
 def ceph_volume_remove(pool, name, confirm_flag):
     """
     Remove a Ceph RBD volume with name NAME from pool POOL.
-        
+
     DANGER: This will completely remove the volume and all data contained in it.
     """
     if not confirm_flag:
         try:
             click.confirm('Remove volume {}/{}'.format(pool, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_volume_remove(config, pool, name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume resize
@@ -2025,6 +2105,7 @@ def ceph_volume_resize(pool, name, size):
     retcode, retmsg = pvc_ceph.ceph_volume_modify(config, pool, name, new_size=size)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage volume rename
 ###############################################################################
@@ -2046,6 +2127,7 @@ def ceph_volume_rename(pool, name, new_name):
     retcode, retmsg = pvc_ceph.ceph_volume_modify(config, pool, name, new_name=new_name)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc storage volume clone
 ###############################################################################
@@ -2066,6 +2148,7 @@ def ceph_volume_clone(pool, name, new_name):
     """
     retcode, retmsg = pvc_ceph.ceph_volume_clone(config, pool, name, new_name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume list
@@ -2090,6 +2173,7 @@ def ceph_volume_list(limit, pool):
         retdata = pvc_ceph.format_list_volume(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc storage volume snapshot
 ###############################################################################
@@ -2098,6 +2182,8 @@ def ceph_volume_snapshot():
     """
     Manage the Ceph RBD volume snapshots of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc storage volume snapshot add
@@ -2120,6 +2206,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
 
     retcode, retmsg = pvc_ceph.ceph_snapshot_add(config, pool, volume, name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume snapshot rename
@@ -2144,6 +2231,7 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     retcode, retmsg = pvc_ceph.ceph_snapshot_modify(config, pool, volume, name, new_name=new_name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume snapshot remove
@@ -2173,11 +2261,12 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove snapshot {} for volume {}/{}'.format(name, pool, volume), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_snapshot_remove(config, pool, volume, name)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc storage volume snapshot list
@@ -2216,6 +2305,8 @@ def cli_provisioner():
     """
     Manage the PVC provisioner.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template
@@ -2225,6 +2316,7 @@ def provisioner_template():
     """
     Manage the PVC provisioner template system.
     """
+    pass
 
 
 ###############################################################################
@@ -2244,6 +2336,7 @@ def provisioner_template_list(limit):
         retdata = pvc_provisioner.format_list_template(retdata)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner template system
 ###############################################################################
@@ -2252,6 +2345,8 @@ def provisioner_template_system():
     """
     Manage the PVC provisioner system templates.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template system list
@@ -2269,6 +2364,7 @@ def provisioner_template_system_list(limit):
     if retcode:
         retdata = pvc_provisioner.format_list_template(retdata, template_type='system')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template system add
@@ -2310,7 +2406,7 @@ def provisioner_template_system_list(limit):
 @click.option(
     '--node-selector', 'node_selector',
     type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
-    default=None, # Use cluster default
+    default=None,  # Use cluster default
     help='Use this selector to determine the optimal node during migrations.'
 )
 @click.option(
@@ -2320,8 +2416,8 @@ def provisioner_template_system_list(limit):
 )
 @click.option(
     '--migration-method', 'migration_method',
-    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
-    default=None, # Use cluster default
+    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
+    default=None,  # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
 @cluster_req
@@ -2332,7 +2428,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     params = dict()
     params['name'] = name
     params['vcpus'] = vcpus
-    params['vram']  = vram
+    params['vram'] = vram
     params['serial'] = serial
     params['vnc'] = vnc
     if vnc:
@@ -2348,6 +2444,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 
     retcode, retdata = pvc_provisioner.template_add(config, params, template_type='system')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template system modify
@@ -2396,8 +2493,8 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 )
 @click.option(
     '--migration-method', 'migration_method',
-    type=click.Choice(['none','live','shutdown'], case_sensitive=False),
-    default=None, # Use cluster default
+    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
+    default=None,  # Use cluster default
     help='The preferred migration method of the VM between nodes'
 )
 @cluster_req
@@ -2407,7 +2504,7 @@ def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind,
     """
     params = dict()
     params['vcpus'] = vcpus
-    params['vram']  = vram
+    params['vram'] = vram
     params['serial'] = serial
     params['vnc'] = vnc
     params['vnc_bind'] = vnc_bind
@@ -2418,6 +2515,7 @@ def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind,
 
     retcode, retdata = pvc_provisioner.template_modify(config, params, name, template_type='system')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template system remove
@@ -2439,7 +2537,7 @@ def provisioner_template_system_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove system template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
@@ -2454,6 +2552,8 @@ def provisioner_template_network():
     """
     Manage the PVC provisioner network templates.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template network list
@@ -2471,6 +2571,7 @@ def provisioner_template_network_list(limit):
     if retcode:
         retdata = pvc_provisioner.format_list_template(retdata, template_type='network')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template network add
@@ -2522,6 +2623,7 @@ def provisioner_template_network_add(name, mac_template):
     retcode, retdata = pvc_provisioner.template_add(config, params, template_type='network')
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner template network remove
 ###############################################################################
@@ -2542,11 +2644,12 @@ def provisioner_template_network_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove network template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template network vni
@@ -2556,6 +2659,8 @@ def provisioner_template_network_vni():
     """
     Manage the network VNIs in PVC provisioner network templates.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template network vni add
@@ -2578,6 +2683,7 @@ def provisioner_template_network_vni_add(name, vni):
 
     retcode, retdata = pvc_provisioner.template_element_add(config, name, vni, params, element_type='net', template_type='network')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template network vni remove
@@ -2602,7 +2708,7 @@ def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove VNI {} from network template {}'.format(vni, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, vni, element_type='net', template_type='network')
@@ -2617,6 +2723,8 @@ def provisioner_template_storage():
     """
     Manage the PVC provisioner storage templates.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template storage list
@@ -2635,6 +2743,7 @@ def provisioner_template_storage_list(limit):
         retdata = pvc_provisioner.format_list_template(retdata, template_type='storage')
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner template storage add
 ###############################################################################
@@ -2652,6 +2761,7 @@ def provisioner_template_storage_add(name):
 
     retcode, retdata = pvc_provisioner.template_add(config, params, template_type='storage')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template storage remove
@@ -2673,11 +2783,12 @@ def provisioner_template_storage_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove storage template {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner template storage disk
@@ -2687,6 +2798,8 @@ def provisioner_template_storage_disk():
     """
     Manage the disks in PVC provisioner storage templates.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner template storage disk add
@@ -2734,7 +2847,7 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     Add a new DISK to storage template NAME.
 
     DISK must be a Linux-style sdX/vdX disk identifier, such as "sda" or "vdb". All disks in a template must use the same identifier format.
-    
+
     Disks will be added to VMs in sdX/vdX order. For disks with mountpoints, ensure this order is sensible.
     """
 
@@ -2763,6 +2876,7 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     retcode, retdata = pvc_provisioner.template_element_add(config, name, disk, params, element_type='disk', template_type='storage')
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner template storage disk remove
 ###############################################################################
@@ -2788,7 +2902,7 @@ def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove disk {} from storage template {}'.format(disk, name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.template_element_remove(config, name, disk, element_type='disk', template_type='storage')
@@ -2803,6 +2917,8 @@ def provisioner_userdata():
     """
     Manage userdata documents in the PVC provisioner.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner userdata list
@@ -2830,6 +2946,7 @@ def provisioner_userdata_list(limit, full):
         retdata = pvc_provisioner.format_list_userdata(retdata, lines)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner userdata show
 ###############################################################################
@@ -2844,6 +2961,7 @@ def provisioner_userdata_show(name):
     """
     retcode, retdata = pvc_provisioner.userdata_show(config, name)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner userdata add
@@ -2877,6 +2995,7 @@ def provisioner_userdata_add(name, filename):
     retcode, retmsg = pvc_provisioner.userdata_add(config, params)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc provisioner userdata modify
 ###############################################################################
@@ -2897,10 +3016,10 @@ def provisioner_userdata_modify(name, filename, editor):
     Modify existing userdata document NAME, either in-editor or with replacement FILE.
     """
 
-    if editor == False and filename == None:
+    if editor is False and filename is None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         retcode, retdata = pvc_provisioner.userdata_info(config, name)
         if not retcode:
@@ -2920,11 +3039,11 @@ def provisioner_userdata_modify(name, filename, editor):
         click.echo('')
         diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) != None:
+            if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) != None:
+            elif re.match('^[-]', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -2952,6 +3071,7 @@ def provisioner_userdata_modify(name, filename, editor):
     retcode, retmsg = pvc_provisioner.userdata_modify(config, name, params)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc provisioner userdata remove
 ###############################################################################
@@ -2972,7 +3092,7 @@ def provisioner_userdata_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove userdata document {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.userdata_remove(config, name)
@@ -2987,6 +3107,8 @@ def provisioner_script():
     """
     Manage scripts in the PVC provisioner.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner script list
@@ -3014,6 +3136,7 @@ def provisioner_script_list(limit, full):
         retdata = pvc_provisioner.format_list_script(retdata, lines)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner script show
 ###############################################################################
@@ -3028,6 +3151,7 @@ def provisioner_script_show(name):
     """
     retcode, retdata = pvc_provisioner.script_show(config, name)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner script add
@@ -3056,6 +3180,7 @@ def provisioner_script_add(name, filename):
     retcode, retmsg = pvc_provisioner.script_add(config, params)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc provisioner script modify
 ###############################################################################
@@ -3076,10 +3201,10 @@ def provisioner_script_modify(name, filename, editor):
     Modify existing script NAME, either in-editor or with replacement FILE.
     """
 
-    if editor == False and filename == None:
+    if editor is False and filename is None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         retcode, retdata = pvc_provisioner.script_info(config, name)
         if not retcode:
@@ -3099,11 +3224,11 @@ def provisioner_script_modify(name, filename, editor):
         click.echo('')
         diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
         for line in diff:
-            if re.match('^\+', line) != None:
+            if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^\-', line) != None:
+            elif re.match('^[-]', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match('^\^', line) != None:
+            elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
@@ -3125,6 +3250,7 @@ def provisioner_script_modify(name, filename, editor):
     retcode, retmsg = pvc_provisioner.script_modify(config, name, params)
     cleanup(retcode, retmsg)
 
+
 ###############################################################################
 # pvc provisioner script remove
 ###############################################################################
@@ -3145,9 +3271,8 @@ def provisioner_script_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
-    params = dict()
 
     retcode, retdata = pvc_provisioner.script_remove(config, name)
     cleanup(retcode, retdata)
@@ -3161,6 +3286,8 @@ def provisioner_ova():
     """
     Manage ovas in the PVC provisioner.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner ova list
@@ -3178,6 +3305,7 @@ def provisioner_ova_list(limit):
     if retcode:
         retdata = pvc_provisioner.format_list_ova(retdata)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner ova upload
@@ -3218,6 +3346,7 @@ def provisioner_ova_upload(name, filename, pool):
     retcode, retdata = pvc_provisioner.ova_upload(config, name, filename, params)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner ova remove
 ###############################################################################
@@ -3238,7 +3367,7 @@ def provisioner_ova_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove OVA image {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.ova_remove(config, name)
@@ -3253,6 +3382,8 @@ def provisioner_profile():
     """
     Manage profiles in the PVC provisioner.
     """
+    pass
+
 
 ###############################################################################
 # pvc provisioner profile list
@@ -3270,6 +3401,7 @@ def provisioner_profile_list(limit):
     if retcode:
         retdata = pvc_provisioner.format_list_profile(retdata)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner profile add
@@ -3331,6 +3463,7 @@ def provisioner_profile_add(name, profile_type, system_template, network_templat
 
     retcode, retdata = pvc_provisioner.profile_add(config, params)
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc provisioner profile modify
@@ -3398,6 +3531,7 @@ def provisioner_profile_modify(name, system_template, network_template, storage_
     retcode, retdata = pvc_provisioner.profile_modify(config, name, params)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner profile remove
 ###############################################################################
@@ -3418,7 +3552,7 @@ def provisioner_profile_remove(name, confirm_flag):
     if not confirm_flag:
         try:
             click.confirm('Remove profile {}'.format(name), prompt_suffix='? ', abort=True)
-        except:
+        except Exception:
             exit(0)
 
     retcode, retdata = pvc_provisioner.profile_remove(config, name)
@@ -3524,6 +3658,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
 
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc provisioner status
 ###############################################################################
@@ -3550,6 +3685,8 @@ def cli_maintenance():
     """
     Manage the maintenance mode of the PVC cluster.
     """
+    pass
+
 
 ###############################################################################
 # pvc maintenance on
@@ -3562,6 +3699,7 @@ def maintenance_on():
     """
     retcode, retdata = pvc_cluster.maintenance_mode(config, 'true')
     cleanup(retcode, retdata)
+
 
 ###############################################################################
 # pvc maintenance off
@@ -3596,6 +3734,7 @@ def status_cluster(oformat):
         retdata = pvc_cluster.format_info(retdata, oformat)
     cleanup(retcode, retdata)
 
+
 ###############################################################################
 # pvc init
 ###############################################################################
@@ -3613,8 +3752,8 @@ def init_cluster(confirm_flag):
 
     if not confirm_flag:
         try:
-            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster'.format(name), prompt_suffix='? ', abort=True)
-        except:
+            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster', prompt_suffix='? ', abort=True)
+        except Exception:
             exit(0)
 
     # Easter-egg
@@ -3622,6 +3761,7 @@ def init_cluster(confirm_flag):
 
     retcode, retmsg = pvc_cluster.initialize(config)
     cleanup(retcode, retmsg)
+
 
 ###############################################################################
 # pvc
@@ -3659,9 +3799,9 @@ def cli(_cluster, _debug, _quiet):
 
         if not _quiet:
             if config['api_scheme'] == 'https' and not config['verify_ssl']:
-                ssl_unverified_msg=' (unverified)'
+                ssl_unverified_msg = ' (unverified)'
             else:
-                ssl_unverified_msg=''
+                ssl_unverified_msg = ''
             click.echo(
                 'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
                     config['cluster'],
@@ -3673,6 +3813,7 @@ def cli(_cluster, _debug, _quiet):
                 err=True
             )
             click.echo('', err=True)
+
 
 config = dict()
 
@@ -3838,6 +3979,6 @@ cli.add_command(init_cluster)
 def main():
     return cli(obj={})
 
+
 if __name__ == '__main__':
     main()
-

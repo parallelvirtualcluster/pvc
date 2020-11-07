@@ -22,13 +22,10 @@
 
 import time
 import re
-import subprocess
-
-from collections import deque
 
 import cli_lib.ansiprint as ansiprint
-import cli_lib.ceph as ceph
 from cli_lib.common import call_api, format_bytes, format_metric
+
 
 #
 # Primary functions
@@ -57,6 +54,7 @@ def vm_info(config, vm):
     else:
         return False, response.json().get('message', '')
 
+
 def vm_list(config, limit, target_node, target_state):
     """
     Get list information about VMs (limited by {limit}, {target_node}, or {target_state})
@@ -79,6 +77,7 @@ def vm_list(config, limit, target_node, target_state):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migration_method):
     """
@@ -107,6 +106,7 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migr
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_modify(config, vm, xml, restart):
     """
     Modify the configuration of VM
@@ -129,6 +129,7 @@ def vm_modify(config, vm, xml, restart):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
     """
@@ -166,6 +167,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_remove(config, vm, delete_disks=False):
     """
     Remove a VM
@@ -174,7 +176,7 @@ def vm_remove(config, vm, delete_disks=False):
     API arguments: delete_disks={delete_disks}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'delete_disks': delete_disks
     }
     response = call_api(config, 'delete', '/vm/{vm}'.format(vm=vm), params=params)
@@ -186,6 +188,7 @@ def vm_remove(config, vm, delete_disks=False):
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_state(config, vm, target_state, wait=False):
     """
     Modify the current state of VM
@@ -194,7 +197,7 @@ def vm_state(config, vm, target_state, wait=False):
     API arguments: state={state}, wait={wait}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'state': target_state,
         'wait': str(wait).lower()
     }
@@ -207,6 +210,7 @@ def vm_state(config, vm, target_state, wait=False):
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_node(config, vm, target_node, action, force=False, wait=False, force_live=False):
     """
     Modify the current node of VM via {action}
@@ -215,7 +219,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     API arguments: node={target_node}, action={action}, force={force}, wait={wait}, force_live={force_live}
     API schema: {"message":"{data}"}
     """
-    params={
+    params = {
         'node': target_node,
         'action': action,
         'force': str(force).lower(),
@@ -230,6 +234,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def vm_locks(config, vm):
     """
@@ -247,6 +252,7 @@ def vm_locks(config, vm):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def view_console_log(config, vm, lines=100):
     """
@@ -271,6 +277,7 @@ def view_console_log(config, vm, lines=100):
     loglines = '\n'.join(shrunk_log)
 
     return True, loglines
+
 
 def follow_console_log(config, vm, lines=10):
     """
@@ -301,7 +308,7 @@ def follow_console_log(config, vm, lines=10):
         try:
             response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
             new_console_log = response.json()['data']
-        except:
+        except Exception:
             break
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')
@@ -327,6 +334,7 @@ def follow_console_log(config, vm, lines=10):
 
     return True, ''
 
+
 #
 # Output display functions
 #
@@ -344,7 +352,7 @@ def format_info(config, domain_information, long_output):
     ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu']))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu_topology']))
 
-    if long_output == True:
+    if long_output is True:
         # Virtualization information
         ainformation.append('')
         ainformation.append('{}Emulator:{}           {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['emulator']))
@@ -358,10 +366,10 @@ def format_info(config, domain_information, long_output):
             format_metric(domain_information['memory_stats'].get('swap_in')),
             format_metric(domain_information['memory_stats'].get('swap_out')),
             '/'.join([format_metric(domain_information['memory_stats'].get('major_fault')), format_metric(domain_information['memory_stats'].get('minor_fault'))]),
-            format_bytes(domain_information['memory_stats'].get('available')*1024),
-            format_bytes(domain_information['memory_stats'].get('usable')*1024),
-            format_bytes(domain_information['memory_stats'].get('unused')*1024),
-            format_bytes(domain_information['memory_stats'].get('rss')*1024)
+            format_bytes(domain_information['memory_stats'].get('available') * 1024),
+            format_bytes(domain_information['memory_stats'].get('usable') * 1024),
+            format_bytes(domain_information['memory_stats'].get('unused') * 1024),
+            format_bytes(domain_information['memory_stats'].get('rss') * 1024)
         ))
         ainformation.append('')
         ainformation.append('{0}vCPU stats:{1}         {2}CPU time (ns)     User time (ns)    System time (ns){3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
@@ -439,7 +447,7 @@ def format_info(config, domain_information, long_output):
     ainformation.append('')
     ainformation.append('{}Networks:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(net_list)))
 
-    if long_output == True:
+    if long_output is True:
         # Disk list
         ainformation.append('')
         name_length = 0
@@ -482,10 +490,11 @@ def format_info(config, domain_information, long_output):
     ainformation.append('')
     return '\n'.join(ainformation)
 
+
 def format_list(config, vm_list, raw):
     # Handle single-element lists
     if not isinstance(vm_list, list):
-        vm_list = [ vm_list ]
+        vm_list = [vm_list]
 
     # Function to strip the "br" off of nets and return a nicer list
     def getNiceNetID(domain_information):
@@ -573,7 +582,7 @@ def format_list(config, vm_list, raw):
             vm_migrated='Migrated'
         )
     )
-    
+
     # Keep track of nets we found to be valid to cut down on duplicate API hits
     valid_net_list = []
     # Format the string (elements)
@@ -596,7 +605,7 @@ def format_list(config, vm_list, raw):
         net_list = []
         vm_net_colour = ''
         for net_vni in raw_net_list:
-            if not net_vni in valid_net_list:
+            if net_vni not in valid_net_list:
                 response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
                 if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
                     vm_net_colour = ansiprint.red()

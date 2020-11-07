@@ -26,6 +26,7 @@ import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 import pvcnoded.VMInstance as VMInstance
 
+
 #
 # Fence thread entry function
 #
@@ -62,9 +63,9 @@ def fenceNode(node_name, zk_conn, config, logger):
     # Force into secondary network state if needed
     if node_name in config['coordinators']:
         logger.out('Forcing secondary status for node "{}"'.format(node_name), state='i')
-        zkhandler.writedata(zk_conn, { '/nodes/{}/routerstate'.format(node_name): 'secondary' })
+        zkhandler.writedata(zk_conn, {'/nodes/{}/routerstate'.format(node_name): 'secondary'})
         if zkhandler.readdata(zk_conn, '/primary_node') == node_name:
-            zkhandler.writedata(zk_conn, { '/primary_node': 'none' })
+            zkhandler.writedata(zk_conn, {'/primary_node': 'none'})
 
     # If the fence succeeded and successful_fence is migrate
     if fence_status and config['successful_fence'] == 'migrate':
@@ -74,6 +75,7 @@ def fenceNode(node_name, zk_conn, config, logger):
     if not fence_status and config['failed_fence'] == 'migrate' and config['suicide_intervals'] != '0':
         migrateFromFencedNode(zk_conn, node_name, config, logger)
 
+
 # Migrate hosts away from a fenced node
 def migrateFromFencedNode(zk_conn, node_name, config, logger):
     logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
@@ -82,7 +84,7 @@ def migrateFromFencedNode(zk_conn, node_name, config, logger):
     dead_node_running_domains = zkhandler.readdata(zk_conn, '/nodes/{}/runningdomains'.format(node_name)).split()
 
     # Set the node to a custom domainstate so we know what's happening
-    zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'fence-flush' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/domainstate'.format(node_name): 'fence-flush'})
 
     # Migrate a VM after a flush
     def fence_migrate_vm(dom_uuid):
@@ -109,7 +111,8 @@ def migrateFromFencedNode(zk_conn, node_name, config, logger):
         fence_migrate_vm(dom_uuid)
 
     # Set node in flushed state for easy remigrating when it comes back
-    zkhandler.writedata(zk_conn, { '/nodes/{}/domainstate'.format(node_name): 'flushed' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/domainstate'.format(node_name): 'flushed'})
+
 
 #
 # Perform an IPMI fence
@@ -144,6 +147,7 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
         logger.out('Failed to reboot dead node', state='e')
         print(ipmi_reset_stderr)
         return False
+
 
 #
 # Verify that IPMI connectivity to this host exists (used during node init)

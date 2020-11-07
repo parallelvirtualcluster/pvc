@@ -20,10 +20,12 @@
 #
 ###############################################################################
 import argparse
-import os, sys
+import os
+import sys
 import kazoo.client
 import re
 import yaml
+
 
 #
 # Variables
@@ -39,30 +41,33 @@ def get_zookeeper_key():
         print('ERROR: DNSMASQ_BRIDGE_INTERFACE environment variable not found: {}'.format(e), file=sys.stderr)
         exit(1)
     # Get the ID of the interface (the digits)
-    network_vni = re.findall('\d+', interface)[0]
+    network_vni = re.findall(r'\d+', interface)[0]
     # Create the key
     zookeeper_key = '/networks/{}/dhcp4_leases'.format(network_vni)
     return zookeeper_key
 
+
 def get_lease_expiry():
     try:
         expiry = os.environ['DNSMASQ_LEASE_EXPIRES']
-    except:
+    except Exception:
         expiry = '0'
     return expiry
+
 
 def get_client_id():
     try:
         client_id = os.environ['DNSMASQ_CLIENT_ID']
-    except:
+    except Exception:
         client_id = '*'
     return client_id
+
 
 def connect_zookeeper():
     # We expect the environ to contain the config file
     try:
         pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
-    except:
+    except Exception:
         # Default place
         pvcnoded_config_file = '/etc/pvc/pvcnoded.yaml'
 
@@ -82,8 +87,10 @@ def connect_zookeeper():
 
     return zk_conn
 
+
 def read_data(zk_conn, key):
     return zk_conn.get(key)[0].decode('ascii')
+
 
 def get_lease(zk_conn, zk_leases_key, macaddr):
     expiry = read_data(zk_conn, '{}/{}/expiry'.format(zk_leases_key, macaddr))
@@ -91,6 +98,7 @@ def get_lease(zk_conn, zk_leases_key, macaddr):
     hostname = read_data(zk_conn, '{}/{}/hostname'.format(zk_leases_key, macaddr))
     clientid = read_data(zk_conn, '{}/{}/clientid'.format(zk_leases_key, macaddr))
     return expiry, ipaddr, hostname, clientid
+
 
 #
 # Command Functions
@@ -107,6 +115,7 @@ def read_lease_database(zk_conn, zk_leases_key):
     # Output list
     print('\n'.join(output_list))
 
+
 def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clientid):
     if not hostname:
         hostname = ''
@@ -118,8 +127,10 @@ def add_lease(zk_conn, zk_leases_key, expiry, macaddr, ipaddr, hostname, clienti
     transaction.create('{}/{}/clientid'.format(zk_leases_key, macaddr), clientid.encode('ascii'))
     transaction.commit()
 
+
 def del_lease(zk_conn, zk_leases_key, macaddr, expiry):
     zk_conn.delete('{}/{}'.format(zk_leases_key, macaddr), recursive=True)
+
 
 #
 # Instantiate the parser

@@ -24,9 +24,9 @@ import time
 import json
 import psutil
 
-import pvcnoded.log as log
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
+
 
 class CephOSDInstance(object):
     def __init__(self, zk_conn, this_node, osd_id):
@@ -66,6 +66,7 @@ class CephOSDInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
 
 def add_osd(zk_conn, logger, node, device, weight):
     # We are ready to create a new OSD on this node
@@ -189,13 +190,14 @@ def add_osd(zk_conn, logger, node, device, weight):
         logger.out('Failed to create new OSD disk: {}'.format(e), state='e')
         return False
 
+
 def remove_osd(zk_conn, logger, osd_id, osd_obj):
     logger.out('Removing OSD disk {}'.format(osd_id), state='i')
     try:
         # 1. Verify the OSD is present
         retcode, stdout, stderr = common.run_os_command('ceph osd ls')
         osd_list = stdout.split('\n')
-        if not osd_id in osd_list:
+        if osd_id not in osd_list:
             logger.out('Could not find OSD {} in the cluster'.format(osd_id), state='e')
             return True
 
@@ -220,10 +222,10 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
                         osd_string = osd
                 num_pgs = osd_string['num_pgs']
                 if num_pgs > 0:
-                   time.sleep(5)
+                    time.sleep(5)
                 else:
-                   raise
-            except:
+                    raise
+            except Exception:
                 break
 
         # 3. Stop the OSD process and wait for it to be terminated
@@ -248,7 +250,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
 
         # 4. Determine the block devices
         retcode, stdout, stderr = common.run_os_command('readlink /var/lib/ceph/osd/ceph-{}/block'.format(osd_id))
-        vg_name = stdout.split('/')[-2] # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
+        vg_name = stdout.split('/')[-2]  # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
         retcode, stdout, stderr = common.run_os_command('vgs --separator , --noheadings -o pv_name {}'.format(vg_name))
         pv_block = stdout.strip()
 
@@ -281,6 +283,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         # Log it
         logger.out('Failed to purge OSD disk with ID {}: {}'.format(osd_id, e), state='e')
         return False
+
 
 class CephPoolInstance(object):
     def __init__(self, zk_conn, this_node, name):
@@ -320,6 +323,7 @@ class CephPoolInstance(object):
             if data and data != self.stats:
                 self.stats = json.loads(data)
 
+
 class CephVolumeInstance(object):
     def __init__(self, zk_conn, this_node, pool, name):
         self.zk_conn = zk_conn
@@ -343,8 +347,9 @@ class CephVolumeInstance(object):
             if data and data != self.stats:
                 self.stats = json.loads(data)
 
+
 class CephSnapshotInstance(object):
-    def __init__(self, zk_conn, this_node, name):
+    def __init__(self, zk_conn, this_node, pool, volume, name):
         self.zk_conn = zk_conn
         self.this_node = this_node
         self.pool = pool
@@ -366,6 +371,7 @@ class CephSnapshotInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
 
 # Primary command function
 # This command pipe is only used for OSD adds and removes

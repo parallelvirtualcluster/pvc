@@ -32,6 +32,7 @@ from psycopg2.extras import RealDictCursor
 import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
 
+
 class MetadataAPIInstance(object):
     mdapi = flask.Flask(__name__)
 
@@ -49,33 +50,33 @@ class MetadataAPIInstance(object):
         @self.mdapi.route('/', methods=['GET'])
         def api_root():
             return flask.jsonify({"message": "PVC Provisioner Metadata API version 1"}), 209
-        
+
         @self.mdapi.route('/<version>/meta-data/', methods=['GET'])
         def api_metadata_root(version):
             metadata = """instance-id\nname\nprofile"""
             return metadata, 200
-        
+
         @self.mdapi.route('/<version>/meta-data/instance-id', methods=['GET'])
         def api_metadata_instanceid(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
             instance_id = vm_details.get('uuid', None)
             return instance_id, 200
-        
+
         @self.mdapi.route('/<version>/meta-data/name', methods=['GET'])
         def api_metadata_hostname(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
             vm_name = vm_details.get('name', None)
             return vm_name, 200
-        
+
         @self.mdapi.route('/<version>/meta-data/profile', methods=['GET'])
         def api_metadata_profile(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
             vm_details = self.get_vm_details(source_address)
             vm_profile = vm_details.get('profile', None)
             return vm_profile, 200
-        
+
         @self.mdapi.route('/<version>/user-data', methods=['GET'])
         def api_userdata(version):
             source_address = flask.request.__dict__['environ']['REMOTE_ADDR']
@@ -88,7 +89,7 @@ class MetadataAPIInstance(object):
             else:
                 userdata = None
             return flask.Response(userdata)
-        
+
     def launch_wsgi(self):
         try:
             self.md_http_server = gevent.pywsgi.WSGIServer(
@@ -142,7 +143,7 @@ class MetadataAPIInstance(object):
 
     # Obtain a list of templates
     def get_profile_userdata(self, vm_profile):
-        query = """SELECT userdata.userdata FROM profile 
+        query = """SELECT userdata.userdata FROM profile
         JOIN userdata ON profile.userdata = userdata.id
         WHERE profile.name = %s;
         """
@@ -159,7 +160,7 @@ class MetadataAPIInstance(object):
     def get_vm_details(self, source_address):
         # Start connection to Zookeeper
         _discard, networks = pvc_network.get_list(self.zk_conn, None)
-    
+
         # Figure out which server this is via the DHCP address
         host_information = dict()
         networks_managed = (x for x in networks if x.get('type') == 'managed')
@@ -170,26 +171,21 @@ class MetadataAPIInstance(object):
                 try:
                     if information.get('ip4_address', None) == source_address:
                         host_information = information
-                except:
+                except Exception:
                     pass
-    
+
         # Get our real information on the host; now we can start querying about it
-        client_hostname = host_information.get('hostname', None)
         client_macaddr = host_information.get('mac_address', None)
-        client_ipaddr = host_information.get('ip4_address', None)
-    
+
         # Find the VM with that MAC address - we can't assume that the hostname is actually right
         _discard, vm_list = pvc_vm.get_list(self.zk_conn, None, None, None)
-        vm_name = None
         vm_details = dict()
         for vm in vm_list:
             try:
                 for network in vm.get('networks'):
                     if network.get('mac', None) == client_macaddr:
-                        vm_name = vm.get('name')
                         vm_details = vm
-            except:
+            except Exception:
                 pass
-        
+
         return vm_details
-   

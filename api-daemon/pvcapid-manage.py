@@ -20,16 +20,16 @@
 #
 ###############################################################################
 
-import os
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 
-from pvcapid.flaskapi import app, db, config
+from pvcapid.flaskapi import app, db
+from pvcapid.models import *  # noqa F401,F403
 
 migrate = Migrate(app, db)
 manager = Manager(app)
 
-manager.add_command('db', MigrateCommand)	
+manager.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
     manager.run()

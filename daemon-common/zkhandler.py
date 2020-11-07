@@ -20,10 +20,9 @@
 #
 ###############################################################################
 
-import kazoo.client
+import time
 import uuid
 
-import daemon_lib.ansiprint as ansiprint
 
 # Exists function
 def exists(zk_conn, key):
@@ -33,14 +32,17 @@ def exists(zk_conn, key):
     else:
         return False
 
+
 # Child list function
 def listchildren(zk_conn, key):
     children = zk_conn.get_children(key)
     return children
 
+
 # Delete key function
 def deletekey(zk_conn, key, recursive=True):
     zk_conn.delete(key, recursive=recursive)
+
 
 # Rename key recursive function
 def rename_key_element(zk_conn, zk_transaction, source_key, destination_key):
@@ -55,6 +57,7 @@ def rename_key_element(zk_conn, zk_transaction, source_key, destination_key):
             rename_key_element(zk_conn, zk_transaction, child_source_key, child_destination_key)
 
     zk_transaction.delete(source_key)
+
 
 # Rename key function
 def renamekey(zk_conn, kv):
@@ -81,12 +84,13 @@ def renamekey(zk_conn, kv):
     except Exception:
         return False
 
+
 # Data read function
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)
     data = data_raw[0].decode('utf8')
-    meta = data_raw[1]
     return data
+
 
 # Data write function
 def writedata(zk_conn, kv):
@@ -126,8 +130,10 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+
 # Write lock function
 def writelock(zk_conn, key):
+    count = 1
     while True:
         try:
             lock_id = str(uuid.uuid1())
@@ -142,8 +148,10 @@ def writelock(zk_conn, key):
                 continue
     return lock
 
+
 # Read lock function
 def readlock(zk_conn, key):
+    count = 1
     while True:
         try:
             lock_id = str(uuid.uuid1())
@@ -157,6 +165,7 @@ def readlock(zk_conn, key):
                 time.sleep(0.5)
                 continue
     return lock
+
 
 # Exclusive lock function
 def exclusivelock(zk_conn, key):

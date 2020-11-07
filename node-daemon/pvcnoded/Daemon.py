@@ -20,9 +20,6 @@
 #
 ###############################################################################
 
-# Version string for startup output
-version = '0.9.1'
-
 import kazoo.client
 import libvirt
 import sys
@@ -56,6 +53,9 @@ import pvcnoded.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.CephInstance as CephInstance
 import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
 
+# Version string for startup output
+version = '0.9.1'
+
 ###############################################################################
 # PVCD - node daemon startup program
 ###############################################################################
@@ -74,6 +74,7 @@ import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
 # Daemon functions
 ###############################################################################
 
+
 # Create timer to update this node in Zookeeper
 def startKeepaliveTimer():
     # Create our timer object
@@ -85,13 +86,15 @@ def startKeepaliveTimer():
     node_keepalive()
     return update_timer
 
+
 def stopKeepaliveTimer():
     global update_timer
     try:
         update_timer.shutdown()
         logger.out('Stopping keepalive timer', state='s')
-    except:
+    except Exception:
         pass
+
 
 ###############################################################################
 # PHASE 1a - Configuration parsing
@@ -100,13 +103,12 @@ def stopKeepaliveTimer():
 # Get the config file variable from the environment
 try:
     pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
-except:
+except Exception:
     print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcnoded.')
     exit(1)
 
 # Set local hostname and domain variables
 myfqdn = gethostname()
-#myfqdn = 'pvc-hv1.domain.net'
 myhostname = myfqdn.split('.', 1)[0]
 mydomainname = ''.join(myfqdn.split('.', 1)[1:])
 try:
@@ -124,6 +126,7 @@ staticdata.append(str(psutil.cpu_count()))
 staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+
 
 # Read and parse the config file
 def readConfig(pvcnoded_config_file, myhostname):
@@ -176,7 +179,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         config_debug = {
             'debug': o_config['pvc']['debug']
         }
-    except:
+    except Exception:
         config_debug = {
             'debug': False
         }
@@ -223,9 +226,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         config = {**config, **config_networking}
 
         # Create the by-id address entries
-        for net in [ 'vni',
-                     'storage',
-                     'upstream' ]:
+        for net in ['vni', 'storage', 'upstream']:
             address_key = '{}_dev_ip'.format(net)
             floating_key = '{}_floating_ip'.format(net)
             network_key = '{}_network'.format(net)
@@ -233,7 +234,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             # Verify the network provided is valid
             try:
                 network = ip_network(config[network_key])
-            except Exception as e:
+            except Exception:
                 print('ERROR: Network address {} for {} is not valid!'.format(config[network_key], network_key))
                 exit(1)
 
@@ -251,9 +252,9 @@ def readConfig(pvcnoded_config_file, myhostname):
                 # Set the ipaddr
                 floating_addr = ip_address(config[floating_key].split('/')[0])
                 # Verify we're in the network
-                if not floating_addr in list(network.hosts()):
+                if floating_addr not in list(network.hosts()):
                     raise
-            except Exception as e:
+            except Exception:
                 print('ERROR: Floating address {} for {} is not valid!'.format(config[floating_key], floating_key))
                 exit(1)
 
@@ -271,9 +272,10 @@ def readConfig(pvcnoded_config_file, myhostname):
 
     # Handle an empty ipmi_hostname
     if config['ipmi_hostname'] == '':
-        config['ipmi_hostname'] = myshorthostname + '-lom.' + mydomainname
+        config['ipmi_hostname'] = myhostname + '-lom.' + mydomainname
 
     return config
+
 
 # Get the config object from readConfig()
 config = readConfig(pvcnoded_config_file, myhostname)
@@ -513,6 +515,7 @@ except Exception as e:
     logger.out('ERROR: Failed to connect to Zookeeper cluster: {}'.format(e), state='e')
     exit(1)
 
+
 # Handle zookeeper failures
 def zk_listener(state):
     global zk_conn, update_timer
@@ -535,7 +538,7 @@ def zk_listener(state):
             _zk_conn = kazoo.client.KazooClient(hosts=config['coordinators'])
             try:
                 _zk_conn.start()
-            except:
+            except Exception:
                 del _zk_conn
                 continue
 
@@ -545,11 +548,13 @@ def zk_listener(state):
             zk_conn.add_listener(zk_listener)
             break
 
+
 zk_conn.add_listener(zk_listener)
 
 ###############################################################################
 # PHASE 5 - Gracefully handle termination
 ###############################################################################
+
 
 # Cleanup function
 def cleanup():
@@ -558,7 +563,7 @@ def cleanup():
     logger.out('Terminating pvcnoded and cleaning up', state='s')
 
     # Set shutdown state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(myhostname): 'shutdown'})
 
     # Waiting for any flushes to complete
     logger.out('Waiting for any active flushes', state='s')
@@ -571,22 +576,21 @@ def cleanup():
         if d_domain[domain].getnode() == myhostname:
             try:
                 d_domain[domain].console_log_instance.stop()
-            except NameError as e:
+            except NameError:
                 pass
-            except AttributeError as e:
+            except AttributeError:
                 pass
 
     # Force into secondary coordinator state if needed
     try:
         if this_node.router_state == 'primary':
-            is_primary = True
             zkhandler.writedata(zk_conn, {
                 '/primary_node': 'none'
             })
             logger.out('Waiting for primary migration', state='s')
             while this_node.router_state != 'secondary':
                 time.sleep(0.5)
-    except:
+    except Exception:
         pass
 
     # Stop keepalive thread
@@ -601,7 +605,7 @@ def cleanup():
     node_keepalive()
 
     # Set stop state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(myhostname): 'stop'})
 
     # Forcibly terminate dnsmasq because it gets stuck sometimes
     common.run_os_command('killall dnsmasq')
@@ -610,20 +614,23 @@ def cleanup():
     try:
         zk_conn.stop()
         zk_conn.close()
-    except:
+    except Exception:
         pass
 
     logger.out('Terminated pvc daemon', state='s')
     sys.exit(0)
 
+
 # Termination function
 def term(signum='', frame=''):
     cleanup()
+
 
 # Hangup (logrotate) function
 def hup(signum='', frame=''):
     if config['file_logging']:
         logger.hup()
+
 
 # Handle signals gracefully
 signal.signal(signal.SIGTERM, term)
@@ -648,7 +655,7 @@ if zk_conn.exists('/nodes/{}'.format(myhostname)):
         '/nodes/{}/daemonstate'.format(myhostname): 'init',
         '/nodes/{}/routerstate'.format(myhostname): init_routerstate,
         '/nodes/{}/staticdata'.format(myhostname): ' '.join(staticdata),
-    # Keepalives and fencing information (always load and set from config on boot)
+        # Keepalives and fencing information (always load and set from config on boot)
         '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'],
         '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'],
         '/nodes/{}/ipmipassword'.format(myhostname): config['ipmi_password']
@@ -658,7 +665,7 @@ else:
     keepalive_time = int(time.time())
     zkhandler.writedata(zk_conn, {
         '/nodes/{}'.format(myhostname): config['daemon_mode'],
-    # Basic state information
+        # Basic state information
         '/nodes/{}/daemonmode'.format(myhostname): config['daemon_mode'],
         '/nodes/{}/daemonstate'.format(myhostname): 'init',
         '/nodes/{}/routerstate'.format(myhostname): 'client',
@@ -674,7 +681,7 @@ else:
         '/nodes/{}/networkscount'.format(myhostname): '0',
         '/nodes/{}/domainscount'.format(myhostname): '0',
         '/nodes/{}/runningdomains'.format(myhostname): '',
-    # Keepalives and fencing information
+        # Keepalives and fencing information
         '/nodes/{}/keepalive'.format(myhostname): str(keepalive_time),
         '/nodes/{}/ipmihostname'.format(myhostname): config['ipmi_hostname'],
         '/nodes/{}/ipmiusername'.format(myhostname): config['ipmi_username'],
@@ -692,7 +699,7 @@ if current_primary and current_primary != 'none':
 else:
     if config['daemon_mode'] == 'coordinator':
         logger.out('No primary node found; creating with us as primary.', state='i')
-        zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
+        zkhandler.writedata(zk_conn, {'/primary_node': myhostname})
 
 ###############################################################################
 # PHASE 7a - Ensure IPMI is reachable and working
@@ -726,17 +733,17 @@ if enable_networking:
     common.run_os_command(
         '/bin/mkdir --parents {}/networks'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
     common.run_os_command(
         '/bin/mkdir --parents {}/static'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
     common.run_os_command(
         '/bin/mkdir --parents {}'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
 
     # Set up the basic features of the nftables firewall
@@ -744,8 +751,8 @@ if enable_networking:
     flush ruleset
     # Add the filter table and chains
     add table inet filter
-    add chain inet filter forward {{ type filter hook forward priority 0; }}
-    add chain inet filter input {{ type filter hook input priority 0; }}
+    add chain inet filter forward {{type filter hook forward priority 0; }}
+    add chain inet filter input {{type filter hook input priority 0; }}
     # Include static rules and network rules
     include "{rulesdir}/static/*"
     include "{rulesdir}/networks/*"
@@ -776,13 +783,13 @@ d_network = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
-d_volume = dict() # Dict of Dicts
+d_volume = dict()  # Dict of Dicts
 node_list = []
 network_list = []
 domain_list = []
 osd_list = []
 pool_list = []
-volume_list = dict() # Dict of Lists
+volume_list = dict()  # Dict of Lists
 
 if enable_networking:
     # Create an instance of the DNS Aggregator and Metadata API if we're a coordinator
@@ -796,6 +803,7 @@ else:
     dns_aggregator = None
     metadata_api = None
 
+
 # Node objects
 @zk_conn.ChildrenWatch('/nodes')
 def update_nodes(new_node_list):
@@ -803,12 +811,12 @@ def update_nodes(new_node_list):
 
     # Add any missing nodes to the list
     for node in new_node_list:
-        if not node in node_list:
+        if node not in node_list:
             d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api)
 
     # Remove any deleted nodes from the list
     for node in node_list:
-        if not node in new_node_list:
+        if node not in new_node_list:
             # Delete the object
             del(d_node[node])
 
@@ -820,8 +828,10 @@ def update_nodes(new_node_list):
     for node in d_node:
         d_node[node].update_node_list(d_node)
 
+
 # Alias for our local node (passed to network and domain objects)
 this_node = d_node[myhostname]
+
 
 # Maintenance mode
 @zk_conn.DataWatch('/maintenance')
@@ -829,8 +839,9 @@ def set_maintenance(_maintenance, stat, event=''):
     global maintenance
     try:
         maintenance = bool(strtobool(_maintenance.decode('ascii')))
-    except:
+    except Exception:
         maintenance = False
+
 
 # Primary node
 @zk_conn.DataWatch('/primary_node')
@@ -877,6 +888,7 @@ def update_primary(new_primary, stat, event=''):
         for node in d_node:
             d_node[node].primary_node = new_primary
 
+
 if enable_networking:
     # Network objects
     @zk_conn.ChildrenWatch('/networks')
@@ -885,13 +897,13 @@ if enable_networking:
 
         # Add any missing networks to the list
         for network in new_network_list:
-            if not network in network_list:
+            if network not in network_list:
                 d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node, dns_aggregator)
                 if config['daemon_mode'] == 'coordinator' and d_network[network].nettype == 'managed':
                     try:
                         dns_aggregator.add_network(d_network[network])
                     except Exception as e:
-                        logger.out('Failed to create DNS Aggregator for network {}'.format(network), 'w')
+                        logger.out('Failed to create DNS Aggregator for network {}: {}'.format(network, e), 'w')
                 # Start primary functionality
                 if this_node.router_state == 'primary' and d_network[network].nettype == 'managed':
                     d_network[network].createGateways()
@@ -899,7 +911,7 @@ if enable_networking:
 
         # Remove any deleted networks from the list
         for network in network_list:
-            if not network in new_network_list:
+            if network not in new_network_list:
                 if d_network[network].nettype == 'managed':
                     # Stop primary functionality
                     if this_node.router_state == 'primary':
@@ -923,7 +935,7 @@ if enable_networking:
 if enable_hypervisor:
     # VM command pipeline key
     @zk_conn.DataWatch('/cmd/domains')
-    def cmd(data, stat, event=''):
+    def cmd_domains(data, stat, event=''):
         if data:
             VMInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'))
 
@@ -934,12 +946,12 @@ if enable_hypervisor:
 
         # Add any missing domains to the list
         for domain in new_domain_list:
-            if not domain in domain_list:
+            if domain not in domain_list:
                 d_domain[domain] = VMInstance.VMInstance(domain, zk_conn, config, logger, this_node)
 
         # Remove any deleted domains from the list
         for domain in domain_list:
-            if not domain in new_domain_list:
+            if domain not in new_domain_list:
                 # Delete the object
                 del(d_domain[domain])
 
@@ -954,7 +966,7 @@ if enable_hypervisor:
 if enable_storage:
     # Ceph command pipeline key
     @zk_conn.DataWatch('/cmd/ceph')
-    def cmd(data, stat, event=''):
+    def cmd_ceph(data, stat, event=''):
         if data:
             CephInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'), d_osd)
 
@@ -965,12 +977,12 @@ if enable_storage:
 
         # Add any missing OSDs to the list
         for osd in new_osd_list:
-            if not osd in osd_list:
+            if osd not in osd_list:
                 d_osd[osd] = CephInstance.CephOSDInstance(zk_conn, this_node, osd)
 
         # Remove any deleted OSDs from the list
         for osd in osd_list:
-            if not osd in new_osd_list:
+            if osd not in new_osd_list:
                 # Delete the object
                 del(d_osd[osd])
 
@@ -985,14 +997,14 @@ if enable_storage:
 
         # Add any missing Pools to the list
         for pool in new_pool_list:
-            if not pool in pool_list:
+            if pool not in pool_list:
                 d_pool[pool] = CephInstance.CephPoolInstance(zk_conn, this_node, pool)
                 d_volume[pool] = dict()
                 volume_list[pool] = []
 
         # Remove any deleted Pools from the list
         for pool in pool_list:
-            if not pool in new_pool_list:
+            if pool not in new_pool_list:
                 # Delete the object
                 del(d_pool[pool])
 
@@ -1008,18 +1020,19 @@ if enable_storage:
 
                 # Add any missing Volumes to the list
                 for volume in new_volume_list:
-                    if not volume in volume_list[pool]:
+                    if volume not in volume_list[pool]:
                         d_volume[pool][volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
 
                 # Remove any deleted Volumes from the list
                 for volume in volume_list[pool]:
-                    if not volume in new_volume_list:
+                    if volume not in new_volume_list:
                         # Delete the object
                         del(d_volume[pool][volume])
 
                 # Update and print new list
                 volume_list[pool] = new_volume_list
                 logger.out('{}Volume list [{pool}]:{} {plist}'.format(fmt_blue, fmt_end, pool=pool, plist=' '.join(volume_list[pool])), state='i')
+
 
 ###############################################################################
 # PHASE 9 - Run the daemon
@@ -1044,7 +1057,7 @@ def collect_ceph_stats(queue):
         logger.out("Getting health stats from monitor", state='d', prefix='ceph-thread')
 
     # Get Ceph cluster health for local status output
-    command = { "prefix": "health", "format": "json" }
+    command = {"prefix": "health", "format": "json"}
     try:
         health_status = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])
         ceph_health = health_status['status']
@@ -1064,7 +1077,7 @@ def collect_ceph_stats(queue):
         if debug:
             logger.out("Set ceph health information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
-        command = { "prefix": "status", "format": "pretty" }
+        command = {"prefix": "status", "format": "pretty"}
         ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
@@ -1078,7 +1091,7 @@ def collect_ceph_stats(queue):
             logger.out("Set ceph rados df information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get rados df info
-        command = { "prefix": "df", "format": "pretty" }
+        command = {"prefix": "df", "format": "pretty"}
         ceph_df = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
@@ -1092,7 +1105,7 @@ def collect_ceph_stats(queue):
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
-        command = { "prefix": "df", "format": "json" }
+        command = {"prefix": "df", "format": "json"}
         try:
             ceph_pool_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['pools']
         except Exception as e:
@@ -1143,14 +1156,14 @@ def collect_ceph_stats(queue):
                     'write_ops': pool['write_ops'],
                     'write_bytes': pool['write_bytes']
                 }
-                
+
                 # Write the pool data to Zookeeper
                 zkhandler.writedata(zk_conn, {
                     '/ceph/pools/{}/stats'.format(pool['name']): str(json.dumps(pool_df))
                 })
             except Exception as e:
                 # One or more of the status commands timed out, just continue
-                logger.out('Failed to format and send pool data', state='w')
+                logger.out('Failed to format and send pool data: {}'.format(e), state='w')
                 pass
 
     # Only grab OSD stats if there are OSDs to grab (otherwise `ceph osd df` hangs)
@@ -1163,7 +1176,7 @@ def collect_ceph_stats(queue):
         # Parse the dump data
         osd_dump = dict()
 
-        command = { "prefix": "osd dump", "format": "json" }
+        command = {"prefix": "osd dump", "format": "json"}
         try:
             retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json --connect-timeout 2', timeout=2)
             osd_dump_raw = json.loads(stdout)['osds']
@@ -1189,7 +1202,7 @@ def collect_ceph_stats(queue):
 
         osd_df = dict()
 
-        command = { "prefix": "osd df", "format": "json" }
+        command = {"prefix": "osd df", "format": "json"}
         try:
             osd_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['nodes']
         except Exception as e:
@@ -1216,7 +1229,7 @@ def collect_ceph_stats(queue):
 
         osd_status = dict()
 
-        command = { "prefix": "osd status", "format": "pretty" }
+        command = {"prefix": "osd status", "format": "pretty"}
         try:
             osd_status_raw = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         except Exception as e:
@@ -1296,6 +1309,7 @@ def collect_ceph_stats(queue):
     if debug:
         logger.out("Thread finished", state='d', prefix='ceph-thread')
 
+
 # State table for pretty stats
 libvirt_vm_states = {
     0: "NOSTATE",
@@ -1308,6 +1322,7 @@ libvirt_vm_states = {
     7: "PMSUSPENDED"
 }
 
+
 # VM stats update function
 def collect_vm_stats(queue):
     if debug:
@@ -1318,7 +1333,7 @@ def collect_vm_stats(queue):
     if debug:
         logger.out("Connecting to libvirt", state='d', prefix='vm-thread')
     lv_conn = libvirt.open(libvirt_name)
-    if lv_conn == None:
+    if lv_conn is None:
         logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
         return
 
@@ -1337,13 +1352,13 @@ def collect_vm_stats(queue):
             memprov += instance.getmemory()
             vcpualloc += instance.getvcpus()
             if instance.getstate() == 'start' and instance.getnode() == this_node.name:
-                if instance.getdom() != None:
+                if instance.getdom() is not None:
                     try:
                         if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
                             raise
-                    except Exception as e:
+                    except Exception:
                         # Toggle a state "change"
-                        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
+                        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(domain): instance.getstate()})
         elif instance.getnode() == this_node.name:
             memprov += instance.getmemory()
 
@@ -1371,7 +1386,7 @@ def collect_vm_stats(queue):
             if debug:
                 try:
                     logger.out("Failed getting VM information for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
-                except:
+                except Exception:
                     pass
             continue
 
@@ -1451,6 +1466,7 @@ def collect_vm_stats(queue):
     if debug:
         logger.out("Thread finished", state='d', prefix='vm-thread')
 
+
 # Keepalive update function
 def node_keepalive():
     if debug:
@@ -1462,7 +1478,7 @@ def node_keepalive():
             try:
                 if zkhandler.readdata(zk_conn, '/upstream_ip') != config['upstream_floating_ip']:
                     raise
-            except:
+            except Exception:
                 zkhandler.writedata(zk_conn, {'/upstream_ip': config['upstream_floating_ip']})
 
     # Get past state and update if needed
@@ -1471,7 +1487,7 @@ def node_keepalive():
     past_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(this_node.name))
     if past_state != 'run':
         this_node.daemon_state = 'run'
-        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(this_node.name): 'run' })
+        zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(this_node.name): 'run'})
     else:
         this_node.daemon_state = 'run'
 
@@ -1487,13 +1503,13 @@ def node_keepalive():
         vm_thread_queue = Queue()
         vm_stats_thread = Thread(target=collect_vm_stats, args=(vm_thread_queue,), kwargs={})
         vm_stats_thread.start()
-    
+
     # Run Ceph status collection in separate thread for parallelization
     if enable_storage:
         ceph_thread_queue = Queue()
         ceph_stats_thread = Thread(target=collect_ceph_stats, args=(ceph_thread_queue,), kwargs={})
         ceph_stats_thread.start()
-    
+
     # Get node performance statistics
     this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
@@ -1517,7 +1533,7 @@ def node_keepalive():
             this_node.memalloc = vm_thread_queue.get()
             this_node.memprov = vm_thread_queue.get()
             this_node.vcpualloc = vm_thread_queue.get()
-        except:
+        except Exception:
             pass
     else:
         this_node.domains_count = 0
@@ -1530,7 +1546,7 @@ def node_keepalive():
             ceph_health_colour = ceph_thread_queue.get()
             ceph_health = ceph_thread_queue.get()
             osds_this_node = ceph_thread_queue.get()
-        except:
+        except Exception:
             ceph_health_colour = fmt_cyan
             ceph_health = 'UNKNOWN'
             osds_this_node = '?'
@@ -1552,7 +1568,7 @@ def node_keepalive():
             '/nodes/{}/runningdomains'.format(this_node.name): ' '.join(this_node.domain_list),
             '/nodes/{}/keepalive'.format(this_node.name): str(keepalive_time)
         })
-    except:
+    except Exception:
         logger.out('Failed to set keepalive data', state='e')
         return
 
@@ -1621,17 +1637,15 @@ def node_keepalive():
             for node_name in d_node:
                 try:
                     node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-                    node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
                     node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
-                except:
+                except Exception:
                     node_daemon_state = 'unknown'
-                    node_domain_state = 'unknown'
                     node_keepalive = 0
-    
+
                 # Handle deadtime and fencng if needed
                 # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
                 # out-of-date while in 'start' state)
-                node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
+                node_deadtime = int(time.time()) - (int(config['keepalive_interval']) * int(config['fence_intervals']))
                 if node_keepalive < node_deadtime and node_daemon_state == 'run':
                     logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
                     zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
@@ -1642,10 +1656,11 @@ def node_keepalive():
                             fence_thread = Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
                             fence_thread.start()
                             # Write the updated data after we start the fence thread
-                            zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
+                            zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(node_name): 'dead'})
 
     if debug:
         logger.out("Keepalive finished", state='d', prefix='main-thread')
+
 
 # Start keepalive thread
 update_timer = startKeepaliveTimer()
@@ -1654,5 +1669,5 @@ update_timer = startKeepaliveTimer()
 while True:
     try:
         time.sleep(1)
-    except:
+    except Exception:
         break

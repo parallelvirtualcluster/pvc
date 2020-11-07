@@ -20,18 +20,15 @@
 #
 ###############################################################################
 
-import json
 import re
 
-from distutils.util import strtobool
-
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 import daemon_lib.vm as pvc_vm
 import daemon_lib.node as pvc_node
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
+
 
 def set_maintenance(zk_conn, maint_state):
     try:
@@ -41,14 +38,15 @@ def set_maintenance(zk_conn, maint_state):
         else:
             zkhandler.writedata(zk_conn, {'/maintenance': 'false'})
             return True, 'Successfully set cluster in normal mode'
-    except:
+    except Exception:
         return False, 'Failed to set cluster maintenance state'
+
 
 def getClusterInformation(zk_conn):
     # Get cluster maintenance state
     try:
         maint_state = zkhandler.readdata(zk_conn, '/maintenance')
-    except:
+    except Exception:
         maint_state = 'false'
 
     # List of messages to display to the clients
@@ -120,7 +118,7 @@ def getClusterInformation(zk_conn):
             cluster_health_msg.append("Node '{}' in {},{} state".format(node['name'], daemon_state, domain_state))
         else:
             node_healthy_status[index] = True
-        node_report_status[index] = daemon_state + ',' +  domain_state
+        node_report_status[index] = daemon_state + ',' + domain_state
 
     # Determinations for VM health
     vm_healthy_status = list(range(0, vm_count))
@@ -148,8 +146,8 @@ def getClusterInformation(zk_conn):
         except KeyError:
             ceph_osd_in = 0
 
-        up_texts = { 1: 'up', 0: 'down' }
-        in_texts = { 1: 'in', 0: 'out' }
+        up_texts = {1: 'up', 0: 'down'}
+        in_texts = {1: 'in', 0: 'out'}
 
         if not ceph_osd_up or not ceph_osd_in:
             ceph_osd_healthy_status[index] = False
@@ -249,6 +247,7 @@ def getClusterInformation(zk_conn):
     }
 
     return cluster_information
+
 
 def get_info(zk_conn):
     # This is a thin wrapper function for naming purposes

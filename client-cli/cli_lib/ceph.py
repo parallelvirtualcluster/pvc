@@ -20,9 +20,7 @@
 #
 ###############################################################################
 
-import re
 import json
-import time
 import math
 
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
@@ -34,15 +32,28 @@ from cli_lib.common import UploadProgressBar, call_api
 # Supplemental functions
 #
 
-# Format byte sizes to/from human-readable units
+# Matrix of human-to-byte values
 byte_unit_matrix = {
     'B': 1,
     'K': 1024,
-    'M': 1024*1024,
-    'G': 1024*1024*1024,
-    'T': 1024*1024*1024*1024,
-    'P': 1024*1024*1024*1024*1024
+    'M': 1024 * 1024,
+    'G': 1024 * 1024 * 1024,
+    'T': 1024 * 1024 * 1024 * 1024,
+    'P': 1024 * 1024 * 1024 * 1024 * 1024
 }
+
+# Matrix of human-to-metric values
+ops_unit_matrix = {
+    '': 1,
+    'K': 1000,
+    'M': 1000 * 1000,
+    'G': 1000 * 1000 * 1000,
+    'T': 1000 * 1000 * 1000 * 1000,
+    'P': 1000 * 1000 * 1000 * 1000 * 1000
+}
+
+
+# Format byte sizes to/from human-readable units
 def format_bytes_tohuman(databytes):
     datahuman = ''
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get, reverse=True):
@@ -57,6 +68,7 @@ def format_bytes_tohuman(databytes):
 
     return datahuman
 
+
 def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
@@ -64,15 +76,8 @@ def format_bytes_fromhuman(datahuman):
     databytes = datasize * byte_unit_matrix[dataunit]
     return '{}B'.format(databytes)
 
+
 # Format ops sizes to/from human-readable units
-ops_unit_matrix = {
-    '': 1,
-    'K': 1000,
-    'M': 1000*1000,
-    'G': 1000*1000*1000,
-    'T': 1000*1000*1000*1000,
-    'P': 1000*1000*1000*1000*1000
-}
 def format_ops_tohuman(dataops):
     datahuman = ''
     for unit in sorted(ops_unit_matrix, key=ops_unit_matrix.get, reverse=True):
@@ -87,6 +92,7 @@ def format_ops_tohuman(dataops):
 
     return datahuman
 
+
 def format_ops_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
@@ -94,9 +100,11 @@ def format_ops_fromhuman(datahuman):
     dataops = datasize * ops_unit_matrix[dataunit]
     return '{}'.format(dataops)
 
+
 def format_pct_tohuman(datapct):
     datahuman = "{0:.1f}".format(float(datapct * 100.0))
     return datahuman
+
 
 #
 # Status functions
@@ -115,7 +123,8 @@ def ceph_status(config):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
-	
+
+
 def ceph_util(config):
     """
     Get utilization of the Ceph cluster
@@ -130,7 +139,8 @@ def ceph_util(config):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
-	
+
+
 def format_raw_output(status_data):
     ainformation = list()
     ainformation.append('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
@@ -138,6 +148,7 @@ def format_raw_output(status_data):
     ainformation.append('')
 
     return '\n'.join(ainformation)
+
 
 #
 # OSD functions
@@ -157,6 +168,7 @@ def ceph_osd_info(config, osd):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_osd_list(config, limit):
     """
     Get list information about Ceph OSDs (limited by {limit})
@@ -175,6 +187,7 @@ def ceph_osd_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_osd_add(config, node, device, weight):
     """
@@ -198,6 +211,7 @@ def ceph_osd_add(config, node, device, weight):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_osd_remove(config, osdid):
     """
     Remove Ceph OSD
@@ -218,6 +232,7 @@ def ceph_osd_remove(config, osdid):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_osd_state(config, osdid, state):
     """
     Set state of Ceph OSD
@@ -237,6 +252,7 @@ def ceph_osd_state(config, osdid, state):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_osd_option(config, option, action):
     """
@@ -259,6 +275,7 @@ def ceph_osd_option(config, option, action):
 
     return retstatus, response.json().get('message', '')
 
+
 def getOutputColoursOSD(osd_information):
     # Set the UP status
     if osd_information['stats']['up'] == 1:
@@ -278,13 +295,14 @@ def getOutputColoursOSD(osd_information):
 
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
 
+
 def format_list_osd(osd_list):
     # Handle empty list
     if not osd_list:
         osd_list = list()
     # Handle single-item list
     if not isinstance(osd_list, list):
-        osd_list = [ osd_list ]
+        osd_list = [osd_list]
 
     osd_list_output = []
 
@@ -414,44 +432,43 @@ Rd: {osd_rdops: <{osd_rdops_length}} \
 Wr: {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            osd_id_length=osd_id_length,
-            osd_node_length=osd_node_length,
-            osd_up_length=osd_up_length,
-            osd_in_length=osd_in_length,
-            osd_size_length=osd_size_length,
-            osd_pgs_length=osd_pgs_length,
-            osd_weight_length=osd_weight_length,
-            osd_reweight_length=osd_reweight_length,
-            osd_used_length=osd_used_length,
-            osd_free_length=osd_free_length,
-            osd_util_length=osd_util_length,
-            osd_var_length=osd_var_length,
-            osd_wrops_length=osd_wrops_length,
-            osd_wrdata_length=osd_wrdata_length,
-            osd_rdops_length=osd_rdops_length,
-            osd_rddata_length=osd_rddata_length,
-            osd_id='ID',
-            osd_node='Node',
-            osd_up='Up',
-            osd_in='In',
-            osd_size='Size',
-            osd_pgs='PGs',
-            osd_weight='Wt',
-            osd_reweight='ReWt',
-            osd_used='Used',
-            osd_free='Free',
-            osd_util='Util%',
-            osd_var='Var',
-            osd_wrops='OPS',
-            osd_wrdata='Data',
-            osd_rdops='OPS',
-            osd_rddata='Data'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        osd_id_length=osd_id_length,
+        osd_node_length=osd_node_length,
+        osd_up_length=osd_up_length,
+        osd_in_length=osd_in_length,
+        osd_size_length=osd_size_length,
+        osd_pgs_length=osd_pgs_length,
+        osd_weight_length=osd_weight_length,
+        osd_reweight_length=osd_reweight_length,
+        osd_used_length=osd_used_length,
+        osd_free_length=osd_free_length,
+        osd_util_length=osd_util_length,
+        osd_var_length=osd_var_length,
+        osd_wrops_length=osd_wrops_length,
+        osd_wrdata_length=osd_wrdata_length,
+        osd_rdops_length=osd_rdops_length,
+        osd_rddata_length=osd_rddata_length,
+        osd_id='ID',
+        osd_node='Node',
+        osd_up='Up',
+        osd_in='In',
+        osd_size='Size',
+        osd_pgs='PGs',
+        osd_weight='Wt',
+        osd_reweight='ReWt',
+        osd_used='Used',
+        osd_free='Free',
+        osd_util='Util%',
+        osd_var='Var',
+        osd_wrops='OPS',
+        osd_wrdata='Data',
+        osd_rdops='OPS',
+        osd_rddata='Data')
     )
 
-    for osd_information in sorted(osd_list, key = lambda x: int(x['id'])):
+    for osd_information in sorted(osd_list, key=lambda x: int(x['id'])):
         try:
             # If this happens, the node hasn't checked in fully yet, so just ignore it
             if osd_information['stats']['node'] == '|':
@@ -482,44 +499,43 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
     {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                end_colour=ansiprint.end(),
-                osd_id_length=osd_id_length,
-                osd_node_length=osd_node_length,
-                osd_up_length=osd_up_length,
-                osd_in_length=osd_in_length,
-                osd_size_length=osd_size_length,
-                osd_pgs_length=osd_pgs_length,
-                osd_weight_length=osd_weight_length,
-                osd_reweight_length=osd_reweight_length,
-                osd_used_length=osd_used_length,
-                osd_free_length=osd_free_length,
-                osd_util_length=osd_util_length,
-                osd_var_length=osd_var_length,
-                osd_wrops_length=osd_wrops_length,
-                osd_wrdata_length=osd_wrdata_length,
-                osd_rdops_length=osd_rdops_length,
-                osd_rddata_length=osd_rddata_length,
-                osd_id=osd_information['id'],
-                osd_node=osd_information['stats']['node'],
-                osd_up_colour=osd_up_colour,
-                osd_up=osd_up_flag,
-                osd_in_colour=osd_in_colour,
-                osd_in=osd_in_flag,
-                osd_size=osd_information['stats']['size'],
-                osd_pgs=osd_information['stats']['pgs'],
-                osd_weight=osd_information['stats']['weight'],
-                osd_reweight=osd_information['stats']['reweight'],
-                osd_used=osd_information['stats']['used'],
-                osd_free=osd_information['stats']['avail'],
-                osd_util=osd_util,
-                osd_var=osd_var,
-                osd_wrops=osd_information['stats']['wr_ops'],
-                osd_wrdata=osd_information['stats']['wr_data'],
-                osd_rdops=osd_information['stats']['rd_ops'],
-                osd_rddata=osd_information['stats']['rd_data']
-            )
+            bold='',
+            end_bold='',
+            end_colour=ansiprint.end(),
+            osd_id_length=osd_id_length,
+            osd_node_length=osd_node_length,
+            osd_up_length=osd_up_length,
+            osd_in_length=osd_in_length,
+            osd_size_length=osd_size_length,
+            osd_pgs_length=osd_pgs_length,
+            osd_weight_length=osd_weight_length,
+            osd_reweight_length=osd_reweight_length,
+            osd_used_length=osd_used_length,
+            osd_free_length=osd_free_length,
+            osd_util_length=osd_util_length,
+            osd_var_length=osd_var_length,
+            osd_wrops_length=osd_wrops_length,
+            osd_wrdata_length=osd_wrdata_length,
+            osd_rdops_length=osd_rdops_length,
+            osd_rddata_length=osd_rddata_length,
+            osd_id=osd_information['id'],
+            osd_node=osd_information['stats']['node'],
+            osd_up_colour=osd_up_colour,
+            osd_up=osd_up_flag,
+            osd_in_colour=osd_in_colour,
+            osd_in=osd_in_flag,
+            osd_size=osd_information['stats']['size'],
+            osd_pgs=osd_information['stats']['pgs'],
+            osd_weight=osd_information['stats']['weight'],
+            osd_reweight=osd_information['stats']['reweight'],
+            osd_used=osd_information['stats']['used'],
+            osd_free=osd_information['stats']['avail'],
+            osd_util=osd_util,
+            osd_var=osd_var,
+            osd_wrops=osd_information['stats']['wr_ops'],
+            osd_wrdata=osd_information['stats']['wr_data'],
+            osd_rdops=osd_information['stats']['rd_ops'],
+            osd_rddata=osd_information['stats']['rd_data'])
         )
 
     return '\n'.join(osd_list_output)
@@ -543,6 +559,7 @@ def ceph_pool_info(config, pool):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_pool_list(config, limit):
     """
     Get list information about Ceph OSDs (limited by {limit})
@@ -561,6 +578,7 @@ def ceph_pool_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_pool_add(config, pool, pgs, replcfg):
     """
@@ -584,6 +602,7 @@ def ceph_pool_add(config, pool, pgs, replcfg):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_pool_remove(config, pool):
     """
     Remove Ceph OSD
@@ -604,13 +623,14 @@ def ceph_pool_remove(config, pool):
 
     return retstatus, response.json().get('message', '')
 
+
 def format_list_pool(pool_list):
     # Handle empty list
     if not pool_list:
         pool_list = list()
     # Handle single-entry list
     if not isinstance(pool_list, list):
-        pool_list = [ pool_list ]
+        pool_list = [pool_list]
 
     pool_list_output = []
 
@@ -721,38 +741,37 @@ Rd: {pool_read_ops: <{pool_read_ops_length}} \
 Wr: {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            pool_id_length=pool_id_length,
-            pool_name_length=pool_name_length,
-            pool_used_length=pool_used_length,
-            pool_usedpct_length=pool_usedpct_length,
-            pool_free_length=pool_free_length,
-            pool_objects_length=pool_num_objects_length,
-            pool_clones_length=pool_num_clones_length,
-            pool_copies_length=pool_num_copies_length,
-            pool_degraded_length=pool_num_degraded_length,
-            pool_write_ops_length=pool_write_ops_length,
-            pool_write_data_length=pool_write_data_length,
-            pool_read_ops_length=pool_read_ops_length,
-            pool_read_data_length=pool_read_data_length,
-            pool_id='ID',
-            pool_name='Name',
-            pool_used='Used',
-            pool_usedpct='%',
-            pool_free='Free',
-            pool_objects='Count',
-            pool_clones='Clones',
-            pool_copies='Copies',
-            pool_degraded='Degraded',
-            pool_write_ops='OPS',
-            pool_write_data='Data',
-            pool_read_ops='OPS',
-            pool_read_data='Data'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        pool_id_length=pool_id_length,
+        pool_name_length=pool_name_length,
+        pool_used_length=pool_used_length,
+        pool_usedpct_length=pool_usedpct_length,
+        pool_free_length=pool_free_length,
+        pool_objects_length=pool_num_objects_length,
+        pool_clones_length=pool_num_clones_length,
+        pool_copies_length=pool_num_copies_length,
+        pool_degraded_length=pool_num_degraded_length,
+        pool_write_ops_length=pool_write_ops_length,
+        pool_write_data_length=pool_write_data_length,
+        pool_read_ops_length=pool_read_ops_length,
+        pool_read_data_length=pool_read_data_length,
+        pool_id='ID',
+        pool_name='Name',
+        pool_used='Used',
+        pool_usedpct='%',
+        pool_free='Free',
+        pool_objects='Count',
+        pool_clones='Clones',
+        pool_copies='Copies',
+        pool_degraded='Degraded',
+        pool_write_ops='OPS',
+        pool_write_data='Data',
+        pool_read_ops='OPS',
+        pool_read_data='Data')
     )
 
-    for pool_information in sorted(pool_list, key = lambda x: int(x['stats']['id'])):
+    for pool_information in sorted(pool_list, key=lambda x: int(x['stats']['id'])):
         # Format the output header
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
@@ -769,35 +788,34 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
     {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                pool_id_length=pool_id_length,
-                pool_name_length=pool_name_length,
-                pool_used_length=pool_used_length,
-                pool_usedpct_length=pool_usedpct_length,
-                pool_free_length=pool_free_length,
-                pool_objects_length=pool_num_objects_length,
-                pool_clones_length=pool_num_clones_length,
-                pool_copies_length=pool_num_copies_length,
-                pool_degraded_length=pool_num_degraded_length,
-                pool_write_ops_length=pool_write_ops_length,
-                pool_write_data_length=pool_write_data_length,
-                pool_read_ops_length=pool_read_ops_length,
-                pool_read_data_length=pool_read_data_length,
-                pool_id=pool_information['stats']['id'],
-                pool_name=pool_information['name'],
-                pool_used=pool_information['stats']['used_bytes'],
-                pool_usedpct=pool_information['stats']['used_percent'],
-                pool_free=pool_information['stats']['free_bytes'],
-                pool_objects=pool_information['stats']['num_objects'],
-                pool_clones=pool_information['stats']['num_object_clones'],
-                pool_copies=pool_information['stats']['num_object_copies'],
-                pool_degraded=pool_information['stats']['num_objects_degraded'],
-                pool_write_ops=pool_information['stats']['write_ops'],
-                pool_write_data=pool_information['stats']['write_bytes'],
-                pool_read_ops=pool_information['stats']['read_ops'],
-                pool_read_data=pool_information['stats']['read_bytes']
-            )
+            bold='',
+            end_bold='',
+            pool_id_length=pool_id_length,
+            pool_name_length=pool_name_length,
+            pool_used_length=pool_used_length,
+            pool_usedpct_length=pool_usedpct_length,
+            pool_free_length=pool_free_length,
+            pool_objects_length=pool_num_objects_length,
+            pool_clones_length=pool_num_clones_length,
+            pool_copies_length=pool_num_copies_length,
+            pool_degraded_length=pool_num_degraded_length,
+            pool_write_ops_length=pool_write_ops_length,
+            pool_write_data_length=pool_write_data_length,
+            pool_read_ops_length=pool_read_ops_length,
+            pool_read_data_length=pool_read_data_length,
+            pool_id=pool_information['stats']['id'],
+            pool_name=pool_information['name'],
+            pool_used=pool_information['stats']['used_bytes'],
+            pool_usedpct=pool_information['stats']['used_percent'],
+            pool_free=pool_information['stats']['free_bytes'],
+            pool_objects=pool_information['stats']['num_objects'],
+            pool_clones=pool_information['stats']['num_object_clones'],
+            pool_copies=pool_information['stats']['num_object_copies'],
+            pool_degraded=pool_information['stats']['num_objects_degraded'],
+            pool_write_ops=pool_information['stats']['write_ops'],
+            pool_write_data=pool_information['stats']['write_bytes'],
+            pool_read_ops=pool_information['stats']['read_ops'],
+            pool_read_data=pool_information['stats']['read_bytes'])
         )
 
     return '\n'.join(pool_list_output)
@@ -821,6 +839,7 @@ def ceph_volume_info(config, pool, volume):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_volume_list(config, limit, pool):
     """
     Get list information about Ceph volumes (limited by {limit} and by {pool})
@@ -841,6 +860,7 @@ def ceph_volume_list(config, limit, pool):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_volume_add(config, pool, volume, size):
     """
@@ -864,6 +884,7 @@ def ceph_volume_add(config, pool, volume, size):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_volume_upload(config, pool, volume, image_format, image_file):
     """
     Upload a disk image to a Ceph volume
@@ -876,7 +897,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
 
     bar = UploadProgressBar(image_file, end_message="Parsing file on remote side...", end_nl=False)
     upload_data = MultipartEncoder(
-        fields={ 'file': ('filename', open(image_file, 'rb'), 'application/octet-stream')}
+        fields={'file': ('filename', open(image_file, 'rb'), 'application/octet-stream')}
     )
     upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
 
@@ -899,6 +920,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_volume_remove(config, pool, volume):
     """
     Remove Ceph volume
@@ -915,6 +937,7 @@ def ceph_volume_remove(config, pool, volume):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
     """
@@ -940,6 +963,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_volume_clone(config, pool, volume, new_volume):
     """
     Clone Ceph volume
@@ -960,13 +984,14 @@ def ceph_volume_clone(config, pool, volume, new_volume):
 
     return retstatus, response.json().get('message', '')
 
+
 def format_list_volume(volume_list):
     # Handle empty list
     if not volume_list:
         volume_list = list()
     # Handle single-entry list
     if not isinstance(volume_list, list):
-        volume_list = [ volume_list ]
+        volume_list = [volume_list]
 
     volume_list_output = []
 
@@ -1024,23 +1049,22 @@ def format_list_volume(volume_list):
 {volume_format: <{volume_format_length}} \
 {volume_features: <{volume_features_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            volume_name_length=volume_name_length,
-            volume_pool_length=volume_pool_length,
-            volume_size_length=volume_size_length,
-            volume_objects_length=volume_objects_length,
-            volume_order_length=volume_order_length,
-            volume_format_length=volume_format_length,
-            volume_features_length=volume_features_length,
-            volume_name='Name',
-            volume_pool='Pool',
-            volume_size='Size',
-            volume_objects='Objects',
-            volume_order='Order',
-            volume_format='Format',
-            volume_features='Features',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        volume_name_length=volume_name_length,
+        volume_pool_length=volume_pool_length,
+        volume_size_length=volume_size_length,
+        volume_objects_length=volume_objects_length,
+        volume_order_length=volume_order_length,
+        volume_format_length=volume_format_length,
+        volume_features_length=volume_features_length,
+        volume_name='Name',
+        volume_pool='Pool',
+        volume_size='Size',
+        volume_objects='Objects',
+        volume_order='Order',
+        volume_format='Format',
+        volume_features='Features')
     )
 
     for volume_information in volume_list:
@@ -1053,23 +1077,22 @@ def format_list_volume(volume_list):
 {volume_format: <{volume_format_length}} \
 {volume_features: <{volume_features_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                volume_name_length=volume_name_length,
-                volume_pool_length=volume_pool_length,
-                volume_size_length=volume_size_length,
-                volume_objects_length=volume_objects_length,
-                volume_order_length=volume_order_length,
-                volume_format_length=volume_format_length,
-                volume_features_length=volume_features_length,
-                volume_name=volume_information['name'],
-                volume_pool=volume_information['pool'],
-                volume_size=volume_information['stats']['size'],
-                volume_objects=volume_information['stats']['objects'],
-                volume_order=volume_information['stats']['order'],
-                volume_format=volume_information['stats']['format'],
-                volume_features=','.join(volume_information['stats']['features']),
-            )
+            bold='',
+            end_bold='',
+            volume_name_length=volume_name_length,
+            volume_pool_length=volume_pool_length,
+            volume_size_length=volume_size_length,
+            volume_objects_length=volume_objects_length,
+            volume_order_length=volume_order_length,
+            volume_format_length=volume_format_length,
+            volume_features_length=volume_features_length,
+            volume_name=volume_information['name'],
+            volume_pool=volume_information['pool'],
+            volume_size=volume_information['stats']['size'],
+            volume_objects=volume_information['stats']['objects'],
+            volume_order=volume_information['stats']['order'],
+            volume_format=volume_information['stats']['format'],
+            volume_features=','.join(volume_information['stats']['features']))
         )
 
     return '\n'.join(sorted(volume_list_output))
@@ -1092,6 +1115,7 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_snapshot_list(config, limit, volume, pool):
     """
@@ -1116,6 +1140,7 @@ def ceph_snapshot_list(config, limit, volume, pool):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_snapshot_add(config, pool, volume, snapshot):
     """
     Add new Ceph snapshot
@@ -1138,6 +1163,7 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_snapshot_remove(config, pool, volume, snapshot):
     """
     Remove Ceph snapshot
@@ -1154,6 +1180,7 @@ def ceph_snapshot_remove(config, pool, volume, snapshot):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     """
@@ -1177,13 +1204,14 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
 
     return retstatus, response.json().get('message', '')
 
+
 def format_list_snapshot(snapshot_list):
     # Handle empty list
     if not snapshot_list:
         snapshot_list = list()
     # Handle single-entry list
     if not isinstance(snapshot_list, list):
-        snapshot_list = [ snapshot_list ]
+        snapshot_list = [snapshot_list]
 
     snapshot_list_output = []
 
@@ -1217,15 +1245,14 @@ def format_list_snapshot(snapshot_list):
 {snapshot_volume: <{snapshot_volume_length}} \
 {snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            snapshot_name_length=snapshot_name_length,
-            snapshot_volume_length=snapshot_volume_length,
-            snapshot_pool_length=snapshot_pool_length,
-            snapshot_name='Name',
-            snapshot_volume='Volume',
-            snapshot_pool='Pool',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        snapshot_name_length=snapshot_name_length,
+        snapshot_volume_length=snapshot_volume_length,
+        snapshot_pool_length=snapshot_pool_length,
+        snapshot_name='Name',
+        snapshot_volume='Volume',
+        snapshot_pool='Pool')
     )
 
     for snapshot_information in snapshot_list:
@@ -1237,18 +1264,18 @@ def format_list_snapshot(snapshot_list):
 {snapshot_volume: <{snapshot_volume_length}} \
 {snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                snapshot_name_length=snapshot_name_length,
-                snapshot_volume_length=snapshot_volume_length,
-                snapshot_pool_length=snapshot_pool_length,
-                snapshot_name=snapshot_name,
-                snapshot_volume=snapshot_volume,
-                snapshot_pool=snapshot_pool,
-            )
+            bold='',
+            end_bold='',
+            snapshot_name_length=snapshot_name_length,
+            snapshot_volume_length=snapshot_volume_length,
+            snapshot_pool_length=snapshot_pool_length,
+            snapshot_name=snapshot_name,
+            snapshot_volume=snapshot_volume,
+            snapshot_pool=snapshot_pool)
         )
 
     return '\n'.join(sorted(snapshot_list_output))
+
 
 #
 # Benchmark functions
@@ -1272,8 +1299,9 @@ def ceph_benchmark_run(config, pool):
     else:
         retvalue = False
         retdata = response.json().get('message', '')
-        
+
     return retvalue, retdata
+
 
 def ceph_benchmark_list(config, job):
     """
@@ -1301,16 +1329,16 @@ def ceph_benchmark_list(config, job):
 
     return retvalue, retdata
 
+
 def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
-    
-    benchmark_id_length = 3
+
     benchmark_job_length = 20
     benchmark_bandwidth_length = dict()
     benchmark_iops_length = dict()
 
     # For this output, we're only showing the Sequential (seq_read and seq_write) and 4k Random (rand_read_4K and rand_write_4K) results since we're showing them for each test result.
-    for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+    for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
         benchmark_bandwidth_length[test] = 7
         benchmark_iops_length[test] = 6
 
@@ -1326,7 +1354,7 @@ def format_list_benchmark(config, benchmark_information):
 
         benchmark_bandwidth = dict()
         benchmark_iops = dict()
-        for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+        for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
             benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
             benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
 
@@ -1344,15 +1372,14 @@ def format_list_benchmark(config, benchmark_information):
  {seq_header: <{seq_header_length}} \
 {rand_header: <{rand_header_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            benchmark_job_length=benchmark_job_length,
-            seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
-            rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
-            benchmark_job='Benchmark Job',
-            seq_header='Sequential (4M blocks):',
-            rand_header='Random (4K blocks):'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        benchmark_job_length=benchmark_job_length,
+        seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
+        rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
+        benchmark_job='Benchmark Job',
+        seq_header='Sequential (4M blocks):',
+        rand_header='Random (4K blocks):')
     )
 
     benchmark_list_output.append('{bold}\
@@ -1362,19 +1389,18 @@ def format_list_benchmark(config, benchmark_information):
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
 {rand_benchmark_iops: <{rand_benchmark_iops_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            benchmark_job_length=benchmark_job_length,
-            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-            benchmark_job='',
-            seq_benchmark_bandwidth='R/W Bandwith/s',
-            seq_benchmark_iops='R/W IOPS',
-            rand_benchmark_bandwidth='R/W Bandwith/s',
-            rand_benchmark_iops='R/W IOPS'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        benchmark_job_length=benchmark_job_length,
+        seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
+        seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+        rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+        rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+        benchmark_job='',
+        seq_benchmark_bandwidth='R/W Bandwith/s',
+        seq_benchmark_iops='R/W IOPS',
+        rand_benchmark_bandwidth='R/W Bandwith/s',
+        rand_benchmark_iops='R/W IOPS')
     )
 
     for benchmark in benchmark_information:
@@ -1388,17 +1414,16 @@ def format_list_benchmark(config, benchmark_information):
         else:
             benchmark_bandwidth = dict()
             benchmark_iops = dict()
-            for test in [ "seq_read", "seq_write", "rand_read_4K", "rand_write_4K" ]:
+            for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
                 benchmark_data = json.loads(benchmark['benchmark_result'])
                 benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
                 benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
-    
+
             seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
             seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
             rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
             rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
-            
-    
+
         benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}} \
  {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
@@ -1406,28 +1431,24 @@ def format_list_benchmark(config, benchmark_information):
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
 {rand_benchmark_iops: <{rand_benchmark_iops_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                benchmark_job_length=benchmark_job_length,
-                seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-                seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-                rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-                rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-                benchmark_job=benchmark_job,
-                seq_benchmark_bandwidth=seq_benchmark_bandwidth,
-                seq_benchmark_iops=seq_benchmark_iops,
-                rand_benchmark_bandwidth=rand_benchmark_bandwidth,
-                rand_benchmark_iops=rand_benchmark_iops
-            )
+            bold='',
+            end_bold='',
+            benchmark_job_length=benchmark_job_length,
+            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
+            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+            benchmark_job=benchmark_job,
+            seq_benchmark_bandwidth=seq_benchmark_bandwidth,
+            seq_benchmark_iops=seq_benchmark_iops,
+            rand_benchmark_bandwidth=rand_benchmark_bandwidth,
+            rand_benchmark_iops=rand_benchmark_iops)
         )
 
     return '\n'.join(benchmark_list_output)
 
-def format_info_benchmark(config, benchmark_information):
-    # Load information from benchmark output
-    benchmark_id = benchmark_information[0]['id']
-    benchmark_job = benchmark_information[0]['job']
 
+def format_info_benchmark(config, benchmark_information):
     if benchmark_information[0]['benchmark_result'] == "Running":
         return "Benchmark test is still running."
 
@@ -1471,7 +1492,7 @@ def format_info_benchmark(config, benchmark_information):
         for element in benchmark_details[test]['bandwidth']:
             try:
                 _element_length = len(format_bytes_tohuman(int(float(benchmark_details[test]['bandwidth'][element]))))
-            except:
+            except Exception:
                 _element_length = len(benchmark_details[test]['bandwidth'][element])
             if _element_length > bandwidth_column_length:
                 bandwidth_column_length = _element_length
@@ -1479,7 +1500,7 @@ def format_info_benchmark(config, benchmark_information):
         for element in benchmark_details[test]['iops']:
             try:
                 _element_length = len(format_ops_tohuman(int(float(benchmark_details[test]['iops'][element]))))
-            except:
+            except Exception:
                 _element_length = len(benchmark_details[test]['iops'][element])
             if _element_length > iops_column_length:
                 iops_column_length = _element_length
@@ -1493,8 +1514,6 @@ def format_info_benchmark(config, benchmark_information):
             _element_length = len(benchmark_details[test]['cpu'][element])
             if _element_length > cpuutil_column_length:
                 cpuutil_column_length = _element_length
-
-
 
     for test in benchmark_details:
         ainformation.append('')

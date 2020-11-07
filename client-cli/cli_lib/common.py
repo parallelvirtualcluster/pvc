@@ -21,21 +21,21 @@
 ###############################################################################
 
 import os
-import io
 import math
 import time
 import requests
 import click
 from urllib3 import disable_warnings
 
+
 def format_bytes(size_bytes):
     byte_unit_matrix = {
         'B': 1,
         'K': 1024,
-        'M': 1024*1024,
-        'G': 1024*1024*1024,
-        'T': 1024*1024*1024*1024,
-        'P': 1024*1024*1024*1024*1024
+        'M': 1024 * 1024,
+        'G': 1024 * 1024 * 1024,
+        'T': 1024 * 1024 * 1024 * 1024,
+        'P': 1024 * 1024 * 1024 * 1024 * 1024
     }
     human_bytes = '0B'
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get):
@@ -45,14 +45,15 @@ def format_bytes(size_bytes):
             break
     return human_bytes
 
+
 def format_metric(integer):
     integer_unit_matrix = {
         '': 1,
         'K': 1000,
-        'M': 1000*1000,
-        'B': 1000*1000*1000,
-        'T': 1000*1000*1000*1000,
-        'Q': 1000*1000*1000*1000*1000
+        'M': 1000 * 1000,
+        'B': 1000 * 1000 * 1000,
+        'T': 1000 * 1000 * 1000 * 1000,
+        'Q': 1000 * 1000 * 1000 * 1000 * 1000
     }
     human_integer = '0'
     for unit in sorted(integer_unit_matrix, key=integer_unit_matrix.get):
@@ -61,6 +62,7 @@ def format_metric(integer):
             human_integer = '{}{}'.format(formatted_integer, unit)
             break
     return human_integer
+
 
 class UploadProgressBar(object):
     def __init__(self, filename, end_message='', end_nl=True):
@@ -104,6 +106,7 @@ class UploadProgressBar(object):
             if self.end_message:
                 click.echo(self.end_message + self.end_suffix, nl=self.end_nl)
 
+
 class ErrorResponse(requests.Response):
     def __init__(self, json_data, status_code):
         self.json_data = json_data
@@ -111,6 +114,7 @@ class ErrorResponse(requests.Response):
 
     def json(self):
         return self.json_data
+
 
 def call_api(config, operation, request_uri, headers={}, params=None, data=None, files=None):
     # Craft the URI
@@ -172,7 +176,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
             )
     except Exception as e:
         message = 'Failed to connect to the API: {}'.format(e)
-        response = ErrorResponse({'message':message}, 500)
+        response = ErrorResponse({'message': message}, 500)
 
     # Display debug output
     if config['debug']:
@@ -183,4 +187,3 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
 
     # Return the response object
     return response
-

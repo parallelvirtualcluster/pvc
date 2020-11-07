@@ -20,15 +20,13 @@
 #
 ###############################################################################
 
-import time
-import re
-import subprocess
 import ast
 
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import UploadProgressBar, call_api
+
 
 #
 # Primary functions
@@ -47,6 +45,7 @@ def template_info(config, template, template_type):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def template_list(config, limit, template_type=None):
     """
@@ -70,6 +69,7 @@ def template_list(config, limit, template_type=None):
     else:
         return False, response.json().get('message', '')
 
+
 def template_add(config, params, template_type=None):
     """
     Add a new template of {template_type} with {params}
@@ -84,8 +84,9 @@ def template_add(config, params, template_type=None):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def template_modify(config, params, name, template_type):
     """
@@ -101,8 +102,9 @@ def template_modify(config, params, name, template_type):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def template_remove(config, name, template_type):
     """
@@ -118,8 +120,9 @@ def template_remove(config, name, template_type):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def template_element_add(config, name, element_id, params, element_type=None, template_type=None):
     """
@@ -135,8 +138,9 @@ def template_element_add(config, name, element_id, params, element_type=None, te
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def template_element_remove(config, name, element_id, element_type=None, template_type=None):
     """
@@ -152,8 +156,9 @@ def template_element_remove(config, name, element_id, element_type=None, templat
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def userdata_info(config, userdata):
     """
@@ -169,6 +174,7 @@ def userdata_info(config, userdata):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def userdata_list(config, limit):
     """
@@ -189,6 +195,7 @@ def userdata_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def userdata_show(config, name):
     """
     Get information about userdata name
@@ -203,6 +210,7 @@ def userdata_show(config, name):
         return True, response.json()[0]['userdata']
     else:
         return False, response.json().get('message', '')
+
 
 def userdata_add(config, params):
     """
@@ -227,8 +235,9 @@ def userdata_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def userdata_modify(config, name, params):
     """
@@ -252,8 +261,9 @@ def userdata_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def userdata_remove(config, name):
     """
@@ -269,8 +279,9 @@ def userdata_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def script_info(config, script):
     """
@@ -286,6 +297,7 @@ def script_info(config, script):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def script_list(config, limit):
     """
@@ -306,6 +318,7 @@ def script_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def script_show(config, name):
     """
     Get information about script name
@@ -320,6 +333,7 @@ def script_show(config, name):
         return True, response.json()[0]['script']
     else:
         return False, response.json().get('message', '')
+
 
 def script_add(config, params):
     """
@@ -344,8 +358,9 @@ def script_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def script_modify(config, name, params):
     """
@@ -369,8 +384,9 @@ def script_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def script_remove(config, name):
     """
@@ -386,8 +402,9 @@ def script_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def ova_info(config, name):
     """
@@ -403,6 +420,7 @@ def ova_info(config, name):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def ova_list(config, limit):
     """
@@ -423,6 +441,7 @@ def ova_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def ova_upload(config, name, ova_file, params):
     """
     Upload an OVA image to the cluster
@@ -435,7 +454,7 @@ def ova_upload(config, name, ova_file, params):
 
     bar = UploadProgressBar(ova_file, end_message="Parsing file on remote side...", end_nl=False)
     upload_data = MultipartEncoder(
-        fields={ 'file': ('filename', open(ova_file, 'rb'), 'application/octet-stream')}
+        fields={'file': ('filename', open(ova_file, 'rb'), 'application/octet-stream')}
     )
     upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
 
@@ -455,6 +474,7 @@ def ova_upload(config, name, ova_file, params):
 
     return retstatus, response.json().get('message', '')
 
+
 def ova_remove(config, name):
     """
     Remove OVA image {name}
@@ -469,8 +489,9 @@ def ova_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def profile_info(config, profile):
     """
@@ -486,6 +507,7 @@ def profile_info(config, profile):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def profile_list(config, limit):
     """
@@ -506,6 +528,7 @@ def profile_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def profile_add(config, params):
     """
     Add a new profile with {params}
@@ -520,8 +543,9 @@ def profile_add(config, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def profile_modify(config, name, params):
     """
@@ -537,8 +561,9 @@ def profile_modify(config, name, params):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def profile_remove(config, name):
     """
@@ -554,8 +579,9 @@ def profile_remove(config, name):
         retvalue = True
     else:
         retvalue = False
-        
+
     return retvalue, response.json().get('message', '')
+
 
 def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
     """
@@ -584,8 +610,9 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_
     else:
         retvalue = False
         retdata = response.json().get('message', '')
-        
+
     return retvalue, retdata
+
 
 def task_status(config, task_id=None, is_watching=False):
     """
@@ -661,6 +688,7 @@ def task_status(config, task_id=None, is_watching=False):
 
     return retvalue, retdata
 
+
 #
 # Format functions
 #
@@ -671,12 +699,12 @@ def format_list_template(template_data, template_type=None):
     template_type can be used to only display part of the full list, allowing function
     reuse with more limited output options.
     """
-    template_types = [ 'system', 'network', 'storage' ]
+    template_types = ['system', 'network', 'storage']
     normalized_template_data = dict()
     ainformation = list()
 
     if template_type in template_types:
-        template_types = [ template_type ]
+        template_types = [template_type]
         template_data_type = '{}_templates'.format(template_type)
         normalized_template_data[template_data_type] = template_data
     else:
@@ -703,9 +731,10 @@ def format_list_template(template_data, template_type=None):
 
     return '\n'.join(ainformation)
 
+
 def format_list_template_system(template_data):
     if isinstance(template_data, dict):
-        template_data = [ template_data ]
+        template_data = [template_data]
 
     template_list_output = []
 
@@ -779,38 +808,34 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}} \
 {template_migration_method: <{template_migration_method_length}}{end_bold}'.format(
-            template_name_length=template_name_length,
-            template_id_length=template_id_length,
-            template_vcpu_length=template_vcpu_length,
-            template_vram_length=template_vram_length,
-            template_serial_length=template_serial_length,
-            template_vnc_length=template_vnc_length,
-            template_vnc_bind_length=template_vnc_bind_length,
-            template_node_limit_length=template_node_limit_length,
-            template_node_selector_length=template_node_selector_length,
-            template_node_autostart_length=template_node_autostart_length,
-            template_migration_method_length=template_migration_method_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            template_state_colour='',
-            end_colour='',
-            template_name='Name',
-            template_id='ID',
-            template_vcpu='vCPUs',
-            template_vram='vRAM [MB]',
-            template_serial='Serial',
-            template_vnc='VNC',
-            template_vnc_bind='VNC bind',
-            template_node_limit='Limit',
-            template_node_selector='Selector',
-            template_node_autostart='Autostart',
-            template_migration_method='Migration'
-        )
+        template_name_length=template_name_length,
+        template_id_length=template_id_length,
+        template_vcpu_length=template_vcpu_length,
+        template_vram_length=template_vram_length,
+        template_serial_length=template_serial_length,
+        template_vnc_length=template_vnc_length,
+        template_vnc_bind_length=template_vnc_bind_length,
+        template_node_limit_length=template_node_limit_length,
+        template_node_selector_length=template_node_selector_length,
+        template_node_autostart_length=template_node_autostart_length,
+        template_migration_method_length=template_migration_method_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_state_colour='',
+        end_colour='',
+        template_name='Name',
+        template_id='ID',
+        template_vcpu='vCPUs',
+        template_vram='vRAM [MB]',
+        template_serial='Serial',
+        template_vnc='VNC',
+        template_vnc_bind='VNC bind',
+        template_node_limit='Limit',
+        template_node_selector='Selector',
+        template_node_autostart='Autostart',
+        template_migration_method='Migration')
 
-    # Keep track of nets we found to be valid to cut down on duplicate API hits
-    valid_net_list = []
     # Format the string (elements)
-
     for template in sorted(template_data, key=lambda i: i.get('name', None)):
         template_list_output.append(
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
@@ -854,9 +879,10 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
 
     return True, ''
 
+
 def format_list_template_network(template_template):
     if isinstance(template_template, dict):
-        template_template = [ template_template ]
+        template_template = [template_template]
 
     template_list_output = []
 
@@ -895,17 +921,16 @@ def format_list_template_network(template_template):
     template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_mac_template: <{template_mac_template_length}} \
 {template_networks: <{template_networks_length}}{end_bold}'.format(
-            template_name_length=template_name_length,
-            template_id_length=template_id_length,
-            template_mac_template_length=template_mac_template_length,
-            template_networks_length=template_networks_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            template_name='Name',
-            template_id='ID',
-            template_mac_template='MAC template',
-            template_networks='Network VNIs'
-        )
+        template_name_length=template_name_length,
+        template_id_length=template_id_length,
+        template_mac_template_length=template_mac_template_length,
+        template_networks_length=template_networks_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_name='Name',
+        template_id='ID',
+        template_mac_template='MAC template',
+        template_networks='Network VNIs')
 
     # Format the string (elements)
     for template in sorted(template_template, key=lambda i: i.get('name', None)):
@@ -928,9 +953,10 @@ def format_list_template_network(template_template):
 
     return '\n'.join([template_list_output_header] + template_list_output)
 
+
 def format_list_template_storage(template_template):
     if isinstance(template_template, dict):
-        template_template = [ template_template ]
+        template_template = [template_template]
 
     template_list_output = []
 
@@ -994,27 +1020,26 @@ def format_list_template_storage(template_template):
 {template_disk_filesystem: <{template_disk_filesystem_length}} \
 {template_disk_fsargs: <{template_disk_fsargs_length}} \
 {template_disk_mountpoint: <{template_disk_mountpoint_length}}{end_bold}'.format(
-            template_name_length=template_name_length,
-            template_id_length=template_id_length,
-            template_disk_id_length=template_disk_id_length,
-            template_disk_pool_length=template_disk_pool_length,
-            template_disk_source_length=template_disk_source_length,
-            template_disk_size_length=template_disk_size_length,
-            template_disk_filesystem_length=template_disk_filesystem_length,
-            template_disk_fsargs_length=template_disk_fsargs_length,
-            template_disk_mountpoint_length=template_disk_mountpoint_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            template_name='Name',
-            template_id='ID',
-            template_disk_id='Disk ID',
-            template_disk_pool='Pool',
-            template_disk_source='Source Volume',
-            template_disk_size='Size [GB]',
-            template_disk_filesystem='Filesystem',
-            template_disk_fsargs='Arguments',
-            template_disk_mountpoint='Mountpoint'
-        )
+        template_name_length=template_name_length,
+        template_id_length=template_id_length,
+        template_disk_id_length=template_disk_id_length,
+        template_disk_pool_length=template_disk_pool_length,
+        template_disk_source_length=template_disk_source_length,
+        template_disk_size_length=template_disk_size_length,
+        template_disk_filesystem_length=template_disk_filesystem_length,
+        template_disk_fsargs_length=template_disk_fsargs_length,
+        template_disk_mountpoint_length=template_disk_mountpoint_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_name='Name',
+        template_id='ID',
+        template_disk_id='Disk ID',
+        template_disk_pool='Pool',
+        template_disk_source='Source Volume',
+        template_disk_size='Size [GB]',
+        template_disk_filesystem='Filesystem',
+        template_disk_fsargs='Arguments',
+        template_disk_mountpoint='Mountpoint')
 
     # Format the string (elements)
     for template in sorted(template_template, key=lambda i: i.get('name', None)):
@@ -1063,16 +1088,16 @@ def format_list_template_storage(template_template):
 
     return '\n'.join([template_list_output_header] + template_list_output)
 
+
 def format_list_userdata(userdata_data, lines=None):
     if isinstance(userdata_data, dict):
-        userdata_data = [ userdata_data ]
+        userdata_data = [userdata_data]
 
     userdata_list_output = []
 
     # Determine optimal column widths
     userdata_name_length = 5
     userdata_id_length = 3
-    userdata_useruserdata_length = 8
 
     for userdata in userdata_data:
         # userdata_name column
@@ -1087,14 +1112,13 @@ def format_list_userdata(userdata_data, lines=None):
     # Format the string (header)
     userdata_list_output_header = '{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
 {userdata_data}{end_bold}'.format(
-            userdata_name_length=userdata_name_length,
-            userdata_id_length=userdata_id_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            userdata_name='Name',
-            userdata_id='ID',
-            userdata_data='Document'
-        )
+        userdata_name_length=userdata_name_length,
+        userdata_id_length=userdata_id_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        userdata_name='Name',
+        userdata_id='ID',
+        userdata_data='Document')
 
     # Format the string (elements)
     for data in sorted(userdata_data, key=lambda i: i.get('name', None)):
@@ -1138,16 +1162,16 @@ def format_list_userdata(userdata_data, lines=None):
 
     return '\n'.join([userdata_list_output_header] + userdata_list_output)
 
+
 def format_list_script(script_data, lines=None):
     if isinstance(script_data, dict):
-        script_data = [ script_data ]
+        script_data = [script_data]
 
     script_list_output = []
 
     # Determine optimal column widths
     script_name_length = 5
     script_id_length = 3
-    script_script_length = 8
 
     for script in script_data:
         # script_name column
@@ -1162,14 +1186,13 @@ def format_list_script(script_data, lines=None):
     # Format the string (header)
     script_list_output_header = '{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
 {script_data}{end_bold}'.format(
-            script_name_length=script_name_length,
-            script_id_length=script_id_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            script_name='Name',
-            script_id='ID',
-            script_data='Script'
-        )
+        script_name_length=script_name_length,
+        script_id_length=script_id_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        script_name='Name',
+        script_id='ID',
+        script_data='Script')
 
     # Format the string (elements)
     for script in sorted(script_data, key=lambda i: i.get('name', None)):
@@ -1213,9 +1236,10 @@ def format_list_script(script_data, lines=None):
 
     return '\n'.join([script_list_output_header] + script_list_output)
 
+
 def format_list_ova(ova_data):
     if isinstance(ova_data, dict):
-        ova_data = [ ova_data ]
+        ova_data = [ova_data]
 
     ova_list_output = []
 
@@ -1267,23 +1291,22 @@ def format_list_ova(ova_data):
 {ova_disk_pool: <{ova_disk_pool_length}} \
 {ova_disk_volume_format: <{ova_disk_volume_format_length}} \
 {ova_disk_volume_name: <{ova_disk_volume_name_length}}{end_bold}'.format(
-            ova_name_length=ova_name_length,
-            ova_id_length=ova_id_length,
-            ova_disk_id_length=ova_disk_id_length,
-            ova_disk_pool_length=ova_disk_pool_length,
-            ova_disk_size_length=ova_disk_size_length,
-            ova_disk_volume_format_length=ova_disk_volume_format_length,
-            ova_disk_volume_name_length=ova_disk_volume_name_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            ova_name='Name',
-            ova_id='ID',
-            ova_disk_id='Disk ID',
-            ova_disk_size='Size [GB]',
-            ova_disk_pool='Pool',
-            ova_disk_volume_format='Format',
-            ova_disk_volume_name='Source Volume',
-        )
+        ova_name_length=ova_name_length,
+        ova_id_length=ova_id_length,
+        ova_disk_id_length=ova_disk_id_length,
+        ova_disk_pool_length=ova_disk_pool_length,
+        ova_disk_size_length=ova_disk_size_length,
+        ova_disk_volume_format_length=ova_disk_volume_format_length,
+        ova_disk_volume_name_length=ova_disk_volume_name_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        ova_name='Name',
+        ova_id='ID',
+        ova_disk_id='Disk ID',
+        ova_disk_size='Size [GB]',
+        ova_disk_pool='Pool',
+        ova_disk_volume_format='Format',
+        ova_disk_volume_name='Source Volume')
 
     # Format the string (elements)
     for ova in sorted(ova_data, key=lambda i: i.get('name', None)):
@@ -1326,9 +1349,10 @@ def format_list_ova(ova_data):
 
     return '\n'.join([ova_list_output_header] + ova_list_output)
 
+
 def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
-        profile_data = [ profile_data ]
+        profile_data = [profile_data]
 
     # Format the profile "source" from the type and, if applicable, OVA profile name
     for profile in profile_data:
@@ -1395,26 +1419,25 @@ Templates: {profile_system_template: <{profile_system_template_length}} \
 Data: {profile_userdata: <{profile_userdata_length}} \
 {profile_script: <{profile_script_length}} \
 {profile_arguments}{end_bold}'.format(
-            profile_name_length=profile_name_length,
-            profile_id_length=profile_id_length,
-            profile_source_length=profile_source_length,
-            profile_system_template_length=profile_system_template_length,
-            profile_network_template_length=profile_network_template_length,
-            profile_storage_template_length=profile_storage_template_length,
-            profile_userdata_length=profile_userdata_length,
-            profile_script_length=profile_script_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            profile_name='Name',
-            profile_id='ID',
-            profile_source='Source',
-            profile_system_template='System',
-            profile_network_template='Network',
-            profile_storage_template='Storage',
-            profile_userdata='Userdata',
-            profile_script='Script',
-            profile_arguments='Script Arguments'
-        )
+        profile_name_length=profile_name_length,
+        profile_id_length=profile_id_length,
+        profile_source_length=profile_source_length,
+        profile_system_template_length=profile_system_template_length,
+        profile_network_template_length=profile_network_template_length,
+        profile_storage_template_length=profile_storage_template_length,
+        profile_userdata_length=profile_userdata_length,
+        profile_script_length=profile_script_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        profile_name='Name',
+        profile_id='ID',
+        profile_source='Source',
+        profile_system_template='System',
+        profile_network_template='Network',
+        profile_storage_template='Storage',
+        profile_userdata='Userdata',
+        profile_script='Script',
+        profile_arguments='Script Arguments')
 
     # Format the string (elements)
     for profile in sorted(profile_data, key=lambda i: i.get('name', None)):
@@ -1449,6 +1472,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
         )
 
     return '\n'.join([profile_list_output_header] + profile_list_output)
+
 
 def format_list_task(task_data):
     task_list_output = []
@@ -1499,23 +1523,22 @@ VM: {task_vm_name: <{task_vm_name_length}} \
 {task_vm_profile: <{task_vm_profile_length}} \
 {task_vm_define: <{task_vm_define_length}} \
 {task_vm_start: <{task_vm_start_length}}{end_bold}'.format(
-            task_id_length=task_id_length,
-            task_type_length=task_type_length,
-            task_worker_length=task_worker_length,
-            task_vm_name_length=task_vm_name_length,
-            task_vm_profile_length=task_vm_profile_length,
-            task_vm_define_length=task_vm_define_length,
-            task_vm_start_length=task_vm_start_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            task_id='Job ID',
-            task_type='Status',
-            task_worker='Worker',
-            task_vm_name='Name',
-            task_vm_profile='Profile',
-            task_vm_define='Define?',
-            task_vm_start='Start?'
-        )
+        task_id_length=task_id_length,
+        task_type_length=task_type_length,
+        task_worker_length=task_worker_length,
+        task_vm_name_length=task_vm_name_length,
+        task_vm_profile_length=task_vm_profile_length,
+        task_vm_define_length=task_vm_define_length,
+        task_vm_start_length=task_vm_start_length,
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        task_id='Job ID',
+        task_type='Status',
+        task_worker='Worker',
+        task_vm_name='Name',
+        task_vm_profile='Profile',
+        task_vm_define='Define?',
+        task_vm_start='Start?')
 
     # Format the string (elements)
     for task in sorted(task_data, key=lambda i: i.get('type', None)):

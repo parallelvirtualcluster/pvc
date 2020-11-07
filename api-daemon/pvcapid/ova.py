@@ -21,30 +21,23 @@
 ###############################################################################
 
 import flask
-import json
 import psycopg2
 import psycopg2.extras
-import os
 import re
-import time
 import math
 import tarfile
-import shutil
-import shlex
-import subprocess
 
 import lxml.etree
 
 from werkzeug.formparser import parse_form_data
 
 import daemon_lib.common as pvc_common
-import daemon_lib.node as pvc_node
-import daemon_lib.vm as pvc_vm
-import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
-import pvcapid.libvirt_schema as libvirt_schema
 import pvcapid.provisioner as provisioner
+
+config = None  # Set in this namespace by flaskapi
+
 
 #
 # Common functions
@@ -62,11 +55,13 @@ def open_database(config):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
 
+
 def close_database(conn, cur, failed=False):
     if not failed:
         conn.commit()
     cur.close()
     conn.close()
+
 
 #
 # OVA functions
@@ -75,11 +70,11 @@ def list_ova(limit, is_fuzzy=True):
     if limit:
         if is_fuzzy:
             # Handle fuzzy vs. non-fuzzy limits
-            if not re.match('\^.*', limit):
+            if not re.match('[^].*', limit):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*\$', limit):
+            if not re.match('.*[$]', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]
@@ -113,12 +108,13 @@ def list_ova(limit, is_fuzzy=True):
     if ova_data:
         return ova_data, 200
     else:
-        return { 'message': 'No OVAs found.' }, 404
+        return {'message': 'No OVAs found.'}, 404
+
 
 def delete_ova(name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
     if retcode != 200:
-        retmsg = { 'message': 'The OVA "{}" does not exist.'.format(name) }
+        retmsg = {'message': 'The OVA "{}" does not exist.'.format(name)}
         retcode = 400
         return retmsg, retcode
 
@@ -156,13 +152,14 @@ def delete_ova(name):
         args = (ova_id,)
         cur.execute(query, args)
 
-        retmsg = { "message": 'Removed OVA image "{}".'.format(name) }
+        retmsg = {"message": 'Removed OVA image "{}".'.format(name)}
         retcode = 200
     except Exception as e:
-        retmsg = { 'message': 'Failed to remove OVA "{}": {}'.format(name, e) }
+        retmsg = {'message': 'Failed to remove OVA "{}": {}'.format(name, e)}
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def upload_ova(pool, name, ova_size):
     ova_archive = None
@@ -233,7 +230,7 @@ def upload_ova(pool, name, ova_size):
         def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
             return open(ova_blockdev, 'wb')
         parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
-    except:
+    except Exception:
         output = {
             'message': "Failed to upload or write OVA file to temporary volume."
         }
@@ -255,7 +252,7 @@ def upload_ova(pool, name, ova_size):
         return output, retcode
 
     # Parse through the members list and extract the OVF file
-    for element in set(x for x in members if re.match('.*\.ovf$', x.name)):
+    for element in set(x for x in members if re.match('.*[.]ovf$', x.name)):
         ovf_file = ova_archive.extractfile(element)
 
     # Parse the OVF file to get our VM details
@@ -273,12 +270,10 @@ def upload_ova(pool, name, ova_size):
         disk_identifier = "sd{}".format(chr(ord('a') + idx))
         volume = "ova_{}_{}".format(name, disk_identifier)
         dev_src = disk.get('src')
-        dev_type = dev_src.split('.')[-1]
         dev_size_raw = ova_archive.getmember(dev_src).size
         vm_volume_size = disk.get('capacity')
 
         # Normalize the dev size to bytes
-        dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(dev_size_raw)[:-1])
         dev_size = pvc_ceph.format_bytes_fromhuman(dev_size_raw)
 
         def cleanup_img_maps():
@@ -321,15 +316,13 @@ def upload_ova(pool, name, ova_size):
             # Open the temporary blockdev and seek to byte 0
             blk_file = open(temp_blockdev, 'wb')
             blk_file.seek(0)
-            # Write the contents of vmdk_file into blk_file
-            bytes_written = blk_file.write(vmdk_file.read())
             # Close blk_file (and flush the buffers)
             blk_file.close()
             # Close vmdk_file
             vmdk_file.close()
             # Perform an OS-level sync
             pvc_common.run_os_command('sync')
-        except:
+        except Exception:
             output = {
                 'message': "Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
             }
@@ -419,16 +412,17 @@ def upload_ova(pool, name, ova_size):
     retcode = 200
     return output, retcode
 
+
 #
 # OVF parser
 #
 class OVFParser(object):
     RASD_TYPE = {
-        "1":  "vmci",
-        "3":  "vcpus",
-        "4":  "vram",
-        "5":  "ide-controller",
-        "6":  "scsi-controller",
+        "1": "vmci",
+        "3": "vcpus",
+        "4": "vram",
+        "5": "ide-controller",
+        "6": "scsi-controller",
         "10": "ethernet-adapter",
         "15": "cdrom",
         "17": "disk",
@@ -442,7 +436,7 @@ class OVFParser(object):
         path = "{{{schema}}}References/{{{schema}}}File".format(schema=self.OVF_SCHEMA)
         id_attr = "{{{schema}}}id".format(schema=self.OVF_SCHEMA)
         href_attr = "{{{schema}}}href".format(schema=self.OVF_SCHEMA)
-        current_list = self.xml.findall(path) 
+        current_list = self.xml.findall(path)
         results = [(x.get(id_attr), x.get(href_attr)) for x in current_list]
         return results
 
@@ -452,12 +446,12 @@ class OVFParser(object):
         ref_attr = "{{{schema}}}fileRef".format(schema=self.OVF_SCHEMA)
         cap_attr = "{{{schema}}}capacity".format(schema=self.OVF_SCHEMA)
         cap_units = "{{{schema}}}capacityAllocationUnits".format(schema=self.OVF_SCHEMA)
-        current_list = self.xml.findall(path) 
+        current_list = self.xml.findall(path)
         results = [(x.get(id_attr), x.get(ref_attr), x.get(cap_attr), x.get(cap_units)) for x in current_list]
         return results
 
     def _getAttributes(self, virtual_system, path, attribute):
-        current_list = virtual_system.findall(path) 
+        current_list = virtual_system.findall(path)
         results = [x.get(attribute) for x in current_list]
         return results
 
@@ -493,7 +487,7 @@ class OVFParser(object):
         for item in hardware_list:
             try:
                 item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
-            except:
+            except Exception:
                 continue
             quantity = item.find("{{{rasd}}}VirtualQuantity".format(rasd=self.RASD_SCHEMA))
             if quantity is None:
@@ -514,7 +508,7 @@ class OVFParser(object):
                 "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(schema=self.OVF_SCHEMA)
             )
         disk_list = []
-        
+
         for item in hardware_list:
             item_type = None
 
@@ -543,7 +537,7 @@ class OVFParser(object):
                 # Handle the unit conversion
                 base_unit, action, multiple = disk_capacity_unit.split()
                 multiple_base, multiple_exponent = multiple.split('^')
-                disk_capacity = int(disk_capacity) * ( int(multiple_base) ** int(multiple_exponent) )
+                disk_capacity = int(disk_capacity) * (int(multiple_base) ** int(multiple_exponent))
 
             # Append the disk with all details to the list
             disk_list.append({

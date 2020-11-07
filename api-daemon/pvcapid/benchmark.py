@@ -20,25 +20,16 @@
 #
 ###############################################################################
 
-import flask
-import json
 import psycopg2
 import psycopg2.extras
-import os
-import re
-import time
-import shlex
-import subprocess
 
 from distutils.util import strtobool as dustrtobool
 
 import daemon_lib.common as pvc_common
-import daemon_lib.node as pvc_node
 import daemon_lib.ceph as pvc_ceph
 
-import pvcapid.libvirt_schema as libvirt_schema
+config = None  # Set in this namespace by flaskapi
 
-from pvcapid.ova import list_ova
 
 def strtobool(stringv):
     if stringv is None:
@@ -47,8 +38,9 @@ def strtobool(stringv):
         return bool(stringv)
     try:
         return bool(dustrtobool(stringv))
-    except:
+    except Exception:
         return False
+
 
 #
 # Exceptions (used by Celery tasks)
@@ -76,6 +68,7 @@ class BenchmarkError(Exception):
 # Common functions
 #
 
+
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(
@@ -88,11 +81,13 @@ def open_database(config):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
 
+
 def close_database(conn, cur, failed=False):
     if not failed:
         conn.commit()
     cur.close()
     conn.close()
+
 
 def list_benchmarks(job=None):
     if job is not None:
@@ -117,7 +112,8 @@ def list_benchmarks(job=None):
     if data:
         return data, 200
     else:
-        return { 'message': 'No benchmark found.' }, 404
+        return {'message': 'No benchmark found.'}, 404
+
 
 def run_benchmark(self, pool):
     # Runtime imports
@@ -134,16 +130,15 @@ def run_benchmark(self, pool):
     # Phase 0 - connect to databases
     try:
         db_conn, db_cur = open_database(config)
-    except:
+    except Exception:
         print('FATAL - failed to connect to Postgres')
         raise Exception
 
     try:
         zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    except:
+    except Exception:
         print('FATAL - failed to connect to Zookeeper')
         raise Exception
-
 
     print("Storing running status for job '{}' in database".format(cur_time))
     try:
@@ -242,12 +237,11 @@ def run_benchmark(self, pool):
                 --bs={bs} \
                 --readwrite={rw}
         """.format(
-                pool=pool,
-                volume=volume,
-                test=test,
-                bs=test_matrix[test]['bs'],
-                rw=test_matrix[test]['rw']
-            )
+            pool=pool,
+            volume=volume,
+            test=test,
+            bs=test_matrix[test]['bs'],
+            rw=test_matrix[test]['rw'])
 
         retcode, stdout, stderr = pvc_common.run_os_command(fio_cmd)
         if retcode:
@@ -324,19 +318,19 @@ def run_benchmark(self, pool):
             #         7:   IOPS
             #         8:   runtime (msec)
             # Total latency
-            #         37:  min 
-            #         38:  max 
+            #         37:  min
+            #         38:  max
             #         39:  mean
             #         40:  stdev
             # Bandwidth
-            #         41:  min 
-            #         42:  max 
+            #         41:  min
+            #         42:  max
             #         44:  mean
             #         45:  stdev
             #         46:  # samples
             # IOPS
-            #         47:  min 
-            #         48:  max 
+            #         47:  min
+            #         48:  max
             #         49:  mean
             #         50:  stdev
             #         51:  # samples
@@ -405,7 +399,7 @@ def run_benchmark(self, pool):
             #         96:  mean
             #         97:  stdev
             #         98:  # samples
-            # CPU     
+            # CPU
             #         146: user
             #         147: system
             #         148: ctx switches
@@ -446,7 +440,7 @@ def run_benchmark(self, pool):
                     "minfault": results[150]
                 }
             }
-        
+
     # Phase 3 - cleanup
     self.update_state(state='RUNNING', meta={'current': 3, 'total': 3, 'status': 'Cleaning up and storing results'})
     time.sleep(1)
@@ -469,4 +463,4 @@ def run_benchmark(self, pool):
 
     close_database(db_conn, db_cur)
     pvc_common.stopZKConnection(zk_conn)
-    return { 'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3 }
+    return {'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3}

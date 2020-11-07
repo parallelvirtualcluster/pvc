@@ -22,6 +22,7 @@
 
 import uuid
 
+
 # Child list function
 def listchildren(zk_conn, key):
     try:
@@ -29,6 +30,7 @@ def listchildren(zk_conn, key):
         return children
     except Exception:
         return None
+
 
 # Key deletion function
 def deletekey(zk_conn, key, recursive=True):
@@ -38,15 +40,16 @@ def deletekey(zk_conn, key, recursive=True):
     except Exception:
         return False
 
+
 # Data read function
 def readdata(zk_conn, key):
     try:
         data_raw = zk_conn.get(key)
         data = data_raw[0].decode('utf8')
-        meta = data_raw[1]
         return data
     except Exception:
         return None
+
 
 # Data write function
 def writedata(zk_conn, kv):
@@ -88,6 +91,7 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+
 # Key rename function
 def renamekey(zk_conn, kv):
     # This one is not transactional because, inexplicably, transactions don't
@@ -102,8 +106,9 @@ def renamekey(zk_conn, kv):
 
             old_data = zk_conn.get(old_name)[0]
 
-            # Find the children of old_name recursively
             child_keys = list()
+
+            # Find the children of old_name recursively
             def get_children(key):
                 children = zk_conn.get_children(key)
                 if not children:
@@ -133,6 +138,7 @@ def renamekey(zk_conn, kv):
     except Exception:
         return False
 
+
 # Write lock function
 def writelock(zk_conn, key):
     count = 1
@@ -149,6 +155,7 @@ def writelock(zk_conn, key):
                 continue
     return lock
 
+
 # Read lock function
 def readlock(zk_conn, key):
     count = 1
@@ -164,6 +171,7 @@ def readlock(zk_conn, key):
             else:
                 continue
     return lock
+
 
 # Exclusive lock function
 def exclusivelock(zk_conn, key):

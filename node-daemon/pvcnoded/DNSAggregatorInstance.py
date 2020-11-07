@@ -27,9 +27,8 @@ import psycopg2
 
 from threading import Thread, Event
 
-import pvcnoded.log as log
-import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
+
 
 class DNSAggregatorInstance(object):
     # Initialization function
@@ -67,6 +66,7 @@ class DNSAggregatorInstance(object):
             del self.dns_networks[network]
             self.dns_axfr_daemon.update_networks(self.dns_networks)
 
+
 class PowerDNSInstance(object):
     # Initialization function
     def __init__(self, aggregator):
@@ -86,37 +86,30 @@ class PowerDNSInstance(object):
         )
         # Define the PowerDNS config
         dns_configuration = [
-            # Option                            # Explanation
+            # Option                             # Explanation
             '--no-config',
-            '--daemon=no',                      # Start directly
-            '--guardian=yes',                   # Use a guardian
-            '--disable-syslog=yes',             # Log only to stdout (which is then captured)
-            '--disable-axfr=no',                # Allow AXFRs
-            '--allow-axfr-ips=0.0.0.0/0',       # Allow AXFRs to anywhere
-            '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),
-                                                # Listen on floating IPs
-            '--local-port=53',                  # On port 53
-            '--log-dns-details=on',             # Log details
-            '--loglevel=3',                     # Log info
-            '--master=yes',                     # Enable master mode
-            '--slave=yes',                      # Enable slave mode
-            '--slave-renotify=yes',             # Renotify out for our slaved zones
-            '--version-string=powerdns',        # Set the version string
-            '--default-soa-name=dns.pvc.local', # Override dnsmasq's invalid name
-            '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),
-                                                # Standard socket directory
-            '--launch=gpgsql',                  # Use the PostgreSQL backend
-            '--gpgsql-host={}'.format(self.config['pdns_postgresql_host']),
-                                                # PostgreSQL instance
-            '--gpgsql-port={}'.format(self.config['pdns_postgresql_port']),
-                                                # Default port
-            '--gpgsql-dbname={}'.format(self.config['pdns_postgresql_dbname']),
-                                                # Database name
-            '--gpgsql-user={}'.format(self.config['pdns_postgresql_user']),
-                                                # User name
-            '--gpgsql-password={}'.format(self.config['pdns_postgresql_password']),
-                                                # User password
-            '--gpgsql-dnssec=no',               # Do DNSSEC elsewhere
+            '--daemon=no',                       # Start directly
+            '--guardian=yes',                    # Use a guardian
+            '--disable-syslog=yes',              # Log only to stdout (which is then captured)
+            '--disable-axfr=no',                 # Allow AXFRs
+            '--allow-axfr-ips=0.0.0.0/0',        # Allow AXFRs to anywhere
+            '--local-address={},{}'.format(self.vni_ipaddr, self.upstream_ipaddr),  # Listen on floating IPs
+            '--local-port=53',                   # On port 53
+            '--log-dns-details=on',              # Log details
+            '--loglevel=3',                      # Log info
+            '--master=yes',                      # Enable master mode
+            '--slave=yes',                       # Enable slave mode
+            '--slave-renotify=yes',              # Renotify out for our slaved zones
+            '--version-string=powerdns',         # Set the version string
+            '--default-soa-name=dns.pvc.local',  # Override dnsmasq's invalid name
+            '--socket-dir={}'.format(self.config['pdns_dynamic_directory']),  # Standard socket directory
+            '--launch=gpgsql',                   # Use the PostgreSQL backend
+            '--gpgsql-host={}'.format(self.config['pdns_postgresql_host']),  # PostgreSQL instance
+            '--gpgsql-port={}'.format(self.config['pdns_postgresql_port']),  # Default port
+            '--gpgsql-dbname={}'.format(self.config['pdns_postgresql_dbname']),  # Database name
+            '--gpgsql-user={}'.format(self.config['pdns_postgresql_user']),  # User name
+            '--gpgsql-password={}'.format(self.config['pdns_postgresql_password']),  # User password
+            '--gpgsql-dnssec=no',                # Do DNSSEC elsewhere
         ]
         # Start the pdns process in a thread
         self.dns_server_daemon = common.run_os_daemon(
@@ -131,7 +124,6 @@ class PowerDNSInstance(object):
                 'Successfully started PowerDNS zone aggregator',
                 state='o'
             )
-
 
     def stop(self):
         if self.dns_server_daemon:
@@ -148,6 +140,7 @@ class PowerDNSInstance(object):
                 state='o'
             )
 
+
 class DNSNetworkInstance(object):
     # Initialization function
     def __init__(self, aggregator, network):
@@ -160,10 +153,6 @@ class DNSNetworkInstance(object):
     # Add a new network to the aggregator database
     def add_network(self):
         network_domain = self.network.domain
-        if self.network.ip4_gateway != 'None':
-            network_gateway = self.network.ip4_gateway
-        else:
-            network_gateway = self.network.ip6_gateway
 
         self.logger.out(
             'Adding entry for client domain {}'.format(
@@ -176,11 +165,11 @@ class DNSNetworkInstance(object):
         # Connect to the database
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
         sql_curs = self.sql_conn.cursor()
@@ -252,11 +241,11 @@ class DNSNetworkInstance(object):
         # Connect to the database
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
         sql_curs = self.sql_conn.cursor()
@@ -308,16 +297,16 @@ class AXFRDaemonInstance(object):
         # after the leader transitions
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
 
         # Start the thread
-        self.thread.start() 
+        self.thread.start()
 
     def stop(self):
         self.thread_stopper.set()
@@ -332,12 +321,10 @@ class AXFRDaemonInstance(object):
         while not self.thread_stopper.is_set():
             # We do this for each network
             for network, instance in self.dns_networks.items():
-                zone_modified = False
-
                 # Set up our SQL cursor
                 try:
                     sql_curs = self.sql_conn.cursor()
-                except:
+                except Exception:
                     time.sleep(0.5)
                     continue
 
@@ -446,7 +433,7 @@ class AXFRDaemonInstance(object):
                         self.logger.out('Old but not new: {}'.format(in_old_not_in_new), state='d', prefix='dns-aggregator')
 
                     # Go through the old list
-                    remove_records = list() # list of database IDs
+                    remove_records = list()  # list of database IDs
                     for i in range(len(records_old)):
                         record_id = records_old_ids[i]
                         record = records_old[i]
