@@ -20,6 +20,7 @@
 #
 ###############################################################################
 
+import re
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 
