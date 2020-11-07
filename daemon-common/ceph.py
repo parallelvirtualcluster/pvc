@@ -238,7 +238,7 @@ def add_osd(zk_conn, node, device, weight):
             else:
                 message = 'ERROR: Failed to create new OSD; check node logs for details.'
                 success = False
-        except:
+        except Exception:
             message = 'ERROR: Command ignored by node.'
             success = False
 
@@ -270,7 +270,7 @@ def remove_osd(zk_conn, osd_id):
             else:
                 message = 'ERROR: Failed to remove OSD; check node logs for details.'
                 success = False
-        except:
+        except Exception:
             success = False
             message = 'ERROR Command ignored by node.'
 
@@ -593,7 +593,7 @@ def add_pool(zk_conn, name, pgs, replcfg):
         copies, mincopies = replcfg.split(',')
         copies = int(copies.replace('copies=', ''))
         mincopies = int(mincopies.replace('mincopies=', ''))
-    except:
+    except Exception:
         copies = None
         mincopies = None
     if not copies or not mincopies:
@@ -962,7 +962,7 @@ def resize_volume(zk_conn, pool, name, size):
             if target_vm_conn:
                 target_vm_conn.blockResize(volume_id, int(format_bytes_fromhuman(size)[:-1]), libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
             target_lv_conn.close()
-        except:
+        except Exception:
             pass
 
     # 2. Get volume stats

@@ -55,11 +55,11 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
 
     try:
         stdout = command_output.stdout.decode('ascii')
-    except:
+    except Exception:
         stdout = ''
     try:
         stderr = command_output.stderr.decode('ascii')
-    except:
+    except Exception:
         stderr = ''
     return retcode, stdout, stderr
 
@@ -70,7 +70,7 @@ def validateUUID(dom_uuid):
     try:
         uuid.UUID(dom_uuid)
         return True
-    except:
+    except Exception:
         return False
 
 #
@@ -98,7 +98,7 @@ def stopZKConnection(zk_conn):
 def getDomainXML(zk_conn, dom_uuid):
     try:
         xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
-    except:
+    except Exception:
         return None
 
     # Parse XML using lxml.objectify
@@ -125,7 +125,7 @@ def getDomainMainDetails(parsed_xml):
     dvcpu = str(parsed_xml.vcpu)
     try:
         dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib.get('sockets'), parsed_xml.cpu.topology.attrib.get('cores'), parsed_xml.cpu.topology.attrib.get('threads'))
-    except:
+    except Exception:
         dvcputopo = 'N/A'
 
     return duuid, dname, ddescription, dmemory, dvcpu, dvcputopo
@@ -150,7 +150,7 @@ def getDomainCPUFeatures(parsed_xml):
     try:
         for feature in parsed_xml.features.getchildren():
             dfeatures.append(feature.tag)
-    except:
+    except Exception:
         pass
 
     return dfeatures
@@ -168,7 +168,7 @@ def getDomainDisks(parsed_xml, stats_data):
             disk_stats_list = [x for x in stats_data.get('disk_stats', []) if x.get('name') == disk_attrib.get('name')]
             try:
                 disk_stats = disk_stats_list[0]
-            except:
+            except Exception:
                 disk_stats = {}
 
             if disk_type == 'network':
@@ -225,19 +225,19 @@ def getInformationFromXML(zk_conn, uuid):
 
     try:
         domain_node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(uuid))
-    except:
+    except Exception:
         domain_node_limit = None
     try:
         domain_node_selector = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(uuid))
-    except:
+    except Exception:
         domain_node_selector = None
     try:
         domain_node_autostart = zkhandler.readdata(zk_conn, '/domains/{}/node_autostart'.format(uuid))
-    except:
+    except Exception:
         domain_node_autostart = None
     try:
         domain_migration_method = zkhandler.readdata(zk_conn, '/domains/{}/migration_method'.format(uuid))
-    except:
+    except Exception:
         domain_migration_method = None
 
     if not domain_node_limit:
@@ -250,14 +250,14 @@ def getInformationFromXML(zk_conn, uuid):
 
     try:
         domain_profile = zkhandler.readdata(zk_conn, '/domains/{}/profile'.format(uuid))
-    except:
+    except Exception:
         domain_profile = None
 
     parsed_xml = getDomainXML(zk_conn, uuid)
 
     try:
         stats_data = loads(zkhandler.readdata(zk_conn, '/domains/{}/stats'.format(uuid)))
-    except:
+    except Exception:
         stats_data = {}
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
@@ -316,24 +316,24 @@ def getDomainNetworks(parsed_xml, stats_data):
         if device.tag == 'interface':
             try:
                 net_type = device.attrib.get('type')
-            except:
+            except Exception:
                 net_type = None
             try:
                 net_mac = device.mac.attrib.get('address')
-            except:
+            except Exception:
                 net_mac = None
             try:
                 net_bridge = device.source.attrib.get(net_type)
-            except:
+            except Exception:
                 net_bridge = None
             try:
                 net_model = device.model.attrib.get('type')
-            except:
+            except Exception:
                 net_model = None
             try:
                 net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
                 net_stats = net_stats_list[0]
-            except:
+            except Exception:
                 net_stats = {}
             net_rd_bytes = net_stats.get('rd_bytes', 0)
             net_rd_packets = net_stats.get('rd_packets', 0)
@@ -395,7 +395,7 @@ def getPrimaryNode(zk_conn):
     while True:
         try:
             primary_node = zkhandler.readdata(zk_conn, '/primary_node')
-        except:
+        except Exception:
             primary_node == 'none'
 
         if primary_node == 'none':
@@ -420,13 +420,13 @@ def findTargetNode(zk_conn, dom_uuid):
         node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
         if not any(node_limit):
             node_limit = None
-    except:
+    except Exception:
         node_limit = None
 
     # Determine VM search field or use default; set config value if read fails
     try:
         search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
-    except:
+    except Exception:
         search_field = 'mem'
 
     # Execute the search

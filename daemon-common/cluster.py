@@ -37,14 +37,14 @@ def set_maintenance(zk_conn, maint_state):
         else:
             zkhandler.writedata(zk_conn, {'/maintenance': 'false'})
             return True, 'Successfully set cluster in normal mode'
-    except:
+    except Exception:
         return False, 'Failed to set cluster maintenance state'
 
 def getClusterInformation(zk_conn):
     # Get cluster maintenance state
     try:
         maint_state = zkhandler.readdata(zk_conn, '/maintenance')
-    except:
+    except Exception:
         maint_state = 'false'
 
     # List of messages to display to the clients

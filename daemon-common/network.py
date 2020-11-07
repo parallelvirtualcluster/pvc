@@ -392,7 +392,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
     # Remove the entry from zookeeper
     try:
         zkhandler.deletekey(zk_conn, '/networks/{}/dhcp4_{}/{}'.format(net_vni, lease_type_zk, match_description))
-    except:
+    except Exception:
         return False, 'ERROR: Failed to write to Zookeeper!'
 
     return True, 'DHCP {} "{}" removed successfully!'.format(lease_type_human, match_description)

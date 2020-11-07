@@ -50,15 +50,15 @@ def install(**kwargs):
     # failures of these gracefully, should administrators forget to specify them.
     try:
         deb_release = kwargs['deb_release']
-    except:
+    except Exception:
         deb_release = "stable"
     try:
         deb_mirror = kwargs['deb_mirror']
-    except:
+    except Exception:
         deb_mirror = "http://ftp.debian.org/debian"
     try:
         deb_packages = kwargs['deb_packages'].split(',')
-    except:
+    except Exception:
         deb_packages = ["linux-image-amd64", "grub-pc", "cloud-init", "python3-cffi-backend", "wget"]
 
     # We need to know our root disk

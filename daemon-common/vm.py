@@ -135,7 +135,7 @@ def flush_locks(zk_conn, domain):
             else:
                 message = 'ERROR: Failed to flush locks on VM "{}"; check node logs for details.'.format(domain)
                 success = False
-        except:
+        except Exception:
             message = 'ERROR: Command ignored by node.'
             success = False
 
@@ -151,7 +151,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
-    except:
+    except Exception:
         return False, 'ERROR: Failed to parse XML data.'
     dom_uuid = parsed_xml.uuid.text
     dom_name = parsed_xml.name.text
@@ -247,7 +247,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     # Parse and valiate the XML
     try:
         parsed_xml = lxml.objectify.fromstring(new_vm_config)
-    except:
+    except Exception:
         return False, 'ERROR: Failed to parse XML data.'
 
     # Obtain the RBD disk list using the common functions
