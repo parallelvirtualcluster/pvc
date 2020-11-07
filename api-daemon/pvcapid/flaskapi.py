@@ -144,6 +144,7 @@ celery.conf.update(app.config)
 class RequestParser(object):
     def __init__(self, reqargs):
         self.reqargs = reqargs
+
     def __call__(self, function):
         if not callable(function):
             return
