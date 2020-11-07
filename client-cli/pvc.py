@@ -1446,7 +1446,7 @@ def net_acl():
 @click.option(
     '--in/--out', 'direction',
     is_flag=True,
-    default=True, #inbound
+    default=True, # inbound
     help='Inbound or outbound ruleset.'
 )
 @click.option(
