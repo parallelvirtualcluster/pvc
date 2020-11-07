@@ -366,10 +366,10 @@ def format_info(config, domain_information, long_output):
             format_metric(domain_information['memory_stats'].get('swap_in')),
             format_metric(domain_information['memory_stats'].get('swap_out')),
             '/'.join([format_metric(domain_information['memory_stats'].get('major_fault')), format_metric(domain_information['memory_stats'].get('minor_fault'))]),
-            format_bytes(domain_information['memory_stats'].get('available')*1024),
-            format_bytes(domain_information['memory_stats'].get('usable')*1024),
-            format_bytes(domain_information['memory_stats'].get('unused')*1024),
-            format_bytes(domain_information['memory_stats'].get('rss')*1024)
+            format_bytes(domain_information['memory_stats'].get('available') * 1024),
+            format_bytes(domain_information['memory_stats'].get('usable') * 1024),
+            format_bytes(domain_information['memory_stats'].get('unused') * 1024),
+            format_bytes(domain_information['memory_stats'].get('rss') * 1024)
         ))
         ainformation.append('')
         ainformation.append('{0}vCPU stats:{1}         {2}CPU time (ns)     User time (ns)    System time (ns){3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))

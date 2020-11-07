@@ -32,10 +32,10 @@ def format_bytes(size_bytes):
     byte_unit_matrix = {
         'B': 1,
         'K': 1024,
-        'M': 1024*1024,
-        'G': 1024*1024*1024,
-        'T': 1024*1024*1024*1024,
-        'P': 1024*1024*1024*1024*1024
+        'M': 1024 * 1024,
+        'G': 1024 * 1024 * 1024,
+        'T': 1024 * 1024 * 1024 * 1024,
+        'P': 1024 * 1024 * 1024 * 1024 * 1024
     }
     human_bytes = '0B'
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get):
@@ -50,10 +50,10 @@ def format_metric(integer):
     integer_unit_matrix = {
         '': 1,
         'K': 1000,
-        'M': 1000*1000,
-        'B': 1000*1000*1000,
-        'T': 1000*1000*1000*1000,
-        'Q': 1000*1000*1000*1000*1000
+        'M': 1000 * 1000,
+        'B': 1000 * 1000 * 1000,
+        'T': 1000 * 1000 * 1000 * 1000,
+        'Q': 1000 * 1000 * 1000 * 1000 * 1000
     }
     human_integer = '0'
     for unit in sorted(integer_unit_matrix, key=integer_unit_matrix.get):
