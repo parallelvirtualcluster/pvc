@@ -24,6 +24,7 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 
 from pvcapid.flaskapi import app, db
+from pvcapid.models import *  # noqa F401,F403
 
 migrate = Migrate(app, db)
 manager = Manager(app)
