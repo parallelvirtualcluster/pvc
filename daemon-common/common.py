@@ -559,7 +559,6 @@ def runRemoteCommand(node, command, become=False):
     ssh_client = paramiko.client.SSHClient()
     ssh_client.load_system_host_keys()
     ssh_client.set_missing_host_key_policy(DnssecPolicy())
-    #ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh_client.connect(node)
     stdin, stdout, stderr = ssh_client.exec_command(command)
     return stdout.read().decode('ascii').rstrip(), stderr.read().decode('ascii').rstrip()

@@ -532,7 +532,6 @@ def get_list(zk_conn, limit, is_fuzzy=True):
         else:
             net_list.append(getNetworkInformation(zk_conn, net))
 
-    #output_string = formatNetworkList(zk_conn, net_list)
     return True, net_list
 
 def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
@@ -618,7 +617,6 @@ def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
         if valid_acl:
             acl_list.append(acl)
 
-    #output_string = formatACLList(zk_conn, net_vni, direction, acl_list)
     return True, acl_list
 
 # CLI-only functions

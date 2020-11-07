@@ -106,7 +106,6 @@ except Exception:
 
 # Set local hostname and domain variables
 myfqdn = gethostname()
-#myfqdn = 'pvc-hv1.domain.net'
 myhostname = myfqdn.split('.', 1)[0]
 mydomainname = ''.join(myfqdn.split('.', 1)[1:])
 try:

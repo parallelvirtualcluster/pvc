@@ -228,23 +228,23 @@ class API_Root(Resource):
 api.add_resource(API_Root, '/')
 
 # /doc - NOTE: Until flask_swagger is packaged for Debian this must be disabled
-#class API_Doc(Resource):
-#    def get(self):
-#        """
-#        Provide the Swagger API documentation
-#        ---
-#        tags:
-#          - root
-#        responses:
-#          200:
-#            description: OK
-#        """
-#        swagger_data = swagger(pvc_api.app)
-#        swagger_data['info']['version'] = API_VERSION
-#        swagger_data['info']['title'] = "PVC Client and Provisioner API"
-#        swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
-#        return swagger_data
-#api.add_resource(API_Doc, '/doc')
+# class API_Doc(Resource):
+#     def get(self):
+#         """
+#         Provide the Swagger API documentation
+#         ---
+#         tags:
+#           - root
+#         responses:
+#           200:
+#             description: OK
+#         """
+#         swagger_data = swagger(pvc_api.app)
+#         swagger_data['info']['version'] = API_VERSION
+#         swagger_data['info']['title'] = "PVC Client and Provisioner API"
+#         swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
+#         return swagger_data
+# api.add_resource(API_Doc, '/doc')
 
 # /login
 class API_Login(Resource):
