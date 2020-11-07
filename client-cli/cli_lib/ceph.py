@@ -449,7 +449,7 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
         )
     )
 
-    for osd_information in sorted(osd_list, key = lambda x: int(x['id'])):
+    for osd_information in sorted(osd_list, key=lambda x: int(x['id'])):
         try:
             # If this happens, the node hasn't checked in fully yet, so just ignore it
             if osd_information['stats']['node'] == '|':
@@ -750,7 +750,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         )
     )
 
-    for pool_information in sorted(pool_list, key = lambda x: int(x['stats']['id'])):
+    for pool_information in sorted(pool_list, key=lambda x: int(x['stats']['id'])):
         # Format the output header
         pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \

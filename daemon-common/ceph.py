@@ -337,7 +337,7 @@ def get_list_osd(zk_conn, limit, is_fuzzy=True):
         else:
             osd_list.append(getOSDInformation(zk_conn, osd))
 
-    return True, sorted(osd_list, key = lambda x: int(x['id']))
+    return True, sorted(osd_list, key=lambda x: int(x['id']))
 
 def format_list_osd(osd_list):
     osd_list_output = []
@@ -667,7 +667,7 @@ def get_list_pool(zk_conn, limit, is_fuzzy=True):
         else:
             pool_list.append(getPoolInformation(zk_conn, pool))
 
-    return True, sorted(pool_list, key = lambda x: int(x['stats']['id']))
+    return True, sorted(pool_list, key=lambda x: int(x['stats']['id']))
 
 def format_list_pool(pool_list):
     pool_list_output = []
@@ -1086,7 +1086,7 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
         else:
             volume_list.append(getVolumeInformation(zk_conn, pool_name, volume_name))
 
-    return True, sorted(volume_list, key = lambda x: str(x['name']))
+    return True, sorted(volume_list, key=lambda x: str(x['name']))
 
 def format_list_volume(volume_list):
     volume_list_output = []
@@ -1297,7 +1297,7 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
         else:
             snapshot_list.append({'pool': pool_name, 'volume': volume_name, 'snapshot': snapshot_name})
 
-    return True, sorted(snapshot_list, key = lambda x: int(x['id']))
+    return True, sorted(snapshot_list, key=lambda x: int(x['id']))
 
 def format_list_snapshot(snapshot_list):
     snapshot_list_output = []
