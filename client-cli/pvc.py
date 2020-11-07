@@ -735,7 +735,7 @@ def vm_modify(domain, cfgfile, editor, restart):
         for line in diff:
             if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^[-]', line) is not None:
+            elif re.match('^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
@@ -3041,7 +3041,7 @@ def provisioner_userdata_modify(name, filename, editor):
         for line in diff:
             if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^[-]', line) is not None:
+            elif re.match('^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
@@ -3226,7 +3226,7 @@ def provisioner_script_modify(name, filename, editor):
         for line in diff:
             if re.match('^[+]', line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match('^[-]', line) is not None:
+            elif re.match('^\-', line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match('^[^]', line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
