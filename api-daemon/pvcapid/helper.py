@@ -36,6 +36,7 @@ import daemon_lib.ceph as pvc_ceph
 
 config = None  # Set in this namespace by flaskapi
 
+
 def strtobool(stringv):
     if stringv is None:
         return False
@@ -45,6 +46,7 @@ def strtobool(stringv):
         return bool(dustrtobool(stringv))
     except Exception:
         return False
+
 
 #
 # Initialization function
@@ -83,6 +85,7 @@ def initialize_cluster():
 
     return True
 
+
 #
 # Cluster functions
 #
@@ -95,6 +98,7 @@ def cluster_status():
     pvc_common.stopZKConnection(zk_conn)
 
     return retdata, 200
+
 
 def cluster_maintenance(maint_state='false'):
     """
@@ -113,6 +117,7 @@ def cluster_maintenance(maint_state='false'):
         retcode = 400
 
     return retdata, retcode
+
 
 #
 # Node functions
@@ -145,6 +150,7 @@ def node_list(limit=None, daemon_state=None, coordinator_state=None, domain_stat
 
     return retdata, retcode
 
+
 def node_daemon_state(node):
     """
     Return the daemon state of node NODE.
@@ -172,6 +178,7 @@ def node_daemon_state(node):
         }
 
     return retdata, retcode
+
 
 def node_coordinator_state(node):
     """
@@ -201,6 +208,7 @@ def node_coordinator_state(node):
 
     return retdata, retcode
 
+
 def node_domain_state(node):
     """
     Return the domain state of node NODE.
@@ -226,6 +234,7 @@ def node_domain_state(node):
 
     return retdata, retcode
 
+
 def node_secondary(node):
     """
     Take NODE out of primary router mode.
@@ -243,6 +252,7 @@ def node_secondary(node):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def node_primary(node):
     """
@@ -262,6 +272,7 @@ def node_primary(node):
     }
     return output, retcode
 
+
 def node_flush(node, wait):
     """
     Flush NODE of running VMs.
@@ -279,6 +290,7 @@ def node_flush(node, wait):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def node_ready(node, wait):
     """
@@ -298,6 +310,7 @@ def node_ready(node, wait):
     }
     return output, retcode
 
+
 #
 # VM functions
 #
@@ -310,6 +323,7 @@ def vm_is_migrated(vm):
     pvc_common.stopZKConnection(zk_conn)
 
     return retdata
+
 
 def vm_state(vm):
     """
@@ -342,6 +356,7 @@ def vm_state(vm):
         }
 
     return retdata, retcode
+
 
 def vm_node(vm):
     """
@@ -376,6 +391,7 @@ def vm_node(vm):
 
     return retdata, retcode
 
+
 def vm_console(vm, lines=None):
     """
     Return the current console log for VM.
@@ -403,6 +419,7 @@ def vm_console(vm, lines=None):
         }
 
     return retdata, retcode
+
 
 def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     """
@@ -432,6 +449,7 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
 
     return retdata, retcode
 
+
 def vm_define(xml, node, limit, selector, autostart, migration_method):
     """
     Define a VM from Libvirt XML in the PVC cluster.
@@ -456,6 +474,7 @@ def vm_define(xml, node, limit, selector, autostart, migration_method):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def get_vm_meta(vm):
     """
@@ -492,6 +511,7 @@ def get_vm_meta(vm):
 
     return retdata, retcode
 
+
 def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migration_method):
     """
     Update metadata of a VM.
@@ -514,6 +534,7 @@ def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migratio
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_modify(name, restart, xml):
     """
@@ -539,6 +560,7 @@ def vm_modify(name, restart, xml):
     }
     return output, retcode
 
+
 def vm_undefine(name):
     """
     Undefine a VM from the PVC cluster.
@@ -556,6 +578,7 @@ def vm_undefine(name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_remove(name):
     """
@@ -575,6 +598,7 @@ def vm_remove(name):
     }
     return output, retcode
 
+
 def vm_start(name):
     """
     Start a VM in the PVC cluster.
@@ -592,6 +616,7 @@ def vm_start(name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_restart(name, wait):
     """
@@ -611,6 +636,7 @@ def vm_restart(name, wait):
     }
     return output, retcode
 
+
 def vm_shutdown(name, wait):
     """
     Shutdown a VM in the PVC cluster.
@@ -628,6 +654,7 @@ def vm_shutdown(name, wait):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_stop(name):
     """
@@ -647,6 +674,7 @@ def vm_stop(name):
     }
     return output, retcode
 
+
 def vm_disable(name):
     """
     Disable a (stopped) VM in the PVC cluster.
@@ -664,6 +692,7 @@ def vm_disable(name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_move(name, node, wait, force_live):
     """
@@ -683,6 +712,7 @@ def vm_move(name, node, wait, force_live):
     }
     return output, retcode
 
+
 def vm_migrate(name, node, flag_force, wait, force_live):
     """
     Temporarily migrate a VM to another node.
@@ -701,6 +731,7 @@ def vm_migrate(name, node, flag_force, wait, force_live):
     }
     return output, retcode
 
+
 def vm_unmigrate(name, wait, force_live):
     """
     Unmigrate a migrated VM.
@@ -718,6 +749,7 @@ def vm_unmigrate(name, wait, force_live):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def vm_flush_locks(vm):
     """
@@ -747,6 +779,7 @@ def vm_flush_locks(vm):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 #
 # Network functions
@@ -779,6 +812,7 @@ def net_list(limit=None, is_fuzzy=True):
 
     return retdata, retcode
 
+
 def net_add(vni, description, nettype, domain, name_servers,
             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
             dhcp4_flag, dhcp4_start, dhcp4_end):
@@ -802,6 +836,7 @@ def net_add(vni, description, nettype, domain, name_servers,
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def net_modify(vni, description, domain, name_servers,
                ip4_network, ip4_gateway,
@@ -828,6 +863,7 @@ def net_modify(vni, description, domain, name_servers,
     }
     return output, retcode
 
+
 def net_remove(network):
     """
     Remove a virtual client network from the PVC cluster.
@@ -845,6 +881,7 @@ def net_remove(network):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def net_dhcp_list(network, limit=None, static=False):
     """
@@ -870,6 +907,7 @@ def net_dhcp_list(network, limit=None, static=False):
 
     return retdata, retcode
 
+
 def net_dhcp_add(network, ipaddress, macaddress, hostname):
     """
     Add a static DHCP lease to a virtual client network.
@@ -888,6 +926,7 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     }
     return output, retcode
 
+
 def net_dhcp_remove(network, macaddress):
     """
     Remove a static DHCP lease from a virtual client network.
@@ -905,6 +944,7 @@ def net_dhcp_remove(network, macaddress):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
     """
@@ -934,6 +974,7 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
 
     return retdata, retcode
 
+
 def net_acl_add(network, direction, description, rule, order):
     """
     Add an ACL to a virtual client network.
@@ -951,6 +992,7 @@ def net_acl_add(network, direction, description, rule, order):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def net_acl_remove(network, description):
     """
@@ -970,6 +1012,7 @@ def net_acl_remove(network, description):
     }
     return output, retcode
 
+
 #
 # Ceph functions
 #
@@ -988,6 +1031,7 @@ def ceph_status():
 
     return retdata, retcode
 
+
 def ceph_util():
     """
     Get the current Ceph cluster utilization.
@@ -1002,6 +1046,7 @@ def ceph_util():
         retcode = 400
 
     return retdata, retcode
+
 
 def ceph_osd_list(limit=None):
     """
@@ -1027,6 +1072,7 @@ def ceph_osd_list(limit=None):
 
     return retdata, retcode
 
+
 def ceph_osd_state(osd):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zk_conn, osd)
@@ -1051,6 +1097,7 @@ def ceph_osd_state(osd):
 
     return {"id": osd, "in": in_state, "up": up_state}, retcode
 
+
 def ceph_osd_add(node, device, weight):
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
@@ -1068,6 +1115,7 @@ def ceph_osd_add(node, device, weight):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_osd_remove(osd_id):
     """
@@ -1087,6 +1135,7 @@ def ceph_osd_remove(osd_id):
     }
     return output, retcode
 
+
 def ceph_osd_in(osd_id):
     """
     Set in a Ceph OSD in the PVC Ceph storage cluster.
@@ -1104,6 +1153,7 @@ def ceph_osd_in(osd_id):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_osd_out(osd_id):
     """
@@ -1123,6 +1173,7 @@ def ceph_osd_out(osd_id):
     }
     return output, retcode
 
+
 def ceph_osd_set(option):
     """
     Set options on a Ceph OSD in the PVC Ceph storage cluster.
@@ -1141,6 +1192,7 @@ def ceph_osd_set(option):
     }
     return output, retcode
 
+
 def ceph_osd_unset(option):
     """
     Unset options on a Ceph OSD in the PVC Ceph storage cluster.
@@ -1158,6 +1210,7 @@ def ceph_osd_unset(option):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_pool_list(limit=None, is_fuzzy=True):
     """
@@ -1187,6 +1240,7 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
 
     return retdata, retcode
 
+
 def ceph_pool_add(name, pgs, replcfg):
     """
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
@@ -1205,6 +1259,7 @@ def ceph_pool_add(name, pgs, replcfg):
     }
     return output, retcode
 
+
 def ceph_pool_remove(name):
     """
     Remove a Ceph RBD pool to the PVC Ceph storage cluster.
@@ -1222,6 +1277,7 @@ def ceph_pool_remove(name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     """
@@ -1251,6 +1307,7 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
 
     return retdata, retcode
 
+
 def ceph_volume_add(pool, name, size):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
@@ -1268,6 +1325,7 @@ def ceph_volume_add(pool, name, size):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_volume_clone(pool, name, source_volume):
     """
@@ -1287,6 +1345,7 @@ def ceph_volume_clone(pool, name, source_volume):
     }
     return output, retcode
 
+
 def ceph_volume_resize(pool, name, size):
     """
     Resize an existing Ceph RBD volume in the PVC Ceph storage cluster.
@@ -1304,6 +1363,7 @@ def ceph_volume_resize(pool, name, size):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_volume_rename(pool, name, new_name):
     """
@@ -1323,6 +1383,7 @@ def ceph_volume_rename(pool, name, new_name):
     }
     return output, retcode
 
+
 def ceph_volume_remove(pool, name):
     """
     Remove a Ceph RBD volume to the PVC Ceph storage cluster.
@@ -1340,6 +1401,7 @@ def ceph_volume_remove(pool, name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_volume_upload(pool, volume, img_type):
     """
@@ -1491,6 +1553,7 @@ def ceph_volume_upload(pool, volume, img_type):
         cleanup_maps_and_volumes()
         return output, retcode
 
+
 def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.
@@ -1519,6 +1582,7 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
 
     return retdata, retcode
 
+
 def ceph_volume_snapshot_add(pool, volume, name):
     """
     Add a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
@@ -1537,6 +1601,7 @@ def ceph_volume_snapshot_add(pool, volume, name):
     }
     return output, retcode
 
+
 def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     Rename a Ceph RBD volume snapshot in the PVC Ceph storage cluster.
@@ -1554,6 +1619,7 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
+
 
 def ceph_volume_snapshot_remove(pool, volume, name):
     """

@@ -30,6 +30,7 @@ import daemon_lib.ceph as pvc_ceph
 
 config = None  # Set in this namespace by flaskapi
 
+
 def strtobool(stringv):
     if stringv is None:
         return False
@@ -39,6 +40,7 @@ def strtobool(stringv):
         return bool(dustrtobool(stringv))
     except Exception:
         return False
+
 
 #
 # Exceptions (used by Celery tasks)
@@ -66,6 +68,7 @@ class BenchmarkError(Exception):
 # Common functions
 #
 
+
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(
@@ -78,11 +81,13 @@ def open_database(config):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
 
+
 def close_database(conn, cur, failed=False):
     if not failed:
         conn.commit()
     cur.close()
     conn.close()
+
 
 def list_benchmarks(job=None):
     if job is not None:
@@ -108,6 +113,7 @@ def list_benchmarks(job=None):
         return data, 200
     else:
         return {'message': 'No benchmark found.'}, 404
+
 
 def run_benchmark(self, pool):
     # Runtime imports

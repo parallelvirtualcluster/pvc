@@ -27,6 +27,7 @@ import requests
 import click
 from urllib3 import disable_warnings
 
+
 def format_bytes(size_bytes):
     byte_unit_matrix = {
         'B': 1,
@@ -44,6 +45,7 @@ def format_bytes(size_bytes):
             break
     return human_bytes
 
+
 def format_metric(integer):
     integer_unit_matrix = {
         '': 1,
@@ -60,6 +62,7 @@ def format_metric(integer):
             human_integer = '{}{}'.format(formatted_integer, unit)
             break
     return human_integer
+
 
 class UploadProgressBar(object):
     def __init__(self, filename, end_message='', end_nl=True):
@@ -103,6 +106,7 @@ class UploadProgressBar(object):
             if self.end_message:
                 click.echo(self.end_message + self.end_suffix, nl=self.end_nl)
 
+
 class ErrorResponse(requests.Response):
     def __init__(self, json_data, status_code):
         self.json_data = json_data
@@ -110,6 +114,7 @@ class ErrorResponse(requests.Response):
 
     def json(self):
         return self.json_data
+
 
 def call_api(config, operation, request_uri, headers={}, params=None, data=None, files=None):
     # Craft the URI

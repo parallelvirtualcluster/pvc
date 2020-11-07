@@ -32,7 +32,7 @@ from cli_lib.common import UploadProgressBar, call_api
 # Supplemental functions
 #
 
-# Format byte sizes to/from human-readable units
+# Matrix of human-to-byte values
 byte_unit_matrix = {
     'B': 1,
     'K': 1024,
@@ -41,6 +41,19 @@ byte_unit_matrix = {
     'T': 1024*1024*1024*1024,
     'P': 1024*1024*1024*1024*1024
 }
+
+# Matrix of human-to-metric values
+ops_unit_matrix = {
+    '': 1,
+    'K': 1000,
+    'M': 1000*1000,
+    'G': 1000*1000*1000,
+    'T': 1000*1000*1000*1000,
+    'P': 1000*1000*1000*1000*1000
+}
+
+
+# Format byte sizes to/from human-readable units
 def format_bytes_tohuman(databytes):
     datahuman = ''
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get, reverse=True):
@@ -55,6 +68,7 @@ def format_bytes_tohuman(databytes):
 
     return datahuman
 
+
 def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
@@ -64,14 +78,6 @@ def format_bytes_fromhuman(datahuman):
 
 
 # Format ops sizes to/from human-readable units
-ops_unit_matrix = {
-    '': 1,
-    'K': 1000,
-    'M': 1000*1000,
-    'G': 1000*1000*1000,
-    'T': 1000*1000*1000*1000,
-    'P': 1000*1000*1000*1000*1000
-}
 def format_ops_tohuman(dataops):
     datahuman = ''
     for unit in sorted(ops_unit_matrix, key=ops_unit_matrix.get, reverse=True):
@@ -86,6 +92,7 @@ def format_ops_tohuman(dataops):
 
     return datahuman
 
+
 def format_ops_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
@@ -93,9 +100,11 @@ def format_ops_fromhuman(datahuman):
     dataops = datasize * ops_unit_matrix[dataunit]
     return '{}'.format(dataops)
 
+
 def format_pct_tohuman(datapct):
     datahuman = "{0:.1f}".format(float(datapct * 100.0))
     return datahuman
+
 
 #
 # Status functions
@@ -115,6 +124,7 @@ def ceph_status(config):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_util(config):
     """
     Get utilization of the Ceph cluster
@@ -130,6 +140,7 @@ def ceph_util(config):
     else:
         return False, response.json().get('message', '')
 
+
 def format_raw_output(status_data):
     ainformation = list()
     ainformation.append('{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n'.format(bold=ansiprint.bold(), end=ansiprint.end(), blue=ansiprint.blue(), stype=status_data['type'], primary=status_data['primary_node']))
@@ -137,6 +148,7 @@ def format_raw_output(status_data):
     ainformation.append('')
 
     return '\n'.join(ainformation)
+
 
 #
 # OSD functions
@@ -156,6 +168,7 @@ def ceph_osd_info(config, osd):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_osd_list(config, limit):
     """
     Get list information about Ceph OSDs (limited by {limit})
@@ -174,6 +187,7 @@ def ceph_osd_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_osd_add(config, node, device, weight):
     """
@@ -197,6 +211,7 @@ def ceph_osd_add(config, node, device, weight):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_osd_remove(config, osdid):
     """
     Remove Ceph OSD
@@ -217,6 +232,7 @@ def ceph_osd_remove(config, osdid):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_osd_state(config, osdid, state):
     """
     Set state of Ceph OSD
@@ -236,6 +252,7 @@ def ceph_osd_state(config, osdid, state):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_osd_option(config, option, action):
     """
@@ -258,6 +275,7 @@ def ceph_osd_option(config, option, action):
 
     return retstatus, response.json().get('message', '')
 
+
 def getOutputColoursOSD(osd_information):
     # Set the UP status
     if osd_information['stats']['up'] == 1:
@@ -276,6 +294,7 @@ def getOutputColoursOSD(osd_information):
         osd_in_colour = ansiprint.red()
 
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
+
 
 def format_list_osd(osd_list):
     # Handle empty list
@@ -542,6 +561,7 @@ def ceph_pool_info(config, pool):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_pool_list(config, limit):
     """
     Get list information about Ceph OSDs (limited by {limit})
@@ -560,6 +580,7 @@ def ceph_pool_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_pool_add(config, pool, pgs, replcfg):
     """
@@ -583,6 +604,7 @@ def ceph_pool_add(config, pool, pgs, replcfg):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_pool_remove(config, pool):
     """
     Remove Ceph OSD
@@ -602,6 +624,7 @@ def ceph_pool_remove(config, pool):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def format_list_pool(pool_list):
     # Handle empty list
@@ -820,6 +843,7 @@ def ceph_volume_info(config, pool, volume):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_volume_list(config, limit, pool):
     """
     Get list information about Ceph volumes (limited by {limit} and by {pool})
@@ -840,6 +864,7 @@ def ceph_volume_list(config, limit, pool):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ceph_volume_add(config, pool, volume, size):
     """
@@ -862,6 +887,7 @@ def ceph_volume_add(config, pool, volume, size):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_volume_upload(config, pool, volume, image_format, image_file):
     """
@@ -898,6 +924,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_volume_remove(config, pool, volume):
     """
     Remove Ceph volume
@@ -914,6 +941,7 @@ def ceph_volume_remove(config, pool, volume):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
     """
@@ -939,6 +967,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_volume_clone(config, pool, volume, new_volume):
     """
     Clone Ceph volume
@@ -958,6 +987,7 @@ def ceph_volume_clone(config, pool, volume, new_volume):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def format_list_volume(volume_list):
     # Handle empty list
@@ -1092,6 +1122,7 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_snapshot_list(config, limit, volume, pool):
     """
     Get list information about Ceph snapshots (limited by {limit}, by {pool}, or by {volume})
@@ -1115,6 +1146,7 @@ def ceph_snapshot_list(config, limit, volume, pool):
     else:
         return False, response.json().get('message', '')
 
+
 def ceph_snapshot_add(config, pool, volume, snapshot):
     """
     Add new Ceph snapshot
@@ -1137,6 +1169,7 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
 
     return retstatus, response.json().get('message', '')
 
+
 def ceph_snapshot_remove(config, pool, volume, snapshot):
     """
     Remove Ceph snapshot
@@ -1153,6 +1186,7 @@ def ceph_snapshot_remove(config, pool, volume, snapshot):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     """
@@ -1175,6 +1209,7 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def format_list_snapshot(snapshot_list):
     # Handle empty list
@@ -1249,6 +1284,7 @@ def format_list_snapshot(snapshot_list):
 
     return '\n'.join(sorted(snapshot_list_output))
 
+
 #
 # Benchmark functions
 #
@@ -1273,6 +1309,7 @@ def ceph_benchmark_run(config, pool):
         retdata = response.json().get('message', '')
 
     return retvalue, retdata
+
 
 def ceph_benchmark_list(config, job):
     """
@@ -1299,6 +1336,7 @@ def ceph_benchmark_list(config, job):
         retdata = response.json().get('message', '')
 
     return retvalue, retdata
+
 
 def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
@@ -1419,6 +1457,7 @@ def format_list_benchmark(config, benchmark_information):
         )
 
     return '\n'.join(benchmark_list_output)
+
 
 def format_info_benchmark(config, benchmark_information):
     if benchmark_information[0]['benchmark_result'] == "Running":

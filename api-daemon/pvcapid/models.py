@@ -22,6 +22,7 @@
 
 from pvcapid.flaskapi import db
 
+
 class DBSystemTemplate(db.Model):
     __tablename__ = 'system_template'
 
@@ -54,6 +55,7 @@ class DBSystemTemplate(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
 class DBNetworkTemplate(db.Model):
     __tablename__ = 'network_template'
 
@@ -70,6 +72,7 @@ class DBNetworkTemplate(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
 class DBNetworkElement(db.Model):
     __tablename__ = 'network'
 
@@ -84,6 +87,7 @@ class DBNetworkElement(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
 class DBStorageTemplate(db.Model):
     __tablename__ = 'storage_template'
 
@@ -97,6 +101,7 @@ class DBStorageTemplate(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 class DBStorageElement(db.Model):
     __tablename__ = 'storage'
@@ -124,6 +129,7 @@ class DBStorageElement(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
 class DBUserdata(db.Model):
     __tablename__ = 'userdata'
 
@@ -137,6 +143,7 @@ class DBUserdata(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 class DBScript(db.Model):
     __tablename__ = 'script'
@@ -152,6 +159,7 @@ class DBScript(db.Model):
     def __repr__(self):
         return '<id {}>'.format(self.id)
 
+
 class DBOva(db.Model):
     __tablename__ = 'ova'
 
@@ -165,6 +173,7 @@ class DBOva(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 class DBOvaVolume(db.Model):
     __tablename__ = 'ova_volume'
@@ -187,6 +196,7 @@ class DBOvaVolume(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 class DBProfile(db.Model):
     __tablename__ = 'profile'
@@ -215,6 +225,7 @@ class DBProfile(db.Model):
 
     def __repr__(self):
         return '<id {}>'.format(self.id)
+
 
 class DBStorageBenchmarks(db.Model):
     __tablename__ = 'storage_benchmarks'

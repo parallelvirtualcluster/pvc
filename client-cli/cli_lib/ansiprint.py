@@ -22,23 +22,39 @@
 
 import datetime
 
+
 # ANSII colours for output
 def red():
     return '\033[91m'
+
+
 def blue():
     return '\033[94m'
+
+
 def cyan():
     return '\033[96m'
+
+
 def green():
     return '\033[92m'
+
+
 def yellow():
     return '\033[93m'
+
+
 def purple():
     return '\033[95m'
+
+
 def bold():
     return '\033[1m'
+
+
 def end():
     return '\033[0m'
+
 
 # Print function
 def echo(message, prefix, state):

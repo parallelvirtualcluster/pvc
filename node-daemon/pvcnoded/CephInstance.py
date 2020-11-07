@@ -27,6 +27,7 @@ import psutil
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 
+
 class CephOSDInstance(object):
     def __init__(self, zk_conn, this_node, osd_id):
         self.zk_conn = zk_conn
@@ -65,6 +66,7 @@ class CephOSDInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
 
 def add_osd(zk_conn, logger, node, device, weight):
     # We are ready to create a new OSD on this node
@@ -188,6 +190,7 @@ def add_osd(zk_conn, logger, node, device, weight):
         logger.out('Failed to create new OSD disk: {}'.format(e), state='e')
         return False
 
+
 def remove_osd(zk_conn, logger, osd_id, osd_obj):
     logger.out('Removing OSD disk {}'.format(osd_id), state='i')
     try:
@@ -281,6 +284,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         logger.out('Failed to purge OSD disk with ID {}: {}'.format(osd_id, e), state='e')
         return False
 
+
 class CephPoolInstance(object):
     def __init__(self, zk_conn, this_node, name):
         self.zk_conn = zk_conn
@@ -319,6 +323,7 @@ class CephPoolInstance(object):
             if data and data != self.stats:
                 self.stats = json.loads(data)
 
+
 class CephVolumeInstance(object):
     def __init__(self, zk_conn, this_node, pool, name):
         self.zk_conn = zk_conn
@@ -341,6 +346,7 @@ class CephVolumeInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
 
 class CephSnapshotInstance(object):
     def __init__(self, zk_conn, this_node, pool, volume, name):
@@ -365,6 +371,7 @@ class CephSnapshotInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
 
 # Primary command function
 # This command pipe is only used for OSD adds and removes

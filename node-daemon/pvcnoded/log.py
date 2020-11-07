@@ -22,6 +22,7 @@
 
 import datetime
 
+
 class Logger(object):
     # Define a logger class for a daemon instance
     # Keeps record of where to log, and is passed messages which are

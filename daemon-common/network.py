@@ -26,6 +26,7 @@ from kazoo.exceptions import NoNodeError
 
 import daemon_lib.zkhandler as zkhandler
 
+
 #
 # Cluster search functions
 #
@@ -37,6 +38,7 @@ def getClusterNetworkList(zk_conn):
     for vni in vni_list:
         description_list.append(zkhandler.readdata(zk_conn, '/networks/{}'.format(vni)))
     return vni_list, description_list
+
 
 def searchClusterByVNI(zk_conn, vni):
     try:
@@ -52,6 +54,7 @@ def searchClusterByVNI(zk_conn, vni):
 
     return description
 
+
 def searchClusterByDescription(zk_conn, description):
     try:
         # Get the lists
@@ -66,6 +69,7 @@ def searchClusterByDescription(zk_conn, description):
 
     return vni
 
+
 def getNetworkVNI(zk_conn, network):
     # Validate and obtain alternate passed value
     if network.isdigit():
@@ -76,6 +80,7 @@ def getNetworkVNI(zk_conn, network):
         net_description = searchClusterByVNI(zk_conn, net_vni)
 
     return net_vni
+
 
 def getNetworkDescription(zk_conn, network):
     # Validate and obtain alternate passed value
@@ -88,15 +93,18 @@ def getNetworkDescription(zk_conn, network):
 
     return net_description
 
+
 def getNetworkDHCPLeases(zk_conn, vni):
     # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp4_leases
     dhcp4_leases = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp4_leases'.format(vni))
     return sorted(dhcp4_leases)
 
+
 def getNetworkDHCPReservations(zk_conn, vni):
     # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp4_reservations
     dhcp4_reservations = zkhandler.listchildren(zk_conn, '/networks/{}/dhcp4_reservations'.format(vni))
     return sorted(dhcp4_reservations)
+
 
 def getNetworkACLs(zk_conn, vni, _direction):
     # Get the (sorted) list of active ACLs
@@ -118,6 +126,7 @@ def getNetworkACLs(zk_conn, vni, _direction):
             full_acl_list.append({'direction': direction, 'order': int(order), 'description': ordered_acls[order], 'rule': rule})
 
     return full_acl_list
+
 
 def getNetworkInformation(zk_conn, vni):
     description = zkhandler.readdata(zk_conn, '/networks/{}'.format(vni))
@@ -155,6 +164,7 @@ def getNetworkInformation(zk_conn, vni):
     }
     return network_information
 
+
 def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     # Check whether this is a dynamic or static lease
     try:
@@ -180,6 +190,7 @@ def getDHCPLeaseInformation(zk_conn, vni, mac_address):
     }
     return lease_information
 
+
 def getACLInformation(zk_conn, vni, direction, description):
     order = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, description))
     rule = zkhandler.readdata(zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, description))
@@ -192,6 +203,7 @@ def getACLInformation(zk_conn, vni, direction, description):
         'direction': direction
     }
     return acl_information
+
 
 def isValidMAC(macaddr):
     allowed = re.compile(r"""
@@ -206,6 +218,7 @@ def isValidMAC(macaddr):
     else:
         return False
 
+
 def isValidIP(ipaddr):
     ip4_blocks = str(ipaddr).split(".")
     if len(ip4_blocks) == 4:
@@ -218,6 +231,7 @@ def isValidIP(ipaddr):
                 return False
         return True
     return False
+
 
 #
 # Direct functions
@@ -272,6 +286,7 @@ def add_network(zk_conn, vni, description, nettype,
 
     return True, 'Network "{}" added successfully!'.format(description)
 
+
 def modify_network(zk_conn, vni, description=None, domain=None, name_servers=None,
                    ip4_network=None, ip4_gateway=None, ip6_network=None, ip6_gateway=None,
                    dhcp4_flag=None, dhcp4_start=None, dhcp4_end=None):
@@ -312,6 +327,7 @@ def modify_network(zk_conn, vni, description=None, domain=None, name_servers=Non
     zkhandler.writedata(zk_conn, zk_data)
 
     return True, 'Network "{}" modified successfully!'.format(vni)
+
 
 def remove_network(zk_conn, network):
     # Validate and obtain alternate passed value
@@ -356,6 +372,7 @@ def add_dhcp_reservation(zk_conn, network, ipaddress, macaddress, hostname):
 
     return True, 'DHCP reservation "{}" added successfully!'.format(macaddress)
 
+
 def remove_dhcp_reservation(zk_conn, network, reservation):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
@@ -394,6 +411,7 @@ def remove_dhcp_reservation(zk_conn, network, reservation):
         return False, 'ERROR: Failed to write to Zookeeper!'
 
     return True, 'DHCP {} "{}" removed successfully!'.format(lease_type_human, match_description)
+
 
 def add_acl(zk_conn, network, direction, description, rule, order):
     # Validate and obtain standard passed value
@@ -458,6 +476,7 @@ def add_acl(zk_conn, network, direction, description, rule, order):
 
     return True, 'Firewall rule "{}" added successfully!'.format(description)
 
+
 def remove_acl(zk_conn, network, description):
     # Validate and obtain standard passed value
     net_vni = getNetworkVNI(zk_conn, network)
@@ -498,6 +517,7 @@ def remove_acl(zk_conn, network, description):
 
     return True, 'Firewall rule "{}" removed successfully!'.format(match_description)
 
+
 def get_info(zk_conn, network):
     # Validate and obtain alternate passed value
     net_vni = getNetworkVNI(zk_conn, network)
@@ -509,6 +529,7 @@ def get_info(zk_conn, network):
         return False, 'ERROR: Could not get information about network "{}"'.format(network)
 
     return True, network_information
+
 
 def get_list(zk_conn, limit, is_fuzzy=True):
     net_list = []
@@ -531,6 +552,7 @@ def get_list(zk_conn, limit, is_fuzzy=True):
             net_list.append(getNetworkInformation(zk_conn, net))
 
     return True, net_list
+
 
 def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
     # Validate and obtain alternate passed value
@@ -573,6 +595,7 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
             dhcp_list.append(getDHCPLeaseInformation(zk_conn, net_vni, lease))
 
     return True, dhcp_list
+
 
 def get_list_acl(zk_conn, network, limit, direction, is_fuzzy=True):
     # Validate and obtain alternate passed value

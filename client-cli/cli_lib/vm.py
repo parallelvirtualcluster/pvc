@@ -26,6 +26,7 @@ import re
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api, format_bytes, format_metric
 
+
 #
 # Primary functions
 #
@@ -53,6 +54,7 @@ def vm_info(config, vm):
     else:
         return False, response.json().get('message', '')
 
+
 def vm_list(config, limit, target_node, target_state):
     """
     Get list information about VMs (limited by {limit}, {target_node}, or {target_state})
@@ -75,6 +77,7 @@ def vm_list(config, limit, target_node, target_state):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migration_method):
     """
@@ -103,6 +106,7 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migr
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_modify(config, vm, xml, restart):
     """
     Modify the configuration of VM
@@ -125,6 +129,7 @@ def vm_modify(config, vm, xml, restart):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
     """
@@ -162,6 +167,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_remove(config, vm, delete_disks=False):
     """
     Remove a VM
@@ -181,6 +187,7 @@ def vm_remove(config, vm, delete_disks=False):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def vm_state(config, vm, target_state, wait=False):
     """
@@ -202,6 +209,7 @@ def vm_state(config, vm, target_state, wait=False):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def vm_node(config, vm, target_node, action, force=False, wait=False, force_live=False):
     """
@@ -227,6 +235,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
 
     return retstatus, response.json().get('message', '')
 
+
 def vm_locks(config, vm):
     """
     Flush RBD locks of (stopped) VM
@@ -243,6 +252,7 @@ def vm_locks(config, vm):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def view_console_log(config, vm, lines=100):
     """
@@ -267,6 +277,7 @@ def view_console_log(config, vm, lines=100):
     loglines = '\n'.join(shrunk_log)
 
     return True, loglines
+
 
 def follow_console_log(config, vm, lines=10):
     """
@@ -322,6 +333,7 @@ def follow_console_log(config, vm, lines=10):
         time.sleep(1)
 
     return True, ''
+
 
 #
 # Output display functions
@@ -477,6 +489,7 @@ def format_info(config, domain_information, long_output):
     # Join it all together
     ainformation.append('')
     return '\n'.join(ainformation)
+
 
 def format_list(config, vm_list, raw):
     # Handle single-element lists

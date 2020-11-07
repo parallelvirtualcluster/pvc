@@ -39,6 +39,7 @@ from pvcapid.ova import list_ova
 
 config = None  # Set in this namespace by flaskapi
 
+
 def strtobool(stringv):
     if stringv is None:
         return False
@@ -49,6 +50,7 @@ def strtobool(stringv):
     except Exception:
         return False
 
+
 #
 # Exceptions (used by Celery tasks)
 #
@@ -58,17 +60,20 @@ class ValidationError(Exception):
     """
     pass
 
+
 class ClusterError(Exception):
     """
     An exception that results from the PVC cluster being out of alignment with the action.
     """
     pass
 
+
 class ProvisioningError(Exception):
     """
     An exception that results from a failure of a provisioning command.
     """
     pass
+
 
 #
 # Common functions
@@ -86,11 +91,13 @@ def open_database(config):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
 
+
 def close_database(conn, cur, failed=False):
     if not failed:
         conn.commit()
     cur.close()
     conn.close()
+
 
 #
 # Template List functions
@@ -143,6 +150,7 @@ def list_template(limit, table, is_fuzzy=True):
 
     return data
 
+
 def list_template_system(limit, is_fuzzy=True):
     """
     Obtain a list of system templates.
@@ -153,6 +161,7 @@ def list_template_system(limit, is_fuzzy=True):
     else:
         return {'message': 'No system templates found.'}, 404
 
+
 def list_template_network(limit, is_fuzzy=True):
     """
     Obtain a list of network templates.
@@ -162,6 +171,7 @@ def list_template_network(limit, is_fuzzy=True):
         return data, 200
     else:
         return {'message': 'No network templates found.'}, 404
+
 
 def list_template_network_vnis(name):
     """
@@ -174,6 +184,7 @@ def list_template_network_vnis(name):
     else:
         return {'message': 'No network template networks found.'}, 404
 
+
 def list_template_storage(limit, is_fuzzy=True):
     """
     Obtain a list of storage templates.
@@ -183,6 +194,7 @@ def list_template_storage(limit, is_fuzzy=True):
         return data, 200
     else:
         return {'message': 'No storage templates found.'}, 404
+
 
 def list_template_storage_disks(name):
     """
@@ -194,6 +206,7 @@ def list_template_storage_disks(name):
         return disks, 200
     else:
         return {'message': 'No storage template disks found.'}, 404
+
 
 def template_list(limit):
     system_templates, code = list_template_system(limit)
@@ -207,6 +220,7 @@ def template_list(limit):
         storage_templates = []
 
     return {"system_templates": system_templates, "network_templates": network_templates, "storage_templates": storage_templates}
+
 
 #
 # Template Create functions
@@ -231,6 +245,7 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def create_template_network(name, mac_template=None):
     if list_template_network(name, is_fuzzy=False)[-1] != 404:
         retmsg = {'message': 'The network template "{}" already exists.'.format(name)}
@@ -249,6 +264,7 @@ def create_template_network(name, mac_template=None):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def create_template_network_element(name, vni):
     if list_template_network(name, is_fuzzy=False)[-1] != 200:
@@ -285,6 +301,7 @@ def create_template_network_element(name, vni):
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def create_template_storage(name):
     if list_template_storage(name, is_fuzzy=False)[-1] != 404:
         retmsg = {'message': 'The storage template "{}" already exists.'.format(name)}
@@ -303,6 +320,7 @@ def create_template_storage(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def create_template_storage_element(name, disk_id, pool, source_volume=None, disk_size_gb=None, filesystem=None, filesystem_args=[], mountpoint=None):
     if list_template_storage(name, is_fuzzy=False)[-1] != 200:
@@ -352,6 +370,7 @@ def create_template_storage_element(name, disk_id, pool, source_volume=None, dis
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 #
 # Template Modify functions
@@ -434,6 +453,7 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
     close_database(conn, cur)
     return retmsg, retcode
 
+
 #
 # Template Delete functions
 #
@@ -455,6 +475,7 @@ def delete_template_system(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def delete_template_network(name):
     if list_template_network(name, is_fuzzy=False)[-1] != 200:
@@ -481,6 +502,7 @@ def delete_template_network(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def delete_template_network_element(name, vni):
     if list_template_network(name, is_fuzzy=False)[-1] != 200:
@@ -515,6 +537,7 @@ def delete_template_network_element(name, vni):
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def delete_template_storage(name):
     if list_template_storage(name, is_fuzzy=False)[-1] != 200:
         retmsg = {'message': 'The storage template "{}" does not exist.'.format(name)}
@@ -540,6 +563,7 @@ def delete_template_storage(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def delete_template_storage_element(name, disk_id):
     if list_template_storage(name, is_fuzzy=False)[-1] != 200:
@@ -574,6 +598,7 @@ def delete_template_storage_element(name, disk_id):
     close_database(conn, cur)
     return retmsg, retcode
 
+
 #
 # Userdata functions
 #
@@ -605,6 +630,7 @@ def list_userdata(limit, is_fuzzy=True):
     else:
         return {'message': 'No userdata documents found.'}, 404
 
+
 def create_userdata(name, userdata):
     if list_userdata(name, is_fuzzy=False)[-1] != 404:
         retmsg = {'message': 'The userdata document "{}" already exists.'.format(name)}
@@ -623,6 +649,7 @@ def create_userdata(name, userdata):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def update_userdata(name, userdata):
     if list_userdata(name, is_fuzzy=False)[-1] != 200:
@@ -646,6 +673,7 @@ def update_userdata(name, userdata):
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def delete_userdata(name):
     if list_userdata(name, is_fuzzy=False)[-1] != 200:
         retmsg = {'message': 'The userdata "{}" does not exist.'.format(name)}
@@ -664,6 +692,7 @@ def delete_userdata(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 #
 # Script functions
@@ -696,6 +725,7 @@ def list_script(limit, is_fuzzy=True):
     else:
         return {'message': 'No scripts found.'}, 404
 
+
 def create_script(name, script):
     if list_script(name, is_fuzzy=False)[-1] != 404:
         retmsg = {'message': 'The script "{}" already exists.'.format(name)}
@@ -714,6 +744,7 @@ def create_script(name, script):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def update_script(name, script):
     if list_script(name, is_fuzzy=False)[-1] != 200:
@@ -737,6 +768,7 @@ def update_script(name, script):
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def delete_script(name):
     if list_script(name, is_fuzzy=False)[-1] != 200:
         retmsg = {'message': 'The script "{}" does not exist.'.format(name)}
@@ -755,6 +787,7 @@ def delete_script(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 #
 # Profile functions
@@ -806,6 +839,7 @@ def list_profile(limit, is_fuzzy=True):
         return data, 200
     else:
         return {'message': 'No profiles found.'}, 404
+
 
 def create_profile(name, profile_type, system_template, network_template, storage_template, userdata=None, script=None, ova=None, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 404:
@@ -895,6 +929,7 @@ def create_profile(name, profile_type, system_template, network_template, storag
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def modify_profile(name, profile_type, system_template, network_template, storage_template, userdata, script, ova, arguments=None):
     if list_profile(name, is_fuzzy=False)[-1] != 200:
@@ -1004,6 +1039,7 @@ def modify_profile(name, profile_type, system_template, network_template, storag
     close_database(conn, cur)
     return retmsg, retcode
 
+
 def delete_profile(name):
     if list_profile(name, is_fuzzy=False)[-1] != 200:
         retmsg = {'message': 'The profile "{}" does not exist.'.format(name)}
@@ -1022,6 +1058,7 @@ def delete_profile(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 #
 # Main VM provisioning function - executed by the Celery worker

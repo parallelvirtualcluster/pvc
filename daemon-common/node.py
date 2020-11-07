@@ -26,6 +26,7 @@ import re
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 
+
 def getNodeInformation(zk_conn, node_name):
     """
     Gather information about a node from the Zookeeper database and return a dict() containing it.
@@ -75,6 +76,7 @@ def getNodeInformation(zk_conn, node_name):
     }
     return node_information
 
+
 #
 # Direct Functions
 #
@@ -105,6 +107,7 @@ def secondary_node(zk_conn, node):
 
     return True, retmsg
 
+
 def primary_node(zk_conn, node):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
@@ -132,6 +135,7 @@ def primary_node(zk_conn, node):
 
     return True, retmsg
 
+
 def flush_node(zk_conn, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
@@ -150,6 +154,7 @@ def flush_node(zk_conn, node, wait=False):
         retmsg = 'Flushed hypervisor {} of running VMs.'.format(node)
 
     return True, retmsg
+
 
 def ready_node(zk_conn, node, wait=False):
     # Verify node is valid
@@ -170,6 +175,7 @@ def ready_node(zk_conn, node, wait=False):
 
     return True, retmsg
 
+
 def get_info(zk_conn, node):
     # Verify node is valid
     if not common.verifyNode(zk_conn, node):
@@ -181,6 +187,7 @@ def get_info(zk_conn, node):
         return False, 'ERROR: Could not get information about node "{}".'.format(node)
 
     return True, node_information
+
 
 def get_list(zk_conn, limit, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
     node_list = []

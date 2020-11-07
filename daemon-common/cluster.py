@@ -29,6 +29,7 @@ import daemon_lib.node as pvc_node
 import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
+
 def set_maintenance(zk_conn, maint_state):
     try:
         if maint_state == 'true':
@@ -39,6 +40,7 @@ def set_maintenance(zk_conn, maint_state):
             return True, 'Successfully set cluster in normal mode'
     except Exception:
         return False, 'Failed to set cluster maintenance state'
+
 
 def getClusterInformation(zk_conn):
     # Get cluster maintenance state
@@ -245,6 +247,7 @@ def getClusterInformation(zk_conn):
     }
 
     return cluster_information
+
 
 def get_info(zk_conn):
     # This is a thin wrapper function for naming purposes

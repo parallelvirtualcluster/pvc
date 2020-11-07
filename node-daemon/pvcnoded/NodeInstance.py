@@ -27,6 +27,7 @@ from threading import Thread
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 
+
 class NodeInstance(object):
     # Initialization function
     def __init__(self, name, this_node, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api):

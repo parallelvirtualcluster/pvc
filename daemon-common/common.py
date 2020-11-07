@@ -36,6 +36,7 @@ import daemon_lib.zkhandler as zkhandler
 # Supplemental functions
 ###############################################################################
 
+
 #
 # Run a local OS command via shell
 #
@@ -64,6 +65,7 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
         stderr = ''
     return retcode, stdout, stderr
 
+
 #
 # Validate a UUID
 #
@@ -73,6 +75,7 @@ def validateUUID(dom_uuid):
         return True
     except Exception:
         return False
+
 
 #
 # Connect and disconnect from Zookeeper
@@ -89,10 +92,13 @@ def startZKConnection(zk_host):
         exit(1)
     return zk_conn
 
+
 def stopZKConnection(zk_conn):
     zk_conn.stop()
     zk_conn.close()
     return 0
+
+
 #
 # Parse a Domain XML object
 #
@@ -105,6 +111,7 @@ def getDomainXML(zk_conn, dom_uuid):
     # Parse XML using lxml.objectify
     parsed_xml = lxml.objectify.fromstring(xml)
     return parsed_xml
+
 
 #
 # Get the main details for a VM object from XML
@@ -131,6 +138,7 @@ def getDomainMainDetails(parsed_xml):
 
     return duuid, dname, ddescription, dmemory, dvcpu, dvcputopo
 
+
 #
 # Get long-format details
 #
@@ -142,6 +150,7 @@ def getDomainExtraDetails(parsed_xml):
     demulator = str(parsed_xml.devices.emulator)
 
     return dtype, darch, dmachine, dconsole, demulator
+
 
 #
 # Get CPU features
@@ -155,6 +164,7 @@ def getDomainCPUFeatures(parsed_xml):
         pass
 
     return dfeatures
+
 
 #
 # Get disk devices
@@ -200,6 +210,7 @@ def getDomainDisks(parsed_xml, stats_data):
 
     return ddisks
 
+
 #
 # Get a list of disk devices
 #
@@ -210,6 +221,7 @@ def getDomainDiskList(zk_conn, dom_uuid):
         disk_list.append(disk['name'])
 
     return disk_list
+
 
 #
 # Get domain information from XML
@@ -308,6 +320,7 @@ def getInformationFromXML(zk_conn, uuid):
 
     return domain_information
 
+
 #
 # Get network devices
 #
@@ -362,6 +375,7 @@ def getDomainNetworks(parsed_xml, stats_data):
 
     return dnets
 
+
 #
 # Get controller devices
 #
@@ -379,6 +393,7 @@ def getDomainControllers(parsed_xml):
 
     return dcontrollers
 
+
 #
 # Verify node is valid in cluster
 #
@@ -387,6 +402,7 @@ def verifyNode(zk_conn, node):
         return True
     else:
         return False
+
 
 #
 # Get the primary coordinator node
@@ -411,6 +427,7 @@ def getPrimaryNode(zk_conn):
             return None
 
     return primary_node
+
 
 #
 # Find a migration target
@@ -443,6 +460,7 @@ def findTargetNode(zk_conn, dom_uuid):
     # Nothing was found
     return None
 
+
 # Get the list of valid target nodes
 def getNodes(zk_conn, node_limit, dom_uuid):
     valid_node_list = []
@@ -469,6 +487,7 @@ def getNodes(zk_conn, node_limit, dom_uuid):
 
     return valid_node_list
 
+
 # via free memory (relative to allocated memory)
 def findTargetNodeMem(zk_conn, node_limit, dom_uuid):
     most_provfree = 0
@@ -488,6 +507,7 @@ def findTargetNodeMem(zk_conn, node_limit, dom_uuid):
 
     return target_node
 
+
 # via load average
 def findTargetNodeLoad(zk_conn, node_limit, dom_uuid):
     least_load = 9999.0
@@ -502,6 +522,7 @@ def findTargetNodeLoad(zk_conn, node_limit, dom_uuid):
             target_node = node
 
     return target_node
+
 
 # via total vCPUs
 def findTargetNodeVCPUs(zk_conn, node_limit, dom_uuid):
@@ -518,6 +539,7 @@ def findTargetNodeVCPUs(zk_conn, node_limit, dom_uuid):
 
     return target_node
 
+
 # via total VMs
 def findTargetNodeVMs(zk_conn, node_limit, dom_uuid):
     least_vms = 9999
@@ -532,6 +554,7 @@ def findTargetNodeVMs(zk_conn, node_limit, dom_uuid):
             target_node = node
 
     return target_node
+
 
 # Connect to the primary host and run a command
 def runRemoteCommand(node, command, become=False):

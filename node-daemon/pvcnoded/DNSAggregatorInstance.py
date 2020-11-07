@@ -29,6 +29,7 @@ from threading import Thread, Event
 
 import pvcnoded.common as common
 
+
 class DNSAggregatorInstance(object):
     # Initialization function
     def __init__(self, zk_conn, config, logger):
@@ -64,6 +65,7 @@ class DNSAggregatorInstance(object):
             self.dns_networks[network].remove_network()
             del self.dns_networks[network]
             self.dns_axfr_daemon.update_networks(self.dns_networks)
+
 
 class PowerDNSInstance(object):
     # Initialization function
@@ -137,6 +139,7 @@ class PowerDNSInstance(object):
                 'Successfully stopped PowerDNS zone aggregator',
                 state='o'
             )
+
 
 class DNSNetworkInstance(object):
     # Initialization function

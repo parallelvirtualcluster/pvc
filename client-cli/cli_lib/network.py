@@ -24,6 +24,7 @@ import re
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 
+
 def isValidMAC(macaddr):
     allowed = re.compile(r"""
                          (
@@ -37,6 +38,7 @@ def isValidMAC(macaddr):
     else:
         return False
 
+
 def isValidIP(ipaddr):
     ip4_blocks = str(ipaddr).split(".")
     if len(ip4_blocks) == 4:
@@ -49,6 +51,7 @@ def isValidIP(ipaddr):
                 return False
         return True
     return False
+
 
 #
 # Primary functions
@@ -68,6 +71,7 @@ def net_info(config, net):
     else:
         return False, response.json().get('message', '')
 
+
 def net_list(config, limit):
     """
     Get list information about networks (limited by {limit})
@@ -86,6 +90,7 @@ def net_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def net_add(config, vni, description, nettype, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -117,6 +122,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -157,6 +163,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
 
     return retstatus, response.json().get('message', '')
 
+
 def net_remove(config, net):
     """
     Remove a network
@@ -173,6 +180,7 @@ def net_remove(config, net):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 #
 # DHCP lease functions
@@ -191,6 +199,7 @@ def net_dhcp_info(config, net, mac):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def net_dhcp_list(config, net, limit, only_static=False):
     """
@@ -216,6 +225,7 @@ def net_dhcp_list(config, net, limit, only_static=False):
     else:
         return False, response.json().get('message', '')
 
+
 def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
     """
     Add new network DHCP lease
@@ -238,6 +248,7 @@ def net_dhcp_add(config, net, ipaddr, macaddr, hostname):
 
     return retstatus, response.json().get('message', '')
 
+
 def net_dhcp_remove(config, net, mac):
     """
     Remove a network DHCP lease
@@ -254,6 +265,7 @@ def net_dhcp_remove(config, net, mac):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 #
 # ACL functions
@@ -272,6 +284,7 @@ def net_acl_info(config, net, description):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def net_acl_list(config, net, limit, direction):
     """
@@ -293,6 +306,7 @@ def net_acl_list(config, net, limit, direction):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def net_acl_add(config, net, direction, description, rule, order):
     """
@@ -318,7 +332,9 @@ def net_acl_add(config, net, direction, description, rule, order):
 
     return retstatus, response.json().get('message', '')
 
+
 def net_acl_remove(config, net, description):
+
     """
     Remove a network ACL
 
@@ -359,6 +375,7 @@ def getOutputColours(network_information):
         dhcp4_flag_colour = ansiprint.blue()
 
     return v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour
+
 
 def format_info(config, network_information, long_output):
     if not network_information:
@@ -417,6 +434,7 @@ def format_info(config, network_information, long_output):
 
     # Join it all together
     return '\n'.join(ainformation)
+
 
 def format_list(config, network_list):
     if not network_list:
@@ -534,6 +552,7 @@ def format_list(config, network_list):
 
     return '\n'.join(sorted(network_list_output))
 
+
 def format_list_dhcp(dhcp_lease_list):
     dhcp_lease_list_output = []
 
@@ -597,6 +616,7 @@ def format_list_dhcp(dhcp_lease_list):
         )
 
     return '\n'.join(sorted(dhcp_lease_list_output))
+
 
 def format_list_acl(acl_list):
     # Handle when we get an empty entry

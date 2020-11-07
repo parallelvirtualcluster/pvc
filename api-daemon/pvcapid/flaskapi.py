@@ -38,6 +38,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 API_VERSION = 1.0
 
+
 def strtobool(stringv):
     if stringv is None:
         return False
@@ -137,6 +138,7 @@ app.register_blueprint(blueprint)
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
+
 #
 # Custom decorators
 #
@@ -168,6 +170,7 @@ class RequestParser(object):
             return function(*args, **kwargs)
         return wrapped_function
 
+
 # Authentication decorator function
 def Authenticator(function):
     @wraps(function)
@@ -195,6 +198,7 @@ def Authenticator(function):
 @celery.task(bind=True)
 def create_vm(self, vm_name, profile_name, define_vm=True, start_vm=True, script_run_args=[]):
     return api_provisioner.create_vm(self, vm_name, profile_name, define_vm=define_vm, start_vm=start_vm, script_run_args=script_run_args)
+
 
 @celery.task(bind=True)
 def run_benchmark(self, pool):
@@ -230,6 +234,7 @@ class API_Root(Resource):
 
 api.add_resource(API_Root, '/')
 
+
 # /doc - NOTE: Until flask_swagger is packaged for Debian this must be disabled
 # class API_Doc(Resource):
 #     def get(self):
@@ -250,6 +255,7 @@ api.add_resource(API_Root, '/')
 #
 #
 # api.add_resource(API_Doc, '/doc')
+
 
 # /login
 class API_Login(Resource):
@@ -294,6 +300,7 @@ class API_Login(Resource):
 
 api.add_resource(API_Login, '/login')
 
+
 # /logout
 class API_Logout(Resource):
     def post(self):
@@ -319,6 +326,7 @@ class API_Logout(Resource):
 
 
 api.add_resource(API_Logout, '/logout')
+
 
 # /initialize
 class API_Initialize(Resource):
@@ -350,6 +358,7 @@ class API_Initialize(Resource):
 
 
 api.add_resource(API_Initialize, '/initialize')
+
 
 # /status
 class API_Status(Resource):
@@ -588,6 +597,7 @@ class API_Node_Root(Resource):
 
 api.add_resource(API_Node_Root, '/node')
 
+
 # /node/<node>
 class API_Node_Element(Resource):
     @Authenticator
@@ -612,6 +622,7 @@ class API_Node_Element(Resource):
 
 
 api.add_resource(API_Node_Element, '/node/<node>')
+
 
 # /node/<node>/daemon-state
 class API_Node_DaemonState(Resource):
@@ -645,6 +656,7 @@ class API_Node_DaemonState(Resource):
 
 
 api.add_resource(API_Node_DaemonState, '/node/<node>/daemon-state')
+
 
 # /node/<node>/coordinator-state
 class API_Node_CoordinatorState(Resource):
@@ -715,6 +727,7 @@ class API_Node_CoordinatorState(Resource):
 
 
 api.add_resource(API_Node_CoordinatorState, '/node/<node>/coordinator-state')
+
 
 # /node/<node>/domain-state
 class API_Node_DomainState(Resource):
@@ -1128,6 +1141,7 @@ class API_VM_Root(Resource):
 
 api.add_resource(API_VM_Root, '/vm')
 
+
 # /vm/<vm>
 class API_VM_Element(Resource):
     @Authenticator
@@ -1310,6 +1324,7 @@ class API_VM_Element(Resource):
 
 api.add_resource(API_VM_Element, '/vm/<vm>')
 
+
 # /vm/<vm>/meta
 class API_VM_Metadata(Resource):
     @Authenticator
@@ -1425,6 +1440,7 @@ class API_VM_Metadata(Resource):
 
 api.add_resource(API_VM_Metadata, '/vm/<vm>/meta')
 
+
 # /vm/<vm</state
 class API_VM_State(Resource):
     @Authenticator
@@ -1511,6 +1527,7 @@ class API_VM_State(Resource):
 
 
 api.add_resource(API_VM_State, '/vm/<vm>/state')
+
 
 # /vm/<vm>/node
 class API_VM_Node(Resource):
@@ -1614,6 +1631,7 @@ class API_VM_Node(Resource):
 
 api.add_resource(API_VM_Node, '/vm/<vm>/node')
 
+
 # /vm/<vm>/locks
 class API_VM_Locks(Resource):
     @Authenticator
@@ -1639,6 +1657,7 @@ class API_VM_Locks(Resource):
 
 
 api.add_resource(API_VM_Locks, '/vm/<vm>/locks')
+
 
 # /vm/<vm</console
 class API_VM_Console(Resource):
@@ -1884,6 +1903,7 @@ class API_Network_Root(Resource):
 
 
 api.add_resource(API_Network_Root, '/network')
+
 
 # /network/<vni>
 class API_Network_Element(Resource):
@@ -2133,6 +2153,7 @@ class API_Network_Element(Resource):
 
 api.add_resource(API_Network_Element, '/network/<vni>')
 
+
 # /network/<vni>/lease
 class API_Network_Lease_Root(Resource):
     @RequestParser([
@@ -2253,6 +2274,7 @@ class API_Network_Lease_Root(Resource):
 
 
 api.add_resource(API_Network_Lease_Root, '/network/<vni>/lease')
+
 
 # /network/<vni>/lease/{mac}
 class API_Network_Lease_Element(Resource):
@@ -2382,6 +2404,7 @@ class API_Network_Lease_Element(Resource):
 
 api.add_resource(API_Network_Lease_Element, '/network/<vni>/lease/<mac>')
 
+
 # /network/<vni>/acl
 class API_Network_ACL_Root(Resource):
     @RequestParser([
@@ -2505,6 +2528,7 @@ class API_Network_ACL_Root(Resource):
 
 
 api.add_resource(API_Network_ACL_Root, '/network/<vni>/acl')
+
 
 # /network/<vni>/acl/<description>
 class API_Network_ACL_Element(Resource):
@@ -2633,6 +2657,7 @@ class API_Storage_Root(Resource):
 
 api.add_resource(API_Storage_Root, '/storage')
 
+
 # /storage/ceph
 class API_Storage_Ceph_Root(Resource):
     @Authenticator
@@ -2641,6 +2666,7 @@ class API_Storage_Ceph_Root(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Root, '/storage/ceph')
+
 
 # /storage/ceph/status
 class API_Storage_Ceph_Status(Resource):
@@ -2672,6 +2698,7 @@ class API_Storage_Ceph_Status(Resource):
 
 api.add_resource(API_Storage_Ceph_Status, '/storage/ceph/status')
 
+
 # /storage/ceph/utilization
 class API_Storage_Ceph_Utilization(Resource):
     @Authenticator
@@ -2701,6 +2728,7 @@ class API_Storage_Ceph_Utilization(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Utilization, '/storage/ceph/utilization')
+
 
 # /storage/ceph/benchmark
 class API_Storage_Ceph_Benchmark(Resource):
@@ -2862,6 +2890,7 @@ class API_Storage_Ceph_Benchmark(Resource):
 
 api.add_resource(API_Storage_Ceph_Benchmark, '/storage/ceph/benchmark')
 
+
 # /storage/ceph/option
 class API_Storage_Ceph_Option(Resource):
     @RequestParser([
@@ -2909,6 +2938,7 @@ class API_Storage_Ceph_Option(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Option, '/storage/ceph/option')
+
 
 # /storage/ceph/osd
 class API_Storage_Ceph_OSD_Root(Resource):
@@ -3055,6 +3085,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
 
 api.add_resource(API_Storage_Ceph_OSD_Root, '/storage/ceph/osd')
 
+
 # /storage/ceph/osd/<osdid>
 class API_Storage_Ceph_OSD_Element(Resource):
     @Authenticator
@@ -3116,6 +3147,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
 
 api.add_resource(API_Storage_Ceph_OSD_Element, '/storage/ceph/osd/<osdid>')
 
+
 # /storage/ceph/osd/<osdid>/state
 class API_Storage_Ceph_OSD_State(Resource):
     @Authenticator
@@ -3174,6 +3206,7 @@ class API_Storage_Ceph_OSD_State(Resource):
 
 
 api.add_resource(API_Storage_Ceph_OSD_State, '/storage/ceph/osd/<osdid>/state')
+
 
 # /storage/ceph/pool
 class API_Storage_Ceph_Pool_Root(Resource):
@@ -3307,6 +3340,7 @@ class API_Storage_Ceph_Pool_Root(Resource):
 
 api.add_resource(API_Storage_Ceph_Pool_Root, '/storage/ceph/pool')
 
+
 # /storage/ceph/pool/<pool>
 class API_Storage_Ceph_Pool_Element(Resource):
     @Authenticator
@@ -3417,6 +3451,7 @@ class API_Storage_Ceph_Pool_Element(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Pool_Element, '/storage/ceph/pool/<pool>')
+
 
 # /storage/ceph/volume
 class API_Storage_Ceph_Volume_Root(Resource):
@@ -3569,6 +3604,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
 
 api.add_resource(API_Storage_Ceph_Volume_Root, '/storage/ceph/volume')
 
+
 # /storage/ceph/volume/<pool>/<volume>
 class API_Storage_Ceph_Volume_Element(Resource):
     @Authenticator
@@ -3718,6 +3754,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
 
 api.add_resource(API_Storage_Ceph_Volume_Element, '/storage/ceph/volume/<pool>/<volume>')
 
+
 # /storage/ceph/volume/<pool>/<volume>/clone
 class API_Storage_Ceph_Volume_Element_Clone(Resource):
     @RequestParser([
@@ -3761,6 +3798,7 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<pool>/<volume>/clone')
+
 
 # /storage/ceph/volume/<pool>/<volume>/upload
 class API_Storage_Ceph_Volume_Element_Upload(Resource):
@@ -3814,6 +3852,7 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<pool>/<volume>/upload')
+
 
 # /storage/ceph/snapshot
 class API_Storage_Ceph_Snapshot_Root(Resource):
@@ -3921,6 +3960,7 @@ class API_Storage_Ceph_Snapshot_Root(Resource):
 
 
 api.add_resource(API_Storage_Ceph_Snapshot_Root, '/storage/ceph/snapshot')
+
 
 # /storage/ceph/snapshot/<pool>/<volume>/<snapshot>
 class API_Storage_Ceph_Snapshot_Element(Resource):
@@ -4081,6 +4121,7 @@ class API_Provisioner_Root(Resource):
 
 api.add_resource(API_Provisioner_Root, '/provisioner')
 
+
 # /provisioner/template
 class API_Provisioner_Template_Root(Resource):
     @RequestParser([
@@ -4128,6 +4169,7 @@ class API_Provisioner_Template_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Template_Root, '/provisioner/template')
+
 
 # /provisioner/template/system
 class API_Provisioner_Template_System_Root(Resource):
@@ -4319,6 +4361,7 @@ class API_Provisioner_Template_System_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Template_System_Root, '/provisioner/template/system')
+
 
 # /provisioner/template/system/<template>
 class API_Provisioner_Template_System_Element(Resource):
@@ -4565,6 +4608,7 @@ class API_Provisioner_Template_System_Element(Resource):
 
 api.add_resource(API_Provisioner_Template_System_Element, '/provisioner/template/system/<template>')
 
+
 # /provisioner/template/network
 class API_Provisioner_Template_Network_Root(Resource):
     @RequestParser([
@@ -4668,6 +4712,7 @@ class API_Provisioner_Template_Network_Root(Resource):
 
 api.add_resource(API_Provisioner_Template_Network_Root, '/provisioner/template/network')
 
+
 # /provisioner/template/network/<template>
 class API_Provisioner_Template_Network_Element(Resource):
     @Authenticator
@@ -4752,6 +4797,7 @@ class API_Provisioner_Template_Network_Element(Resource):
 
 api.add_resource(API_Provisioner_Template_Network_Element, '/provisioner/template/network/<template>')
 
+
 # /provisioner/template/network/<template>/net
 class API_Provisioner_Template_Network_Net_Root(Resource):
     @Authenticator
@@ -4818,6 +4864,7 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Template_Network_Net_Root, '/provisioner/template/network/<template>/net')
+
 
 # /provisioner/template/network/<template>/net/<vni>
 class API_Provisioner_Template_Network_Net_Element(Resource):
@@ -4898,6 +4945,7 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
 
 
 api.add_resource(API_Provisioner_Template_Network_Net_Element, '/provisioner/template/network/<template>/net/<vni>')
+
 
 # /provisioner/template/storage
 class API_Provisioner_Template_Storage_Root(Resource):
@@ -5009,6 +5057,7 @@ class API_Provisioner_Template_Storage_Root(Resource):
 
 api.add_resource(API_Provisioner_Template_Storage_Root, '/provisioner/template/storage')
 
+
 # /provisioner/template/storage/<template>
 class API_Provisioner_Template_Storage_Element(Resource):
     @Authenticator
@@ -5082,6 +5131,7 @@ class API_Provisioner_Template_Storage_Element(Resource):
 
 
 api.add_resource(API_Provisioner_Template_Storage_Element, '/provisioner/template/storage/<template>')
+
 
 # /provisioner/template/storage/<template>/disk
 class API_Provisioner_Template_Storage_Disk_Root(Resource):
@@ -5194,6 +5244,7 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Template_Storage_Disk_Root, '/provisioner/template/storage/<template>/disk')
+
 
 # /provisioner/template/storage/<template>/disk/<disk_id>
 class API_Provisioner_Template_Storage_Disk_Element(Resource):
@@ -5321,6 +5372,7 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
 
 api.add_resource(API_Provisioner_Template_Storage_Disk_Element, '/provisioner/template/storage/<template>/disk/<disk_id>')
 
+
 # /provisioner/userdata
 class API_Provisioner_Userdata_Root(Resource):
     @RequestParser([
@@ -5406,6 +5458,7 @@ class API_Provisioner_Userdata_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Userdata_Root, '/provisioner/userdata')
+
 
 # /provisioner/userdata/<userdata>
 class API_Provisioner_Userdata_Element(Resource):
@@ -5524,6 +5577,7 @@ class API_Provisioner_Userdata_Element(Resource):
 
 api.add_resource(API_Provisioner_Userdata_Element, '/provisioner/userdata/<userdata>')
 
+
 # /provisioner/script
 class API_Provisioner_Script_Root(Resource):
     @RequestParser([
@@ -5609,6 +5663,7 @@ class API_Provisioner_Script_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Script_Root, '/provisioner/script')
+
 
 # /provisioner/script/<script>
 class API_Provisioner_Script_Element(Resource):
@@ -5727,6 +5782,7 @@ class API_Provisioner_Script_Element(Resource):
 
 api.add_resource(API_Provisioner_Script_Element, '/provisioner/script/<script>')
 
+
 # /provisioner/profile
 class API_Provisioner_OVA_Root(Resource):
     @RequestParser([
@@ -5840,6 +5896,7 @@ class API_Provisioner_OVA_Root(Resource):
 
 api.add_resource(API_Provisioner_OVA_Root, '/provisioner/ova')
 
+
 # /provisioner/ova/<ova>
 class API_Provisioner_OVA_Element(Resource):
     @Authenticator
@@ -5932,6 +5989,7 @@ class API_Provisioner_OVA_Element(Resource):
 
 
 api.add_resource(API_Provisioner_OVA_Element, '/provisioner/ova/<ova>')
+
 
 # /provisioner/profile
 class API_Provisioner_Profile_Root(Resource):
@@ -6086,6 +6144,7 @@ class API_Provisioner_Profile_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Profile_Root, '/provisioner/profile')
+
 
 # /provisioner/profile/<profile>
 class API_Provisioner_Profile_Element(Resource):
@@ -6291,6 +6350,7 @@ class API_Provisioner_Profile_Element(Resource):
 
 api.add_resource(API_Provisioner_Profile_Element, '/provisioner/profile/<profile>')
 
+
 # /provisioner/create
 class API_Provisioner_Create_Root(Resource):
     @RequestParser([
@@ -6375,6 +6435,7 @@ class API_Provisioner_Create_Root(Resource):
 
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
 
+
 # /provisioner/status
 class API_Provisioner_Status_Root(Resource):
     @Authenticator
@@ -6410,6 +6471,7 @@ class API_Provisioner_Status_Root(Resource):
 
 
 api.add_resource(API_Provisioner_Status_Root, '/provisioner/status')
+
 
 # /provisioner/status/<task_id>
 class API_Provisioner_Status_Element(Resource):

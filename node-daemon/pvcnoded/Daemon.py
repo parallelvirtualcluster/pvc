@@ -74,6 +74,7 @@ version = '0.9.1'
 # Daemon functions
 ###############################################################################
 
+
 # Create timer to update this node in Zookeeper
 def startKeepaliveTimer():
     # Create our timer object
@@ -84,6 +85,7 @@ def startKeepaliveTimer():
     update_timer.start()
     node_keepalive()
     return update_timer
+
 
 def stopKeepaliveTimer():
     global update_timer
@@ -124,6 +126,7 @@ staticdata.append(str(psutil.cpu_count()))
 staticdata.append(subprocess.run(['uname', '-r'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-o'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
 staticdata.append(subprocess.run(['uname', '-m'], stdout=subprocess.PIPE).stdout.decode('ascii').strip())
+
 
 # Read and parse the config file
 def readConfig(pvcnoded_config_file, myhostname):
@@ -512,6 +515,7 @@ except Exception as e:
     logger.out('ERROR: Failed to connect to Zookeeper cluster: {}'.format(e), state='e')
     exit(1)
 
+
 # Handle zookeeper failures
 def zk_listener(state):
     global zk_conn, update_timer
@@ -550,6 +554,7 @@ zk_conn.add_listener(zk_listener)
 ###############################################################################
 # PHASE 5 - Gracefully handle termination
 ###############################################################################
+
 
 # Cleanup function
 def cleanup():
@@ -615,9 +620,11 @@ def cleanup():
     logger.out('Terminated pvc daemon', state='s')
     sys.exit(0)
 
+
 # Termination function
 def term(signum='', frame=''):
     cleanup()
+
 
 # Hangup (logrotate) function
 def hup(signum='', frame=''):
@@ -796,6 +803,7 @@ else:
     dns_aggregator = None
     metadata_api = None
 
+
 # Node objects
 @zk_conn.ChildrenWatch('/nodes')
 def update_nodes(new_node_list):
@@ -824,6 +832,7 @@ def update_nodes(new_node_list):
 # Alias for our local node (passed to network and domain objects)
 this_node = d_node[myhostname]
 
+
 # Maintenance mode
 @zk_conn.DataWatch('/maintenance')
 def set_maintenance(_maintenance, stat, event=''):
@@ -832,6 +841,7 @@ def set_maintenance(_maintenance, stat, event=''):
         maintenance = bool(strtobool(_maintenance.decode('ascii')))
     except Exception:
         maintenance = False
+
 
 # Primary node
 @zk_conn.DataWatch('/primary_node')
@@ -1022,6 +1032,7 @@ if enable_storage:
                 # Update and print new list
                 volume_list[pool] = new_volume_list
                 logger.out('{}Volume list [{pool}]:{} {plist}'.format(fmt_blue, fmt_end, pool=pool, plist=' '.join(volume_list[pool])), state='i')
+
 
 ###############################################################################
 # PHASE 9 - Run the daemon
@@ -1311,6 +1322,7 @@ libvirt_vm_states = {
     7: "PMSUSPENDED"
 }
 
+
 # VM stats update function
 def collect_vm_stats(queue):
     if debug:
@@ -1453,6 +1465,7 @@ def collect_vm_stats(queue):
 
     if debug:
         logger.out("Thread finished", state='d', prefix='vm-thread')
+
 
 # Keepalive update function
 def node_keepalive():

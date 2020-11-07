@@ -28,6 +28,7 @@ from collections import deque
 
 import pvcnoded.zkhandler as zkhandler
 
+
 class VMConsoleWatcherInstance(object):
     # Initialization function
     def __init__(self, domuuid, domname, zk_conn, config, logger, this_node):

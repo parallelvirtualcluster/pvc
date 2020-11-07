@@ -25,6 +25,7 @@ import json
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 
+
 def initialize(config):
     """
     Initialize the PVC cluster
@@ -41,6 +42,7 @@ def initialize(config):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
 
 def maintenance_mode(config, state):
     """
@@ -62,6 +64,7 @@ def maintenance_mode(config, state):
 
     return retstatus, response.json().get('message', '')
 
+
 def get_info(config):
     """
     Get status of the PVC cluster
@@ -76,6 +79,7 @@ def get_info(config):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def format_info(cluster_information, oformat):
     if oformat == 'json':

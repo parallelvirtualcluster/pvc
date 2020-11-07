@@ -22,6 +22,7 @@
 
 import uuid
 
+
 # Exists function
 def exists(zk_conn, key):
     stat = zk_conn.exists(key)
@@ -30,20 +31,24 @@ def exists(zk_conn, key):
     else:
         return False
 
+
 # Child list function
 def listchildren(zk_conn, key):
     children = zk_conn.get_children(key)
     return children
 
+
 # Delete key function
 def deletekey(zk_conn, key, recursive=True):
     zk_conn.delete(key, recursive=recursive)
+
 
 # Data read function
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)
     data = data_raw[0].decode('utf8')
     return data
+
 
 # Data write function
 def writedata(zk_conn, kv):
@@ -83,11 +88,13 @@ def writedata(zk_conn, kv):
     except Exception:
         return False
 
+
 # Write lock function
 def writelock(zk_conn, key):
     lock_id = str(uuid.uuid1())
     lock = zk_conn.WriteLock('{}'.format(key), lock_id)
     return lock
+
 
 # Read lock function
 def readlock(zk_conn, key):

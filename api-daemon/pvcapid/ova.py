@@ -38,6 +38,7 @@ import pvcapid.provisioner as provisioner
 
 config = None  # Set in this namespace by flaskapi
 
+
 #
 # Common functions
 #
@@ -54,11 +55,13 @@ def open_database(config):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
 
+
 def close_database(conn, cur, failed=False):
     if not failed:
         conn.commit()
     cur.close()
     conn.close()
+
 
 #
 # OVA functions
@@ -106,6 +109,7 @@ def list_ova(limit, is_fuzzy=True):
         return ova_data, 200
     else:
         return {'message': 'No OVAs found.'}, 404
+
 
 def delete_ova(name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
@@ -155,6 +159,7 @@ def delete_ova(name):
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
+
 
 def upload_ova(pool, name, ova_size):
     ova_archive = None
@@ -406,6 +411,7 @@ def upload_ova(pool, name, ova_size):
     }
     retcode = 200
     return output, retcode
+
 
 #
 # OVF parser

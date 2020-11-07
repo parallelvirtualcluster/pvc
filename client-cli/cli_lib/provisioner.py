@@ -27,6 +27,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import cli_lib.ansiprint as ansiprint
 from cli_lib.common import UploadProgressBar, call_api
 
+
 #
 # Primary functions
 #
@@ -44,6 +45,7 @@ def template_info(config, template, template_type):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def template_list(config, limit, template_type=None):
     """
@@ -67,6 +69,7 @@ def template_list(config, limit, template_type=None):
     else:
         return False, response.json().get('message', '')
 
+
 def template_add(config, params, template_type=None):
     """
     Add a new template of {template_type} with {params}
@@ -83,6 +86,7 @@ def template_add(config, params, template_type=None):
         retvalue = False
 
     return retvalue, response.json().get('message', '')
+
 
 def template_modify(config, params, name, template_type):
     """
@@ -101,6 +105,7 @@ def template_modify(config, params, name, template_type):
 
     return retvalue, response.json().get('message', '')
 
+
 def template_remove(config, name, template_type):
     """
     Remove template {name} of {template_type}
@@ -117,6 +122,7 @@ def template_remove(config, name, template_type):
         retvalue = False
 
     return retvalue, response.json().get('message', '')
+
 
 def template_element_add(config, name, element_id, params, element_type=None, template_type=None):
     """
@@ -135,6 +141,7 @@ def template_element_add(config, name, element_id, params, element_type=None, te
 
     return retvalue, response.json().get('message', '')
 
+
 def template_element_remove(config, name, element_id, element_type=None, template_type=None):
     """
     Remove template element {element_id} of {element_type} from template {name} of {template_type}
@@ -152,6 +159,7 @@ def template_element_remove(config, name, element_id, element_type=None, templat
 
     return retvalue, response.json().get('message', '')
 
+
 def userdata_info(config, userdata):
     """
     Get information about userdata
@@ -166,6 +174,7 @@ def userdata_info(config, userdata):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def userdata_list(config, limit):
     """
@@ -186,6 +195,7 @@ def userdata_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def userdata_show(config, name):
     """
     Get information about userdata name
@@ -200,6 +210,7 @@ def userdata_show(config, name):
         return True, response.json()[0]['userdata']
     else:
         return False, response.json().get('message', '')
+
 
 def userdata_add(config, params):
     """
@@ -227,6 +238,7 @@ def userdata_add(config, params):
 
     return retvalue, response.json().get('message', '')
 
+
 def userdata_modify(config, name, params):
     """
     Modify userdata {name} with {params}
@@ -252,6 +264,7 @@ def userdata_modify(config, name, params):
 
     return retvalue, response.json().get('message', '')
 
+
 def userdata_remove(config, name):
     """
     Remove userdata {name}
@@ -269,6 +282,7 @@ def userdata_remove(config, name):
 
     return retvalue, response.json().get('message', '')
 
+
 def script_info(config, script):
     """
     Get information about script
@@ -283,6 +297,7 @@ def script_info(config, script):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def script_list(config, limit):
     """
@@ -303,6 +318,7 @@ def script_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def script_show(config, name):
     """
     Get information about script name
@@ -317,6 +333,7 @@ def script_show(config, name):
         return True, response.json()[0]['script']
     else:
         return False, response.json().get('message', '')
+
 
 def script_add(config, params):
     """
@@ -344,6 +361,7 @@ def script_add(config, params):
 
     return retvalue, response.json().get('message', '')
 
+
 def script_modify(config, name, params):
     """
     Modify script {name} with {params}
@@ -369,6 +387,7 @@ def script_modify(config, name, params):
 
     return retvalue, response.json().get('message', '')
 
+
 def script_remove(config, name):
     """
     Remove script {name}
@@ -386,6 +405,7 @@ def script_remove(config, name):
 
     return retvalue, response.json().get('message', '')
 
+
 def ova_info(config, name):
     """
     Get information about OVA image {name}
@@ -400,6 +420,7 @@ def ova_info(config, name):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def ova_list(config, limit):
     """
@@ -419,6 +440,7 @@ def ova_list(config, limit):
         return True, response.json()
     else:
         return False, response.json().get('message', '')
+
 
 def ova_upload(config, name, ova_file, params):
     """
@@ -452,6 +474,7 @@ def ova_upload(config, name, ova_file, params):
 
     return retstatus, response.json().get('message', '')
 
+
 def ova_remove(config, name):
     """
     Remove OVA image {name}
@@ -469,6 +492,7 @@ def ova_remove(config, name):
 
     return retvalue, response.json().get('message', '')
 
+
 def profile_info(config, profile):
     """
     Get information about profile
@@ -483,6 +507,7 @@ def profile_info(config, profile):
         return True, response.json()[0]
     else:
         return False, response.json().get('message', '')
+
 
 def profile_list(config, limit):
     """
@@ -503,6 +528,7 @@ def profile_list(config, limit):
     else:
         return False, response.json().get('message', '')
 
+
 def profile_add(config, params):
     """
     Add a new profile with {params}
@@ -519,6 +545,7 @@ def profile_add(config, params):
         retvalue = False
 
     return retvalue, response.json().get('message', '')
+
 
 def profile_modify(config, name, params):
     """
@@ -537,6 +564,7 @@ def profile_modify(config, name, params):
 
     return retvalue, response.json().get('message', '')
 
+
 def profile_remove(config, name):
     """
     Remove profile {name}
@@ -553,6 +581,7 @@ def profile_remove(config, name):
         retvalue = False
 
     return retvalue, response.json().get('message', '')
+
 
 def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
     """
@@ -583,6 +612,7 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_
         retdata = response.json().get('message', '')
 
     return retvalue, retdata
+
 
 def task_status(config, task_id=None, is_watching=False):
     """
@@ -658,6 +688,7 @@ def task_status(config, task_id=None, is_watching=False):
 
     return retvalue, retdata
 
+
 #
 # Format functions
 #
@@ -699,6 +730,7 @@ def format_list_template(template_data, template_type=None):
         ainformation.append(format_list_template_storage(normalized_template_data['storage_templates']))
 
     return '\n'.join(ainformation)
+
 
 def format_list_template_system(template_data):
     if isinstance(template_data, dict):
@@ -848,6 +880,7 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
 
     return True, ''
 
+
 def format_list_template_network(template_template):
     if isinstance(template_template, dict):
         template_template = [template_template]
@@ -921,6 +954,7 @@ def format_list_template_network(template_template):
         )
 
     return '\n'.join([template_list_output_header] + template_list_output)
+
 
 def format_list_template_storage(template_template):
     if isinstance(template_template, dict):
@@ -1057,6 +1091,7 @@ def format_list_template_storage(template_template):
 
     return '\n'.join([template_list_output_header] + template_list_output)
 
+
 def format_list_userdata(userdata_data, lines=None):
     if isinstance(userdata_data, dict):
         userdata_data = [userdata_data]
@@ -1131,6 +1166,7 @@ def format_list_userdata(userdata_data, lines=None):
 
     return '\n'.join([userdata_list_output_header] + userdata_list_output)
 
+
 def format_list_script(script_data, lines=None):
     if isinstance(script_data, dict):
         script_data = [script_data]
@@ -1204,6 +1240,7 @@ def format_list_script(script_data, lines=None):
             )
 
     return '\n'.join([script_list_output_header] + script_list_output)
+
 
 def format_list_ova(ova_data):
     if isinstance(ova_data, dict):
@@ -1317,6 +1354,7 @@ def format_list_ova(ova_data):
             )
 
     return '\n'.join([ova_list_output_header] + ova_list_output)
+
 
 def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
@@ -1441,6 +1479,7 @@ Data: {profile_userdata: <{profile_userdata_length}} \
         )
 
     return '\n'.join([profile_list_output_header] + profile_list_output)
+
 
 def format_list_task(task_data):
     task_list_output = []

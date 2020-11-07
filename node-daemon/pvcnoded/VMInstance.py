@@ -34,6 +34,7 @@ import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
 import daemon_lib.common as daemon_common
 
+
 def flush_locks(zk_conn, logger, dom_uuid):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
     # Get the list of RBD images
@@ -64,6 +65,7 @@ def flush_locks(zk_conn, logger, dom_uuid):
 
     return True
 
+
 # Primary command function
 def run_command(zk_conn, logger, this_node, data):
     # Get the command and args
@@ -91,6 +93,7 @@ def run_command(zk_conn, logger, this_node, data):
                     zkhandler.writedata(zk_conn, {'/cmd/domains': 'failure-{}'.format(data)})
                 # Wait 1 seconds before we free the lock, to ensure the client hits the lock
                 time.sleep(1)
+
 
 class VMInstance(object):
     # Initialization function

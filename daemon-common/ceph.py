@@ -31,6 +31,7 @@ import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 
+
 #
 # Supplemental functions
 #
@@ -42,12 +43,14 @@ def verifyOSD(zk_conn, osd_id):
     else:
         return False
 
+
 # Verify Pool is valid in cluster
 def verifyPool(zk_conn, name):
     if zkhandler.exists(zk_conn, '/ceph/pools/{}'.format(name)):
         return True
     else:
         return False
+
 
 # Verify Volume is valid in cluster
 def verifyVolume(zk_conn, pool, name):
@@ -56,12 +59,14 @@ def verifyVolume(zk_conn, pool, name):
     else:
         return False
 
+
 # Verify Snapshot is valid in cluster
 def verifySnapshot(zk_conn, pool, volume, name):
     if zkhandler.exists(zk_conn, '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name)):
         return True
     else:
         return False
+
 
 # Verify OSD path is valid in cluster
 def verifyOSDBlock(zk_conn, node, device):
@@ -73,7 +78,7 @@ def verifyOSDBlock(zk_conn, node, device):
     return None
 
 
-# Format byte sizes to/from human-readable units
+# Matrix of human-to-byte values
 byte_unit_matrix = {
     'B': 1,
     'K': 1024,
@@ -82,6 +87,19 @@ byte_unit_matrix = {
     'T': 1024*1024*1024*1024,
     'P': 1024*1024*1024*1024*1024
 }
+
+# Matrix of human-to-metric values
+ops_unit_matrix = {
+    '': 1,
+    'K': 1000,
+    'M': 1000*1000,
+    'G': 1000*1000*1000,
+    'T': 1000*1000*1000*1000,
+    'P': 1000*1000*1000*1000*1000
+}
+
+
+# Format byte sizes to/from human-readable units
 def format_bytes_tohuman(databytes):
     datahuman = ''
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get, reverse=True):
@@ -96,6 +114,7 @@ def format_bytes_tohuman(databytes):
 
     return datahuman
 
+
 def format_bytes_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = str(datahuman)[-1]
@@ -108,14 +127,6 @@ def format_bytes_fromhuman(datahuman):
 
 
 # Format ops sizes to/from human-readable units
-ops_unit_matrix = {
-    '': 1,
-    'K': 1000,
-    'M': 1000*1000,
-    'G': 1000*1000*1000,
-    'T': 1000*1000*1000*1000,
-    'P': 1000*1000*1000*1000*1000
-}
 def format_ops_tohuman(dataops):
     datahuman = ''
     for unit in sorted(ops_unit_matrix, key=ops_unit_matrix.get, reverse=True):
@@ -130,6 +141,7 @@ def format_ops_tohuman(dataops):
 
     return datahuman
 
+
 def format_ops_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
@@ -137,9 +149,11 @@ def format_ops_fromhuman(datahuman):
     dataops = datasize * ops_unit_matrix[dataunit]
     return '{}'.format(dataops)
 
+
 def format_pct_tohuman(datapct):
     datahuman = "{0:.1f}".format(float(datapct * 100.0))
     return datahuman
+
 
 #
 # Status functions
@@ -155,6 +169,7 @@ def get_status(zk_conn):
         'ceph_data': ceph_status
     }
     return True, status_data
+
 
 def get_util(zk_conn):
     primary_node = zkhandler.readdata(zk_conn, '/primary_node')
@@ -177,6 +192,7 @@ def getClusterOSDList(zk_conn):
     osd_list = zkhandler.listchildren(zk_conn, '/ceph/osds')
     return osd_list
 
+
 def getOSDInformation(zk_conn, osd_id):
     # Parse the stats data
     osd_stats_raw = zkhandler.readdata(zk_conn, '/ceph/osds/{}/stats'.format(osd_id))
@@ -187,6 +203,7 @@ def getOSDInformation(zk_conn, osd_id):
         'stats': osd_stats
     }
     return osd_information
+
 
 def getOutputColoursOSD(osd_information):
     # Set the UP status
@@ -206,6 +223,7 @@ def getOutputColoursOSD(osd_information):
         osd_in_colour = ansiprint.red()
 
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
+
 
 # OSD addition and removal uses the /cmd/ceph pipe
 # These actions must occur on the specific node they reference
@@ -247,6 +265,7 @@ def add_osd(zk_conn, node, device, weight):
 
     return success, message
 
+
 def remove_osd(zk_conn, osd_id):
     if not verifyOSD(zk_conn, osd_id):
         return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
@@ -279,6 +298,7 @@ def remove_osd(zk_conn, osd_id):
 
     return success, message
 
+
 def in_osd(zk_conn, osd_id):
     if not verifyOSD(zk_conn, osd_id):
         return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(osd_id)
@@ -288,6 +308,7 @@ def in_osd(zk_conn, osd_id):
         return False, 'ERROR: Failed to enable OSD {}: {}'.format(osd_id, stderr)
 
     return True, 'Set OSD {} online.'.format(osd_id)
+
 
 def out_osd(zk_conn, osd_id):
     if not verifyOSD(zk_conn, osd_id):
@@ -299,6 +320,7 @@ def out_osd(zk_conn, osd_id):
 
     return True, 'Set OSD {} offline.'.format(osd_id)
 
+
 def set_osd(zk_conn, option):
     retcode, stdout, stderr = common.run_os_command('ceph osd set {}'.format(option))
     if retcode:
@@ -306,12 +328,14 @@ def set_osd(zk_conn, option):
 
     return True, 'Set OSD property "{}".'.format(option)
 
+
 def unset_osd(zk_conn, option):
     retcode, stdout, stderr = common.run_os_command('ceph osd unset {}'.format(option))
     if retcode:
         return False, 'ERROR: Failed to unset property "{}": {}'.format(option, stderr)
 
     return True, 'Unset OSD property "{}".'.format(option)
+
 
 def get_list_osd(zk_conn, limit, is_fuzzy=True):
     osd_list = []
@@ -350,6 +374,7 @@ def getPoolInformation(zk_conn, pool):
         'stats': pool_stats
     }
     return pool_information
+
 
 def add_pool(zk_conn, name, pgs, replcfg):
     # Prepare the copies/mincopies variables
@@ -393,6 +418,7 @@ def add_pool(zk_conn, name, pgs, replcfg):
 
     return True, 'Created RBD pool "{}" with {} PGs'.format(name, pgs)
 
+
 def remove_pool(zk_conn, name):
     if not verifyPool(zk_conn, name):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
@@ -412,6 +438,7 @@ def remove_pool(zk_conn, name):
     zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}'.format(name))
 
     return True, 'Removed RBD pool "{}" and all volumes.'.format(name)
+
 
 def get_list_pool(zk_conn, limit, is_fuzzy=True):
     pool_list = []
@@ -450,6 +477,7 @@ def getCephVolumes(zk_conn, pool):
 
     return volume_list
 
+
 def getVolumeInformation(zk_conn, pool, volume):
     # Parse the stats data
     volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, volume))
@@ -463,6 +491,7 @@ def getVolumeInformation(zk_conn, pool, volume):
         'stats': volume_stats
     }
     return volume_information
+
 
 def add_volume(zk_conn, pool, name, size):
     # 1. Create the volume
@@ -482,6 +511,7 @@ def add_volume(zk_conn, pool, name, size):
     })
 
     return True, 'Created RBD volume "{}/{}" ({}).'.format(pool, name, size)
+
 
 def clone_volume(zk_conn, pool, name_src, name_new):
     if not verifyVolume(zk_conn, pool, name_src):
@@ -504,6 +534,7 @@ def clone_volume(zk_conn, pool, name_src, name_new):
     })
 
     return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(name_src, name_new, pool)
+
 
 def resize_volume(zk_conn, pool, name, size):
     if not verifyVolume(zk_conn, pool, name):
@@ -551,6 +582,7 @@ def resize_volume(zk_conn, pool, name, size):
 
     return True, 'Resized RBD volume "{}" to size "{}" in pool "{}".'.format(name, size, pool)
 
+
 def rename_volume(zk_conn, pool, name, new_name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
@@ -577,6 +609,7 @@ def rename_volume(zk_conn, pool, name, new_name):
 
     return True, 'Renamed RBD volume "{}" to "{}" in pool "{}".'.format(name, new_name, pool)
 
+
 def remove_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
@@ -596,6 +629,7 @@ def remove_volume(zk_conn, pool, name):
 
     return True, 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
 
+
 def map_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
@@ -614,6 +648,7 @@ def map_volume(zk_conn, pool, name):
 
     return True, mapped_volume
 
+
 def unmap_volume(zk_conn, pool, name):
     if not verifyVolume(zk_conn, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
@@ -630,6 +665,7 @@ def unmap_volume(zk_conn, pool, name):
         return False, 'ERROR: Failed to unmap RBD volume at "{}": {}'.format(mapped_volume, stderr)
 
     return True, 'Unmapped RBD volume at "{}".'.format(mapped_volume)
+
 
 def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []
@@ -665,7 +701,6 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
 #
 # Snapshot functions
 #
-
 def getCephSnapshots(zk_conn, pool, volume):
     snapshot_list = list()
     volume_list = list()
@@ -683,6 +718,7 @@ def getCephSnapshots(zk_conn, pool, volume):
 
     return snapshot_list
 
+
 def add_snapshot(zk_conn, pool, volume, name):
     if not verifyVolume(zk_conn, pool, volume):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(volume, pool)
@@ -699,6 +735,7 @@ def add_snapshot(zk_conn, pool, volume, name):
     })
 
     return True, 'Created RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
+
 
 def rename_snapshot(zk_conn, pool, volume, name, new_name):
     if not verifyVolume(zk_conn, pool, volume):
@@ -718,6 +755,7 @@ def rename_snapshot(zk_conn, pool, volume, name, new_name):
 
     return True, 'Renamed RBD snapshot "{}" to "{}" for volume "{}" in pool "{}".'.format(name, new_name, volume, pool)
 
+
 def remove_snapshot(zk_conn, pool, volume, name):
     if not verifyVolume(zk_conn, pool, volume):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(volume, pool)
@@ -733,6 +771,7 @@ def remove_snapshot(zk_conn, pool, volume, name):
     zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
 
     return True, 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
+
 
 def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
     snapshot_list = []

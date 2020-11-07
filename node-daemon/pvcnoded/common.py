@@ -28,6 +28,7 @@ from shlex import split as shlex_split
 
 import pvcnoded.zkhandler as zkhandler
 
+
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):
         command = shlex_split(command_string)
@@ -55,9 +56,11 @@ class OSDaemon(object):
         }
         self.proc.send_signal(signal_map[sent_signal])
 
+
 def run_os_daemon(command_string, environment=None, logfile=None):
     daemon = OSDaemon(command_string, environment, logfile)
     return daemon
+
 
 # Run a oneshot command, optionally without blocking
 def run_os_command(command_string, background=False, environment=None, timeout=None):
@@ -100,12 +103,14 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
             stderr = ''
         return retcode, stdout, stderr
 
+
 # Reload the firewall rules of the system
 def reload_firewall_rules(logger, rules_file):
     logger.out('Reloading firewall configuration', state='o')
     retcode, stdout, stderr = run_os_command('/usr/sbin/nft -f {}'.format(rules_file))
     if retcode != 0:
         logger.out('Failed to reload configuration: {}'.format(stderr), state='e')
+
 
 # Create IP address
 def createIPAddress(ipaddr, cidrnetmask, dev):
@@ -123,6 +128,7 @@ def createIPAddress(ipaddr, cidrnetmask, dev):
         )
     )
 
+
 # Remove IP address
 def removeIPAddress(ipaddr, cidrnetmask, dev):
     run_os_command(
@@ -132,6 +138,7 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
             dev
         )
     )
+
 
 #
 # Find a migration target
@@ -173,6 +180,7 @@ def findTargetNode(zk_conn, config, logger, dom_uuid):
     # Nothing was found
     return None
 
+
 # Get the list of valid target nodes
 def getNodes(zk_conn, node_limit, dom_uuid):
     valid_node_list = []
@@ -195,6 +203,7 @@ def getNodes(zk_conn, node_limit, dom_uuid):
         valid_node_list.append(node)
 
     return valid_node_list
+
 
 # via free memory (relative to allocated memory)
 def findTargetNodeMem(zk_conn, config, logger, node_limit, dom_uuid):
@@ -222,6 +231,7 @@ def findTargetNodeMem(zk_conn, config, logger, node_limit, dom_uuid):
         logger.out('Selected node {}'.format(target_node), state='d', prefix='node-flush')
     return target_node
 
+
 # via load average
 def findTargetNodeLoad(zk_conn, config, logger, node_limit, dom_uuid):
     least_load = 9999.0
@@ -244,6 +254,7 @@ def findTargetNodeLoad(zk_conn, config, logger, node_limit, dom_uuid):
         logger.out('Selected node {}'.format(target_node), state='d', prefix='node-flush')
     return target_node
 
+
 # via total vCPUs
 def findTargetNodeVCPUs(zk_conn, config, logger, node_limit, dom_uuid):
     least_vcpus = 9999
@@ -265,6 +276,7 @@ def findTargetNodeVCPUs(zk_conn, config, logger, node_limit, dom_uuid):
     if config['debug']:
         logger.out('Selected node {}'.format(target_node), state='d', prefix='node-flush')
     return target_node
+
 
 # via total VMs
 def findTargetNodeVMs(zk_conn, config, logger, node_limit, dom_uuid):

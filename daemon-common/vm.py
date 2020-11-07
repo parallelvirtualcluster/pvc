@@ -29,6 +29,7 @@ import daemon_lib.common as common
 
 import daemon_lib.ceph as ceph
 
+
 #
 # Cluster search functions
 #
@@ -40,6 +41,7 @@ def getClusterDomainList(zk_conn):
     for uuid in uuid_list:
         name_list.append(zkhandler.readdata(zk_conn, '/domains/%s' % uuid))
     return uuid_list, name_list
+
 
 def searchClusterByUUID(zk_conn, uuid):
     try:
@@ -55,6 +57,7 @@ def searchClusterByUUID(zk_conn, uuid):
 
     return name
 
+
 def searchClusterByName(zk_conn, name):
     try:
         # Get the lists
@@ -69,6 +72,7 @@ def searchClusterByName(zk_conn, name):
 
     return uuid
 
+
 def getDomainUUID(zk_conn, domain):
     # Validate that VM exists in cluster
     if common.validateUUID(domain):
@@ -80,6 +84,7 @@ def getDomainUUID(zk_conn, domain):
 
     return dom_uuid
 
+
 def getDomainName(zk_conn, domain):
     # Validate that VM exists in cluster
     if common.validateUUID(domain):
@@ -90,6 +95,7 @@ def getDomainName(zk_conn, domain):
         dom_name = searchClusterByUUID(zk_conn, dom_uuid)
 
     return dom_name
+
 
 #
 # Direct functions
@@ -105,6 +111,7 @@ def is_migrated(zk_conn, domain):
         return True
     else:
         return False
+
 
 def flush_locks(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -144,6 +151,7 @@ def flush_locks(zk_conn, domain):
         zkhandler.writedata(zk_conn, {'/cmd/domains': ''})
 
     return success, message
+
 
 def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node_autostart, migration_method=None, profile=None, initial_state='stop'):
     # Parse the XML data
@@ -204,6 +212,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
+
 def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -235,6 +244,7 @@ def modify_vm_metadata(zk_conn, domain, node_limit, node_selector, node_autostar
         })
 
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
+
 
 def modify_vm(zk_conn, domain, restart, new_vm_config):
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -277,6 +287,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
 
     return True, ''
 
+
 def dump_vm(zk_conn, domain):
     dom_uuid = getDomainUUID(zk_conn, domain)
     if not dom_uuid:
@@ -286,6 +297,7 @@ def dump_vm(zk_conn, domain):
     vm_xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
 
     return True, vm_xml
+
 
 def undefine_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -313,6 +325,7 @@ def undefine_vm(zk_conn, domain):
     zkhandler.deletekey(zk_conn, '/domains/{}'.format(dom_uuid))
 
     return True, 'Undefined VM "{}" from the cluster.'.format(domain)
+
 
 def remove_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -353,6 +366,7 @@ def remove_vm(zk_conn, domain):
 
     return True, 'Removed VM "{}" and disks from the cluster.'.format(domain)
 
+
 def start_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -366,6 +380,7 @@ def start_vm(zk_conn, domain):
     lock.release()
 
     return True, 'Starting VM "{}".'.format(domain)
+
 
 def restart_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
@@ -393,6 +408,7 @@ def restart_vm(zk_conn, domain, wait=False):
 
     return True, retmsg
 
+
 def shutdown_vm(zk_conn, domain, wait=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -419,6 +435,7 @@ def shutdown_vm(zk_conn, domain, wait=False):
 
     return True, retmsg
 
+
 def stop_vm(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -432,6 +449,7 @@ def stop_vm(zk_conn, domain):
     lock.release()
 
     return True, 'Forcibly stopping VM "{}".'.format(domain)
+
 
 def disable_vm(zk_conn, domain):
     # Validate that VM exists in cluster
@@ -451,6 +469,7 @@ def disable_vm(zk_conn, domain):
     lock.release()
 
     return True, 'Marked VM "{}" as disable.'.format(domain)
+
 
 def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
     # Validate that VM exists in cluster
@@ -513,6 +532,7 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
         retmsg = 'Permanently migrated VM "{}" to node "{}"'.format(domain, target_node)
 
     return True, retmsg
+
 
 def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_live=False):
     # Validate that VM exists in cluster
@@ -579,6 +599,7 @@ def migrate_vm(zk_conn, domain, target_node, force_migrate, wait=False, force_li
 
     return True, retmsg
 
+
 def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -619,6 +640,7 @@ def unmigrate_vm(zk_conn, domain, wait=False, force_live=False):
 
     return True, retmsg
 
+
 def get_console_log(zk_conn, domain, lines=1000):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -634,6 +656,7 @@ def get_console_log(zk_conn, domain, lines=1000):
 
     return True, loglines
 
+
 def get_info(zk_conn, domain):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zk_conn, domain)
@@ -646,6 +669,7 @@ def get_info(zk_conn, domain):
         return False, 'ERROR: Could not get information about VM "{}".'.format(domain)
 
     return True, domain_information
+
 
 def get_list(zk_conn, node, state, limit, is_fuzzy=True):
     if node:
