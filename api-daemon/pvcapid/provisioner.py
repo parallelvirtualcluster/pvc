@@ -110,7 +110,7 @@ def list_template(limit, table, is_fuzzy=True):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]
@@ -610,7 +610,7 @@ def list_userdata(limit, is_fuzzy=True):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]
@@ -705,7 +705,7 @@ def list_script(limit, is_fuzzy=True):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]
@@ -800,7 +800,7 @@ def list_profile(limit, is_fuzzy=True):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]

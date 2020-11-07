@@ -324,7 +324,7 @@ def get_list_osd(zk_conn, limit, is_fuzzy=True):
         # Implicitly assume fuzzy limits
         if not re.match('[^].*', limit):
             limit = '.*' + limit
-        if not re.match('.*[$]', limit):
+        if not re.match('.*\$', limit):
             limit = limit + '.*'
 
     for osd in full_osd_list:
@@ -660,7 +660,7 @@ def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
             # Implicitly assume fuzzy limits
             if not re.match('[^].*', limit):
                 limit = '.*' + limit
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '.*'
 
     for volume in full_volume_list:
@@ -766,7 +766,7 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
         # Implicitly assume fuzzy limits
         if not re.match('[^].*', limit):
             limit = '.*' + limit
-        if not re.match('.*[$]', limit):
+        if not re.match('.*\$', limit):
             limit = limit + '.*'
 
     for snapshot in full_snapshot_list:

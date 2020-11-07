@@ -74,7 +74,7 @@ def list_ova(limit, is_fuzzy=True):
                 limit = '%' + limit
             else:
                 limit = limit[1:]
-            if not re.match('.*[$]', limit):
+            if not re.match('.*\$', limit):
                 limit = limit + '%'
             else:
                 limit = limit[:-1]
