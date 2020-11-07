@@ -921,7 +921,7 @@ if enable_networking:
 if enable_hypervisor:
     # VM command pipeline key
     @zk_conn.DataWatch('/cmd/domains')
-    def cmd(data, stat, event=''):
+    def cmd_domains(data, stat, event=''):
         if data:
             VMInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'))
 
@@ -952,7 +952,7 @@ if enable_hypervisor:
 if enable_storage:
     # Ceph command pipeline key
     @zk_conn.DataWatch('/cmd/ceph')
-    def cmd(data, stat, event=''):
+    def cmd_ceph(data, stat, event=''):
         if data:
             CephInstance.run_command(zk_conn, logger, this_node, data.decode('ascii'), d_osd)
 

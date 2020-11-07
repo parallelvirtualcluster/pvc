@@ -226,7 +226,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip6_gateway'.format(self.vni))
-        def watch_network_gateway(data, stat, event=''):
+        def watch_network_gateway6(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -248,7 +248,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp6_flag'.format(self.vni))
-        def watch_network_dhcp_status(data, stat, event=''):
+        def watch_network_dhcp6_status(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -277,7 +277,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/ip4_gateway'.format(self.vni))
-        def watch_network_gateway(data, stat, event=''):
+        def watch_network_gateway4(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -299,7 +299,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.startDHCPServer()
 
         @self.zk_conn.DataWatch('/networks/{}/dhcp4_flag'.format(self.vni))
-        def watch_network_dhcp_status(data, stat, event=''):
+        def watch_network_dhcp4_status(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -355,7 +355,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.startDHCPServer()
 
         @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/in'.format(self.vni))
-        def watch_network_firewall_rules(new_rules, event=''):
+        def watch_network_firewall_rules_in(new_rules, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
@@ -367,7 +367,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.updateFirewallRules()
 
         @self.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/out'.format(self.vni))
-        def watch_network_firewall_rules(new_rules, event=''):
+        def watch_network_firewall_rules_out(new_rules, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
                 # because this class instance is about to be reaped in Daemon.py
