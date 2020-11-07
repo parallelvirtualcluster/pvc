@@ -247,7 +247,7 @@ api.add_resource(API_Root, '/')
 #         swagger_data['info']['title'] = "PVC Client and Provisioner API"
 #         swagger_data['host'] = "{}:{}".format(config['listen_address'], config['listen_port'])
 #         return swagger_data
-# 
+#
 #
 # api.add_resource(API_Doc, '/doc')
 
