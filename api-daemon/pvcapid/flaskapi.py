@@ -4788,7 +4788,7 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
         {'name': 'vni', 'required': True, 'helpmsg': "A valid VNI must be specified."}
     ])
     @Authenticator
-    def post(self, reqargs):
+    def post(self, template, reqargs):
         """
         Create a new network in network template {template}
         ---
