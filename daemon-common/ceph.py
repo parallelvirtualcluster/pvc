@@ -637,7 +637,7 @@ def remove_pool(zk_conn, name):
 
     # 1. Remove pool volumes
     for volume in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(name)):
-        remove_volume(zk_conn, logger, name, volume)
+        remove_volume(zk_conn, name, volume)
 
     # 2. Remove the pool
     retcode, stdout, stderr = common.run_os_command('ceph osd pool rm {pool} {pool} --yes-i-really-really-mean-it'.format(pool=name))
@@ -1012,7 +1012,7 @@ def remove_volume(zk_conn, pool, name):
 
     # 1. Remove volume snapshots
     for snapshot in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}/{}'.format(pool, name)):
-        remove_snapshot(zk_conn, logger, pool, volume, snapshot)
+        remove_snapshot(zk_conn, pool, volume, snapshot)
 
     # 2. Remove the volume
     retcode, stdout, stderr = common.run_os_command('rbd rm {}/{}'.format(pool, name))
