@@ -682,7 +682,7 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
             # Implcitly assume fuzzy limits
             if not re.match('[^].*', limit):
                 limit = '.*' + limit
-            if not re.match('.*\$', limit):
+            if not re.match('.*[$]', limit):
                 limit = limit + '.*'
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
