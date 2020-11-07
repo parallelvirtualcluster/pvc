@@ -529,7 +529,7 @@ class OVFParser(object):
                 # Handle the unit conversion
                 base_unit, action, multiple = disk_capacity_unit.split()
                 multiple_base, multiple_exponent = multiple.split('^')
-                disk_capacity = int(disk_capacity) * (int(multiple_base) ** int(multiple_exponent) )
+                disk_capacity = int(disk_capacity) * (int(multiple_base) ** int(multiple_exponent))
 
             # Append the disk with all details to the list
             disk_list.append({

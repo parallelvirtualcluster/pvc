@@ -228,7 +228,7 @@ def add_network(zk_conn, vni, description, nettype,
                 domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                 dhcp4_flag, dhcp4_start, dhcp4_end):
     # Ensure start and end DHCP ranges are set if the flag is set
-    if dhcp4_flag and (not dhcp4_start or not dhcp4_end ):
+    if dhcp4_flag and (not dhcp4_start or not dhcp4_end):
         return False, 'ERROR: DHCPv4 start and end addresses are required for a DHCPv4-enabled network.'
 
     # Check if a network with this VNI or description already exists

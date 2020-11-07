@@ -95,13 +95,13 @@ class VXNetworkInstance(object):
         self.ip6_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_gateway'.format(self.vni))
         self.ip6_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni))
         self.ip6_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip6_network'.format(self.vni)).split('/')[-1]
-        self.dhcp6_flag = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp6_flag'.format(self.vni)) == 'True' )
+        self.dhcp6_flag = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp6_flag'.format(self.vni)) == 'True')
         self.ip4_gateway = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_gateway'.format(self.vni))
         self.ip4_network = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_network'.format(self.vni))
         self.ip4_cidrnetmask = zkhandler.readdata(self.zk_conn, '/networks/{}/ip4_network'.format(self.vni)).split('/')[-1]
-        self.dhcp4_flag = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_flag'.format(self.vni)) == 'True' )
-        self.dhcp4_start = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_start'.format(self.vni)) == 'True' )
-        self.dhcp4_end = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_end'.format(self.vni)) == 'True' )
+        self.dhcp4_flag = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_flag'.format(self.vni)) == 'True')
+        self.dhcp4_start = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_start'.format(self.vni)) == 'True')
+        self.dhcp4_end = (zkhandler.readdata(self.zk_conn, '/networks/{}/dhcp4_end'.format(self.vni)) == 'True')
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'vmbr{}'.format(self.vni)
@@ -254,8 +254,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.dhcp6_flag != (data.decode('ascii') == 'True' ):
-                self.dhcp6_flag = (data.decode('ascii') == 'True' )
+            if data and self.dhcp6_flag != (data.decode('ascii') == 'True'):
+                self.dhcp6_flag = (data.decode('ascii') == 'True')
                 if self.dhcp6_flag and not self.dhcp_server_daemon and self.this_node.router_state in ['primary', 'takeover']:
                     self.startDHCPServer()
                 elif self.dhcp_server_daemon and not self.dhcp4_flag and self.this_node.router_state in ['primary', 'takeover']:
@@ -305,8 +305,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 # because this class instance is about to be reaped in Daemon.py
                 return False
 
-            if data and self.dhcp4_flag != (data.decode('ascii') == 'True' ):
-                self.dhcp4_flag = (data.decode('ascii') == 'True' )
+            if data and self.dhcp4_flag != (data.decode('ascii') == 'True'):
+                self.dhcp4_flag = (data.decode('ascii') == 'True')
                 if self.dhcp4_flag and not self.dhcp_server_daemon and self.this_node.router_state in ['primary', 'takeover']:
                     self.startDHCPServer()
                 elif self.dhcp_server_daemon and not self.dhcp6_flag and self.this_node.router_state in ['primary', 'takeover']:
