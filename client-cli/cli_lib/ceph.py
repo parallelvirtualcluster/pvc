@@ -1302,7 +1302,6 @@ def ceph_benchmark_list(config, job):
 def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
 
-    benchmark_id_length = 3
     benchmark_job_length = 20
     benchmark_bandwidth_length = dict()
     benchmark_iops_length = dict()
@@ -1422,10 +1421,6 @@ def format_list_benchmark(config, benchmark_information):
     return '\n'.join(benchmark_list_output)
 
 def format_info_benchmark(config, benchmark_information):
-    # Load information from benchmark output
-    benchmark_id = benchmark_information[0]['id']
-    benchmark_job = benchmark_information[0]['job']
-
     if benchmark_information[0]['benchmark_result'] == "Running":
         return "Benchmark test is still running."
 

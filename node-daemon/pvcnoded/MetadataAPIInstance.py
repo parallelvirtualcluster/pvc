@@ -174,19 +174,15 @@ class MetadataAPIInstance(object):
                     pass
 
         # Get our real information on the host; now we can start querying about it
-        client_hostname = host_information.get('hostname', None)
         client_macaddr = host_information.get('mac_address', None)
-        client_ipaddr = host_information.get('ip4_address', None)
 
         # Find the VM with that MAC address - we can't assume that the hostname is actually right
         _discard, vm_list = pvc_vm.get_list(self.zk_conn, None, None, None)
-        vm_name = None
         vm_details = dict()
         for vm in vm_list:
             try:
                 for network in vm.get('networks'):
                     if network.get('mac', None) == client_macaddr:
-                        vm_name = vm.get('name')
                         vm_details = vm
             except Exception:
                 pass

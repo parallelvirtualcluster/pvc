@@ -233,7 +233,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             # Verify the network provided is valid
             try:
                 network = ip_network(config[network_key])
-            except Exception as e:
+            except Exception:
                 print('ERROR: Network address {} for {} is not valid!'.format(config[network_key], network_key))
                 exit(1)
 
@@ -253,7 +253,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                 # Verify we're in the network
                 if floating_addr not in list(network.hosts()):
                     raise
-            except Exception as e:
+            except Exception:
                 print('ERROR: Floating address {} for {} is not valid!'.format(config[floating_key], floating_key))
                 exit(1)
 
@@ -571,15 +571,14 @@ def cleanup():
         if d_domain[domain].getnode() == myhostname:
             try:
                 d_domain[domain].console_log_instance.stop()
-            except NameError as e:
+            except NameError:
                 pass
-            except AttributeError as e:
+            except AttributeError:
                 pass
 
     # Force into secondary coordinator state if needed
     try:
         if this_node.router_state == 'primary':
-            is_primary = True
             zkhandler.writedata(zk_conn, {
                 '/primary_node': 'none'
             })
@@ -891,7 +890,7 @@ if enable_networking:
                     try:
                         dns_aggregator.add_network(d_network[network])
                     except Exception as e:
-                        logger.out('Failed to create DNS Aggregator for network {}'.format(network), 'w')
+                        logger.out('Failed to create DNS Aggregator for network {}: {}'.format(network, e), 'w')
                 # Start primary functionality
                 if this_node.router_state == 'primary' and d_network[network].nettype == 'managed':
                     d_network[network].createGateways()
@@ -1150,7 +1149,7 @@ def collect_ceph_stats(queue):
                 })
             except Exception as e:
                 # One or more of the status commands timed out, just continue
-                logger.out('Failed to format and send pool data', state='w')
+                logger.out('Failed to format and send pool data: {}'.format(e), state='w')
                 pass
 
     # Only grab OSD stats if there are OSDs to grab (otherwise `ceph osd df` hangs)
@@ -1341,7 +1340,7 @@ def collect_vm_stats(queue):
                     try:
                         if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
                             raise
-                    except Exception as e:
+                    except Exception:
                         # Toggle a state "change"
                         zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
         elif instance.getnode() == this_node.name:
@@ -1621,11 +1620,9 @@ def node_keepalive():
             for node_name in d_node:
                 try:
                     node_daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
-                    node_domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node_name))
                     node_keepalive = int(zkhandler.readdata(zk_conn, '/nodes/{}/keepalive'.format(node_name)))
                 except Exception:
                     node_daemon_state = 'unknown'
-                    node_domain_state = 'unknown'
                     node_keepalive = 0
 
                 # Handle deadtime and fencng if needed

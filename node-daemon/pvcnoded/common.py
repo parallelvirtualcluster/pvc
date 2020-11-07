@@ -149,7 +149,7 @@ def findTargetNode(zk_conn, config, logger, dom_uuid):
     # Determine VM search field
     try:
         search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
-    except Exception as e:
+    except Exception:
         search_field = None
 
     # If our search field is invalid, use and set the default (for next time)

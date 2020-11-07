@@ -804,10 +804,7 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
             template_migration_method='Migration'
         )
 
-    # Keep track of nets we found to be valid to cut down on duplicate API hits
-    valid_net_list = []
     # Format the string (elements)
-
     for template in sorted(template_data, key=lambda i: i.get('name', None)):
         template_list_output.append(
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
@@ -1069,7 +1066,6 @@ def format_list_userdata(userdata_data, lines=None):
     # Determine optimal column widths
     userdata_name_length = 5
     userdata_id_length = 3
-    userdata_useruserdata_length = 8
 
     for userdata in userdata_data:
         # userdata_name column
@@ -1144,7 +1140,6 @@ def format_list_script(script_data, lines=None):
     # Determine optimal column widths
     script_name_length = 5
     script_id_length = 3
-    script_script_length = 8
 
     for script in script_data:
         # script_name column

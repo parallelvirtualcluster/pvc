@@ -792,7 +792,7 @@ def list_profile(limit, is_fuzzy=True):
             cur.execute(query, args)
             try:
                 name = cur.fetchone()['name']
-            except Exception as e:
+            except Exception:
                 name = "N/A"
             profile_data[etype] = name
         # Split the arguments back into a list

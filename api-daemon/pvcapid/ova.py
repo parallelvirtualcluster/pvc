@@ -263,12 +263,10 @@ def upload_ova(pool, name, ova_size):
         disk_identifier = "sd{}".format(chr(ord('a') + idx))
         volume = "ova_{}_{}".format(name, disk_identifier)
         dev_src = disk.get('src')
-        dev_type = dev_src.split('.')[-1]
         dev_size_raw = ova_archive.getmember(dev_src).size
         vm_volume_size = disk.get('capacity')
 
         # Normalize the dev size to bytes
-        dev_size_bytes = int(pvc_ceph.format_bytes_fromhuman(dev_size_raw)[:-1])
         dev_size = pvc_ceph.format_bytes_fromhuman(dev_size_raw)
 
         def cleanup_img_maps():
@@ -311,8 +309,6 @@ def upload_ova(pool, name, ova_size):
             # Open the temporary blockdev and seek to byte 0
             blk_file = open(temp_blockdev, 'wb')
             blk_file.seek(0)
-            # Write the contents of vmdk_file into blk_file
-            bytes_written = blk_file.write(vmdk_file.read())
             # Close blk_file (and flush the buffers)
             blk_file.close()
             # Close vmdk_file

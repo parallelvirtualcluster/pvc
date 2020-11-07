@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if ! which flake8 &>/dev/null; then
+    echo "Flake8 is required to lint this project"
+    exit 1
+fi
+
+flake8 \
+    --exclude=api-daemon/migrations/versions \
+    --exclude=api-daemon/provisioner/examples

@@ -494,11 +494,6 @@ def format_list(config, network_list):
         else:
             v6_flag = 'False'
 
-        if network_information['ip4']['dhcp_flag'] == "True":
-            dhcp4_range = '{} - {}'.format(network_information['ip4']['dhcp_start'], network_information['ip4']['dhcp_end'])
-        else:
-            dhcp4_range = 'N/A'
-
         network_list_output.append(
             '{bold}\
 {net_vni: <{net_vni_length}} \

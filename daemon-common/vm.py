@@ -427,9 +427,6 @@ def stop_vm(zk_conn, domain):
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    # Get state and verify we're OK to proceed
-    current_state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
-
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()

@@ -43,7 +43,6 @@ def deletekey(zk_conn, key, recursive=True):
 def readdata(zk_conn, key):
     data_raw = zk_conn.get(key)
     data = data_raw[0].decode('utf8')
-    meta = data_raw[1]
     return data
 
 # Data write function

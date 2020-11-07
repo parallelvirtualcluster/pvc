@@ -689,7 +689,6 @@ def vm_modify(domain, cfgfile, editor, restart):
     if not retcode and not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    dom_uuid = vm_information.get('uuid')
     dom_name = vm_information.get('name')
 
     if editor is True:
@@ -3144,7 +3143,6 @@ def provisioner_script_remove(name, confirm_flag):
             click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
             exit(0)
-    params = dict()
 
     retcode, retdata = pvc_provisioner.script_remove(config, name)
     cleanup(retcode, retdata)

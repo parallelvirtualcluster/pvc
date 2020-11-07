@@ -158,10 +158,6 @@ class DNSNetworkInstance(object):
     # Add a new network to the aggregator database
     def add_network(self):
         network_domain = self.network.domain
-        if self.network.ip4_gateway != 'None':
-            network_gateway = self.network.ip4_gateway
-        else:
-            network_gateway = self.network.ip6_gateway
 
         self.logger.out(
             'Adding entry for client domain {}'.format(
@@ -330,8 +326,6 @@ class AXFRDaemonInstance(object):
         while not self.thread_stopper.is_set():
             # We do this for each network
             for network, instance in self.dns_networks.items():
-                zone_modified = False
-
                 # Set up our SQL cursor
                 try:
                     sql_curs = self.sql_conn.cursor()

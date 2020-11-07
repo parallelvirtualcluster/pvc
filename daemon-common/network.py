@@ -545,11 +545,9 @@ def get_list_dhcp(zk_conn, network, limit, only_static=False, is_fuzzy=True):
 
     if only_static:
         full_dhcp_list = getNetworkDHCPReservations(zk_conn, net_vni)
-        reservations = True
     else:
         full_dhcp_list = getNetworkDHCPReservations(zk_conn, net_vni)
         full_dhcp_list += getNetworkDHCPLeases(zk_conn, net_vni)
-        reservations = False
 
     if limit:
         try:
@@ -693,6 +691,9 @@ def format_info(network_information, long_output):
                 ainformation.append('{}Network firewall rules:{}'.format(ansiprint.bold(), ansiprint.end()))
                 ainformation.append('')
                 formatted_firewall_rules = get_list_firewall_rules(zk_conn, vni)
+                for rule in formatted_firewall_rules:
+                    ainformation.append(rule)
+
 
     # Join it all together
     click.echo('\n'.join(ainformation))
@@ -770,11 +771,6 @@ def format_list(network_list):
             v6_flag = 'True'
         else:
             v6_flag = 'False'
-
-        if network_information['ip4']['dhcp_flag'] == "True":
-            dhcp4_range = '{} - {}'.format(network_information['ip4']['dhcp_start'], network_information['ip4']['dhcp_end'])
-        else:
-            dhcp4_range = 'N/A'
 
         network_list_output.append(
             '{bold}\

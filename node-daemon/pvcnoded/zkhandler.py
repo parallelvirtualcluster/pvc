@@ -43,7 +43,6 @@ def readdata(zk_conn, key):
     try:
         data_raw = zk_conn.get(key)
         data = data_raw[0].decode('utf8')
-        meta = data_raw[1]
         return data
     except Exception:
         return None

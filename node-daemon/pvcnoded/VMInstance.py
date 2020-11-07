@@ -512,7 +512,7 @@ class VMInstance(object):
         time.sleep(0.5) # Time for reader to acquire the lock
 
         if do_migrate_shutdown:
-            migrate_shutdown_result = migrate_shutdown()
+            migrate_shutdown()
 
         self.logger.out('Releasing write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
@@ -547,7 +547,6 @@ class VMInstance(object):
             time.sleep(0.1)
 
         self.inreceive = True
-        live_receive = True
 
         self.logger.out('Receiving VM migration from node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
 
