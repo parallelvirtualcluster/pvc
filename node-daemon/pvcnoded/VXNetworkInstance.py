@@ -452,9 +452,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             firewall_rules += self.firewall_rules_v4
 
         output = "{}\n# User rules\n{}\n".format(
-                     firewall_rules,
-                     '\n'.join(full_ordered_rules)
-                 )
+            firewall_rules,
+            '\n'.join(full_ordered_rules))
 
         with open(self.nftables_netconf_filename, 'w') as nfnetfile:
             nfnetfile.write(dedent(output))

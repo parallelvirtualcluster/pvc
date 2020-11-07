@@ -165,11 +165,11 @@ class DNSNetworkInstance(object):
         # Connect to the database
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
         sql_curs = self.sql_conn.cursor()
@@ -241,11 +241,11 @@ class DNSNetworkInstance(object):
         # Connect to the database
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
         sql_curs = self.sql_conn.cursor()
@@ -297,11 +297,11 @@ class AXFRDaemonInstance(object):
         # after the leader transitions
         self.sql_conn = psycopg2.connect(
             "host='{}' port='{}' dbname='{}' user='{}' password='{}' sslmode='disable'".format(
-               self.config['pdns_postgresql_host'],
-               self.config['pdns_postgresql_port'],
-               self.config['pdns_postgresql_dbname'],
-               self.config['pdns_postgresql_user'],
-               self.config['pdns_postgresql_password']
+                self.config['pdns_postgresql_host'],
+                self.config['pdns_postgresql_port'],
+                self.config['pdns_postgresql_dbname'],
+                self.config['pdns_postgresql_user'],
+                self.config['pdns_postgresql_password']
             )
         )
 

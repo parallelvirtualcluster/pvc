@@ -109,15 +109,11 @@ def format_info(cluster_information, oformat):
     ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
     if cluster_information['health_msg']:
         for line in cluster_information['health_msg']:
-            ainformation.append(
-                        '                     > {}'.format(line)
-            )
+            ainformation.append('                     > {}'.format(line))
     ainformation.append('{}Storage health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), storage_health_colour, cluster_information['storage_health'], ansiprint.end()))
     if cluster_information['storage_health_msg']:
         for line in cluster_information['storage_health_msg']:
-            ainformation.append(
-                        '                     > {}'.format(line)
-            )
+            ainformation.append('                     > {}'.format(line))
     ainformation.append('')
     ainformation.append('{}Primary node:{}        {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['primary_node']))
     ainformation.append('{}Cluster upstream IP:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['upstream_ip']))

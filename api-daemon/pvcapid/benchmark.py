@@ -237,12 +237,11 @@ def run_benchmark(self, pool):
                 --bs={bs} \
                 --readwrite={rw}
         """.format(
-                pool=pool,
-                volume=volume,
-                test=test,
-                bs=test_matrix[test]['bs'],
-                rw=test_matrix[test]['rw']
-            )
+            pool=pool,
+            volume=volume,
+            test=test,
+            bs=test_matrix[test]['bs'],
+            rw=test_matrix[test]['rw'])
 
         retcode, stdout, stderr = pvc_common.run_os_command(fio_cmd)
         if retcode:

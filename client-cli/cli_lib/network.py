@@ -480,25 +480,24 @@ def format_list(config, network_list):
 {net_v4_flag: <{net_v4_flag_length}} \
 {net_dhcp4_flag: <{net_dhcp4_flag_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            net_vni_length=net_vni_length,
-            net_description_length=net_description_length,
-            net_nettype_length=net_nettype_length,
-            net_domain_length=net_domain_length,
-            net_v6_flag_length=net_v6_flag_length,
-            net_dhcp6_flag_length=net_dhcp6_flag_length,
-            net_v4_flag_length=net_v4_flag_length,
-            net_dhcp4_flag_length=net_dhcp4_flag_length,
-            net_vni='VNI',
-            net_description='Description',
-            net_nettype='Type',
-            net_domain='Domain',
-            net_v6_flag='IPv6',
-            net_dhcp6_flag='DHCPv6',
-            net_v4_flag='IPv4',
-            net_dhcp4_flag='DHCPv4',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        net_vni_length=net_vni_length,
+        net_description_length=net_description_length,
+        net_nettype_length=net_nettype_length,
+        net_domain_length=net_domain_length,
+        net_v6_flag_length=net_v6_flag_length,
+        net_dhcp6_flag_length=net_dhcp6_flag_length,
+        net_v4_flag_length=net_v4_flag_length,
+        net_dhcp4_flag_length=net_dhcp4_flag_length,
+        net_vni='VNI',
+        net_description='Description',
+        net_nettype='Type',
+        net_domain='Domain',
+        net_v6_flag='IPv6',
+        net_dhcp6_flag='DHCPv6',
+        net_v4_flag='IPv4',
+        net_dhcp4_flag='DHCPv4')
     )
 
     for network_information in network_list:
@@ -513,8 +512,7 @@ def format_list(config, network_list):
         else:
             v6_flag = 'False'
 
-        network_list_output.append(
-            '{bold}\
+        network_list_output.append('{bold}\
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
 {net_nettype: <{net_nettype_length}} \
@@ -524,30 +522,29 @@ def format_list(config, network_list):
 {v4_flag_colour}{net_v4_flag: <{net_v4_flag_length}}{colour_off} \
 {dhcp4_flag_colour}{net_dhcp4_flag: <{net_dhcp4_flag_length}}{colour_off} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                net_vni_length=net_vni_length,
-                net_description_length=net_description_length,
-                net_nettype_length=net_nettype_length,
-                net_domain_length=net_domain_length,
-                net_v6_flag_length=net_v6_flag_length,
-                net_dhcp6_flag_length=net_dhcp6_flag_length,
-                net_v4_flag_length=net_v4_flag_length,
-                net_dhcp4_flag_length=net_dhcp4_flag_length,
-                net_vni=network_information['vni'],
-                net_description=network_information['description'],
-                net_nettype=network_information['type'],
-                net_domain=network_information['domain'],
-                net_v6_flag=v6_flag,
-                v6_flag_colour=v6_flag_colour,
-                net_dhcp6_flag=network_information['ip6']['dhcp_flag'],
-                dhcp6_flag_colour=dhcp6_flag_colour,
-                net_v4_flag=v4_flag,
-                v4_flag_colour=v4_flag_colour,
-                net_dhcp4_flag=network_information['ip4']['dhcp_flag'],
-                dhcp4_flag_colour=dhcp4_flag_colour,
-                colour_off=ansiprint.end()
-            )
+            bold='',
+            end_bold='',
+            net_vni_length=net_vni_length,
+            net_description_length=net_description_length,
+            net_nettype_length=net_nettype_length,
+            net_domain_length=net_domain_length,
+            net_v6_flag_length=net_v6_flag_length,
+            net_dhcp6_flag_length=net_dhcp6_flag_length,
+            net_v4_flag_length=net_v4_flag_length,
+            net_dhcp4_flag_length=net_dhcp4_flag_length,
+            net_vni=network_information['vni'],
+            net_description=network_information['description'],
+            net_nettype=network_information['type'],
+            net_domain=network_information['domain'],
+            net_v6_flag=v6_flag,
+            v6_flag_colour=v6_flag_colour,
+            net_dhcp6_flag=network_information['ip6']['dhcp_flag'],
+            dhcp6_flag_colour=dhcp6_flag_colour,
+            net_v4_flag=v4_flag,
+            v4_flag_colour=v4_flag_colour,
+            net_dhcp4_flag=network_information['ip4']['dhcp_flag'],
+            dhcp4_flag_colour=dhcp4_flag_colour,
+            colour_off=ansiprint.end())
         )
 
     return '\n'.join(sorted(network_list_output))
@@ -582,17 +579,16 @@ def format_list_dhcp(dhcp_lease_list):
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            lease_hostname_length=lease_hostname_length,
-            lease_ip4_address_length=lease_ip4_address_length,
-            lease_mac_address_length=lease_mac_address_length,
-            lease_timestamp_length=lease_timestamp_length,
-            lease_hostname='Hostname',
-            lease_ip4_address='IP Address',
-            lease_mac_address='MAC Address',
-            lease_timestamp='Timestamp'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        lease_hostname_length=lease_hostname_length,
+        lease_ip4_address_length=lease_ip4_address_length,
+        lease_mac_address_length=lease_mac_address_length,
+        lease_timestamp_length=lease_timestamp_length,
+        lease_hostname='Hostname',
+        lease_ip4_address='IP Address',
+        lease_mac_address='MAC Address',
+        lease_timestamp='Timestamp')
     )
 
     for dhcp_lease_information in dhcp_lease_list:
@@ -602,17 +598,16 @@ def format_list_dhcp(dhcp_lease_list):
 {lease_mac_address: <{lease_mac_address_length}} \
 {lease_timestamp: <{lease_timestamp_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                lease_hostname_length=lease_hostname_length,
-                lease_ip4_address_length=lease_ip4_address_length,
-                lease_mac_address_length=lease_mac_address_length,
-                lease_timestamp_length=12,
-                lease_hostname=str(dhcp_lease_information['hostname']),
-                lease_ip4_address=str(dhcp_lease_information['ip4_address']),
-                lease_mac_address=str(dhcp_lease_information['mac_address']),
-                lease_timestamp=str(dhcp_lease_information['timestamp'])
-            )
+            bold='',
+            end_bold='',
+            lease_hostname_length=lease_hostname_length,
+            lease_ip4_address_length=lease_ip4_address_length,
+            lease_mac_address_length=lease_mac_address_length,
+            lease_timestamp_length=12,
+            lease_hostname=str(dhcp_lease_information['hostname']),
+            lease_ip4_address=str(dhcp_lease_information['ip4_address']),
+            lease_mac_address=str(dhcp_lease_information['mac_address']),
+            lease_timestamp=str(dhcp_lease_information['timestamp']))
         )
 
     return '\n'.join(sorted(dhcp_lease_list_output))
@@ -654,17 +649,16 @@ def format_list_acl(acl_list):
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            acl_direction_length=acl_direction_length,
-            acl_order_length=acl_order_length,
-            acl_description_length=acl_description_length,
-            acl_rule_length=acl_rule_length,
-            acl_direction='Direction',
-            acl_order='Order',
-            acl_description='Description',
-            acl_rule='Rule',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        acl_direction_length=acl_direction_length,
+        acl_order_length=acl_order_length,
+        acl_description_length=acl_description_length,
+        acl_rule_length=acl_rule_length,
+        acl_direction='Direction',
+        acl_order='Order',
+        acl_description='Description',
+        acl_rule='Rule')
     )
 
     for acl_information in acl_list:
@@ -674,17 +668,16 @@ def format_list_acl(acl_list):
 {acl_description: <{acl_description_length}} \
 {acl_rule: <{acl_rule_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                acl_direction_length=acl_direction_length,
-                acl_order_length=acl_order_length,
-                acl_description_length=acl_description_length,
-                acl_rule_length=acl_rule_length,
-                acl_direction=acl_information['direction'],
-                acl_order=acl_information['order'],
-                acl_description=acl_information['description'],
-                acl_rule=acl_information['rule'],
-            )
+            bold='',
+            end_bold='',
+            acl_direction_length=acl_direction_length,
+            acl_order_length=acl_order_length,
+            acl_description_length=acl_description_length,
+            acl_rule_length=acl_rule_length,
+            acl_direction=acl_information['direction'],
+            acl_order=acl_information['order'],
+            acl_description=acl_information['description'],
+            acl_rule=acl_information['rule'])
         )
 
     return '\n'.join(sorted(acl_list_output))

@@ -733,17 +733,17 @@ if enable_networking:
     common.run_os_command(
         '/bin/mkdir --parents {}/networks'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
     common.run_os_command(
         '/bin/mkdir --parents {}/static'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
     common.run_os_command(
         '/bin/mkdir --parents {}'.format(
             config['nft_dynamic_directory']
-         )
+        )
     )
 
     # Set up the basic features of the nftables firewall

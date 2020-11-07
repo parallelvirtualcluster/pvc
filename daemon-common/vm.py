@@ -520,10 +520,10 @@ def move_vm(zk_conn, domain, target_node, wait=False, force_live=False):
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
     zkhandler.writedata(zk_conn, {
-            '/domains/{}/state'.format(dom_uuid): target_state,
-            '/domains/{}/node'.format(dom_uuid): target_node,
-            '/domains/{}/lastnode'.format(dom_uuid): ''
-        })
+        '/domains/{}/state'.format(dom_uuid): target_state,
+        '/domains/{}/node'.format(dom_uuid): target_node,
+        '/domains/{}/lastnode'.format(dom_uuid): ''
+    })
     lock.release()
 
     if wait:

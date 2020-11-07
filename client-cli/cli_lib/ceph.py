@@ -432,41 +432,40 @@ Rd: {osd_rdops: <{osd_rdops_length}} \
 Wr: {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            osd_id_length=osd_id_length,
-            osd_node_length=osd_node_length,
-            osd_up_length=osd_up_length,
-            osd_in_length=osd_in_length,
-            osd_size_length=osd_size_length,
-            osd_pgs_length=osd_pgs_length,
-            osd_weight_length=osd_weight_length,
-            osd_reweight_length=osd_reweight_length,
-            osd_used_length=osd_used_length,
-            osd_free_length=osd_free_length,
-            osd_util_length=osd_util_length,
-            osd_var_length=osd_var_length,
-            osd_wrops_length=osd_wrops_length,
-            osd_wrdata_length=osd_wrdata_length,
-            osd_rdops_length=osd_rdops_length,
-            osd_rddata_length=osd_rddata_length,
-            osd_id='ID',
-            osd_node='Node',
-            osd_up='Up',
-            osd_in='In',
-            osd_size='Size',
-            osd_pgs='PGs',
-            osd_weight='Wt',
-            osd_reweight='ReWt',
-            osd_used='Used',
-            osd_free='Free',
-            osd_util='Util%',
-            osd_var='Var',
-            osd_wrops='OPS',
-            osd_wrdata='Data',
-            osd_rdops='OPS',
-            osd_rddata='Data'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        osd_id_length=osd_id_length,
+        osd_node_length=osd_node_length,
+        osd_up_length=osd_up_length,
+        osd_in_length=osd_in_length,
+        osd_size_length=osd_size_length,
+        osd_pgs_length=osd_pgs_length,
+        osd_weight_length=osd_weight_length,
+        osd_reweight_length=osd_reweight_length,
+        osd_used_length=osd_used_length,
+        osd_free_length=osd_free_length,
+        osd_util_length=osd_util_length,
+        osd_var_length=osd_var_length,
+        osd_wrops_length=osd_wrops_length,
+        osd_wrdata_length=osd_wrdata_length,
+        osd_rdops_length=osd_rdops_length,
+        osd_rddata_length=osd_rddata_length,
+        osd_id='ID',
+        osd_node='Node',
+        osd_up='Up',
+        osd_in='In',
+        osd_size='Size',
+        osd_pgs='PGs',
+        osd_weight='Wt',
+        osd_reweight='ReWt',
+        osd_used='Used',
+        osd_free='Free',
+        osd_util='Util%',
+        osd_var='Var',
+        osd_wrops='OPS',
+        osd_wrdata='Data',
+        osd_rdops='OPS',
+        osd_rddata='Data')
     )
 
     for osd_information in sorted(osd_list, key=lambda x: int(x['id'])):
@@ -500,44 +499,43 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
     {osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                end_colour=ansiprint.end(),
-                osd_id_length=osd_id_length,
-                osd_node_length=osd_node_length,
-                osd_up_length=osd_up_length,
-                osd_in_length=osd_in_length,
-                osd_size_length=osd_size_length,
-                osd_pgs_length=osd_pgs_length,
-                osd_weight_length=osd_weight_length,
-                osd_reweight_length=osd_reweight_length,
-                osd_used_length=osd_used_length,
-                osd_free_length=osd_free_length,
-                osd_util_length=osd_util_length,
-                osd_var_length=osd_var_length,
-                osd_wrops_length=osd_wrops_length,
-                osd_wrdata_length=osd_wrdata_length,
-                osd_rdops_length=osd_rdops_length,
-                osd_rddata_length=osd_rddata_length,
-                osd_id=osd_information['id'],
-                osd_node=osd_information['stats']['node'],
-                osd_up_colour=osd_up_colour,
-                osd_up=osd_up_flag,
-                osd_in_colour=osd_in_colour,
-                osd_in=osd_in_flag,
-                osd_size=osd_information['stats']['size'],
-                osd_pgs=osd_information['stats']['pgs'],
-                osd_weight=osd_information['stats']['weight'],
-                osd_reweight=osd_information['stats']['reweight'],
-                osd_used=osd_information['stats']['used'],
-                osd_free=osd_information['stats']['avail'],
-                osd_util=osd_util,
-                osd_var=osd_var,
-                osd_wrops=osd_information['stats']['wr_ops'],
-                osd_wrdata=osd_information['stats']['wr_data'],
-                osd_rdops=osd_information['stats']['rd_ops'],
-                osd_rddata=osd_information['stats']['rd_data']
-            )
+            bold='',
+            end_bold='',
+            end_colour=ansiprint.end(),
+            osd_id_length=osd_id_length,
+            osd_node_length=osd_node_length,
+            osd_up_length=osd_up_length,
+            osd_in_length=osd_in_length,
+            osd_size_length=osd_size_length,
+            osd_pgs_length=osd_pgs_length,
+            osd_weight_length=osd_weight_length,
+            osd_reweight_length=osd_reweight_length,
+            osd_used_length=osd_used_length,
+            osd_free_length=osd_free_length,
+            osd_util_length=osd_util_length,
+            osd_var_length=osd_var_length,
+            osd_wrops_length=osd_wrops_length,
+            osd_wrdata_length=osd_wrdata_length,
+            osd_rdops_length=osd_rdops_length,
+            osd_rddata_length=osd_rddata_length,
+            osd_id=osd_information['id'],
+            osd_node=osd_information['stats']['node'],
+            osd_up_colour=osd_up_colour,
+            osd_up=osd_up_flag,
+            osd_in_colour=osd_in_colour,
+            osd_in=osd_in_flag,
+            osd_size=osd_information['stats']['size'],
+            osd_pgs=osd_information['stats']['pgs'],
+            osd_weight=osd_information['stats']['weight'],
+            osd_reweight=osd_information['stats']['reweight'],
+            osd_used=osd_information['stats']['used'],
+            osd_free=osd_information['stats']['avail'],
+            osd_util=osd_util,
+            osd_var=osd_var,
+            osd_wrops=osd_information['stats']['wr_ops'],
+            osd_wrdata=osd_information['stats']['wr_data'],
+            osd_rdops=osd_information['stats']['rd_ops'],
+            osd_rddata=osd_information['stats']['rd_data'])
         )
 
     return '\n'.join(osd_list_output)
@@ -743,35 +741,34 @@ Rd: {pool_read_ops: <{pool_read_ops_length}} \
 Wr: {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            pool_id_length=pool_id_length,
-            pool_name_length=pool_name_length,
-            pool_used_length=pool_used_length,
-            pool_usedpct_length=pool_usedpct_length,
-            pool_free_length=pool_free_length,
-            pool_objects_length=pool_num_objects_length,
-            pool_clones_length=pool_num_clones_length,
-            pool_copies_length=pool_num_copies_length,
-            pool_degraded_length=pool_num_degraded_length,
-            pool_write_ops_length=pool_write_ops_length,
-            pool_write_data_length=pool_write_data_length,
-            pool_read_ops_length=pool_read_ops_length,
-            pool_read_data_length=pool_read_data_length,
-            pool_id='ID',
-            pool_name='Name',
-            pool_used='Used',
-            pool_usedpct='%',
-            pool_free='Free',
-            pool_objects='Count',
-            pool_clones='Clones',
-            pool_copies='Copies',
-            pool_degraded='Degraded',
-            pool_write_ops='OPS',
-            pool_write_data='Data',
-            pool_read_ops='OPS',
-            pool_read_data='Data'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        pool_id_length=pool_id_length,
+        pool_name_length=pool_name_length,
+        pool_used_length=pool_used_length,
+        pool_usedpct_length=pool_usedpct_length,
+        pool_free_length=pool_free_length,
+        pool_objects_length=pool_num_objects_length,
+        pool_clones_length=pool_num_clones_length,
+        pool_copies_length=pool_num_copies_length,
+        pool_degraded_length=pool_num_degraded_length,
+        pool_write_ops_length=pool_write_ops_length,
+        pool_write_data_length=pool_write_data_length,
+        pool_read_ops_length=pool_read_ops_length,
+        pool_read_data_length=pool_read_data_length,
+        pool_id='ID',
+        pool_name='Name',
+        pool_used='Used',
+        pool_usedpct='%',
+        pool_free='Free',
+        pool_objects='Count',
+        pool_clones='Clones',
+        pool_copies='Copies',
+        pool_degraded='Degraded',
+        pool_write_ops='OPS',
+        pool_write_data='Data',
+        pool_read_ops='OPS',
+        pool_read_data='Data')
     )
 
     for pool_information in sorted(pool_list, key=lambda x: int(x['stats']['id'])):
@@ -791,35 +788,34 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
     {pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                pool_id_length=pool_id_length,
-                pool_name_length=pool_name_length,
-                pool_used_length=pool_used_length,
-                pool_usedpct_length=pool_usedpct_length,
-                pool_free_length=pool_free_length,
-                pool_objects_length=pool_num_objects_length,
-                pool_clones_length=pool_num_clones_length,
-                pool_copies_length=pool_num_copies_length,
-                pool_degraded_length=pool_num_degraded_length,
-                pool_write_ops_length=pool_write_ops_length,
-                pool_write_data_length=pool_write_data_length,
-                pool_read_ops_length=pool_read_ops_length,
-                pool_read_data_length=pool_read_data_length,
-                pool_id=pool_information['stats']['id'],
-                pool_name=pool_information['name'],
-                pool_used=pool_information['stats']['used_bytes'],
-                pool_usedpct=pool_information['stats']['used_percent'],
-                pool_free=pool_information['stats']['free_bytes'],
-                pool_objects=pool_information['stats']['num_objects'],
-                pool_clones=pool_information['stats']['num_object_clones'],
-                pool_copies=pool_information['stats']['num_object_copies'],
-                pool_degraded=pool_information['stats']['num_objects_degraded'],
-                pool_write_ops=pool_information['stats']['write_ops'],
-                pool_write_data=pool_information['stats']['write_bytes'],
-                pool_read_ops=pool_information['stats']['read_ops'],
-                pool_read_data=pool_information['stats']['read_bytes']
-            )
+            bold='',
+            end_bold='',
+            pool_id_length=pool_id_length,
+            pool_name_length=pool_name_length,
+            pool_used_length=pool_used_length,
+            pool_usedpct_length=pool_usedpct_length,
+            pool_free_length=pool_free_length,
+            pool_objects_length=pool_num_objects_length,
+            pool_clones_length=pool_num_clones_length,
+            pool_copies_length=pool_num_copies_length,
+            pool_degraded_length=pool_num_degraded_length,
+            pool_write_ops_length=pool_write_ops_length,
+            pool_write_data_length=pool_write_data_length,
+            pool_read_ops_length=pool_read_ops_length,
+            pool_read_data_length=pool_read_data_length,
+            pool_id=pool_information['stats']['id'],
+            pool_name=pool_information['name'],
+            pool_used=pool_information['stats']['used_bytes'],
+            pool_usedpct=pool_information['stats']['used_percent'],
+            pool_free=pool_information['stats']['free_bytes'],
+            pool_objects=pool_information['stats']['num_objects'],
+            pool_clones=pool_information['stats']['num_object_clones'],
+            pool_copies=pool_information['stats']['num_object_copies'],
+            pool_degraded=pool_information['stats']['num_objects_degraded'],
+            pool_write_ops=pool_information['stats']['write_ops'],
+            pool_write_data=pool_information['stats']['write_bytes'],
+            pool_read_ops=pool_information['stats']['read_ops'],
+            pool_read_data=pool_information['stats']['read_bytes'])
         )
 
     return '\n'.join(pool_list_output)
@@ -1053,23 +1049,22 @@ def format_list_volume(volume_list):
 {volume_format: <{volume_format_length}} \
 {volume_features: <{volume_features_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            volume_name_length=volume_name_length,
-            volume_pool_length=volume_pool_length,
-            volume_size_length=volume_size_length,
-            volume_objects_length=volume_objects_length,
-            volume_order_length=volume_order_length,
-            volume_format_length=volume_format_length,
-            volume_features_length=volume_features_length,
-            volume_name='Name',
-            volume_pool='Pool',
-            volume_size='Size',
-            volume_objects='Objects',
-            volume_order='Order',
-            volume_format='Format',
-            volume_features='Features',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        volume_name_length=volume_name_length,
+        volume_pool_length=volume_pool_length,
+        volume_size_length=volume_size_length,
+        volume_objects_length=volume_objects_length,
+        volume_order_length=volume_order_length,
+        volume_format_length=volume_format_length,
+        volume_features_length=volume_features_length,
+        volume_name='Name',
+        volume_pool='Pool',
+        volume_size='Size',
+        volume_objects='Objects',
+        volume_order='Order',
+        volume_format='Format',
+        volume_features='Features')
     )
 
     for volume_information in volume_list:
@@ -1082,23 +1077,22 @@ def format_list_volume(volume_list):
 {volume_format: <{volume_format_length}} \
 {volume_features: <{volume_features_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                volume_name_length=volume_name_length,
-                volume_pool_length=volume_pool_length,
-                volume_size_length=volume_size_length,
-                volume_objects_length=volume_objects_length,
-                volume_order_length=volume_order_length,
-                volume_format_length=volume_format_length,
-                volume_features_length=volume_features_length,
-                volume_name=volume_information['name'],
-                volume_pool=volume_information['pool'],
-                volume_size=volume_information['stats']['size'],
-                volume_objects=volume_information['stats']['objects'],
-                volume_order=volume_information['stats']['order'],
-                volume_format=volume_information['stats']['format'],
-                volume_features=','.join(volume_information['stats']['features']),
-            )
+            bold='',
+            end_bold='',
+            volume_name_length=volume_name_length,
+            volume_pool_length=volume_pool_length,
+            volume_size_length=volume_size_length,
+            volume_objects_length=volume_objects_length,
+            volume_order_length=volume_order_length,
+            volume_format_length=volume_format_length,
+            volume_features_length=volume_features_length,
+            volume_name=volume_information['name'],
+            volume_pool=volume_information['pool'],
+            volume_size=volume_information['stats']['size'],
+            volume_objects=volume_information['stats']['objects'],
+            volume_order=volume_information['stats']['order'],
+            volume_format=volume_information['stats']['format'],
+            volume_features=','.join(volume_information['stats']['features']))
         )
 
     return '\n'.join(sorted(volume_list_output))
@@ -1251,15 +1245,14 @@ def format_list_snapshot(snapshot_list):
 {snapshot_volume: <{snapshot_volume_length}} \
 {snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            snapshot_name_length=snapshot_name_length,
-            snapshot_volume_length=snapshot_volume_length,
-            snapshot_pool_length=snapshot_pool_length,
-            snapshot_name='Name',
-            snapshot_volume='Volume',
-            snapshot_pool='Pool',
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        snapshot_name_length=snapshot_name_length,
+        snapshot_volume_length=snapshot_volume_length,
+        snapshot_pool_length=snapshot_pool_length,
+        snapshot_name='Name',
+        snapshot_volume='Volume',
+        snapshot_pool='Pool')
     )
 
     for snapshot_information in snapshot_list:
@@ -1271,15 +1264,14 @@ def format_list_snapshot(snapshot_list):
 {snapshot_volume: <{snapshot_volume_length}} \
 {snapshot_pool: <{snapshot_pool_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                snapshot_name_length=snapshot_name_length,
-                snapshot_volume_length=snapshot_volume_length,
-                snapshot_pool_length=snapshot_pool_length,
-                snapshot_name=snapshot_name,
-                snapshot_volume=snapshot_volume,
-                snapshot_pool=snapshot_pool,
-            )
+            bold='',
+            end_bold='',
+            snapshot_name_length=snapshot_name_length,
+            snapshot_volume_length=snapshot_volume_length,
+            snapshot_pool_length=snapshot_pool_length,
+            snapshot_name=snapshot_name,
+            snapshot_volume=snapshot_volume,
+            snapshot_pool=snapshot_pool)
         )
 
     return '\n'.join(sorted(snapshot_list_output))
@@ -1380,15 +1372,14 @@ def format_list_benchmark(config, benchmark_information):
  {seq_header: <{seq_header_length}} \
 {rand_header: <{rand_header_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            benchmark_job_length=benchmark_job_length,
-            seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
-            rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
-            benchmark_job='Benchmark Job',
-            seq_header='Sequential (4M blocks):',
-            rand_header='Random (4K blocks):'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        benchmark_job_length=benchmark_job_length,
+        seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
+        rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
+        benchmark_job='Benchmark Job',
+        seq_header='Sequential (4M blocks):',
+        rand_header='Random (4K blocks):')
     )
 
     benchmark_list_output.append('{bold}\
@@ -1398,19 +1389,18 @@ def format_list_benchmark(config, benchmark_information):
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
 {rand_benchmark_iops: <{rand_benchmark_iops_length}} \
 {end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            benchmark_job_length=benchmark_job_length,
-            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-            benchmark_job='',
-            seq_benchmark_bandwidth='R/W Bandwith/s',
-            seq_benchmark_iops='R/W IOPS',
-            rand_benchmark_bandwidth='R/W Bandwith/s',
-            rand_benchmark_iops='R/W IOPS'
-        )
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        benchmark_job_length=benchmark_job_length,
+        seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
+        seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+        rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+        rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+        benchmark_job='',
+        seq_benchmark_bandwidth='R/W Bandwith/s',
+        seq_benchmark_iops='R/W IOPS',
+        rand_benchmark_bandwidth='R/W Bandwith/s',
+        rand_benchmark_iops='R/W IOPS')
     )
 
     for benchmark in benchmark_information:
@@ -1441,19 +1431,18 @@ def format_list_benchmark(config, benchmark_information):
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
 {rand_benchmark_iops: <{rand_benchmark_iops_length}} \
 {end_bold}'.format(
-                bold='',
-                end_bold='',
-                benchmark_job_length=benchmark_job_length,
-                seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-                seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-                rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-                rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-                benchmark_job=benchmark_job,
-                seq_benchmark_bandwidth=seq_benchmark_bandwidth,
-                seq_benchmark_iops=seq_benchmark_iops,
-                rand_benchmark_bandwidth=rand_benchmark_bandwidth,
-                rand_benchmark_iops=rand_benchmark_iops
-            )
+            bold='',
+            end_bold='',
+            benchmark_job_length=benchmark_job_length,
+            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
+            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
+            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
+            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+            benchmark_job=benchmark_job,
+            seq_benchmark_bandwidth=seq_benchmark_bandwidth,
+            seq_benchmark_iops=seq_benchmark_iops,
+            rand_benchmark_bandwidth=rand_benchmark_bandwidth,
+            rand_benchmark_iops=rand_benchmark_iops)
         )
 
     return '\n'.join(benchmark_list_output)
