@@ -6,4 +6,5 @@ if ! which flake8 &>/dev/null; then
 fi
 
 flake8 \
+    --ignore=E501 \
     --exclude=api-daemon/migrations/versions,api-daemon/provisioner/examples
