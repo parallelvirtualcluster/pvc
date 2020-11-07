@@ -1158,7 +1158,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     last_free = 0
     for node in nodes:
         # Skip the node if it is not ready to run VMs
-        if node ['daemon_state'] != "run" or node['domain_state'] != "ready":
+        if node['daemon_state'] != "run" or node['domain_state'] != "ready":
             continue
         # Skip the node if its free memory is less than the new VM's size, plus a 512MB buffer
         if node['memory']['free'] < (vm_data['system_details']['vram_mb'] + 512):

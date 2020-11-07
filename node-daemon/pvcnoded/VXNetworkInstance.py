@@ -30,7 +30,7 @@ import pvcnoded.common as common
 
 class VXNetworkInstance(object):
     # Initialization function
-    def __init__ (self, vni, zk_conn, config, logger, this_node, dns_aggregator):
+    def __init__(self, vni, zk_conn, config, logger, this_node, dns_aggregator):
         self.vni = vni
         self.zk_conn = zk_conn
         self.config = config
