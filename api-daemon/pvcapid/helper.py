@@ -439,7 +439,7 @@ def vm_define(xml, node, limit, selector, autostart, migration_method):
         xml_data = etree.fromstring(xml)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e) }, 400
+        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.define_vm(zk_conn, new_cfg, node, limit, selector, autostart, migration_method, profile=None)
@@ -522,7 +522,7 @@ def vm_modify(name, restart, xml):
         xml_data = etree.fromstring(xml)
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e) }, 400
+        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.modify_vm(zk_conn, name, restart, new_cfg)
     pvc_common.stopZKConnection(zk_conn)
@@ -1047,7 +1047,7 @@ def ceph_osd_state(osd):
     in_state = retdata[0]['stats']['in']
     up_state = retdata[0]['stats']['up']
 
-    return {"id": osd, "in": in_state, "up": up_state }, retcode
+    return {"id": osd, "in": in_state, "up": up_state}, retcode
 
 def ceph_osd_add(node, device, weight):
     """

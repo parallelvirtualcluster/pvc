@@ -646,8 +646,8 @@ class NodeInstance(object):
 
             if target_node is None:
                 self.logger.out('Failed to find migration target for VM "{}"; shutting down and setting autostart flag'.format(dom_uuid), state='e')
-                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown' })
-                zkhandler.writedata(self.zk_conn, {'/domains/{}/node_autostart'.format(dom_uuid): 'True' })
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown'})
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/node_autostart'.format(dom_uuid): 'True'})
             else:
                 self.logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
                 zkhandler.writedata(self.zk_conn, {
@@ -665,8 +665,8 @@ class NodeInstance(object):
                     break
                 time.sleep(0.2)
 
-        zkhandler.writedata(self.zk_conn, {'/nodes/{}/runningdomains'.format(self.name): '' })
-        zkhandler.writedata(self.zk_conn, {'/nodes/{}/domainstate'.format(self.name): 'flushed' })
+        zkhandler.writedata(self.zk_conn, {'/nodes/{}/runningdomains'.format(self.name): ''})
+        zkhandler.writedata(self.zk_conn, {'/nodes/{}/domainstate'.format(self.name): 'flushed'})
         self.flush_thread = None
         self.flush_stopper = False
         return
@@ -714,7 +714,7 @@ class NodeInstance(object):
             while zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
                 time.sleep(0.1)
 
-        zkhandler.writedata(self.zk_conn, {'/nodes/{}/domainstate'.format(self.name): 'ready' })
+        zkhandler.writedata(self.zk_conn, {'/nodes/{}/domainstate'.format(self.name): 'ready'})
         self.flush_thread = None
         self.flush_stopper = False
         return

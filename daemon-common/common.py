@@ -373,7 +373,7 @@ def getDomainControllers(parsed_xml):
                 controller_model = device.attrib.get('model')
             except KeyError:
                 controller_model = 'none'
-            controller_obj = {'type': controller_type, 'model': controller_model }
+            controller_obj = {'type': controller_type, 'model': controller_model}
             dcontrollers.append(controller_obj)
 
     return dcontrollers

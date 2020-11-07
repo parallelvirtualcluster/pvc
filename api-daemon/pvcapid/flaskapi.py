@@ -182,9 +182,9 @@ def Authenticator(function):
             if any(token for token in config['auth_tokens'] if flask.request.headers.get('X-Api-Key') == token.get('token')):
                 return function(*args, **kwargs)
             else:
-                return {"message": "X-Api-Key Authentication failed." }, 401
+                return {"message": "X-Api-Key Authentication failed."}, 401
         # All authentications failed
-        return {"message": "X-Api-Key Authentication required." }, 401
+        return {"message": "X-Api-Key Authentication required."}, 401
     return authenticate
 
 
@@ -224,7 +224,7 @@ class API_Root(Resource):
                   description: A text message
                   example: "PVC API version 1.0"
         """
-        return {"message": "PVC API version {}".format(API_VERSION) }
+        return {"message": "PVC API version {}".format(API_VERSION)}
 api.add_resource(API_Root, '/')
 
 # /doc - NOTE: Until flask_swagger is packaged for Debian this must be disabled
@@ -282,9 +282,9 @@ class API_Login(Resource):
 
         if any(token for token in config['auth_tokens'] if flask.request.values['token'] in token['token']):
             flask.session['token'] = flask.request.form['token']
-            return {"message": "Authentication successful" }, 200
+            return {"message": "Authentication successful"}, 200
         else:
-            {"message": "Authentication failed" }, 401
+            {"message": "Authentication failed"}, 401
 api.add_resource(API_Login, '/login')
 
 # /logout
@@ -308,7 +308,7 @@ class API_Logout(Resource):
             return flask.redirect(Api.url_for(api, API_Root))
 
         flask.session.pop('token', None)
-        return {"message": "Deauthentication successful" }, 200
+        return {"message": "Deauthentication successful"}, 200
 api.add_resource(API_Logout, '/logout')
 
 # /initialize
@@ -335,9 +335,9 @@ class API_Initialize(Resource):
             description: Bad request
         """
         if api_helper.initialize_cluster():
-            return {"message": "Successfully initialized a new PVC cluster" }, 200
+            return {"message": "Successfully initialized a new PVC cluster"}, 200
         else:
-            return {"message": "PVC cluster already initialized" }, 400
+            return {"message": "PVC cluster already initialized"}, 400
 api.add_resource(API_Initialize, '/initialize')
 
 # /status
@@ -420,7 +420,7 @@ class API_Status(Resource):
         return api_helper.cluster_status()
 
     @RequestParser([
-        {'name': 'state', 'choices': ('true', 'false'), 'required': True, 'helpmsg': "A valid state must be specified." }
+        {'name': 'state', 'choices': ('true', 'false'), 'required': True, 'helpmsg': "A valid state must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -459,10 +459,10 @@ api.add_resource(API_Status, '/status')
 # /node
 class API_Node_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'daemon_state' },
-        {'name': 'coordinator_state' },
-        {'name': 'domain_state' }
+        {'name': 'limit'},
+        {'name': 'daemon_state'},
+        {'name': 'coordinator_state'},
+        {'name': 'domain_state'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -659,7 +659,7 @@ class API_Node_CoordinatorState(Resource):
         return api_helper.node_coordinator_state(node)
 
     @RequestParser([
-        {'name': 'state', 'choices': ('primary', 'secondary'), 'helptext': "A valid state must be specified", 'required': True }
+        {'name': 'state', 'choices': ('primary', 'secondary'), 'helptext': "A valid state must be specified", 'required': True}
     ])
     @Authenticator
     def post(self, node, reqargs):
@@ -727,8 +727,8 @@ class API_Node_DomainState(Resource):
         return api_helper.node_domain_state(node)
 
     @RequestParser([
-        {'name': 'state', 'choices': ('ready', 'flush'), 'helptext': "A valid state must be specified", 'required': True },
-        {'name': 'wait' }
+        {'name': 'state', 'choices': ('ready', 'flush'), 'helptext': "A valid state must be specified", 'required': True},
+        {'name': 'wait'}
     ])
     @Authenticator
     def post(self, node, reqargs):
@@ -777,9 +777,9 @@ api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 # /vm
 class API_VM_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'node' },
-        {'name': 'state' },
+        {'name': 'limit'},
+        {'name': 'node'},
+        {'name': 'state'},
     ])
     @Authenticator
     def get(self, reqargs):
@@ -1026,12 +1026,12 @@ class API_VM_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'node' },
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
-        {'name': 'autostart' },
-        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
-        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
+        {'name': 'limit'},
+        {'name': 'node'},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'autostart'},
+        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
+        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -1127,12 +1127,12 @@ class API_VM_Element(Resource):
         return api_helper.vm_list(None, None, vm, is_fuzzy=False)
 
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'node' },
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
-        {'name': 'autostart' },
-        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
-        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
+        {'name': 'limit'},
+        {'name': 'node'},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'autostart'},
+        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
+        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1207,8 +1207,8 @@ class API_VM_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'restart' },
-        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified" },
+        {'name': 'restart'},
+        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
     def put(self, vm, reqargs):
@@ -1246,7 +1246,7 @@ class API_VM_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'delete_disks' },
+        {'name': 'delete_disks'},
     ])
     @Authenticator
     def delete(self, vm, reqargs):
@@ -1326,11 +1326,11 @@ class API_VM_Metadata(Resource):
         return api_helper.get_vm_meta(vm)
 
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified" },
-        {'name': 'autostart' },
-        {'name': 'profile' },
-        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified" },
+        {'name': 'limit'},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'autostart'},
+        {'name': 'profile'},
+        {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1428,8 +1428,8 @@ class API_VM_State(Resource):
         return api_helper.vm_state(vm)
 
     @RequestParser([
-        {'name': 'state', 'choices': ('start', 'shutdown', 'stop', 'restart', 'disable'), 'helptext': "A valid state must be specified", 'required': True },
-        {'name': 'wait' }
+        {'name': 'state', 'choices': ('start', 'shutdown', 'stop', 'restart', 'disable'), 'helptext': "A valid state must be specified", 'required': True},
+        {'name': 'wait'}
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1516,11 +1516,11 @@ class API_VM_Node(Resource):
         return api_helper.vm_node(vm)
 
     @RequestParser([
-        {'name': 'action', 'choices': ('migrate', 'unmigrate', 'move'), 'helptext': "A valid action must be specified", 'required': True },
-        {'name': 'node' },
-        {'name': 'force' },
-        {'name': 'wait' },
-        {'name': 'force_live' }
+        {'name': 'action', 'choices': ('migrate', 'unmigrate', 'move'), 'helptext': "A valid action must be specified", 'required': True},
+        {'name': 'node'},
+        {'name': 'force'},
+        {'name': 'wait'},
+        {'name': 'force_live'}
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1609,7 +1609,7 @@ api.add_resource(API_VM_Locks, '/vm/<vm>/locks')
 # /vm/<vm</console
 class API_VM_Console(Resource):
     @RequestParser([
-        {'name': 'lines' }
+        {'name': 'lines'}
     ])
     @Authenticator
     def get(self, vm, reqargs):
@@ -1657,7 +1657,7 @@ api.add_resource(API_VM_Console, '/vm/<vm>/console')
 # /network
 class API_Network_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -1740,18 +1740,18 @@ class API_Network_Root(Resource):
         return api_helper.net_list(reqargs.get('limit', None))
 
     @RequestParser([
-        {'name': 'vni', 'required': True },
-        {'name': 'description', 'required': True },
-        {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True },
-        {'name': 'domain' },
-        {'name': 'name_servers' },
-        {'name': 'ip4_network' },
-        {'name': 'ip4_gateway' },
-        {'name': 'ip6_network' },
-        {'name': 'ip6_gateway' },
-        {'name': 'dhcp4' },
-        {'name': 'dhcp4_start' },
-        {'name': 'dhcp4_end' }
+        {'name': 'vni', 'required': True},
+        {'name': 'description', 'required': True},
+        {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True},
+        {'name': 'domain'},
+        {'name': 'name_servers'},
+        {'name': 'ip4_network'},
+        {'name': 'ip4_gateway'},
+        {'name': 'ip6_network'},
+        {'name': 'ip6_gateway'},
+        {'name': 'dhcp4'},
+        {'name': 'dhcp4_start'},
+        {'name': 'dhcp4_end'}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -1870,17 +1870,17 @@ class API_Network_Element(Resource):
         return api_helper.net_list(vni, is_fuzzy=False)
 
     @RequestParser([
-        {'name': 'description', 'required': True },
-        {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True },
-        {'name': 'domain' },
-        {'name': 'name_servers' },
-        {'name': 'ip4_network' },
-        {'name': 'ip4_gateway' },
-        {'name': 'ip6_network' },
-        {'name': 'ip6_gateway' },
-        {'name': 'dhcp4' },
-        {'name': 'dhcp4_start' },
-        {'name': 'dhcp4_end' }
+        {'name': 'description', 'required': True},
+        {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True},
+        {'name': 'domain'},
+        {'name': 'name_servers'},
+        {'name': 'ip4_network'},
+        {'name': 'ip4_gateway'},
+        {'name': 'ip6_network'},
+        {'name': 'ip6_gateway'},
+        {'name': 'dhcp4'},
+        {'name': 'dhcp4_start'},
+        {'name': 'dhcp4_end'}
     ])
     @Authenticator
     def post(self, vni, reqargs):
@@ -1971,16 +1971,16 @@ class API_Network_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'description' },
-        {'name': 'domain' },
-        {'name': 'name_servers' },
-        {'name': 'ip4_network' },
-        {'name': 'ip4_gateway' },
-        {'name': 'ip6_network' },
-        {'name': 'ip6_gateway' },
-        {'name': 'dhcp4' },
-        {'name': 'dhcp4_start' },
-        {'name': 'dhcp4_end' }
+        {'name': 'description'},
+        {'name': 'domain'},
+        {'name': 'name_servers'},
+        {'name': 'ip4_network'},
+        {'name': 'ip4_gateway'},
+        {'name': 'ip6_network'},
+        {'name': 'ip6_gateway'},
+        {'name': 'dhcp4'},
+        {'name': 'dhcp4_start'},
+        {'name': 'dhcp4_end'}
     ])
     @Authenticator
     def put(self, vni, reqargs):
@@ -2096,8 +2096,8 @@ api.add_resource(API_Network_Element, '/network/<vni>')
 # /network/<vni>/lease
 class API_Network_Lease_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'static' }
+        {'name': 'limit'},
+        {'name': 'static'}
     ])
     @Authenticator
     def get(self, vni, reqargs):
@@ -2160,9 +2160,9 @@ class API_Network_Lease_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'macaddress', 'required': True },
-        {'name': 'ipaddress', 'required': True },
-        {'name': 'hostname' }
+        {'name': 'macaddress', 'required': True},
+        {'name': 'ipaddress', 'required': True},
+        {'name': 'hostname'}
     ])
     @Authenticator
     def post(self, vni, reqargs):
@@ -2263,8 +2263,8 @@ class API_Network_Lease_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'ipaddress', 'required': True },
-        {'name': 'hostname' }
+        {'name': 'ipaddress', 'required': True},
+        {'name': 'hostname'}
     ])
     @Authenticator
     def post(self, vni, mac):
@@ -2341,8 +2341,8 @@ api.add_resource(API_Network_Lease_Element, '/network/<vni>/lease/<mac>')
 # /network/<vni>/acl
 class API_Network_ACL_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified." }
+        {'name': 'limit'},
+        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified."}
     ])
     @Authenticator
     def get(self, vni, reqargs):
@@ -2404,10 +2404,10 @@ class API_Network_ACL_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'description', 'required': True, 'helpmsg': "A whitespace-free description must be specified." },
-        {'name': 'rule', 'required': True, 'helpmsg': "A rule must be specified." },
-        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified." },
-        {'name': 'order' }
+        {'name': 'description', 'required': True, 'helpmsg': "A whitespace-free description must be specified."},
+        {'name': 'rule', 'required': True, 'helpmsg': "A rule must be specified."},
+        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified."},
+        {'name': 'order'}
     ])
     @Authenticator
     def post(self, vni, reqargs):
@@ -2493,9 +2493,9 @@ class API_Network_ACL_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'rule', 'required': True, 'helpmsg': "A rule must be specified." },
-        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified." },
-        {'name': 'order' }
+        {'name': 'rule', 'required': True, 'helpmsg': "A rule must be specified."},
+        {'name': 'direction', 'choices': ('in', 'out'), 'helpmsg': "A valid direction must be specified."},
+        {'name': 'order'}
     ])
     @Authenticator
     def post(self, vni, description, reqargs):
@@ -2649,7 +2649,7 @@ api.add_resource(API_Storage_Ceph_Utilization, '/storage/ceph/utilization')
 # /storage/ceph/benchmark
 class API_Storage_Ceph_Benchmark(Resource):
     @RequestParser([
-        {'name': 'job' }
+        {'name': 'job'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -2771,7 +2771,7 @@ class API_Storage_Ceph_Benchmark(Resource):
         return api_benchmark.list_benchmarks(reqargs.get('job', None))
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A valid pool must be specified." },
+        {'name': 'pool', 'required': True, 'helpmsg': "A valid pool must be specified."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -2796,19 +2796,19 @@ class API_Storage_Ceph_Benchmark(Resource):
         # Verify that the pool is valid
         _list, code = api_helper.ceph_pool_list(reqargs.get('pool', None), is_fuzzy=False)
         if code != 200:
-            return {'message': 'Pool "{}" is not valid.'.format(reqargs.get('pool')) }, 400
+            return {'message': 'Pool "{}" is not valid.'.format(reqargs.get('pool'))}, 400
 
         task = run_benchmark.delay(
             reqargs.get('pool', None)
         )
-        return {"task_id": task.id }, 202, {'Location': Api.url_for(api, API_Storage_Ceph_Benchmark, task_id=task.id) }
+        return {"task_id": task.id}, 202, {'Location': Api.url_for(api, API_Storage_Ceph_Benchmark, task_id=task.id)}
 api.add_resource(API_Storage_Ceph_Benchmark, '/storage/ceph/benchmark')
 
 # /storage/ceph/option
 class API_Storage_Ceph_Option(Resource):
     @RequestParser([
-        {'name': 'option', 'required': True, 'helpmsg': "A valid option must be specified." },
-        {'name': 'action', 'required': True, 'choices': ('set', 'unset'), 'helpmsg': "A valid action must be specified." },
+        {'name': 'option', 'required': True, 'helpmsg': "A valid option must be specified."},
+        {'name': 'action', 'required': True, 'choices': ('set', 'unset'), 'helpmsg': "A valid action must be specified."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -2853,7 +2853,7 @@ api.add_resource(API_Storage_Ceph_Option, '/storage/ceph/option')
 # /storage/ceph/osd
 class API_Storage_Ceph_OSD_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
+        {'name': 'limit'},
     ])
     @Authenticator
     def get(self, reqargs):
@@ -2946,9 +2946,9 @@ class API_Storage_Ceph_OSD_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'node', 'required': True, 'helpmsg': "A valid node must be specified." },
-        {'name': 'device', 'required': True, 'helpmsg': "A valid device must be specified." },
-        {'name': 'weight', 'required': True, 'helpmsg': "An OSD weight must be specified." },
+        {'name': 'node', 'required': True, 'helpmsg': "A valid node must be specified."},
+        {'name': 'device', 'required': True, 'helpmsg': "A valid device must be specified."},
+        {'name': 'weight', 'required': True, 'helpmsg': "An OSD weight must be specified."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3013,7 +3013,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'yes-i-really-mean-it', 'required': True, 'helpmsg': "Please confirm that 'yes-i-really-mean-it'." }
+        {'name': 'yes-i-really-mean-it', 'required': True, 'helpmsg': "Please confirm that 'yes-i-really-mean-it'."}
     ])
     @Authenticator
     def delete(self, osdid, reqargs):
@@ -3076,7 +3076,7 @@ class API_Storage_Ceph_OSD_State(Resource):
         )
 
     @RequestParser([
-        {'name': 'state', 'choices': ('in', 'out'), 'required': True, 'helpmsg': "A valid state must be specified." },
+        {'name': 'state', 'choices': ('in', 'out'), 'required': True, 'helpmsg': "A valid state must be specified."},
     ])
     @Authenticator
     def post(self, osdid, reqargs):
@@ -3112,7 +3112,7 @@ api.add_resource(API_Storage_Ceph_OSD_State, '/storage/ceph/osd/<osdid>/state')
 # /storage/ceph/pool
 class API_Storage_Ceph_Pool_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -3193,9 +3193,9 @@ class API_Storage_Ceph_Pool_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A pool name must be specified." },
-        {'name': 'pgs', 'required': True, 'helpmsg': "A placement group count must be specified." },
-        {'name': 'replcfg', 'required': True, 'helpmsg': "A valid replication configuration must be specified." }
+        {'name': 'pool', 'required': True, 'helpmsg': "A pool name must be specified."},
+        {'name': 'pgs', 'required': True, 'helpmsg': "A placement group count must be specified."},
+        {'name': 'replcfg', 'required': True, 'helpmsg': "A valid replication configuration must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3265,8 +3265,8 @@ class API_Storage_Ceph_Pool_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'pgs', 'required': True, 'helpmsg': "A placement group count must be specified." },
-        {'name': 'replcfg', 'required': True, 'helpmsg': "A valid replication configuration must be specified." }
+        {'name': 'pgs', 'required': True, 'helpmsg': "A placement group count must be specified."},
+        {'name': 'replcfg', 'required': True, 'helpmsg': "A valid replication configuration must be specified."}
     ])
     @Authenticator
     def post(self, pool):
@@ -3310,7 +3310,7 @@ class API_Storage_Ceph_Pool_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'yes-i-really-mean-it', 'required': True, 'helpmsg': "Please confirm that 'yes-i-really-mean-it'." }
+        {'name': 'yes-i-really-mean-it', 'required': True, 'helpmsg': "Please confirm that 'yes-i-really-mean-it'."}
     ])
     @Authenticator
     def delete(self, pool, reqargs):
@@ -3351,8 +3351,8 @@ api.add_resource(API_Storage_Ceph_Pool_Element, '/storage/ceph/pool/<pool>')
 # /storage/ceph/volume
 class API_Storage_Ceph_Volume_Root(Resource):
     @RequestParser([
-        {'name': 'limit' },
-        {'name': 'pool' }
+        {'name': 'limit'},
+        {'name': 'pool'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -3451,9 +3451,9 @@ class API_Storage_Ceph_Volume_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'volume', 'required': True, 'helpmsg': "A volume name must be specified." },
-        {'name': 'pool', 'required': True, 'helpmsg': "A valid pool name must be specified." },
-        {'name': 'size', 'required': True, 'helpmsg': "A volume size in bytes (or with k/M/G/T suffix) must be specified." }
+        {'name': 'volume', 'required': True, 'helpmsg': "A volume name must be specified."},
+        {'name': 'pool', 'required': True, 'helpmsg': "A valid pool name must be specified."},
+        {'name': 'size', 'required': True, 'helpmsg': "A volume size in bytes (or with k/M/G/T suffix) must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3524,7 +3524,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'size', 'required': True, 'helpmsg': "A volume size in bytes (or with k/M/G/T suffix) must be specified." }
+        {'name': 'size', 'required': True, 'helpmsg': "A volume size in bytes (or with k/M/G/T suffix) must be specified."}
     ])
     @Authenticator
     def post(self, pool, volume, reqargs):
@@ -3563,8 +3563,8 @@ class API_Storage_Ceph_Volume_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'new_size' },
-        {'name': 'new_name' }
+        {'name': 'new_size'},
+        {'name': 'new_name'}
     ])
     @Authenticator
     def put(self, pool, volume, reqargs):
@@ -3602,7 +3602,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
               id: Message
         """
         if reqargs.get('new_size', None) and reqargs.get('new_name', None):
-            return {"message": "Can only perform one modification at once" }, 400
+            return {"message": "Can only perform one modification at once"}, 400
 
         if reqargs.get('new_size', None):
             return api_helper.ceph_volume_resize(
@@ -3616,7 +3616,7 @@ class API_Storage_Ceph_Volume_Element(Resource):
                 volume,
                 reqargs.get('new_name')
             )
-        return {"message": "At least one modification must be specified" }, 400
+        return {"message": "At least one modification must be specified"}, 400
 
     @Authenticator
     def delete(self, pool, volume):
@@ -3647,7 +3647,7 @@ api.add_resource(API_Storage_Ceph_Volume_Element, '/storage/ceph/volume/<pool>/<
 # /storage/ceph/volume/<pool>/<volume>/clone
 class API_Storage_Ceph_Volume_Element_Clone(Resource):
     @RequestParser([
-        {'name': 'new_volume', 'required': True, 'helpmsg': "A new volume name must be specified." }
+        {'name': 'new_volume', 'required': True, 'helpmsg': "A new volume name must be specified."}
     ])
     @Authenticator
     def post(self, pool, volume, reqargs):
@@ -3689,7 +3689,7 @@ api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<p
 # /storage/ceph/volume/<pool>/<volume>/upload
 class API_Storage_Ceph_Volume_Element_Upload(Resource):
     @RequestParser([
-        {'name': 'image_format', 'required': True, 'helpmsg': "A source image format must be specified." }
+        {'name': 'image_format', 'required': True, 'helpmsg': "A source image format must be specified."}
     ])
     @Authenticator
     def post(self, pool, volume, reqargs):
@@ -3740,9 +3740,9 @@ api.add_resource(API_Storage_Ceph_Volume_Element_Upload, '/storage/ceph/volume/<
 # /storage/ceph/snapshot
 class API_Storage_Ceph_Snapshot_Root(Resource):
     @RequestParser([
-        {'name': 'pool' },
-        {'name': 'volume' },
-        {'name': 'limit' },
+        {'name': 'pool'},
+        {'name': 'volume'},
+        {'name': 'limit'},
     ])
     @Authenticator
     def get(self, reqargs):
@@ -3796,9 +3796,9 @@ class API_Storage_Ceph_Snapshot_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'snapshot', 'required': True, 'helpmsg': "A snapshot name must be specified." },
-        {'name': 'volume', 'required': True, 'helpmsg': "A volume name must be specified." },
-        {'name': 'pool', 'required': True, 'helpmsg': "A pool name must be specified." }
+        {'name': 'snapshot', 'required': True, 'helpmsg': "A snapshot name must be specified."},
+        {'name': 'volume', 'required': True, 'helpmsg': "A volume name must be specified."},
+        {'name': 'pool', 'required': True, 'helpmsg': "A pool name must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3916,7 +3916,7 @@ class API_Storage_Ceph_Snapshot_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'new_name', 'required': True, 'helpmsg': "A new name must be specified." }
+        {'name': 'new_name', 'required': True, 'helpmsg': "A new name must be specified."}
     ])
     @Authenticator
     def put(self, pool, volume, snapshot, reqargs):
@@ -4000,7 +4000,7 @@ api.add_resource(API_Provisioner_Root, '/provisioner')
 # /provisioner/template
 class API_Provisioner_Template_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -4046,7 +4046,7 @@ api.add_resource(API_Provisioner_Template_Root, '/provisioner/template')
 # /provisioner/template/system
 class API_Provisioner_Template_System_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -4112,16 +4112,16 @@ class API_Provisioner_Template_System_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A name must be specified." },
-        {'name': 'vcpus', 'required': True, 'helpmsg': "A vcpus value must be specified." },
-        {'name': 'vram', 'required': True, 'helpmsg': "A vram value in MB must be specified." },
-        {'name': 'serial', 'required': True, 'helpmsg': "A serial value must be specified." },
-        {'name': 'vnc', 'required': True, 'helpmsg': "A vnc value must be specified." },
-        {'name': 'vnc_bind' },
-        {'name': 'node_limit' },
-        {'name': 'node_selector' },
-        {'name': 'node_autostart' },
-        {'name': 'migration_method' }
+        {'name': 'name', 'required': True, 'helpmsg': "A name must be specified."},
+        {'name': 'vcpus', 'required': True, 'helpmsg': "A vcpus value must be specified."},
+        {'name': 'vram', 'required': True, 'helpmsg': "A vram value in MB must be specified."},
+        {'name': 'serial', 'required': True, 'helpmsg': "A serial value must be specified."},
+        {'name': 'vnc', 'required': True, 'helpmsg': "A vnc value must be specified."},
+        {'name': 'vnc_bind'},
+        {'name': 'node_limit'},
+        {'name': 'node_selector'},
+        {'name': 'node_autostart'},
+        {'name': 'migration_method'}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -4197,11 +4197,11 @@ class API_Provisioner_Template_System_Root(Resource):
         try:
             vcpus = int(reqargs.get('vcpus'))
         except Exception:
-            return {"message": "A vcpus value must be an integer" }, 400
+            return {"message": "A vcpus value must be an integer"}, 400
         try:
             vram = int(reqargs.get('vram'))
         except Exception:
-            return {"message": "A vram value must be an integer" }, 400
+            return {"message": "A vram value must be an integer"}, 400
         # Cast boolean arguments
         if bool(strtobool(reqargs.get('serial', 'false'))):
             serial = True
@@ -4258,15 +4258,15 @@ class API_Provisioner_Template_System_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'vcpus', 'required': True, 'helpmsg': "A vcpus value must be specified." },
-        {'name': 'vram', 'required': True, 'helpmsg': "A vram value in MB must be specified." },
-        {'name': 'serial', 'required': True, 'helpmsg': "A serial value must be specified." },
-        {'name': 'vnc', 'required': True, 'helpmsg': "A vnc value must be specified." },
-        {'name': 'vnc_bind' },
-        {'name': 'node_limit' },
-        {'name': 'node_selector' },
-        {'name': 'node_autostart' },
-        {'name': 'migration_method' }
+        {'name': 'vcpus', 'required': True, 'helpmsg': "A vcpus value must be specified."},
+        {'name': 'vram', 'required': True, 'helpmsg': "A vram value in MB must be specified."},
+        {'name': 'serial', 'required': True, 'helpmsg': "A serial value must be specified."},
+        {'name': 'vnc', 'required': True, 'helpmsg': "A vnc value must be specified."},
+        {'name': 'vnc_bind'},
+        {'name': 'node_limit'},
+        {'name': 'node_selector'},
+        {'name': 'node_autostart'},
+        {'name': 'migration_method'}
     ])
     @Authenticator
     def post(self, template, reqargs):
@@ -4337,11 +4337,11 @@ class API_Provisioner_Template_System_Element(Resource):
         try:
             vcpus = int(reqargs.get('vcpus'))
         except Exception:
-            return {"message": "A vcpus value must be an integer" }, 400
+            return {"message": "A vcpus value must be an integer"}, 400
         try:
             vram = int(reqargs.get('vram'))
         except Exception:
-            return {"message": "A vram value must be an integer" }, 400
+            return {"message": "A vram value must be an integer"}, 400
         # Cast boolean arguments
         if bool(strtobool(reqargs.get('serial', False))):
             serial = True
@@ -4372,15 +4372,15 @@ class API_Provisioner_Template_System_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'vcpus' },
-        {'name': 'vram' },
-        {'name': 'serial' },
-        {'name': 'vnc' },
-        {'name': 'vnc_bind' },
-        {'name': 'node_limit' },
-        {'name': 'node_selector' },
-        {'name': 'node_autostart' },
-        {'name': 'migration_method' }
+        {'name': 'vcpus'},
+        {'name': 'vram'},
+        {'name': 'serial'},
+        {'name': 'vnc'},
+        {'name': 'vnc_bind'},
+        {'name': 'node_limit'},
+        {'name': 'node_selector'},
+        {'name': 'node_autostart'},
+        {'name': 'migration_method'}
     ])
     @Authenticator
     def put(self, template, reqargs):
@@ -4478,7 +4478,7 @@ api.add_resource(API_Provisioner_Template_System_Element, '/provisioner/template
 # /provisioner/template/network
 class API_Provisioner_Template_Network_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -4537,8 +4537,8 @@ class API_Provisioner_Template_Network_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A template name must be specified." },
-        {'name': 'mac_template' }
+        {'name': 'name', 'required': True, 'helpmsg': "A template name must be specified."},
+        {'name': 'mac_template'}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -4602,7 +4602,7 @@ class API_Provisioner_Template_Network_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'mac_template' }
+        {'name': 'mac_template'}
     ])
     @Authenticator
     def post(self, template, reqargs):
@@ -4687,10 +4687,10 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
         if templates:
             return templates['networks']
         else:
-            return {'message': 'Template not found.' }, 404
+            return {'message': 'Template not found.'}, 404
 
     @RequestParser([
-        {'name': 'vni', 'required': True, 'helpmsg': "A valid VNI must be specified." }
+        {'name': 'vni', 'required': True, 'helpmsg': "A valid VNI must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -4804,7 +4804,7 @@ api.add_resource(API_Provisioner_Template_Network_Net_Element, '/provisioner/tem
 # /provisioner/template/storage
 class API_Provisioner_Template_Storage_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -4877,7 +4877,7 @@ class API_Provisioner_Template_Storage_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A template name must be specified." }
+        {'name': 'name', 'required': True, 'helpmsg': "A template name must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -4984,7 +4984,7 @@ api.add_resource(API_Provisioner_Template_Storage_Element, '/provisioner/templat
 # /provisioner/template/storage/<template>/disk
 class API_Provisioner_Template_Storage_Disk_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, template, reqargs):
@@ -5013,16 +5013,16 @@ class API_Provisioner_Template_Storage_Disk_Root(Resource):
         if templates:
             return templates['disks']
         else:
-            return {'message': 'Template not found.' }, 404
+            return {'message': 'Template not found.'}, 404
 
     @RequestParser([
-        {'name': 'disk_id', 'required': True, 'helpmsg': "A disk identifier in sdX or vdX format must be specified." },
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified." },
-        {'name': 'source_volume' },
-        {'name': 'disk_size' },
-        {'name': 'filesystem' },
-        {'name': 'filesystem_arg', 'action': 'append' },
-        {'name': 'mountpoint' }
+        {'name': 'disk_id', 'required': True, 'helpmsg': "A disk identifier in sdX or vdX format must be specified."},
+        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
+        {'name': 'source_volume'},
+        {'name': 'disk_size'},
+        {'name': 'filesystem'},
+        {'name': 'filesystem_arg', 'action': 'append'},
+        {'name': 'mountpoint'}
     ])
     @Authenticator
     def post(self, template, reqargs):
@@ -5121,12 +5121,12 @@ class API_Provisioner_Template_Storage_Disk_Element(Resource):
         abort(404)
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified." },
-        {'name': 'source_volume' },
-        {'name': 'disk_size' },
-        {'name': 'filesystem' },
-        {'name': 'filesystem_arg', 'action': 'append' },
-        {'name': 'mountpoint' }
+        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
+        {'name': 'source_volume'},
+        {'name': 'disk_size'},
+        {'name': 'filesystem'},
+        {'name': 'filesystem_arg', 'action': 'append'},
+        {'name': 'mountpoint'}
     ])
     @Authenticator
     def post(self, template, disk_id, reqargs):
@@ -5218,7 +5218,7 @@ api.add_resource(API_Provisioner_Template_Storage_Disk_Element, '/provisioner/te
 # /provisioner/userdata
 class API_Provisioner_Userdata_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -5260,8 +5260,8 @@ class API_Provisioner_Userdata_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A name must be specified." },
-        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified." }
+        {'name': 'name', 'required': True, 'helpmsg': "A name must be specified."},
+        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5325,7 +5325,7 @@ class API_Provisioner_Userdata_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified." }
+        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified."}
     ])
     @Authenticator
     def post(self, userdata, reqargs):
@@ -5358,7 +5358,7 @@ class API_Provisioner_Userdata_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified." }
+        {'name': 'data', 'required': True, 'helpmsg': "A userdata document must be specified."}
     ])
     @Authenticator
     def put(self, userdata, reqargs):
@@ -5417,7 +5417,7 @@ api.add_resource(API_Provisioner_Userdata_Element, '/provisioner/userdata/<userd
 # /provisioner/script
 class API_Provisioner_Script_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -5459,8 +5459,8 @@ class API_Provisioner_Script_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A script name must be specified." },
-        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified." }
+        {'name': 'name', 'required': True, 'helpmsg': "A script name must be specified."},
+        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified."}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5524,7 +5524,7 @@ class API_Provisioner_Script_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified." }
+        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified."}
     ])
     @Authenticator
     def post(self, script):
@@ -5557,7 +5557,7 @@ class API_Provisioner_Script_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified." }
+        {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified."}
     ])
     @Authenticator
     def put(self, script, reqargs):
@@ -5616,7 +5616,7 @@ api.add_resource(API_Provisioner_Script_Element, '/provisioner/script/<script>')
 # /provisioner/profile
 class API_Provisioner_OVA_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -5676,9 +5676,9 @@ class API_Provisioner_OVA_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified." },
-        {'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified." },
-        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified." },
+        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
+        {'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified."},
+        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5750,8 +5750,8 @@ class API_Provisioner_OVA_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified." },
-        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified." },
+        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
+        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified."},
     ])
     @Authenticator
     def post(self, ova, reqargs):
@@ -5818,7 +5818,7 @@ api.add_resource(API_Provisioner_OVA_Element, '/provisioner/ova/<ova>')
 # /provisioner/profile
 class API_Provisioner_Profile_Root(Resource):
     @RequestParser([
-        {'name': 'limit' }
+        {'name': 'limit'}
     ])
     @Authenticator
     def get(self, reqargs):
@@ -5877,15 +5877,15 @@ class API_Provisioner_Profile_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A profile name must be specified." },
-        {'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified." },
-        {'name': 'system_template' },
-        {'name': 'network_template' },
-        {'name': 'storage_template' },
-        {'name': 'userdata' },
-        {'name': 'script' },
-        {'name': 'ova' },
-        {'name': 'arg', 'action': 'append' }
+        {'name': 'name', 'required': True, 'helpmsg': "A profile name must be specified."},
+        {'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified."},
+        {'name': 'system_template'},
+        {'name': 'network_template'},
+        {'name': 'storage_template'},
+        {'name': 'userdata'},
+        {'name': 'script'},
+        {'name': 'ova'},
+        {'name': 'arg', 'action': 'append'}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5993,14 +5993,14 @@ class API_Provisioner_Profile_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified." },
-        {'name': 'system_template' },
-        {'name': 'network_template' },
-        {'name': 'storage_template' },
-        {'name': 'userdata' },
-        {'name': 'script' },
-        {'name': 'ova' },
-        {'name': 'arg', 'action': 'append' }
+        {'name': 'profile_type', 'required': True, 'helpmsg': "A profile type must be specified."},
+        {'name': 'system_template'},
+        {'name': 'network_template'},
+        {'name': 'storage_template'},
+        {'name': 'userdata'},
+        {'name': 'script'},
+        {'name': 'ova'},
+        {'name': 'arg', 'action': 'append'}
     ])
     @Authenticator
     def post(self, profile, reqargs):
@@ -6077,12 +6077,12 @@ class API_Provisioner_Profile_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'system_template' },
-        {'name': 'network_template' },
-        {'name': 'storage_template' },
-        {'name': 'userdata' },
-        {'name': 'script' },
-        {'name': 'arg', 'action': 'append' }
+        {'name': 'system_template'},
+        {'name': 'network_template'},
+        {'name': 'storage_template'},
+        {'name': 'userdata'},
+        {'name': 'script'},
+        {'name': 'arg', 'action': 'append'}
     ])
     @Authenticator
     def put(self, profile, reqargs):
@@ -6172,11 +6172,11 @@ api.add_resource(API_Provisioner_Profile_Element, '/provisioner/profile/<profile
 # /provisioner/create
 class API_Provisioner_Create_Root(Resource):
     @RequestParser([
-        {'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified." },
-        {'name': 'profile', 'required': True, 'helpmsg': "A profile name must be specified." },
-        {'name': 'define_vm' },
-        {'name': 'start_vm' },
-        {'name': 'arg', 'action': 'append' }
+        {'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified."},
+        {'name': 'profile', 'required': True, 'helpmsg': "A profile name must be specified."},
+        {'name': 'define_vm'},
+        {'name': 'start_vm'},
+        {'name': 'arg', 'action': 'append'}
     ])
     @Authenticator
     def post(self, reqargs):
@@ -6229,7 +6229,7 @@ class API_Provisioner_Create_Root(Resource):
         # Verify that the profile is valid
         _list, code = api_provisioner.list_profile(reqargs.get('profile', None), is_fuzzy=False)
         if code != 200:
-            return {'message': 'Profile "{}" is not valid.'.format(reqargs.get('profile')) }, 400
+            return {'message': 'Profile "{}" is not valid.'.format(reqargs.get('profile'))}, 400
 
         if bool(strtobool(reqargs.get('define_vm', 'true'))):
             define_vm = True
@@ -6248,7 +6248,7 @@ class API_Provisioner_Create_Root(Resource):
             start_vm=start_vm,
             script_run_args=reqargs.get('arg', []),
         )
-        return {"task_id": task.id }, 202, {'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id) }
+        return {"task_id": task.id}, 202, {'Location': Api.url_for(api, API_Provisioner_Status_Element, task_id=task.id)}
 api.add_resource(API_Provisioner_Create_Root, '/provisioner/create')
 
 # /provisioner/status
