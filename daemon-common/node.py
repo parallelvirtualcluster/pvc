@@ -23,7 +23,6 @@
 import time
 import re
 
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 

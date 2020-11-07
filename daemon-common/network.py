@@ -24,7 +24,6 @@ import re
 
 from kazoo.exceptions import NoNodeError
 
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 
 #
