@@ -6337,7 +6337,7 @@ class API_Provisioner_Status_Element(Resource):
                 response['result'] = task.info['result']
         else:
             response = {
-                'state' : task.state,
+                'state': task.state,
                 'current': 1,
                 'total': 1,
                 'status': str(task.info)
