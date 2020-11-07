@@ -269,7 +269,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
     # Handle an empty ipmi_hostname
     if config['ipmi_hostname'] == '':
-        config['ipmi_hostname'] = myshorthostname + '-lom.' + mydomainname
+        config['ipmi_hostname'] = myhostname + '-lom.' + mydomainname
 
     return config
 
