@@ -3609,7 +3609,7 @@ def init_cluster(confirm_flag):
 
     if not confirm_flag:
         try:
-            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster', prompt_suffix='? ', abort=True)
         except Exception:
             exit(0)
 
