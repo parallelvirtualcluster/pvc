@@ -660,7 +660,7 @@ def get_list(zk_conn, node, state, limit, is_fuzzy=True):
 
     if state:
         valid_states = [ 'start', 'restart', 'shutdown', 'stop', 'disable', 'fail', 'migrate', 'unmigrate', 'provision' ]
-        if not state in valid_states:
+        if state not in valid_states:
             return False, 'VM state "{}" is not valid.'.format(state)
 
     full_vm_list = zkhandler.listchildren(zk_conn, '/domains')

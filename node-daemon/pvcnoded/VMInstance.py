@@ -180,7 +180,7 @@ class VMInstance(object):
 
     # Manage local node domain_list
     def addDomainToList(self):
-        if not self.domuuid in self.this_node.domain_list:
+        if self.domuuid not in self.this_node.domain_list:
             try:
                 # Add the domain to the domain_list array
                 self.this_node.domain_list.append(self.domuuid)

@@ -1177,7 +1177,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     cluster_networks, _discard = pvc_network.getClusterNetworkList(zk_conn)
     for network in vm_data['networks']:
         vni = str(network['vni'])
-        if not vni in cluster_networks:
+        if vni not in cluster_networks:
             raise ClusterError('The network VNI "{}" is not present on the cluster.'.format(vni))
 
     print("All configured networks for VM are valid")
@@ -1261,7 +1261,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
         loader.exec_module(installer_script)
 
         # Verify that the install() function is valid
-        if not "install" in dir(installer_script):
+        if "install" not in dir(installer_script):
             raise ProvisioningError("Specified script does not contain an install() function.")
 
         print("Provisioning script imported successfully")

@@ -194,7 +194,7 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
         # 1. Verify the OSD is present
         retcode, stdout, stderr = common.run_os_command('ceph osd ls')
         osd_list = stdout.split('\n')
-        if not osd_id in osd_list:
+        if osd_id not in osd_list:
             logger.out('Could not find OSD {} in the cluster'.format(osd_id), state='e')
             return True
 

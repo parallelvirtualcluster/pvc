@@ -592,7 +592,7 @@ def format_list(config, vm_list, raw):
         net_list = []
         vm_net_colour = ''
         for net_vni in raw_net_list:
-            if not net_vni in valid_net_list:
+            if net_vni not in valid_net_list:
                 response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
                 if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
                     vm_net_colour = ansiprint.red()

@@ -251,7 +251,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                 # Set the ipaddr
                 floating_addr = ip_address(config[floating_key].split('/')[0])
                 # Verify we're in the network
-                if not floating_addr in list(network.hosts()):
+                if floating_addr not in list(network.hosts()):
                     raise
             except Exception as e:
                 print('ERROR: Floating address {} for {} is not valid!'.format(config[floating_key], floating_key))
@@ -803,12 +803,12 @@ def update_nodes(new_node_list):
 
     # Add any missing nodes to the list
     for node in new_node_list:
-        if not node in node_list:
+        if node not in node_list:
             d_node[node] = NodeInstance.NodeInstance(node, myhostname, zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api)
 
     # Remove any deleted nodes from the list
     for node in node_list:
-        if not node in new_node_list:
+        if node not in new_node_list:
             # Delete the object
             del(d_node[node])
 
@@ -885,7 +885,7 @@ if enable_networking:
 
         # Add any missing networks to the list
         for network in new_network_list:
-            if not network in network_list:
+            if network not in network_list:
                 d_network[network] = VXNetworkInstance.VXNetworkInstance(network, zk_conn, config, logger, this_node, dns_aggregator)
                 if config['daemon_mode'] == 'coordinator' and d_network[network].nettype == 'managed':
                     try:
@@ -899,7 +899,7 @@ if enable_networking:
 
         # Remove any deleted networks from the list
         for network in network_list:
-            if not network in new_network_list:
+            if network not in new_network_list:
                 if d_network[network].nettype == 'managed':
                     # Stop primary functionality
                     if this_node.router_state == 'primary':
@@ -934,12 +934,12 @@ if enable_hypervisor:
 
         # Add any missing domains to the list
         for domain in new_domain_list:
-            if not domain in domain_list:
+            if domain not in domain_list:
                 d_domain[domain] = VMInstance.VMInstance(domain, zk_conn, config, logger, this_node)
 
         # Remove any deleted domains from the list
         for domain in domain_list:
-            if not domain in new_domain_list:
+            if domain not in new_domain_list:
                 # Delete the object
                 del(d_domain[domain])
 
@@ -965,12 +965,12 @@ if enable_storage:
 
         # Add any missing OSDs to the list
         for osd in new_osd_list:
-            if not osd in osd_list:
+            if osd not in osd_list:
                 d_osd[osd] = CephInstance.CephOSDInstance(zk_conn, this_node, osd)
 
         # Remove any deleted OSDs from the list
         for osd in osd_list:
-            if not osd in new_osd_list:
+            if osd not in new_osd_list:
                 # Delete the object
                 del(d_osd[osd])
 
@@ -985,14 +985,14 @@ if enable_storage:
 
         # Add any missing Pools to the list
         for pool in new_pool_list:
-            if not pool in pool_list:
+            if pool not in pool_list:
                 d_pool[pool] = CephInstance.CephPoolInstance(zk_conn, this_node, pool)
                 d_volume[pool] = dict()
                 volume_list[pool] = []
 
         # Remove any deleted Pools from the list
         for pool in pool_list:
-            if not pool in new_pool_list:
+            if pool not in new_pool_list:
                 # Delete the object
                 del(d_pool[pool])
 
@@ -1008,12 +1008,12 @@ if enable_storage:
 
                 # Add any missing Volumes to the list
                 for volume in new_volume_list:
-                    if not volume in volume_list[pool]:
+                    if volume not in volume_list[pool]:
                         d_volume[pool][volume] = CephInstance.CephVolumeInstance(zk_conn, this_node, pool, volume)
 
                 # Remove any deleted Volumes from the list
                 for volume in volume_list[pool]:
-                    if not volume in new_volume_list:
+                    if volume not in new_volume_list:
                         # Delete the object
                         del(d_volume[pool][volume])
 
