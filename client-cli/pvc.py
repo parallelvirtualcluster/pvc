@@ -2328,7 +2328,7 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     params = dict()
     params['name'] = name
     params['vcpus'] = vcpus
-    params['vram']  = vram
+    params['vram'] = vram
     params['serial'] = serial
     params['vnc'] = vnc
     if vnc:
@@ -2403,7 +2403,7 @@ def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind,
     """
     params = dict()
     params['vcpus'] = vcpus
-    params['vram']  = vram
+    params['vram'] = vram
     params['serial'] = serial
     params['vnc'] = vnc
     params['vnc_bind'] = vnc_bind
