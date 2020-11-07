@@ -1063,7 +1063,7 @@ def unmap_volume(zk_conn, pool, name):
 def get_list_volume(zk_conn, pool, limit, is_fuzzy=True):
     volume_list = []
     if pool and not verifyPool(zk_conn, pool):
-        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
+        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(pool)
 
     full_volume_list = getCephVolumes(zk_conn, pool)
 
