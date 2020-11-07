@@ -2310,7 +2310,7 @@ class API_Network_Lease_Element(Resource):
         {'name': 'hostname'}
     ])
     @Authenticator
-    def post(self, vni, mac):
+    def post(self, vni, mac, reqargs):
         """
         Create a new static DHCP lease {mac} in network {vni}
         ---
@@ -3338,7 +3338,7 @@ class API_Storage_Ceph_Pool_Element(Resource):
         {'name': 'replcfg', 'required': True, 'helpmsg': "A valid replication configuration must be specified."}
     ])
     @Authenticator
-    def post(self, pool):
+    def post(self, pool, reqargs):
         """
         Create a new Ceph pool {pool}
         ---
@@ -5640,7 +5640,7 @@ class API_Provisioner_Script_Element(Resource):
         {'name': 'data', 'required': True, 'helpmsg': "A script document must be specified."}
     ])
     @Authenticator
-    def post(self, script):
+    def post(self, script, reqargs):
         """
         Create a new script {script}
         ---
