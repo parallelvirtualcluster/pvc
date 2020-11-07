@@ -181,7 +181,7 @@ def format_info(node_information, long_output):
 def format_list(node_list, raw):
     # Handle single-element lists
     if not isinstance(node_list, list):
-        node_list = [node_list ]
+        node_list = [node_list]
 
     if raw:
         ainformation = list()

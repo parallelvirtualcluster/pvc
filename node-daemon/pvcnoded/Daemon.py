@@ -222,9 +222,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         config = {**config, **config_networking}
 
         # Create the by-id address entries
-        for net in ['vni',
-                     'storage',
-                     'upstream' ]:
+        for net in ['vni', 'storage', 'upstream']:
             address_key = '{}_dev_ip'.format(net)
             floating_key = '{}_floating_ip'.format(net)
             network_key = '{}_network'.format(net)

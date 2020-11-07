@@ -668,12 +668,12 @@ def format_list_template(template_data, template_type=None):
     template_type can be used to only display part of the full list, allowing function
     reuse with more limited output options.
     """
-    template_types = ['system', 'network', 'storage' ]
+    template_types = ['system', 'network', 'storage']
     normalized_template_data = dict()
     ainformation = list()
 
     if template_type in template_types:
-        template_types = [template_type ]
+        template_types = [template_type]
         template_data_type = '{}_templates'.format(template_type)
         normalized_template_data[template_data_type] = template_data
     else:
@@ -702,7 +702,7 @@ def format_list_template(template_data, template_type=None):
 
 def format_list_template_system(template_data):
     if isinstance(template_data, dict):
-        template_data = [template_data ]
+        template_data = [template_data]
 
     template_list_output = []
 
@@ -850,7 +850,7 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
 
 def format_list_template_network(template_template):
     if isinstance(template_template, dict):
-        template_template = [template_template ]
+        template_template = [template_template]
 
     template_list_output = []
 
@@ -924,7 +924,7 @@ def format_list_template_network(template_template):
 
 def format_list_template_storage(template_template):
     if isinstance(template_template, dict):
-        template_template = [template_template ]
+        template_template = [template_template]
 
     template_list_output = []
 
@@ -1059,7 +1059,7 @@ def format_list_template_storage(template_template):
 
 def format_list_userdata(userdata_data, lines=None):
     if isinstance(userdata_data, dict):
-        userdata_data = [userdata_data ]
+        userdata_data = [userdata_data]
 
     userdata_list_output = []
 
@@ -1133,7 +1133,7 @@ def format_list_userdata(userdata_data, lines=None):
 
 def format_list_script(script_data, lines=None):
     if isinstance(script_data, dict):
-        script_data = [script_data ]
+        script_data = [script_data]
 
     script_list_output = []
 
@@ -1207,7 +1207,7 @@ def format_list_script(script_data, lines=None):
 
 def format_list_ova(ova_data):
     if isinstance(ova_data, dict):
-        ova_data = [ova_data ]
+        ova_data = [ova_data]
 
     ova_list_output = []
 
@@ -1320,7 +1320,7 @@ def format_list_ova(ova_data):
 
 def format_list_profile(profile_data):
     if isinstance(profile_data, dict):
-        profile_data = [profile_data ]
+        profile_data = [profile_data]
 
     # Format the profile "source" from the type and, if applicable, OVA profile name
     for profile in profile_data:

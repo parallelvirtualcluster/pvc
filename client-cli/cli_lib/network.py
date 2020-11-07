@@ -423,7 +423,7 @@ def format_list(config, network_list):
 
     # Handle single-element lists
     if not isinstance(network_list, list):
-        network_list = [network_list ]
+        network_list = [network_list]
 
     network_list_output = []
 
@@ -603,7 +603,7 @@ def format_list_acl(acl_list):
         acl_list = list()
     # Handle when we get a single entry
     if isinstance(acl_list, dict):
-        acl_list = [acl_list ]
+        acl_list = [acl_list]
 
     acl_list_output = []
 

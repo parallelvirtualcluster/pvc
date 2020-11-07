@@ -869,7 +869,7 @@ def getCephVolumes(zk_conn, pool):
     if not pool:
         pool_list = zkhandler.listchildren(zk_conn, '/ceph/pools')
     else:
-        pool_list = [pool ]
+        pool_list = [pool]
 
     for pool_name in pool_list:
         for volume_name in zkhandler.listchildren(zk_conn, '/ceph/volumes/{}'.format(pool_name)):
@@ -1209,7 +1209,7 @@ def getCephSnapshots(zk_conn, pool, volume):
         for volume_entry in volume_list:
             volume_pool, volume_name = volume_entry.split('/')
             if volume_name == volume:
-                volume_list = ['{}/{}'.format(volume_pool, volume_name) ]
+                volume_list = ['{}/{}'.format(volume_pool, volume_name)]
 
     for volume_entry in volume_list:
         for snapshot_name in zkhandler.listchildren(zk_conn, '/ceph/snapshots/{}'.format(volume_entry)):
