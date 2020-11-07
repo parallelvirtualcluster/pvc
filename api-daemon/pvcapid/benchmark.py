@@ -105,7 +105,7 @@ def list_benchmarks(job=None):
     if data:
         return data, 200
     else:
-        return { 'message': 'No benchmark found.' }, 404
+        return {'message': 'No benchmark found.' }, 404
 
 def run_benchmark(self, pool):
     # Runtime imports
@@ -456,4 +456,4 @@ def run_benchmark(self, pool):
 
     close_database(db_conn, db_cur)
     pvc_common.stopZKConnection(zk_conn)
-    return { 'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3 }
+    return {'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3 }

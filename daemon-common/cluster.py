@@ -144,8 +144,8 @@ def getClusterInformation(zk_conn):
         except KeyError:
             ceph_osd_in = 0
 
-        up_texts = { 1: 'up', 0: 'down' }
-        in_texts = { 1: 'in', 0: 'out' }
+        up_texts = {1: 'up', 0: 'down' }
+        in_texts = {1: 'in', 0: 'out' }
 
         if not ceph_osd_up or not ceph_osd_in:
             ceph_osd_healthy_status[index] = False

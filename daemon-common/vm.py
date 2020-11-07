@@ -274,7 +274,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
     if restart:
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart' })
         lock.release()
 
     return True, ''
@@ -301,7 +301,7 @@ def undefine_vm(zk_conn, domain):
         # Set the domain into stop mode
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop' })
         lock.release()
 
         # Wait for 2 seconds to allow state to flow to all nodes
@@ -330,7 +330,7 @@ def remove_vm(zk_conn, domain):
         # Set the domain into stop mode
         lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
         lock.acquire()
-        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop' })
         lock.release()
 
         # Wait for 2 seconds to allow state to flow to all nodes
@@ -364,7 +364,7 @@ def start_vm(zk_conn, domain):
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'start' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'start' })
     lock.release()
 
     return True, 'Starting VM "{}".'.format(domain)
@@ -385,7 +385,7 @@ def restart_vm(zk_conn, domain, wait=False):
     # Set the VM to restart
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'restart' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart' })
     lock.release()
 
     if wait:
@@ -411,7 +411,7 @@ def shutdown_vm(zk_conn, domain, wait=False):
     # Set the VM to shutdown
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'shutdown' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'shutdown' })
     lock.release()
 
     if wait:
@@ -430,7 +430,7 @@ def stop_vm(zk_conn, domain):
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'stop' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'stop' })
     lock.release()
 
     return True, 'Forcibly stopping VM "{}".'.format(domain)
@@ -449,7 +449,7 @@ def disable_vm(zk_conn, domain):
     # Set the VM to start
     lock = zkhandler.exclusivelock(zk_conn, '/domains/{}/state'.format(dom_uuid))
     lock.acquire()
-    zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(dom_uuid): 'disable' })
+    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'disable' })
     lock.release()
 
     return True, 'Marked VM "{}" as disable.'.format(domain)

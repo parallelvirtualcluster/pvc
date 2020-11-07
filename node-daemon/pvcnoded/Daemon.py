@@ -557,7 +557,7 @@ def cleanup():
     logger.out('Terminating pvcnoded and cleaning up', state='s')
 
     # Set shutdown state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(myhostname): 'shutdown' })
 
     # Waiting for any flushes to complete
     logger.out('Waiting for any active flushes', state='s')
@@ -599,7 +599,7 @@ def cleanup():
     node_keepalive()
 
     # Set stop state in Zookeeper
-    zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(myhostname): 'stop' })
+    zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(myhostname): 'stop' })
 
     # Forcibly terminate dnsmasq because it gets stuck sometimes
     common.run_os_command('killall dnsmasq')
@@ -690,7 +690,7 @@ if current_primary and current_primary != 'none':
 else:
     if config['daemon_mode'] == 'coordinator':
         logger.out('No primary node found; creating with us as primary.', state='i')
-        zkhandler.writedata(zk_conn, { '/primary_node': myhostname })
+        zkhandler.writedata(zk_conn, {'/primary_node': myhostname })
 
 ###############################################################################
 # PHASE 7a - Ensure IPMI is reachable and working
@@ -742,8 +742,8 @@ if enable_networking:
     flush ruleset
     # Add the filter table and chains
     add table inet filter
-    add chain inet filter forward {{ type filter hook forward priority 0; }}
-    add chain inet filter input {{ type filter hook input priority 0; }}
+    add chain inet filter forward {{type filter hook forward priority 0; }}
+    add chain inet filter input {{type filter hook input priority 0; }}
     # Include static rules and network rules
     include "{rulesdir}/static/*"
     include "{rulesdir}/networks/*"
@@ -1042,7 +1042,7 @@ def collect_ceph_stats(queue):
         logger.out("Getting health stats from monitor", state='d', prefix='ceph-thread')
 
     # Get Ceph cluster health for local status output
-    command = { "prefix": "health", "format": "json" }
+    command = {"prefix": "health", "format": "json" }
     try:
         health_status = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])
         ceph_health = health_status['status']
@@ -1062,7 +1062,7 @@ def collect_ceph_stats(queue):
         if debug:
             logger.out("Set ceph health information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
-        command = { "prefix": "status", "format": "pretty" }
+        command = {"prefix": "status", "format": "pretty" }
         ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
@@ -1076,7 +1076,7 @@ def collect_ceph_stats(queue):
             logger.out("Set ceph rados df information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get rados df info
-        command = { "prefix": "df", "format": "pretty" }
+        command = {"prefix": "df", "format": "pretty" }
         ceph_df = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.writedata(zk_conn, {
@@ -1090,7 +1090,7 @@ def collect_ceph_stats(queue):
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
-        command = { "prefix": "df", "format": "json" }
+        command = {"prefix": "df", "format": "json" }
         try:
             ceph_pool_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['pools']
         except Exception as e:
@@ -1161,7 +1161,7 @@ def collect_ceph_stats(queue):
         # Parse the dump data
         osd_dump = dict()
 
-        command = { "prefix": "osd dump", "format": "json" }
+        command = {"prefix": "osd dump", "format": "json" }
         try:
             retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json --connect-timeout 2', timeout=2)
             osd_dump_raw = json.loads(stdout)['osds']
@@ -1187,7 +1187,7 @@ def collect_ceph_stats(queue):
 
         osd_df = dict()
 
-        command = { "prefix": "osd df", "format": "json" }
+        command = {"prefix": "osd df", "format": "json" }
         try:
             osd_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['nodes']
         except Exception as e:
@@ -1214,7 +1214,7 @@ def collect_ceph_stats(queue):
 
         osd_status = dict()
 
-        command = { "prefix": "osd status", "format": "pretty" }
+        command = {"prefix": "osd status", "format": "pretty" }
         try:
             osd_status_raw = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         except Exception as e:
@@ -1341,7 +1341,7 @@ def collect_vm_stats(queue):
                             raise
                     except Exception:
                         # Toggle a state "change"
-                        zkhandler.writedata(zk_conn, { '/domains/{}/state'.format(domain): instance.getstate() })
+                        zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(domain): instance.getstate() })
         elif instance.getnode() == this_node.name:
             memprov += instance.getmemory()
 
@@ -1469,7 +1469,7 @@ def node_keepalive():
     past_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(this_node.name))
     if past_state != 'run':
         this_node.daemon_state = 'run'
-        zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(this_node.name): 'run' })
+        zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(this_node.name): 'run' })
     else:
         this_node.daemon_state = 'run'
 
@@ -1638,7 +1638,7 @@ def node_keepalive():
                             fence_thread = Thread(target=fencing.fenceNode, args=(node_name, zk_conn, config, logger), kwargs={})
                             fence_thread.start()
                             # Write the updated data after we start the fence thread
-                            zkhandler.writedata(zk_conn, { '/nodes/{}/daemonstate'.format(node_name): 'dead' })
+                            zkhandler.writedata(zk_conn, {'/nodes/{}/daemonstate'.format(node_name): 'dead' })
 
     if debug:
         logger.out("Keepalive finished", state='d', prefix='main-thread')

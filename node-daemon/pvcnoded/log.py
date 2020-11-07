@@ -44,25 +44,25 @@ class Logger(object):
     # Format maps
     format_map_colourized = {
         # Colourized formatting with chevron prompts (log_colours = True)
-        'o': { 'colour': fmt_green,   'prompt': '>>> '      },
-        'e': { 'colour': fmt_red,     'prompt': '>>> '      },
-        'w': { 'colour': fmt_yellow,  'prompt': '>>> '      },
-        't': { 'colour': fmt_purple,  'prompt': '>>> '      },
-        'i': { 'colour': fmt_blue,    'prompt': '>>> '      },
-        's': { 'colour': fmt_cyan,    'prompt': '>>> '      },
-        'd': { 'colour': fmt_white,   'prompt': '>>> '      },
-        'x': { 'colour': last_colour, 'prompt': last_prompt }
+        'o': {'colour': fmt_green,   'prompt': '>>> '      },
+        'e': {'colour': fmt_red,     'prompt': '>>> '      },
+        'w': {'colour': fmt_yellow,  'prompt': '>>> '      },
+        't': {'colour': fmt_purple,  'prompt': '>>> '      },
+        'i': {'colour': fmt_blue,    'prompt': '>>> '      },
+        's': {'colour': fmt_cyan,    'prompt': '>>> '      },
+        'd': {'colour': fmt_white,   'prompt': '>>> '      },
+        'x': {'colour': last_colour, 'prompt': last_prompt }
     }
     format_map_textual = {
         # Uncolourized formatting with text prompts (log_colours = False)
-        'o': { 'colour': '', 'prompt': 'ok: '      },
-        'e': { 'colour': '', 'prompt': 'failed: '  },
-        'w': { 'colour': '', 'prompt': 'warning: ' },
-        't': { 'colour': '', 'prompt': 'tick: '    },
-        'i': { 'colour': '', 'prompt': 'info: '    },
-        's': { 'colour': '', 'prompt': 'system: '  },
-        'd': { 'colour': '', 'prompt': 'debug: '   },
-        'x': { 'colour': '', 'prompt': last_prompt }
+        'o': {'colour': '', 'prompt': 'ok: '      },
+        'e': {'colour': '', 'prompt': 'failed: '  },
+        'w': {'colour': '', 'prompt': 'warning: ' },
+        't': {'colour': '', 'prompt': 'tick: '    },
+        'i': {'colour': '', 'prompt': 'info: '    },
+        's': {'colour': '', 'prompt': 'system: '  },
+        'd': {'colour': '', 'prompt': 'debug: '   },
+        'x': {'colour': '', 'prompt': last_prompt }
     }
 
     # Initialization of instance

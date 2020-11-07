@@ -103,12 +103,12 @@ def list_ova(limit, is_fuzzy=True):
     if ova_data:
         return ova_data, 200
     else:
-        return { 'message': 'No OVAs found.' }, 404
+        return {'message': 'No OVAs found.' }, 404
 
 def delete_ova(name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
     if retcode != 200:
-        retmsg = { 'message': 'The OVA "{}" does not exist.'.format(name) }
+        retmsg = {'message': 'The OVA "{}" does not exist.'.format(name) }
         retcode = 400
         return retmsg, retcode
 
@@ -146,10 +146,10 @@ def delete_ova(name):
         args = (ova_id,)
         cur.execute(query, args)
 
-        retmsg = { "message": 'Removed OVA image "{}".'.format(name) }
+        retmsg = {"message": 'Removed OVA image "{}".'.format(name) }
         retcode = 200
     except Exception as e:
-        retmsg = { 'message': 'Failed to remove OVA "{}": {}'.format(name, e) }
+        retmsg = {'message': 'Failed to remove OVA "{}": {}'.format(name, e) }
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
