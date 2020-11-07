@@ -1627,7 +1627,7 @@ def node_keepalive():
                 # Handle deadtime and fencng if needed
                 # (A node is considered dead when its keepalive timer is >6*keepalive_interval seconds
                 # out-of-date while in 'start' state)
-                node_deadtime = int(time.time()) - ( int(config['keepalive_interval']) * int(config['fence_intervals']) )
+                node_deadtime = int(time.time()) - (int(config['keepalive_interval']) * int(config['fence_intervals']) )
                 if node_keepalive < node_deadtime and node_daemon_state == 'run':
                     logger.out('Node {} seems dead - starting monitor for fencing'.format(node_name), state='w')
                     zk_lock = zkhandler.writelock(zk_conn, '/nodes/{}/daemonstate'.format(node_name))
