@@ -1037,6 +1037,72 @@ def vm_vcpu():
 
 
 ###############################################################################
+# pvc vm vcpu get
+###############################################################################
+@click.command(name='get', short_help='Get the current vCPU count of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw value only without formatting.'
+)
+@cluster_req
+def vm_vcpu_get(domain, raw):
+    """
+    Get the current vCPU count of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_vcpus_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_vcpus(config, domain, retmsg)
+    else:
+        retmsg = retmsg[0]  # Get only the first part of the tuple (vm_vcpus)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm vcpu set
+###############################################################################
+@click.command(name='set', short_help='Set the vCPU count of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vcpus'
+)
+@click.option(
+    '-t', '--topology', 'topology', default=None,
+    help='Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_vcpu_set(domain, vcpus, topology, restart):
+    """
+    Set the vCPU count of the virtual machine DOMAIN to VCPUS.
+
+    By default, the topology of the vCPus is 1 socket, VCPUS cores per socket, 1 thread per core.
+    """
+
+    if topology is not None:
+        try:
+            sockets, cores, threads = topology.split(',')
+            if sockets * cores * threads != vcpus:
+                raise
+        except Exception:
+            cleanup(False, "The topology specified is not valid.")
+        topology = (sockets, cores, threads)
+    else:
+        topology = (1, vcpus, 1)
+
+    retcode, retmsg = pvc_vm.vm_vcpus_set(config, domain, vcpus, topology, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc vm memory
 ###############################################################################
 @click.group(name='memory', short_help='Manage provisioned memory of a virtual machine.', context_settings=CONTEXT_SETTINGS)
@@ -3898,8 +3964,8 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
-# vm_vcpu.add_command(vm_vcpu_get)
-# vm_vcpu.add_command(vm_vcpu_set)
+vm_vcpu.add_command(vm_vcpu_get)
+vm_vcpu.add_command(vm_vcpu_set)
 
 # vm_memory.add_command(vm_memory_get)
 # vm_memory.add_command(vm_memory_set)

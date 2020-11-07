@@ -254,6 +254,133 @@ def vm_locks(config, vm):
     return retstatus, response.json().get('message', '')
 
 
+def vm_vcpus_set(config, vm, vcpus, topology, restart):
+    """
+    Set the vCPU count of the VM with topology
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    parsed_xml.vcpu._setText(str(vcpus))
+    parsed_xml.cpu.topology.set('sockets', str(topology[0]))
+    parsed_xml.cpu.topology.set('cores', str(topology[1]))
+    parsed_xml.cpu.topology.set('threads', str(topology[2]))
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_vcpus_get(config, vm):
+    """
+    Get the vCPU count of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a tuple of (vcpus, (sockets, cores, threads))
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    vm_vcpus = int(parsed_xml.vcpu.text)
+    vm_sockets = parsed_xml.cpu.topology.attrib.get('sockets')
+    vm_cores = parsed_xml.cpu.topology.attrib.get('cores')
+    vm_threads = parsed_xml.cpu.topology.attrib.get('threads')
+
+    return True, (vm_vcpus, (vm_sockets, vm_cores, vm_threads))
+
+
+def format_vm_vcpus(config, name, vcpus):
+    """
+    Format the output of a vCPU value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    vcpus_length = 6
+    sockets_length = 8
+    cores_length = 6
+    threads_length = 8
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vcpus: <{vcpus_length}}   \
+{sockets: <{sockets_length}} \
+{cores: <{cores_length}} \
+{threads: <{threads_length}}{end_bold}'.format(
+            name_length=name_length,
+            vcpus_length=vcpus_length,
+            sockets_length=sockets_length,
+            cores_length=cores_length,
+            threads_length=threads_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            vcpus='vCPUs',
+            sockets='Sockets',
+            cores='Cores',
+            threads='Threads'
+        )
+    )
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vcpus: <{vcpus_length}}   \
+{sockets: <{sockets_length}} \
+{cores: <{cores_length}} \
+{threads: <{threads_length}}{end_bold}'.format(
+            name_length=name_length,
+            vcpus_length=vcpus_length,
+            sockets_length=sockets_length,
+            cores_length=cores_length,
+            threads_length=threads_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name=name,
+            vcpus=vcpus[0],
+            sockets=vcpus[1][0],
+            cores=vcpus[1][1],
+            threads=vcpus[1][2]
+        )
+    )
+    return '\n'.join(output_list)
+
+
 def view_console_log(config, vm, lines=100):
     """
     Return console log lines from the API (and display them in a pager in the main CLI)
