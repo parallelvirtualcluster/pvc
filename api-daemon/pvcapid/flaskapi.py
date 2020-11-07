@@ -461,7 +461,6 @@ class API_Status(Resource):
         return api_helper.cluster_maintenance(reqargs.get('state', 'false'))
 
 
-
 api.add_resource(API_Status, '/status')
 
 
