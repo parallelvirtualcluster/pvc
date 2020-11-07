@@ -294,7 +294,7 @@ class VMInstance(object):
             self.logger.out('Failed to stop VM', state='e', prefix='Domain {}'.format(self.domuuid))
         self.removeDomainFromList()
 
-        if self.inrestart == False:
+        if self.inrestart is False:
             zkhandler.writedata(self.zk_conn, { '/domains/{}/state'.format(self.domuuid): 'stop' })
 
         self.logger.out('Successfully stopped VM', state='o', prefix='Domain {}'.format(self.domuuid))
@@ -662,12 +662,12 @@ class VMInstance(object):
         #   provision
 
         # Conditional pass one - Are we already performing an action
-        if self.instart == False \
-        and self.inrestart == False \
-        and self.inmigrate == False \
-        and self.inreceive == False \
-        and self.inshutdown == False \
-        and self.instop == False:
+        if self.instart is False \
+        and self.inrestart is False \
+        and self.inmigrate is False \
+        and self.inreceive is False \
+        and self.inshutdown is False \
+        and self.instop is False:
             # Conditional pass two - Is this VM configured to run on this node
             if self.node == self.this_node.name:
                 # Conditional pass three - Is this VM currently running on this node
