@@ -312,19 +312,19 @@ def run_benchmark(self, pool):
             #         7:   IOPS
             #         8:   runtime (msec)
             # Total latency
-            #         37:  min 
-            #         38:  max 
+            #         37:  min
+            #         38:  max
             #         39:  mean
             #         40:  stdev
             # Bandwidth
-            #         41:  min 
-            #         42:  max 
+            #         41:  min
+            #         42:  max
             #         44:  mean
             #         45:  stdev
             #         46:  # samples
             # IOPS
-            #         47:  min 
-            #         48:  max 
+            #         47:  min
+            #         48:  max
             #         49:  mean
             #         50:  stdev
             #         51:  # samples
@@ -393,7 +393,7 @@ def run_benchmark(self, pool):
             #         96:  mean
             #         97:  stdev
             #         98:  # samples
-            # CPU     
+            # CPU
             #         146: user
             #         147: system
             #         148: ctx switches

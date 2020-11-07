@@ -228,7 +228,7 @@ def node_secondary(node):
     """
     Take NODE out of primary router mode.
     """
-    zk_conn = pvc_common.startZKConnection(config['coordinators']) 
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.secondary_node(zk_conn, node)
     pvc_common.stopZKConnection(zk_conn)
 
@@ -246,7 +246,7 @@ def node_primary(node):
     """
     Set NODE to primary router mode.
     """
-    zk_conn = pvc_common.startZKConnection(config['coordinators']) 
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.primary_node(zk_conn, node)
     pvc_common.stopZKConnection(zk_conn)
 

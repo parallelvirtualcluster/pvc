@@ -432,7 +432,7 @@ class OVFParser(object):
         path = "{{{schema}}}References/{{{schema}}}File".format(schema=self.OVF_SCHEMA)
         id_attr = "{{{schema}}}id".format(schema=self.OVF_SCHEMA)
         href_attr = "{{{schema}}}href".format(schema=self.OVF_SCHEMA)
-        current_list = self.xml.findall(path) 
+        current_list = self.xml.findall(path)
         results = [(x.get(id_attr), x.get(href_attr)) for x in current_list]
         return results
 
@@ -442,12 +442,12 @@ class OVFParser(object):
         ref_attr = "{{{schema}}}fileRef".format(schema=self.OVF_SCHEMA)
         cap_attr = "{{{schema}}}capacity".format(schema=self.OVF_SCHEMA)
         cap_units = "{{{schema}}}capacityAllocationUnits".format(schema=self.OVF_SCHEMA)
-        current_list = self.xml.findall(path) 
+        current_list = self.xml.findall(path)
         results = [(x.get(id_attr), x.get(ref_attr), x.get(cap_attr), x.get(cap_units)) for x in current_list]
         return results
 
     def _getAttributes(self, virtual_system, path, attribute):
-        current_list = virtual_system.findall(path) 
+        current_list = virtual_system.findall(path)
         results = [x.get(attribute) for x in current_list]
         return results
 

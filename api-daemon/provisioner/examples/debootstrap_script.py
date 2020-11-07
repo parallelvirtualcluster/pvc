@@ -205,7 +205,7 @@ GRUB_DISABLE_LINUX_UUID=false
     os.system(
         "grub-install --force /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
     )
-    os.system( 
+    os.system(
         "update-grub"
     )
     # Set a really dumb root password [TEMPORARY]

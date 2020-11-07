@@ -437,7 +437,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         for order in sorted(ordered_acls_out.keys()):
             sorted_acl_list['out'].append(ordered_acls_out[order])
 
-        for direction in 'in', 'out': 
+        for direction in 'in', 'out':
             for acl in sorted_acl_list[direction]:
                 rule_prefix = "add rule inet filter vxlan{}-{} counter".format(self.vni, direction)
                 rule_data = zkhandler.readdata(self.zk_conn, '/networks/{}/firewall_rules/{}/{}/rule'.format(self.vni, direction, acl))
@@ -701,7 +701,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             else:
                 dhcp_configuration += dhcp_configuration_v4
             if self.dhcp4_flag:
-                dhcp_configuration += dhcp_configuration_v4_dhcp 
+                dhcp_configuration += dhcp_configuration_v4_dhcp
 
             # Start the dnsmasq process in a thread
             print('/usr/sbin/dnsmasq {}'.format(' '.join(dhcp_configuration)))

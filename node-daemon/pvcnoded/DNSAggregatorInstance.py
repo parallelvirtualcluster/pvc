@@ -315,7 +315,7 @@ class AXFRDaemonInstance(object):
         )
 
         # Start the thread
-        self.thread.start() 
+        self.thread.start()
 
     def stop(self):
         self.thread_stopper.set()

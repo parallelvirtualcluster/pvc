@@ -1777,7 +1777,7 @@ def ceph_osd_set(osd_property):
 
     Valid properties are:
 
-      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'set')
@@ -1797,7 +1797,7 @@ def ceph_osd_unset(osd_property):
 
     Valid properties are:
 
-      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds 
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
     retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'unset')
