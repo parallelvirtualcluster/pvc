@@ -381,6 +381,106 @@ def format_vm_vcpus(config, name, vcpus):
     return '\n'.join(output_list)
 
 
+def vm_memory_set(config, vm, memory, restart):
+    """
+    Set the provisioned memory of the VM with topology
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    parsed_xml.memory._setText(str(memory))
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_memory_get(config, vm):
+    """
+    Get the provisioned memory of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a tuple of (memory, (sockets, cores, threads))
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    vm_memory = int(parsed_xml.memory.text)
+
+    return True, vm_memory
+
+
+def format_vm_memory(config, name, memory):
+    """
+    Format the output of a memory value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    memory_length = 6
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{memory: <{memory_length}}{end_bold}'.format(
+            name_length=name_length,
+            memory_length=memory_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            memory='RAM (M)'
+        )
+    )
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{memory: <{memory_length}}{end_bold}'.format(
+            name_length=name_length,
+            memory_length=memory_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name=name,
+            memory=memory
+        )
+    )
+    return '\n'.join(output_list)
+
+
 def view_console_log(config, vm, lines=100):
     """
     Return console log lines from the API (and display them in a pager in the main CLI)

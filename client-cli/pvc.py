@@ -1114,6 +1114,53 @@ def vm_memory():
 
 
 ###############################################################################
+# pvc vm memory get
+###############################################################################
+@click.command(name='get', short_help='Get the current provisioned memory of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw value only without formatting.'
+)
+@cluster_req
+def vm_memory_get(domain, raw):
+    """
+    Get the current provisioned memory of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_memory_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_memory(config, domain, retmsg)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm memory set
+###############################################################################
+@click.command(name='set', short_help='Set the provisioned memory of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'memory'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_memory_set(domain, memory, restart):
+    """
+    Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
+    """
+
+    retcode, retmsg = pvc_vm.vm_memory_set(config, domain, memory, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc vm network
 ###############################################################################
 @click.group(name='network', short_help='Manage attached networks of a virtual machine.', context_settings=CONTEXT_SETTINGS)
@@ -3967,8 +4014,8 @@ cli_node.add_command(node_list)
 vm_vcpu.add_command(vm_vcpu_get)
 vm_vcpu.add_command(vm_vcpu_set)
 
-# vm_memory.add_command(vm_memory_get)
-# vm_memory.add_command(vm_memory_set)
+vm_memory.add_command(vm_memory_get)
+vm_memory.add_command(vm_memory_set)
 
 # vm_network.add_command(vm_network_list)
 # vm_network.add_command(vm_network_add)
