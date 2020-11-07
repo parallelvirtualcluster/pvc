@@ -37,6 +37,8 @@ import pvcapid.libvirt_schema as libvirt_schema
 
 from pvcapid.ova import list_ova
 
+config = None  # Set in this namespace by flaskapi
+
 def strtobool(stringv):
     if stringv is None:
         return False

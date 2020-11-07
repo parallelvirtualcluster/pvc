@@ -28,6 +28,8 @@ from distutils.util import strtobool as dustrtobool
 import daemon_lib.common as pvc_common
 import daemon_lib.ceph as pvc_ceph
 
+config = None  # Set in this namespace by flaskapi
+
 def strtobool(stringv):
     if stringv is None:
         return False

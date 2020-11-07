@@ -36,6 +36,8 @@ import daemon_lib.ceph as pvc_ceph
 
 import pvcapid.provisioner as provisioner
 
+config = None  # Set in this namespace by flaskapi
+
 #
 # Common functions
 #
