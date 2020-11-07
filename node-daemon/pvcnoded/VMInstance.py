@@ -638,7 +638,7 @@ class VMInstance(object):
 
         # Check the current state of the VM
         try:
-            if self.dom != None:
+            if self.dom is not None:
                 running, reason = self.dom.state()
             else:
                 raise
@@ -766,7 +766,7 @@ class VMInstance(object):
         # After everything
         finally:
             # Close the libvirt connection
-            if lv_conn != None:
+            if lv_conn is not None:
                 lv_conn.close()
 
         # Return the dom object (or None)

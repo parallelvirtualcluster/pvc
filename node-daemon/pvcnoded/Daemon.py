@@ -1337,7 +1337,7 @@ def collect_vm_stats(queue):
             memprov += instance.getmemory()
             vcpualloc += instance.getvcpus()
             if instance.getstate() == 'start' and instance.getnode() == this_node.name:
-                if instance.getdom() != None:
+                if instance.getdom() is not None:
                     try:
                         if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
                             raise
