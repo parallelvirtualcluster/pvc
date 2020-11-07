@@ -662,11 +662,11 @@ class VMInstance(object):
 
         # Conditional pass one - Are we already performing an action
         if self.instart is False \
-        and self.inrestart is False \
-        and self.inmigrate is False \
-        and self.inreceive is False \
-        and self.inshutdown is False \
-        and self.instop is False:
+            and self.inrestart is False \
+            and self.inmigrate is False \
+            and self.inreceive is False \
+            and self.inshutdown is False \
+            and self.instop is False:
             # Conditional pass two - Is this VM configured to run on this node
             if self.node == self.this_node.name:
                 # Conditional pass three - Is this VM currently running on this node
