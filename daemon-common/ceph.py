@@ -932,7 +932,7 @@ def clone_volume(zk_conn, pool, name_src, name_new):
         '/ceph/snapshots/{}/{}'.format(pool, name_new): '',
     })
 
-    return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(name, name_new, pool)
+    return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(name_src, name_new, pool)
 
 def resize_volume(zk_conn, pool, name, size):
     if not verifyVolume(zk_conn, pool, name):
