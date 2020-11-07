@@ -418,11 +418,11 @@ def upload_ova(pool, name, ova_size):
 #
 class OVFParser(object):
     RASD_TYPE = {
-        "1":  "vmci",
-        "3":  "vcpus",
-        "4":  "vram",
-        "5":  "ide-controller",
-        "6":  "scsi-controller",
+        "1": "vmci",
+        "3": "vcpus",
+        "4": "vram",
+        "5": "ide-controller",
+        "6": "scsi-controller",
         "10": "ethernet-adapter",
         "15": "cdrom",
         "17": "disk",
