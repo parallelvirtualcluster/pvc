@@ -20,9 +20,6 @@
 #
 ###############################################################################
 
-# Version string for startup output
-version = '0.9.1'
-
 import kazoo.client
 import libvirt
 import sys
@@ -55,6 +52,9 @@ import pvcnoded.VXNetworkInstance as VXNetworkInstance
 import pvcnoded.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.CephInstance as CephInstance
 import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
+
+# Version string for startup output
+version = '0.9.1'
 
 ###############################################################################
 # PVCD - node daemon startup program

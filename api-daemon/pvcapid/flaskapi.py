@@ -36,6 +36,8 @@ import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
 
+from pvcapid.models import *
+
 API_VERSION = 1.0
 
 def strtobool(stringv):
@@ -124,9 +126,6 @@ if config['auth_enabled']:
 
 # Create SQLAlchemy database
 db = SQLAlchemy(app)
-
-# Import database models
-from pvcapid.models import *
 
 # Create Flask blueprint
 blueprint = flask.Blueprint('api', __name__, url_prefix='/api/v1')
