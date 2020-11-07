@@ -787,8 +787,8 @@ def net_add(vni, description, nettype, domain, name_servers,
         dhcp4_flag = bool(strtobool(dhcp4_flag))
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_network(zk_conn, vni, description, nettype, domain, name_servers,
-                                              ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                                              dhcp4_flag, dhcp4_start, dhcp4_end)
+                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                                               dhcp4_flag, dhcp4_start, dhcp4_end)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:
@@ -812,8 +812,8 @@ def net_modify(vni, description, domain, name_servers,
         dhcp4_flag = bool(strtobool(dhcp4_flag))
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.modify_network(zk_conn, vni, description, domain, name_servers,
-                                              ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                                              dhcp4_flag, dhcp4_start, dhcp4_end)
+                                                  ip4_network, ip4_gateway, ip6_network, ip6_gateway,
+                                                  dhcp4_flag, dhcp4_start, dhcp4_end)
     pvc_common.stopZKConnection(zk_conn)
 
     if retflag:

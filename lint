@@ -6,5 +6,4 @@ if ! which flake8 &>/dev/null; then
 fi
 
 flake8 \
-    --exclude=api-daemon/migrations/versions \
-    --exclude=api-daemon/provisioner/examples
+    --exclude=api-daemon/migrations/versions,api-daemon/provisioner/examples
