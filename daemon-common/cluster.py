@@ -116,7 +116,7 @@ def getClusterInformation(zk_conn):
             cluster_health_msg.append("Node '{}' in {},{} state".format(node['name'], daemon_state, domain_state))
         else:
             node_healthy_status[index] = True
-        node_report_status[index] = daemon_state + ',' +  domain_state
+        node_report_status[index] = daemon_state + ',' + domain_state
 
     # Determinations for VM health
     vm_healthy_status = list(range(0, vm_count))

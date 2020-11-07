@@ -35,7 +35,7 @@ class Logger(object):
     fmt_purple = '\033[95m'
     fmt_cyan = '\033[96m'
     fmt_white = '\033[97m'
-    fmt_bold =  '\033[1m'
+    fmt_bold = '\033[1m'
     fmt_end = '\033[0m'
 
     last_colour = ''
