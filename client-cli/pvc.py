@@ -113,7 +113,7 @@ def get_config(store_data, cluster=None):
 def get_store(store_path):
     store_file = '{}/pvc-cli.json'.format(store_path)
     with open(store_file, 'r') as fh:
-       store_data = json.loads(fh.read())
+        store_data = json.loads(fh.read())
     return store_data
 
 def update_store(store_path, store_data):

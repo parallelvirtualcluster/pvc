@@ -42,10 +42,10 @@ def isValidIP(ipaddr):
         for block in ip4_blocks:
             # Check if number is digit, if not checked before calling this function
             if not block.isdigit():
-                 return False
+                return False
             tmp = int(block)
             if 0 > tmp > 255:
-                 return False
+                return False
         return True
     return False
 

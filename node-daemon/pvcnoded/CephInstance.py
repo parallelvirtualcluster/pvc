@@ -219,9 +219,9 @@ def remove_osd(zk_conn, logger, osd_id, osd_obj):
                         osd_string = osd
                 num_pgs = osd_string['num_pgs']
                 if num_pgs > 0:
-                   time.sleep(5)
+                    time.sleep(5)
                 else:
-                   raise
+                    raise
             except Exception:
                 break
 
