@@ -145,7 +145,7 @@ if not os.path.isfile(store_path + '/pvc-cli.json'):
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
 def cleanup(retcode, retmsg):
-    if retcode == True:
+    if retcode is True:
         if retmsg != '':
             click.echo(retmsg)
         exit(0)
@@ -692,7 +692,7 @@ def vm_modify(domain, cfgfile, editor, restart):
     dom_uuid = vm_information.get('uuid')
     dom_name = vm_information.get('name')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         current_vm_cfg_raw = vm_information.get('xml')
         xml_data = etree.fromstring(current_vm_cfg_raw)
@@ -2897,7 +2897,7 @@ def provisioner_userdata_modify(name, filename, editor):
     if editor == False and filename == None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         retcode, retdata = pvc_provisioner.userdata_info(config, name)
         if not retcode:
@@ -3076,7 +3076,7 @@ def provisioner_script_modify(name, filename, editor):
     if editor == False and filename == None:
         cleanup(False, 'Either a file or the "--editor" option must be specified.')
 
-    if editor == True:
+    if editor is True:
         # Grab the current config
         retcode, retdata = pvc_provisioner.script_info(config, name)
         if not retcode:

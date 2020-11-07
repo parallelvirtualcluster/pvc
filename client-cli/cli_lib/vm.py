@@ -340,7 +340,7 @@ def format_info(config, domain_information, long_output):
     ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu']))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu_topology']))
 
-    if long_output == True:
+    if long_output is True:
         # Virtualization information
         ainformation.append('')
         ainformation.append('{}Emulator:{}           {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['emulator']))
@@ -435,7 +435,7 @@ def format_info(config, domain_information, long_output):
     ainformation.append('')
     ainformation.append('{}Networks:{}           {}'.format(ansiprint.purple(), ansiprint.end(), ', '.join(net_list)))
 
-    if long_output == True:
+    if long_output is True:
         # Disk list
         ainformation.append('')
         name_length = 0
