@@ -182,4 +182,3 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
 
     # Return the response object
     return response
-

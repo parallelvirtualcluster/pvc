@@ -6344,4 +6344,3 @@ class API_Provisioner_Status_Element(Resource):
             }
         return response
 api.add_resource(API_Provisioner_Status_Element, '/provisioner/status/<task_id>')
-

@@ -974,4 +974,3 @@ def format_list(zk_conn, vm_list, raw):
     click.echo('\n'.join(sorted(vm_list_output)))
 
     return True, ''
-

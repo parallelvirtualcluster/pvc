@@ -938,4 +938,3 @@ def format_list_acl(acl_list):
         )
 
     click.echo('\n'.join(sorted(acl_list_output)))
-

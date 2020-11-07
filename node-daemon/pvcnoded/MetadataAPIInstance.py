@@ -188,4 +188,3 @@ class MetadataAPIInstance(object):
                 pass
 
         return vm_details
-

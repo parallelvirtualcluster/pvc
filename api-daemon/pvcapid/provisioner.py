@@ -1629,4 +1629,3 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
 
     pvc_common.stopZKConnection(zk_conn)
     return {'status': 'VM "{}" with profile "{}" has been provisioned and started successfully'.format(vm_name, vm_profile), 'current': 10, 'total': 10}
-

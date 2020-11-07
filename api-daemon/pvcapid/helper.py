@@ -1564,4 +1564,3 @@ def ceph_volume_snapshot_remove(pool, volume, name):
         'message': retdata.replace('\"', '\'')
     }
     return output, retcode
-
