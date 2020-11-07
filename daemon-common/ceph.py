@@ -27,7 +27,6 @@ import time
 import math
 
 import daemon_lib.vm as vm
-import daemon_lib.ansiprint as ansiprint
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 
@@ -203,26 +202,6 @@ def getOSDInformation(zk_conn, osd_id):
         'stats': osd_stats
     }
     return osd_information
-
-
-def getOutputColoursOSD(osd_information):
-    # Set the UP status
-    if osd_information['stats']['up'] == 1:
-        osd_up_flag = 'Yes'
-        osd_up_colour = ansiprint.green()
-    else:
-        osd_up_flag = 'No'
-        osd_up_colour = ansiprint.red()
-
-    # Set the IN status
-    if osd_information['stats']['in'] == 1:
-        osd_in_flag = 'Yes'
-        osd_in_colour = ansiprint.green()
-    else:
-        osd_in_flag = 'No'
-        osd_in_colour = ansiprint.red()
-
-    return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
 
 
 # OSD addition and removal uses the /cmd/ceph pipe
