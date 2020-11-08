@@ -39,7 +39,7 @@ mv ${readme_tmpdir}/index.md docs/index.md
 rm -r ${readme_tmpdir}
 
 deb_changelog_orig="$( cat debian/changelog )"
-deb_changelog_new="pvc (${new_version}-0) unstable urgency=high\n\n${changelog}\n\n -- $( git config --get user.name ) <$( git config --get user.email )>  $( date --rfc-email )\n"
+deb_changelog_new="pvc (${new_version}-0) unstable; urgency=high\n\n${changelog}\n\n -- $( git config --get user.name ) <$( git config --get user.email )>  $( date --rfc-email )\n"
 
 deb_changelog_file=$( mktemp )
 echo -e "${deb_changelog_new}" >> ${deb_changelog_file}
