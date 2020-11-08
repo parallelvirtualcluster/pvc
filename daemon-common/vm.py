@@ -285,7 +285,7 @@ def modify_vm(zk_conn, domain, restart, new_vm_config):
         zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'restart'})
         lock.release()
 
-    return True, ''
+    return True, 'Successfully modified configuration of VM "{}".'.format(domain)
 
 
 def dump_vm(zk_conn, domain):

@@ -254,6 +254,709 @@ def vm_locks(config, vm):
     return retstatus, response.json().get('message', '')
 
 
+def vm_vcpus_set(config, vm, vcpus, topology, restart):
+    """
+    Set the vCPU count of the VM with topology
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    parsed_xml.vcpu._setText(str(vcpus))
+    parsed_xml.cpu.topology.set('sockets', str(topology[0]))
+    parsed_xml.cpu.topology.set('cores', str(topology[1]))
+    parsed_xml.cpu.topology.set('threads', str(topology[2]))
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_vcpus_get(config, vm):
+    """
+    Get the vCPU count of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a tuple of (vcpus, (sockets, cores, threads))
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    vm_vcpus = int(parsed_xml.vcpu.text)
+    vm_sockets = parsed_xml.cpu.topology.attrib.get('sockets')
+    vm_cores = parsed_xml.cpu.topology.attrib.get('cores')
+    vm_threads = parsed_xml.cpu.topology.attrib.get('threads')
+
+    return True, (vm_vcpus, (vm_sockets, vm_cores, vm_threads))
+
+
+def format_vm_vcpus(config, name, vcpus):
+    """
+    Format the output of a vCPU value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    vcpus_length = 6
+    sockets_length = 8
+    cores_length = 6
+    threads_length = 8
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vcpus: <{vcpus_length}}   \
+{sockets: <{sockets_length}} \
+{cores: <{cores_length}} \
+{threads: <{threads_length}}{end_bold}'.format(
+            name_length=name_length,
+            vcpus_length=vcpus_length,
+            sockets_length=sockets_length,
+            cores_length=cores_length,
+            threads_length=threads_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            vcpus='vCPUs',
+            sockets='Sockets',
+            cores='Cores',
+            threads='Threads'
+        )
+    )
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vcpus: <{vcpus_length}}   \
+{sockets: <{sockets_length}} \
+{cores: <{cores_length}} \
+{threads: <{threads_length}}{end_bold}'.format(
+            name_length=name_length,
+            vcpus_length=vcpus_length,
+            sockets_length=sockets_length,
+            cores_length=cores_length,
+            threads_length=threads_length,
+            bold='',
+            end_bold='',
+            name=name,
+            vcpus=vcpus[0],
+            sockets=vcpus[1][0],
+            cores=vcpus[1][1],
+            threads=vcpus[1][2]
+        )
+    )
+    return '\n'.join(output_list)
+
+
+def vm_memory_set(config, vm, memory, restart):
+    """
+    Set the provisioned memory of the VM with topology
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    parsed_xml.memory._setText(str(memory))
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_memory_get(config, vm):
+    """
+    Get the provisioned memory of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns an integer memory value.
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    vm_memory = int(parsed_xml.memory.text)
+
+    return True, vm_memory
+
+
+def format_vm_memory(config, name, memory):
+    """
+    Format the output of a memory value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    memory_length = 6
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{memory: <{memory_length}}{end_bold}'.format(
+            name_length=name_length,
+            memory_length=memory_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            memory='RAM (M)'
+        )
+    )
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{memory: <{memory_length}}{end_bold}'.format(
+            name_length=name_length,
+            memory_length=memory_length,
+            bold='',
+            end_bold='',
+            name=name,
+            memory=memory
+        )
+    )
+    return '\n'.join(output_list)
+
+
+def vm_networks_add(config, vm, network, macaddr, model, restart):
+    """
+    Add a new network to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+    from random import randint
+    import cli_lib.network as pvc_network
+
+    # Verify that the provided network is valid
+    retcode, retdata = pvc_network.net_info(config, network)
+    if not retcode:
+        # Ignore the three special networks
+        if network not in ['upstream', 'cluster', 'storage']:
+            return False, "Network {} is not present in the cluster.".format(network)
+
+    if network in ['upstream', 'cluster', 'storage']:
+        br_prefix = 'br'
+    else:
+        br_prefix = 'vmbr'
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    if macaddr is None:
+        mac_prefix = '52:54:00'
+        random_octet_A = '{:x}'.format(randint(16, 238))
+        random_octet_B = '{:x}'.format(randint(16, 238))
+        random_octet_C = '{:x}'.format(randint(16, 238))
+        macaddr = '{prefix}:{octetA}:{octetB}:{octetC}'.format(
+            prefix=mac_prefix,
+            octetA=random_octet_A,
+            octetB=random_octet_B,
+            octetC=random_octet_C
+        )
+
+    device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
+        macaddr=macaddr,
+        bridge="{}{}".format(br_prefix, network),
+        model=model
+    )
+    device_xml = fromstring(device_string)
+
+    last_interface = None
+    for interface in parsed_xml.devices.find('interface'):
+        last_interface = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+        if last_interface == network:
+            return False, 'Network {} is already configured for VM {}.'.format(network, vm)
+    if last_interface is not None:
+        for interface in parsed_xml.devices.find('interface'):
+            if last_interface == re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1):
+                interface.addnext(device_xml)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_networks_remove(config, vm, network, restart):
+    """
+    Remove a network to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    for interface in parsed_xml.devices.find('interface'):
+        if_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+        if network == if_vni:
+            interface.getparent().remove(interface)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_networks_get(config, vm):
+    """
+    Get the networks of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a list of tuples of (network_vni, mac_address, model)
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    network_data = list()
+    for interface in parsed_xml.devices.find('interface'):
+        mac_address = interface.mac.attrib.get('address')
+        model = interface.model.attrib.get('type')
+        network = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+        network_data.append((network, mac_address, model))
+
+    return True, network_data
+
+
+def format_vm_networks(config, name, networks):
+    """
+    Format the output of a network list in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    vni_length = 8
+    macaddr_length = 12
+    model_length = 6
+
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    for network in networks:
+        _vni_length = len(network[0]) + 1
+        if _vni_length > vni_length:
+            vni_length = _vni_length
+
+        _macaddr_length = len(network[1]) + 1
+        if _macaddr_length > macaddr_length:
+            macaddr_length = _macaddr_length
+
+        _model_length = len(network[2]) + 1
+        if _model_length > model_length:
+            model_length = _model_length
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vni: <{vni_length}} \
+{macaddr: <{macaddr_length}} \
+{model: <{model_length}}{end_bold}'.format(
+            name_length=name_length,
+            vni_length=vni_length,
+            macaddr_length=macaddr_length,
+            model_length=model_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            vni='Network',
+            macaddr='MAC Address',
+            model='Model'
+        )
+    )
+    count = 0
+    for network in networks:
+        if count > 0:
+            name = ''
+        count += 1
+        output_list.append(
+            '{bold}{name: <{name_length}}  \
+{vni: <{vni_length}} \
+{macaddr: <{macaddr_length}} \
+{model: <{model_length}}{end_bold}'.format(
+                name_length=name_length,
+                vni_length=vni_length,
+                macaddr_length=macaddr_length,
+                model_length=model_length,
+                bold='',
+                end_bold='',
+                name=name,
+                vni=network[0],
+                macaddr=network[1],
+                model=network[2]
+            )
+        )
+    return '\n'.join(output_list)
+
+
+def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
+    """
+    Add a new volume to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+    from copy import deepcopy
+    import cli_lib.ceph as pvc_ceph
+
+    if disk_type == 'rbd':
+        # Verify that the provided volume is valid
+        vpool = volume.split('/')[0]
+        vname = volume.split('/')[1]
+        retcode, retdata = pvc_ceph.ceph_volume_info(config, vpool, vname)
+        if not retcode:
+            return False, "Volume {} is not present in the cluster.".format(volume)
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    last_disk = None
+    id_list = list()
+    for disk in parsed_xml.devices.find('disk'):
+        id_list.append(disk.target.attrib.get('dev'))
+        if disk.source.attrib.get('protocol') == disk_type:
+            if disk_type == 'rbd':
+                last_disk = disk.source.attrib.get('name')
+            elif disk_type == 'file':
+                last_disk = disk.source.attrib.get('file')
+            if last_disk == volume:
+                return False, 'Volume {} is already configured for VM {}.'.format(volume, vm)
+            last_disk_details = deepcopy(disk)
+
+    if disk_id is not None:
+        if disk_id in id_list:
+            return False, 'Manually specified disk ID {} is already in use for VM {}.'.format(disk_id, vm)
+    else:
+        # Find the next free disk ID
+        first_dev_prefix = id_list[0][0:-1]
+
+        for char in range(ord('a'), ord('z')):
+            char = chr(char)
+            next_id = "{}{}".format(first_dev_prefix, char)
+            if next_id not in id_list:
+                break
+            else:
+                next_id = None
+        if next_id is None:
+            return False, 'Failed to find a valid disk_id and none specified; too many disks for VM {}?'.format(vm)
+        disk_id = next_id
+
+    if last_disk is None:
+        if disk_type == 'rbd':
+            # RBD volumes need an example to be based on
+            return False, "There are no existing RBD volumes attached to this VM. Autoconfiguration failed; use the 'vm modify' command to manually configure this volume with the required details for authentication, hosts, etc.."
+        elif disk_type == 'file':
+            # File types can be added ad-hoc
+            disk_template = '<disk type="file" device="disk"><driver name="qemu" type="raw"/><source file="{source}"/><target dev="{dev}" bus="{bus}"/></disk>'.format(
+                source=volume,
+                dev=disk_id,
+                bus=bus
+            )
+            last_disk_details = fromstring(disk_template)
+
+    new_disk_details = last_disk_details
+    new_disk_details.target.set('dev', disk_id)
+    new_disk_details.target.set('bus', bus)
+    if disk_type == 'rbd':
+        new_disk_details.source.set('name', volume)
+    elif disk_type == 'file':
+        new_disk_details.source.set('file', volume)
+
+    for disk in parsed_xml.devices.find('disk'):
+        last_disk = disk
+    last_disk.addnext(new_disk_details)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_volumes_remove(config, vm, volume, restart):
+    """
+    Remove a volume to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    for disk in parsed_xml.devices.find('disk'):
+        disk_name = disk.source.attrib.get('name')
+        if not disk_name:
+            disk_name = disk.source.attrib.get('file')
+        if volume == disk_name:
+            disk.getparent().remove(disk)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_volumes_get(config, vm):
+    """
+    Get the volumes of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a list of tuples of (volume, disk_id, type, bus)
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    volume_data = list()
+    for disk in parsed_xml.devices.find('disk'):
+        protocol = disk.attrib.get('type')
+        disk_id = disk.target.attrib.get('dev')
+        bus = disk.target.attrib.get('bus')
+        if protocol == 'network':
+            protocol = disk.source.attrib.get('protocol')
+            source = disk.source.attrib.get('name')
+        elif protocol == 'file':
+            protocol = 'file'
+            source = disk.source.attrib.get('file')
+        else:
+            protocol = 'unknown'
+            source = 'unknown'
+
+        volume_data.append((source, disk_id, protocol, bus))
+
+    return True, volume_data
+
+
+def format_vm_volumes(config, name, volumes):
+    """
+    Format the output of a volume value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    volume_length = 7
+    disk_id_length = 4
+    protocol_length = 5
+    bus_length = 4
+
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    for volume in volumes:
+        _volume_length = len(volume[0]) + 1
+        if _volume_length > volume_length:
+            volume_length = _volume_length
+
+        _disk_id_length = len(volume[1]) + 1
+        if _disk_id_length > disk_id_length:
+            disk_id_length = _disk_id_length
+
+        _protocol_length = len(volume[2]) + 1
+        if _protocol_length > protocol_length:
+            protocol_length = _protocol_length
+
+        _bus_length = len(volume[3]) + 1
+        if _bus_length > bus_length:
+            bus_length = _bus_length
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{volume: <{volume_length}} \
+{disk_id: <{disk_id_length}} \
+{protocol: <{protocol_length}} \
+{bus: <{bus_length}}{end_bold}'.format(
+            name_length=name_length,
+            volume_length=volume_length,
+            disk_id_length=disk_id_length,
+            protocol_length=protocol_length,
+            bus_length=bus_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            volume='Volume',
+            disk_id='Dev',
+            protocol='Type',
+            bus='Bus'
+        )
+    )
+    count = 0
+    for volume in volumes:
+        if count > 0:
+            name = ''
+        count += 1
+        output_list.append(
+            '{bold}{name: <{name_length}}  \
+{volume: <{volume_length}} \
+{disk_id: <{disk_id_length}} \
+{protocol: <{protocol_length}} \
+{bus: <{bus_length}}{end_bold}'.format(
+                name_length=name_length,
+                volume_length=volume_length,
+                disk_id_length=disk_id_length,
+                protocol_length=protocol_length,
+                bus_length=bus_length,
+                bold='',
+                end_bold='',
+                name=name,
+                volume=volume[0],
+                disk_id=volume[1],
+                protocol=volume[2],
+                bus=volume[3]
+            )
+        )
+    return '\n'.join(output_list)
+
+
 def view_console_log(config, vm, lines=100):
     """
     Return console log lines from the API (and display them in a pager in the main CLI)
@@ -484,7 +1187,7 @@ def format_info(config, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for controller in domain_information['controllers']:
-            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], controller['model']))
+            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], str(controller['model'])))
 
     # Join it all together
     ainformation.append('')

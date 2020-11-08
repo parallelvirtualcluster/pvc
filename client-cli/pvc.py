@@ -1026,6 +1026,343 @@ def vm_flush_locks(domain):
 
 
 ###############################################################################
+# pvc vm vcpu
+###############################################################################
+@click.group(name='vcpu', short_help='Manage vCPU counts of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+def vm_vcpu():
+    """
+    Manage the vCPU counts of a virtual machine in the PVC cluster."
+    """
+    pass
+
+
+###############################################################################
+# pvc vm vcpu get
+###############################################################################
+@click.command(name='get', short_help='Get the current vCPU count of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw value only without formatting.'
+)
+@cluster_req
+def vm_vcpu_get(domain, raw):
+    """
+    Get the current vCPU count of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_vcpus_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_vcpus(config, domain, retmsg)
+    else:
+        retmsg = retmsg[0]  # Get only the first part of the tuple (vm_vcpus)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm vcpu set
+###############################################################################
+@click.command(name='set', short_help='Set the vCPU count of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vcpus'
+)
+@click.option(
+    '-t', '--topology', 'topology', default=None,
+    help='Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_vcpu_set(domain, vcpus, topology, restart):
+    """
+    Set the vCPU count of the virtual machine DOMAIN to VCPUS.
+
+    By default, the topology of the vCPus is 1 socket, VCPUS cores per socket, 1 thread per core.
+    """
+
+    if topology is not None:
+        try:
+            sockets, cores, threads = topology.split(',')
+            if sockets * cores * threads != vcpus:
+                raise
+        except Exception:
+            cleanup(False, "The topology specified is not valid.")
+        topology = (sockets, cores, threads)
+    else:
+        topology = (1, vcpus, 1)
+
+    retcode, retmsg = pvc_vm.vm_vcpus_set(config, domain, vcpus, topology, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm memory
+###############################################################################
+@click.group(name='memory', short_help='Manage provisioned memory of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+def vm_memory():
+    """
+    Manage the provisioned memory of a virtual machine in the PVC cluster."
+    """
+    pass
+
+
+###############################################################################
+# pvc vm memory get
+###############################################################################
+@click.command(name='get', short_help='Get the current provisioned memory of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw value only without formatting.'
+)
+@cluster_req
+def vm_memory_get(domain, raw):
+    """
+    Get the current provisioned memory of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_memory_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_memory(config, domain, retmsg)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm memory set
+###############################################################################
+@click.command(name='set', short_help='Set the provisioned memory of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'memory'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_memory_set(domain, memory, restart):
+    """
+    Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
+    """
+
+    retcode, retmsg = pvc_vm.vm_memory_set(config, domain, memory, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm network
+###############################################################################
+@click.group(name='network', short_help='Manage attached networks of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+def vm_network():
+    """
+    Manage the attached networks of a virtual machine in the PVC cluster.
+
+    Network details cannot be modified here. To modify a network, first remove it, then readd it with the correct settings. Unless the '-r'/'--reboot' flag is provided, this will not affect the running VM until it is restarted.
+    """
+    pass
+
+
+###############################################################################
+# pvc vm network get
+###############################################################################
+@click.command(name='get', short_help='Get the networks of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw values only without formatting.'
+)
+@cluster_req
+def vm_network_get(domain, raw):
+    """
+    Get the networks of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc_vm.vm_networks_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_networks(config, domain, retdata)
+    else:
+        network_vnis = list()
+        for network in retdata:
+            network_vnis.append(network[0])
+        retmsg = ','.join(network_vnis)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm network add
+###############################################################################
+@click.command(name='add', short_help='Add network to a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-a', '--macaddr', 'macaddr', default=None,
+    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-deliniated format.'
+)
+@click.option(
+    '-m', '--model', 'model', default='virtio',
+    help='The model for the interface; must be a valid libvirt model.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_network_add(domain, vni, macaddr, model, restart):
+    """
+    Add the network VNI to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+    """
+
+    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm network remove
+###############################################################################
+@click.command(name='remove', short_help='Remove network from a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_network_remove(domain, vni, restart):
+    """
+    Remove the network VNI to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm volume
+###############################################################################
+@click.group(name='volume', short_help='Manage attached volumes of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+def vm_volume():
+    """
+    Manage the attached volumes of a virtual machine in the PVC cluster.
+
+    Volume details cannot be modified here. To modify a volume, first remove it, then readd it with the correct settings. Unless the '-r'/'--reboot' flag is provided, this will not affect the running VM until it is restarted.
+    """
+    pass
+
+
+###############################################################################
+# pvc vm volume get
+###############################################################################
+@click.command(name='get', short_help='Get the volumes of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw values only without formatting.'
+)
+@cluster_req
+def vm_volume_get(domain, raw):
+    """
+    Get the volumes of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc_vm.vm_volumes_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_volumes(config, domain, retdata)
+    else:
+        volume_paths = list()
+        for volume in retdata:
+            volume_paths.append("{}:{}".format(volume[2], volume[0]))
+        retmsg = ','.join(volume_paths)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm volume add
+###############################################################################
+@click.command(name='add', short_help='Add volume to a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'volume'
+)
+@click.option(
+    '-d', '--disk-id', 'disk_id', default=None,
+    help='The disk ID in sdX/vdX/hdX format; if not specified, the next available will be used.'
+)
+@click.option(
+    '-b', '--bus', 'bus', default='scsi', show_default=True,
+    type=click.Choice(['scsi', 'ide', 'usb', 'virtio']),
+    help='The bus to attach the disk to; must be present in the VM.'
+)
+@click.option(
+    '-t', '--type', 'disk_type', default='rbd', show_default=True,
+    type=click.Choice(['rbd', 'file']),
+    help='The type of volume to add.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart):
+    """
+    Add the volume VOLUME to the virtual machine DOMAIN.
+
+    VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
+    """
+
+    retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm volume remove
+###############################################################################
+@click.command(name='remove', short_help='Remove volume from a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_volume_remove(domain, vni, restart):
+    """
+    Remove the volume VNI to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc vm log
 ###############################################################################
 @click.command(name='log', short_help='Show console logs of a VM object.')
@@ -3832,6 +4169,20 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
+vm_vcpu.add_command(vm_vcpu_get)
+vm_vcpu.add_command(vm_vcpu_set)
+
+vm_memory.add_command(vm_memory_get)
+vm_memory.add_command(vm_memory_set)
+
+vm_network.add_command(vm_network_get)
+vm_network.add_command(vm_network_add)
+vm_network.add_command(vm_network_remove)
+
+vm_volume.add_command(vm_volume_get)
+vm_volume.add_command(vm_volume_add)
+vm_volume.add_command(vm_volume_remove)
+
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_meta)
 cli_vm.add_command(vm_modify)
@@ -3847,6 +4198,10 @@ cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
 cli_vm.add_command(vm_flush_locks)
+cli_vm.add_command(vm_vcpu)
+cli_vm.add_command(vm_memory)
+cli_vm.add_command(vm_network)
+cli_vm.add_command(vm_volume)
 cli_vm.add_command(vm_info)
 cli_vm.add_command(vm_log)
 cli_vm.add_command(vm_list)

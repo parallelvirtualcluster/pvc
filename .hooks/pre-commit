@@ -5,6 +5,7 @@ pushd $( git rev-parse --show-toplevel ) &>/dev/null
 ex=0
 
 # Linting
+echo -n "Linting... "
 ./lint
 if [[ $? -ne 0 ]]; then
     echo "Aborting commit due to linting errors."

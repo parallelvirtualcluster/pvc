@@ -119,7 +119,7 @@ devices_disk_footer = """      </source>
 
 # vhostmd virtualization passthrough device
 devices_vhostmd = """    <disk type='file' device='disk'>
-      <drive name='qemu' type='raw'/>
+      <driver name='qemu' type='raw'/>
       <source file='/dev/shm/vhostmd0'/>
       <target dev='sdz' bus='usb'/>
       <readonly/>
