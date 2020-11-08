@@ -19,6 +19,13 @@ To get started with PVC, read the [Cluster Architecture document](https://parall
 
 ## Changelog
 
+#### v0.9.2
+
+  * Major linting of the codebase with flake8; adds linting tools
+  * Implements CLI-based modification of VM vCPUs, memory, networks, and disks without directly editing XML
+  * Fixes bug where `pvc vm log -f` would show all 1000 lines before starting
+  * Fixes bug in default provisioner libvirt schema (`drive` -> `driver` typo)
+
 #### v0.9.1
 
   * Added per-VM migration method feature
