@@ -369,8 +369,8 @@ def format_vm_vcpus(config, name, vcpus):
             sockets_length=sockets_length,
             cores_length=cores_length,
             threads_length=threads_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
+            bold='',
+            end_bold='',
             name=name,
             vcpus=vcpus[0],
             sockets=vcpus[1][0],
@@ -472,12 +472,213 @@ def format_vm_memory(config, name, memory):
 {memory: <{memory_length}}{end_bold}'.format(
             name_length=name_length,
             memory_length=memory_length,
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
+            bold='',
+            end_bold='',
             name=name,
             memory=memory
         )
     )
+    return '\n'.join(output_list)
+
+
+def vm_networks_add(config, vm, network, macaddr, model, restart):
+    """
+    Add a new network to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+    from random import randint
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    if macaddr is None:
+        mac_prefix = '52:54:00'
+        random_octet_A = '{:x}'.format(randint(16, 238))
+        random_octet_B = '{:x}'.format(randint(16, 238))
+        random_octet_C = '{:x}'.format(randint(16, 238))
+        macaddr = '{prefix}:{octetA}:{octetB}:{octetC}'.format(
+            prefix=mac_prefix,
+            octetA=random_octet_A,
+            octetB=random_octet_B,
+            octetC=random_octet_C
+        )
+
+    device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
+        macaddr=macaddr,
+        bridge="vmbr{}".format(network),
+        model=model
+    )
+    device_xml = fromstring(device_string)
+
+    last_interface = None
+    for interface in parsed_xml.devices.find('interface'):
+        last_interface = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        if last_interface == network:
+            return False, 'Network {} is already configured for VM {}.'.format(network, vm)
+    if last_interface is not None:
+        for interface in parsed_xml.devices.find('interface'):
+            if last_interface == re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1):
+                interface.addnext(device_xml)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_networks_remove(config, vm, network, restart):
+    """
+    Remove a network to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    for interface in parsed_xml.devices.find('interface'):
+        if_vni = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        if network == if_vni:
+            interface.getparent().remove(interface)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_networks_get(config, vm):
+    """
+    Get the networks of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a tuple of (network, (sockets, cores, threads))
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    network_data = list()
+    for interface in parsed_xml.devices.find('interface'):
+        mac_address = interface.mac.attrib.get('address')
+        model = interface.model.attrib.get('type')
+        network = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        network_data.append((network, mac_address, model))
+
+    return True, network_data
+
+
+def format_vm_networks(config, name, networks):
+    """
+    Format the output of a network value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    for network in networks:
+        vni_length = 8
+        _vni_length = len(network[0]) + 1
+        if _vni_length > vni_length:
+            vni_length = _vni_length
+
+        macaddr_length = 12
+        _macaddr_length = len(network[1]) + 1
+        if _macaddr_length > macaddr_length:
+            macaddr_length = _macaddr_length
+
+        model_length = 6
+        _model_length = len(network[2]) + 1
+        if _model_length > model_length:
+            model_length = _model_length
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{vni: <{vni_length}} \
+{macaddr: <{macaddr_length}} \
+{model: <{model_length}}{end_bold}'.format(
+            name_length=name_length,
+            vni_length=vni_length,
+            macaddr_length=macaddr_length,
+            model_length=model_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            vni='Network',
+            macaddr='MAC Address',
+            model='Model'
+        )
+    )
+    count = 0
+    for network in networks:
+        if count > 0:
+            name = ''
+        count += 1
+        output_list.append(
+            '{bold}{name: <{name_length}}  \
+{vni: <{vni_length}} \
+{macaddr: <{macaddr_length}} \
+{model: <{model_length}}{end_bold}'.format(
+                name_length=name_length,
+                vni_length=vni_length,
+                macaddr_length=macaddr_length,
+                model_length=model_length,
+                bold='',
+                end_bold='',
+                name=name,
+                vni=network[0],
+                macaddr=network[1],
+                model=network[2]
+            )
+        )
     return '\n'.join(output_list)
 
 

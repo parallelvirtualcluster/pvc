@@ -1166,9 +1166,93 @@ def vm_memory_set(domain, memory, restart):
 @click.group(name='network', short_help='Manage attached networks of a virtual machine.', context_settings=CONTEXT_SETTINGS)
 def vm_network():
     """
-    Manage the attached networks of a virtual machine in the PVC cluster."
+    Manage the attached networks of a virtual machine in the PVC cluster.
     """
     pass
+
+
+###############################################################################
+# pvc vm network get
+###############################################################################
+@click.command(name='get', short_help='Get the networks of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw values only without formatting.'
+)
+@cluster_req
+def vm_network_get(domain, raw):
+    """
+    Get the networks of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc_vm.vm_networks_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_networks(config, domain, retdata)
+    else:
+        network_vnis = list()
+        for network in retdata:
+            network_vnis.append(network[0])
+        retmsg = ','.join(network_vnis)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm network add
+###############################################################################
+@click.command(name='add', short_help='Add network to a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-a', '--macaddr', 'macaddr', default=None,
+    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-deliniated format.'
+)
+@click.option(
+    '-m', '--model', 'model', default='virtio',
+    help='The model for the interface; must be a valid libvirt model.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_network_add(domain, vni, macaddr, model, restart):
+    """
+    Add the network VNI to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+    """
+
+    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm network remove
+###############################################################################
+@click.command(name='remove', short_help='Remove network from a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_network_remove(domain, vni, restart):
+    """
+    Remove the network VNI to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
+    cleanup(retcode, retmsg)
 
 
 ###############################################################################
@@ -3995,10 +4079,9 @@ vm_vcpu.add_command(vm_vcpu_set)
 vm_memory.add_command(vm_memory_get)
 vm_memory.add_command(vm_memory_set)
 
-# vm_network.add_command(vm_network_list)
-# vm_network.add_command(vm_network_add)
-# vm_network.add_command(vm_network_modify)
-# vm_network_add_command(vm_network_remove)
+vm_network.add_command(vm_network_get)
+vm_network.add_command(vm_network_add)
+vm_network.add_command(vm_network_remove)
 
 # vm_volume.add_command(vm_volume_list)
 # vm_volume.add_command(vm_volume_add)
