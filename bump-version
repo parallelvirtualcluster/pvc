@@ -52,7 +52,7 @@ git commit -v
 echo
 echo "GitLab release message:"
 echo
-echo "Release ${new_version}"
+echo "# Parallel Virtual Cluster version ${new_version}"
 echo
 echo -e "${changelog}" | sed 's/^  \*/*/'
 echo
