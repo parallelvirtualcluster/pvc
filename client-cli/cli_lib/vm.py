@@ -492,6 +492,19 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from random import randint
+    import cli_lib.network as pvc_network
+
+    # Verify that the provided network is valid
+    retcode, retdata = pvc_network.net_info(config, network)
+    if not retcode:
+        # Ignore the three special networks
+        if network not in ['upstream', 'cluster', 'storage']:
+            return False, "Network {} is not present in the cluster.".format(network)
+
+    if network in ['upstream', 'cluster', 'storage']:
+        br_prefix = 'br'
+    else:
+        br_prefix = 'vmbr'
 
     status, domain_information = vm_info(config, vm)
     if not status:
@@ -520,19 +533,19 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
 
     device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
         macaddr=macaddr,
-        bridge="vmbr{}".format(network),
+        bridge="{}{}".format(br_prefix, network),
         model=model
     )
     device_xml = fromstring(device_string)
 
     last_interface = None
     for interface in parsed_xml.devices.find('interface'):
-        last_interface = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        last_interface = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
         if last_interface == network:
             return False, 'Network {} is already configured for VM {}.'.format(network, vm)
     if last_interface is not None:
         for interface in parsed_xml.devices.find('interface'):
-            if last_interface == re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1):
+            if last_interface == re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1):
                 interface.addnext(device_xml)
 
     try:
@@ -568,7 +581,7 @@ def vm_networks_remove(config, vm, network, restart):
         return False, 'ERROR: Failed to parse XML data.'
 
     for interface in parsed_xml.devices.find('interface'):
-        if_vni = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        if_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
         if network == if_vni:
             interface.getparent().remove(interface)
 
@@ -607,7 +620,7 @@ def vm_networks_get(config, vm):
     for interface in parsed_xml.devices.find('interface'):
         mac_address = interface.mac.attrib.get('address')
         model = interface.model.attrib.get('type')
-        network = re.match(r'vmbr([0-9]+)', interface.source.attrib.get('bridge')).group(1)
+        network = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
         network_data.append((network, mac_address, model))
 
     return True, network_data
