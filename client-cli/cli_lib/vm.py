@@ -421,7 +421,7 @@ def vm_memory_get(config, vm):
 
     Calls vm_info to get VM XML.
 
-    Returns a tuple of (memory, (sockets, cores, threads))
+    Returns an integer memory value.
     """
     from lxml.objectify import fromstring
 
@@ -599,7 +599,7 @@ def vm_networks_get(config, vm):
 
     Calls vm_info to get VM XML.
 
-    Returns a tuple of (network, (sockets, cores, threads))
+    Returns a list of tuples of (network_vni, mac_address, model)
     """
     from lxml.objectify import fromstring
 
@@ -628,7 +628,7 @@ def vm_networks_get(config, vm):
 
 def format_vm_networks(config, name, networks):
     """
-    Format the output of a network value in a nice table
+    Format the output of a network list in a nice table
     """
     output_list = []
 
