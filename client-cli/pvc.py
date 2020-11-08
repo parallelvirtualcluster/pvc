@@ -1167,6 +1167,8 @@ def vm_memory_set(domain, memory, restart):
 def vm_network():
     """
     Manage the attached networks of a virtual machine in the PVC cluster.
+
+    Network details cannot be modified here. To modify a network, first remove it, then readd it with the correct settings. Unless the '-r'/'--reboot' flag is provided, this will not affect the running VM until it is restarted.
     """
     pass
 
@@ -1261,9 +1263,103 @@ def vm_network_remove(domain, vni, restart):
 @click.group(name='volume', short_help='Manage attached volumes of a virtual machine.', context_settings=CONTEXT_SETTINGS)
 def vm_volume():
     """
-    Manage the attached volumes of a virtual machine in the PVC cluster."
+    Manage the attached volumes of a virtual machine in the PVC cluster.
+
+    Volume details cannot be modified here. To modify a volume, first remove it, then readd it with the correct settings. Unless the '-r'/'--reboot' flag is provided, this will not affect the running VM until it is restarted.
     """
     pass
+
+
+###############################################################################
+# pvc vm volume get
+###############################################################################
+@click.command(name='get', short_help='Get the volumes of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw values only without formatting.'
+)
+@cluster_req
+def vm_volume_get(domain, raw):
+    """
+    Get the volumes of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc_vm.vm_volumes_get(config, domain)
+    if not raw:
+        retmsg = pvc_vm.format_vm_volumes(config, domain, retdata)
+    else:
+        volume_paths = list()
+        for volume in retdata:
+            volume_paths.append("{}:{}".format(volume[2], volume[0]))
+        retmsg = ','.join(volume_paths)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm volume add
+###############################################################################
+@click.command(name='add', short_help='Add volume to a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'volume'
+)
+@click.option(
+    '-d', '--disk-id', 'disk_id', default=None,
+    help='The disk ID in sdX/vdX/hdX format; if not specified, the next available will be used.'
+)
+@click.option(
+    '-b', '--bus', 'bus', default='scsi', show_default=True,
+    type=click.Choice(['scsi', 'ide', 'usb', 'virtio']),
+    help='The bus to attach the disk to; must be present in the VM.'
+)
+@click.option(
+    '-t', '--type', 'disk_type', default='rbd', show_default=True,
+    type=click.Choice(['rbd', 'file']),
+    help='The type of volume to add.'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart):
+    """
+    Add the volume VOLUME to the virtual machine DOMAIN.
+
+    VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
+    """
+
+    retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, restart)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm volume remove
+###############################################################################
+@click.command(name='remove', short_help='Remove volume from a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'vni'
+)
+@click.option(
+    '-r', '--restart', 'restart', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config.'
+)
+@cluster_req
+def vm_volume_remove(domain, vni, restart):
+    """
+    Remove the volume VNI to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
+    cleanup(retcode, retmsg)
 
 
 ###############################################################################
@@ -4083,10 +4179,9 @@ vm_network.add_command(vm_network_get)
 vm_network.add_command(vm_network_add)
 vm_network.add_command(vm_network_remove)
 
-# vm_volume.add_command(vm_volume_list)
-# vm_volume.add_command(vm_volume_add)
-# vm_volume.add_command(vm_volume_modify)
-# vm_volume_add_command(vm_volume_remove)
+vm_volume.add_command(vm_volume_get)
+vm_volume.add_command(vm_volume_add)
+vm_volume.add_command(vm_volume_remove)
 
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_meta)

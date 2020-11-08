@@ -633,22 +633,23 @@ def format_vm_networks(config, name, networks):
     output_list = []
 
     name_length = 5
+    vni_length = 8
+    macaddr_length = 12
+    model_length = 6
+
     _name_length = len(name) + 1
     if _name_length > name_length:
         name_length = _name_length
 
     for network in networks:
-        vni_length = 8
         _vni_length = len(network[0]) + 1
         if _vni_length > vni_length:
             vni_length = _vni_length
 
-        macaddr_length = 12
         _macaddr_length = len(network[1]) + 1
         if _macaddr_length > macaddr_length:
             macaddr_length = _macaddr_length
 
-        model_length = 6
         _model_length = len(network[2]) + 1
         if _model_length > model_length:
             model_length = _model_length
@@ -690,6 +691,267 @@ def format_vm_networks(config, name, networks):
                 vni=network[0],
                 macaddr=network[1],
                 model=network[2]
+            )
+        )
+    return '\n'.join(output_list)
+
+
+def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
+    """
+    Add a new volume to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+    from copy import deepcopy
+    import cli_lib.ceph as pvc_ceph
+
+    if disk_type == 'rbd':
+        # Verify that the provided volume is valid
+        vpool = volume.split('/')[0]
+        vname = volume.split('/')[1]
+        retcode, retdata = pvc_ceph.ceph_volume_info(config, vpool, vname)
+        if not retcode:
+            return False, "Volume {} is not present in the cluster.".format(volume)
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    last_disk = None
+    id_list = list()
+    for disk in parsed_xml.devices.find('disk'):
+        id_list.append(disk.target.attrib.get('dev'))
+        if disk.source.attrib.get('protocol') == disk_type:
+            if disk_type == 'rbd':
+                last_disk = disk.source.attrib.get('name')
+            elif disk_type == 'file':
+                last_disk = disk.source.attrib.get('file')
+            if last_disk == volume:
+                return False, 'Volume {} is already configured for VM {}.'.format(volume, vm)
+            last_disk_details = deepcopy(disk)
+
+    if disk_id is not None:
+        if disk_id in id_list:
+            return False, 'Manually specified disk ID {} is already in use for VM {}.'.format(disk_id, vm)
+    else:
+        # Find the next free disk ID
+        first_dev_prefix = id_list[0][0:-1]
+
+        for char in range(ord('a'), ord('z')):
+            char = chr(char)
+            next_id = "{}{}".format(first_dev_prefix, char)
+            if next_id not in id_list:
+                break
+            else:
+                next_id = None
+        if next_id is None:
+            return False, 'Failed to find a valid disk_id and none specified; too many disks for VM {}?'.format(vm)
+        disk_id = next_id
+
+    if last_disk is None:
+        if disk_type == 'rbd':
+            # RBD volumes need an example to be based on
+            return False, "There are no existing RBD volumes attached to this VM. Autoconfiguration failed; use the 'vm modify' command to manually configure this volume with the required details for authentication, hosts, etc.."
+        elif disk_type == 'file':
+            # File types can be added ad-hoc
+            disk_template = '<disk type="file" device="disk"><driver name="qemu" type="raw"/><source file="{source}"/><target dev="{dev}" bus="{bus}"/></disk>'.format(
+                source=volume,
+                dev=disk_id,
+                bus=bus
+            )
+            last_disk_details = fromstring(disk_template)
+
+    new_disk_details = last_disk_details
+    new_disk_details.target.set('dev', disk_id)
+    new_disk_details.target.set('bus', bus)
+    if disk_type == 'rbd':
+        new_disk_details.source.set('name', volume)
+    elif disk_type == 'file':
+        new_disk_details.source.set('file', volume)
+
+    for disk in parsed_xml.devices.find('disk'):
+        last_disk = disk
+    last_disk.addnext(new_disk_details)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_volumes_remove(config, vm, volume, restart):
+    """
+    Remove a volume to the VM
+
+    Calls vm_info to get the VM XML.
+
+    Calls vm_modify to set the VM XML.
+    """
+    from lxml.objectify import fromstring
+    from lxml.etree import tostring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    for disk in parsed_xml.devices.find('disk'):
+        disk_name = disk.source.attrib.get('name')
+        if not disk_name:
+            disk_name = disk.source.attrib.get('file')
+        if volume == disk_name:
+            disk.getparent().remove(disk)
+
+    try:
+        new_xml = tostring(parsed_xml, pretty_print=True)
+    except Exception:
+        return False, 'ERROR: Failed to dump XML data.'
+
+    return vm_modify(config, vm, new_xml, restart)
+
+
+def vm_volumes_get(config, vm):
+    """
+    Get the volumes of the VM
+
+    Calls vm_info to get VM XML.
+
+    Returns a list of tuples of (volume, disk_id, type, bus)
+    """
+    from lxml.objectify import fromstring
+
+    status, domain_information = vm_info(config, vm)
+    if not status:
+        return status, domain_information
+
+    xml = domain_information.get('xml', None)
+    if xml is None:
+        return False, "VM does not have a valid XML doccument."
+
+    try:
+        parsed_xml = fromstring(xml)
+    except Exception:
+        return False, 'ERROR: Failed to parse XML data.'
+
+    volume_data = list()
+    for disk in parsed_xml.devices.find('disk'):
+        protocol = disk.attrib.get('type')
+        disk_id = disk.target.attrib.get('dev')
+        bus = disk.target.attrib.get('bus')
+        if protocol == 'network':
+            protocol = disk.source.attrib.get('protocol')
+            source = disk.source.attrib.get('name')
+        elif protocol == 'file':
+            protocol = 'file'
+            source = disk.source.attrib.get('file')
+        else:
+            protocol = 'unknown'
+            source = 'unknown'
+
+        volume_data.append((source, disk_id, protocol, bus))
+
+    return True, volume_data
+
+
+def format_vm_volumes(config, name, volumes):
+    """
+    Format the output of a volume value in a nice table
+    """
+    output_list = []
+
+    name_length = 5
+    volume_length = 7
+    disk_id_length = 4
+    protocol_length = 5
+    bus_length = 4
+
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    for volume in volumes:
+        _volume_length = len(volume[0]) + 1
+        if _volume_length > volume_length:
+            volume_length = _volume_length
+
+        _disk_id_length = len(volume[1]) + 1
+        if _disk_id_length > disk_id_length:
+            disk_id_length = _disk_id_length
+
+        _protocol_length = len(volume[2]) + 1
+        if _protocol_length > protocol_length:
+            protocol_length = _protocol_length
+
+        _bus_length = len(volume[3]) + 1
+        if _bus_length > bus_length:
+            bus_length = _bus_length
+
+    output_list.append(
+        '{bold}{name: <{name_length}}  \
+{volume: <{volume_length}} \
+{disk_id: <{disk_id_length}} \
+{protocol: <{protocol_length}} \
+{bus: <{bus_length}}{end_bold}'.format(
+            name_length=name_length,
+            volume_length=volume_length,
+            disk_id_length=disk_id_length,
+            protocol_length=protocol_length,
+            bus_length=bus_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name='Name',
+            volume='Volume',
+            disk_id='Dev',
+            protocol='Type',
+            bus='Bus'
+        )
+    )
+    count = 0
+    for volume in volumes:
+        if count > 0:
+            name = ''
+        count += 1
+        output_list.append(
+            '{bold}{name: <{name_length}}  \
+{volume: <{volume_length}} \
+{disk_id: <{disk_id_length}} \
+{protocol: <{protocol_length}} \
+{bus: <{bus_length}}{end_bold}'.format(
+                name_length=name_length,
+                volume_length=volume_length,
+                disk_id_length=disk_id_length,
+                protocol_length=protocol_length,
+                bus_length=bus_length,
+                bold='',
+                end_bold='',
+                name=name,
+                volume=volume[0],
+                disk_id=volume[1],
+                protocol=volume[2],
+                bus=volume[3]
             )
         )
     return '\n'.join(output_list)
@@ -925,7 +1187,7 @@ def format_info(config, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{}Controllers:{}  {}ID  Type           Model{}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for controller in domain_information['controllers']:
-            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], controller['model']))
+            ainformation.append('              {0: <3} {1: <14} {2: <8}'.format(domain_information['controllers'].index(controller), controller['type'], str(controller['model'])))
 
     # Join it all together
     ainformation.append('')
