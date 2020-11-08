@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+new_version="${1}"
+if [[ -z ${new_version} ]]; then
+    exit 1
+fi
+
+current_version="$( grep 'version = ' node-daemon/pvcnoded/Daemon.py | awk -F "'" '{ print $2 }' )"
+echo "${current_version} -> ${new_version}"
+
+changelog_file=$( mktemp )
+echo "# Write the changelog below; comments will be ignored" >> ${changelog_file}
+$EDITOR ${changelog_file}
+
+changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
+
+sed -i "s,version = '${current_version}',version = '${new_version}'," node-daemon/pvcnoded/Daemon.py
+
+readme_tmpdir=$( mktemp -d )
+cp README.md ${readme_tmpdir}/
+cp docs/index.md ${readme_tmpdir}/
+pushd ${readme_tmpdir} &>/dev/null
+
+echo -e "\n#### v${new_version}\n\n${changelog}" >> middle
+
+csplit README.md "/## Changelog/1" &>/dev/null
+cat xx00 middle xx01 > README.md
+rm xx00 xx01
+
+csplit index.md "/## Changelog/1" &>/dev/null
+cat xx00 middle xx01 > index.md
+rm xx00 xx01
+
+popd &>/dev/null
+mv ${readme_tmpdir}/README.md README.md
+mv ${readme_tmpdir}/index.md docs/index.md
+rm -r ${readme_tmpdir}
+
+deb_changelog_orig="$( cat debian/changelog )"
+deb_changelog_new="pvc (${new_version}-0) unstable urgency=high\n\n${changelog}\n\n -- $( git config --get user.name ) <$( git config --get user.email )>  $( date --rfc-email )\n"
+
+deb_changelog_file=$( mktemp )
+echo -e "${deb_changelog_new}" >> ${deb_changelog_file}
+echo -e "${deb_changelog_orig}" >> ${deb_changelog_file}
+mv ${deb_changelog_file} debian/changelog
+
+git add node-daemon/pvcnoded/Daemon.py README.md docs/index.md debian/changelog
+git commit -v
+
+echo
+echo "GitLab release message:"
+echo
+echo "Release ${new_version}"
+echo
+echo -e "${changelog}" | sed 's/^  \*/*/'
+echo
