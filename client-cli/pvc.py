@@ -1183,28 +1183,6 @@ def vm_volume():
 
 
 ###############################################################################
-# pvc vm serial-console
-###############################################################################
-@click.group(name='serial-console', short_help='Manage serial consoles of a virtual machine.', context_settings=CONTEXT_SETTINGS)
-def vm_serialconsole():
-    """
-    Manage the serial consoles of a virtual machine in the PVC cluster."
-    """
-    pass
-
-
-###############################################################################
-# pvc vm vnc-console
-###############################################################################
-@click.group(name='vnc-console', short_help='Manage VNC consoles of a virtual machine.', context_settings=CONTEXT_SETTINGS)
-def vm_vncconsole():
-    """
-    Manage the VNC consoles of a virtual machine in the PVC cluster."
-    """
-    pass
-
-
-###############################################################################
 # pvc vm log
 ###############################################################################
 @click.command(name='log', short_help='Show console logs of a VM object.')
@@ -4027,16 +4005,6 @@ vm_memory.add_command(vm_memory_set)
 # vm_volume.add_command(vm_volume_modify)
 # vm_volume_add_command(vm_volume_remove)
 
-# vm_serialconsole.add_command(vm_serialconsole_list)
-# vm_serialconsole.add_command(vm_serialconsole_add)
-# vm_serialconsole.add_command(vm_serialconsole_modify)
-# vm_serialconsole_add_command(vm_serialconsole_remove)
-
-# vm_vncconsole.add_command(vm_vncconsole_list)
-# vm_vncconsole.add_command(vm_vncconsole_add)
-# vm_vncconsole.add_command(vm_vncconsole_modify)
-# vm_vncconsole_add_command(vm_vncconsole_remove)
-
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_meta)
 cli_vm.add_command(vm_modify)
@@ -4056,8 +4024,6 @@ cli_vm.add_command(vm_vcpu)
 cli_vm.add_command(vm_memory)
 cli_vm.add_command(vm_network)
 cli_vm.add_command(vm_volume)
-cli_vm.add_command(vm_serialconsole)
-cli_vm.add_command(vm_vncconsole)
 cli_vm.add_command(vm_info)
 cli_vm.add_command(vm_log)
 cli_vm.add_command(vm_list)
