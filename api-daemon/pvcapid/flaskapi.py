@@ -163,7 +163,7 @@ class RequestParser(object):
                     action=reqarg.get('action', None),
                     choices=reqarg.get('choices', ()),
                     help=reqarg.get('helptext', None),
-                    location=['args', 'form']
+                    location=['args']
                 )
             reqargs = parser.parse_args()
             kwargs['reqargs'] = reqargs
