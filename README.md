@@ -21,6 +21,10 @@ To get started with PVC, read the [Cluster Architecture document](https://parall
 
 ## Changelog
 
+#### v0.9.3
+
+  * Fixes bugs with image & OVA upload parsing
+
 #### v0.9.2
 
   * Major linting of the codebase with flake8; adds linting tools
