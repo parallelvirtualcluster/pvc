@@ -1464,7 +1464,7 @@ def ceph_volume_upload(pool, volume, img_type):
             parse_form_data(flask.request.environ, stream_factory=image_stream_factory)
         except Exception:
             output = {
-                'message': "Failed to write image file to volume."
+                'message': "Failed to upload or write image file to temporary volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
@@ -1523,9 +1523,9 @@ def ceph_volume_upload(pool, volume, img_type):
             # rather than the standard stream_factory which writes to a temporary file waiting
             # on a save() call. This will break if the API ever uploaded multiple files, but
             # this is an acceptable workaround.
-            def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
+            def image_stream_factory(total_content_length, filename, content_type, content_length=None):
                 return open(temp_blockdev, 'wb')
-            parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
+            parse_form_data(flask.request.environ, stream_factory=image_stream_factory)
         except Exception:
             output = {
                 'message': "Failed to upload or write image file to temporary volume."
