@@ -157,13 +157,16 @@ class RequestParser(object):
             parser = reqparse.RequestParser()
             # Parse and add each argument
             for reqarg in self.reqargs:
+                location = reqarg.get('location', None)
+                if location is None:
+                    location = ['args', 'form']
                 parser.add_argument(
                     reqarg.get('name', None),
                     required=reqarg.get('required', False),
                     action=reqarg.get('action', None),
                     choices=reqarg.get('choices', ()),
                     help=reqarg.get('helptext', None),
-                    location=['args']
+                    location=location
                 )
             reqargs = parser.parse_args()
             kwargs['reqargs'] = reqargs
@@ -3803,7 +3806,7 @@ api.add_resource(API_Storage_Ceph_Volume_Element_Clone, '/storage/ceph/volume/<p
 # /storage/ceph/volume/<pool>/<volume>/upload
 class API_Storage_Ceph_Volume_Element_Upload(Resource):
     @RequestParser([
-        {'name': 'image_format', 'required': True, 'helpmsg': "A source image format must be specified."}
+        {'name': 'image_format', 'required': True, 'location': ['args'], 'helpmsg': "A source image format must be specified."}
     ])
     @Authenticator
     def post(self, pool, volume, reqargs):
@@ -5846,9 +5849,9 @@ class API_Provisioner_OVA_Root(Resource):
         )
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
-        {'name': 'name', 'required': True, 'helpmsg': "A VM name must be specified."},
-        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified."},
+        {'name': 'pool', 'required': True, 'location': ['args'], 'helpmsg': "A storage pool must be specified."},
+        {'name': 'name', 'required': True, 'location': ['args'], 'helpmsg': "A VM name must be specified."},
+        {'name': 'ova_size', 'required': True, 'location': ['args'], 'helpmsg': "An OVA size must be specified."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -5923,8 +5926,8 @@ class API_Provisioner_OVA_Element(Resource):
         )
 
     @RequestParser([
-        {'name': 'pool', 'required': True, 'helpmsg': "A storage pool must be specified."},
-        {'name': 'ova_size', 'required': True, 'helpmsg': "An OVA size must be specified."},
+        {'name': 'pool', 'required': True, 'location': ['args'], 'helpmsg': "A storage pool must be specified."},
+        {'name': 'ova_size', 'required': True, 'location': ['args'], 'helpmsg': "An OVA size must be specified."},
     ])
     @Authenticator
     def post(self, ova, reqargs):
