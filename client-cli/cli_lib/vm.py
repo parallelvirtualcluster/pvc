@@ -1020,8 +1020,11 @@ def follow_console_log(config, vm, lines=10):
     print(loglines, end='')
 
     while True:
-        # Grab the next line set
+        # Grab the next line set (200 is a reasonable number of lines per second; any more are skipped)
         try:
+            params = {
+                'lines': 200
+            }
             response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
             new_console_log = response.json()['data']
         except Exception:
