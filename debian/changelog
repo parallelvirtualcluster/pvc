@@ -1,3 +1,9 @@
+pvc (0.9.4-0) unstable; urgency=high
+
+  * Fixes major bug in OVA parser
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 10 Nov 2020 15:33:50 -0500
+
 pvc (0.9.3-0) unstable; urgency=high
 
   * Fixes bugs with image & OVA upload parsing

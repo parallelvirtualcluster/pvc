@@ -19,6 +19,10 @@ To get started with PVC, read the [Cluster Architecture document](https://parall
 
 ## Changelog
 
+#### v0.9.4
+
+  * Fixes major bug in OVA parser
+
 #### v0.9.3
 
   * Fixes bugs with image & OVA upload parsing
