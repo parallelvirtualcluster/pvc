@@ -316,6 +316,8 @@ def upload_ova(pool, name, ova_size):
             # Open the temporary blockdev and seek to byte 0
             blk_file = open(temp_blockdev, 'wb')
             blk_file.seek(0)
+            # Write the contents of vmdk_file into blk_file
+            blk_file.write(vmdk_file.read())
             # Close blk_file (and flush the buffers)
             blk_file.close()
             # Close vmdk_file
