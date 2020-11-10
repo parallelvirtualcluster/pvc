@@ -539,7 +539,10 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
     device_xml = fromstring(device_string)
 
     last_interface = None
-    for interface in parsed_xml.devices.find('interface'):
+    all_interfaces = parsed_xml.devices.find('interface')
+    if all_interfaces is None:
+        all_interfaces = []
+    for interface in all_interfaces:
         last_interface = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
         if last_interface == network:
             return False, 'Network {} is already configured for VM {}.'.format(network, vm)
@@ -547,6 +550,8 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
         for interface in parsed_xml.devices.find('interface'):
             if last_interface == re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1):
                 interface.addnext(device_xml)
+    else:
+        parsed_xml.devices.find('emulator').addprevious(device_xml)
 
     try:
         new_xml = tostring(parsed_xml, pretty_print=True)
@@ -732,7 +737,10 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
 
     last_disk = None
     id_list = list()
-    for disk in parsed_xml.devices.find('disk'):
+    all_disks = parsed_xml.devices.find('disk')
+    if all_disks is None:
+        all_disks = []
+    for disk in all_disks:
         id_list.append(disk.target.attrib.get('dev'))
         if disk.source.attrib.get('protocol') == disk_type:
             if disk_type == 'rbd':
@@ -782,9 +790,14 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
     elif disk_type == 'file':
         new_disk_details.source.set('file', volume)
 
-    for disk in parsed_xml.devices.find('disk'):
+    all_disks = parsed_xml.devices.find('disk')
+    if all_disks is None:
+        all_disks = []
+    for disk in all_disks:
         last_disk = disk
-    last_disk.addnext(new_disk_details)
+
+    if last_disk is None:
+        parsed_xml.devices.find('emulator').addprevious(new_disk_details)
 
     try:
         new_xml = tostring(parsed_xml, pretty_print=True)
