@@ -1082,20 +1082,20 @@ def format_info(config, domain_information, long_output):
         ainformation.append('')
         ainformation.append('{0}Memory stats:{1}       {2}Swap In  Swap Out  Faults (maj/min)  Available  Usable  Unused  RSS{3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         ainformation.append('                    {0: <7}  {1: <8}  {2: <16}  {3: <10} {4: <7} {5: <7} {6: <10}'.format(
-            format_metric(domain_information['memory_stats'].get('swap_in')),
-            format_metric(domain_information['memory_stats'].get('swap_out')),
-            '/'.join([format_metric(domain_information['memory_stats'].get('major_fault')), format_metric(domain_information['memory_stats'].get('minor_fault'))]),
-            format_bytes(domain_information['memory_stats'].get('available') * 1024),
-            format_bytes(domain_information['memory_stats'].get('usable') * 1024),
-            format_bytes(domain_information['memory_stats'].get('unused') * 1024),
-            format_bytes(domain_information['memory_stats'].get('rss') * 1024)
+            format_metric(domain_information['memory_stats'].get('swap_in', 0)),
+            format_metric(domain_information['memory_stats'].get('swap_out', 0)),
+            '/'.join([format_metric(domain_information['memory_stats'].get('major_fault', 0)), format_metric(domain_information['memory_stats'].get('minor_fault', 0))]),
+            format_bytes(domain_information['memory_stats'].get('available', 0) * 1024),
+            format_bytes(domain_information['memory_stats'].get('usable', 0) * 1024),
+            format_bytes(domain_information['memory_stats'].get('unused', 0) * 1024),
+            format_bytes(domain_information['memory_stats'].get('rss', 0) * 1024)
         ))
         ainformation.append('')
         ainformation.append('{0}vCPU stats:{1}         {2}CPU time (ns)     User time (ns)    System time (ns){3}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         ainformation.append('                    {0: <16}  {1: <16}  {2: <15}'.format(
-            str(domain_information['vcpu_stats'].get('cpu_time')),
-            str(domain_information['vcpu_stats'].get('user_time')),
-            str(domain_information['vcpu_stats'].get('system_time'))
+            str(domain_information['vcpu_stats'].get('cpu_time', 0)),
+            str(domain_information['vcpu_stats'].get('user_time', 0)),
+            str(domain_information['vcpu_stats'].get('system_time', 0))
         ))
 
     # PVC cluster information
@@ -1182,8 +1182,8 @@ def format_info(config, domain_information, long_output):
                 disk['name'],
                 disk['dev'],
                 disk['bus'],
-                '/'.join([str(format_metric(disk['rd_req'])), str(format_metric(disk['wr_req']))]),
-                '/'.join([str(format_bytes(disk['rd_bytes'])), str(format_bytes(disk['wr_bytes']))]),
+                '/'.join([str(format_metric(disk.get('rd_req', 0))), str(format_metric(disk.get('wr_req', 0)))]),
+                '/'.join([str(format_bytes(disk.get('rd_bytes', 0))), str(format_bytes(disk.get('wr_bytes', 0)))]),
                 width=name_length
             ))
         ainformation.append('')
@@ -1195,9 +1195,9 @@ def format_info(config, domain_information, long_output):
                 net['source'],
                 net['model'],
                 net['mac'],
-                '/'.join([str(format_bytes(net['rd_bytes'])), str(format_bytes(net['wr_bytes']))]),
-                '/'.join([str(format_metric(net['rd_packets'])), str(format_metric(net['wr_packets']))]),
-                '/'.join([str(format_metric(net['rd_errors'])), str(format_metric(net['wr_errors']))]),
+                '/'.join([str(format_bytes(net.get('rd_bytes', 0))), str(format_bytes(net.get('wr_bytes', 0)))]),
+                '/'.join([str(format_metric(net.get('rd_packets', 0))), str(format_metric(net.get('wr_packets', 0)))]),
+                '/'.join([str(format_metric(net.get('rd_errors', 0))), str(format_metric(net.get('wr_errors', 0)))]),
             ))
         # Controller list
         ainformation.append('')
