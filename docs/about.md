@@ -1,6 +1,23 @@
-# About the Parallel Virtual Cluster suite
+# About the Parallel Virtual Cluster system
 
-## Project Goals and Philosophy
+- [About the Parallel Virtual Cluster system](#about-the-parallel-virtual-cluster-system)
+  * [Project Motivation](#project-motivation)
+  * [Building Blocks](#building-blocks)
+  * [Cluster Architecture](#cluster-architecture)
+  * [Clients](#clients)
+    + [API Client](#api-client)
+    + [Direct Bindings](#direct-bindings)
+    + [CLI Client](#cli-client)
+  * [Deployment](#deployment)
+  * [Frequently Asked Questions](#frequently-asked-questions)
+    + [General Questions](#general-questions)
+    + [Feature Questions](#feature-questions)
+    + [Storage Questions](#storage-questions)
+  * [About The Author](#about-the-author)
+
+This document contains information about the project itself, the software stack, its motivations, and a number of frequently-asked questions.
+
+## Project Motivation
 
 Server management and system administration have changed significantly in the last decade. Computing as a resource is here, and software-defined is the norm. Gone are the days of pet servers, of tweaking configuration files by hand, and of painstakingly installing from ISO images in 52x CD-ROM drives. This is a brave new world.
 
@@ -48,7 +65,7 @@ Further information about the general cluster architecture, including important 
 
 ## Clients
 
-### API client
+### API Client
 
 The API client is a Flask-based RESTful API and is the core interface to PVC. By default the API will run on the primary coordinator, listening on TCP port 7370 on the "upstream" network floating IP address. All other clients communicate with this API to perform actions against the cluster. The API features basic authentication using UUID-based API keys to prevent unauthorized access, and can optionally be configured with full TLS encryption to provide integrity and confidentiality across public networks.
 
@@ -56,11 +73,11 @@ The API generally accepts all requests as HTTP form requests following standard 
 
 The API client manual can be found at the [API manual page](/manuals/api), and the [API documentation page](/manuals/api-reference.html).
 
-### Direct bindings
+### Direct Bindings
 
 The API client uses a dedicated set of Python libraries, packages as the `pvc-daemon-common` Debian package, to communicate with the cluster. It is thus possible to build custom Python clients that directly interface with the PVC cluster, without having to get "into the weeds" of the Zookeeper or PostgreSQL databases.
 
-### CLI client
+### CLI Client
 
 The CLI client is a Python Click application, which provides a convenient CLI interface to the API client. It supports connecting to multiple clusters, over both HTTP and HTTPS and with authentication, including a special "local" cluster if the client determines that an API configuration exists on the local host.
 
@@ -74,7 +91,7 @@ The Ansible configuration and architecture manual can be found at the [Ansible m
 
 ## Frequently Asked Questions
 
-### General
+### General Questions
 
 #### What is it?
 
@@ -122,7 +139,7 @@ You can, but you won't like the results. SSDs, and specifically datacentre-grade
 
 PVC requires Ceph 14.x (Nautilus). The official PVC repository at https://repo.bonifacelabs.ca includes Ceph 14.2.x (updated regularly), since Debian Buster by default includes only 12.x (Luminous).
 
-## About the author
+## About The Author
 
 PVC is written by [Joshua](https://www.boniface.me) [M.](https://bonifacelabs.ca) [Boniface](https://github.com/joshuaboniface). A Linux system administrator by trade, Joshua is always looking for the best solutions to his user's problems, be they developers or end users. PVC grew out of his frustration with the various FOSS virtualization tools, as well as and specifically, the constant failures of Pacemaker/Corosync to gracefully manage a virtualization cluster. He started work on PVC at the end of May 2018 as a simple alternative to a Corosync/Pacemaker-managed virtualization cluster, and has been growing the feature set and stability of the system ever since.
 
