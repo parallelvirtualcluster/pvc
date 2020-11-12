@@ -72,6 +72,57 @@ The overall management, deployment, bootstrapping, and configuring of nodes is a
 
 The Ansible configuration and architecture manual can be found at the [Ansible manual page](/manuals/ansible).
 
+## Frequently Asked Questions
+
+### General
+
+#### What is it?
+
+PVC is a virtual machine management suite designed around high-availability. It can be considered an alternative to OpenStack, ProxMox, VMWare, Nutanix, and other similar solutions that manage not just the VMs, but the surrounding infrastructure as well.
+
+#### Why would you make this?
+
+After becoming frustrated by numerous other management tools, I discovered that what I wanted didn't exist as FLOSS software, so I built it myself. Since then, I have also been able to leverage PVC both for my own purposes as well as for my employer, a win-win for the project.
+
+#### Is PVC right for me?
+
+PVC might be right for you if your requirements are:
+
+1. You need KVM-based VMs.
+2. You want management of storage and networking (a.k.a. "batteries-included") in the same tool.
+3. You want hypervisor-level redundancy, able to tolerate hypervisor downtime seamlessly, for all elements of the stack.
+
+I built PVC for my homelab first, found a perfect usecase with my employer, and think it might be useful to you too.
+
+#### Is 3 hypervisors really the minimum?
+
+For a redundant cluster, yes. PVC requires a majority quorum for several subsystems, and the smallest possible majority quorum is 2-of-3, and thus 3 nodes is the safe minimum. That said, you can run PVC on a single node for testing/lab purposes without host-level reundancy, should you wish to do so, and it might also be possible to run 2 "main" systems with a 3rd "quorum observer" hosting only the management tools but no VMs, however this is unsupported.
+
+### Feature Questions
+
+#### Does PVC support Docker/Kubernetes/LXC/etc.
+
+No, not directly. PVC supports only KVM VMs. To run Docker containers, etc., you would need to run a VM which then runs your containers.
+
+#### Does PVC have a WebUI?
+
+Not yet. Right now, PVC management is done exclusively with the CLI interface to the API. A WebUI can and likely will be built in the future, but I'm not a frontend developer and I do not consider this a personal priority. As of late 2020 the API is generally stable, so I would welcome 3rd party assistance here.
+
+### Storage Questions
+
+#### Can I use RAID-5/RAID-6 with PVC?
+
+The short answer is no. The long answer is: Ceph, the storage backend used by PVC, does support "erasure coded" pools which implement a RAID-5-like functionality, but PVC does not support this for several reasons, mostly related to ease of management and performance. If you use PVC, you must accept at the very least a 2x storage penalty, and for true safety and resiliency, a 3x storage penalty for VM storage. This is a trade-off of the architecture.
+
+#### Can I use spinning HDDs with PVC?
+
+You can, but you won't like the results. SSDs, and specifically datacentre-grade SSDs for resiliency, are effectively required to obtain any sort of reasonable performance when running multiple VMs.
+
+#### What Ceph version does PVC use?
+
+PVC requires Ceph 14.x (Nautilus). The official PVC repository at https://repo.bonifacelabs.ca includes Ceph 14.2.x (updated regularly), since Debian Buster by default includes only 12.x (Luminous).
+
 ## About the author
 
 PVC is written by [Joshua](https://www.boniface.me) [M.](https://bonifacelabs.ca) [Boniface](https://github.com/joshuaboniface). A Linux system administrator by trade, Joshua is always looking for the best solutions to his user's problems, be they developers or end users. PVC grew out of his frustration with the various FOSS virtualization tools, as well as and specifically, the constant failures of Pacemaker/Corosync to gracefully manage a virtualization cluster. He started work on PVC at the end of May 2018 as a simple alternative to a Corosync/Pacemaker-managed virtualization cluster, and has been growing the feature set and stability of the system ever since.
+
