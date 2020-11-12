@@ -5,7 +5,6 @@
 <br/><br/>
 <a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
 <a href="https://github.com/parallelvirtualcluster/pvc/releases"><img alt="Release" src="https://img.shields.io/github/release-pre/parallelvirtualcluster/pvc"/></a>
-<a href="https://git.bonifacelabs.ca/parallelvirtualcluster/pvc/pipelines"><img alt="Pipeline Status" src="https://git.bonifacelabs.ca/parallelvirtualcluster/pvc/badges/master/pipeline.svg"/></a>
 <a href="https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
 </p>
 
@@ -17,7 +16,7 @@ The major goal of PVC is to be administrator friendly, providing the power of En
 
 ## Getting Started
 
-To get started with PVC, read the [Cluster Architecture document](https://parallelvirtualcluster.readthedocs.io/en/latest/architecture/cluster/), then see [Installing](https://parallelvirtualcluster.readthedocs.io/en/latest/installing) for details on setting up a set of PVC nodes, using the [PVC Ansible](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/ansible) framework to configure and bootstrap a cluster, and managing it with the [`pvc` CLI tool](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/cli) or [RESTful HTTP API](https://parallelvirtualcluster.readthedocs.io/en/latest/manuals/api). For details on the project, its motivation, and architectural details, see [the About page](https://parallelvirtualcluster.readthedocs.io/en/latest/about).
+To get started with PVC, please see the [About](https://parallelvirtualcluster.readthedocs.io/en/latest/about/) page for general information about the project, and the [Getting Started](https://parallelvirtualcluster.readthedocs.io/en/latest/getting-started/) page for details on configuring your cluster.
 
 ## Changelog
 
