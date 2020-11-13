@@ -152,7 +152,7 @@ The floating IP address in the storage network can be used as a single point of 
 
 Nodes in this network are generally assigned IPs automatically based on their node number (e.g. node1 at `.1`, node2 at `.2`, etc.). The network should be large enough to include all nodes sequentially.
 
-The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth. If the administrator does choose to colocate these networks, they may also share the same IP address, thus eliminating any distinction between the Cluster and Storage networks. The PVC software handles this natively when the Cluster and Storage IPs of a node are identical.
+The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth. If the administrator does choose to collocate these networks, they may also share the same IP address, thus eliminating any distinction between the Cluster and Storage networks. The PVC software handles this natively when the Cluster and Storage IPs of a node are identical.
 
 ### PVC client networks
 
@@ -162,7 +162,7 @@ The first type of client network is the unmanaged bridged network. These network
 
 With this client network type, PVC does no management of the network. This is left entirely to the administrator. It requires switch support and the configuration of the vLANs on the switchports of each node's physical interfaces before enabling the network.
 
-Generally, the same physical network interface will underly both the cluster networks as well as bridged client networks. PVC does however support specifying a separate physical device for bridged client networks, for instance to separate these networks onto a different physical interface from the main cluster networks.
+Generally, the same physical network interface will underlay both the cluster networks as well as bridged client networks. PVC does however support specifying a separate physical device for bridged client networks, for instance to separate these networks onto a different physical interface from the main cluster networks.
 
 #### VXLAN (managed) Client Networks
 
