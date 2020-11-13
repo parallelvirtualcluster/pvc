@@ -69,7 +69,7 @@ Further information about the general cluster architecture, including important 
 
 The API client is a Flask-based RESTful API and is the core interface to PVC. By default the API will run on the primary coordinator, listening on TCP port 7370 on the "upstream" network floating IP address. All other clients communicate with this API to perform actions against the cluster. The API features basic authentication using UUID-based API keys to prevent unauthorized access, and can optionally be configured with full TLS encryption to provide integrity and confidentiality across public networks.
 
-The API generally accepts all requests as HTTP form requests following standard RESTful guidelines, supporting arguments in the URI string or in the message body. The API returns JSON response bodies to all requests consisting either of the information requested, or a `{ "message": "text" }` construct to pass informational status messages back to the client.
+The API generally accepts all requests as HTTP form requests following standard RESTful guidelines, supporting arguments in the URI string or, with limited exceptions, in the message body. The API returns JSON response bodies to all requests consisting either of the information requested, or a `{ "message": "text" }` construct to pass informational status messages back to the client.
 
 The API client manual can be found at the [API manual page](/manuals/api), and the full API documentation can be found at the [API reference page](/manuals/api-reference.html).
 
