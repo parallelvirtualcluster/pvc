@@ -55,19 +55,19 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Perform the initial bootstrap. From the `pvc-ansible` repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.  
     `$ ansible-playbook -v -i hosts pvc.yml -l <cluster_name> -e bootstrap=yes`
 
+    **WARNING:** Never rerun this playbook with the `-e bootstrap=yes` option against an active cluster. This will have unintended, disasterous consequences.
+
 0. Wait for the Ansible playbook run to finish. Once completed, the cluster bootstrap will be finished, and all 3 nodes will have rebooted into a working PVC cluster.
 
-0. Install the CLI client on your administrative host, and verify connectivity to the cluster, for instance by running the following command, which should show all 3 nodes as present and running:  
-    `$ pvc -z pvchv1:2181,pvchv2:2181,pvchv3:2181 node list`
-
-0. Optionally, verify the API is listening on the `upstream_floating_ip` address configured in the cluster `group_vars`, for instance by running the following command which shows, in JSON format, the same information as in the previous step:  
-    `$ curl -X GET http://<upstream_floating_ip>:7370/api/v1`
+0. Install the CLI client on your administrative host, and add and verify connectivity to the cluster; this will also verify that the API is working. You will need to know the cluster upstream floating IP address here, and if you configured SSL or authentication for the API in your `group_vars`, adjust the first command as needed (see `pvc cluster add -h` for details). 
+    `$ pvc cluster add -a <upstream_floating_ip> mycluster`
+    `$ pvc -c mycluster node list`
+    We can also set a default cluster by exporting the `PVC_CLUSTER` environment variable to avoid requiring `-c cluster` with every subsequent command: 
+    `$ export PVC_CLUSTER="mycluster"`
 
 ### Part Four - Configuring the Ceph storage cluster
 
-All steps in this and following sections can be performed using either the CLI client or the HTTP API; for clarity, only the CLI commands are shown.
-
-0. Determine the Ceph OSD block devices on each host, via an `ssh` shell. For instance, check `/dev/disk/by-path` to show the block devices by their physical SAS/SATA bus location, and obtain the relevant `/dev/sdX` name for each disk you wish to be a Ceph OSD on each host.
+0. Determine the Ceph OSD block devices on each host, via an `ssh` shell. For instance, use `lsblk` or check `/dev/disk/by-path` to show the block devices by their physical SAS/SATA bus location, and obtain the relevant `/dev/sdX` name for each disk you wish to be a Ceph OSD on each host.
 
 0. Add each OSD device to each host. The general command is:  
     `$ pvc storage osd add --weight <weight> <node> <device>`
@@ -80,9 +80,11 @@ All steps in this and following sections can be performed using either the CLI c
     `$ pvc storage osd add --weight 1.0 pvchv3 /dev/sdb`  
     `$ pvc storage osd add --weight 1.0 pvchv3 /dev/sdc`   
 
-    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
+    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly, but the CLI sets a default value. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the Ceph documentation.
 
-    **NOTE:** OSD commands wait for the action to complete on the node, and can take some time (up to 30s normally). Be cautious of HTTP timeouts when using the API to perform these steps.
+    **NOTE:** OSD commands wait for the action to complete on the node, and can take some time.
+
+    **NOTE:** You can add OSDs in any order you wish, for instance you can add the first OSD to each node and then add the second to each node, or you can add all nodes' OSDs together at once like the example. This ordering does not affect the cluster in any way.
 
 0. Verify that the OSDs were added and are functional (`up` and `in`):  
     `$ pvc storage osd list`
@@ -93,19 +95,18 @@ All steps in this and following sections can be performed using either the CLI c
     For example, to create a pool named `vms` with 256 placement groups (a good default with 6 OSD disks), run the command as follows:  
     `$ pvc storage pool add vms 256`
 
-    **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
+    **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. The general formula is to calculate the ideal number of PGs is `pgs * maxcopies / osds = ~250`, then round `pgs` up to the next power of 2; generally, you want as close to 250 PGs per OSD as possible, but no more than 250. With 3-6 OSDs, 256 is a good number, and with 9+ OSDs, 512 is a good number. Ceph will error if the total number exceeds the limit. For more details see the Ceph documentation and the [placement group calculator](https://ceph.com/pgcalc/).
 
-    **NOTE:** All PVC RBD pools use `copies=3` and `mincopies=2` for data storage. This provides, for each object, 3 copies of the data, with writes being accepted with 1 degraded copy. This provides maximum resiliency against single-node outages, but will use 3x the amount of storage for each unit stored inside the image. Take this into account when sizing OSD disks and VM images. This cannot be changed as any less storage will result in a non-HA cluster that could not handle a single node failure.
+    **NOTE:** As detailed in the [cluster architecture documentation](/cluster-architecture), you can also set a custom replica configuration for each pool if the default of 3 replica copies with 2 minimum copies is not acceptable. See `pvc storage pool add -h` or that document for full details.
 
 0. Verify that the pool was added:  
     `$ pvc storage pool list`
 
 ### Part Five - Creating virtual networks
 
-0. Determine a domain name, IPv4, and/or IPv6 network for your first client network, and any other client networks you may wish to create. For this guide we will create a single "managed" virtual client network with DHCP.
+0. Determine a domain name and IPv4, and/or IPv6 network for your first client network, and any other client networks you may wish to create. These networks should never overlap with the cluster networks. For full details on the client network types, see the [cluster architecture documentation](/cluster-architecture).
 
-0. Create the virtual network. The general command for an IPv4-only network with DHCP is:  
-    `$ pvc network add <vni_id> --type <type> --description <space-less_description> --domain <domain> --ipnet <ipv4_network_in_CIDR> --gateway <ipv4_gateway_address> --dhcp --dhcp-start <first_address> --dhcp-end <last_address>`
+0. Create the virtual network. There are many options here, so see `pvc network add -h` for details.  
 
     For example, to create the managed (EVPN VXLAN) network `100` with subnet `10.100.0.0/24`,  gateway `.1` and DHCP from `.100` to `.199`, run the command as follows:  
     `$ pvc network add 100 --type managed --description my-managed-network --domain myhosts.local --ipnet 10.100.0.0/24 --gateway 10.100.0.1 --dhcp --dhcp-start 10.100.0.100 --dhcp-end 10.100.0.199`
@@ -113,23 +114,26 @@ All steps in this and following sections can be performed using either the CLI c
     For another example, to create the static bridged (switch-configured, tagged VLAN, with no PVC management of IPs) network `200`, run the command as follows:  
     `$ pvc network add 200 --type bridged --description my-bridged-network`
 
+    **NOTE:** Network descriptions cannot contain spaces or special characters; keep them short, sweet, and dash or understore delimited.
+
 0. Verify that the network(s) were added:  
     `$ pvc network list`
 
 0. On the upstream router, configure one of:
 
-    a) A BGP neighbour relationship with the `upstream_floating_address` to automatically learn routes.
+    a) A BGP neighbour relationship with the cluster upstream floating address to automatically learn routes.
 
-    b) Static routes for the configured client IP networks towards the `upstream_floating_address`.
+    b) Static routes for the configured client IP networks towards the cluster upstream floating address.
 
 0. On the upstream router, if required, configure NAT for the configured client IP networks.
 
 0. Verify the client networks are reachable by pinging the managed gateway from outside the cluster.
 
-0. Set all 3 nodes to `ready` state, allowing them to run virtual machines. The general command is:  
-    `$ pvc node ready <node>`
 
 ### You're Done!
+
+0. Set all 3 nodes to `ready` state, allowing them to run virtual machines. The general command is:  
+    `$ pvc node ready <node>`
 
 Congratulations, you now have a basic PVC storage cluster, ready to run your VMs.
 
