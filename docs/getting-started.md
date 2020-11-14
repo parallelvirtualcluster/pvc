@@ -60,7 +60,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Wait for the Ansible playbook run to finish. Once completed, the cluster bootstrap will be finished, and all 3 nodes will have rebooted into a working PVC cluster.
 
 0. Install the CLI client on your administrative host, and add and verify connectivity to the cluster; this will also verify that the API is working. You will need to know the cluster upstream floating IP address here, and if you configured SSL or authentication for the API in your `group_vars`, adjust the first command as needed (see `pvc cluster add -h` for details).  
-    `$ pvc cluster add -a <upstream_floating_ip> mycluster`
+    `$ pvc cluster add -a <upstream_floating_ip> mycluster`  
     `$ pvc -c mycluster node list`
     We can also set a default cluster by exporting the `PVC_CLUSTER` environment variable to avoid requiring `-c cluster` with every subsequent command:  
     `$ export PVC_CLUSTER="mycluster"`
