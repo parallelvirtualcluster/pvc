@@ -55,7 +55,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Perform the initial bootstrap. From the `pvc-ansible` repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.  
     `$ ansible-playbook -v -i hosts pvc.yml -l <cluster_name> -e bootstrap=yes`
 
-    **WARNING:** Never rerun this playbook with the `-e bootstrap=yes` option against an active cluster. This will have unintended, disasterous consequences.
+    **WARNING:** Never rerun this playbook with the `-e bootstrap=yes` option against an active cluster. This will have unintended, disastrous consequences.
 
 0. Wait for the Ansible playbook run to finish. Once completed, the cluster bootstrap will be finished, and all 3 nodes will have rebooted into a working PVC cluster.
 
@@ -114,7 +114,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
     For another example, to create the static bridged (switch-configured, tagged VLAN, with no PVC management of IPs) network `200`, run the command as follows:  
     `$ pvc network add 200 --type bridged --description my-bridged-network`
 
-    **NOTE:** Network descriptions cannot contain spaces or special characters; keep them short, sweet, and dash or understore delimited.
+    **NOTE:** Network descriptions cannot contain spaces or special characters; keep them short, sweet, and dash or underscore delimited.
 
 0. Verify that the network(s) were added:  
     `$ pvc network list`
