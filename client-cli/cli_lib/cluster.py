@@ -115,7 +115,7 @@ def format_info(cluster_information, oformat):
         if cluster_information['storage_health_msg']:
             for line in cluster_information['storage_health_msg']:
                 ainformation.append('                     > {}'.format(line))
-    
+
         return '\n'.join(ainformation)
 
     ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
