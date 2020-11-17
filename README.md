@@ -20,6 +20,13 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.5
+
+  * Fixes bug with line count in log follow
+  * Fixes bug with disk stat output being None
+  * Adds short pretty health output
+  * Documentation updates
+
 #### v0.9.4
 
   * Fixes major bug in OVA parser
