@@ -20,6 +20,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.6
+
+  * Fixes bug with migrations
+
 #### v0.9.5
 
   * Fixes bug with line count in log follow
