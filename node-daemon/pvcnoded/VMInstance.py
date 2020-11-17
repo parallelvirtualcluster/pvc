@@ -381,6 +381,7 @@ class VMInstance(object):
             })
             migrate_lock_node.release()
             migrate_lock_state.release()
+            self.inmigrate = False
             self.logger.out('Aborted migration: {}'.format(reason), state='i', prefix='Domain {}'.format(self.domuuid))
 
         # Acquire exclusive lock on the domain node key
