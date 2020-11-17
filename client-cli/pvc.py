@@ -4057,13 +4057,19 @@ def maintenance_off():
 @click.command(name='status', short_help='Show current cluster status.')
 @click.option(
     '-f', '--format', 'oformat', default='plain', show_default=True,
-    type=click.Choice(['plain', 'json', 'json-pretty']),
+    type=click.Choice(['plain', 'short', 'json', 'json-pretty']),
     help='Output format of cluster status information.'
 )
 @cluster_req
 def status_cluster(oformat):
     """
     Show basic information and health for the active PVC cluster.
+
+    Output formats:
+      plain: Full text, full colour output for human-readability.
+      short: Health-only, full colour output for human-readability.
+      json: Compact JSON representation for machine parsing.
+      json-pretty: Pretty-printed JSON representation for machine parsing or human-readability.
     """
 
     retcode, retdata = pvc_cluster.get_info(config)
