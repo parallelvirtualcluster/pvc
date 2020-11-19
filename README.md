@@ -20,6 +20,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.7
+
+  * Fixes bug with provisioner system template modifications
+
 #### v0.9.6
 
   * Fixes bug with migrations

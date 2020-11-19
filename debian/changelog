@@ -1,3 +1,9 @@
+pvc (0.9.7-0) unstable; urgency=high
+
+  * Fixes bug with provisioner system template modifications
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 19 Nov 2020 10:48:28 -0500
+
 pvc (0.9.6-0) unstable; urgency=high
 
   * Fixes bug with migrations
