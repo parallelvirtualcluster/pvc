@@ -2721,14 +2721,14 @@ def provisioner_template_system_list(limit):
     help='The amount of vRAM (in MB).'
 )
 @click.option(
-    '-s', '--serial', 'serial',
+    '-s/-S', '--serial/--no-serial', 'serial',
     is_flag=True, default=False,
     help='Enable the virtual serial console.'
 )
 @click.option(
-    '-n', '--vnc', 'vnc',
+    '-n/-N', '--vnc/--no-vnc', 'vnc',
     is_flag=True, default=False,
-    help='Enable the VNC console.'
+    help='Enable/disable the VNC console.'
 )
 @click.option(
     '-b', '--vnc-bind', 'vnc_bind',
@@ -2801,14 +2801,14 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
     help='The amount of vRAM (in MB).'
 )
 @click.option(
-    '-s', '--serial', 'serial',
+    '-s/-S', '--serial/--no-serial', 'serial',
     is_flag=True, default=None,
     help='Enable the virtual serial console.'
 )
 @click.option(
-    '-n', '--vnc', 'vnc',
+    '-n/-N', '--vnc/--no-vnc', 'vnc',
     is_flag=True, default=None,
-    help='Enable the VNC console.'
+    help='Enable/disable the VNC console.'
 )
 @click.option(
     '-b', '--vnc-bind', 'vnc_bind',
