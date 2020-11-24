@@ -4079,16 +4079,81 @@ def status_cluster(oformat):
 
 
 ###############################################################################
+# pvc task
+###############################################################################
+@click.group(name='task', short_help='Perform PVC cluster tasks.', context_settings=CONTEXT_SETTINGS)
+def cli_task():
+    """
+    Perform administrative tasks against the PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# pvc task backup
+###############################################################################
+@click.command(name='backup', short_help='Create JSON backup of cluster.')
+@click.option(
+    '-f', '--file', 'filename',
+    default=None, type=click.File(),
+    help='Write backup data to this file.'
+)
+@cluster_req
+def task_backup(filename):
+    """
+    Create a JSON-format backup of the cluster Zookeeper database.
+    """
+
+    retcode, retdata = pvc_cluster.backup(config)
+    if filename:
+        with open(filename, 'wb') as fh:
+            fh.write(retdata)
+            retdata = 'Data written to {}'.format(filename)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc task restore
+###############################################################################
+@click.command(name='restore', short_help='Restore JSON backup to cluster.')
+@click.option(
+    '-f', '--file', 'filename',
+    required=True, default=None, type=click.File(),
+    help='Read backup data from this file.'
+)
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restore'
+)
+@cluster_req
+def task_restore(filename, confirm_flag):
+    """
+    Restore the JSON backup data from a file to the cluster.
+    """
+
+    if not confirm_flag:
+        try:
+            click.confirm('Replace all existing cluster data from coordinators with backup file "{}"'.format(filename.name), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
+
+    cluster_data = json.loads(filename.read())
+    retcode, retmsg = pvc_cluster.restore(config, cluster_data)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc init
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the removal'
+    help='Confirm the initialization'
 )
 @cluster_req
-def init_cluster(confirm_flag):
+def task_init(confirm_flag):
     """
     Perform initialization of a new PVC cluster.
     """
@@ -4323,6 +4388,10 @@ cli_provisioner.add_command(provisioner_status)
 cli_maintenance.add_command(maintenance_on)
 cli_maintenance.add_command(maintenance_off)
 
+cli_task.add_command(task_backup)
+cli_task.add_command(task_restore)
+cli_task.add_command(task_init)
+
 cli.add_command(cli_cluster)
 cli.add_command(cli_node)
 cli.add_command(cli_vm)
@@ -4330,8 +4399,8 @@ cli.add_command(cli_network)
 cli.add_command(cli_storage)
 cli.add_command(cli_provisioner)
 cli.add_command(cli_maintenance)
+cli.add_command(cli_task)
 cli.add_command(status_cluster)
-cli.add_command(init_cluster)
 
 
 #

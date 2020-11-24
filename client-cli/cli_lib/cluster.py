@@ -31,10 +31,55 @@ def initialize(config):
     Initialize the PVC cluster
 
     API endpoint: GET /api/v1/initialize
+    API arguments: yes-i-really-mean-it
+    API schema: {json_data_object}
+    """
+    params = {
+        'yes-i-really-mean-it': 'yes'
+    }
+    response = call_api(config, 'post', '/initialize', params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
+def backup(config):
+    """
+    Get a JSON backup of the cluster
+
+    API endpoint: GET /api/v1/backup
     API arguments:
     API schema: {json_data_object}
     """
-    response = call_api(config, 'post', '/initialize')
+    response = call_api(config, 'get', '/backup')
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json().get('message', '')
+
+
+def restore(config, cluster_data):
+    """
+    Restore a JSON backup to the cluster
+
+    API endpoint: POST /api/v1/restore
+    API arguments: yes-i-really-mean-it
+    API schema: {json_data_object}
+    """
+    cluster_data_json = json.dumps(cluster_data)
+
+    params = {
+        'yes-i-really-mean-it': 'yes'
+    }
+    data = {
+        'cluster_data': cluster_data_json
+    }
+    response = call_api(config, 'post', '/restore', params=params, data=data)
 
     if response.status_code == 200:
         retstatus = True

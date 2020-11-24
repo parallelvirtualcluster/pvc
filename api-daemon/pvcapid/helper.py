@@ -21,6 +21,7 @@
 ###############################################################################
 
 import flask
+import json
 import lxml.etree as etree
 
 from distutils.util import strtobool as dustrtobool
@@ -49,7 +50,7 @@ def strtobool(stringv):
 
 
 #
-# Initialization function
+# Cluster base functions
 #
 def initialize_cluster():
     # Open a Zookeeper connection
@@ -84,6 +85,66 @@ def initialize_cluster():
     pvc_common.stopZKConnection(zk_conn)
 
     return True
+
+
+def backup_cluster():
+    # Open a zookeeper connection
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+
+    # Dictionary of values to come
+    cluster_data = dict()
+
+    def get_data(path):
+        data_raw = zk_conn.get(path)
+        if data_raw:
+            data = data_raw[0].decode('utf8')
+        children = zk_conn.get_children(path)
+
+        cluster_data[path] = data
+
+        if children:
+            if path == '/':
+                child_prefix = '/'
+            else:
+                child_prefix = path + '/'
+
+            for child in children:
+                if child_prefix + child == '/zookeeper':
+                    # We must skip the built-in /zookeeper tree
+                    continue
+                get_data(child_prefix + child)
+
+    get_data('/')
+
+    return cluster_data, 200
+
+
+def restore_cluster(cluster_data_raw):
+    # Open a zookeeper connection
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+
+    # Open a single transaction (restore is atomic)
+    zk_transaction = zk_conn.transaction()
+
+    try:
+        cluster_data = json.loads(cluster_data_raw)
+    except Exception as e:
+        return {"message": "Failed to parse JSON data: {}.".format(e)}, 400
+
+    for key in cluster_data:
+        data = cluster_data[key]
+
+        if zk_conn.exists(key):
+            zk_transaction.set_data(key, str(data).encode('utf8'))
+        else:
+            zk_transaction.create(key, str(data).encode('utf8'))
+
+    try:
+        zk_transaction.commit()
+        return {'message': 'Restore completed successfully.'}, 200
+    except Exception as e:
+        raise
+        return {'message': 'Restore failed: {}.'.format(e)}, 500
 
 
 #

@@ -333,14 +333,23 @@ api.add_resource(API_Logout, '/logout')
 
 # /initialize
 class API_Initialize(Resource):
+    @RequestParser([
+        {'name': 'yes-i-really-mean-it', 'required': True, 'helptext': "Initialization is destructive; please confirm with the argument 'yes-i-really-mean-it'."}
+    ])
     @Authenticator
-    def post(self):
+    def post(self, reqargs):
         """
         Initialize a new PVC cluster
         Note: Normally used only once during cluster bootstrap; checks for the existence of the "/primary_node" key before proceeding and returns 400 if found
         ---
         tags:
           - root
+        parameters:
+          - in: query
+            name: yes-i-really-mean-it
+            type: string
+            required: true
+            description: A confirmation string to ensure that the API consumer really means it
         responses:
           200:
             description: OK
@@ -361,6 +370,82 @@ class API_Initialize(Resource):
 
 
 api.add_resource(API_Initialize, '/initialize')
+
+
+# /backup
+class API_Backup(Resource):
+    @Authenticator
+    def get(self):
+        """
+        Back up the Zookeeper data of a cluster in JSON format
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Cluster Data
+          400:
+            description: Bad request
+        """
+        return api_helper.backup_cluster()
+
+
+api.add_resource(API_Backup, '/backup')
+
+
+# /restore
+class API_Restore(Resource):
+    @RequestParser([
+        {'name': 'yes-i-really-mean-it', 'required': True, 'helptext': "Restore is destructive; please confirm with the argument 'yes-i-really-mean-it'."},
+        {'name': 'cluster_data', 'required': True, 'helptext': "A cluster JSON backup must be provided."}
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Restore a backup over the cluster; destroys the existing data
+        ---
+        tags:
+          - root
+        parameters:
+          - in: query
+            name: yes-i-really-mean-it
+            type: string
+            required: true
+            description: A confirmation string to ensure that the API consumer really means it
+          - in: query
+            name: cluster_data
+            type: string
+            required: true
+            description: The raw JSON cluster backup data
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+          500:
+            description: Restore error or code failure
+            schema:
+              type: object
+              id: Message
+        """
+        try:
+            cluster_data = reqargs.get('cluster_data')
+        except Exception as e:
+            return {"message": "Failed to load JSON backup: {}.".format(e)}, 400
+
+        return api_helper.restore_cluster(cluster_data)
+
+
+api.add_resource(API_Restore, '/restore')
 
 
 # /status
