@@ -20,6 +20,12 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.8
+
+  * Adds support for cluster backup/restore
+  * Moves location of `init` command in CLI to make room for the above
+  * Cleans up some invalid help messages from the API
+
 #### v0.9.7
 
   * Fixes bug with provisioner system template modifications

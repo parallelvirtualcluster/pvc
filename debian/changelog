@@ -1,3 +1,11 @@
+pvc (0.9.8-0) unstable; urgency=high
+
+  * Adds support for cluster backup/restore
+  * Moves location of `init` command in CLI to make room for the above
+  * Cleans up some invalid help messages from the API
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 24 Nov 2020 12:26:57 -0500
+
 pvc (0.9.7-0) unstable; urgency=high
 
   * Fixes bug with provisioner system template modifications
