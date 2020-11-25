@@ -64,9 +64,9 @@ For memory provisioning of VMs, PVC will warn the administrator, via a Degraded 
 
 ### Operating System and Architecture
 
-As an underlying OS, only Debian 10 "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 "Buster".
+As an underlying OS, only Debian GNU/Linux 10.x "Buster" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 "Buster". PVC will, in the future, upgrade to future versions of Debian based on their release schedule and testing; releases may be skipped for official support if required. As a general rule, using the current versions of the official node installer and Ansible repository is the preferred and only supported method for deploying PVC.
 
-Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author.
+Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author and is not officially supported at this time.
 
 ## Storage Layout: Ceph and OSDs
 
