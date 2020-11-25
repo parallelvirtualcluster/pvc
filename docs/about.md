@@ -69,7 +69,7 @@ Nodes are networked together via a set of statically-configured networks. At a m
  
  Within each network is a single "floating" IP address which follows the primary coordinator, providing a single interface to the cluster. Once configured, the cluster is then able to create additional networks of two kinds, "bridged" traditional vLANs and "managed" routed VXLANs, to provide network access to VMs.
 
-Further information about the general cluster architecture, including important considerations for node specifications/sizing and network configuration, can be found at the [cluster architecture page](/cluster-architecture).
+Further information about the general cluster architecture, including important considerations for node specifications/sizing and network configuration, [can be found at the cluster architecture page](/cluster-architecture). It is imperative that potential PVC administrators read this document thoroughly to understand the specific requirements of PVC and avoid potential missteps in obtaining and deploying their cluster.
 
 ## Clients
 
