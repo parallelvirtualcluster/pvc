@@ -4144,7 +4144,7 @@ def task_restore(filename, confirm_flag):
 
 
 ###############################################################################
-# pvc init
+# pvc task init
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(

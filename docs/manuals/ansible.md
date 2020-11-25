@@ -36,7 +36,7 @@ The PVC role configures all the dependencies of PVC, including storage, networki
 
 * Install and configure FRRouting.
 
-* Install and configure the main PVC daemon and API client, including initializing the PVC cluster (`pvc init`).
+* Install and configure the main PVC daemon and API client, including initializing the PVC cluster (`pvc task init`).
 
 ## Completion
 
