@@ -205,10 +205,6 @@ def node_list(limit=None, daemon_state=None, coordinator_state=None, domain_stat
             'message': retdata
         }
 
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
-
     return retdata, retcode
 
 
@@ -394,10 +390,6 @@ def vm_state(vm):
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
     pvc_common.stopZKConnection(zk_conn)
 
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
-
     if retflag:
         if retdata:
             retcode = 200
@@ -426,10 +418,6 @@ def vm_node(vm):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
     pvc_common.stopZKConnection(zk_conn)
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     if retflag:
         if retdata:
@@ -490,10 +478,6 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     retflag, retdata = pvc_vm.get_list(zk_conn, node, state, limit, is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
 
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
-
     if retflag:
         if retdata:
             retcode = 200
@@ -544,10 +528,6 @@ def get_vm_meta(vm):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
     pvc_common.stopZKConnection(zk_conn)
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     if retflag:
         if retdata:
@@ -820,10 +800,6 @@ def vm_flush_locks(vm):
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
     pvc_common.stopZKConnection(zk_conn)
 
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
-
     if retdata['state'] not in ['stop', 'disable']:
         return {"message": "VM must be stopped to flush locks"}, 400
 
@@ -852,10 +828,6 @@ def net_list(limit=None, is_fuzzy=True):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list(zk_conn, limit, is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     if retflag:
         if retdata:
@@ -1028,10 +1000,6 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
         retdata = {
             'message': retdata
         }
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     return retdata, retcode
 
@@ -1281,10 +1249,6 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
     retflag, retdata = pvc_ceph.get_list_pool(zk_conn, limit, is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
 
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
-
     if retflag:
         if retdata:
             retcode = 200
@@ -1347,10 +1311,6 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_volume(zk_conn, pool, limit, is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     if retflag:
         if retdata:
@@ -1622,10 +1582,6 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy)
     pvc_common.stopZKConnection(zk_conn)
-
-    # If this is a single element, strip it out of the list
-    if isinstance(retdata, list) and len(retdata) == 1:
-        retdata = retdata[0]
 
     if retflag:
         if retdata:

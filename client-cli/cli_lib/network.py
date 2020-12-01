@@ -440,10 +440,6 @@ def format_list(config, network_list):
     if not network_list:
         return "No network found"
 
-    # Handle single-element lists
-    if not isinstance(network_list, list):
-        network_list = [network_list]
-
     network_list_output = []
 
     # Determine optimal column widths
@@ -617,9 +613,6 @@ def format_list_acl(acl_list):
     # Handle when we get an empty entry
     if not acl_list:
         acl_list = list()
-    # Handle when we get a single entry
-    if isinstance(acl_list, dict):
-        acl_list = [acl_list]
 
     acl_list_output = []
 

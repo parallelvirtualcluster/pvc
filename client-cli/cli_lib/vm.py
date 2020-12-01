@@ -1211,10 +1211,6 @@ def format_info(config, domain_information, long_output):
 
 
 def format_list(config, vm_list, raw):
-    # Handle single-element lists
-    if not isinstance(vm_list, list):
-        vm_list = [vm_list]
-
     # Function to strip the "br" off of nets and return a nicer list
     def getNiceNetID(domain_information):
         # Network list
