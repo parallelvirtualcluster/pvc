@@ -3316,6 +3316,9 @@ class API_Storage_Ceph_Pool_Root(Resource):
                 name:
                   type: string
                   description: The name of the pool
+                volume_count:
+                  type: integer
+                  description: The number of volumes in the pool
                 stats:
                   type: object
                   properties:

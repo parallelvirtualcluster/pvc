@@ -347,9 +347,11 @@ def getPoolInformation(zk_conn, pool):
     # Parse the stats data
     pool_stats_raw = zkhandler.readdata(zk_conn, '/ceph/pools/{}/stats'.format(pool))
     pool_stats = dict(json.loads(pool_stats_raw))
+    volume_count = len(getCephVolumes(zk_conn, pool))
 
     pool_information = {
         'name': pool,
+        'volume_count': volume_count,
         'stats': pool_stats
     }
     return pool_information
