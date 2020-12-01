@@ -10,6 +10,9 @@
             },
             "type": "object"
         },
+        "Cluster Data": {
+            "type": "object"
+        },
         "ClusterStatus": {
             "properties": {
                 "health": {
@@ -156,6 +159,10 @@
         },
         "VMMetadata": {
             "properties": {
+                "migration_method": {
+                    "description": "The preferred migration method (live, shutdown, none)",
+                    "type": "string"
+                },
                 "name": {
                     "description": "The name of the VM",
                     "type": "string"
@@ -671,6 +678,10 @@
                         }
                     },
                     "type": "object"
+                },
+                "volume_count": {
+                    "description": "The number of volumes in the pool",
+                    "type": "integer"
                 }
             },
             "type": "object"
@@ -954,6 +965,10 @@
                     "description": "Internal provisioner template ID",
                     "type": "integer"
                 },
+                "migration_method": {
+                    "description": "The preferred migration method (live, shutdown, none)",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Template name",
                     "type": "string"
@@ -1158,6 +1173,10 @@
                     "description": "Whether the VM has been migrated, either \"no\" or \"from <last_node>\"",
                     "type": "string"
                 },
+                "migration_method": {
+                    "description": "The preferred migration method (live, shutdown, none)",
+                    "type": "string"
+                },
                 "name": {
                     "description": "The name of the VM",
                     "type": "string"
@@ -1197,6 +1216,10 @@
                             "type": {
                                 "description": "The PVC network type",
                                 "type": "string"
+                            },
+                            "vni": {
+                                "description": "The VNI (PVC network) of the network bridge",
+                                "type": "integer"
                             },
                             "wr_bytes": {
                                 "description": "The number of write bytes on the interface",
@@ -1397,9 +1420,38 @@
                 ]
             }
         },
+        "/api/v1/backup": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Cluster Data"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                },
+                "summary": "Back up the Zookeeper data of a cluster in JSON format",
+                "tags": [
+                    "root"
+                ]
+            }
+        },
         "/api/v1/initialize": {
             "post": {
                 "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding and returns 400 if found",
+                "parameters": [
+                    {
+                        "description": "A confirmation string to ensure that the API consumer really means it",
+                        "in": "query",
+                        "name": "yes-i-really-mean-it",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3933,6 +3985,13 @@
                         "name": "node_autostart",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "in": "query",
+                        "name": "migration_method",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4056,6 +4115,13 @@
                         "name": "node_autostart",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "in": "query",
+                        "name": "migration_method",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4127,6 +4193,12 @@
                         "in": "query",
                         "name": "node_autostart",
                         "type": "boolean"
+                    },
+                    {
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "in": "query",
+                        "name": "migration_method",
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4316,6 +4388,51 @@
                 "summary": "Update userdata document {userdata}",
                 "tags": [
                     "provisioner"
+                ]
+            }
+        },
+        "/api/v1/restore": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "A confirmation string to ensure that the API consumer really means it",
+                        "in": "query",
+                        "name": "yes-i-really-mean-it",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The raw JSON cluster backup data",
+                        "in": "query",
+                        "name": "cluster_data",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "500": {
+                        "description": "Restore error or code failure",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Restore a backup over the cluster; destroys the existing data",
+                "tags": [
+                    "root"
                 ]
             }
         },
@@ -5463,6 +5580,19 @@
                         "name": "autostart",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "default": "none",
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "enum": [
+                            "live",
+                            "shutdown",
+                            "none"
+                        ],
+                        "in": "query",
+                        "name": "migration_method",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -5587,6 +5717,19 @@
                         "name": "autostart",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "default": "none",
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "enum": [
+                            "live",
+                            "shutdown",
+                            "none"
+                        ],
+                        "in": "query",
+                        "name": "migration_method",
+                        "required": false,
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -5756,6 +5899,19 @@
                         "description": "The PVC provisioner profile for the VM",
                         "in": "query",
                         "name": "profile",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "default": "none",
+                        "description": "The preferred migration method (live, shutdown, none)",
+                        "enum": [
+                            "live",
+                            "shutdown",
+                            "none"
+                        ],
+                        "in": "query",
+                        "name": "migration_method",
                         "required": false,
                         "type": "string"
                     }
