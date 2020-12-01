@@ -27,6 +27,7 @@ import shlex
 import subprocess
 import kazoo.client
 from json import loads
+from re import match as re_match
 
 from distutils.util import strtobool
 
@@ -359,6 +360,7 @@ def getDomainNetworks(parsed_xml, stats_data):
             net_wr_drops = net_stats.get('wr_drops', 0)
             net_obj = {
                 'type': net_type,
+                'vni': re_match(r'[vm]*br([0-9a-z]+)', net_bridge).group(1),
                 'mac': net_mac,
                 'source': net_bridge,
                 'model': net_model,

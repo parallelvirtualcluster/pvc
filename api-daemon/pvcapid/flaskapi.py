@@ -1046,6 +1046,9 @@ class API_VM_Root(Resource):
                       source:
                         type: string
                         description: The parent network bridge on the node
+                      vni:
+                        type: integer
+                        description: The VNI (PVC network) of the network bridge
                       model:
                         type: string
                         description: The virtual network device model
