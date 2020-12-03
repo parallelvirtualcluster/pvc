@@ -67,7 +67,16 @@ def net_info(config, net):
     response = call_api(config, 'get', '/network/{net}'.format(net=net))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Network not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -196,7 +205,16 @@ def net_dhcp_info(config, net, mac):
     response = call_api(config, 'get', '/network/{net}/lease/{mac}'.format(net=net, mac=mac))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Lease not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -281,7 +299,16 @@ def net_acl_info(config, net, description):
     response = call_api(config, 'get', '/network/{net}/acl/{description}'.format(net=net, description=description))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "ACL not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 

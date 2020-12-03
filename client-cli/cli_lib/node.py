@@ -81,7 +81,16 @@ def node_info(config, node):
     response = call_api(config, 'get', '/node/{node}'.format(node=node))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match, return not found
+            return False, "Node not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 

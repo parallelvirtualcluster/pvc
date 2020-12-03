@@ -42,7 +42,16 @@ def template_info(config, template, template_type):
     response = call_api(config, 'get', '/provisioner/template/{template_type}/{template}'.format(template_type=template_type, template=template))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Template not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -171,7 +180,16 @@ def userdata_info(config, userdata):
     response = call_api(config, 'get', '/provisioner/userdata/{userdata}'.format(userdata=userdata))
 
     if response.status_code == 200:
-        return True, response.json()[0]
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Userdata not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -294,7 +312,16 @@ def script_info(config, script):
     response = call_api(config, 'get', '/provisioner/script/{script}'.format(script=script))
 
     if response.status_code == 200:
-        return True, response.json()[0]
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Script not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -417,7 +444,16 @@ def ova_info(config, name):
     response = call_api(config, 'get', '/provisioner/ova/{name}'.format(name=name))
 
     if response.status_code == 200:
-        return True, response.json()[0]
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "OVA not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -504,7 +540,16 @@ def profile_info(config, profile):
     response = call_api(config, 'get', '/provisioner/profile/{profile}'.format(profile=profile))
 
     if response.status_code == 200:
-        return True, response.json()[0]
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Profile not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 

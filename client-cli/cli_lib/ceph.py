@@ -164,7 +164,16 @@ def ceph_osd_info(config, osd):
     response = call_api(config, 'get', '/storage/ceph/osd/{osd}'.format(osd=osd))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "OSD not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -552,7 +561,16 @@ def ceph_pool_info(config, pool):
     response = call_api(config, 'get', '/storage/ceph/pool/{pool}'.format(pool=pool))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Pool not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -829,7 +847,16 @@ def ceph_volume_info(config, pool, volume):
     response = call_api(config, 'get', '/storage/ceph/volume/{pool}/{volume}'.format(volume=volume, pool=pool))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Volume not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
@@ -1103,7 +1130,16 @@ def ceph_snapshot_info(config, pool, volume, snapshot):
     response = call_api(config, 'get', '/storage/ceph/snapshot/{pool}/{volume}/{snapshot}'.format(snapshot=snapshot, volume=volume, pool=pool))
 
     if response.status_code == 200:
-        return True, response.json()
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "Snapshot not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
     else:
         return False, response.json().get('message', '')
 
