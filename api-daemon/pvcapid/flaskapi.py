@@ -1974,7 +1974,7 @@ class API_Network_Root(Resource):
               id: Message
         """
         if reqargs.get('name_servers', None):
-            name_servers = reqargs.get('name_servers', None).split(',')
+            name_servers = ','.join(reqargs.get('name_servers', None))
         else:
             name_servers = ''
         return api_helper.net_add(
@@ -2101,7 +2101,7 @@ class API_Network_Element(Resource):
               id: Message
         """
         if reqargs.get('name_servers', None):
-            name_servers = reqargs.get('name_servers', None).split(',')
+            name_servers = ','.join(reqargs.get('name_servers', None))
         else:
             name_servers = ''
         return api_helper.net_add(
@@ -2198,7 +2198,7 @@ class API_Network_Element(Resource):
               id: Message
         """
         if reqargs.get('name_servers', None):
-            name_servers = reqargs.get('name_servers', None).split(',')
+            name_servers = ','.join(reqargs.get('name_servers', None))
         else:
             name_servers = ''
         return api_helper.net_modify(
