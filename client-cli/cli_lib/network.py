@@ -157,7 +157,7 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
     if ip6_gateway is not None:
         params['ip6_gateway'] = ip6_gateway
     if dhcp4_flag is not None:
-        params['dhcp4_flag'] = dhcp4_flag
+        params['dhcp4'] = dhcp4_flag
     if dhcp4_start is not None:
         params['dhcp4_start'] = dhcp4_start
     if dhcp4_end is not None:
