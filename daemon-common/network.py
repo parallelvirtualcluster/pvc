@@ -292,23 +292,23 @@ def modify_network(zk_conn, vni, description=None, domain=None, name_servers=Non
                    dhcp4_flag=None, dhcp4_start=None, dhcp4_end=None):
     # Add the modified parameters to Zookeeper
     zk_data = dict()
-    if description:
+    if description is not None:
         zk_data.update({'/networks/{}'.format(vni): description})
-    if domain:
+    if domain is not None:
         zk_data.update({'/networks/{}/domain'.format(vni): domain})
-    if name_servers:
+    if name_servers is not None:
         zk_data.update({'/networks/{}/name_servers'.format(vni): name_servers})
-    if ip4_network:
+    if ip4_network is not None:
         zk_data.update({'/networks/{}/ip4_network'.format(vni): ip4_network})
-    if ip4_gateway:
+    if ip4_gateway is not None:
         zk_data.update({'/networks/{}/ip4_gateway'.format(vni): ip4_gateway})
-    if ip6_network:
+    if ip6_network is not None:
         zk_data.update({'/networks/{}/ip6_network'.format(vni): ip6_network})
-        if ip6_network is not None:
+        if ip6_network:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'True'})
         else:
             zk_data.update({'/networks/{}/dhcp6_flag'.format(vni): 'False'})
-    if ip6_gateway:
+    if ip6_gateway is not None:
         zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
     else:
         # If we're changing the network, but don't also specify the gateway,
@@ -317,11 +317,11 @@ def modify_network(zk_conn, vni, description=None, domain=None, name_servers=Non
             ip6_netpart, ip6_maskpart = ip6_network.split('/')
             ip6_gateway = '{}1'.format(ip6_netpart)
             zk_data.update({'/networks/{}/ip6_gateway'.format(vni): ip6_gateway})
-    if dhcp4_flag:
+    if dhcp4_flag is not None:
         zk_data.update({'/networks/{}/dhcp4_flag'.format(vni): dhcp4_flag})
-    if dhcp4_start:
+    if dhcp4_start is not None:
         zk_data.update({'/networks/{}/dhcp4_start'.format(vni): dhcp4_start})
-    if dhcp4_end:
+    if dhcp4_end is not None:
         zk_data.update({'/networks/{}/dhcp4_end'.format(vni): dhcp4_end})
 
     zkhandler.writedata(zk_conn, zk_data)
