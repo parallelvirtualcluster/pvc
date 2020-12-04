@@ -1601,38 +1601,38 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
 @click.option(
     '-i', '--ipnet', 'ip4_network',
     default=None,
-    help='CIDR-format IPv4 network address for subnet.'
+    help='CIDR-format IPv4 network address for subnet; disable with "".'
 )
 @click.option(
     '-i6', '--ipnet6', 'ip6_network',
     default=None,
-    help='CIDR-format IPv6 network address for subnet.'
+    help='CIDR-format IPv6 network address for subnet; disable with "".'
 )
 @click.option(
     '-g', '--gateway', 'ip4_gateway',
     default=None,
-    help='Default IPv4 gateway address for subnet.'
+    help='Default IPv4 gateway address for subnet; disable with "".'
 )
 @click.option(
     '-g6', '--gateway6', 'ip6_gateway',
     default=None,
-    help='Default IPv6 gateway address for subnet.'
+    help='Default IPv6 gateway address for subnet; disable with "".'
 )
 @click.option(
     '--dhcp/--no-dhcp', 'dhcp_flag',
     is_flag=True,
     default=None,
-    help='Enable/disable DHCP for clients on subnet.'
+    help='Enable/disable DHCPv4 for clients on subnet (DHCPv6 is always enabled if DHCPv6 network is set).'
 )
 @click.option(
     '--dhcp-start', 'dhcp_start',
     default=None,
-    help='DHCP range start address.'
+    help='DHCPvr range start address.'
 )
 @click.option(
     '--dhcp-end', 'dhcp_end',
     default=None,
-    help='DHCP range end address.'
+    help='DHCPv4 range end address.'
 )
 @click.argument(
     'vni'
