@@ -1275,6 +1275,8 @@ def collect_ceph_stats(queue):
         osd_stats = dict()
 
         for osd in osd_list:
+            if d_osd[osd].node == myhostname:
+                osds_this_node += 1
             try:
                 this_dump = osd_dump[osd]
                 this_dump.update(osd_df[osd])
@@ -1284,12 +1286,12 @@ def collect_ceph_stats(queue):
                 # One or more of the status commands timed out, just continue
                 logger.out('Failed to parse OSD stats into dictionary: {}'.format(e), state='w')
 
-        # Trigger updates for each OSD on this node
-        if debug:
-            logger.out("Trigger updates for each OSD on this node", state='d', prefix='ceph-thread')
+        # Upload OSD data for the cluster (primary-only)
+        if this_node.router_state == 'primary':
+            if debug:
+                logger.out("Trigger updates for each OSD", state='d', prefix='ceph-thread')
 
-        for osd in osd_list:
-            if d_osd[osd].node == myhostname:
+            for osd in osd_list:
                 try:
                     stats = json.dumps(osd_stats[osd])
                     zkhandler.writedata(zk_conn, {
@@ -1298,7 +1300,6 @@ def collect_ceph_stats(queue):
                 except KeyError as e:
                     # One or more of the status commands timed out, just continue
                     logger.out('Failed to upload OSD stats from dictionary: {}'.format(e), state='w')
-                osds_this_node += 1
 
     ceph_conn.shutdown()
 
