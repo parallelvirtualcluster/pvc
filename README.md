@@ -20,6 +20,13 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.9
+
+  * Adds documentation updates
+  * Removes single-element list stripping and fixes surrounding bugs
+  * Adds additional fields to some API endpoints for ease of parsing by clients
+  * Fixes bugs with network configuration
+
 #### v0.9.8
 
   * Adds support for cluster backup/restore

@@ -1,3 +1,12 @@
+pvc (0.9.9-0) unstable; urgency=high
+
+  * Adds documentation updates
+  * Removes single-element list stripping and fixes surrounding bugs
+  * Adds additional fields to some API endpoints for ease of parsing by clients
+  * Fixes bugs with network configuration
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 09 Dec 2020 02:20:20 -0500
+
 pvc (0.9.8-0) unstable; urgency=high
 
   * Adds support for cluster backup/restore
