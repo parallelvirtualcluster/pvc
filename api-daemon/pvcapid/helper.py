@@ -800,7 +800,7 @@ def vm_flush_locks(vm):
     retflag, retdata = pvc_vm.get_list(zk_conn, None, None, vm, is_fuzzy=False)
     pvc_common.stopZKConnection(zk_conn)
 
-    if retdata['state'] not in ['stop', 'disable']:
+    if retdata[0].get('state') not in ['stop', 'disable']:
         return {"message": "VM must be stopped to flush locks"}, 400
 
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
