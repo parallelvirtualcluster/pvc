@@ -26,6 +26,8 @@ The provisioner supports creating VMs based off of installation scripts, by clon
 
 Examples in the following sections use the CLI exclusively for demonstration purposes. For details of the underlying API calls, please see the [API interface reference](/manuals/api-reference.html).
 
+Use of the PVC Provisioner is not required. Administrators can always perform their own installation tasks, and the provisioner is not specially integrated, calling various other API commands as though they were run from the CLI or API.
+
 # PVC Provisioner concepts
 
 Before explaining how to create VMs using either OVA images or installer scripts, we must discuss the concepts used to construct the PVC provisioner system.
@@ -44,9 +46,11 @@ System templates specify the basic resources of the virtual machine: vCPUs, memo
 
 The simplest valid template will specify a number of vCPUs and an amount of vRAM; additional details are optional and can be specified if required.
 
-Serial consoles are required to make use of the `pvc vm log` functionality, via console logfiles in `/var/log/libvirt` on the nodes. VMs without a serial console show an empty log.
+Serial consoles are required to make use of the `pvc vm log` functionality, via console logfiles in `/var/log/libvirt` on the nodes. VMs without a serial console show an empty log. Note that the guest operating system must also be configured to provide output to this serial console for this functionality to work as expected.
 
 VNC consoles permit graphical access to the VM. By default, the VNC interface listens only on 127.0.0.1 on its parent node; the VNC bind configuration can override this to listen on other interfaces, including `0.0.0.0` for all.
+
+PVC does not currently support SPICE or any other non-VNC consoles.
 
 #### Examples
 
@@ -75,7 +79,7 @@ ext-sm-lim  83  1      1024                 True    False  None                 
 
 Network template specify which PVC networks the virtual machine will be bound to, as well as the method used to calculate MAC addresses for VM interfaces. Networks are specified by their VNI ID within PVC.
 
-A template requires at least one network VNI to be valid, and is created in two stages. First, `pvc provisioner template add` adds the template itself, along with the optional MAC template. Second, `pvc provisioner template vni add` adds a VNI into the network template. VNIs are always shown and created in the order added; to move networks around they must be removed then re-added in the proper order.
+A network template requires at least one network VNI to be valid, and is created in two stages. First, `pvc provisioner template network add` adds the template itself, along with the optional MAC template. Second, `pvc provisioner template network vni add` adds a VNI into the network template. VNIs are always shown and created in the order added; to move networks around they must be removed then re-added in the proper order; this will not affect existing VMs provisioned with the template.
 
 In some cases, it may be useful for the administrator to specify a static MAC address pattern for a set of VMs, for instance if they must get consistent DHCP reservations between rebuilds. Such a MAC address template can be specified when adding a new network template, using a standardized layout and set of interpolated variables. This is an optional feature; if no MAC template is specified, VMs will be configured with random MAC addresses for each interface at deploy time.
 
@@ -99,11 +103,11 @@ fixed-mac  82  {prefix}:ff:ff:{vmid}{netid}  1000,1001,1002
 
 * The third example shows a triple-VNI network with a MAC template. The variable names shown are literal, while the `f` values are user-configurable and must be set to valid hexadecimal values by the administrator to uniquely identify the MAC address (in this case, using `ff:ff` for that segment). The variables are interpolated at deploy time as follows:
 
-    * The {prefix} variable is replaced by the provisioner with a standard prefix (`52:54:01`), which is different from the randomly-generated MAC prefix (`52:54:00`) to avoid accidental overlap of MAC addresses. These OUI prefixes are not assigned to any vendor by the IEEE and thus should not conflict with any (real, standards-compliant) devices on the network.
+    * The `{prefix}` variable is replaced by the provisioner with a standard prefix (`52:54:01`), which is different from the randomly-generated MAC prefix (`52:54:00`) to avoid accidental overlap of MAC addresses. These OUI prefixes are not assigned to any vendor by the IEEE and thus should not conflict with any (real, standards-compliant) devices on the network.
 
-    * The {vmid} variable is replaced by a single hexadecimal digit representing the VM's ID, the numerical suffix portion of its name (e.g. `myvm2` will have ID `2`); VMs without a suffix numeral in their names have ID 0. VMs with IDs greater than 15 (hexadecimal "f") will wrap back to 0, so a single MAC template should never be used by more than 16 VMs (numbered 0-15).
+    * The `{vmid}` variable is replaced by a single hexadecimal digit representing the VM's ID, the numerical suffix portion of its name (e.g. `myvm2` will have ID 2); VMs without a suffix numeral in their names have ID 0. VMs with IDs greater than 15 (hexadecimal `f`) will wrap back to 0, so a single MAC template should never be used by more than 16 VMs (numbered 0-15).
 
-    * The {netid} variable is replaced by a single hexadecimal digit representing the sequential identifier, starting at 0, of the interface within the template (i.e. the first interface is 0, the second is 1, etc.). Like the VM ID, network IDs greater than 15 (hexadecimal "f") will wrap back to 0, so a single VM should never have more than 16 interfaces.
+    * The `{netid}` variable is replaced by a single hexadecimal digit representing the sequential identifier, starting at 0, of the interface within the template (i.e. the first interface is 0, the second is 1, etc.). Like the VM ID, network IDs greater than 15 (hexadecimal `f`) will wrap back to 0, so a single VM should never have more than 16 interfaces.
 
     * The location of the two per-VM variables can be adjusted at the administrator's discretion, or removed if not required (e.g. a single-network template, or template for a single VM). In such situations, be careful to avoid accidental overlap with other templates' variable portions.
 
@@ -112,6 +116,8 @@ fixed-mac  82  {prefix}:ff:ff:{vmid}{netid}  1000,1001,1002
 Disk templates specify the disk layout, including filesystem and mountpoint for scripted deployments, for the VM. Disks are specified by their virtual disk ID in Libvirt, in either `sdX` or `vdX` format, and sizes are always specified in GB. Disks may also reference other storage volumes, which will then be cloned during provisioning.
 
 For additional flexibility, the volume filesystem and mountpoint are optional; such volumes will be created and attached to the VM but will not be modified during provisioning.
+
+All storage volumes created by the provisioner at deploy time, regardless of source or type, will be named in the format `<vmname>_<id>`, for instance `myvm_sda`.
 
 #### Examples
 
@@ -174,13 +180,15 @@ A full example script to perform a `debootstrap` Debian installation can be foun
 
 The default script "empty" can be used to skip scripted installation for a profile. Additionally, profiles with no disk mountpoints (and specifically, no root `/` mountpoint) will skip scripted installation.
 
-*WARNING*: It is important to remember that these provisioning scripts will run with the same privileges as the provisioner API daemon (usually root) on the system running the daemon. THIS MAY POSE A SECURITY RISK. However, the intent is that administrators of the cluster are the only ones allowed to specify these scripts, and that they check them thoroughly when adding them to the system, as well as limit access to the provisioning API to trusted sources. If neither of these conditions are possible, for instance if arbitrary users must specify custom scripts without administrator oversight, then the PVC provisioner script system may not be ideal.
+**WARNING**: It is important to remember that these provisioning scripts will run with the same privileges as the provisioner API daemon (usually root) on the system running the daemon. THIS MAY POSE A SECURITY RISK. However, the intent is that administrators of the cluster are the only ones allowed to specify these scripts, and that they check them thoroughly when adding them to the system, as well as limit access to the provisioning API to trusted sources. If neither of these conditions are possible, for instance if arbitrary users must specify custom scripts without administrator oversight, then the PVC provisioner script system may not be ideal.
 
-*NOTE*: It is often required to perform a `chroot` to perform some aspects of the install process. The PVC script fully supports this, though it is relatively complicated. The example script details how to achieve this.
+**NOTE**: It is often required to perform a `chroot` to perform some aspects of the install process. The PVC script fully supports this, though it is relatively complicated. The example script details how to achieve this.
 
 #### The `install` function
 
 The `install` function is the main entrypoint for a provisioning script, and is the only part of the script that is explicitly called. The provisioner calls this function after setting up the temporary install directory and mounting the volumes. Thus, this script can then perform any sort of tasks required in the VM to install it, and then finishes, after which the main provisioner resumes control to unmount the volumes and finish the VM creation.
+
+It is good practice in these scripts to "fail through", since terminating the script abruptly would affect the entire provisioning flow and thus may leave the half-provisioned VM in an undefined state. Care should be taken to `try`/`catch` possible errors, and attempt to finish the script execution (or `return`) even if some aspect fails.
 
 This function is passed a number of keyword arguments that it can then use during installation. These include those specified by the administrator in the profile, on the CLI at deploy time, as well as a number of default arguments:
 
@@ -241,9 +249,7 @@ std-large   41             ext-lg-ser  ext-101  standard-ext4        basic-ssh  
 
 # Deploying VMs from provisioner scripts
 
-PVC supports deploying virtual machines using administrator-provided scripts, using templates, profiles, and Cloud-init userdata to control the deployment process as desired. This deployment method permits the administrator to deploy POSIX-like systems such as Linux or BSD directly from a companion tool such as `debootstrap` on-demand and with maximum flexibility.
-
-Creating VMs with the provisioner requires specifying a VM name and a profile to use.
+Once a profile with a Script value is defined, creating VMs with the provisioner is as simple as specifying a VM name and a profile to use.
 
 ```
 $ pvc provisioner create test1 std-large
@@ -290,7 +296,7 @@ Waiting for task to start..... done.
 SUCCESS: VM "test2" with profile "std-large" has been provisioned and started successfully
 ```
 
-The administrator can also specify whether or not to automatically define and start the VM when launching a provisioner job, using the `--define`/`--no-define` and `--start`/`--no-start` options. The default is to define and start a VM. `--no-define` implies `--no-start` as there would be no VM to start.
+The administrator can also specify whether or not to automatically define and start the VM when launching a provisioner job, using the `--define`/`--no-define` and `--start`/`--no-start` options. The default is to define and start a VM. `--no-define` implies `--no-start` as there would be no VM to start. Using `--no-start` can be useful if other tasks must be performed before starting the VM for the first time, and `--no-define` can be useful for creating "template" VMs which would then be cloned by other profiles.
 
 ```
 $ pvc provisioner create test3 std-large --no-define
@@ -308,7 +314,7 @@ Using cluster "local" - Host: "10.0.0.1:7370"  Scheme: "http"  Prefix: "/api/v1"
 Task ID: 39639f8c-4866-49de-8c51-4179edec0194
 ```
 
-**NOTE**: A VM that is set to do so will be defined on the cluster early in the provisioning process, before creating disks or executing the provisioning script, with the special status "provision". Once completed, if the VM is not set to start automatically, the state will remain "provision", with the VM not running, until its state is explicitly changed with the client (or via autostart when its node returns to ready state).
+**NOTE**: A VM that is set to do so will be defined on the cluster early in the provisioning process, before creating disks or executing the provisioning script, with the special status `provision`. Once completed, if the VM is not set to start automatically, the state will remain `provision`, with the VM not running, until its state is explicitly changed with the client (or via autostart when its node returns to `ready` state).
 
 **NOTE**: Provisioning jobs are tied to the node that spawned them. If the primary node changes, provisioning jobs will continue to run against that node until they are completed, interrupted, or fail, but the active API (now on the new primary node) will not have access to any status data from these jobs, until the primary node status is returned to the original host. The CLI will warn the administrator of this if there are active jobs while running `node primary` or `node secondary` commands.
 
