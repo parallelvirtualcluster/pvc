@@ -9,7 +9,7 @@ Details of the Provisioner API interface can be found in [the API manual](/manua
   * [PVC Provisioner concepts](#pvc-provisioner-concepts)
     + [Templates](#templates)
     + [Userdata](#cloud-init-userdata)
-    + [Scripts](#provisioner-scripts)
+    + [Scripts](#provisioning-scripts)
     + [Profiles](#profiles)
   * [Deploying VMs from provisioner scripts](#deploying-vms-from-provisioner-scripts)
   * [Deploying VMs from OVA images](#deploying-vms-from-ova-images)
