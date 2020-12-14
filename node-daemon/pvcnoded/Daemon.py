@@ -1356,9 +1356,11 @@ def collect_vm_stats(queue):
                 if instance.getdom() is not None:
                     try:
                         if instance.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+                            logger.out("VM {} has failed".format(instance.domname), state='w', prefix='vm-thread')
                             raise
                     except Exception:
                         # Toggle a state "change"
+                        logger.out("Resetting state to {} for VM {}".format(instance.getstate(), instance.domname), state='i', prefix='vm-thread')
                         zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(domain): instance.getstate()})
         elif instance.getnode() == this_node.name:
             memprov += instance.getmemory()

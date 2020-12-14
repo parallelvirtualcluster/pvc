@@ -35,7 +35,7 @@ import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 import daemon_lib.common as daemon_common
 
 
-def flush_locks(zk_conn, logger, dom_uuid):
+def flush_locks(zk_conn, logger, dom_uuid, this_node=None):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
     # Get the list of RBD images
     rbd_list = zkhandler.readdata(zk_conn, '/domains/{}/rbdlist'.format(dom_uuid)).split(',')
@@ -56,10 +56,13 @@ def flush_locks(zk_conn, logger, dom_uuid):
         if lock_list:
             # Loop through the locks
             for lock in lock_list:
+                if this_node is not None and lock['address'].split(':')[0] != this_node.storage_ipaddr:
+                    logger.out('RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting'.format(lock['address'].split(':')[0], state='e'))
+                    continue
                 # Free the lock
                 lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock['id'], lock['locker']))
                 if lock_remove_retcode != 0:
-                    logger.out('Failed to free RBD lock "{}" on volume "{}"\n{}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
+                    logger.out('Failed to free RBD lock "{}" on volume "{}": {}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
                     continue
                 logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock['id'], rbd), state='o')
 
@@ -74,15 +77,14 @@ def run_command(zk_conn, logger, this_node, data):
     # Flushing VM RBD locks
     if command == 'flush_locks':
         dom_uuid = args
-        # If this node is taking over primary state, wait until it's done
-        while this_node.router_state == 'takeover':
-            time.sleep(1)
-        if this_node.router_state == 'primary':
+
+        # Verify that the VM is set to run on this node
+        if this_node.d_domain[dom_uuid].getnode() == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock(zk_conn, '/cmd/domains')
             with zk_lock:
-                # Add the OSD
-                result = flush_locks(zk_conn, logger, dom_uuid)
+                # Flush the lock
+                result = flush_locks(zk_conn, logger, dom_uuid, this_node)
                 # Command succeeded
                 if result:
                     # Update the command queue
@@ -224,6 +226,12 @@ class VMInstance(object):
             curstate = self.dom.state()[0]
         except Exception:
             curstate = 'notstart'
+
+        # Handle situations where the VM crashed or the node unexpectedly rebooted
+        if self.getdom() is None or self.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
+            # Flush locks
+            self.logger.out('Flushing RBD locks', state='i', prefix='Domain {}'.format(self.domuuid))
+            flush_locks(self.zk_conn, self.logger, self.domuuid, self.this_node)
 
         if curstate == libvirt.VIR_DOMAIN_RUNNING:
             # If it is running just update the model

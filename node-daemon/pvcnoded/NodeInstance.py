@@ -64,17 +64,28 @@ class NodeInstance(object):
         self.vcpualloc = 0
         # Floating IP configurations
         if self.config['enable_networking']:
-            self.vni_dev = self.config['vni_dev']
-            self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
             self.upstream_dev = self.config['upstream_dev']
-            self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
+            self.upstream_floatingipaddr = self.config['upstream_floating_ip'].split('/')[0]
+            self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_dev_ip'].split('/')
+            self.vni_dev = self.config['vni_dev']
+            self.vni_floatingipaddr = self.config['vni_floating_ip'].split('/')[0]
+            self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_dev_ip'].split('/')
+            self.storage_dev = self.config['storage_dev']
+            self.storage_floatingipaddr = self.config['storage_floating_ip'].split('/')[0]
+            self.storage_ipaddr, self.storage_cidrnetmask = self.config['storage_dev_ip'].split('/')
         else:
-            self.vni_dev = None
-            self.vni_ipaddr = None
-            self.vni_cidrnetmask = None
             self.upstream_dev = None
+            self.upstream_floatingipaddr = None
             self.upstream_ipaddr = None
             self.upstream_cidrnetmask = None
+            self.vni_dev = None
+            self.vni_floatingipaddr = None
+            self.vni_ipaddr = None
+            self.vni_cidrnetmask = None
+            self.storage_dev = None
+            self.storage_floatingipaddr = None
+            self.storage_ipaddr = None
+            self.storage_cidrnetmask = None
         # Threads
         self.flush_thread = None
         # Flags
@@ -349,13 +360,13 @@ class NodeInstance(object):
         # 1. Add Upstream floating IP
         self.logger.out(
             'Creating floating upstream IP {}/{} on interface {}'.format(
-                self.upstream_ipaddr,
+                self.upstream_floatingipaddr,
                 self.upstream_cidrnetmask,
                 'brupstream'
             ),
             state='o'
         )
-        common.createIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
+        common.createIPAddress(self.upstream_floatingipaddr, self.upstream_cidrnetmask, 'brupstream')
         self.logger.out('Releasing write lock for synchronization phase C', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
@@ -367,16 +378,25 @@ class NodeInstance(object):
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase D', state='o')
         time.sleep(0.2)  # Time fir reader to acquire the lock
-        # 2. Add Cluster floating IP
+        # 2. Add Cluster & Storage floating IP
         self.logger.out(
             'Creating floating management IP {}/{} on interface {}'.format(
-                self.vni_ipaddr,
+                self.vni_floatingipaddr,
                 self.vni_cidrnetmask,
                 'brcluster'
             ),
             state='o'
         )
-        common.createIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
+        common.createIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
+        self.logger.out(
+            'Creating floating management IP {}/{} on interface {}'.format(
+                self.storage_floatingipaddr,
+                self.storage_cidrnetmask,
+                'brcluster'
+            ),
+            state='o'
+        )
+        common.createIPAddress(self.storage_floatingipaddr, self.storage_cidrnetmask, 'brstorage')
         self.logger.out('Releasing write lock for synchronization phase D', state='i')
         zkhandler.writedata(self.zk_conn, {'/locks/primary_node': ''})
         lock.release()
@@ -541,13 +561,13 @@ class NodeInstance(object):
         # 5. Remove Upstream floating IP
         self.logger.out(
             'Removing floating upstream IP {}/{} from interface {}'.format(
-                self.upstream_ipaddr,
+                self.upstream_floatingipaddr,
                 self.upstream_cidrnetmask,
                 'brupstream'
             ),
             state='o'
         )
-        common.removeIPAddress(self.upstream_ipaddr, self.upstream_cidrnetmask, 'brupstream')
+        common.removeIPAddress(self.upstream_floatingipaddr, self.upstream_cidrnetmask, 'brupstream')
         self.logger.out('Releasing read lock for synchronization phase C', state='i')
         lock.release()
         self.logger.out('Released read lock for synchronization phase C', state='o')
@@ -557,16 +577,25 @@ class NodeInstance(object):
         self.logger.out('Acquiring read lock for synchronization phase D', state='i')
         lock.acquire()
         self.logger.out('Acquired read lock for synchronization phase D', state='o')
-        # 6. Remove Cluster floating IP
+        # 6. Remove Cluster & Storage floating IP
         self.logger.out(
             'Removing floating management IP {}/{} from interface {}'.format(
-                self.vni_ipaddr,
+                self.vni_floatingipaddr,
                 self.vni_cidrnetmask,
                 'brcluster'
             ),
             state='o'
         )
-        common.removeIPAddress(self.vni_ipaddr, self.vni_cidrnetmask, 'brcluster')
+        common.removeIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
+        self.logger.out(
+            'Removing floating management IP {}/{} from interface {}'.format(
+                self.storage_floatingipaddr,
+                self.storage_cidrnetmask,
+                'brcluster'
+            ),
+            state='o'
+        )
+        common.removeIPAddress(self.storage_floatingipaddr, self.storage_cidrnetmask, 'brstorage')
         self.logger.out('Releasing read lock for synchronization phase D', state='i')
         lock.release()
         self.logger.out('Released read lock for synchronization phase D', state='o')
