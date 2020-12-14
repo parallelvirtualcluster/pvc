@@ -56,14 +56,18 @@ def flush_locks(zk_conn, logger, dom_uuid, this_node=None):
         if lock_list:
             # Loop through the locks
             for lock in lock_list:
-                if this_node is not None and lock['address'].split(':')[0] != this_node.storage_ipaddr:
+                if this_node is not None and zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid)) != 'stop' and lock['address'].split(':')[0] != this_node.storage_ipaddr:
                     logger.out('RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting'.format(lock['address'].split(':')[0], state='e'))
-                    continue
+                    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'fail'})
+                    zkhandler.writedata(zk_conn, {'/domains/{}/failedreason'.format(dom_uuid): 'Could not safely free RBD lock {} ({}) on volume {}; stop VM and flush locks manually'.format(lock['id'], lock['address'], rbd)})
+                    break
                 # Free the lock
                 lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock['id'], lock['locker']))
                 if lock_remove_retcode != 0:
                     logger.out('Failed to free RBD lock "{}" on volume "{}": {}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
-                    continue
+                    zkhandler.writedata(zk_conn, {'/domains/{}/state'.format(dom_uuid): 'fail'})
+                    zkhandler.writedata(zk_conn, {'/domains/{}/failedreason'.format(dom_uuid): 'Could not free RBD lock {} ({}) on volume {}: {}'.format(lock['id'], lock['address'], rbd, lock_remove_stderr)})
+                    break
                 logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock['id'], rbd), state='o')
 
     return True
@@ -232,6 +236,11 @@ class VMInstance(object):
             # Flush locks
             self.logger.out('Flushing RBD locks', state='i', prefix='Domain {}'.format(self.domuuid))
             flush_locks(self.zk_conn, self.logger, self.domuuid, self.this_node)
+            if zkhandler.readdata(self.zk_conn, '/domains/{}/state'.format(self.domuuid)) == 'fail':
+                lv_conn.close()
+                self.dom = None
+                self.instart = False
+                return
 
         if curstate == libvirt.VIR_DOMAIN_RUNNING:
             # If it is running just update the model
@@ -251,7 +260,10 @@ class VMInstance(object):
                 self.logger.out('Failed to create VM', state='e', prefix='Domain {}'.format(self.domuuid))
                 zkhandler.writedata(self.zk_conn, {'/domains/{}/state'.format(self.domuuid): 'fail'})
                 zkhandler.writedata(self.zk_conn, {'/domains/{}/failedreason'.format(self.domuuid): str(e)})
+                lv_conn.close()
                 self.dom = None
+                self.instart = False
+                return
 
         lv_conn.close()
 
