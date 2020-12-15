@@ -1,3 +1,13 @@
+pvc (0.9.10-0) unstable; urgency=high
+
+  * Moves OSD stats uploading to primary, eliminating reporting failures while hosts are down
+  * Documentation updates
+  * Significantly improves RBD locking behaviour in several situations, eliminating cold-cluster start issues and failed VM boot-ups after crashes
+  * Fixes some timeout delays with fencing
+  * Fixes bug in validating YAML provisioner userdata
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 15 Dec 2020 10:45:15 -0500
+
 pvc (0.9.9-0) unstable; urgency=high
 
   * Adds documentation updates

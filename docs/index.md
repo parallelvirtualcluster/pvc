@@ -18,6 +18,14 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.10
+
+  * Moves OSD stats uploading to primary, eliminating reporting failures while hosts are down
+  * Documentation updates
+  * Significantly improves RBD locking behaviour in several situations, eliminating cold-cluster start issues and failed VM boot-ups after crashes
+  * Fixes some timeout delays with fencing
+  * Fixes bug in validating YAML provisioner userdata
+
 #### v0.9.9
 
   * Adds documentation updates
