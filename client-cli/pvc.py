@@ -3320,7 +3320,7 @@ def provisioner_userdata_add(name, filename):
     userdata = filename.read()
     filename.close()
     try:
-        yaml.load(userdata, Loader=yaml.FullLoader)
+        yaml.load(userdata, Loader=yaml.SafeLoader)
     except Exception as e:
         click.echo("Error: Userdata document is malformed")
         cleanup(False, e)
@@ -3397,7 +3397,7 @@ def provisioner_userdata_modify(name, filename, editor):
         filename.close()
 
     try:
-        yaml.load(userdata, Loader=yaml.FullLoader)
+        yaml.load(userdata, Loader=yaml.SafeLoader)
     except Exception as e:
         click.echo("Error: Userdata document is malformed")
         cleanup(False, e)
