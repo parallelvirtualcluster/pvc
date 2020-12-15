@@ -124,6 +124,11 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
     )
     ipmi_reset_retcode, ipmi_reset_stdout, ipmi_reset_stderr = common.run_os_command(ipmi_command_reset)
 
+    if ipmi_reset_retcode != 0:
+        logger.out('Failed to reboot dead node', state='e')
+        print(ipmi_reset_stderr)
+        return False
+
     time.sleep(2)
 
     # Ensure the node is powered on
@@ -139,14 +144,14 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
         )
         ipmi_start_retcode, ipmi_start_stdout, ipmi_start_stderr = common.run_os_command(ipmi_command_start)
 
-    # Declare success or failure
-    if ipmi_reset_retcode == 0:
-        logger.out('Successfully rebooted dead node', state='o')
-        return True
-    else:
-        logger.out('Failed to reboot dead node', state='e')
-        print(ipmi_reset_stderr)
-        return False
+        if ipmi_start_retcode != 0:
+            logger.out('Failed to start powered-off dead node', state='e')
+            print(ipmi_reset_stderr)
+            return False
+
+    # Declare success
+    logger.out('Successfully rebooted dead node', state='o')
+    return True
 
 
 #
