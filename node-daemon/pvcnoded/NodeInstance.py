@@ -389,10 +389,10 @@ class NodeInstance(object):
         )
         common.createIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
         self.logger.out(
-            'Creating floating management IP {}/{} on interface {}'.format(
+            'Creating floating storage IP {}/{} on interface {}'.format(
                 self.storage_floatingipaddr,
                 self.storage_cidrnetmask,
-                'brcluster'
+                'brstorage'
             ),
             state='o'
         )
@@ -588,10 +588,10 @@ class NodeInstance(object):
         )
         common.removeIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
         self.logger.out(
-            'Removing floating management IP {}/{} from interface {}'.format(
+            'Removing floating storage IP {}/{} from interface {}'.format(
                 self.storage_floatingipaddr,
                 self.storage_cidrnetmask,
-                'brcluster'
+                'brstorage'
             ),
             state='o'
         )
