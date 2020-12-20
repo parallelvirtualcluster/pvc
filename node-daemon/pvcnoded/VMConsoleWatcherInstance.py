@@ -62,13 +62,13 @@ class VMConsoleWatcherInstance(object):
     def start(self):
         self.thread_stopper.clear()
         self.thread = Thread(target=self.run, args=(), kwargs={})
-        self.logger.out('Starting VM log parser', state='i', prefix='Domain {}:'.format(self.domuuid))
+        self.logger.out('Starting VM log parser', state='i', prefix='Domain {}'.format(self.domuuid))
         self.thread.start()
 
     # Stop execution thread
     def stop(self):
         if self.thread and self.thread.isAlive():
-            self.logger.out('Stopping VM log parser', state='i', prefix='Domain {}:'.format(self.domuuid))
+            self.logger.out('Stopping VM log parser', state='i', prefix='Domain {}'.format(self.domuuid))
             self.thread_stopper.set()
             # Do one final flush
             self.update()
