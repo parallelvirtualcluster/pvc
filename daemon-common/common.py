@@ -267,6 +267,13 @@ def getInformationFromXML(zk_conn, uuid):
     except Exception:
         domain_profile = None
 
+    try:
+        domain_vnc = zkhandler.readdata(zk_conn, '/domains/{}/vnc'.format(uuid))
+        domain_vnc_listen, domain_vnc_port = domain_vnc.split(':')
+    except Exception:
+        domain_vnc_listen = 'None'
+        domain_vnc_port = 'None'
+
     parsed_xml = getDomainXML(zk_conn, uuid)
 
     try:
@@ -312,6 +319,10 @@ def getInformationFromXML(zk_conn, uuid):
         'arch': domain_arch,
         'machine': domain_machine,
         'console': domain_console,
+        'vnc': {
+            'listen': domain_vnc_listen,
+            'port': domain_vnc_port
+        },
         'emulator': domain_emulator,
         'features': domain_features,
         'disks': domain_disks,

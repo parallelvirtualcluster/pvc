@@ -27,6 +27,8 @@ import json
 
 from threading import Thread
 
+from xml.etree import ElementTree
+
 import pvcnoded.zkhandler as zkhandler
 import pvcnoded.common as common
 
@@ -207,6 +209,21 @@ class VMInstance(object):
                 zkhandler.writedata(self.zk_conn, {'/nodes/{}/runningdomains'.format(self.this_node.name): ' '.join(self.this_node.domain_list)})
             except Exception as e:
                 self.logger.out('Error removing domain from list: {}'.format(e), state='e')
+
+    # Update the VNC live data
+    def update_vnc(self):
+        if self.dom is not None:
+            live_xml = ElementTree.fromstring(self.dom.XMLDesc(0))
+            graphics = live_xml.find('./devices/graphics')
+            if graphics is not None:
+                self.logger.out('Updating VNC data', state='i', prefix='Domain {}'.format(self.domuuid))
+                port = graphics.get('port', '')
+                listen = graphics.get('listen', '')
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/vnc'.format(self.domuuid): '{}:{}'.format(listen, port)})
+            else:
+                zkhandler.writedata(self.zk_conn, {'/domains/{}/vnc'.format(self.domuuid): ''})
+        else:
+            zkhandler.writedata(self.zk_conn, {'/domains/{}/vnc'.format(self.domuuid): ''})
 
     # Start up the VM
     def start_vm(self):
@@ -739,7 +756,8 @@ class VMInstance(object):
                         self.removeDomainFromList()
                         # Stop the log watcher
                         self.console_log_instance.stop()
-
+                # Update the VNC information
+                self.update_vnc()
             else:
                 # Conditional pass three - Is this VM currently running on this node
                 if running == libvirt.VIR_DOMAIN_RUNNING:

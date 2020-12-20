@@ -1071,6 +1071,11 @@ def format_info(config, domain_information, long_output):
     ainformation.append('{}vCPUs:{}              {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu']))
     ainformation.append('{}Topology (S/C/T):{}   {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vcpu_topology']))
 
+    if domain_information['vnc'].get('listen', 'None') != 'None' and domain_information['vnc'].get('port', 'None') != 'None':
+        ainformation.append('')
+        ainformation.append('{}VNC listen:{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vnc']['listen']))
+        ainformation.append('{}VNC port:{}           {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['vnc']['port']))
+
     if long_output is True:
         # Virtualization information
         ainformation.append('')

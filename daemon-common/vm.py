@@ -207,6 +207,7 @@ def define_vm(zk_conn, config_data, target_node, node_limit, node_selector, node
         '/domains/{}/consolelog'.format(dom_uuid): '',
         '/domains/{}/rbdlist'.format(dom_uuid): formatted_rbd_list,
         '/domains/{}/profile'.format(dom_uuid): profile,
+        '/domains/{}/vnc'.format(dom_uuid): '',
         '/domains/{}/xml'.format(dom_uuid): config_data
     })
 

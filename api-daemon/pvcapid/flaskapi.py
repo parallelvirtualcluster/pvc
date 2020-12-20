@@ -1023,6 +1023,15 @@ class API_VM_Root(Resource):
                 console:
                   type: string
                   descritpion: The serial console type of the VM
+                vnc:
+                  type: object
+                  properties:
+                    listen:
+                      type: string
+                      description: The active VNC listen address or 'None'
+                    port:
+                      type: string
+                      description: The active VNC port or 'None'
                 emulator:
                   type: string
                   description: The binary emulator of the VM

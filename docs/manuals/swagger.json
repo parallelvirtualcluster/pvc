@@ -1302,6 +1302,19 @@
                     "description": "The topology of the assigned vCPUs in Sockets/Cores/Threads format",
                     "type": "string"
                 },
+                "vnc": {
+                    "properties": {
+                        "listen": {
+                            "description": "The active VNC listen address or 'None'",
+                            "type": "string"
+                        },
+                        "port": {
+                            "description": "The active VNC port or 'None'",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
                 "xml": {
                     "description": "The raw Libvirt XML definition of the VM",
                     "type": "string"
