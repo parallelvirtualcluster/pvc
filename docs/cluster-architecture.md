@@ -46,8 +46,6 @@ The following table provides bare-minimum, recommended, and optimal specificatio
 | Total RAM (n-1) | 32GB | 96GB | 128GB |
 | Total disk space | 200GB | 400GB | 800GB |
 
-Of these totals, some amount of CPU and RAM will be used by the storage subsystem and the PVC daemons themselves, meaning that the total available for virtual machines is slightly less. Generally, each OSD data disk will consume 1 vCPU at load and 1-2GB RAM, so nodes should be sized not only according to the VM workload, but the number of storage disks per node. Additionally the coordinator databases will use additional RAM and CPU resources of up to 1-4GB per node, though there is generally little need to spec coordinators any larger than non-coordinator nodes and the VM automatic node selection process will take used RAM into account by default.
-
 ### System Disks
 
 The system disk(s) chosen are important to consider, especially for coordinators. Ideally, an SSD, or two SSDs in RAID-1/mirroring are recommended for system disks. This helps ensure optimal performance for the system (e.g. swap space) and PVC components such as databases as well as the Ceph caches.
@@ -61,6 +59,18 @@ Care should be taken to examine the "healthy" versus "n-1" total resource availa
 The general rule for available resource capacity planning can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs" for a 3-node cluster.
 
 For memory provisioning of VMs, PVC will warn the administrator, via a Degraded cluster state, if the "n-1" RAM quantity is exceeded by the total maximum allocation of all running VMs. This situation can be worked around with sufficient swap space on nodes to ensure there is overflow, however the warning cannot be overridden. If nodes are of mismatched sizes, the "n-1" RAM quantity is calculated by removing (one of) the largest node in the cluster and adding the remaining nodes' RAM counts together.
+
+### System Memory Utilization
+
+By default, several components of PVC outside of VMs will have large memory allocations, most notably Ceph OSD processes and Zookeeper database processes. These processes should be considered when selecting the RAM allocation of nodes, and adjusted in the Ansible `group_vars` if lower defaults are required.
+
+#### Ceph OSD processes
+
+By default, PVC will allow several GB (up to 4-6GB) of RAM allocation per OSD to maximize the available cache space and hence disk performance. This can be lowered as far as 939MB should the administrator require due to a low RAM configuration, but no further due to Ceph limitations; therefore at least 1GB of memory per storage OSD is required even in the most limited case.
+
+#### Zookeeper processes
+
+By default, the Java heap and stack sizes are set to 256MB and 512MB respectively, yieliding a memory usage of 500+MB after serveral days or weeks of uptime. This can be lowered to 32M or less for lightly-used clusters should the administrator require due to a low RAM configuration.
 
 ### Operating System and Architecture
 
