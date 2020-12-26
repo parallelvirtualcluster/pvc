@@ -1105,9 +1105,9 @@ def collect_ceph_stats(queue):
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
-        command = {"prefix": "df", "format": "json"}
+        retcode, stdout, stderr = common.run_os_command('ceph df --format json', timeout=1)
         try:
-            ceph_pool_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['pools']
+            ceph_pool_df_raw = json.loads(stdout)['pools']
         except Exception as e:
             logger.out('Failed to obtain Pool data (ceph df): {}'.format(e), state='w')
             ceph_pool_df_raw = []
