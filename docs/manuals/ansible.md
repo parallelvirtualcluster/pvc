@@ -62,7 +62,7 @@ Create a `group_vars/<cluster>` folder to hold the cluster configuration variabl
 
 ### Bootstrapping a cluster
 
-Before bootstrapping a cluster, see the section on [PVC Ansible configuration variables](/manuals/ansible#pvc-ansible-configuration-variables) to configure the cluster.
+Before bootstrapping a cluster, see the section on [PVC Ansible configuration variables](/manuals/ansible/#pvc-ansible-configuration-variables) to configure the cluster.
 
 Bootstrapping a cluster can be done using the main `pvc.yml` playbook. Generally, a bootstrap run should be limited to the coordinators of the cluster to avoid potential race conditions or strange bootstrap behaviour. The special variable `bootstrap=yes` must be set to indicate that a cluster bootstrap is to be requested.
 
@@ -278,7 +278,7 @@ A dictionary of networks to configure on the nodes.
 
 The key will be used to "name" the interface file under `/etc/network/interfaces.d`, but otherwise the `device` is the real name of the device (e.g. `iface [device] inet ...`.
 
-The three required networks are: `upstream`, `cluster`, `storage`. If `storage` is configured identically to `cluster`, the two networks will be collapsed into one; for details on this, please see the [documentation about the storage network](/cluster-architecture#storage--connecting-ceph-osd-with-each-other).
+The three required networks are: `upstream`, `cluster`, `storage`. If `storage` is configured identically to `cluster`, the two networks will be collapsed into one; for details on this, please see the [documentation about the storage network](/cluster-architecture/#storage-connecting-ceph-daemons-with-each-other-and-with-osds).
 
 Additional networks can also be specified here to automate their configuration. In the above example, a "bondU" interface is configured, which the remaining required networks use as their `raw_device`.
 
