@@ -196,7 +196,7 @@ Generate using `pwgen -s 16` and adjusting length as required.
 
 #### `passwd_root`
 
-* *optional*
+* *ignored*
 
 Used only for reference, the plain-text root password for `passwdhash_root`.
 
