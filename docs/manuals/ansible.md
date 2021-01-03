@@ -128,13 +128,19 @@ admin_users:
       - "ssh-ed25519 MyKey 2019-06"
 
 networks:
-  "upstream":
+  "bondU":
     device: "bondU"
     type: "bond"
     bond_mode: "802.3ad"
     bond_devices:
       - "enp1s0f0"
       - "enp1s0f1"
+    mtu: 9000
+
+  "upstream":
+    device: "vlan1000"
+    type: "vlan"
+    raw_device: "bondU"
     mtu: 1500
     domain: "{{ local_domain }}"
     subnet: "192.168.100.0/24"
@@ -154,7 +160,7 @@ networks:
     device: "vlan1002"
     type: "vlan"
     raw_device: "bondU"
-    mtu: 1500
+    mtu: 9000
     domain: "pvc-storage.local"
     subnet: "10.0.1.0/24"
     floating_ip: "10.0.1.254/24"
@@ -268,9 +274,13 @@ A list of SSH public key strings, in `authorized_keys` line format, for the user
 
 * *required*
 
-A dictionary of networks to configure on the nodes. Three networks are required by all PVC clusters, though additional networks may be configured here as well.
+A dictionary of networks to configure on the nodes.
 
-The three required networks are: `upstream`, `cluster`, `storage`.
+The key will be used to "name" the interface file under `/etc/network/interfaces.d`, but otherwise the `device` is the real name of the device (e.g. `iface [device] inet ...`.
+
+The three required networks are: `upstream`, `cluster`, `storage`. If `storage` is configured identically to `cluster`, the two networks will be collapsed into one; for details on this, please see the [documentation about the storage network](/cluster-architecture#storage--connecting-ceph-osd-with-each-other).
+
+Additional networks can also be specified here to automate their configuration. In the above example, a "bondU" interface is configured, which the remaining required networks use as their `raw_device`.
 
 Within each `network` element, the following options may be specified:
 
@@ -278,7 +288,7 @@ Within each `network` element, the following options may be specified:
 
 * *required*
 
-The network device name.
+The real network device name.
 
 ##### `type`
 
