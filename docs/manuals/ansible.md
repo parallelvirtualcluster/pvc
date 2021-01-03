@@ -6,7 +6,7 @@ The PVC Ansible setup and management framework is written in Ansible. It consist
 
 The Base role configures a node to a specific, standard base Debian system, with a number of PVC-specific tweaks. Some examples include:
 
-* Installing the custom PVC repository at Boniface Labs.
+* Installing the custom PVC repository hosted at Boniface Labs.
 
 * Removing several unnecessary packages and installing numerous additional packages.
 
@@ -22,6 +22,8 @@ The Base role configures a node to a specific, standard base Debian system, with
 
 The end result is a standardized "PVC node" system ready to have the daemons installed by the PVC role.
 
+The Base role is optional: if an administrator so chooses, they can bypass this role and configure things manually. That said, for the proper functioning of the PVC role, the Base role should always be applied first.
+
 ## PVC role
 
 The PVC role configures all the dependencies of PVC, including storage, networking, and databases, then installs the PVC daemon itself. Specifically, it will, in order:
@@ -30,21 +32,19 @@ The PVC role configures all the dependencies of PVC, including storage, networki
 
 * Install, configure, and if `bootstrap=yes` is set, bootstrap a Zookeeper cluster (coordinators only).
 
-* Install, configure, and if `bootstrap=yes` is set`, bootstrap a Patroni PostgreSQL cluster for the PowerDNS aggregator (coordinators only).
+* Install, configure, and if `bootstrap=yes` is set, bootstrap a Patroni PostgreSQL cluster for the PowerDNS aggregator (coordinators only).
 
 * Install and configure Libvirt.
 
 * Install and configure FRRouting.
 
-* Install and configure the main PVC daemon and API client, including initializing the PVC cluster (`pvc task init`).
+* Install and configure the main PVC daemon and API client.
+
+* If `bootstrap=yes` is set, initialize the PVC cluster (`pvc task init`).
 
 ## Completion
 
-Once the entire playbook has run for the first time against a given host, the host will be rebooted to apply all the configured services. On startup, the system should immediately launch the PVC daemon, check in to the Zookeeper cluster, and become ready. The node will be in `flushed` state on its first boot; the administrator will need to run `pvc node unflush <node>` to set the node into active state ready to handle virtual machines.
-
-# PVC Ansible configuration manual
-
-This manual documents the various `group_vars` configuration options for the `pvc-ansible` framework. We assume that the administrator is generally familiar with Ansible and its operation.
+Once the entire playbook has run for the first time against a given host, the host will be rebooted to apply all the configured services. On startup, the system should immediately launch the PVC daemon, check in to the Zookeeper cluster, and become ready. The node will be in `flushed` state on its first boot; the administrator will need to run `pvc node unflush <node>` to set the node into active state ready to handle virtual machines. On the first bootstrap run, the administrator will also have to configure storage block devices (OSDs), networks, etc. For full details, see [the main getting started page](/getting-started).
 
 ## General usage
 
@@ -74,7 +74,13 @@ Adding new nodes to an existing cluster can be done using the main `pvc.yml` pla
 
 ### Reconfiguration and software updates
 
-After modifying configuration settings in the `group_vars`, or to update PVC to the latest version on a release, deployment of updated cluster can be done using the main `pvc.yml` playbook. The configuration should be updated if required, then the playbook run against all hosts in the cluster with no special flags or limits.
+For general, day-to-day software updates such as base system updates or upgrading to newer PVC versions, a special playbook, `oneshot/update-pvc-cluster.yml`, is provided. This playbook will gracefully update and upgrade all PVC nodes in the cluster, flush them, reboot them, and then unflush them. This operation should be completely transparent to VMs on the cluster.
+
+For more advanced updates, such as changing configurations in the `group_vars`, the main `pvc.yml` playbook can be used to deploy the changes across all hosts. Note that this may cause downtime due to node reboots if certain configurations change, and it is not recommended to use this process frequently.
+
+# PVC Ansible configuration manual
+
+This manual documents the various `group_vars` configuration options for the `pvc-ansible` framework. We assume that the administrator is generally familiar with Ansible and its operation.
 
 ## PVC Ansible configuration variables
 
@@ -96,10 +102,14 @@ Example configuration:
 
 ```
 ---
+cluster_group: mycluster
+timezone_location: Canada/Eastern
 local_domain: upstream.local
+
 username_ipmi_host: "pvc"
 passwd_ipmi_host: "MyPassword2019"
 
+passwd_root: MySuperSecretPassword   # Not actually used by the playbook, but good for reference
 passwdhash_root: "$6$shadowencryptedpassword"
 
 logrotate_keepcount: 7
@@ -150,6 +160,18 @@ networks:
     floating_ip: "10.0.1.254/24"
 ```
 
+#### `cluster_group`
+
+* *required*
+
+The name of the Ansible PVC cluster group in the `hosts` inventory.
+
+#### `timezone_location`
+
+* *required*
+
+The TZ database format name of the local timezone, e.g. `America/Toronto` or `Canada/Eastern`.
+
 #### `local_domain`
 
 * *required*
@@ -171,6 +193,12 @@ The IPMI username used by PVC to communicate with the node management controller
 The IPMI password, in plain text, used by PVC to communicate with the node management controllers.
 
 Generate using `pwgen -s 16` and adjusting length as required.
+
+#### `passwd_root`
+
+* *optional*
+
+Used only for reference, the plain-text root password for `passwdhash_root`.
 
 #### `passwdhash_root`
 
@@ -321,18 +349,33 @@ pvc_log_keepalive_cluster_details: True
 pvc_log_keepalive_storage_details: True
 pvc_log_console_lines: 1000
 
+pvc_vm_shutdown_timeout: 180
+pvc_keepalive_interval: 5
+pvc_fence_intervals: 6
+pvc_suicide_intervals: 0
+pvc_fence_successful_action: migrate
+pvc_fence_failed_action: None
+
+pvc_osd_memory_limit: 4294967296
+pvc_zookeeper_heap_limit: 256M
+pvc_zookeeper_stack_limit: 512M
+
 pvc_api_listen_address: "0.0.0.0"
 pvc_api_listen_port: "7370"
-pvc_api_enable_authentication: False
 pvc_api_secret_key: ""
+
+pvc_api_enable_authentication: False
 pvc_api_tokens:
   - description: "myuser"
     token: ""
+
 pvc_api_enable_ssl: False
+pvc_api_ssl_cert_path: /etc/ssl/pvc/cert.pem
 pvc_api_ssl_cert: >
   -----BEGIN CERTIFICATE-----
   MIIxxx
   -----END CERTIFICATE-----
+pvc_api_ssl_key_path: /etc/ssl/pvc/key.pem
 pvc_api_ssl_key: >
   -----BEGIN PRIVATE KEY-----
   MIIxxx
@@ -343,6 +386,9 @@ pvc_ceph_storage_secret_uuid: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 pvc_dns_database_name: "pvcdns"
 pvc_dns_database_user: "pvcdns"
 pvc_dns_database_password: "xxxxxxxx"
+pvc_api_database_name: "pvcapi"
+pvc_api_database_user: "pcapi"
+pvc_api_database_password: "xxxxxxxx"
 pvc_replication_database_user: "replicator"
 pvc_replication_database_password: "xxxxxxxx"
 pvc_superuser_database_user: "postgres"
@@ -393,6 +439,8 @@ pvc_nodes:
     ipmi_user: "{{ username_ipmi_host }}"
     ipmi_password: "{{ passwd_ipmi_host }}"
 
+pvc_bridge_device: bondU
+
 pvc_upstream_device: "{{ networks['upstream']['device'] }}"
 pvc_upstream_mtu: "{{ networks['upstream']['mtu'] }}"
 pvc_upstream_domain: "{{ networks['upstream']['domain'] }}"
@@ -413,19 +461,23 @@ pvc_storage_floatingip: "{{ networks['storage']['floating_ip'] }}"
 
 #### `pvc_log_to_file`
 
-* *required*
+* *optional*
 
 Whether to log PVC output to the file `/var/log/pvc/pvc.log`. Must be one of, unquoted: `True`, `False`.
 
+If unset, a default value of "False" is set in the role defaults.
+
 #### `pvc_log_to_stdout`
 
-* *required*
+* *optional*
 
 Whether to log PVC output to stdout, i.e. `journald`. Must be one of, unquoted: `True`, `False`.
 
+If unset, a default value of "True" is set in the role defaults.
+
 #### `pvc_log_colours`
 
-* *required*
+* *optional*
 
 Whether to include ANSI coloured prompts (`>>>`) for status in the log output. Must be one of, unquoted: `True`, `False`.
 
@@ -433,39 +485,153 @@ Requires `journalctl -o cat` or file logging in order to be visible and useful.
 
 If set to False, the prompts will instead be text values.
 
+If unset, a default value of "True" is set in the role defaults.
+
 #### `pvc_log_dates`
 
-* *required*
+* *optional*
 
 Whether to include dates in the log output. Must be one of, unquoted: `True`, `False`.
 
 Requires `journalctl -o cat` or file logging in order to be visible and useful (and not clutter the logs with duplicate dates).
 
+If unset, a default value of "False" is set in the role defaults.
+
 #### `pvc_log_keepalives`
 
-* *required*
+* *optional*
 
-Whether to log keepalive messages. Must be one of, unquoted: `True`, `False`.
+Whether to log the regular keepalive messages. Must be one of, unquoted: `True`, `False`.
+
+If unset, a default value of "True" is set in the role defaults.
 
 #### `pvc_log_keepalive_cluster_details`
 
-* *required*
+* *optional*
 * *ignored* if `pvc_log_keepalives` is `False`
 
 Whether to log cluster and node details during keepalive messages. Must be one of, unquoted: `True`, `False`.
 
+If unset, a default value of "True" is set in the role defaults.
+
 #### `pvc_log_keepalive_storage_details`
 
-* *required*
+* *optional*
 * *ignored* if `pvc_log_keepalives` is `False`
 
 Whether to log storage cluster details during keepalive messages. Must be one of, unquoted: `True`, `False`.
 
+If unset, a default value of "True" is set in the role defaults.
+
 #### `pvc_log_console_lines`
 
-* *required*
+* *optional*
 
-The number of output console lines to log for each VM.
+The number of output console lines to log for each VM, to be used by the console log endpoints (`pvc vm log`).
+
+If unset, a default value of "1000" is set in the role defaults.
+
+#### `pvc_vm_shutdown_timeout`
+
+* *optional*
+
+The number of seconds to wait for a VM to `shutdown` before it is forced off.
+
+A value of "0" disables this functionality.
+
+If unset, a default value of "180" is set in the role defaults.
+
+#### `pvc_keepalive_interval`
+
+* *optional*
+
+The number of seconds between node keepalives.
+
+If unset, a default value of "5" is set in the role defaults.
+
+**WARNING**: Changing this value is not recommended except in exceptional circumstances.
+
+#### `pvc_fence_intervals`
+
+* *optional*
+
+The number of keepalive intervals to be missed before other nodes consider a node `dead` and trigger the fencing process. The total time elapsed will be `pvc_keepalive_interval * pvc_fence_intervals`.
+
+If unset, a default value of "6" is set in the role defaults.
+
+**NOTE**: This is not the total time until a node is fenced. A node has a further 6 (hardcoded) `pvc_keepalive_interval`s ("saving throw" attepmts) to try to send a keepalive before it is actually fenced. Thus, with the default values, this works out to a total of 60 +/- 5 seconds between a node crashing, and it being fenced. An administrator of a very important cluster may want to set this lower, perhaps to 2, or even 1, leaving only the "saving throws", though this is not recommended for most clusters, due to timing overhead from various other subsystems.
+
+#### `pvc_suicide intervals`
+
+* *optional*
+
+The number of keepalive intervals without the ability to send a keepalive before a node considers *itself* to be dead and reboots itself.
+
+A value of "0" disables this functionality.
+
+If unset, a default value of "0" is set in the role defaults.
+
+**WARNING**: This option is provided to allow additional flexibility in fencing behaviour. Normally, it is not safe to set a `pvc_fence_failed_action` of `migrate`, since if the other nodes cannot fence a node its VMs cannot be safely started on other nodes. This would also apply to nodes without IPMI-over-LAN which could not be fenced normally. This option provides an alternative way to guarantee this safety, at least in situations where the node can still reliably shut itself down (i.e. it is not hard-locked). The administrator should however take special care and thoroughly test their system before using these alternative fencing options in production, as the results could be disasterous.
+
+#### `pvc_fence_successful_action`
+
+* *optional*
+
+The action the cluster should take upon a successful node fence with respect to running VMs.  Must be one of, unquoted: `migrate`, `None`.
+
+If unset, a default value of "migrate" is set in the role defaults.
+
+An administrator can set the value "None" to disable automatic VM recovery migrations after a node fence.
+
+#### `pvc_fence_failed_action`
+
+* *optional*
+
+The action the cluster should take upon a failed node fence with respect to running VMs. Must be one of, unquoted: `migrate`, `None`.
+
+If unset, a default value of "None" is set in the role defaults.
+
+**WARNING**: See the warning in the above `pvc_suicide_intervals` section for details on the purpose of this option. Do not set this option to "migrate" unless you have also set `pvc_suicide_intervals` to a non-"0" value and understand the caveats and risks.
+
+#### `pvc_fence_migrate_target_selector`
+
+* *optional*
+
+The migration selector to use when running a `migrate` command after a node fence. Must be one of, unquoted: `mem`, `load`, `vcpu`, `vms`.
+
+If unset, a default value of "mem" is set in the role defaults.
+
+**NOTE**: These values map to the standard VM meta `selector` options, and determine how nodes select where to run the migrated VMs.
+
+#### `pvc_osd_memory_limit`
+
+* *optional*
+
+The memory limit, in bytes, to pass to the Ceph OSD processes. Only set once, during cluster bootstrap; subsequent changes to this value must be manually made in the `files/*/ceph.conf` static configuration for the cluster in question.
+
+If unset, a default value of "4294967296" (i.e. 4GB) is set in the role defaults.
+
+As per Ceph documentation, the minimum value possible is "939524096" (i.e. ~1GB), and the default matches the Ceph system default. Setting a lower value is only recommended for systems with relatively low memory availability, where the default of 4GB per OSD is too large; it is recommended to increase the total system memory first before tweaking this setting to ensure optimal storage performance across all workloads.
+
+#### `pvc_zookeeper_heap_limit`
+
+* *optional*
+
+The memory limit to pass to the Zookeeper Java process for its heap.
+
+If unset, a default vlue of "256M" is set in the role defaults.
+
+The administrator may set this to a lower value on memory-constrained systems or if the memory usage of the Zookeeper process becomes excessive.
+
+#### `pvc_zookeeper_stack_limit`
+
+* *optional*
+
+The memory limit to pass to the Zookeeper Java process for its stack.
+
+If unset, a defautl value of "512M" is set in the role defaults.
+
+The administrator may set this to a lower value on memory-constrained systems or if the memory usage of the Zookeeper process becomes excessive.
 
 #### `pvc_api_listen_address`
 
@@ -519,17 +685,33 @@ Generate using `uuidgen` or `pwgen -s 32` and adjusting length as required.
 
 Whether to enable SSL for the PVC API. Must be one of, unquoted: `True`, `False`.
 
+#### `pvc_api_ssl_cert_path`
+
+* *optional* 
+* *required* if `pvc_api_enable_ssl` is `True` and `pvc_api_ssl_cert` is not set.
+
+The path to an (existing) SSL certificate on the node system for the PVC API to use.
+
 #### `pvc_api_ssl_cert`
 
-* *required* if `pvc_api_enable_ssl` is `True`
+* *optional*
+* *required* if `pvc_api_enable_ssl` is `True` and `pvc_api_ssl_cert_path` is not set.
 
-The SSL certificate, in text form, for the PVC API to use.
+The SSL certificate, in text form, for the PVC API to use. Will be installed to `/etc/pvc/api-cert.pem` on the node system.
+
+#### `pc_api_ssl_key_path`
+
+* *optional*
+* *required* if `pvc_api_enable_ssl` is `True` and `pvc_api_ssl_key` is not set.
+
+The path to an (existing) SSL private key on the node system for the PVC API to use.
 
 #### `pvc_api_ssl_key`
 
-* *required* if `pvc_api_enable_ssl` is `True`
+* *optional*
+* *required* if `pvc_api_enable_ssl` is `True` and `pvc_api_ssl_key_path` is not set.
 
-The SSL private key, in text form, for the PVC API to use.
+The SSL private key, in text form, for the PVC API to use. Will be installed to `/etc/pvc/api-key.pem` on the node system.
 
 #### `pvc_ceph_storage_secret_uuid`
 
@@ -556,6 +738,26 @@ The username of the PVC DNS aggregator database user.
 * *required*
 
 The password of the PVC DNS aggregator database user.
+
+Generate using `pwgen -s 16` and adjusting length as required.
+
+#### `pvc_api_database_name`
+
+* *required*
+
+The name of the PVC API database.
+
+#### `pvc_api_database_user`
+
+* *required*
+
+The username of the PVC API database user.
+
+#### `pvc_api_database_password`
+
+* *required*
+
+The password of the PVC API database user.
 
 Generate using `pwgen -s 16` and adjusting length as required.
 
@@ -589,9 +791,11 @@ Generate using `pwgen -s 16` and adjusting length as required.
 
 #### `pvc_asn`
 
-* *required*
+* *optional*
 
 The private autonomous system number used for BGP updates to upstream routers.
+
+A default value of "65001" is set in the role defaults if left unset.
 
 #### `pvc_routers`
 
@@ -680,6 +884,12 @@ The IPMI username for the node management controller. Unless a per-host override
 * *required*
 
 The IPMI password for the node management controller. Unless a per-host override is required, should usually use the previously-configured global `passwordname_ipmi_host`. All notes from that entry apply.
+
+#### `pvc_bridge_device`
+
+* *required*
+
+The device name of the underlying network interface to be used for "bridged"-type client networks. For each "bridged"-type network, an IEEE 802.3q vLAN and bridge will be created on top of this device to pass these networks. In most cases, using the reflexive `networks['cluster']['device']` or `networks['upstream']['device']` from the Base role is sufficient.
 
 #### `pvc_<network>_*`
 
