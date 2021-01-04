@@ -899,7 +899,7 @@ The IPMI password for the node management controller. Unless a per-host override
 
 * *required*
 
-The device name of the underlying network interface to be used for "bridged"-type client networks. For each "bridged"-type network, an IEEE 802.3q vLAN and bridge will be created on top of this device to pass these networks. In most cases, using the reflexive `networks['cluster']['device']` or `networks['upstream']['device']` from the Base role is sufficient.
+The device name of the underlying network interface to be used for "bridged"-type client networks. For each "bridged"-type network, an IEEE 802.3q vLAN and bridge will be created on top of this device to pass these networks. In most cases, using the reflexive `networks['cluster']['raw_device']` or `networks['upstream']['raw_device']` from the Base role is sufficient.
 
 #### `pvc_<network>_*`
 
