@@ -18,6 +18,12 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.11
+
+  * Documentation updates
+  * Adds VNC information to VM info
+  * Goes back to external Ceph commands for disk usage
+
 #### v0.9.10
 
   * Moves OSD stats uploading to primary, eliminating reporting failures while hosts are down
