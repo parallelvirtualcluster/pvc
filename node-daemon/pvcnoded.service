@@ -2,8 +2,7 @@
 
 [Unit]
 Description = Parallel Virtual Cluster node daemon
-After = network-online.target zookeeper.service libvirtd.service
-Wants = zookeeper.service libvirtd.service
+After = network-online.target
 PartOf = pvc.target
 
 [Service]
