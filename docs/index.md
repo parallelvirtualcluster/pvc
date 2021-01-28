@@ -18,6 +18,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.12
+
+  * Fixes a bug in the pvcnoded service unit file causing a Zookeeper startup race condition
+
 #### v0.9.11
 
   * Documentation updates
