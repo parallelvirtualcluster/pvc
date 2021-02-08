@@ -134,7 +134,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
     with open(pvcnoded_config_file, 'r') as cfgfile:
         try:
-            o_config = yaml.load(cfgfile)
+            o_config = yaml.load(cfgfile, Loader=yaml.SafeLoader)
         except Exception as e:
             print('ERROR: Failed to parse configuration file: {}'.format(e))
             exit(1)
@@ -331,16 +331,29 @@ if not os.path.exists(config['log_directory']):
 logger = log.Logger(config)
 
 # Print our startup messages
-logger.out('Parallel Virtual Cluster node daemon v{}'.format(version))
-logger.out('FQDN: {}'.format(myfqdn))
-logger.out('Host: {}'.format(myhostname))
-logger.out('ID: {}'.format(mynodeid))
-logger.out('IPMI hostname: {}'.format(config['ipmi_hostname']))
-logger.out('Machine details:')
-logger.out('  CPUs: {}'.format(staticdata[0]))
-logger.out('  Arch: {}'.format(staticdata[3]))
-logger.out('  OS: {}'.format(staticdata[2]))
-logger.out('  Kernel: {}'.format(staticdata[1]))
+logger.out('')
+logger.out('|--------------------------------------------------|')
+logger.out('|           ########  ##     ##  ######            |')
+logger.out('|           ##     ## ##     ## ##    ##           |')
+logger.out('|           ##     ## ##     ## ##                 |')
+logger.out('|           ########  ##     ## ##                 |')
+logger.out('|           ##         ##   ##  ##                 |')
+logger.out('|           ##          ## ##   ##    ##           |')
+logger.out('|           ##           ###     ######            |')
+logger.out('|--------------------------------------------------|')
+logger.out('| Parallel Virtual Cluster node daemon v{0: <10} |'.format(version))
+logger.out('| FQDN: {0: <42} |'.format(myfqdn))
+logger.out('| Host: {0: <42} |'.format(myhostname))
+logger.out('| ID: {0: <44} |'.format(mynodeid))
+logger.out('| IPMI hostname: {0: <33} |'.format(config['ipmi_hostname']))
+logger.out('| Machine details:                                 |')
+logger.out('|   CPUs: {0: <40} |'.format(staticdata[0]))
+logger.out('|   Arch: {0: <40} |'.format(staticdata[3]))
+logger.out('|   OS: {0: <42} |'.format(staticdata[2]))
+logger.out('|   Kernel: {0: <38} |'.format(staticdata[1]))
+logger.out('|--------------------------------------------------|')
+logger.out('')
+
 logger.out('Starting pvcnoded on host {}'.format(myfqdn), state='s')
 
 # Define some colours for future messages if applicable

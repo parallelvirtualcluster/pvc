@@ -26,10 +26,31 @@ import pvcapid.flaskapi as pvc_api
 # Entrypoint
 ##########################################################
 
+# Version string for startup output
+version = '0.9.11'
+
 if pvc_api.config['ssl_enabled']:
     context = (pvc_api.config['ssl_cert_file'], pvc_api.config['ssl_key_file'])
 else:
     context = None
 
-print('Starting PVC API daemon at {}:{} with SSL={}, Authentication={}'.format(pvc_api.config['listen_address'], pvc_api.config['listen_port'], pvc_api.config['ssl_enabled'], pvc_api.config['auth_enabled']))
+# Print our startup messages
+print('')
+print('|--------------------------------------------------|')
+print('|           ########  ##     ##  ######            |')
+print('|           ##     ## ##     ## ##    ##           |')
+print('|           ##     ## ##     ## ##                 |')
+print('|           ########  ##     ## ##                 |')
+print('|           ##         ##   ##  ##                 |')
+print('|           ##          ## ##   ##    ##           |')
+print('|           ##           ###     ######            |')
+print('|--------------------------------------------------|')
+print('| Parallel Virtual Cluster API daemon v{0: <11} |'.format(version))
+print('| API version: v{0: <34} |'.format(pvc_api.API_VERSION))
+print('| Listen: {0}:{1: <32} |'.format(pvc_api.config['listen_address'], pvc_api.config['listen_port']))
+print('| SSL: {0: <43} |'.format(str(pvc_api.config['ssl_enabled'])))
+print('| Authentication: {0: <32} |'.format(str(pvc_api.config['auth_enabled'])))
+print('|--------------------------------------------------|')
+print('')
+
 pvc_api.app.run(pvc_api.config['listen_address'], pvc_api.config['listen_port'], threaded=True, ssl_context=context)

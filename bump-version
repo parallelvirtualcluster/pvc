@@ -17,6 +17,7 @@ $EDITOR ${changelog_file}
 changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
 
 sed -i "s,version = '${current_version}',version = '${new_version}'," node-daemon/pvcnoded/Daemon.py
+sed -i "s,version = '${current_version}',version = '${new_version}'," api-daemon/pvcapid/Daemon.py
 
 readme_tmpdir=$( mktemp -d )
 cp README.md ${readme_tmpdir}/

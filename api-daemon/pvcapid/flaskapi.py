@@ -52,16 +52,16 @@ def strtobool(stringv):
 
 # Parse the configuration file
 try:
-    pvc_config_file = os.environ['PVC_CONFIG_FILE']
+    pvcapid_config_file = os.environ['PVC_CONFIG_FILE']
 except Exception:
     print('Error: The "PVC_CONFIG_FILE" environment variable must be set before starting pvcapid.')
     exit(1)
 
-print('Starting PVC API daemon')
+print('Loading configuration from file "{}"'.format(pvcapid_config_file))
 
 # Read in the config
 try:
-    with open(pvc_config_file, 'r') as cfgfile:
+    with open(pvcapid_config_file, 'r') as cfgfile:
         o_config = yaml.load(cfgfile, Loader=yaml.BaseLoader)
 except Exception as e:
     print('ERROR: Failed to parse configuration file: {}'.format(e))
