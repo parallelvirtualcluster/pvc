@@ -3337,12 +3337,15 @@ class API_Storage_Ceph_Pool_Root(Resource):
                     id:
                       type: integer
                       description: The Ceph pool ID
+                    stored_bytes:
+                      type: integer
+                      description: The stored data size (in bytes, post-replicas)
                     free_bytes:
                       type: integer
-                      description: The total free space (in bytes)
+                      description: The total free space (in bytes. post-replicas)
                     used_bytes:
                       type: integer
-                      description: The total used space (in bytes)
+                      description: The total used space (in bytes, pre-replicas)
                     used_percent:
                       type: number
                       description: The ratio of used space to free space

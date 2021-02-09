@@ -621,7 +621,7 @@
                 "stats": {
                     "properties": {
                         "free_bytes": {
-                            "description": "The total free space (in bytes)",
+                            "description": "The total free space (in bytes. post-replicas)",
                             "type": "integer"
                         },
                         "id": {
@@ -660,8 +660,12 @@
                             "description": "The total read operations on the pool (pool-lifetime)",
                             "type": "integer"
                         },
+                        "stored_bytes": {
+                            "description": "The stored data size (in bytes, post-replicas)",
+                            "type": "integer"
+                        },
                         "used_bytes": {
-                            "description": "The total used space (in bytes)",
+                            "description": "The total used space (in bytes, pre-replicas)",
                             "type": "integer"
                         },
                         "used_percent": {
