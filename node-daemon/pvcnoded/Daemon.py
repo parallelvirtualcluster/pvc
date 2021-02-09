@@ -1155,6 +1155,7 @@ def collect_ceph_stats(queue):
                 # Assemble a useful data structure
                 pool_df = {
                     'id': pool['id'],
+                    'stored_bytes': pool['stats']['stored'],
                     'free_bytes': pool['stats']['max_avail'],
                     'used_bytes': pool['stats']['bytes_used'],
                     'used_percent': pool['stats']['percent_used'],
