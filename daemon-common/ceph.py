@@ -783,4 +783,4 @@ def get_list_snapshot(zk_conn, pool, volume, limit, is_fuzzy=True):
         else:
             snapshot_list.append({'pool': pool_name, 'volume': volume_name, 'snapshot': snapshot_name})
 
-    return True, sorted(snapshot_list, key=lambda x: str(x['name']))
+    return True, sorted(snapshot_list, key=lambda x: str(x['snapshot']))
