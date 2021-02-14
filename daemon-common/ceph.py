@@ -715,6 +715,16 @@ def add_snapshot(zk_conn, pool, volume, name):
         '/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, name): '{}'
     })
 
+    # 3. Update the count of snapshots on this volume
+    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, volume))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    # Format the size to something nicer
+    volume_stats['snapshot_count'] = volume_stats['snapshot_count'] + 1
+    volume_stats_raw = json.dumps(volume_stats)
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}/stats'.format(pool, volume): volume_stats_raw
+    })
+
     return True, 'Created RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
 
 
@@ -750,6 +760,16 @@ def remove_snapshot(zk_conn, pool, volume, name):
 
     # 2. Delete snapshot from Zookeeper
     zkhandler.deletekey(zk_conn, '/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
+
+    # 3. Update the count of snapshots on this volume
+    volume_stats_raw = zkhandler.readdata(zk_conn, '/ceph/volumes/{}/{}/stats'.format(pool, volume))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    # Format the size to something nicer
+    volume_stats['snapshot_count'] = volume_stats['snapshot_count'] - 1
+    volume_stats_raw = json.dumps(volume_stats)
+    zkhandler.writedata(zk_conn, {
+        '/ceph/volumes/{}/{}/stats'.format(pool, volume): volume_stats_raw
+    })
 
     return True, 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
 
