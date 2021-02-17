@@ -177,8 +177,8 @@ def upload_ova(pool, name, ova_size):
         pvc_common.stopZKConnection(zk_conn)
 
     # Normalize the OVA size to bytes
-    ova_size_bytes = int(pvc_ceph.format_bytes_fromhuman(ova_size)[:-1])
-    ova_size = pvc_ceph.format_bytes_fromhuman(ova_size)
+    ova_size_bytes = pvc_ceph.format_bytes_fromhuman(ova_size)
+    ova_size = '{}B'.format(ova_size_bytes)
 
     # Verify that the cluster has enough space to store the OVA volumes (2x OVA size, temporarily, 1x permanently)
     zk_conn = pvc_common.startZKConnection(config['coordinators'])
@@ -274,7 +274,7 @@ def upload_ova(pool, name, ova_size):
         vm_volume_size = disk.get('capacity')
 
         # Normalize the dev size to bytes
-        dev_size = pvc_ceph.format_bytes_fromhuman(dev_size_raw)
+        dev_size = '{}B'.format(pvc_ceph.format_bytes_fromhuman(dev_size_raw))
 
         def cleanup_img_maps():
             zk_conn = pvc_common.startZKConnection(config['coordinators'])
@@ -368,7 +368,7 @@ def upload_ova(pool, name, ova_size):
         vm_volume_size = disk.get('capacity')
 
         # The function always return XXXXB, so strip off the B and convert to an integer
-        vm_volume_size_bytes = int(pvc_ceph.format_bytes_fromhuman(vm_volume_size)[:-1])
+        vm_volume_size_bytes = pvc_ceph.format_bytes_fromhuman(vm_volume_size)
         vm_volume_size_gb = math.ceil(vm_volume_size_bytes / 1024 / 1024 / 1024)
 
         query = "INSERT INTO ova_volume (ova, pool, volume_name, volume_format, disk_id, disk_size_gb) VALUES (%s, %s, %s, %s, %s, %s);"

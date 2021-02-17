@@ -122,7 +122,7 @@ def format_bytes_fromhuman(datahuman):
         dataunit = 'B'
         datasize = int(datahuman)
     databytes = datasize * byte_unit_matrix[dataunit]
-    return '{}B'.format(databytes)
+    return databytes
 
 
 # Format ops sizes to/from human-readable units
@@ -475,7 +475,14 @@ def getVolumeInformation(zk_conn, pool, volume):
 
 
 def add_volume(zk_conn, pool, name, size):
-    # 1. Create the volume
+    # 1. Verify the size of the volume
+    pool_information = getPoolInformation(zk_conn, pool)
+
+    size_bytes = format_bytes_fromhuman(size)
+    if size_bytes >= int(pool_information['stats']['free_bytes']):
+        return False, 'ERROR: Requested volume size is greater than the available free space in the pool'
+
+    # 2. Create the volume
     retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
     if retcode:
         return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
@@ -545,7 +552,7 @@ def resize_volume(zk_conn, pool, name, size):
             target_lv_conn = libvirt.open(dest_lv)
             target_vm_conn = target_lv_conn.lookupByName(vm_info['name'])
             if target_vm_conn:
-                target_vm_conn.blockResize(volume_id, int(format_bytes_fromhuman(size)[:-1]), libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+                target_vm_conn.blockResize(volume_id, format_bytes_fromhuman(size), libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
             target_lv_conn.close()
         except Exception:
             pass
