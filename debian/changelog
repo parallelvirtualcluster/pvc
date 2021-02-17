@@ -1,3 +1,15 @@
+pvc (0.9.13-0) unstable; urgency=high
+
+  * Adds nicer startup messages for daemons
+  * Adds additional API field for stored_bytes to pool stats
+  * Fixes sorting issues with snapshot lists
+  * Fixes missing increment/decrement of snapshot_count on volumes
+  * Fixes bad calls in pool element API endpoints
+  * Fixes inconsistent bytes_tohuman behaviour in daemons
+  * Adds validation and maximum volume size on creation (must be smaller than the pool free space)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 17 Feb 2021 11:33:28 -0500
+
 pvc (0.9.12-0) unstable; urgency=high
 
   * Fixes a bug in the pvcnoded service unit file causing a Zookeeper startup race condition

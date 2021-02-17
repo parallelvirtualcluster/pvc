@@ -20,6 +20,16 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.13
+
+  * Adds nicer startup messages for daemons
+  * Adds additional API field for stored_bytes to pool stats
+  * Fixes sorting issues with snapshot lists
+  * Fixes missing increment/decrement of snapshot_count on volumes
+  * Fixes bad calls in pool element API endpoints
+  * Fixes inconsistent bytes_tohuman behaviour in daemons
+  * Adds validation and maximum volume size on creation (must be smaller than the pool free space)
+
 #### v0.9.12
 
   * Fixes a bug in the pvcnoded service unit file causing a Zookeeper startup race condition
