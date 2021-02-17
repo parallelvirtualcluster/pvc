@@ -477,10 +477,13 @@ def getVolumeInformation(zk_conn, pool, volume):
 def add_volume(zk_conn, pool, name, size):
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zk_conn, pool)
-
     size_bytes = format_bytes_fromhuman(size)
     if size_bytes >= int(pool_information['stats']['free_bytes']):
         return False, 'ERROR: Requested volume size is greater than the available free space in the pool'
+
+    # Add 'B' if the volume is in bytes
+    if re.match(r'^[0-9]+$', size):
+        size = '{}B'.format(size)
 
     # 2. Create the volume
     retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
