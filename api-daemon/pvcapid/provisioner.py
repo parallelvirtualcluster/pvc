@@ -1225,16 +1225,13 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     pools = dict()
     for volume in vm_data['volumes']:
         if volume.get('source_volume') is not None:
+            volume_data = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
+            if not volume_data:
+                raise ClusterError('The source volume {}/{} could not be found.'.format(volume['pool'], volume['source_volume']))
             if not volume['pool'] in pools:
-                volume_data, status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
-                pools[volume['pool']] = volume_data['disk_size_gb']
-                if not status:
-                    raise ClusterError('The source volume {}/{} could not be found.'.format(volume['pool'], volume['source_volume']))
+                pools[volume['pool']] = volume_data['stats']['size'].replace('G', '')
             else:
-                volume_data, status = pvc_ceph.getVolumeInformation(zk_conn, volume['pool'], volume['source_volume'])
-                pools[volume['pool']] += volume_data['disk_size_gb']
-                if not status:
-                    raise ClusterError('The source volume {}/{} could not be found.'.format(volume['pool'], volume['source_volume']))
+                pools[volume['pool']] += volume_data['stats']['size'].replace('G', '')
         else:
             if not volume['pool'] in pools:
                 pools[volume['pool']] = volume['disk_size_gb']
@@ -1453,7 +1450,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
 
         for volume in vm_data['volumes']:
             if volume.get('source_volume') is not None:
-                success, message = pvc_ceph.clone_volume(zk_conn, volume['pool'], "{}_{}".format(vm_name, volume['disk_id']), volume['source_volume'])
+                success, message = pvc_ceph.clone_volume(zk_conn, volume['pool'], volume['source_volume'], "{}_{}".format(vm_name, volume['disk_id']))
                 print(message)
                 if not success:
                     raise ProvisioningError('Failed to clone volume "{}" to "{}".'.format(volume['source_volume'], volume['disk_id']))
