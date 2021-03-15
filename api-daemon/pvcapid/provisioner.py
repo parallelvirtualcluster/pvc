@@ -1229,9 +1229,9 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
             if not volume_data:
                 raise ClusterError('The source volume {}/{} could not be found.'.format(volume['pool'], volume['source_volume']))
             if not volume['pool'] in pools:
-                pools[volume['pool']] = volume_data['stats']['size'].replace('G', '')
+                pools[volume['pool']] = int(volume_data['stats']['size'].replace('G', ''))
             else:
-                pools[volume['pool']] += volume_data['stats']['size'].replace('G', '')
+                pools[volume['pool']] += int(volume_data['stats']['size'].replace('G', ''))
         else:
             if not volume['pool'] in pools:
                 pools[volume['pool']] = volume['disk_size_gb']
