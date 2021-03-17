@@ -4177,7 +4177,7 @@ def task_init(confirm_flag):
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option(
     '-c', '--cluster', '_cluster', envvar='PVC_CLUSTER', default=None,
-    help='Zookeeper connection string.'
+    help='Cluster to connect to.'
 )
 @click.option(
     '-v', '--debug', '_debug', envvar='PVC_DEBUG', is_flag=True, default=False,
