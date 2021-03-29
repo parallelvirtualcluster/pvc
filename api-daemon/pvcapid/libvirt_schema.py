@@ -67,6 +67,9 @@ devices_default = """    <emulator>/usr/bin/kvm</emulator>
       <rate period="1000" bytes="2048"/>
       <backend model='random'>/dev/random</backend>
     </rng>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
 """
 
 # Serial device
