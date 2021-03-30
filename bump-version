@@ -47,7 +47,7 @@ echo -e "${deb_changelog_new}" >> ${deb_changelog_file}
 echo -e "${deb_changelog_orig}" >> ${deb_changelog_file}
 mv ${deb_changelog_file} debian/changelog
 
-git add node-daemon/pvcnoded/Daemon.py README.md docs/index.md debian/changelog
+git add node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py README.md docs/index.md debian/changelog
 git commit -v
 
 echo

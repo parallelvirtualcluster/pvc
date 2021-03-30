@@ -26,7 +26,7 @@ import pvcapid.flaskapi as pvc_api
 ##########################################################
 
 # Version string for startup output
-version = '0.9.11'
+version = '0.9.14'
 
 if pvc_api.config['ssl_enabled']:
     context = (pvc_api.config['ssl_cert_file'], pvc_api.config['ssl_key_file'])
