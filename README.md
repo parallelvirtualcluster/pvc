@@ -20,6 +20,13 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.14
+
+  * Fixes bugs around cloned volume provisioning
+  * Fixes some minor visual bugs
+  * Minor license update (from GPL3+ to GPL3)
+  * Adds qemu-guest-agent support to provisioner-created VMs by default
+
 #### v0.9.13
 
   * Adds nicer startup messages for daemons
