@@ -46,7 +46,7 @@ myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
 
 default_store_data = {
-    'cfgfile': '/etc/pvc/pvcapid.yaml'  # pvc/api/listen_address, pvc/api/listen_port
+    'cfgfile': '/etc/pvc/pvcapid.yaml'
 }
 
 
@@ -67,7 +67,7 @@ def read_from_yaml(cfgfile):
         api_key = api_config['pvc']['api']['authentication']['tokens'][0]['token']
     else:
         api_key = 'N/A'
-    return host, port, scheme, api_key
+    return cfgfile, host, port, scheme, api_key
 
 
 def get_config(store_data, cluster=None):
@@ -84,7 +84,7 @@ def get_config(store_data, cluster=None):
         # This is a reference to an API configuration; grab the details from its listen address
         cfgfile = cluster_details.get('cfgfile')
         if os.path.isfile(cfgfile):
-            host, port, scheme, api_key = read_from_yaml(cfgfile)
+            description, host, port, scheme, api_key = read_from_yaml(cfgfile)
         else:
             return {'badcfg': True}
         # Handle an all-wildcard address
@@ -92,6 +92,7 @@ def get_config(store_data, cluster=None):
             host = '127.0.0.1'
     else:
         # This is a static configuration, get the raw details
+        description = cluster_details['description']
         host = cluster_details['host']
         port = cluster_details['port']
         scheme = cluster_details['scheme']
@@ -100,6 +101,7 @@ def get_config(store_data, cluster=None):
     config = dict()
     config['debug'] = False
     config['cluster'] = cluster
+    config['desctription'] = description
     config['api_host'] = '{}:{}'.format(host, port)
     config['api_scheme'] = scheme
     config['api_key'] = api_key
@@ -176,6 +178,10 @@ def cli_cluster():
 ###############################################################################
 @click.command(name='add', short_help='Add a new cluster to the client.')
 @click.option(
+    '-d', '--description', 'description', required=False, default="N/A",
+    help='A text description of the cluster.'
+)
+@click.option(
     '-a', '--address', 'address', required=True,
     help='The IP address or hostname of the cluster API client.'
 )
@@ -194,7 +200,7 @@ def cli_cluster():
 @click.argument(
     'name'
 )
-def cluster_add(address, port, ssl, name, api_key):
+def cluster_add(description, address, port, ssl, name, api_key):
     """
     Add a new PVC cluster NAME, via its API connection details, to the configuration of the local CLI client. Replaces any existing cluster with this name.
     """
@@ -207,6 +213,7 @@ def cluster_add(address, port, ssl, name, api_key):
     existing_config = get_store(store_path)
     # Append our new entry to the end
     existing_config[name] = {
+        'description': description,
         'host': address,
         'port': port,
         'scheme': scheme,
@@ -252,10 +259,11 @@ def cluster_list():
     clusters = get_store(store_path)
     # Find the lengths of each column
     name_length = 5
+    description_length = 12
     address_length = 10
     port_length = 5
     scheme_length = 7
-    api_key_length = 8
+    api_key_length = 32
 
     for cluster in clusters:
         cluster_details = clusters[cluster]
@@ -263,10 +271,11 @@ def cluster_list():
             # This is a reference to an API configuration; grab the details from its listen address
             cfgfile = cluster_details.get('cfgfile')
             if os.path.isfile(cfgfile):
-                address, port, scheme, api_key = read_from_yaml(cfgfile)
+                description, address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
-                address, port, scheme, api_key = 'N/A', 'N/A', 'N/A', 'N/A'
+                description, address, port, scheme, api_key = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
         else:
+            description = cluster_details.get('description', '')
             address = cluster_details.get('host', 'N/A')
             port = cluster_details.get('port', 'N/A')
             scheme = cluster_details.get('scheme', 'N/A')
@@ -278,6 +287,9 @@ def cluster_list():
         if _name_length > name_length:
             name_length = _name_length
         _address_length = len(address) + 1
+        _description_length = len(description) + 1
+        if _description_length > description_length:
+            description_length = _description_length
         if _address_length > address_length:
             address_length = _address_length
         _port_length = len(str(port)) + 1
@@ -294,11 +306,13 @@ def cluster_list():
     click.echo("Available clusters:")
     click.echo()
     click.echo(
-        '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
+        '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             name="Name",
             name_length=name_length,
+            description="Description",
+            description_length=description_length,
             address="Address",
             address_length=address_length,
             port="Port",
@@ -315,14 +329,16 @@ def cluster_list():
         if cluster_details.get('cfgfile', None):
             # This is a reference to an API configuration; grab the details from its listen address
             if os.path.isfile(cfgfile):
-                address, port, scheme, api_key = read_from_yaml(cfgfile)
+                description, address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
+                description = 'N/A'
                 address = 'N/A'
                 port = 'N/A'
                 scheme = 'N/A'
                 api_key = 'N/A'
         else:
             address = cluster_details.get('host', 'N/A')
+            description = cluster_details.get('description', 'N/A')
             port = cluster_details.get('port', 'N/A')
             scheme = cluster_details.get('scheme', 'N/A')
             api_key = cluster_details.get('api_key', 'N/A')
@@ -330,11 +346,13 @@ def cluster_list():
                 api_key = 'N/A'
 
         click.echo(
-            '{bold}{name: <{name_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
+            '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
                 bold='',
                 end_bold='',
                 name=cluster,
                 name_length=name_length,
+                description=description,
+                description_length=description_length,
                 address=address,
                 address_length=address_length,
                 port=port,
