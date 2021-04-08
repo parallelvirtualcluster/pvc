@@ -712,13 +712,18 @@ def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method,
     '-r', '--restart', 'restart', is_flag=True,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @click.argument(
     'domain'
 )
 @click.argument(
     'cfgfile', type=click.File(), default=None, required=False
 )
-def vm_modify(domain, cfgfile, editor, restart):
+def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
     """
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
@@ -729,6 +734,12 @@ def vm_modify(domain, cfgfile, editor, restart):
     retcode, vm_information = pvc_vm.vm_info(config, domain)
     if not retcode and not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
+
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     dom_name = vm_information.get('name')
 
@@ -786,6 +797,8 @@ def vm_modify(domain, cfgfile, editor, restart):
         cleanup(False, 'Error: XML is malformed or invalid: {}'.format(e))
 
     retcode, retmsg = pvc_vm.vm_modify(config, domain, new_cfg, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -871,11 +884,21 @@ def vm_start(domain):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for restart to complete before returning.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_restart(domain, wait):
+def vm_restart(domain, wait, confirm_flag):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
+    if not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart', wait=wait)
     cleanup(retcode, retmsg)
@@ -892,11 +915,21 @@ def vm_restart(domain, wait):
     '-w', '--wait', 'wait', is_flag=True, default=False,
     help='Wait for shutdown to complete before returning.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the shutdown'
+)
 @cluster_req
-def vm_shutdown(domain, wait):
+def vm_shutdown(domain, wait, confirm_flag):
     """
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
+    if not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Shut down VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown', wait=wait)
     cleanup(retcode, retmsg)
@@ -909,11 +942,21 @@ def vm_shutdown(domain, wait):
 @click.argument(
     'domain'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the stop'
+)
 @cluster_req
-def vm_stop(domain):
+def vm_stop(domain, confirm_flag):
     """
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
+    if not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Forcibly stop VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_state(config, domain, 'stop')
     cleanup(retcode, retmsg)
@@ -1096,13 +1139,23 @@ def vm_vcpu_get(domain, raw):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_vcpu_set(domain, vcpus, topology, restart):
+def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
     """
     Set the vCPU count of the virtual machine DOMAIN to VCPUS.
 
     By default, the topology of the vCPus is 1 socket, VCPUS cores per socket, 1 thread per core.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     if topology is not None:
         try:
@@ -1116,6 +1169,8 @@ def vm_vcpu_set(domain, vcpus, topology, restart):
         topology = (1, vcpus, 1)
 
     retcode, retmsg = pvc_vm.vm_vcpus_set(config, domain, vcpus, topology, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -1167,13 +1222,25 @@ def vm_memory_get(domain, raw):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_memory_set(domain, memory, restart):
+def vm_memory_set(domain, memory, restart, confirm_flag):
     """
     Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_memory_set(config, domain, memory, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -1240,13 +1307,25 @@ def vm_network_get(domain, raw):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_network_add(domain, vni, macaddr, model, restart):
+def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     """
     Add the network VNI to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -1264,13 +1343,25 @@ def vm_network_add(domain, vni, macaddr, model, restart):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_network_remove(domain, vni, restart):
+def vm_network_remove(domain, vni, restart, confirm_flag):
     """
     Remove the network VNI to the virtual machine DOMAIN.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -1343,15 +1434,27 @@ def vm_volume_get(domain, raw):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart):
+def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag):
     """
     Add the volume VOLUME to the virtual machine DOMAIN.
 
     VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
@@ -1369,13 +1472,25 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart):
     '-r', '--restart', 'restart', is_flag=True, default=False,
     help='Immediately restart VM to apply new config.'
 )
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart'
+)
 @cluster_req
-def vm_volume_remove(domain, vni, restart):
+def vm_volume_remove(domain, vni, restart, confirm_flag):
     """
     Remove the volume VNI to the virtual machine DOMAIN.
     """
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
 
 
