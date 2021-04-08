@@ -1,3 +1,11 @@
+pvc (0.9.15-0) unstable; urgency=high
+
+  * [CLI] Adds additional verification (--yes) to several VM management commands
+  * [CLI] Adds a method to override --yes/confirmation requirements via envvar (PVC_UNSAFE)
+  * [CLI] Adds description fields to PVC clusters in CLI
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 08 Apr 2021 13:37:47 -0400
+
 pvc (0.9.14-0) unstable; urgency=high
 
   * Fixes bugs around cloned volume provisioning

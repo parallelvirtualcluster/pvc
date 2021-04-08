@@ -20,6 +20,12 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.15
+
+  * [CLI] Adds additional verification (--yes) to several VM management commands
+  * [CLI] Adds a method to override --yes/confirmation requirements via envvar (PVC_UNSAFE)
+  * [CLI] Adds description fields to PVC clusters in CLI
+
 #### v0.9.14
 
   * Fixes bugs around cloned volume provisioning
