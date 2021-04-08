@@ -4330,9 +4330,12 @@ def cli(_cluster, _debug, _quiet, _unsafe):
     Environment variables:
 
       "PVC_CLUSTER": Set the cluster to access instead of using --cluster/-c
+
       "PVC_DEBUG": Enable additional debugging details instead of using --debug/-v
+
       "PVC_QUIET": Suppress stderr connection output from client instead of using --quiet/-q
-      "PVC_UNSAFE": Suppress confirmation requirements for all operations instead of using --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
+
+      "PVC_UNSAFE": Suppress confirmation requirements instead of using --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
 
     If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
     for an API configuration in "/etc/pvc/pvcapid.yaml". If this is also not found, abort.
