@@ -806,7 +806,7 @@ def vm_undefine(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Undefine VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
@@ -833,7 +833,7 @@ def vm_remove(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Undefine VM {} and remove all disks'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
@@ -1687,7 +1687,7 @@ def net_remove(net, confirm_flag):
     WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove network {}'.format(net), prompt_suffix='? ', abort=True)
         except Exception:
@@ -1796,7 +1796,7 @@ def net_dhcp_remove(net, macaddr, confirm_flag):
     """
     Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove DHCP lease for {} in network {}'.format(macaddr, net), prompt_suffix='? ', abort=True)
         except Exception:
@@ -1915,7 +1915,7 @@ def net_acl_remove(net, rule, confirm_flag):
     """
     Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove ACL {} in network {}'.format(rule, net), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2114,7 +2114,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Destroy all data and create a new OSD on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2143,7 +2143,7 @@ def ceph_osd_remove(osdid, confirm_flag):
 
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which may negatively affect performance or available space.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove OSD {}'.format(osdid), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2307,7 +2307,7 @@ def ceph_pool_remove(name, confirm_flag):
 
     DANGER: This will completely remove the pool and all volumes contained in it from the cluster.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove RBD pool {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2428,7 +2428,7 @@ def ceph_volume_remove(pool, name, confirm_flag):
 
     DANGER: This will completely remove the volume and all data contained in it.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove volume {}/{}'.format(pool, name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2612,7 +2612,7 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
 
     DANGER: This will completely remove the snapshot.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove snapshot {} for volume {}/{}'.format(name, pool, volume), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2888,7 +2888,7 @@ def provisioner_template_system_remove(name, confirm_flag):
     """
     Remove system template NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove system template {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -2995,7 +2995,7 @@ def provisioner_template_network_remove(name, confirm_flag):
     """
     Remove network template MAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove network template {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3059,7 +3059,7 @@ def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     """
     Remove network VNI from network template NAME.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove VNI {} from network template {}'.format(vni, name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3134,7 +3134,7 @@ def provisioner_template_storage_remove(name, confirm_flag):
     """
     Remove storage template NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove storage template {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3253,7 +3253,7 @@ def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
 
     DISK must be a Linux-style disk identifier such as "sda" or "vdb".
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove disk {} from storage template {}'.format(disk, name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3443,7 +3443,7 @@ def provisioner_userdata_remove(name, confirm_flag):
     """
     Remove userdata document NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove userdata document {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3622,7 +3622,7 @@ def provisioner_script_remove(name, confirm_flag):
     """
     Remove script NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3718,7 +3718,7 @@ def provisioner_ova_remove(name, confirm_flag):
     """
     Remove OVA image NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove OVA image {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -3903,7 +3903,7 @@ def provisioner_profile_remove(name, confirm_flag):
     """
     Remove profile NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove profile {}'.format(name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -4149,7 +4149,7 @@ def task_restore(filename, confirm_flag):
     Restore the JSON backup data from a file to the cluster.
     """
 
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Replace all existing cluster data from coordinators with backup file "{}"'.format(filename.name), prompt_suffix='? ', abort=True)
         except Exception:
@@ -4175,7 +4175,7 @@ def task_init(confirm_flag):
     Perform initialization of a new PVC cluster.
     """
 
-    if not confirm_flag:
+    if not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster', prompt_suffix='? ', abort=True)
         except Exception:
@@ -4204,13 +4204,20 @@ def task_init(confirm_flag):
     '-q', '--quiet', '_quiet', envvar='PVC_QUIET', is_flag=True, default=False,
     help='Suppress cluster connection information.'
 )
-def cli(_cluster, _debug, _quiet):
+@click.option(
+    '-u', '--unsafe', '_unsafe', envvar='PVC_UNSAFE', is_flag=True, default=False,
+    help='Allow unsafe operations without confirmation/"--yes" argument.'
+)
+def cli(_cluster, _debug, _quiet, _unsafe):
     """
     Parallel Virtual Cluster CLI management tool
 
     Environment variables:
 
       "PVC_CLUSTER": Set the cluster to access instead of using --cluster/-c
+      "PVC_DEBUG": Enable additional debugging details instead of using --debug/-v
+      "PVC_QUIET": Suppress stderr connection output from client instead of using --quiet/-q
+      "PVC_UNSAFE": Suppress confirmation requirements for all operations instead of using --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
 
     If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
     for an API configuration in "/etc/pvc/pvcapid.yaml". If this is also not found, abort.
@@ -4221,6 +4228,7 @@ def cli(_cluster, _debug, _quiet):
     config = get_config(store_data, _cluster)
     if not config.get('badcfg', None):
         config['debug'] = _debug
+        config['unsafe'] = _unsafe
 
         if not _quiet:
             if config['api_scheme'] == 'https' and not config['verify_ssl']:
