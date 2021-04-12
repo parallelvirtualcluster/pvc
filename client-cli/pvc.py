@@ -1775,6 +1775,7 @@ def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway,
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
     Example:
+
     pvc network modify 1001 --gateway 10.1.1.1 --dhcp
     """
 
@@ -2389,14 +2390,16 @@ def ceph_pool():
     default='copies=3,mincopies=2', show_default=True, required=False,
     help="""
     The replication configuration, specifying both a "copies" and "mincopies" value, separated by a
-    comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
+    comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas
+    and should not exceed the total number of nodes; the "mincopies" value specifies the minimum
+    number of available copies to allow writes. For additional details please see the Cluster
+    Architecture documentation.
     """
 )
 @cluster_req
 def ceph_pool_add(name, pgs, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
-
     """
 
     retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg)
@@ -4198,9 +4201,13 @@ def status_cluster(oformat):
     Show basic information and health for the active PVC cluster.
 
     Output formats:
+
       plain: Full text, full colour output for human-readability.
+
       short: Health-only, full colour output for human-readability.
+
       json: Compact JSON representation for machine parsing.
+
       json-pretty: Pretty-printed JSON representation for machine parsing or human-readability.
     """
 
