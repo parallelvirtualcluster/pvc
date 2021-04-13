@@ -331,11 +331,7 @@ def cluster_list():
             if os.path.isfile(cfgfile):
                 description, address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
-                description = 'N/A'
-                address = 'N/A'
-                port = 'N/A'
-                scheme = 'N/A'
-                api_key = 'N/A'
+                continue
         else:
             address = cluster_details.get('host', 'N/A')
             description = cluster_details.get('description', 'N/A')
