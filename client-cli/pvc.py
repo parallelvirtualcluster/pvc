@@ -731,12 +731,6 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
     if not retcode and not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    if restart and not confirm_flag and not config['unsafe']:
-        try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
-        except Exception:
-            exit(0)
-
     dom_name = vm_information.get('name')
 
     if editor is True:
@@ -752,38 +746,28 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
         else:
             new_vm_cfgfile = new_vm_cfgfile.strip()
 
-        # Show a diff and confirm
-        click.echo('Pending modifications:')
-        click.echo('')
-        diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
-        for line in diff:
-            if re.match(r'^\+', line) is not None:
-                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match(r'^\-', line) is not None:
-                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match(r'^\^', line) is not None:
-                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
-            else:
-                click.echo(line)
-        click.echo('')
-
-        click.confirm('Write modifications to cluster?', abort=True)
-
-        if restart:
-            click.echo('Writing modified configuration of VM "{}" and restarting.'.format(dom_name))
-        else:
-            click.echo('Writing modified configuration of VM "{}".'.format(dom_name))
-
     # We're operating in replace mode
     else:
         # Open the XML file
         new_vm_cfgfile = cfgfile.read()
         cfgfile.close()
 
-        if restart:
-            click.echo('Replacing configuration of VM "{}" with file "{}" and restarting.'.format(dom_name, cfgfile.name))
+        click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
+
+    # Show a diff and confirm
+    click.echo('Pending modifications:')
+    click.echo('')
+    diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+    for line in diff:
+        if re.match(r'^\+', line) is not None:
+            click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+        elif re.match(r'^\-', line) is not None:
+            click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+        elif re.match(r'^\^', line) is not None:
+            click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
         else:
-            click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
+            click.echo(line)
+    click.echo('')
 
     # Verify our XML is sensible
     try:
@@ -791,6 +775,14 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
         cleanup(False, 'Error: XML is malformed or invalid: {}'.format(e))
+
+    click.confirm('Write modifications to cluster?', abort=True)
+
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_modify(config, domain, new_cfg, restart)
     if retcode and not restart:
@@ -1147,22 +1139,22 @@ def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
 
     By default, the topology of the vCPus is 1 socket, VCPUS cores per socket, 1 thread per core.
     """
-    if restart and not confirm_flag and not config['unsafe']:
-        try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
-        except Exception:
-            exit(0)
-
     if topology is not None:
         try:
             sockets, cores, threads = topology.split(',')
             if sockets * cores * threads != vcpus:
                 raise
         except Exception:
-            cleanup(False, "The topology specified is not valid.")
+            cleanup(False, "The specified topology is not valid.")
         topology = (sockets, cores, threads)
     else:
         topology = (1, vcpus, 1)
+
+    if restart and not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+        except Exception:
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_vcpus_set(config, domain, vcpus, topology, restart)
     if retcode and not restart:
@@ -1230,9 +1222,9 @@ def vm_memory_set(domain, memory, restart, confirm_flag):
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            exit(0)
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_memory_set(config, domain, memory, restart)
     if retcode and not restart:
@@ -1315,9 +1307,9 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            exit(0)
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
     if retcode and not restart:
@@ -1351,9 +1343,9 @@ def vm_network_remove(domain, vni, restart, confirm_flag):
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            exit(0)
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
     if retcode and not restart:
@@ -1444,9 +1436,9 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            exit(0)
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, restart)
     if retcode and not restart:
@@ -1480,9 +1472,9 @@ def vm_volume_remove(domain, vni, restart, confirm_flag):
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
-            click.confirm('Restart VM {} after applying change'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            exit(0)
+            restart = False
 
     retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
     if retcode and not restart:
