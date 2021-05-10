@@ -44,7 +44,14 @@ class VMConsoleWatcherInstance(object):
         open(self.logfile, 'a').close()
         os.chmod(self.logfile, 0o600)
 
-        self.logdeque = deque(open(self.logfile), self.console_log_lines)
+        try:
+            self.logdeque = deque(open(self.logfile), self.console_log_lines)
+        except UnicodeDecodeError:
+            # There is corruption in the log file; overwrite it
+            self.logger.out('Failed to decode console log file; clearing existing file', state='w', prefix='Domain {}'.format(self.domuuid))
+            with open(self.logfile, 'w') as lfh:
+                lfh.write('\n')
+            self.logdeque = deque(open(self.logfile), self.console_log_lines)
 
         self.stamp = None
         self.cached_stamp = None
