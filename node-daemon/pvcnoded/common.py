@@ -91,6 +91,8 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
             retcode = command_output.returncode
         except subprocess.TimeoutExpired:
             retcode = 128
+        except Exception:
+            retcode = 255
 
         try:
             stdout = command_output.stdout.decode('ascii')
