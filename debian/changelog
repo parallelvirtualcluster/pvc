@@ -1,3 +1,13 @@
+pvc (0.9.16-0) unstable; urgency=high
+
+  * Improves some CLI help messages
+  * Skips empty local cluster in CLI
+  * Adjusts how confirmations happen during VM modify restarts
+  * Fixes bug around corrupted VM log files
+  * Fixes bug around subprocess pipe exceptions
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 10 May 2021 01:13:21 -0400
+
 pvc (0.9.15-0) unstable; urgency=high
 
   * [CLI] Adds additional verification (--yes) to several VM management commands

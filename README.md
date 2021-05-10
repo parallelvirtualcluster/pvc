@@ -20,6 +20,14 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.16
+
+  * Improves some CLI help messages
+  * Skips empty local cluster in CLI
+  * Adjusts how confirmations happen during VM modify restarts
+  * Fixes bug around corrupted VM log files
+  * Fixes bug around subprocess pipe exceptions
+
 #### v0.9.15
 
   * [CLI] Adds additional verification (--yes) to several VM management commands
