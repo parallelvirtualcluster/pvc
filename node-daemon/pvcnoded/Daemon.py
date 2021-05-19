@@ -53,7 +53,7 @@ import pvcnoded.CephInstance as CephInstance
 import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
 
 # Version string for startup output
-version = '0.9.16'
+version = '0.9.17'
 
 ###############################################################################
 # PVCD - node daemon startup program

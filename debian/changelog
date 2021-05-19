@@ -1,3 +1,9 @@
+pvc (0.9.17-0) unstable; urgency=high
+
+  * [CLI] Fixes bugs in log follow output
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 19 May 2021 17:06:29 -0400
+
 pvc (0.9.16-0) unstable; urgency=high
 
   * Improves some CLI help messages

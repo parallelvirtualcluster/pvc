@@ -18,6 +18,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.17
+
+  * [CLI] Fixes bugs in log follow output
+
 #### v0.9.16
 
   * Improves some CLI help messages
