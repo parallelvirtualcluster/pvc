@@ -1002,8 +1002,9 @@ def follow_console_log(config, vm, lines=10):
     API arguments: lines={lines}
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
+    # We always grab 500 to match the follow call, but only _show_ `lines` number
     params = {
-        'lines': lines
+        'lines': 500
     }
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
@@ -1012,7 +1013,7 @@ def follow_console_log(config, vm, lines=10):
 
     # Shrink the log buffer to length lines
     console_log = response.json()['data']
-    shrunk_log = console_log.split('\n')[-lines:]
+    shrunk_log = console_log.split('\n')[-int(lines):]
     loglines = '\n'.join(shrunk_log)
 
     # Print the initial data and begin following
