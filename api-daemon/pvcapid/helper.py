@@ -601,6 +601,37 @@ def vm_modify(name, restart, xml):
     return output, retcode
 
 
+def vm_rename(name, new_name):
+    """
+    Rename a VM in the PVC cluster.
+    """
+    if new_name is None:
+        output = {
+            'message': 'A new VM name must be specified'
+        }
+        return 400, output
+
+    zk_conn = pvc_common.startZKConnection(config['coordinators'])
+    if pvc_vm.searchClusterByName(zk_conn, new_name) is not None:
+        output = {
+            'message': 'A VM named \'{}\' is already present in the cluster'.format(new_name)
+        }
+        return 400, output
+
+    retflag, retdata = pvc_vm.rename_vm(zk_conn, name, new_name)
+    pvc_common.stopZKConnection(zk_conn)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return output, retcode
+
+
 def vm_undefine(name):
     """
     Undefine a VM from the PVC cluster.

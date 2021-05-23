@@ -22,6 +22,7 @@
 import time
 import re
 import lxml.objectify
+import lxml.etree
 
 import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
@@ -297,6 +298,55 @@ def dump_vm(zk_conn, domain):
     vm_xml = zkhandler.readdata(zk_conn, '/domains/{}/xml'.format(dom_uuid))
 
     return True, vm_xml
+
+
+def rename_vm(zk_conn, domain, new_domain):
+    dom_uuid = getDomainUUID(zk_conn, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Verify that the VM is in a stopped state; renaming is not supported otherwise
+    state = zkhandler.readdata(zk_conn, '/domains/{}/state'.format(dom_uuid))
+    if state != 'stop':
+        return False, 'ERROR: VM "{}" is not in stopped state; VMs cannot be renamed while running.'.format(domain)
+
+    # Parse and valiate the XML
+    vm_config = common.getDomainXML(zk_conn, dom_uuid)
+
+    # Obtain the RBD disk list using the common functions
+    ddisks = common.getDomainDisks(vm_config, {})
+    pool_list = []
+    rbd_list = []
+    for disk in ddisks:
+        if disk['type'] == 'rbd':
+            pool_list.append(disk['name'].split('/')[0])
+            rbd_list.append(disk['name'].split('/')[1])
+
+    # Rename each volume in turn
+    for idx, rbd in enumerate(rbd_list):
+        rbd_new = re.sub(r"{}".format(domain), new_domain, rbd)
+        # Skip renaming if nothing changed
+        if rbd_new == rbd:
+            continue
+        ceph.rename_volume(zk_conn, pool_list[idx], rbd, rbd_new)
+
+    # Replace the name in the config
+    vm_config_new = lxml.etree.tostring(vm_config, encoding='ascii', method='xml').decode().replace(domain, new_domain)
+
+    # Get VM information
+    _b, dom_info = get_info(zk_conn, dom_uuid)
+
+    # Undefine the old VM
+    undefine_vm(zk_conn, dom_uuid)
+
+    # Define the new VM
+    define_vm(zk_conn, vm_config_new, dom_info['node'], dom_info['node_limit'], dom_info['node_selector'], dom_info['node_autostart'], migration_method=dom_info['migration_method'], profile=dom_info['profile'], initial_state='stop')
+
+    # If the VM is migrated, store that
+    if dom_info['migrated'] != 'no':
+        zkhandler.writedata(zk_conn, {'/domains/{}/lastnode'.format(dom_uuid): dom_info['last_node']})
+
+    return True, 'Successfully renamed VM "{}" to "{}".'.format(domain, new_domain)
 
 
 def undefine_vm(zk_conn, domain):

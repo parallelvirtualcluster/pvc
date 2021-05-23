@@ -791,6 +791,36 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
 
 
 ###############################################################################
+# pvc vm rename
+###############################################################################
+@click.command(name='rename', short_help='Rename a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'new_name'
+)
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the rename'
+)
+@cluster_req
+def vm_rename(domain, new_name, confirm_flag):
+    """
+    Rename virtual machine DOMAIN, and all its connected disk volumes, to NEW_NAME. DOMAIN may be a UUID or name.
+    """
+    if not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Rename VM {} to {}'.format(domain, new_name), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
+
+    retcode, retmsg = pvc_vm.vm_rename(config, domain, new_name)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc vm undefine
 ###############################################################################
 @click.command(name='undefine', short_help='Undefine a virtual machine.')
@@ -4395,6 +4425,7 @@ vm_volume.add_command(vm_volume_remove)
 cli_vm.add_command(vm_define)
 cli_vm.add_command(vm_meta)
 cli_vm.add_command(vm_modify)
+cli_vm.add_command(vm_rename)
 cli_vm.add_command(vm_undefine)
 cli_vm.add_command(vm_remove)
 cli_vm.add_command(vm_dump)

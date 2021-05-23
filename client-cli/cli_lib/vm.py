@@ -130,6 +130,27 @@ def vm_modify(config, vm, xml, restart):
     return retstatus, response.json().get('message', '')
 
 
+def vm_rename(config, vm, new_name):
+    """
+    Rename VM to new name
+
+    API endpoint: POST /vm/{vm}/rename
+    API arguments: new_name={new_name}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        'new_name': new_name
+    }
+    response = call_api(config, 'post', '/vm/{vm}/rename'.format(vm=vm), params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
 def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
     """
     Modify PVC metadata of a VM

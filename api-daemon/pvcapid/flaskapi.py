@@ -1804,6 +1804,45 @@ class API_VM_Console(Resource):
 api.add_resource(API_VM_Console, '/vm/<vm>/console')
 
 
+# /vm/<vm>/rename
+class API_VM_Rename(Resource):
+    @RequestParser([
+        {'name': 'new_name'}
+    ])
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Rename VM {vm}, and all connected disk volumes which include this name, to {new_name}
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: new_name
+            type: string
+            required: true
+            description: The new name of the VM
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_rename(
+            vm,
+            reqargs.get('new_name', None)
+        )
+
+
+api.add_resource(API_VM_Rename, '/vm/<vm>/rename')
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

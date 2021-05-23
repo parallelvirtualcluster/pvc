@@ -6035,6 +6035,38 @@
                 ]
             }
         },
+        "/api/v1/vm/{vm}/rename": {
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new name of the VM",
+                        "in": "query",
+                        "name": "new_name",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Rename VM {vm}, and all connected disk volumes which include this name, to {new_name}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
         "/api/v1/vm/{vm}/state": {
             "get": {
                 "description": "",
