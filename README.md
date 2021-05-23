@@ -20,6 +20,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.18
+
+  * Adds VM rename functionality to API and CLI client
+
 #### v0.9.17
 
   * [CLI] Fixes bugs in log follow output

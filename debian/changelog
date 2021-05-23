@@ -1,3 +1,9 @@
+pvc (0.9.18-0) unstable; urgency=high
+
+  * Adds VM rename functionality to API and CLI client
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 23 May 2021 17:23:10 -0400
+
 pvc (0.9.17-0) unstable; urgency=high
 
   * [CLI] Fixes bugs in log follow output
