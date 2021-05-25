@@ -728,7 +728,7 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
         cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
-    if not retcode and not vm_information.get('name', None):
+    if not retcode or not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
     dom_name = vm_information.get('name')
@@ -1586,7 +1586,7 @@ def vm_dump(domain):
     """
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
-    if not retcode and not vm_information.get('name', None):
+    if not retcode or not vm_information.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
     # Grab the current config
