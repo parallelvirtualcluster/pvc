@@ -21,18 +21,79 @@
 
 import time
 import uuid
+from functools import wraps
 from kazoo.client import KazooClient
 
 
+#
+# Function decorators
+#
+class ZKConnection(object):
+    """
+    Decorates a function with a Zookeeper connection before and after the main call.
+
+    The decorated function must accept the `zkhandler` argument as its first argument, and
+    then use this to access the connection.
+    """
+    def __init__(self, config):
+        self.config = config
+
+    def __call__(self, function):
+        if not callable(function):
+            return
+
+        @wraps(function)
+        def connection(*args, **kwargs):
+            zkhandler = ZKHandler(self.config)
+            zkhandler.connect()
+
+            ret = function(zkhandler, *args, **kwargs)
+
+            zkhandler.disconnect()
+            del zkhandler
+
+            return ret
+
+        return connection
+
+
+#
+# Exceptions
+#
+class ZKConnectionException(Exception):
+    """
+    A exception when connecting to the cluster
+    """
+    def __init__(self, zkhandler, error=None):
+        if error is not None:
+            self.message = "Failed to connect to Zookeeper at {}: {}".format(zkhandler.coordinators(), error)
+        else:
+            self.message = "Failed to connect to Zookeeper at {}".format(zkhandler.coordinators())
+        zkhandler.disconnect()
+
+    def __str__(self):
+        return str(self.message)
+
+
+#
+# Handler class
+#
 class ZKHandler(object):
-    def __init__(self, hosts):
+    def __init__(self, config):
         """
         Initialize an instance of the ZKHandler class with config
 
         A zk_conn object will be created but not started
         """
         self.encoding = 'utf8'
-        self.zk_conn = KazooClient(hosts=hosts)
+        self.coordinators = config['coordinators']
+        self.zk_conn = KazooClient(hosts=self.coordinators)
+
+    #
+    # Class meta-functions
+    #
+    def coordinators(self):
+        return str(self.coordinators)
 
     #
     # State/connection management
@@ -41,7 +102,10 @@ class ZKHandler(object):
         """
         Start the zk_conn object and connect to the cluster
         """
-        self.zk_conn.start()
+        try:
+            self.zk_conn.start()
+        except Exception as e:
+            raise ZKConnectionException(self, e)
 
     def disconnect(self):
         """
