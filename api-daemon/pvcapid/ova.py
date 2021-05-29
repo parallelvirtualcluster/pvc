@@ -30,12 +30,12 @@ import lxml.etree
 
 from werkzeug.formparser import parse_form_data
 
+from pvcapid.Daemon import config
+
 import daemon_lib.common as pvc_common
 import daemon_lib.ceph as pvc_ceph
 
 import pvcapid.provisioner as provisioner
-
-config = None  # Set in this namespace by flaskapi
 
 
 #

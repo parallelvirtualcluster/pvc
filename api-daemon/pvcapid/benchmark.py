@@ -22,23 +22,10 @@
 import psycopg2
 import psycopg2.extras
 
-from distutils.util import strtobool as dustrtobool
+from pvcapid.Daemon import config
 
 import daemon_lib.common as pvc_common
 import daemon_lib.ceph as pvc_ceph
-
-config = None  # Set in this namespace by flaskapi
-
-
-def strtobool(stringv):
-    if stringv is None:
-        return False
-    if isinstance(stringv, bool):
-        return bool(stringv)
-    try:
-        return bool(dustrtobool(stringv))
-    except Exception:
-        return False
 
 
 #
