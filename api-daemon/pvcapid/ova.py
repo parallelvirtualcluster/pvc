@@ -32,6 +32,8 @@ from werkzeug.formparser import parse_form_data
 
 from pvcapid.Daemon import config
 
+from daemon_lib.zkhandler import ZKConnection
+
 import daemon_lib.common as pvc_common
 import daemon_lib.ceph as pvc_ceph
 
@@ -110,7 +112,8 @@ def list_ova(limit, is_fuzzy=True):
         return {'message': 'No OVAs found.'}, 404
 
 
-def delete_ova(name):
+@ZKConnection(config)
+def delete_ova(zkhandler, name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
     if retcode != 200:
         retmsg = {'message': 'The OVA "{}" does not exist.'.format(name)}
@@ -127,9 +130,8 @@ def delete_ova(name):
         volumes = cur.fetchall()
 
         # Remove each volume for this OVA
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
         for volume in volumes:
-            pvc_ceph.remove_volume(zk_conn, volume.get('pool'), volume.get('volume_name'))
+            pvc_ceph.remove_volume(zkhandler, volume.get('pool'), volume.get('volume_name'))
 
         # Delete the volume entries from the database
         query = "DELETE FROM ova_volume WHERE ova = %s;"
@@ -160,7 +162,8 @@ def delete_ova(name):
     return retmsg, retcode
 
 
-def upload_ova(pool, name, ova_size):
+@ZKConnection(config)
+def upload_ova(zkhandler, pool, name, ova_size):
     ova_archive = None
 
     # Cleanup function
@@ -168,21 +171,17 @@ def upload_ova(pool, name, ova_size):
         # Close the OVA archive
         if ova_archive:
             ova_archive.close()
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
         # Unmap the OVA temporary blockdev
-        retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, "ova_{}".format(name))
+        retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, "ova_{}".format(name))
         # Remove the OVA temporary blockdev
-        retflag, retdata = pvc_ceph.remove_volume(zk_conn, pool, "ova_{}".format(name))
-        pvc_common.stopZKConnection(zk_conn)
+        retflag, retdata = pvc_ceph.remove_volume(zkhandler, pool, "ova_{}".format(name))
 
     # Normalize the OVA size to bytes
     ova_size_bytes = pvc_ceph.format_bytes_fromhuman(ova_size)
     ova_size = '{}B'.format(ova_size_bytes)
 
     # Verify that the cluster has enough space to store the OVA volumes (2x OVA size, temporarily, 1x permanently)
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    pool_information = pvc_ceph.getPoolInformation(zk_conn, pool)
-    pvc_common.stopZKConnection(zk_conn)
+    pool_information = pvc_ceph.getPoolInformation(zkhandler, pool)
     pool_free_space_bytes = int(pool_information['stats']['free_bytes'])
     if ova_size_bytes * 2 >= pool_free_space_bytes:
         output = {
@@ -196,9 +195,7 @@ def upload_ova(pool, name, ova_size):
         return output, retcode
 
     # Create a temporary OVA blockdev
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, "ova_{}".format(name), ova_size)
-    pvc_common.stopZKConnection(zk_conn)
+    retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, "ova_{}".format(name), ova_size)
     if not retflag:
         output = {
             'message': retdata.replace('\"', '\'')
@@ -208,9 +205,7 @@ def upload_ova(pool, name, ova_size):
         return output, retcode
 
     # Map the temporary OVA blockdev
-    zk_conn = pvc_common.startZKConnection(config['coordinators'])
-    retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, "ova_{}".format(name))
-    pvc_common.stopZKConnection(zk_conn)
+    retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, "ova_{}".format(name))
     if not retflag:
         output = {
             'message': retdata.replace('\"', '\'')
@@ -276,15 +271,11 @@ def upload_ova(pool, name, ova_size):
         dev_size = '{}B'.format(pvc_ceph.format_bytes_fromhuman(dev_size_raw))
 
         def cleanup_img_maps():
-            zk_conn = pvc_common.startZKConnection(config['coordinators'])
             # Unmap the temporary blockdev
-            retflag, retdata = pvc_ceph.unmap_volume(zk_conn, pool, volume)
-            pvc_common.stopZKConnection(zk_conn)
+            retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, volume)
 
         # Create the blockdev
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
-        retflag, retdata = pvc_ceph.add_volume(zk_conn, pool, volume, dev_size)
-        pvc_common.stopZKConnection(zk_conn)
+        retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, volume, dev_size)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
@@ -295,9 +286,7 @@ def upload_ova(pool, name, ova_size):
             return output, retcode
 
         # Map the blockdev
-        zk_conn = pvc_common.startZKConnection(config['coordinators'])
-        retflag, retdata = pvc_ceph.map_volume(zk_conn, pool, volume)
-        pvc_common.stopZKConnection(zk_conn)
+        retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
