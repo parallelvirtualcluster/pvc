@@ -42,6 +42,7 @@ API_VERSION = 1.0
 app = flask.Flask(__name__)
 app.config['CELERY_BROKER_URL'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
 app.config['CELERY_RESULT_BACKEND'] = 'redis://{}:{}{}'.format(config['queue_host'], config['queue_port'], config['queue_path'])
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@{}:{}/{}'.format(config['database_user'], config['database_password'], config['database_host'], config['database_port'], config['database_name'])
 
 if config['debug']:
