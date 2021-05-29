@@ -780,9 +780,7 @@ def vm_flush_locks(zkhandler, vm):
     if retdata[0].get('state') not in ['stop', 'disable']:
         return {"message": "VM must be stopped to flush locks"}, 400
 
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.flush_locks(zkhandler, vm)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -798,13 +796,12 @@ def vm_flush_locks(zkhandler, vm):
 #
 # Network functions
 #
-def net_list(limit=None, is_fuzzy=True):
+@ZKConnection(config)
+def net_list(zkhandler, limit=None, is_fuzzy=True):
     """
     Return a list of client networks with limit LIMIT.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list(zkhandler, limit, is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -823,7 +820,8 @@ def net_list(limit=None, is_fuzzy=True):
     return retdata, retcode
 
 
-def net_add(vni, description, nettype, domain, name_servers,
+@ZKConnection(config)
+def net_add(zkhandler, vni, description, nettype, domain, name_servers,
             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
             dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -831,11 +829,9 @@ def net_add(vni, description, nettype, domain, name_servers,
     """
     if dhcp4_flag:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_network(zkhandler, vni, description, nettype, domain, name_servers,
                                                ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                                dhcp4_flag, dhcp4_start, dhcp4_end)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -848,7 +844,8 @@ def net_add(vni, description, nettype, domain, name_servers,
     return output, retcode
 
 
-def net_modify(vni, description, domain, name_servers,
+@ZKConnection(config)
+def net_modify(zkhandler, vni, description, domain, name_servers,
                ip4_network, ip4_gateway,
                ip6_network, ip6_gateway,
                dhcp4_flag, dhcp4_start, dhcp4_end):
@@ -857,11 +854,9 @@ def net_modify(vni, description, domain, name_servers,
     """
     if dhcp4_flag is not None:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.modify_network(zkhandler, vni, description, domain, name_servers,
                                                   ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                                   dhcp4_flag, dhcp4_start, dhcp4_end)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -874,13 +869,12 @@ def net_modify(vni, description, domain, name_servers,
     return output, retcode
 
 
-def net_remove(network):
+@ZKConnection(config)
+def net_remove(zkhandler, network):
     """
     Remove a virtual client network from the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_network(zkhandler, network)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -893,13 +887,12 @@ def net_remove(network):
     return output, retcode
 
 
-def net_dhcp_list(network, limit=None, static=False):
+@ZKConnection(config)
+def net_dhcp_list(zkhandler, network, limit=None, static=False):
     """
     Return a list of DHCP leases in network NETWORK with limit LIMIT.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list_dhcp(zkhandler, network, limit, static)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -918,13 +911,12 @@ def net_dhcp_list(network, limit=None, static=False):
     return retdata, retcode
 
 
-def net_dhcp_add(network, ipaddress, macaddress, hostname):
+@ZKConnection(config)
+def net_dhcp_add(zkhandler, network, ipaddress, macaddress, hostname):
     """
     Add a static DHCP lease to a virtual client network.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_dhcp_reservation(zkhandler, network, ipaddress, macaddress, hostname)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -937,13 +929,12 @@ def net_dhcp_add(network, ipaddress, macaddress, hostname):
     return output, retcode
 
 
-def net_dhcp_remove(network, macaddress):
+@ZKConnection(config)
+def net_dhcp_remove(zkhandler, network, macaddress):
     """
     Remove a static DHCP lease from a virtual client network.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_dhcp_reservation(zkhandler, network, macaddress)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -956,13 +947,12 @@ def net_dhcp_remove(network, macaddress):
     return output, retcode
 
 
-def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
+@ZKConnection(config)
+def net_acl_list(zkhandler, network, limit=None, direction=None, is_fuzzy=True):
     """
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.get_list_acl(zkhandler, network, limit, direction, is_fuzzy=True)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -981,13 +971,12 @@ def net_acl_list(network, limit=None, direction=None, is_fuzzy=True):
     return retdata, retcode
 
 
-def net_acl_add(network, direction, description, rule, order):
+@ZKConnection(config)
+def net_acl_add(zkhandler, network, direction, description, rule, order):
     """
     Add an ACL to a virtual client network.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.add_acl(zkhandler, network, direction, description, rule, order)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1000,13 +989,12 @@ def net_acl_add(network, direction, description, rule, order):
     return output, retcode
 
 
-def net_acl_remove(network, description):
+@ZKConnection(config)
+def net_acl_remove(zkhandler, network, description):
     """
     Remove an ACL from a virtual client network.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_network.remove_acl(zkhandler, network, description)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1022,13 +1010,12 @@ def net_acl_remove(network, description):
 #
 # Ceph functions
 #
-def ceph_status():
+@ZKConnection(config)
+def ceph_status(zkhandler):
     """
     Get the current Ceph cluster status.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_status(zkhandler)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1038,13 +1025,12 @@ def ceph_status():
     return retdata, retcode
 
 
-def ceph_util():
+@ZKConnection(config)
+def ceph_util(zkhandler):
     """
     Get the current Ceph cluster utilization.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_util(zkhandler)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1054,13 +1040,12 @@ def ceph_util():
     return retdata, retcode
 
 
-def ceph_osd_list(limit=None):
+@ZKConnection(config)
+def ceph_osd_list(zkhandler, limit=None):
     """
     Get the list of OSDs in the Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_osd(zkhandler, limit)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -1079,10 +1064,9 @@ def ceph_osd_list(limit=None):
     return retdata, retcode
 
 
-def ceph_osd_state(osd):
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
+@ZKConnection(config)
+def ceph_osd_state(zkhandler, osd):
     retflag, retdata = pvc_ceph.get_list_osd(zkhandler, osd)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -1104,13 +1088,12 @@ def ceph_osd_state(osd):
     return {"id": osd, "in": in_state, "up": up_state}, retcode
 
 
-def ceph_osd_add(node, device, weight):
+@ZKConnection(config)
+def ceph_osd_add(zkhandler, node, device, weight):
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_osd(zkhandler, node, device, weight)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1123,13 +1106,12 @@ def ceph_osd_add(node, device, weight):
     return output, retcode
 
 
-def ceph_osd_remove(osd_id):
+@ZKConnection(config)
+def ceph_osd_remove(zkhandler, osd_id):
     """
     Remove a Ceph OSD from the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_osd(zkhandler, osd_id)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1142,13 +1124,12 @@ def ceph_osd_remove(osd_id):
     return output, retcode
 
 
-def ceph_osd_in(osd_id):
+@ZKConnection(config)
+def ceph_osd_in(zkhandler, osd_id):
     """
     Set in a Ceph OSD in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.in_osd(zkhandler, osd_id)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1161,13 +1142,12 @@ def ceph_osd_in(osd_id):
     return output, retcode
 
 
-def ceph_osd_out(osd_id):
+@ZKConnection(config)
+def ceph_osd_out(zkhandler, osd_id):
     """
     Set out a Ceph OSD in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.out_osd(zkhandler, osd_id)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1180,13 +1160,12 @@ def ceph_osd_out(osd_id):
     return output, retcode
 
 
-def ceph_osd_set(option):
+@ZKConnection(config)
+def ceph_osd_set(zkhandler, option):
     """
     Set options on a Ceph OSD in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.set_osd(zkhandler, option)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1199,13 +1178,12 @@ def ceph_osd_set(option):
     return output, retcode
 
 
-def ceph_osd_unset(option):
+@ZKConnection(config)
+def ceph_osd_unset(zkhandler, option):
     """
     Unset options on a Ceph OSD in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.unset_osd(zkhandler, option)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1218,13 +1196,12 @@ def ceph_osd_unset(option):
     return output, retcode
 
 
-def ceph_pool_list(limit=None, is_fuzzy=True):
+@ZKConnection(config)
+def ceph_pool_list(zkhandler, limit=None, is_fuzzy=True):
     """
     Get the list of RBD pools in the Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_pool(zkhandler, limit, is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -1243,13 +1220,12 @@ def ceph_pool_list(limit=None, is_fuzzy=True):
     return retdata, retcode
 
 
-def ceph_pool_add(name, pgs, replcfg):
+@ZKConnection(config)
+def ceph_pool_add(zkhandler, name, pgs, replcfg):
     """
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_pool(zkhandler, name, pgs, replcfg)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1262,13 +1238,12 @@ def ceph_pool_add(name, pgs, replcfg):
     return output, retcode
 
 
-def ceph_pool_remove(name):
+@ZKConnection(config)
+def ceph_pool_remove(zkhandler, name):
     """
     Remove a Ceph RBD pool to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_pool(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1281,13 +1256,12 @@ def ceph_pool_remove(name):
     return output, retcode
 
 
-def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
+@ZKConnection(config)
+def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volumes in the Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_volume(zkhandler, pool, limit, is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -1306,13 +1280,12 @@ def ceph_volume_list(pool=None, limit=None, is_fuzzy=True):
     return retdata, retcode
 
 
-def ceph_volume_add(pool, name, size):
+@ZKConnection(config)
+def ceph_volume_add(zkhandler, pool, name, size):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, name, size)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1325,13 +1298,12 @@ def ceph_volume_add(pool, name, size):
     return output, retcode
 
 
-def ceph_volume_clone(pool, name, source_volume):
+@ZKConnection(config)
+def ceph_volume_clone(zkhandler, pool, name, source_volume):
     """
     Clone a Ceph RBD volume to a new volume on the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.clone_volume(zkhandler, pool, source_volume, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1344,13 +1316,12 @@ def ceph_volume_clone(pool, name, source_volume):
     return output, retcode
 
 
-def ceph_volume_resize(pool, name, size):
+@ZKConnection(config)
+def ceph_volume_resize(zkhandler, pool, name, size):
     """
     Resize an existing Ceph RBD volume in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.resize_volume(zkhandler, pool, name, size)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1363,13 +1334,12 @@ def ceph_volume_resize(pool, name, size):
     return output, retcode
 
 
-def ceph_volume_rename(pool, name, new_name):
+@ZKConnection(config)
+def ceph_volume_rename(zkhandler, pool, name, new_name):
     """
     Rename a Ceph RBD volume in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.rename_volume(zkhandler, pool, name, new_name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1382,13 +1352,12 @@ def ceph_volume_rename(pool, name, new_name):
     return output, retcode
 
 
-def ceph_volume_remove(pool, name):
+@ZKConnection(config)
+def ceph_volume_remove(zkhandler, pool, name):
     """
     Remove a Ceph RBD volume to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_volume(zkhandler, pool, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1401,7 +1370,8 @@ def ceph_volume_remove(pool, name):
     return output, retcode
 
 
-def ceph_volume_upload(pool, volume, img_type):
+@ZKConnection(config)
+def ceph_volume_upload(zkhandler, pool, volume, img_type):
     """
     Upload a raw file via HTTP post to a PVC Ceph volume
     """
@@ -1414,9 +1384,7 @@ def ceph_volume_upload(pool, volume, img_type):
         return output, retcode
 
     # Get the size of the target block device
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retcode, retdata = pvc_ceph.get_list_volume(zkhandler, pool, volume, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
     # If there's no target, return failure
     if not retcode or len(retdata) < 1:
         output = {
@@ -1427,21 +1395,17 @@ def ceph_volume_upload(pool, volume, img_type):
     dev_size = retdata[0]['stats']['size']
 
     def cleanup_maps_and_volumes():
-        zkhandler = pvc_common.startZKConnection(config['coordinators'])
         # Unmap the target blockdev
         retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, volume)
         # Unmap the temporary blockdev
         retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, "{}_tmp".format(volume))
         # Remove the temporary blockdev
         retflag, retdata = pvc_ceph.remove_volume(zkhandler, pool, "{}_tmp".format(volume))
-        pvc_common.stopZKConnection(zkhandler)
 
     # Create a temporary block device to store non-raw images
     if img_type == 'raw':
         # Map the target blockdev
-        zkhandler = pvc_common.startZKConnection(config['coordinators'])
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
-        pvc_common.stopZKConnection(zkhandler)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
@@ -1478,9 +1442,7 @@ def ceph_volume_upload(pool, volume, img_type):
     # Write the image directly to the blockdev
     else:
         # Create a temporary blockdev
-        zkhandler = pvc_common.startZKConnection(config['coordinators'])
         retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, "{}_tmp".format(volume), dev_size)
-        pvc_common.stopZKConnection(zkhandler)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
@@ -1490,9 +1452,7 @@ def ceph_volume_upload(pool, volume, img_type):
             return output, retcode
 
         # Map the temporary target blockdev
-        zkhandler = pvc_common.startZKConnection(config['coordinators'])
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, "{}_tmp".format(volume))
-        pvc_common.stopZKConnection(zkhandler)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
@@ -1503,9 +1463,7 @@ def ceph_volume_upload(pool, volume, img_type):
         temp_blockdev = retdata
 
         # Map the target blockdev
-        zkhandler = pvc_common.startZKConnection(config['coordinators'])
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
-        pvc_common.stopZKConnection(zkhandler)
         if not retflag:
             output = {
                 'message': retdata.replace('\"', '\'')
@@ -1552,13 +1510,12 @@ def ceph_volume_upload(pool, volume, img_type):
         return output, retcode
 
 
-def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True):
+@ZKConnection(config)
+def ceph_volume_snapshot_list(zkhandler, pool=None, volume=None, limit=None, is_fuzzy=True):
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.get_list_snapshot(zkhandler, pool, volume, limit, is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -1577,13 +1534,12 @@ def ceph_volume_snapshot_list(pool=None, volume=None, limit=None, is_fuzzy=True)
     return retdata, retcode
 
 
-def ceph_volume_snapshot_add(pool, volume, name):
+@ZKConnection(config)
+def ceph_volume_snapshot_add(zkhandler, pool, volume, name):
     """
     Add a Ceph RBD volume snapshot to the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.add_snapshot(zkhandler, pool, volume, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1596,13 +1552,12 @@ def ceph_volume_snapshot_add(pool, volume, name):
     return output, retcode
 
 
-def ceph_volume_snapshot_rename(pool, volume, name, new_name):
+@ZKConnection(config)
+def ceph_volume_snapshot_rename(zkhandler, pool, volume, name, new_name):
     """
     Rename a Ceph RBD volume snapshot in the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.rename_snapshot(zkhandler, pool, volume, name, new_name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -1615,13 +1570,12 @@ def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     return output, retcode
 
 
-def ceph_volume_snapshot_remove(pool, volume, name):
+@ZKConnection(config)
+def ceph_volume_snapshot_remove(zkhandler, pool, volume, name):
     """
     Remove a Ceph RBD volume snapshot from the PVC Ceph storage cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_ceph.remove_snapshot(zkhandler, pool, volume, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
