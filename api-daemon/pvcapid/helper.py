@@ -126,24 +126,22 @@ def restore_cluster(zkhandler, cluster_data_raw):
 #
 # Cluster functions
 #
-def cluster_status():
+@ZKConnection(config)
+def cluster_status(zkhandler):
     """
     Get the overall status of the PVC cluster
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_cluster.get_info(zkhandler)
-    pvc_common.stopZKConnection(zkhandler)
 
     return retdata, 200
 
 
-def cluster_maintenance(maint_state='false'):
+@ZKConnection(config)
+def cluster_maintenance(zkhandler, maint_state='false'):
     """
     Set the cluster in or out of maintenance state
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_cluster.set_maintenance(zkhandler, maint_state)
-    pvc_common.stopZKConnection(zkhandler)
 
     retdata = {
         'message': retdata
