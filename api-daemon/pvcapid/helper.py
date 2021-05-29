@@ -157,13 +157,12 @@ def cluster_maintenance(zkhandler, maint_state='false'):
 #
 # Node functions
 #
-def node_list(limit=None, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
+@ZKConnection(config)
+def node_list(zkhandler, limit=None, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
     """
     Return a list of nodes with limit LIMIT.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zkhandler, limit, daemon_state=daemon_state, coordinator_state=coordinator_state, domain_state=domain_state, is_fuzzy=is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -182,13 +181,12 @@ def node_list(limit=None, daemon_state=None, coordinator_state=None, domain_stat
     return retdata, retcode
 
 
-def node_daemon_state(node):
+@ZKConnection(config)
+def node_daemon_state(zkhandler, node):
     """
     Return the daemon state of node NODE.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zkhandler, node, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -211,13 +209,12 @@ def node_daemon_state(node):
     return retdata, retcode
 
 
-def node_coordinator_state(node):
+@ZKConnection(config)
+def node_coordinator_state(zkhandler, node):
     """
     Return the coordinator state of node NODE.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zkhandler, node, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -240,13 +237,12 @@ def node_coordinator_state(node):
     return retdata, retcode
 
 
-def node_domain_state(node):
+@ZKConnection(config)
+def node_domain_state(zkhandler, node):
     """
     Return the domain state of node NODE.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.get_list(zkhandler, node, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -266,13 +262,12 @@ def node_domain_state(node):
     return retdata, retcode
 
 
-def node_secondary(node):
+@ZKConnection(config)
+def node_secondary(zkhandler, node):
     """
     Take NODE out of primary router mode.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.secondary_node(zkhandler, node)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -285,13 +280,12 @@ def node_secondary(node):
     return output, retcode
 
 
-def node_primary(node):
+@ZKConnection(config)
+def node_primary(zkhandler, node):
     """
     Set NODE to primary router mode.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.primary_node(zkhandler, node)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -304,13 +298,12 @@ def node_primary(node):
     return output, retcode
 
 
-def node_flush(node, wait):
+@ZKConnection(config)
+def node_flush(zkhandler, node, wait):
     """
     Flush NODE of running VMs.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.flush_node(zkhandler, node, wait)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -323,13 +316,12 @@ def node_flush(node, wait):
     return output, retcode
 
 
-def node_ready(node, wait):
+@ZKConnection(config)
+def node_ready(zkhandler, node, wait):
     """
     Restore NODE to active service.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_node.ready_node(zkhandler, node, wait)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -345,24 +337,22 @@ def node_ready(node, wait):
 #
 # VM functions
 #
-def vm_is_migrated(vm):
+@ZKConnection(config)
+def vm_is_migrated(zkhandler, vm):
     """
     Determine if a VM is migrated or not
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retdata = pvc_vm.is_migrated(zkhandler, vm)
-    pvc_common.stopZKConnection(zkhandler)
 
     return retdata
 
 
-def vm_state(vm):
+@ZKConnection(config)
+def vm_state(zkhandler, vm):
     """
     Return the state of virtual machine VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -385,13 +375,12 @@ def vm_state(vm):
     return retdata, retcode
 
 
-def vm_node(vm):
+@ZKConnection(config)
+def vm_node(zkhandler, vm):
     """
     Return the current node of virtual machine VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -415,7 +404,8 @@ def vm_node(vm):
     return retdata, retcode
 
 
-def vm_console(vm, lines=None):
+@ZKConnection(config)
+def vm_console(zkhandler, vm, lines=None):
     """
     Return the current console log for VM.
     """
@@ -425,9 +415,7 @@ def vm_console(vm, lines=None):
     except TypeError:
         lines = 10
 
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_console_log(zkhandler, vm, lines)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -444,13 +432,12 @@ def vm_console(vm, lines=None):
     return retdata, retcode
 
 
-def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
+@ZKConnection(config)
+def vm_list(zkhandler, node=None, state=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zkhandler, node, state, limit, is_fuzzy)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -469,7 +456,8 @@ def vm_list(node=None, state=None, limit=None, is_fuzzy=True):
     return retdata, retcode
 
 
-def vm_define(xml, node, limit, selector, autostart, migration_method):
+@ZKConnection(config)
+def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
@@ -480,9 +468,7 @@ def vm_define(xml, node, limit, selector, autostart, migration_method):
     except Exception as e:
         return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
 
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.define_vm(zkhandler, new_cfg, node, limit, selector, autostart, migration_method, profile=None)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -495,13 +481,12 @@ def vm_define(xml, node, limit, selector, autostart, migration_method):
     return output, retcode
 
 
-def get_vm_meta(vm):
+@ZKConnection(config)
+def get_vm_meta(zkhandler, vm):
     """
     Get metadata of a VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         if retdata:
@@ -527,18 +512,17 @@ def get_vm_meta(vm):
     return retdata, retcode
 
 
-def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migration_method):
+@ZKConnection(config)
+def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method):
     """
     Update metadata of a VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     if autostart is not None:
         try:
             autostart = bool(strtobool(autostart))
         except Exception:
             autostart = False
     retflag, retdata = pvc_vm.modify_vm_metadata(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -551,7 +535,8 @@ def update_vm_meta(vm, limit, selector, autostart, provisioner_profile, migratio
     return output, retcode
 
 
-def vm_modify(name, restart, xml):
+@ZKConnection(config)
+def vm_modify(zkhandler, name, restart, xml):
     """
     Modify a VM Libvirt XML in the PVC cluster.
     """
@@ -561,9 +546,8 @@ def vm_modify(name, restart, xml):
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
         return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
+
     retflag, retdata = pvc_vm.modify_vm(zkhandler, name, restart, new_cfg)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -576,7 +560,8 @@ def vm_modify(name, restart, xml):
     return output, retcode
 
 
-def vm_rename(name, new_name):
+@ZKConnection(config)
+def vm_rename(zkhandler, name, new_name):
     """
     Rename a VM in the PVC cluster.
     """
@@ -586,7 +571,6 @@ def vm_rename(name, new_name):
         }
         return 400, output
 
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     if pvc_vm.searchClusterByName(zkhandler, new_name) is not None:
         output = {
             'message': 'A VM named \'{}\' is already present in the cluster'.format(new_name)
@@ -594,7 +578,6 @@ def vm_rename(name, new_name):
         return 400, output
 
     retflag, retdata = pvc_vm.rename_vm(zkhandler, name, new_name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -607,13 +590,12 @@ def vm_rename(name, new_name):
     return output, retcode
 
 
-def vm_undefine(name):
+@ZKConnection(config)
+def vm_undefine(zkhandler, name):
     """
     Undefine a VM from the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.undefine_vm(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -626,13 +608,12 @@ def vm_undefine(name):
     return output, retcode
 
 
-def vm_remove(name):
+@ZKConnection(config)
+def vm_remove(zkhandler, name):
     """
     Remove a VM from the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.remove_vm(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -645,13 +626,12 @@ def vm_remove(name):
     return output, retcode
 
 
-def vm_start(name):
+@ZKConnection(config)
+def vm_start(zkhandler, name):
     """
     Start a VM in the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.start_vm(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -664,13 +644,12 @@ def vm_start(name):
     return output, retcode
 
 
-def vm_restart(name, wait):
+@ZKConnection(config)
+def vm_restart(zkhandler, name, wait):
     """
     Restart a VM in the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.restart_vm(zkhandler, name, wait)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -683,13 +662,12 @@ def vm_restart(name, wait):
     return output, retcode
 
 
-def vm_shutdown(name, wait):
+@ZKConnection(config)
+def vm_shutdown(zkhandler, name, wait):
     """
     Shutdown a VM in the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.shutdown_vm(zkhandler, name, wait)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -702,13 +680,12 @@ def vm_shutdown(name, wait):
     return output, retcode
 
 
-def vm_stop(name):
+@ZKConnection(config)
+def vm_stop(zkhandler, name):
     """
     Forcibly stop a VM in the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.stop_vm(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -721,13 +698,12 @@ def vm_stop(name):
     return output, retcode
 
 
-def vm_disable(name):
+@ZKConnection(config)
+def vm_disable(zkhandler, name):
     """
     Disable a (stopped) VM in the PVC cluster.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.disable_vm(zkhandler, name)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -740,13 +716,12 @@ def vm_disable(name):
     return output, retcode
 
 
-def vm_move(name, node, wait, force_live):
+@ZKConnection(config)
+def vm_move(zkhandler, name, node, wait, force_live):
     """
     Move a VM to another node.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.move_vm(zkhandler, name, node, wait, force_live)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -759,13 +734,12 @@ def vm_move(name, node, wait, force_live):
     return output, retcode
 
 
-def vm_migrate(name, node, flag_force, wait, force_live):
+@ZKConnection(config)
+def vm_migrate(zkhandler, name, node, flag_force, wait, force_live):
     """
     Temporarily migrate a VM to another node.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.migrate_vm(zkhandler, name, node, flag_force, wait, force_live)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -778,13 +752,12 @@ def vm_migrate(name, node, flag_force, wait, force_live):
     return output, retcode
 
 
-def vm_unmigrate(name, wait, force_live):
+@ZKConnection(config)
+def vm_unmigrate(zkhandler, name, wait, force_live):
     """
     Unmigrate a migrated VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.unmigrate_vm(zkhandler, name, wait, force_live)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retflag:
         retcode = 200
@@ -797,13 +770,12 @@ def vm_unmigrate(name, wait, force_live):
     return output, retcode
 
 
-def vm_flush_locks(vm):
+@ZKConnection(config)
+def vm_flush_locks(zkhandler, vm):
     """
     Flush locks of a (stopped) VM.
     """
-    zkhandler = pvc_common.startZKConnection(config['coordinators'])
     retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
-    pvc_common.stopZKConnection(zkhandler)
 
     if retdata[0].get('state') not in ['stop', 'disable']:
         return {"message": "VM must be stopped to flush locks"}, 400
