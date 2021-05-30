@@ -21,7 +21,6 @@
 
 import re
 
-import daemon_lib.zkhandler as zkhandler
 import daemon_lib.common as common
 import daemon_lib.vm as pvc_vm
 import daemon_lib.node as pvc_node
@@ -29,22 +28,26 @@ import daemon_lib.network as pvc_network
 import daemon_lib.ceph as pvc_ceph
 
 
-def set_maintenance(zk_conn, maint_state):
+def set_maintenance(zkhandler, maint_state):
     try:
         if maint_state == 'true':
-            zkhandler.writedata(zk_conn, {'/maintenance': 'true'})
+            zkhandler.write([
+                ('/maintenance', 'true')
+            ])
             return True, 'Successfully set cluster in maintenance mode'
         else:
-            zkhandler.writedata(zk_conn, {'/maintenance': 'false'})
+            zkhandler.write([
+                ('/maintenance', 'false')
+            ])
             return True, 'Successfully set cluster in normal mode'
     except Exception:
         return False, 'Failed to set cluster maintenance state'
 
 
-def getClusterInformation(zk_conn):
+def getClusterInformation(zkhandler):
     # Get cluster maintenance state
     try:
-        maint_state = zkhandler.readdata(zk_conn, '/maintenance')
+        maint_state = zkhandler.read('/maintenance')
     except Exception:
         maint_state = 'false'
 
@@ -53,19 +56,19 @@ def getClusterInformation(zk_conn):
     storage_health_msg = []
 
     # Get node information object list
-    retcode, node_list = pvc_node.get_list(zk_conn, None)
+    retcode, node_list = pvc_node.get_list(zkhandler, None)
 
     # Get vm information object list
-    retcode, vm_list = pvc_vm.get_list(zk_conn, None, None, None)
+    retcode, vm_list = pvc_vm.get_list(zkhandler, None, None, None)
 
     # Get network information object list
-    retcode, network_list = pvc_network.get_list(zk_conn, None, None)
+    retcode, network_list = pvc_network.get_list(zkhandler, None, None)
 
     # Get storage information object list
-    retcode, ceph_osd_list = pvc_ceph.get_list_osd(zk_conn, None)
-    retcode, ceph_pool_list = pvc_ceph.get_list_pool(zk_conn, None)
-    retcode, ceph_volume_list = pvc_ceph.get_list_volume(zk_conn, None, None)
-    retcode, ceph_snapshot_list = pvc_ceph.get_list_snapshot(zk_conn, None, None, None)
+    retcode, ceph_osd_list = pvc_ceph.get_list_osd(zkhandler, None)
+    retcode, ceph_pool_list = pvc_ceph.get_list_pool(zkhandler, None)
+    retcode, ceph_volume_list = pvc_ceph.get_list_volume(zkhandler, None, None)
+    retcode, ceph_snapshot_list = pvc_ceph.get_list_snapshot(zkhandler, None, None, None)
 
     # Determine, for each subsection, the total count
     node_count = len(node_list)
@@ -164,7 +167,7 @@ def getClusterInformation(zk_conn):
         cluster_health = 'Optimal'
 
     # Find out our storage health from Ceph
-    ceph_status = zkhandler.readdata(zk_conn, '/ceph').split('\n')
+    ceph_status = zkhandler.read('/ceph').split('\n')
     ceph_health = ceph_status[2].split()[-1]
 
     # Parse the status output to get the health indicators
@@ -234,8 +237,8 @@ def getClusterInformation(zk_conn):
         'health_msg': cluster_health_msg,
         'storage_health': storage_health,
         'storage_health_msg': storage_health_msg,
-        'primary_node': common.getPrimaryNode(zk_conn),
-        'upstream_ip': zkhandler.readdata(zk_conn, '/upstream_ip'),
+        'primary_node': common.getPrimaryNode(zkhandler),
+        'upstream_ip': zkhandler.read('/upstream_ip'),
         'nodes': formatted_node_states,
         'vms': formatted_vm_states,
         'networks': network_count,
@@ -248,9 +251,9 @@ def getClusterInformation(zk_conn):
     return cluster_information
 
 
-def get_info(zk_conn):
+def get_info(zkhandler):
     # This is a thin wrapper function for naming purposes
-    cluster_information = getClusterInformation(zk_conn)
+    cluster_information = getClusterInformation(zkhandler)
     if cluster_information:
         return True, cluster_information
     else:
