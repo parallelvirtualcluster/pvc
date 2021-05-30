@@ -623,7 +623,7 @@ def migrate_vm(zkhandler, domain, target_node, force_migrate, wait=False, force_
 
     retmsg = 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
 
-    lock = zkhandler.exclusivelock(zkhandler, '/domains/{}/state'.format(dom_uuid))
+    lock = zkhandler.exclusivelock('/domains/{}/state'.format(dom_uuid))
     with lock:
         zkhandler.write([
             ('/domains/{}/state'.format(dom_uuid), target_state),
@@ -666,7 +666,7 @@ def unmigrate_vm(zkhandler, domain, wait=False, force_live=False):
 
     retmsg = 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
 
-    lock = zkhandler.exclusivelock(zkhandler, '/domains/{}/state'.format(dom_uuid))
+    lock = zkhandler.exclusivelock('/domains/{}/state'.format(dom_uuid))
     with lock:
         zkhandler.write([
             ('/domains/{}/state'.format(dom_uuid), target_state),
