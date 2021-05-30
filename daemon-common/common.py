@@ -386,7 +386,7 @@ def getDomainControllers(parsed_xml):
 # Verify node is valid in cluster
 #
 def verifyNode(zkhandler, node):
-    return zkhandler.exists(zkhandler, '/nodes/{}'.format(node))
+    return zkhandler.exists('/nodes/{}'.format(node))
 
 
 #
