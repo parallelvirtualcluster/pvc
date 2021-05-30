@@ -1059,6 +1059,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     import datetime
     import random
 
+    temp_dir = None
+
     time.sleep(2)
 
     print("Starting provisioning of VM '{}' with profile '{}'".format(vm_name, vm_profile))
