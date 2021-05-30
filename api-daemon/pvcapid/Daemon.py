@@ -24,8 +24,11 @@ import yaml
 
 from distutils.util import strtobool as dustrtobool
 
-# Version string for startup output
+# Daemon version
 version = '0.9.18'
+
+# API version
+API_VERSION = 1.0
 
 
 ##########################################################
@@ -123,7 +126,7 @@ print('|           ##          ## ##   ##    ##           |')
 print('|           ##           ###     ######            |')
 print('|--------------------------------------------------|')
 print('| Parallel Virtual Cluster API daemon v{0: <11} |'.format(version))
-print('| API version: v{0: <34} |'.format(pvc_api.API_VERSION))
+print('| API version: v{0: <34} |'.format(API_VERSION))
 print('| Listen: {0: <40} |'.format('{}:{}'.format(config['listen_address'], config['listen_port'])))
 print('| SSL: {0: <43} |'.format(str(config['ssl_enabled'])))
 print('| Authentication: {0: <32} |'.format(str(config['auth_enabled'])))

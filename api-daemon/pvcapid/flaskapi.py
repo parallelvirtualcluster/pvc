@@ -25,7 +25,7 @@ from functools import wraps
 from flask_restful import Resource, Api, reqparse, abort
 from celery import Celery
 
-from pvcapid.Daemon import config, strtobool
+from pvcapid.Daemon import config, strtobool, API_VERSION
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
@@ -33,9 +33,6 @@ import pvcapid.benchmark as api_benchmark
 import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
-
-# API version
-API_VERSION = 1.0
 
 
 # Create Flask app and set config values
