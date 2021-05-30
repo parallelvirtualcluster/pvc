@@ -26,7 +26,7 @@ import re
 
 from pvcapid.Daemon import config, strtobool
 
-from daemon_lib.zkhandler import ZKConnection
+from daemon_lib.zkhandler import ZKHandler
 
 import daemon_lib.common as pvc_common
 import daemon_lib.node as pvc_node
@@ -1051,8 +1051,7 @@ def delete_profile(name):
 #
 # Main VM provisioning function - executed by the Celery worker
 #
-@ZKConnection(config)
-def create_vm(self, zkhandler, vm_name, vm_profile, define_vm=True, start_vm=True, script_run_args=[]):
+def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_run_args=[]):
     # Runtime imports
     import time
     import importlib
@@ -1068,8 +1067,13 @@ def create_vm(self, zkhandler, vm_name, vm_profile, define_vm=True, start_vm=Tru
     try:
         db_conn, db_cur = open_database(config)
     except Exception:
-        print('FATAL - failed to connect to Postgres')
-        raise Exception
+        raise ClusterError('Failed to connect to Postgres')
+
+    try:
+        zkhandler = ZKHandler(config)
+        zkhandler.connect()
+    except Exception:
+        raise ClusterError('Failed to connect to Zookeeper')
 
     # Phase 1 - setup
     #  * Get the profile elements
@@ -1645,5 +1649,8 @@ def create_vm(self, zkhandler, vm_name, vm_profile, define_vm=True, start_vm=Tru
             time.sleep(1)
             retcode, retmsg = pvc_vm.start_vm(zkhandler, vm_name)
             print(retmsg)
+
+    zkhandler.disconnect()
+    del zkhandler
 
     return {'status': 'VM "{}" with profile "{}" has been provisioned and started successfully'.format(vm_name, vm_profile), 'current': 10, 'total': 10}
