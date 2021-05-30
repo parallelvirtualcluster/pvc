@@ -107,30 +107,31 @@ except Exception as e:
 # Entrypoint
 ##########################################################
 
-import pvcapid.flaskapi as pvc_api  # noqa: E402
+def entrypoint():
+    import pvcapid.flaskapi as pvc_api  # noqa: E402
 
-if config['ssl_enabled']:
-    context = (config['ssl_cert_file'], config['ssl_key_file'])
-else:
-    context = None
+    if config['ssl_enabled']:
+        context = (config['ssl_cert_file'], config['ssl_key_file'])
+    else:
+        context = None
 
-# Print our startup messages
-print('')
-print('|--------------------------------------------------|')
-print('|           ########  ##     ##  ######            |')
-print('|           ##     ## ##     ## ##    ##           |')
-print('|           ##     ## ##     ## ##                 |')
-print('|           ########  ##     ## ##                 |')
-print('|           ##         ##   ##  ##                 |')
-print('|           ##          ## ##   ##    ##           |')
-print('|           ##           ###     ######            |')
-print('|--------------------------------------------------|')
-print('| Parallel Virtual Cluster API daemon v{0: <11} |'.format(version))
-print('| API version: v{0: <34} |'.format(API_VERSION))
-print('| Listen: {0: <40} |'.format('{}:{}'.format(config['listen_address'], config['listen_port'])))
-print('| SSL: {0: <43} |'.format(str(config['ssl_enabled'])))
-print('| Authentication: {0: <32} |'.format(str(config['auth_enabled'])))
-print('|--------------------------------------------------|')
-print('')
+    # Print our startup messages
+    print('')
+    print('|--------------------------------------------------|')
+    print('|           ########  ##     ##  ######            |')
+    print('|           ##     ## ##     ## ##    ##           |')
+    print('|           ##     ## ##     ## ##                 |')
+    print('|           ########  ##     ## ##                 |')
+    print('|           ##         ##   ##  ##                 |')
+    print('|           ##          ## ##   ##    ##           |')
+    print('|           ##           ###     ######            |')
+    print('|--------------------------------------------------|')
+    print('| Parallel Virtual Cluster API daemon v{0: <11} |'.format(version))
+    print('| API version: v{0: <34} |'.format(API_VERSION))
+    print('| Listen: {0: <40} |'.format('{}:{}'.format(config['listen_address'], config['listen_port'])))
+    print('| SSL: {0: <43} |'.format(str(config['ssl_enabled'])))
+    print('| Authentication: {0: <32} |'.format(str(config['auth_enabled'])))
+    print('|--------------------------------------------------|')
+    print('')
 
-pvc_api.app.run(config['listen_address'], config['listen_port'], threaded=True, ssl_context=context)
+    pvc_api.app.run(config['listen_address'], config['listen_port'], threaded=True, ssl_context=context)

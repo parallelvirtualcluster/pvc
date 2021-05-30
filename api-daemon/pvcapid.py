@@ -20,3 +20,5 @@
 ###############################################################################
 
 import pvcapid.Daemon  # noqa: F401
+
+pvcapid.Daemon.entrypoint()
