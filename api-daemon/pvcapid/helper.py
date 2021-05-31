@@ -41,16 +41,41 @@ import daemon_lib.ceph as pvc_ceph
 # Cluster base functions
 #
 @ZKConnection(config)
-def initialize_cluster(zkhandler):
+def initialize_cluster(zkhandler, overwrite=False):
     """
     Initialize a new cluster
     """
     # Abort if we've initialized the cluster before
-    if zkhandler.exists('/primary_node'):
+    if zkhandler.exists('/primary_node') and not overwrite:
         return False
 
+    if overwrite:
+        # Delete the existing keys; ignore any errors
+        status = zkhandler.delete([
+            '/primary_node',
+            '/upstream_ip',
+            '/maintenance',
+            '/nodes',
+            '/domains',
+            '/networks',
+            '/ceph',
+            '/ceph/osds',
+            '/ceph/pools',
+            '/ceph/volumes',
+            '/ceph/snapshots',
+            '/cmd',
+            '/cmd/domains',
+            '/cmd/ceph',
+            '/locks',
+            '/locks/flush_lock',
+            '/locks/primary_node'
+        ], recursive=True)
+
+        if not status:
+            return False
+
     # Create the root keys
-    zkhandler.write([
+    status = zkhandler.write([
         ('/primary_node', 'none'),
         ('/upstream_ip', 'none'),
         ('/maintenance', 'False'),
@@ -70,7 +95,7 @@ def initialize_cluster(zkhandler):
         ('/locks/primary_node', ''),
     ])
 
-    return True
+    return status
 
 
 @ZKConnection(config)

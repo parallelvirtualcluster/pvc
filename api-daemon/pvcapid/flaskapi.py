@@ -260,17 +260,27 @@ api.add_resource(API_Logout, '/logout')
 # /initialize
 class API_Initialize(Resource):
     @RequestParser([
-        {'name': 'yes-i-really-mean-it', 'required': True, 'helptext': "Initialization is destructive; please confirm with the argument 'yes-i-really-mean-it'."}
+        {'name': 'overwrite', 'required': False},
+        {'name': 'yes-i-really-mean-it', 'required': True, 'helptext': "Initialization is destructive; please confirm with the argument 'yes-i-really-mean-it'."},
     ])
     @Authenticator
     def post(self, reqargs):
         """
         Initialize a new PVC cluster
-        Note: Normally used only once during cluster bootstrap; checks for the existence of the "/primary_node" key before proceeding and returns 400 if found
+
+        If the 'overwrite' option is not True, the cluster will return 400 if the `/primary_node` key is found. If 'overwrite' is True, the existing cluster
+        data will be erased and new, empty data written in its place.
+
+        All node daemons should be stopped before running this command, and the API daemon started manually to avoid undefined behavior.
         ---
         tags:
           - root
         parameters:
+          - in: query
+            name: overwrite
+            type: bool
+            required: false
+            description: A flag to enable or disable (default) overwriting existing data
           - in: query
             name: yes-i-really-mean-it
             type: string
@@ -289,7 +299,10 @@ class API_Initialize(Resource):
           400:
             description: Bad request
         """
-        if api_helper.initialize_cluster():
+        if reqargs.get('overwrite', False):
+            overwrite_flag = True
+
+        if api_helper.initialize_cluster(overwrite=overwrite_flag):
             return {"message": "Successfully initialized a new PVC cluster"}, 200
         else:
             return {"message": "PVC cluster already initialized"}, 400

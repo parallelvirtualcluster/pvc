@@ -4305,14 +4305,25 @@ def task_restore(filename, confirm_flag):
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
+    '-o', '--overwite', 'overwrite_flag',
+    is_flag=True, default=False,
+    help='Remove and overwrite any existing data'
+)
+@click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
     help='Confirm the initialization'
 )
 @cluster_req
-def task_init(confirm_flag):
+def task_init(confirm_flag, overwrite_flag):
     """
     Perform initialization of a new PVC cluster.
+
+    If the '-o'/'--overwrite' option is specified, all existing data in the cluster will be deleted
+    before new, empty data is written.
+
+    It is not advisable to do this against a running cluster - all node daemons should be stopped
+    first and the API daemon started manually before running this command.
     """
 
     if not confirm_flag and not config['unsafe']:
@@ -4324,7 +4335,7 @@ def task_init(confirm_flag):
     # Easter-egg
     click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
 
-    retcode, retmsg = pvc_cluster.initialize(config)
+    retcode, retmsg = pvc_cluster.initialize(config, overwrite_flag)
     cleanup(retcode, retmsg)
 
 

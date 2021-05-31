@@ -25,16 +25,17 @@ import cli_lib.ansiprint as ansiprint
 from cli_lib.common import call_api
 
 
-def initialize(config):
+def initialize(config, overwrite=False):
     """
     Initialize the PVC cluster
 
     API endpoint: GET /api/v1/initialize
-    API arguments: yes-i-really-mean-it
+    API arguments: overwrite, yes-i-really-mean-it
     API schema: {json_data_object}
     """
     params = {
-        'yes-i-really-mean-it': 'yes'
+        'yes-i-really-mean-it': 'yes',
+        'overwrite': overwrite
     }
     response = call_api(config, 'post', '/initialize', params=params)
 
