@@ -211,13 +211,23 @@ class ZKHandler(object):
             self.log("ZKHandler error: Failed to commit transaction: {}".format(e), state='e')
             return False
 
-    def delete(self, key, recursive=True):
+    def delete(self, keys, recursive=True):
         """
-        Delete a key (defaults to recursive)
+        Delete a key or list of keys (defaults to recursive)
         """
-        if self.zk_conn.delete(key, recursive=recursive):
+        if type(keys) is not list:
+            keys = [keys]
+
+        transaction = self.zk_conn.transaction()
+
+        for key in keys:
+            transaction.delete(key, recursive=recursive)
+
+        try:
+            transaction.commit()
             return True
-        else:
+        except Exception as e:
+            self.log("ZKHandler error: Failed to commit transaction: {}".format(e), state='e')
             return False
 
     def children(self, key):
