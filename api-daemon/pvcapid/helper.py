@@ -94,6 +94,10 @@ def backup_cluster(zkhandler):
                 if child_prefix + child == '/zookeeper':
                     # We must skip the built-in /zookeeper tree
                     continue
+                if child_prefix + child == '/patroni':
+                    # We must skip the /patroni tree
+                    continue
+
                 get_data(child_prefix + child)
 
     get_data('/')
