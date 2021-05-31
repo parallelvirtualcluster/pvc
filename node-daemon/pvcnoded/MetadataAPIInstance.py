@@ -36,8 +36,8 @@ class MetadataAPIInstance(object):
     mdapi = flask.Flask(__name__)
 
     # Initialization function
-    def __init__(self, zk_conn, config, logger):
-        self.zk_conn = zk_conn
+    def __init__(self, zkhandler, config, logger):
+        self.zkhandler = zkhandler
         self.config = config
         self.logger = logger
         self.thread = None
@@ -158,15 +158,15 @@ class MetadataAPIInstance(object):
     # VM details function
     def get_vm_details(self, source_address):
         # Start connection to Zookeeper
-        _discard, networks = pvc_network.get_list(self.zk_conn, None)
+        _discard, networks = pvc_network.get_list(self.zkhandler, None)
 
         # Figure out which server this is via the DHCP address
         host_information = dict()
         networks_managed = (x for x in networks if x.get('type') == 'managed')
         for network in networks_managed:
-            network_leases = pvc_network.getNetworkDHCPLeases(self.zk_conn, network.get('vni'))
+            network_leases = pvc_network.getNetworkDHCPLeases(self.zkhandler, network.get('vni'))
             for network_lease in network_leases:
-                information = pvc_network.getDHCPLeaseInformation(self.zk_conn, network.get('vni'), network_lease)
+                information = pvc_network.getDHCPLeaseInformation(self.zkhandler, network.get('vni'), network_lease)
                 try:
                     if information.get('ip4_address', None) == source_address:
                         host_information = information
@@ -177,7 +177,7 @@ class MetadataAPIInstance(object):
         client_macaddr = host_information.get('mac_address', None)
 
         # Find the VM with that MAC address - we can't assume that the hostname is actually right
-        _discard, vm_list = pvc_vm.get_list(self.zk_conn, None, None, None)
+        _discard, vm_list = pvc_vm.get_list(self.zkhandler, None, None, None)
         vm_details = dict()
         for vm in vm_list:
             try:

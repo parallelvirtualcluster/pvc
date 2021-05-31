@@ -780,7 +780,7 @@ if enable_networking:
     # Create an instance of the DNS Aggregator and Metadata API if we're a coordinator
     if config['daemon_mode'] == 'coordinator':
         dns_aggregator = DNSAggregatorInstance.DNSAggregatorInstance(config, logger)
-        metadata_api = MetadataAPIInstance.MetadataAPIInstance(zkhandler.zk_conn, config, logger)
+        metadata_api = MetadataAPIInstance.MetadataAPIInstance(zkhandler, config, logger)
     else:
         dns_aggregator = None
         metadata_api = None
