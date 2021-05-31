@@ -971,7 +971,7 @@ if enable_storage:
         # Add any missing OSDs to the list
         for osd in new_osd_list:
             if osd not in osd_list:
-                d_osd[osd] = CephInstance.CephOSDInstance(zkhandler.zk_conn, this_node, osd)
+                d_osd[osd] = CephInstance.CephOSDInstance(zkhandler, this_node, osd)
 
         # Remove any deleted OSDs from the list
         for osd in osd_list:
@@ -991,7 +991,7 @@ if enable_storage:
         # Add any missing Pools to the list
         for pool in new_pool_list:
             if pool not in pool_list:
-                d_pool[pool] = CephInstance.CephPoolInstance(zkhandler.zk_conn, this_node, pool)
+                d_pool[pool] = CephInstance.CephPoolInstance(zkhandler, this_node, pool)
                 d_volume[pool] = dict()
                 volume_list[pool] = []
 
@@ -1014,7 +1014,7 @@ if enable_storage:
                 # Add any missing Volumes to the list
                 for volume in new_volume_list:
                     if volume not in volume_list[pool]:
-                        d_volume[pool][volume] = CephInstance.CephVolumeInstance(zkhandler.zk_conn, this_node, pool, volume)
+                        d_volume[pool][volume] = CephInstance.CephVolumeInstance(zkhandler, this_node, pool, volume)
 
                 # Remove any deleted Volumes from the list
                 for volume in volume_list[pool]:
