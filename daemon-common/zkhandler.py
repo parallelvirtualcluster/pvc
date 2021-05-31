@@ -218,17 +218,15 @@ class ZKHandler(object):
         if type(keys) is not list:
             keys = [keys]
 
-        transaction = self.zk_conn.transaction()
-
         for key in keys:
-            transaction.delete(key, recursive=recursive)
+            if self.exists(key):
+                try:
+                    self.zk_conn.delete(key, recursive=recursive)
+                except Exception as e:
+                    self.log("ZKHandler error: Failed to delete key {}: {}".format(key, e), state='e')
+                    return False
 
-        try:
-            transaction.commit()
-            return True
-        except Exception as e:
-            self.log("ZKHandler error: Failed to commit transaction: {}".format(e), state='e')
-            return False
+        return True
 
     def children(self, key):
         """
