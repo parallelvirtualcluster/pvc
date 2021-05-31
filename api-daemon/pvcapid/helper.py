@@ -102,7 +102,7 @@ def backup_cluster(zkhandler):
 
     get_data('/')
 
-    return cluster_data, 200
+    return json.dumps(cluster_data), 200
 
 
 @ZKConnection(config)
