@@ -31,8 +31,7 @@ import pvcnoded.common as common
 
 class DNSAggregatorInstance(object):
     # Initialization function
-    def __init__(self, zk_conn, config, logger):
-        self.zk_conn = zk_conn
+    def __init__(self, config, logger):
         self.config = config
         self.logger = logger
         self.dns_networks = dict()
