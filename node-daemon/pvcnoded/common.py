@@ -160,10 +160,9 @@ def findTargetNode(zk_conn, config, logger, dom_uuid):
     except Exception:
         search_field = None
 
-    # If our search field is invalid, use and set the default (for next time)
+    # If our search field is invalid, use the default
     if search_field is None or search_field == 'None':
-        search_field = config['migration_target_selector']
-        zkhandler.writedata(zk_conn, {'/domains/{}/node_selector'.format(dom_uuid): config['migration_target_selector']})
+        search_field = zkhandler.readdata(zk_conn, '/config/migration_target_selector')
 
     if config['debug']:
         logger.out('Migrating VM {} with selector {}'.format(dom_uuid, search_field), state='d', prefix='node-flush')

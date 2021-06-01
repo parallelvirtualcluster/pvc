@@ -1102,7 +1102,7 @@ class API_VM_Root(Resource):
     @RequestParser([
         {'name': 'limit'},
         {'name': 'node'},
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
@@ -1172,7 +1172,7 @@ class API_VM_Root(Resource):
             reqargs.get('xml'),
             reqargs.get('node', None),
             reqargs.get('limit', None),
-            reqargs.get('selector', 'mem'),
+            reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
             reqargs.get('migration_method', 'none')
         )
@@ -1206,7 +1206,7 @@ class API_VM_Element(Resource):
     @RequestParser([
         {'name': 'limit'},
         {'name': 'node'},
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
@@ -1247,6 +1247,7 @@ class API_VM_Element(Resource):
               - vcpus
               - load
               - vms
+              - none (cluster default)
           - in: query
             name: autostart
             type: boolean
@@ -1278,7 +1279,7 @@ class API_VM_Element(Resource):
             reqargs.get('xml'),
             reqargs.get('node', None),
             reqargs.get('limit', None),
-            reqargs.get('selector', 'mem'),
+            reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
             reqargs.get('migration_method', 'none')
         )
@@ -1407,7 +1408,7 @@ class API_VM_Metadata(Resource):
 
     @RequestParser([
         {'name': 'limit'},
-        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms'), 'helptext': "A valid selector must be specified"},
+        {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'profile'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},

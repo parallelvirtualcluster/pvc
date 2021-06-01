@@ -618,8 +618,8 @@ def cli_vm():
 )
 @click.option(
     '-s', '--selector', 'node_selector', default='mem', show_default=True,
-    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
-    help='Method to determine optimal target node during autoselect; saved with VM.'
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms', 'none']),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
 )
 @click.option(
     '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=False,
@@ -664,8 +664,8 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 )
 @click.option(
     '-s', '--selector', 'node_selector', default=None, show_default=False,
-    type=click.Choice(['mem', 'load', 'vcpus', 'vms']),
-    help='Method to determine optimal target node during autoselect.'
+    type=click.Choice(['mem', 'load', 'vcpus', 'vms', 'none']),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
 )
 @click.option(
     '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=None,
@@ -2895,9 +2895,9 @@ def provisioner_template_system_list(limit):
 )
 @click.option(
     '--node-selector', 'node_selector',
-    type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
-    default=None,  # Use cluster default
-    help='Use this selector to determine the optimal node during migrations.'
+    type=click.Choice(['mem', 'vcpus', 'vms', 'load', 'none'], case_sensitive=False),
+    default='none',
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
 )
 @click.option(
     '--node-autostart', 'node_autostart',
@@ -2973,8 +2973,8 @@ def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, no
 )
 @click.option(
     '--node-selector', 'node_selector',
-    type=click.Choice(['mem', 'vcpus', 'vms', 'load'], case_sensitive=False),
-    help='Use this selector to determine the optimal node during migrations.'
+    type=click.Choice(['mem', 'vcpus', 'vms', 'load', 'none'], case_sensitive=False),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
 )
 @click.option(
     '--node-autostart', 'node_autostart',

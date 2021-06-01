@@ -53,9 +53,6 @@ def initialize_cluster(zkhandler, overwrite=False):
         # Delete the existing keys; ignore any errors
         status = zkhandler.delete([
             '/config'
-            '/config/primary_node',
-            '/config/upstream_ip',
-            '/config/maintenance',
             '/nodes',
             '/domains',
             '/networks',
@@ -81,6 +78,7 @@ def initialize_cluster(zkhandler, overwrite=False):
         ('/config/primary_node', 'none'),
         ('/config/upstream_ip', 'none'),
         ('/config/maintenance', 'False'),
+        ('/config/migration_target_selector', 'none'),
         ('/nodes', ''),
         ('/domains', ''),
         ('/networks', ''),

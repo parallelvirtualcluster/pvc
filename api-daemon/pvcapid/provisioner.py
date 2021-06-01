@@ -219,6 +219,9 @@ def create_template_system(name, vcpu_count, vram_mb, serial=False, vnc=False, v
         retcode = 400
         return retmsg, retcode
 
+    if node_selector == 'none':
+        node_selector = None
+
     query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
     args = (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova)
 
@@ -414,6 +417,9 @@ def modify_template_system(name, vcpu_count=None, vram_mb=None, serial=None, vnc
         fields.append({'field': 'node_limit', 'data': node_limit})
 
     if node_selector is not None:
+        if node_selector == 'none':
+            node_selector = 'None'
+
         fields.append({'field': 'node_selector', 'data': node_selector})
 
     if node_autostart is not None:

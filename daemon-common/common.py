@@ -430,7 +430,11 @@ def findTargetNode(zkhandler, dom_uuid):
     try:
         search_field = zkhandler.read('/domains/{}/node_selector'.format(dom_uuid))
     except Exception:
-        search_field = 'mem'
+        search_field = None
+
+    # If our search field is invalid, use the default
+    if search_field is None or search_field == 'None':
+        search_field = zkhandler.read('/config/migration_target_selector')
 
     # Execute the search
     if search_field == 'mem':
