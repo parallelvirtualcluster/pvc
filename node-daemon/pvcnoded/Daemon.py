@@ -830,7 +830,7 @@ def update_nodes(new_node_list):
     # Add any missing nodes to the list
     for node in new_node_list:
         if node not in node_list:
-            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zkhandler.zk_conn, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api)
+            d_node[node] = NodeInstance.NodeInstance(node, myhostname, zkhandler, config, logger, d_node, d_network, d_domain, dns_aggregator, metadata_api)
 
     # Remove any deleted nodes from the list
     for node in node_list:
