@@ -388,12 +388,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             if reservation not in old_reservations_list:
                 # Add new reservation file
                 filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
-                ipaddr = self.zkhandler.readdata(
-                    '/networks/{}/dhcp4_reservations/{}/ipaddr'.format(
-                        self.vni,
-                        reservation
-                    )
-                )
+                ipaddr = self.zkhandler.read('/networks/{}/dhcp4_reservations/{}/ipaddr'.format(self.vni, reservation))
                 entry = '{},{}'.format(reservation, ipaddr)
                 # Write the entry
                 with open(filename, 'w') as outfile:
