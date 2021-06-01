@@ -963,7 +963,7 @@ if enable_hypervisor:
     @zkhandler.zk_conn.DataWatch('/cmd/domains')
     def cmd_domains(data, stat, event=''):
         if data:
-            VMInstance.run_command(zkhandler.zk_conn, logger, this_node, data.decode('ascii'))
+            VMInstance.run_command(zkhandler, logger, this_node, data.decode('ascii'))
 
     # VM domain objects
     @zkhandler.zk_conn.ChildrenWatch('/domains')
@@ -973,7 +973,7 @@ if enable_hypervisor:
         # Add any missing domains to the list
         for domain in new_domain_list:
             if domain not in domain_list:
-                d_domain[domain] = VMInstance.VMInstance(domain, zkhandler.zk_conn, config, logger, this_node)
+                d_domain[domain] = VMInstance.VMInstance(domain, zkhandler, config, logger, this_node)
 
         # Remove any deleted domains from the list
         for domain in domain_list:

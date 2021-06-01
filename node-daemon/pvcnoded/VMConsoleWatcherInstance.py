@@ -25,15 +25,13 @@ import time
 from threading import Thread, Event
 from collections import deque
 
-import pvcnoded.zkhandler as zkhandler
-
 
 class VMConsoleWatcherInstance(object):
     # Initialization function
-    def __init__(self, domuuid, domname, zk_conn, config, logger, this_node):
+    def __init__(self, domuuid, domname, zkhandler, config, logger, this_node):
         self.domuuid = domuuid
         self.domname = domname
-        self.zk_conn = zk_conn
+        self.zkhandler = zkhandler
         self.config = config
         self.logfile = '{}/{}.log'.format(config['console_log_directory'], self.domname)
         self.console_log_lines = config['console_log_lines']
@@ -93,7 +91,9 @@ class VMConsoleWatcherInstance(object):
             self.fetch_lines()
         # Update Zookeeper with the new loglines if they changed
         if self.loglines != self.last_loglines:
-            zkhandler.writedata(self.zk_conn, {'/domains/{}/consolelog'.format(self.domuuid): self.loglines})
+            self.zkhandler.write([
+                ('/domains/{}/consolelog'.format(self.domuuid), self.loglines)
+            ])
             self.last_loglines = self.loglines
 
     def fetch_lines(self):
