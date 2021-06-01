@@ -32,12 +32,12 @@ def set_maintenance(zkhandler, maint_state):
     try:
         if maint_state == 'true':
             zkhandler.write([
-                ('/maintenance', 'true')
+                ('/config/maintenance', 'true')
             ])
             return True, 'Successfully set cluster in maintenance mode'
         else:
             zkhandler.write([
-                ('/maintenance', 'false')
+                ('/config/maintenance', 'false')
             ])
             return True, 'Successfully set cluster in normal mode'
     except Exception:
@@ -47,7 +47,7 @@ def set_maintenance(zkhandler, maint_state):
 def getClusterInformation(zkhandler):
     # Get cluster maintenance state
     try:
-        maint_state = zkhandler.read('/maintenance')
+        maint_state = zkhandler.read('/config/maintenance')
     except Exception:
         maint_state = 'false'
 
@@ -238,7 +238,7 @@ def getClusterInformation(zkhandler):
         'storage_health': storage_health,
         'storage_health_msg': storage_health_msg,
         'primary_node': common.getPrimaryNode(zkhandler),
-        'upstream_ip': zkhandler.read('/upstream_ip'),
+        'upstream_ip': zkhandler.read('/config/upstream_ip'),
         'nodes': formatted_node_states,
         'vms': formatted_vm_states,
         'networks': network_count,

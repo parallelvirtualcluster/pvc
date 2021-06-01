@@ -396,7 +396,7 @@ def getPrimaryNode(zkhandler):
     failcount = 0
     while True:
         try:
-            primary_node = zkhandler.read('/primary_node')
+            primary_node = zkhandler.read('/config/primary_node')
         except Exception:
             primary_node == 'none'
 

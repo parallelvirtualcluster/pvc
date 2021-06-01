@@ -98,7 +98,7 @@ def secondary_node(zkhandler, node):
     if current_state == 'primary':
         retmsg = 'Setting node {} in secondary router mode.'.format(node)
         zkhandler.write([
-            ('/primary_node', 'none')
+            ('/config/primary_node', 'none')
         ])
     else:
         return False, 'Node "{}" is already in secondary router mode.'.format(node)
@@ -126,7 +126,7 @@ def primary_node(zkhandler, node):
     if current_state == 'secondary':
         retmsg = 'Setting node {} in primary router mode.'.format(node)
         zkhandler.write([
-            ('/primary_node', node)
+            ('/config/primary_node', node)
         ])
     else:
         return False, 'Node "{}" is already in primary router mode.'.format(node)

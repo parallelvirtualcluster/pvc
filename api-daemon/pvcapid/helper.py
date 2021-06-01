@@ -46,15 +46,16 @@ def initialize_cluster(zkhandler, overwrite=False):
     Initialize a new cluster
     """
     # Abort if we've initialized the cluster before
-    if zkhandler.exists('/primary_node') and not overwrite:
+    if zkhandler.exists('/config/primary_node') and not overwrite:
         return False
 
     if overwrite:
         # Delete the existing keys; ignore any errors
         status = zkhandler.delete([
-            '/primary_node',
-            '/upstream_ip',
-            '/maintenance',
+            '/config'
+            '/config/primary_node',
+            '/config/upstream_ip',
+            '/config/maintenance',
             '/nodes',
             '/domains',
             '/networks',
@@ -76,9 +77,10 @@ def initialize_cluster(zkhandler, overwrite=False):
 
     # Create the root keys
     status = zkhandler.write([
-        ('/primary_node', 'none'),
-        ('/upstream_ip', 'none'),
-        ('/maintenance', 'False'),
+        ('/config', ''),
+        ('/config/primary_node', 'none'),
+        ('/config/upstream_ip', 'none'),
+        ('/config/maintenance', 'False'),
         ('/nodes', ''),
         ('/domains', ''),
         ('/networks', ''),

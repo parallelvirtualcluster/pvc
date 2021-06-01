@@ -268,7 +268,7 @@ class API_Initialize(Resource):
         """
         Initialize a new PVC cluster
 
-        If the 'overwrite' option is not True, the cluster will return 400 if the `/primary_node` key is found. If 'overwrite' is True, the existing cluster
+        If the 'overwrite' option is not True, the cluster will return 400 if the `/config/primary_node` key is found. If 'overwrite' is True, the existing cluster
         data will be erased and new, empty data written in its place.
 
         All node daemons should be stopped before running this command, and the API daemon started manually to avoid undefined behavior.
