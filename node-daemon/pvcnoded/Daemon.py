@@ -1504,6 +1504,17 @@ def node_keepalive():
     if debug:
         logger.out("Keepalive starting", state='d', prefix='main-thread')
 
+    # Set the migration selector in Zookeeper for clients to read
+    if config['enable_hypervisor']:
+        if this_node.router_state == 'primary':
+            try:
+                if zkhandler.read('/config/migration_target_selector') != config['migration_target_selector']:
+                    raise
+            except Exception:
+                zkhandler.write([
+                    ('/config/migration_target_selector', config['migration_target_selector'])
+                ])
+
     # Set the upstream IP in Zookeeper for clients to read
     if config['enable_networking']:
         if this_node.router_state == 'primary':
