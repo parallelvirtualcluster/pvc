@@ -25,8 +25,6 @@ import signal
 from threading import Thread
 from shlex import split as shlex_split
 
-import pvcnoded.zkhandler as zkhandler
-
 
 class OSDaemon(object):
     def __init__(self, command_string, environment, logfile):
@@ -144,55 +142,57 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
 #
 # Find a migration target
 #
-def findTargetNode(zk_conn, config, logger, dom_uuid):
+def findTargetNode(zkhandler, config, logger, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
-        node_limit = zkhandler.readdata(zk_conn, '/domains/{}/node_limit'.format(dom_uuid)).split(',')
+        node_limit = zkhandler.read('/domains/{}/node_limit'.format(dom_uuid)).split(',')
         if not any(node_limit):
             node_limit = ''
     except Exception:
         node_limit = ''
-        zkhandler.writedata(zk_conn, {'/domains/{}/node_limit'.format(dom_uuid): ''})
+        zkhandler.write([
+            ('/domains/{}/node_limit'.format(dom_uuid), '')
+        ])
 
     # Determine VM search field
     try:
-        search_field = zkhandler.readdata(zk_conn, '/domains/{}/node_selector'.format(dom_uuid))
+        search_field = zkhandler.read('/domains/{}/node_selector'.format(dom_uuid))
     except Exception:
         search_field = None
 
     # If our search field is invalid, use the default
     if search_field is None or search_field == 'None':
-        search_field = zkhandler.readdata(zk_conn, '/config/migration_target_selector')
+        search_field = zkhandler.read('/config/migration_target_selector')
 
     if config['debug']:
         logger.out('Migrating VM {} with selector {}'.format(dom_uuid, search_field), state='d', prefix='node-flush')
 
     # Execute the search
     if search_field == 'mem':
-        return findTargetNodeMem(zk_conn, config, logger, node_limit, dom_uuid)
+        return findTargetNodeMem(zkhandler, config, logger, node_limit, dom_uuid)
     if search_field == 'load':
-        return findTargetNodeLoad(zk_conn, config, logger, node_limit, dom_uuid)
+        return findTargetNodeLoad(zkhandler, config, logger, node_limit, dom_uuid)
     if search_field == 'vcpus':
-        return findTargetNodeVCPUs(zk_conn, config, logger, node_limit, dom_uuid)
+        return findTargetNodeVCPUs(zkhandler, config, logger, node_limit, dom_uuid)
     if search_field == 'vms':
-        return findTargetNodeVMs(zk_conn, config, logger, node_limit, dom_uuid)
+        return findTargetNodeVMs(zkhandler, config, logger, node_limit, dom_uuid)
 
     # Nothing was found
     return None
 
 
 # Get the list of valid target nodes
-def getNodes(zk_conn, node_limit, dom_uuid):
+def getNodes(zkhandler, node_limit, dom_uuid):
     valid_node_list = []
-    full_node_list = zkhandler.listchildren(zk_conn, '/nodes')
-    current_node = zkhandler.readdata(zk_conn, '/domains/{}/node'.format(dom_uuid))
+    full_node_list = zkhandler.children('/nodes')
+    current_node = zkhandler.read('/domains/{}/node'.format(dom_uuid))
 
     for node in full_node_list:
         if node_limit and node not in node_limit:
             continue
 
-        daemon_state = zkhandler.readdata(zk_conn, '/nodes/{}/daemonstate'.format(node))
-        domain_state = zkhandler.readdata(zk_conn, '/nodes/{}/domainstate'.format(node))
+        daemon_state = zkhandler.read('/nodes/{}/daemonstate'.format(node))
+        domain_state = zkhandler.read('/nodes/{}/domainstate'.format(node))
 
         if node == current_node:
             continue
@@ -206,18 +206,18 @@ def getNodes(zk_conn, node_limit, dom_uuid):
 
 
 # via free memory (relative to allocated memory)
-def findTargetNodeMem(zk_conn, config, logger, node_limit, dom_uuid):
+def findTargetNodeMem(zkhandler, config, logger, node_limit, dom_uuid):
     most_provfree = 0
     target_node = None
 
-    node_list = getNodes(zk_conn, node_limit, dom_uuid)
+    node_list = getNodes(zkhandler, node_limit, dom_uuid)
     if config['debug']:
         logger.out('Found nodes: {}'.format(node_list), state='d', prefix='node-flush')
 
     for node in node_list:
-        memprov = int(zkhandler.readdata(zk_conn, '/nodes/{}/memprov'.format(node)))
-        memused = int(zkhandler.readdata(zk_conn, '/nodes/{}/memused'.format(node)))
-        memfree = int(zkhandler.readdata(zk_conn, '/nodes/{}/memfree'.format(node)))
+        memprov = int(zkhandler.read('/nodes/{}/memprov'.format(node)))
+        memused = int(zkhandler.read('/nodes/{}/memused'.format(node)))
+        memfree = int(zkhandler.read('/nodes/{}/memfree'.format(node)))
         memtotal = memused + memfree
         provfree = memtotal - memprov
 
@@ -233,16 +233,16 @@ def findTargetNodeMem(zk_conn, config, logger, node_limit, dom_uuid):
 
 
 # via load average
-def findTargetNodeLoad(zk_conn, config, logger, node_limit, dom_uuid):
+def findTargetNodeLoad(zkhandler, config, logger, node_limit, dom_uuid):
     least_load = 9999.0
     target_node = None
 
-    node_list = getNodes(zk_conn, node_limit, dom_uuid)
+    node_list = getNodes(zkhandler, node_limit, dom_uuid)
     if config['debug']:
         logger.out('Found nodes: {}'.format(node_list), state='d', prefix='node-flush')
 
     for node in node_list:
-        load = float(zkhandler.readdata(zk_conn, '/nodes/{}/cpuload'.format(node)))
+        load = float(zkhandler.read('/nodes/{}/cpuload'.format(node)))
 
         if config['debug']:
             logger.out('Evaluating node {} with load {}'.format(node, load), state='d', prefix='node-flush')
@@ -256,16 +256,16 @@ def findTargetNodeLoad(zk_conn, config, logger, node_limit, dom_uuid):
 
 
 # via total vCPUs
-def findTargetNodeVCPUs(zk_conn, config, logger, node_limit, dom_uuid):
+def findTargetNodeVCPUs(zkhandler, config, logger, node_limit, dom_uuid):
     least_vcpus = 9999
     target_node = None
 
-    node_list = getNodes(zk_conn, node_limit, dom_uuid)
+    node_list = getNodes(zkhandler, node_limit, dom_uuid)
     if config['debug']:
         logger.out('Found nodes: {}'.format(node_list), state='d', prefix='node-flush')
 
     for node in node_list:
-        vcpus = int(zkhandler.readdata(zk_conn, '/nodes/{}/vcpualloc'.format(node)))
+        vcpus = int(zkhandler.read('/nodes/{}/vcpualloc'.format(node)))
 
         if config['debug']:
             logger.out('Evaluating node {} with vcpualloc {}'.format(node, vcpus), state='d', prefix='node-flush')
@@ -279,16 +279,16 @@ def findTargetNodeVCPUs(zk_conn, config, logger, node_limit, dom_uuid):
 
 
 # via total VMs
-def findTargetNodeVMs(zk_conn, config, logger, node_limit, dom_uuid):
+def findTargetNodeVMs(zkhandler, config, logger, node_limit, dom_uuid):
     least_vms = 9999
     target_node = None
 
-    node_list = getNodes(zk_conn, node_limit, dom_uuid)
+    node_list = getNodes(zkhandler, node_limit, dom_uuid)
     if config['debug']:
         logger.out('Found nodes: {}'.format(node_list), state='d', prefix='node-flush')
 
     for node in node_list:
-        vms = int(zkhandler.readdata(zk_conn, '/nodes/{}/domainscount'.format(node)))
+        vms = int(zkhandler.read('/nodes/{}/domainscount'.format(node)))
 
         if config['debug']:
             logger.out('Evaluating node {} with VM count {}'.format(node, vms), state='d', prefix='node-flush')
