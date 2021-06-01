@@ -719,7 +719,7 @@ class NodeInstance(object):
 
         self.zkhandler.write([
             ('/nodes/{}/runningdomains'.format(self.name), ''),
-            ('/nodes/{}/domainstate'.format(self.name), '')
+            ('/nodes/{}/domainstate'.format(self.name), 'flushed')
         ])
         self.flush_thread = None
         self.flush_stopper = False
