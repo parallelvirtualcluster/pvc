@@ -44,7 +44,7 @@ from daemon_lib.zkhandler import ZKHandler
 
 import pvcnoded.log as log
 import pvcnoded.fencing as fencing
-import pvcnoded.common as common
+import daemon_lib.common as common
 
 import pvcnoded.VMInstance as VMInstance
 import pvcnoded.NodeInstance as NodeInstance
@@ -782,7 +782,7 @@ if enable_networking:
     nftables_base_filename = '{}/base.nft'.format(config['nft_dynamic_directory'])
     with open(nftables_base_filename, 'w') as nfbasefile:
         nfbasefile.write(nftables_base_rules)
-    common.reload_firewall_rules(logger, nftables_base_filename)
+    common.reload_firewall_rules(nftables_base_filename, logger=logger)
 
 ###############################################################################
 # PHASE 7d - Ensure DNSMASQ is not running

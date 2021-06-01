@@ -23,7 +23,7 @@ import time
 
 from threading import Thread
 
-import pvcnoded.common as common
+import daemon_lib.common as common
 
 
 class NodeInstance(object):

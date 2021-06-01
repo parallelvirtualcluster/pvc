@@ -26,7 +26,7 @@ import psycopg2
 
 from threading import Thread, Event
 
-import pvcnoded.common as common
+import daemon_lib.common as common
 
 
 class DNSAggregatorInstance(object):

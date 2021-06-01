@@ -21,7 +21,7 @@
 
 import time
 
-import pvcnoded.common as common
+import daemon_lib.common as common
 import pvcnoded.VMInstance as VMInstance
 
 

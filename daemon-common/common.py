@@ -22,45 +22,99 @@
 import time
 import uuid
 import lxml
-import shlex
 import subprocess
+import signal
 from json import loads
 from re import match as re_match
-
 from distutils.util import strtobool
+from threading import Thread
+from shlex import split as shlex_split
+
 
 ###############################################################################
 # Supplemental functions
 ###############################################################################
 
+#
+# Run a local OS daemon in the background
+#
+class OSDaemon(object):
+    def __init__(self, command_string, environment, logfile):
+        command = shlex_split(command_string)
+        # Set stdout to be a logfile if set
+        if logfile:
+            stdout = open(logfile, 'a')
+        else:
+            stdout = subprocess.PIPE
+
+        # Invoke the process
+        self.proc = subprocess.Popen(
+            command,
+            env=environment,
+            stdout=stdout,
+            stderr=stdout,
+        )
+
+    # Signal the process
+    def signal(self, sent_signal):
+        signal_map = {
+            'hup': signal.SIGHUP,
+            'int': signal.SIGINT,
+            'term': signal.SIGTERM,
+            'kill': signal.SIGKILL
+        }
+        self.proc.send_signal(signal_map[sent_signal])
+
+
+def run_os_daemon(command_string, environment=None, logfile=None):
+    daemon = OSDaemon(command_string, environment, logfile)
+    return daemon
+
 
 #
 # Run a local OS command via shell
 #
-def run_os_command(command_string, background=False, environment=None, timeout=None, shell=False):
-    command = shlex.split(command_string)
-    try:
-        command_output = subprocess.run(
-            command,
-            shell=shell,
-            env=environment,
-            timeout=timeout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        retcode = command_output.returncode
-    except subprocess.TimeoutExpired:
-        retcode = 128
+def run_os_command(command_string, background=False, environment=None, timeout=None):
+    command = shlex_split(command_string)
+    if background:
+        def runcmd():
+            try:
+                subprocess.run(
+                    command,
+                    env=environment,
+                    timeout=timeout,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            except subprocess.TimeoutExpired:
+                pass
+        thread = Thread(target=runcmd, args=())
+        thread.start()
+        return 0, None, None
+    else:
+        try:
+            command_output = subprocess.run(
+                command,
+                env=environment,
+                timeout=timeout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            retcode = command_output.returncode
+        except subprocess.TimeoutExpired:
+            retcode = 128
+        except Exception:
+            retcode = 255
 
-    try:
-        stdout = command_output.stdout.decode('ascii')
-    except Exception:
-        stdout = ''
-    try:
-        stderr = command_output.stderr.decode('ascii')
-    except Exception:
-        stderr = ''
-    return retcode, stdout, stderr
+        try:
+            stdout = command_output.stdout.decode('ascii')
+        except Exception:
+            stdout = ''
+        try:
+            stderr = command_output.stderr.decode('ascii')
+        except Exception:
+            stderr = ''
+        return retcode, stdout, stderr
 
 
 #
@@ -449,7 +503,9 @@ def findTargetNode(zkhandler, dom_uuid):
     return None
 
 
+#
 # Get the list of valid target nodes
+#
 def getNodes(zkhandler, node_limit, dom_uuid):
     valid_node_list = []
     full_node_list = zkhandler.children('/nodes')
@@ -473,7 +529,9 @@ def getNodes(zkhandler, node_limit, dom_uuid):
     return valid_node_list
 
 
+#
 # via free memory (relative to allocated memory)
+#
 def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
     most_provfree = 0
     target_node = None
@@ -493,7 +551,9 @@ def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
     return target_node
 
 
+#
 # via load average
+#
 def findTargetNodeLoad(zkhandler, node_limit, dom_uuid):
     least_load = 9999.0
     target_node = None
@@ -509,7 +569,9 @@ def findTargetNodeLoad(zkhandler, node_limit, dom_uuid):
     return target_node
 
 
+#
 # via total vCPUs
+#
 def findTargetNodeVCPUs(zkhandler, node_limit, dom_uuid):
     least_vcpus = 9999
     target_node = None
@@ -525,7 +587,9 @@ def findTargetNodeVCPUs(zkhandler, node_limit, dom_uuid):
     return target_node
 
 
+#
 # via total VMs
+#
 def findTargetNodeVMs(zkhandler, node_limit, dom_uuid):
     least_vms = 9999
     target_node = None
@@ -541,7 +605,9 @@ def findTargetNodeVMs(zkhandler, node_limit, dom_uuid):
     return target_node
 
 
-# Connect to the primary host and run a command
+#
+# Connect to the primary node and run a command
+#
 def runRemoteCommand(node, command, become=False):
     import paramiko
     import hashlib
@@ -571,3 +637,47 @@ def runRemoteCommand(node, command, become=False):
     ssh_client.connect(node)
     stdin, stdout, stderr = ssh_client.exec_command(command)
     return stdout.read().decode('ascii').rstrip(), stderr.read().decode('ascii').rstrip()
+
+
+#
+# Reload the firewall rules of the system
+#
+def reload_firewall_rules(rules_file, logger=None):
+    if logger is not None:
+        logger.out('Reloading firewall configuration', state='o')
+
+    retcode, stdout, stderr = run_os_command('/usr/sbin/nft -f {}'.format(rules_file))
+    if retcode != 0 and logger is not None:
+        logger.out('Failed to reload configuration: {}'.format(stderr), state='e')
+
+
+#
+# Create an IP address
+#
+def createIPAddress(ipaddr, cidrnetmask, dev):
+    run_os_command(
+        'ip address add {}/{} dev {}'.format(
+            ipaddr,
+            cidrnetmask,
+            dev
+        )
+    )
+    run_os_command(
+        'arping -P -U -W 0.02 -c 2 -i {dev} -S {ip} {ip}'.format(
+            dev=dev,
+            ip=ipaddr
+        )
+    )
+
+
+#
+# Remove an IP address
+#
+def removeIPAddress(ipaddr, cidrnetmask, dev):
+    run_os_command(
+        'ip address delete {}/{} dev {}'.format(
+            ipaddr,
+            cidrnetmask,
+            dev
+        )
+    )

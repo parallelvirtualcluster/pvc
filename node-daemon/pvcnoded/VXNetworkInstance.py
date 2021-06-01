@@ -24,7 +24,7 @@ import time
 
 from textwrap import dedent
 
-import pvcnoded.common as common
+import daemon_lib.common as common
 
 
 class VXNetworkInstance(object):
@@ -452,7 +452,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
         # Reload firewall rules
         nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
-        common.reload_firewall_rules(self.logger, nftables_base_filename)
+        common.reload_firewall_rules(nftables_base_filename, logger=self.logger)
 
     # Create bridged network configuration
     def createNetworkBridged(self):
@@ -798,7 +798,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
         # Reload firewall rules
         nftables_base_filename = '{}/base.nft'.format(self.config['nft_dynamic_directory'])
-        common.reload_firewall_rules(self.logger, nftables_base_filename)
+        common.reload_firewall_rules(nftables_base_filename, logger=self.logger)
 
     def removeGateways(self):
         if self.nettype == 'managed':

@@ -23,7 +23,7 @@ import time
 import json
 import psutil
 
-import pvcnoded.common as common
+import daemon_lib.common as common
 
 
 class CephOSDInstance(object):
