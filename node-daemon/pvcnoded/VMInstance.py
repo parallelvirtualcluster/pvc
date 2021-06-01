@@ -494,7 +494,7 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase B', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5)  # Time fir reader to acquire the lock
+        time.sleep(0.5)  # Time for reader to acquire the lock
 
         def migrate_live():
             self.logger.out('Setting up live migration', state='i', prefix='Domain {}'.format(self.domuuid))
@@ -584,7 +584,7 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase C', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5)  # Time fir reader to acquire the lock
+        time.sleep(0.5)  # Time for reader to acquire the lock
 
         if do_migrate_shutdown:
             migrate_shutdown()
@@ -635,11 +635,11 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5)  # Time fir reader to acquire the lock
+        time.sleep(1)  # Time for reader to acquire the lock
         self.logger.out('Releasing write lock for synchronization phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.release()
         self.logger.out('Released write lock for synchronization phase A', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.1)  # Time fir new writer to acquire the lock
+        time.sleep(0.1)  # Time for new writer to acquire the lock
 
         # Synchronize nodes B (I am reader)
         lock = self.zkhandler.readlock('/locks/domain_migrate/{}'.format(self.domuuid))
@@ -669,7 +669,7 @@ class VMInstance(object):
         self.logger.out('Acquiring write lock for synchronization phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
-        time.sleep(0.5)  # Time fir reader to acquire the lock
+        time.sleep(0.5)  # Time for reader to acquire the lock
 
         self.state = self.zkhandler.read('/domains/{}/state'.format(self.domuuid))
         self.dom = self.lookupByUUID(self.domuuid)
