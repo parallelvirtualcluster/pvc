@@ -24,7 +24,6 @@ import uuid
 import lxml
 import shlex
 import subprocess
-import kazoo.client
 from json import loads
 from re import match as re_match
 
@@ -454,10 +453,7 @@ def findTargetNode(zkhandler, dom_uuid):
 def getNodes(zkhandler, node_limit, dom_uuid):
     valid_node_list = []
     full_node_list = zkhandler.children('/nodes')
-    try:
-        current_node = zkhandler.read('/domains/{}/node'.format(dom_uuid))
-    except kazoo.exceptions.NoNodeError:
-        current_node = None
+    current_node = zkhandler.read('/domains/{}/node'.format(dom_uuid))
 
     for node in full_node_list:
         if node_limit and node not in node_limit:
