@@ -994,7 +994,7 @@ if enable_storage:
     @zkhandler.zk_conn.DataWatch('/cmd/ceph')
     def cmd_ceph(data, stat, event=''):
         if data:
-            CephInstance.run_command(zkhandler.zk_conn, logger, this_node, data.decode('ascii'), d_osd)
+            CephInstance.run_command(zkhandler, logger, this_node, data.decode('ascii'), d_osd)
 
     # OSD objects
     @zkhandler.zk_conn.ChildrenWatch('/ceph/osds')
@@ -1702,7 +1702,7 @@ def node_keepalive():
                         # Ensures that, if we lost the lock race and come out of waiting,
                         # we won't try to trigger our own fence thread.
                         if zkhandler.read('/nodes/{}/daemonstate'.format(node_name)) != 'dead':
-                            fence_thread = Thread(target=fencing.fenceNode, args=(node_name, zkhandler.zk_conn, config, logger), kwargs={})
+                            fence_thread = Thread(target=fencing.fenceNode, args=(node_name, zkhandler, config, logger), kwargs={})
                             fence_thread.start()
                             # Write the updated data after we start the fence thread
                             zkhandler.write([
