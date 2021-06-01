@@ -42,8 +42,8 @@ from rados import Rados
 
 from daemon_lib.zkhandler import ZKHandler
 
-import pvcnoded.log as log
 import pvcnoded.fencing as fencing
+import daemon_lib.log as log
 import daemon_lib.common as common
 
 import pvcnoded.VMInstance as VMInstance

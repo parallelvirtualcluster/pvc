@@ -72,7 +72,7 @@ class Logger(object):
         if self.config['file_logging']:
             self.logfile = self.config['log_directory'] + '/pvc.log'
             # We open the logfile for the duration of our session, but have a hup function
-            self.writer = open(self.logfile, 'a', buffering=1)
+            self.writer = open(self.logfile, 'a', buffering=0)
 
         self.last_colour = ''
         self.last_prompt = ''
