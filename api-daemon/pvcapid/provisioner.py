@@ -1211,7 +1211,7 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     cluster_networks, _discard = pvc_network.getClusterNetworkList(zkhandler)
     for network in vm_data['networks']:
         vni = str(network['vni'])
-        if vni not in cluster_networks:
+        if vni not in cluster_networks and vni not in ['upstream', 'cluster', 'storage']:
             raise ClusterError('The network VNI "{}" is not present on the cluster.'.format(vni))
 
     print("All configured networks for VM are valid")
@@ -1327,7 +1327,10 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
     network_id = 0
     for network in vm_data['networks']:
         vni = network['vni']
-        eth_bridge = "vmbr{}".format(vni)
+        if vni in ['upstream', 'cluster', 'storage']:
+            eth_bridge = "br{}".format(vni)
+        else:
+            eth_bridge = "vmbr{}".format(vni)
 
         vm_id_hex = '{:x}'.format(int(vm_id % 16))
         net_id_hex = '{:x}'.format(int(network_id % 16))
