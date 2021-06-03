@@ -77,8 +77,7 @@ class DBNetworkElement(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"), nullable=False)
-    vni = db.Column(db.Integer, nullable=False)
-    vni2 = db.Column(db.Text, nullable=False)
+    vni = db.Column(db.Text, nullable=False)
 
     def __init__(self, network_template, vni):
         self.network_template = network_template
