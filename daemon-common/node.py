@@ -139,6 +139,9 @@ def flush_node(zkhandler, node, wait=False):
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
 
+    if zkhandler.read('/nodes/{}/domainstate'.format(node)) == 'flushed':
+        return True, 'Hypervisor {} is already flushed.'.format(node)
+
     retmsg = 'Flushing hypervisor {} of running VMs.'.format(node)
 
     # Add the new domain to Zookeeper
@@ -158,6 +161,9 @@ def ready_node(zkhandler, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
+
+    if zkhandler.read('/nodes/{}/domainstate'.format(node)) == 'ready':
+        return True, 'Hypervisor {} is already ready.'.format(node)
 
     retmsg = 'Restoring hypervisor {} to active service.'.format(node)
 
