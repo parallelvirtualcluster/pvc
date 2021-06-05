@@ -29,27 +29,28 @@ import daemon_lib.ceph as pvc_ceph
 
 
 def set_maintenance(zkhandler, maint_state):
-    try:
+    current_maint_state = zkhandler.read('/config/maintenance')
+    if maint_state == current_maint_state:
         if maint_state == 'true':
-            zkhandler.write([
-                ('/config/maintenance', 'true')
-            ])
-            return True, 'Successfully set cluster in maintenance mode'
+            return True, 'Cluster is already in maintenance mode'
         else:
-            zkhandler.write([
-                ('/config/maintenance', 'false')
-            ])
-            return True, 'Successfully set cluster in normal mode'
-    except Exception:
-        return False, 'Failed to set cluster maintenance state'
+            return True, 'Cluster is already in normal mode'
+
+    if maint_state == 'true':
+        zkhandler.write([
+            ('/config/maintenance', 'true')
+        ])
+        return True, 'Successfully set cluster in maintenance mode'
+    else:
+        zkhandler.write([
+            ('/config/maintenance', 'false')
+        ])
+        return True, 'Successfully set cluster in normal mode'
 
 
 def getClusterInformation(zkhandler):
     # Get cluster maintenance state
-    try:
-        maint_state = zkhandler.read('/config/maintenance')
-    except Exception:
-        maint_state = 'false'
+    maint_state = zkhandler.read('/config/maintenance')
 
     # List of messages to display to the clients
     cluster_health_msg = []
