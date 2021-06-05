@@ -95,13 +95,13 @@ def secondary_node(zkhandler, node):
 
     # Get current state
     current_state = zkhandler.read('/nodes/{}/routerstate'.format(node))
-    if current_state == 'primary':
-        retmsg = 'Setting node {} in secondary router mode.'.format(node)
-        zkhandler.write([
-            ('/config/primary_node', 'none')
-        ])
-    else:
-        return False, 'Node "{}" is already in secondary router mode.'.format(node)
+    if current_state == 'secondary':
+        return True, 'Node "{}" is already in secondary router mode.'.format(node)
+
+    retmsg = 'Setting node {} in secondary router mode.'.format(node)
+    zkhandler.write([
+        ('/config/primary_node', 'none')
+    ])
 
     return True, retmsg
 
@@ -123,13 +123,13 @@ def primary_node(zkhandler, node):
 
     # Get current state
     current_state = zkhandler.read('/nodes/{}/routerstate'.format(node))
-    if current_state == 'secondary':
-        retmsg = 'Setting node {} in primary router mode.'.format(node)
-        zkhandler.write([
-            ('/config/primary_node', node)
-        ])
-    else:
-        return False, 'Node "{}" is already in primary router mode.'.format(node)
+    if current_state == 'primary':
+        return True, 'Node "{}" is already in primary router mode.'.format(node)
+
+    retmsg = 'Setting node {} in primary router mode.'.format(node)
+    zkhandler.write([
+        ('/config/primary_node', node)
+    ])
 
     return True, retmsg
 
