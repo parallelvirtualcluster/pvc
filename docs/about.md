@@ -49,7 +49,7 @@ Node network routing for managed networks providing EBGP VXLAN and route-learnin
 
 The storage subsystem is provided by Ceph, a distributed object-based storage subsystem with extensive scalability, self-managing, and self-healing functionality. The Ceph RBD (RADOS Block Device) subsystem is used to provide VM block devices similar to traditional LVM or ZFS zvols, but in a distributed, shared-storage manner.
 
-All the components are designed to be run on top of Debian GNU/Linux, specifically Debian 10.X "Buster", with the SystemD system service manager. This OS provides a stable base to run the various other subsystems while remaining truly Free Software, while SystemD provides functionality such as automatic daemon restarting and complex startup/shutdown ordering.
+All the components are designed to be run on top of Debian GNU/Linux, specifically Debian 10.x "Buster" or 11.x "Bullseye", with the SystemD system service manager. This OS provides a stable base to run the various other subsystems while remaining truly Free Software, while SystemD provides functionality such as automatic daemon restarting and complex startup/shutdown ordering.
 
 ## Cluster Architecture
 
@@ -156,7 +156,7 @@ For optimal performance, nodes should use at least 10-Gigabit Ethernet network i
 
 #### What Ceph version does PVC use?
 
-PVC requires Ceph 14.x (Nautilus). The official PVC repository at https://repo.bonifacelabs.ca includes Ceph 14.2.x (updated regularly), since Debian Buster by default includes only 12.x (Luminous).
+PVC requires Ceph 14.x (Nautilus). The official PVC repository at https://repo.bonifacelabs.ca includes Ceph 14.2.x for Debian Buster (updated regularly), since by default it only includes 12.x (Luminous).
 
 ## About The Author
 
