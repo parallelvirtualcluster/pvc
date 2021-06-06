@@ -18,6 +18,18 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.19
+
+  * [CLI] Corrects some flawed conditionals
+  * [API] Disables SQLAlchemy modification tracking functionality (not used by us)
+  * [Daemons] Implements new zkhandler module for improved reliability and reusability
+  * [Daemons] Refactors some code to use new zkhandler module
+  * [API, CLI] Adds support for "none" migration selector (uses cluster default instead)
+  * [Daemons] Moves some configuration keys to new /config tree
+  * [Node Daemon] Increases initial lock timeout for VM migrations to avoid out-of-sync potential
+  * [Provisioner] Support storing and using textual cluster network labels ("upstream", "storage", "cluster") in templates
+  * [API] Avoid duplicating existing node states
+
 #### v0.9.18
 
   * Adds VM rename functionality to API and CLI client
