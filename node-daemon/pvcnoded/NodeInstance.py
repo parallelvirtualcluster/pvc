@@ -697,7 +697,7 @@ class NodeInstance(object):
             if target_node is None:
                 self.logger.out('Failed to find migration target for VM "{}"; shutting down and setting autostart flag'.format(dom_uuid), state='e')
                 self.zkhandler.write([
-                    ('/domains/{}/state'.format(dom_uuid), 'shutdown')
+                    ('/domains/{}/state'.format(dom_uuid), 'shutdown'),
                     ('/domains/{}/node_autostart'.format(dom_uuid), 'True')
                 ])
             else:
