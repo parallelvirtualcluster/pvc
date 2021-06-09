@@ -401,6 +401,7 @@ class ZKSchema(object):
         'node': {
             'keepalive': '/keepalive',
             'mode': '/daemonmode',
+            'data.active_schema': '/activeschema',
             'data.static': '/staticdata',
             'counts.provisioned_domains': '/domainscount',
             'counts.running_domains': '/runningdomains',

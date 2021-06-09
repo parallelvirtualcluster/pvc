@@ -532,7 +532,17 @@ except Exception as e:
 logger.out('Validating Zookeeper schema', state='i')
 
 # Instantiate a zkschema instance with our current schema version
-zkschema = ZKSchema.load_current(zkhandler)
+zkschema = ZKSchema()
+
+try:
+    node_schema_version = int(zkhandler.read(zkschema.path('node.data.active_schema', myhostname)))
+except Exception:
+    node_schema_version = zkhandler.read(zkschema.path('base.schema.version'))
+    zkhandler.write([
+        (zkschema.path('node.data.active_schema', myhostname), node_schema_version)
+    ])
+
+zkschema.load(node_schema_version)
 
 # Validate our schema against that version
 if not zkschema.validate(zkhandler, logger):
@@ -549,7 +559,7 @@ else:
 
 # Cleanup function
 def cleanup():
-    global zkhandler, update_timer, d_domain
+    global zkhandler, zkschema, update_timer, d_domain
 
     logger.out('Terminating pvcnoded and cleaning up', state='s')
 
@@ -607,6 +617,7 @@ def cleanup():
 
     # Close the Zookeeper connection
     try:
+        del zkschema
         zkhandler.disconnect()
         del zkhandler
     except Exception:
