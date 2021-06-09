@@ -703,9 +703,6 @@ class ZKSchema(object):
         for key in diff_rename.keys():
             rename_tasks.append((diff_rename[key]['from'], diff_rename[key]['to']))
 
-        print(add_tasks)
-        print(remove_tasks)
-        print(rename_tasks)
         zkhandler.write(add_tasks)
         zkhandler.delete(remove_tasks)
         zkhandler.rename(rename_tasks)
@@ -714,7 +711,8 @@ class ZKSchema(object):
     def migrate(self, zkhandler, new_version):
         # Determine the versions in between
         versions = ZKSchema.find_all(start=self.version, end=new_version)
-        print(versions)
+        if versions is None:
+            return
 
         for version in versions:
             # Create a new schema at that version
@@ -722,7 +720,6 @@ class ZKSchema(object):
             zkschema_new.load(version)
             # Get a list of changes
             changes = ZKSchema.key_diff(self, zkschema_new)
-            print(changes)
             # Apply those changes
             self.run_migrate(zkhandler, changes)
 
@@ -730,8 +727,10 @@ class ZKSchema(object):
     def rollback(self, zkhandler, old_version):
         # Determine the versions in between
         versions = ZKSchema.find_all(start=old_version - 1, end=self.version - 1)
+        if versions is None:
+            return
+
         versions.reverse()
-        print(versions)
 
         for version in versions:
             # Create a new schema at that version
@@ -739,13 +738,8 @@ class ZKSchema(object):
             zkschema_old.load(version)
             # Get a list of changes
             changes = ZKSchema.key_diff(self, zkschema_old)
-            print(changes)
             # Apply those changes
             self.run_migrate(zkhandler, changes)
-            # Update the schema version key
-            zkhandler.write([
-                (self.key('base.schema.version'), zkschema_old.version)
-            ])
 
     @classmethod
     def key_diff(cls, schema_a, schema_b):
