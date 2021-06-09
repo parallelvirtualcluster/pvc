@@ -402,6 +402,7 @@ class ZKSchema(object):
             'keepalive': '/keepalive',
             'mode': '/daemonmode',
             'data.active_schema': '/activeschema',
+            'data.latest_schema': '/latestschema',
             'data.static': '/staticdata',
             'counts.provisioned_domains': '/domainscount',
             'counts.running_domains': '/runningdomains',
@@ -724,10 +725,6 @@ class ZKSchema(object):
             print(changes)
             # Apply those changes
             self.run_migrate(zkhandler, changes)
-            # Update the schema version key
-            zkhandler.write([
-                (self.key('base.schema.version'), zkschema_new.version)
-            ])
 
     # Rollback from newer to older schema
     def rollback(self, zkhandler, old_version):
@@ -812,3 +809,12 @@ class ZKSchema(object):
             return versions
         else:
             return None
+
+    @staticmethod
+    def find_latest():
+        latest_version = 0
+        for version in os.listdir('daemon_lib/migrations/versions'):
+            sequence_id = int(version.split('.')[0])
+            if sequence_id > latest_version:
+                latest_version = sequence_id
+        return latest_version

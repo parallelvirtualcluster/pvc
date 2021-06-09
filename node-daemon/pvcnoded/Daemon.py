@@ -21,7 +21,6 @@
 
 import kazoo.client
 import libvirt
-import sys
 import os
 import signal
 import psutil
@@ -73,6 +72,9 @@ version = '0.9.19'
 ###############################################################################
 # Daemon functions
 ###############################################################################
+
+# Ensure the update_timer is None until it's set for real
+update_timer = None
 
 
 # Create timer to update this node in Zookeeper
@@ -542,7 +544,14 @@ except Exception:
         (zkschema.path('node.data.active_schema', myhostname), node_schema_version)
     ])
 
+# Load in the current node schema version
 zkschema.load(node_schema_version)
+
+# Record the latest intalled schema version
+latest_schema_version = ZKSchema.find_latest()
+zkhandler.write([
+    (zkschema.path('node.data.latest_schema', myhostname), latest_schema_version)
+])
 
 # Validate our schema against that version
 if not zkschema.validate(zkhandler, logger):
@@ -551,6 +560,80 @@ if not zkschema.validate(zkhandler, logger):
 else:
     logger.out('Schema successfully validated', state='o')
 
+
+# Watch for a global schema update and fire
+# This will only change by the API when triggered after seeing all nodes can update
+@zkhandler.zk_conn.DataWatch(zkschema.path('base.schema.version'))
+def update_schema(new_schema_version, stat, event=''):
+    global zkschema, zkhandler, update_timer
+
+    new_schema_version = int(new_schema_version.decode('ascii'))
+
+    if new_schema_version == node_schema_version:
+        return
+
+    logger.out('Hot update of schema version started', state='s')
+
+    # Prevent any keepalive updates while this happens
+    if update_timer is not None:
+        stopKeepaliveTimer()
+
+    # Perform the migration (primary only)
+    if zkhandler.read(zkschema.path('base.config.primary_node')) == myhostname:
+        logger.out('Primary node acquiring exclusive lock', state='s')
+        # Wait for things to settle
+        time.sleep(0.5)
+        # Acquire a write lock on the root key
+        with zkhandler.exclusivelock('/'):
+            # Perform the schema migration tasks
+            logger.out('Performing schema update', state='s')
+            zkschema.migrate(zkhandler, latest_schema_version)
+    # Wait for the exclusive lock to be lifted
+    else:
+        logger.out('Non-primary node acquiring read lock', state='s')
+        # Wait for things to settle
+        time.sleep(1)
+        # Wait for a read lock
+        lock = zkhandler.readlock('/')
+        lock.acquire()
+        # Wait a bit more for the primary to return to normal
+        time.sleep(1)
+
+    # Update the local schema version
+    logger.out('Updating local schema', state='s')
+    zkschema.load(new_schema_version)
+    zkhandler.write([
+        (zkschema.path('node.data.active_schema', myhostname), new_schema_version)
+    ])
+
+    # Restart the zookeeper connection
+    logger.out('Restarting Zookeeper connection', state='s')
+    zkhandler.disconnect()
+    time.sleep(1)
+    zkhandler.connect(persistent=True)
+
+    # Restart the update timer
+    if update_timer is not None:
+        update_timer = startKeepaliveTimer()
+
+    # Restart the API daemons if applicable
+    if zkhandler.read(zkschema.path('base.config.primary_node')) == myhostname:
+        common.run_os_command('systemctl start pvcapid.service')
+        common.run_os_command('systemctl start pvcapid-worker.service')
+
+
+# If we are the last node to get a schema update, fire the master update
+if latest_schema_version > node_schema_version:
+    node_latest_schema_version = list()
+    for node in zkhandler.children(zkschema.path('base.node')):
+        node_latest_schema_version.append(zkhandler.read(zkschema.path('node.data.latest_schema', node)))
+
+    # This is true if all elements of the latest schema version are identical to the latest version,
+    # i.e. they have all had the latest schema installed and ready to load.
+    if node_latest_schema_version.count(latest_schema_version) == len(node_latest_schema_version):
+        zkhandler.write([
+            (zkschema.path('base.schema.version'), latest_schema_version)
+        ])
 
 ###############################################################################
 # PHASE 5 - Gracefully handle termination
@@ -624,7 +707,7 @@ def cleanup():
         pass
 
     logger.out('Terminated pvc daemon', state='s')
-    sys.exit(0)
+    os._exit(0)
 
 
 # Termination function
