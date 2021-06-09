@@ -401,17 +401,13 @@ class ZKSchema(object):
         'node': {
             'keepalive': '/keepalive',
             'mode': '/daemonmode',
-            'staticdata': '/static_data',
-            'data.kernel': '/oskernelversion',
-            'data.os': '/ostype',
-            'data.arch': '/osarch',
+            'data.static': '/staticdata',
             'counts.provisioned_domains': '/domainscount',
             'counts.running_domains': '/runningdomains',
             'counts.networks': '/networkscount',
             'state.daemon': '/daemonstate',
             'state.router': '/routerstate',
             'state.domain': '/domainstate',
-            'vcpu.total': '/vcputotal',
             'vcpu.allocated': '/vcpualloc',
             'memory.total': '/memtotal',
             'memory.used': '/memused',
@@ -571,20 +567,120 @@ class ZKSchema(object):
         return current_version
 
     # Validate an active schema against a Zookeeper cluster
-    def validate(self, zkhandler, path='base'):
-        for key in self.keys(path):
-            if not zkhandler.exists(self.path(path + '.' + key)):
-                print(f"Key not found: {self.path(key)}")
-                return False
-        return True
+    def validate(self, zkhandler, logger=None):
+        result = True
+
+        # Walk the entire tree checking our schema
+        for elem in ['base']:
+            for key in self.keys(elem):
+                kpath = f'{elem}.{key}'
+                if not zkhandler.exists(self.path(kpath)):
+                    if logger is not None:
+                        logger.out(f'Key not found: {self.path(kpath)}', state='w')
+                    result = False
+
+        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+            # First read all the subelements of the key class
+            for child in zkhandler.children(self.path(f'base.{elem}')):
+                # For each key in the schema for that particular elem
+                for ikey in self.keys(elem):
+                    kpath = f'{elem}.{ikey}'
+                    # Validate that the key exists for that child
+                    if not zkhandler.exists(self.path(kpath, child)):
+                        if logger is not None:
+                            logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                        result = False
+
+        # These two have several children layers that must be parsed through
+        for elem in ['volume']:
+            # First read all the subelements of the key class (pool layer)
+            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+                # Finally read all the subelements of the key class (volume layer)
+                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                    child = f'{pchild}/{vchild}'
+                    # For each key in the schema for that particular elem
+                    for ikey in self.keys(elem):
+                        kpath = f'{elem}.{ikey}'
+                        # Validate that the key exists for that child
+                        if not zkhandler.exists(self.path(kpath, child)):
+                            if logger is not None:
+                                logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                            result = False
+
+        for elem in ['snapshot']:
+            # First read all the subelements of the key class (pool layer)
+            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+                # Next read all the subelements of the key class (volume layer)
+                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                    # Finally read all the subelements of the key class (volume layer)
+                    for schild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
+                        child = f'{pchild}/{vchild}/{schild}'
+                        # For each key in the schema for that particular elem
+                        for ikey in self.keys(elem):
+                            kpath = f'{elem}.{ikey}'
+                            # Validate that the key exists for that child
+                            if not zkhandler.exists(self.path(kpath, child)):
+                                if logger is not None:
+                                    logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                                result = False
+
+        return result
 
     # Apply the current schema to the cluster
-    def apply(self, zkhandler, path='base'):
-        for key in self.keys(path):
-            if not zkhandler.exists(self.path(path + '.' + key)):
-                zkhandler.write([
-                    (self.path(path + '.' + key), '')
-                ])
+    def apply(self, zkhandler):
+        # Walk the entire tree checking our schema
+        for elem in ['base']:
+            for key in self.keys(elem):
+                kpath = f'{elem}.{key}'
+                if not zkhandler.exists(self.path(kpath)):
+                    zkhandler.write([
+                        (self.path(kpath), '')
+                    ])
+
+        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+            # First read all the subelements of the key class
+            for child in zkhandler.children(self.path(f'base.{elem}')):
+                # For each key in the schema for that particular elem
+                for ikey in self.keys(elem):
+                    kpath = f'{elem}.{ikey}'
+                    # Validate that the key exists for that child
+                    if not zkhandler.exists(self.path(kpath, child)):
+                        zkhandler.write([
+                            (self.path(kpath), '')
+                        ])
+
+        # These two have several children layers that must be parsed through
+        for elem in ['volume']:
+            # First read all the subelements of the key class (pool layer)
+            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+                # Finally read all the subelements of the key class (volume layer)
+                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                    child = f'{pchild}/{vchild}'
+                    # For each key in the schema for that particular elem
+                    for ikey in self.keys(elem):
+                        kpath = f'{elem}.{ikey}'
+                        # Validate that the key exists for that child
+                        if not zkhandler.exists(self.path(kpath, child)):
+                            zkhandler.write([
+                                (self.path(kpath), '')
+                            ])
+
+        for elem in ['snapshot']:
+            # First read all the subelements of the key class (pool layer)
+            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+                # Next read all the subelements of the key class (volume layer)
+                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                    # Finally read all the subelements of the key class (volume layer)
+                    for schild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
+                        child = f'{pchild}/{vchild}/{schild}'
+                        # For each key in the schema for that particular elem
+                        for ikey in self.keys(elem):
+                            kpath = f'{elem}.{ikey}'
+                            # Validate that the key exists for that child
+                            if not zkhandler.exists(self.path(kpath, child)):
+                                zkhandler.write([
+                                    (self.path(kpath), '')
+                                ])
 
         zkhandler.write([
             (self.path('base.schema.version'), self.version)
@@ -669,14 +765,14 @@ class ZKSchema(object):
             diff_keys = set_a ^ set_b
 
             for item in diff_keys:
-                elem_item = elem + '.' + item
+                elem_item = f'{elem}.{item}'
                 if item not in schema_a.keys(elem) and item in schema_b.keys(elem):
                     diff_add[elem_item] = schema_b.path(elem_item)
                 if item in schema_a.keys(elem) and item not in schema_b.keys(elem):
                     diff_remove[elem_item] = schema_a.path(elem_item)
 
             for item in set_b:
-                elem_item = elem + '.' + item
+                elem_item = f'{elem}.{item}'
                 if schema_a.path(elem_item) is not None and \
                    schema_b.path(elem_item) is not None and \
                    schema_a.path(elem_item) != schema_b.path(elem_item):
