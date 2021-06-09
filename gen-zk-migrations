@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Generate the Zookeeper migration files
+
+pushd api-daemon
+./pvcapid-manage-zk.py
+popd
