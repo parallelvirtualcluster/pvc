@@ -551,6 +551,8 @@ class ZKSchema(object):
         else:
             base_path = self.schema.get('base').get(itype)
             sub_path = self.schema.get(itype).get('.'.join(ipath))
+            if sub_path is None:
+                sub_path = ''
             return f'{base_path}/{item}{sub_path}'
 
     # Get keys of a schema location
