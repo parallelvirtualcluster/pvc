@@ -40,7 +40,7 @@ from queue import Queue
 from xml.etree import ElementTree
 from rados import Rados
 
-from daemon_lib.zkhandler import ZKHandler
+from daemon_lib.zkhandler import ZKHandler, ZKSchema
 
 import pvcnoded.fencing as fencing
 import daemon_lib.log as log
@@ -529,39 +529,18 @@ except Exception as e:
     logger.out('ERROR: Failed to connect to Zookeeper cluster: {}'.format(e), state='e')
     exit(1)
 
-# Create the /config key if it does not exist
-try:
-    zkhandler.read('/config')
-except Exception:
-    zkhandler.write([
-        ('/config', ''),
-        ('/config/primary_node', 'none'),
-        ('/config/upstream_ip', 'none'),
-        ('/config/maintenance', 'False'),
-    ])
+logger.out('Validating Zookeeper schema', state='i')
 
-# MIGRATION - populate the keys from their old values
-try:
-    primary_node = zkhandler.read('/primary_node')
-    zkhandler.write([
-        ('/config/primary_node', primary_node)
-    ])
-except Exception:
-    pass
-try:
-    upstream_ip = zkhandler.read('/upstream_ip')
-    zkhandler.write([
-        ('/config/upstream_ip', upstream_ip)
-    ])
-except Exception:
-    pass
-try:
-    maintenance = zkhandler.read('/maintenance')
-    zkhandler.write([
-        ('/config/maintenance', maintenance)
-    ])
-except Exception:
-    pass
+# Instantiate a zkschema instance with our current schema version
+zkschema = ZKSchema.load_current(zkhandler)
+
+# Validate our schema against that version
+if not zkschema.validate(zkhandler, logger):
+    logger.out('Found schema violations, applying', state='i')
+    zkschema.apply(zkhandler)
+else:
+    logger.out('Schema successfully validated', state='o')
+
 
 ###############################################################################
 # PHASE 5 - Gracefully handle termination
