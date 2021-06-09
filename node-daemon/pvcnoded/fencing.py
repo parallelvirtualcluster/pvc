@@ -94,7 +94,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
     def fence_migrate_vm(dom_uuid):
         VMInstance.flush_locks(zkhandler, logger, dom_uuid)
 
-        target_node = common.findTargetNode(zkhandler, config, logger, dom_uuid)
+        target_node = common.findTargetNode(zkhandler, dom_uuid)
 
         if target_node is not None:
             logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
