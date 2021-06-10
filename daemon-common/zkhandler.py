@@ -675,8 +675,8 @@ class ZKSchema(object):
                         for nchild in zkhandler.zk_conn.get_children(npath):
                             nkpath = f'{npath}/{nchild}'
                             for esikey in self.keys(sikey):
-                                nkikey = f'{nkpath}/{esikey}'
-                                if not zkhandler.zk_conn.exists(nkikey):
+                                nkipath = f'{nkpath}/{esikey}'
+                                if not zkhandler.zk_conn.exists(nkipath):
                                     result = False
 
         # These two have several children layers that must be parsed through
@@ -743,9 +743,9 @@ class ZKSchema(object):
                         for nchild in zkhandler.zk_conn.get_children(npath):
                             nkpath = f'{npath}/{nchild}'
                             for esikey in self.keys(sikey):
-                                nkikey = f'{nkpath}/{esikey}'
-                                if not zkhandler.zk_conn.exists(nkikey):
-                                    zkhandler.zk_conn.create(nkpath + self.path(ikey, nchild), ''.encode(zkhandler.encoding))
+                                nkipath = f'{nkpath}/{esikey}'
+                                if not zkhandler.zk_conn.exists(nkipath):
+                                    zkhandler.zk_conn.create(nkipath, ''.encode(zkhandler.encoding))
 
         # These two have several children layers that must be parsed through
         for elem in ['volume']:
