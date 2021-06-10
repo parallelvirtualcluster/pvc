@@ -226,7 +226,7 @@ class ZKHandler(object):
 
             path = self.get_schema_path(key)
 
-            if not self.exists(path):
+            if not self.exists(key):
                 # Creating a new key
                 transaction.create(path, str(value).encode(self.encoding))
 
@@ -264,7 +264,7 @@ class ZKHandler(object):
 
         for key in keys:
             path = self.get_schema_path(key)
-            if self.exists(path):
+            if self.exists(key):
                 try:
                     self.zk_conn.delete(path, recursive=recursive)
                 except Exception as e:
@@ -313,10 +313,10 @@ class ZKHandler(object):
             destination_key = kkpair[1]
             destination_path = self.get_schema_path(destination_key)
 
-            if not self.exists(source_path):
+            if not self.exists(source_key):
                 self.log("ZKHander error: Source key '{}' does not exist".format(source_path), state='e')
                 return False
-            if self.exists(destination_path):
+            if self.exists(destination_key):
                 self.log("ZKHander error: Destination key '{}' already exists".format(destination_path), state='e')
                 return False
 
