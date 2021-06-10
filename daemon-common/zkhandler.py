@@ -731,7 +731,7 @@ class ZKSchema(object):
                     kpath = f'{elem}.{ikey}'
                     # Validate that the key exists for that child
                     if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                        zkhandler.zk_conn.create(self.path(kpath), ''.encode(zkhandler.encoding))
+                        zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
 
                     # Continue for child keys under network (reservation, acl)
                     if elem in ['network'] and ikey in ['reservation', 'rule.in', 'rule.out']:
@@ -759,7 +759,7 @@ class ZKSchema(object):
                         kpath = f'{elem}.{ikey}'
                         # Validate that the key exists for that child
                         if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                            zkhandler.zk_conn.create(self.path(kpath), ''.encode(zkhandler.encoding))
+                            zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
 
         for elem in ['snapshot']:
             # First read all the subelements of the key class (pool layer)
@@ -774,7 +774,7 @@ class ZKSchema(object):
                             kpath = f'{elem}.{ikey}'
                             # Validate that the key exists for that child
                             if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                                zkhandler.zk_conn.create(self.path(kpath), ''.encode(zkhandler.encoding))
+                                zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
 
         zkhandler.zk_conn.create(self.path('base.schema.version'), self.version)
 
