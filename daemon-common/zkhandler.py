@@ -474,6 +474,7 @@ class ZKSchema(object):
             'node': '/node',
             'last_node': '/lastnode',
             'failed_reason': '/failedreason',
+            'storage.volumes': '/rbdlist',
             'console.log': '/consolelog',
             'console.vnc': '/vnc',
             'meta.autostart': '/node_autostart',
