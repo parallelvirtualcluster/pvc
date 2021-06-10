@@ -49,7 +49,7 @@ class ZKConnection(object):
         def connection(*args, **kwargs):
             zkhandler = ZKHandler(self.config)
             zkhandler.connect()
-            zkhandler.schema.load(zkhandler.read(zkhandler.schema.path('base.schema.version')), quiet=True)
+            zkhandler.schema.load(zkhandler.read('base.schema.version'), quiet=True)
 
             ret = function(zkhandler, *args, **kwargs)
 
