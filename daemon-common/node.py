@@ -37,7 +37,7 @@ def getNodeInformation(zkhandler, node_name):
     node_kernel = node_static_data[1]
     node_os = node_static_data[2]
     node_arch = node_static_data[3]
-    node_vcpu_allocated = int(zkhandler.read('nodes/{}/vcpualloc'.format(node_name)))
+    node_vcpu_allocated = int(zkhandler.read('/nodes/{}/vcpualloc'.format(node_name)))
     node_mem_total = int(zkhandler.read('/nodes/{}/memtotal'.format(node_name)))
     node_mem_allocated = int(zkhandler.read('/nodes/{}/memalloc'.format(node_name)))
     node_mem_provisioned = int(zkhandler.read('/nodes/{}/memprov'.format(node_name)))
