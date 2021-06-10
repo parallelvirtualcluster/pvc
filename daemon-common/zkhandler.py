@@ -165,7 +165,16 @@ class ZKHandler(object):
     def get_schema_path(self, key):
         if isinstance(key, tuple):
             # This is a key tuple with both an ipath and an item
-            ipath, item = key
+            if len(key) == 2:
+                # 2-length normal tuple
+                ipath, item = key
+            elif len(key) == 4:
+                # 4-length sub-level tuple
+                ipath, item, sub_ipath, sub_item = key
+                return self.schema.path(ipath, item=item) + self.schema.path(sub_ipath, item=sub_item)
+            else:
+                # This is an invalid key
+                return None
         elif isinstance(key, str):
             # This is a key string with just an ipath
             ipath = key
@@ -484,17 +493,25 @@ class ZKSchema(object):
         'network': {
             'type': '/nettype',
             'rules': '/firewall_rules',
+            'rules.in': '/firewall_rules/in',
+            'rules.out': '/firewall_rules/out',
             'nameservers': '/name_servers',
             'domain': '/domain',
             'ip4.gateway': '/ip4_gateway',
             'ip4.network': '/ip4_network',
             'ip4.dhcp': '/dhcp4_flag',
-            'ip4.reservations': '/dhcp4_reservations',
+            'ip4.reservation': '/dhcp4_reservations',
             'ip4.dhcp_start': '/dhcp4_start',
             'ip4.dhcp_end': '/dhcp4_end',
             'ip6.gateway': '/ip6_gateway',
             'ip6.network': '/ip6_network',
             'ip6.dhcp': '/dhcp6_flag'
+        },
+        # The schema of an individual network DHCP(v4) reservation entry (/networks/{vni}/dhcp4_reservations/{mac})
+        'reservation': {
+            'mac': '',  # The root key
+            'ip': '/ipaddr',
+            'hostname': '/hostname'
         },
         # The schema of an individual OSD entry (/ceph/osds/{osd_id})
         'osd': {
@@ -594,7 +611,10 @@ class ZKSchema(object):
         if item is None:
             return self.schema.get(itype).get('.'.join(ipath))
         else:
-            base_path = self.schema.get('base').get(itype)
+            base_path = self.schema.get('base').get(itype, None)
+            if base_path is None:
+                # This should only really happen for second-layer key types where the helper functions join them together
+                base_path = ''
             sub_path = self.schema.get(itype).get('.'.join(ipath))
             if sub_path is None:
                 sub_path = ''
