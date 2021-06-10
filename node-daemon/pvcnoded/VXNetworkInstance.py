@@ -40,7 +40,7 @@ class VXNetworkInstance(object):
         self.vni_mtu = config['vni_mtu']
         self.bridge_dev = config['bridge_dev']
 
-        self.nettype = self.zkhandler.read('/networks/{}/nettype'.format(self.vni))
+        self.nettype = self.zkhandler.read(('network.type', self.vni))
         if self.nettype == 'bridged':
             self.logger.out(
                 'Creating new bridged network',
@@ -72,7 +72,7 @@ class VXNetworkInstance(object):
         self.bridge_nic = 'vmbr{}'.format(self.vni)
 
         # Zookeper handlers for changed states
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
         def watch_network_description(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -91,16 +91,16 @@ class VXNetworkInstance(object):
         self.description = None
         self.domain = None
         self.name_servers = None
-        self.ip6_gateway = self.zkhandler.read('/networks/{}/ip6_gateway'.format(self.vni))
-        self.ip6_network = self.zkhandler.read('/networks/{}/ip6_network'.format(self.vni))
-        self.ip6_cidrnetmask = self.zkhandler.read('/networks/{}/ip6_network'.format(self.vni)).split('/')[-1]
-        self.dhcp6_flag = (self.zkhandler.read('/networks/{}/dhcp6_flag'.format(self.vni)) == 'True')
-        self.ip4_gateway = self.zkhandler.read('/networks/{}/ip4_gateway'.format(self.vni))
-        self.ip4_network = self.zkhandler.read('/networks/{}/ip4_network'.format(self.vni))
-        self.ip4_cidrnetmask = self.zkhandler.read('/networks/{}/ip4_network'.format(self.vni)).split('/')[-1]
-        self.dhcp4_flag = (self.zkhandler.read('/networks/{}/dhcp4_flag'.format(self.vni)) == 'True')
-        self.dhcp4_start = (self.zkhandler.read('/networks/{}/dhcp4_start'.format(self.vni)) == 'True')
-        self.dhcp4_end = (self.zkhandler.read('/networks/{}/dhcp4_end'.format(self.vni)) == 'True')
+        self.ip6_gateway = self.zkhandler.read(('network.ip6.gateway', self.vni))
+        self.ip6_network = self.zkhandler.read(('network.ip6.network', self.vni))
+        self.ip6_cidrnetmask = self.zkhandler.read(('network.ip6.network', self.vni)).split('/')[-1]
+        self.dhcp6_flag = self.zkhandler.read(('network.ip6.dhcp', self.vni))
+        self.ip4_gateway = self.zkhandler.read(('network.ip4.gateway', self.vni))
+        self.ip4_network = self.zkhandler.read(('network.ip4.network', self.vni))
+        self.ip4_cidrnetmask = self.zkhandler.read(('network.ip4.network', self.vni)).split('/')[-1]
+        self.dhcp4_flag = self.zkhandler.read(('network.ip4.dhcp', self.vni))
+        self.dhcp4_start = self.zkhandler.read(('network.ip4.dhcp_start', self.vni))
+        self.dhcp4_end = self.zkhandler.read(('network.ip4.dhcp_end', self.vni))
 
         self.vxlan_nic = 'vxlan{}'.format(self.vni)
         self.bridge_nic = 'vmbr{}'.format(self.vni)
@@ -157,11 +157,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             vxlannic=self.vxlan_nic,
         )
 
-        self.firewall_rules_in = self.zkhandler.children('/networks/{}/firewall_rules/in'.format(self.vni))
-        self.firewall_rules_out = self.zkhandler.children('/networks/{}/firewall_rules/out'.format(self.vni))
+        self.firewall_rules_in = self.zkhandler.children(('network.rule.in', self.vni))
+        self.firewall_rules_out = self.zkhandler.children(('network.rule.out', self.vni))
 
         # Zookeper handlers for changed states
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
         def watch_network_description(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -175,7 +175,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/domain'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.domain', self.vni))
         def watch_network_domain(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -192,7 +192,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/name_servers'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.nameservers', self.vni))
         def watch_network_name_servers(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -209,7 +209,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/ip6_network'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -224,7 +224,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/ip6_gateway'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.gateway', self.vni))
         def watch_network_gateway6(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -246,7 +246,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/dhcp6_flag'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.dhcp', self.vni))
         def watch_network_dhcp6_status(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -260,7 +260,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 elif self.dhcp_server_daemon and not self.dhcp4_flag and self.this_node.router_state in ['primary', 'takeover']:
                     self.stopDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/ip4_network'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip4.network', self.vni))
         def watch_network_ip4_network(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -275,7 +275,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/ip4_gateway'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip4.gateway', self.vni))
         def watch_network_gateway4(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -297,7 +297,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/dhcp4_flag'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip4.dhcp', self.vni))
         def watch_network_dhcp4_status(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -311,7 +311,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 elif self.dhcp_server_daemon and not self.dhcp6_flag and self.this_node.router_state in ['primary', 'takeover']:
                     self.stopDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/dhcp4_start'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip4.dhcp_start', self.vni))
         def watch_network_dhcp4_start(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -324,7 +324,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch('/networks/{}/dhcp4_end'.format(self.vni))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip4.dhcp_end', self.vni))
         def watch_network_dhcp4_end(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -337,7 +337,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.ChildrenWatch('/networks/{}/dhcp4_reservations'.format(self.vni))
+        @self.zkhandler.zk_conn.ChildrenWatch(self.zkhandler.schema.path('network.reservation', self.vni))
         def watch_network_dhcp_reservations(new_reservations, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -353,7 +353,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/in'.format(self.vni))
+        @self.zkhandler.zk_conn.ChildrenWatch(self.zkhandler.schema.path('network.rule.in', self.vni))
         def watch_network_firewall_rules_in(new_rules, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -365,7 +365,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.firewall_rules_in = new_rules
                 self.updateFirewallRules()
 
-        @self.zkhandler.zk_conn.ChildrenWatch('/networks/{}/firewall_rules/out'.format(self.vni))
+        @self.zkhandler.zk_conn.ChildrenWatch(self.zkhandler.schema.path('network.rule.out', self.vni))
         def watch_network_firewall_rules_out(new_rules, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
@@ -388,7 +388,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             if reservation not in old_reservations_list:
                 # Add new reservation file
                 filename = '{}/{}'.format(self.dnsmasq_hostsdir, reservation)
-                ipaddr = self.zkhandler.read('/networks/{}/dhcp4_reservations/{}/ipaddr'.format(self.vni, reservation))
+                ipaddr = self.zkhandler.read(('network.reservation', self.vni, 'reservation.ip', reservation))
                 entry = '{},{}'.format(reservation, ipaddr)
                 # Write the entry
                 with open(filename, 'w') as outfile:
@@ -419,10 +419,10 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         full_ordered_rules = []
 
         for acl in self.firewall_rules_in:
-            order = self.zkhandler.read('/networks/{}/firewall_rules/in/{}/order'.format(self.vni, acl))
+            order = self.zkhandler.read(('network.rule.in', self.vni, 'acl.order', acl))
             ordered_acls_in[order] = acl
         for acl in self.firewall_rules_out:
-            order = self.zkhandler.read('/networks/{}/firewall_rules/out/{}/order'.format(self.vni, acl))
+            order = self.zkhandler.read(('network.rule.out', self.vni, 'acl.order', acl))
             ordered_acls_out[order] = acl
 
         for order in sorted(ordered_acls_in.keys()):
@@ -433,7 +433,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         for direction in 'in', 'out':
             for acl in sorted_acl_list[direction]:
                 rule_prefix = "add rule inet filter vxlan{}-{} counter".format(self.vni, direction)
-                rule_data = self.zkhandler.read('/networks/{}/firewall_rules/{}/{}/rule'.format(self.vni, direction, acl))
+                rule_data = self.zkhandler.read((f'network.rule.{direction}', self.vni, 'acl.rule', acl))
                 rule = '{} {}'.format(rule_prefix, rule_data)
                 full_ordered_rules.append(rule)
 
