@@ -492,15 +492,15 @@ class ZKSchema(object):
         # The schema of an individual network entry (/networks/{vni})
         'network': {
             'type': '/nettype',
-            'rules': '/firewall_rules',
-            'rules.in': '/firewall_rules/in',
-            'rules.out': '/firewall_rules/out',
+            'rule': '/firewall_rules',
+            'rule.in': '/firewall_rules/in',
+            'rule.out': '/firewall_rules/out',
             'nameservers': '/name_servers',
             'domain': '/domain',
+            'reservation': '/dhcp4_reservations',
             'ip4.gateway': '/ip4_gateway',
             'ip4.network': '/ip4_network',
             'ip4.dhcp': '/dhcp4_flag',
-            'ip4.reservation': '/dhcp4_reservations',
             'ip4.dhcp_start': '/dhcp4_start',
             'ip4.dhcp_end': '/dhcp4_end',
             'ip6.gateway': '/ip6_gateway',
@@ -512,6 +512,11 @@ class ZKSchema(object):
             'mac': '',  # The root key
             'ip': '/ipaddr',
             'hostname': '/hostname'
+        },
+        # The schema for an individual network ACL entry (/networks/{vni}/firewall_rules/(in|out)/{acl}
+        'rule': {
+            'rule': '/rule',
+            'order': '/order'
         },
         # The schema of an individual OSD entry (/ceph/osds/{osd_id})
         'osd': {
@@ -643,52 +648,66 @@ class ZKSchema(object):
         for elem in ['base']:
             for key in self.keys(elem):
                 kpath = f'{elem}.{key}'
-                if not zkhandler.exists(self.path(kpath)):
+                if not zkhandler.zk_conn.exists(self.path(kpath)):
                     if logger is not None:
                         logger.out(f'Key not found: {self.path(kpath)}', state='w')
                     result = False
 
         for elem in ['node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
-            for child in zkhandler.children(self.path(f'base.{elem}')):
+            for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
                 for ikey in self.keys(elem):
                     kpath = f'{elem}.{ikey}'
                     # Validate that the key exists for that child
-                    if not zkhandler.exists(self.path(kpath, child)):
+                    if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                         if logger is not None:
                             logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
                         result = False
 
+                    # Continue for child keys under network (reservation, acl)
+                    if elem in ['network'] and ikey in ['reservation', 'rule.in', 'rule.out']:
+                        if ikey in ['rule.in', 'rule.out']:
+                            sikey = 'rule'
+                        else:
+                            sikey = ikey
+                        npath = self.path(f'{elem}.{ikey}', child)
+                        for nchild in zkhandler.zk_conn.get_children(npath):
+                            nkpath = f'{npath}/{nchild}'
+                            for esikey in self.keys(sikey):
+                                nkikey = f'{nkpath}/{esikey}'
+                                if not zkhandler.zk_conn.exists(nkikey):
+                                    result = False
+
         # These two have several children layers that must be parsed through
         for elem in ['volume']:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # Finally read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
                     child = f'{pchild}/{vchild}'
                     # For each key in the schema for that particular elem
                     for ikey in self.keys(elem):
                         kpath = f'{elem}.{ikey}'
                         # Validate that the key exists for that child
-                        if not zkhandler.exists(self.path(kpath, child)):
+                        if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                             if logger is not None:
                                 logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
                             result = False
 
         for elem in ['snapshot']:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # Next read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
                     # Finally read all the subelements of the key class (volume layer)
-                    for schild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
+                    for schild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
                         child = f'{pchild}/{vchild}/{schild}'
                         # For each key in the schema for that particular elem
                         for ikey in self.keys(elem):
                             kpath = f'{elem}.{ikey}'
                             # Validate that the key exists for that child
-                            if not zkhandler.exists(self.path(kpath, child)):
+                            if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                                 if logger is not None:
                                     logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
                                 result = False
@@ -701,59 +720,63 @@ class ZKSchema(object):
         for elem in ['base']:
             for key in self.keys(elem):
                 kpath = f'{elem}.{key}'
-                if not zkhandler.exists(self.path(kpath)):
-                    zkhandler.write([
-                        (self.path(kpath), '')
-                    ])
+                if not zkhandler.zk_conn.exists(self.path(kpath)):
+                    zkhandler.zk_conn.create(self.path(kpath), '')
 
         for elem in ['node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
-            for child in zkhandler.children(self.path(f'base.{elem}')):
+            for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
                 for ikey in self.keys(elem):
                     kpath = f'{elem}.{ikey}'
                     # Validate that the key exists for that child
-                    if not zkhandler.exists(self.path(kpath, child)):
-                        zkhandler.write([
-                            (self.path(kpath), '')
-                        ])
+                    if not zkhandler.zk_conn.exists(self.path(kpath, child)):
+                        zkhandler.zk_conn.create(self.path(kpath), '')
+
+                    # Continue for child keys under network (reservation, acl)
+                    if elem in ['network'] and ikey in ['reservation', 'rule.in', 'rule.out']:
+                        if ikey in ['rule.in', 'rule.out']:
+                            sikey = 'rule'
+                        else:
+                            sikey = ikey
+                        npath = self.path(f'{elem}.{ikey}', child)
+                        for nchild in zkhandler.zk_conn.get_children(npath):
+                            nkpath = f'{npath}/{nchild}'
+                            for esikey in self.keys(sikey):
+                                nkikey = f'{nkpath}/{esikey}'
+                                if not zkhandler.zk_conn.exists(nkikey):
+                                    zkhandler.zk_conn.create(nkpath + self.path(ikey, nchild), '')
 
         # These two have several children layers that must be parsed through
         for elem in ['volume']:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # Finally read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
                     child = f'{pchild}/{vchild}'
                     # For each key in the schema for that particular elem
                     for ikey in self.keys(elem):
                         kpath = f'{elem}.{ikey}'
                         # Validate that the key exists for that child
-                        if not zkhandler.exists(self.path(kpath, child)):
-                            zkhandler.write([
-                                (self.path(kpath), '')
-                            ])
+                        if not zkhandler.zk_conn.exists(self.path(kpath, child)):
+                            zkhandler.zk_conn.create(self.path(kpath), '')
 
         for elem in ['snapshot']:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # Next read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
                     # Finally read all the subelements of the key class (volume layer)
-                    for schild in zkhandler.children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
+                    for schild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
                         child = f'{pchild}/{vchild}/{schild}'
                         # For each key in the schema for that particular elem
                         for ikey in self.keys(elem):
                             kpath = f'{elem}.{ikey}'
                             # Validate that the key exists for that child
-                            if not zkhandler.exists(self.path(kpath, child)):
-                                zkhandler.write([
-                                    (self.path(kpath), '')
-                                ])
+                            if not zkhandler.zk_conn.exists(self.path(kpath, child)):
+                                zkhandler.zk_conn.create(self.path(kpath), '')
 
-        zkhandler.write([
-            (self.path('base.schema.version'), self.version)
-        ])
+        zkhandler.zk_conn.create(self.path('base.schema.version'), self.version)
 
     # Migrate key diffs
     def run_migrate(self, zkhandler, changes):
