@@ -420,12 +420,9 @@ class ZKSchema(object):
             'config': f'{_schema_root}/config',
             'config.maintenance': f'{_schema_root}/config/maintenance',
             'config.primary_node': f'{_schema_root}/config/primary_node',
+            'config.primary_node.sync_lock': f'{_schema_root}/config/primary_node/sync_lock',
             'config.upstream_ip': f'{_schema_root}/config/upstream_ip',
             'config.migration_target_selector': f'{_schema_root}/config/migration_target_selector',
-            'lock': f'{_schema_root}/locks',
-            'lock.primary_node': f'{_schema_root}/locks/primary_node',
-            'lock.flush_lock': f'{_schema_root}/locks/flush_lock',
-            'lock.domain_migrate': f'{_schema_root}/locks/domain_migrate',
             'cmd': f'{_schema_root}/cmd',
             'cmd.node': f'{_schema_root}/cmd/nodes',
             'cmd.domain': f'{_schema_root}/cmd/domains',
@@ -480,7 +477,8 @@ class ZKSchema(object):
             'meta.autostart': '/node_autostart',
             'meta.migrate_method': '/migration_method',
             'meta.node_selector': '/node_selector',
-            'meta.node_limit': '/node_limit'
+            'meta.node_limit': '/node_limit',
+            'migrate.sync_lock': '/migrate_sync_lock'
         },
         # The schema of an individual network entry (/networks/{vni})
         'network': {
