@@ -355,7 +355,7 @@ class CephSnapshotInstance(object):
         self.name = name
         self.stats = dict()
 
-        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('snapsho.stats', f'{self.pool}/{self.volume}/{self.name}'))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('snapshot.stats', f'{self.pool}/{self.volume}/{self.name}'))
         def watch_snapshot_stats(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
