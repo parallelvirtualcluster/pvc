@@ -36,7 +36,7 @@ def fenceNode(node_name, zkhandler, config, logger):
         # Wait 5 seconds
         time.sleep(config['keepalive_interval'])
         # Get the state
-        node_daemon_state = zkhandler.read('/nodes/{}/daemonstate'.format(node_name))
+        node_daemon_state = zkhandler.read(('node.state.daemon', node_name))
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
@@ -49,9 +49,9 @@ def fenceNode(node_name, zkhandler, config, logger):
     logger.out('Fencing node "{}" via IPMI reboot signal'.format(node_name), state='w')
 
     # Get IPMI information
-    ipmi_hostname = zkhandler.read('/nodes/{}/ipmihostname'.format(node_name))
-    ipmi_username = zkhandler.read('/nodes/{}/ipmiusername'.format(node_name))
-    ipmi_password = zkhandler.read('/nodes/{}/ipmipassword'.format(node_name))
+    ipmi_hostname = zkhandler.read(('node.ipmi.hostname', node_name))
+    ipmi_username = zkhandler.read(('node.ipmi.username', node_name))
+    ipmi_password = zkhandler.read(('node.ipmi.password', node_name))
 
     # Shoot it in the head
     fence_status = rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password, logger)
@@ -62,11 +62,11 @@ def fenceNode(node_name, zkhandler, config, logger):
     if node_name in config['coordinators']:
         logger.out('Forcing secondary status for node "{}"'.format(node_name), state='i')
         zkhandler.write([
-            ('/nodes/{}/routerstate'.format(node_name), 'secondary')
+            (('node.state.router', node_name), 'secondary')
         ])
-        if zkhandler.read('/config/primary_node') == node_name:
+        if zkhandler.read('base.config.primary_node') == node_name:
             zkhandler.write([
-                ('/config/primary_node', 'none')
+                ('base.config.primary_node', 'none')
             ])
 
     # If the fence succeeded and successful_fence is migrate
@@ -83,11 +83,11 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
     logger.out('Migrating VMs from dead node "{}" to new hosts'.format(node_name), state='i')
 
     # Get the list of VMs
-    dead_node_running_domains = zkhandler.read('/nodes/{}/runningdomains'.format(node_name)).split()
+    dead_node_running_domains = zkhandler.read(('node.running_domains', node_name)).split()
 
     # Set the node to a custom domainstate so we know what's happening
     zkhandler.write([
-        ('/nodes/{}/domainstate'.format(node_name), 'fence-flush')
+        (('node.state.domain', node_name), 'fence-flush')
     ])
 
     # Migrate a VM after a flush
@@ -99,15 +99,15 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
         if target_node is not None:
             logger.out('Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node), state='i')
             zkhandler.write([
-                ('/domains/{}/state'.format(dom_uuid), 'start'),
-                ('/domains/{}/node'.format(dom_uuid), target_node),
-                ('/domains/{}/lastnode'.format(dom_uuid), node_name)
+                (('domain.state', dom_uuid), 'start'),
+                (('domain.node', dom_uuid), target_node),
+                (('domain.last_node', dom_uuid), node_name),
             ])
         else:
             logger.out('No target node found for VM "{}"; VM will autostart on next unflush/ready of current node'.format(dom_uuid), state='i')
             zkhandler.write({
-                ('/domains/{}/state'.format(dom_uuid), 'stopped'),
-                ('/domains/{}/node_autostart'.format(dom_uuid), 'True')
+                (('domain.state', dom_uuid), 'stopped'),
+                (('domain.meta.autostart', dom_uuid), 'True'),
             })
 
     # Loop through the VMs
@@ -116,7 +116,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 
     # Set node in flushed state for easy remigrating when it comes back
     zkhandler.write([
-        ('/nodes/{}/domainstate'.format(node_name), 'flushed')
+        (('node.state.domain', node_name), 'flushed')
     ])
 
 
