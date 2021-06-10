@@ -92,7 +92,7 @@ class VMConsoleWatcherInstance(object):
         # Update Zookeeper with the new loglines if they changed
         if self.loglines != self.last_loglines:
             self.zkhandler.write([
-                ('/domains/{}/consolelog'.format(self.domuuid), self.loglines)
+                (('domain.console.log', self.domuuid), self.loglines)
             ])
             self.last_loglines = self.loglines
 
