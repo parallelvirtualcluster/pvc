@@ -1106,7 +1106,7 @@ if enable_storage:
 
         # Volume objects in each pool
         for pool in pool_list:
-            @zkhandler.zk_conn.childrenWatch(zkhandler.schema.path('volume', pool))
+            @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path('volume', pool))
             def update_volumes(new_volume_list):
                 global volume_list, d_volume
 
