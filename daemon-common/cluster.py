@@ -29,7 +29,7 @@ import daemon_lib.ceph as pvc_ceph
 
 
 def set_maintenance(zkhandler, maint_state):
-    current_maint_state = zkhandler.read('/config/maintenance')
+    current_maint_state = zkhandler.read('base.config.maintenance')
     if maint_state == current_maint_state:
         if maint_state == 'true':
             return True, 'Cluster is already in maintenance mode'
@@ -38,19 +38,19 @@ def set_maintenance(zkhandler, maint_state):
 
     if maint_state == 'true':
         zkhandler.write([
-            ('/config/maintenance', 'true')
+            ('base.config.maintenance', 'true')
         ])
         return True, 'Successfully set cluster in maintenance mode'
     else:
         zkhandler.write([
-            ('/config/maintenance', 'false')
+            ('base.config.maintenance', 'false')
         ])
         return True, 'Successfully set cluster in normal mode'
 
 
 def getClusterInformation(zkhandler):
     # Get cluster maintenance state
-    maint_state = zkhandler.read('/config/maintenance')
+    maint_state = zkhandler.read('base.config.maintenance')
 
     # List of messages to display to the clients
     cluster_health_msg = []
@@ -168,7 +168,7 @@ def getClusterInformation(zkhandler):
         cluster_health = 'Optimal'
 
     # Find out our storage health from Ceph
-    ceph_status = zkhandler.read('/ceph').split('\n')
+    ceph_status = zkhandler.read('base.storage').split('\n')
     ceph_health = ceph_status[2].split()[-1]
 
     # Parse the status output to get the health indicators
@@ -239,7 +239,7 @@ def getClusterInformation(zkhandler):
         'storage_health': storage_health,
         'storage_health_msg': storage_health_msg,
         'primary_node': common.getPrimaryNode(zkhandler),
-        'upstream_ip': zkhandler.read('/config/upstream_ip'),
+        'upstream_ip': zkhandler.read('base.config.upstream_ip'),
         'nodes': formatted_node_states,
         'vms': formatted_vm_states,
         'networks': network_count,
