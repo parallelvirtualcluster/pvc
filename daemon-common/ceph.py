@@ -35,29 +35,29 @@ import daemon_lib.common as common
 
 # Verify OSD is valid in cluster
 def verifyOSD(zkhandler, osd_id):
-    return zkhandler.exists('/ceph/osds/{}'.format(osd_id))
+    return zkhandler.exists(('osd', osd_id))
 
 
 # Verify Pool is valid in cluster
 def verifyPool(zkhandler, name):
-    return zkhandler.exists('/ceph/pools/{}'.format(name))
+    return zkhandler.exists(('pool', name))
 
 
 # Verify Volume is valid in cluster
 def verifyVolume(zkhandler, pool, name):
-    return zkhandler.exists('/ceph/volumes/{}/{}'.format(pool, name))
+    return zkhandler.exists(('volume', f'{pool}/{name}'))
 
 
 # Verify Snapshot is valid in cluster
 def verifySnapshot(zkhandler, pool, volume, name):
-    return zkhandler.exists('/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
+    return zkhandler.exists(('snapshot', f'{pool}/{volume}/{name}'))
 
 
 # Verify OSD path is valid in cluster
 def verifyOSDBlock(zkhandler, node, device):
-    for osd in zkhandler.children('/ceph/osds'):
-        osd_node = zkhandler.read('/ceph/osds/{}/node'.format(osd))
-        osd_device = zkhandler.read('/ceph/osds/{}/device'.format(osd))
+    for osd in zkhandler.children('base.osd'):
+        osd_node = zkhandler.read(('osd.node', osd))
+        osd_device = zkhandler.read(('osd.device', osd))
         if node == osd_node and device == osd_device:
             return osd
     return None
@@ -144,8 +144,8 @@ def format_pct_tohuman(datapct):
 # Status functions
 #
 def get_status(zkhandler):
-    primary_node = zkhandler.read('/config/primary_node')
-    ceph_status = zkhandler.read('/ceph').rstrip()
+    primary_node = zkhandler.read('base.primary_node')
+    ceph_status = zkhandler.read('base.storage').rstrip()
 
     # Create a data structure for the information
     status_data = {
@@ -157,8 +157,8 @@ def get_status(zkhandler):
 
 
 def get_util(zkhandler):
-    primary_node = zkhandler.read('/config/primary_node')
-    ceph_df = zkhandler.read('/ceph/util').rstrip()
+    primary_node = zkhandler.read('base.primary_node')
+    ceph_df = zkhandler.read('base.storage.util').rstrip()
 
     # Create a data structure for the information
     status_data = {
@@ -174,12 +174,12 @@ def get_util(zkhandler):
 #
 def getClusterOSDList(zkhandler):
     # Get a list of VNIs by listing the children of /networks
-    return zkhandler.children('/ceph/osds')
+    return zkhandler.children('base.osd')
 
 
 def getOSDInformation(zkhandler, osd_id):
     # Parse the stats data
-    osd_stats_raw = zkhandler.read('/ceph/osds/{}/stats'.format(osd_id))
+    osd_stats_raw = zkhandler.read(('osd.stats', osd_id))
     osd_stats = dict(json.loads(osd_stats_raw))
 
     osd_information = {
@@ -203,14 +203,15 @@ def add_osd(zkhandler, node, device, weight):
 
     # Tell the cluster to create a new OSD for the host
     add_osd_string = 'osd_add {},{},{}'.format(node, device, weight)
-    zkhandler.write([('/cmd/ceph', add_osd_string)])
+    zkhandler.write([
+        ('base.cmd.ceph', add_osd_string)
+    ])
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock('/cmd/ceph')
-    with lock:
+    with zkhandler.readlock('base.cmd.ceph'):
         try:
-            result = zkhandler.read('/cmd/ceph').split()[0]
+            result = zkhandler.read('base.cmd.ceph').split()[0]
             if result == 'success-osd_add':
                 message = 'Created new OSD with block device "{}" on node "{}".'.format(device, node)
                 success = True
@@ -222,10 +223,11 @@ def add_osd(zkhandler, node, device, weight):
             success = False
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock('/cmd/ceph')
-    with lock:
+    with zkhandler.writelock('base.cmd.ceph'):
         time.sleep(0.5)
-        zkhandler.write([('/cmd/ceph', '')])
+        zkhandler.write([
+            ('base.cmd.ceph', '')
+        ])
 
     return success, message
 
@@ -236,14 +238,15 @@ def remove_osd(zkhandler, osd_id):
 
     # Tell the cluster to remove an OSD
     remove_osd_string = 'osd_remove {}'.format(osd_id)
-    zkhandler.write([('/cmd/ceph', remove_osd_string)])
+    zkhandler.write([
+        ('base.cmd.ceph', remove_osd_string)
+    ])
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)
     # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock('/cmd/ceph')
-    with lock:
+    with zkhandler.readlock('base.cmd.ceph'):
         try:
-            result = zkhandler.read('/cmd/ceph').split()[0]
+            result = zkhandler.read('base.cmd.ceph').split()[0]
             if result == 'success-osd_remove':
                 message = 'Removed OSD "{}" from the cluster.'.format(osd_id)
                 success = True
@@ -255,10 +258,11 @@ def remove_osd(zkhandler, osd_id):
             message = 'ERROR Command ignored by node.'
 
     # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock('/cmd/ceph')
-    with lock:
+    with zkhandler.writelock('base.cmd.ceph'):
         time.sleep(0.5)
-        zkhandler.write([('/cmd/ceph', '')])
+        zkhandler.write([
+            ('base.cmd.ceph', '')
+        ])
 
     return success, message
 
@@ -303,7 +307,7 @@ def unset_osd(zkhandler, option):
 
 def get_list_osd(zkhandler, limit, is_fuzzy=True):
     osd_list = []
-    full_osd_list = zkhandler.children('/ceph/osds')
+    full_osd_list = zkhandler.children('base.osd')
 
     if is_fuzzy and limit:
         # Implicitly assume fuzzy limits
@@ -330,7 +334,7 @@ def get_list_osd(zkhandler, limit, is_fuzzy=True):
 #
 def getPoolInformation(zkhandler, pool):
     # Parse the stats data
-    pool_stats_raw = zkhandler.read('/ceph/pools/{}/stats'.format(pool))
+    pool_stats_raw = zkhandler.read(('pool.stats', pool))
     pool_stats = dict(json.loads(pool_stats_raw))
     volume_count = len(getCephVolumes(zkhandler, pool))
 
@@ -375,11 +379,11 @@ def add_pool(zkhandler, name, pgs, replcfg):
 
     # 4. Add the new pool to Zookeeper
     zkhandler.write([
-        ('/ceph/pools/{}'.format(name), ''),
-        ('/ceph/pools/{}/pgs'.format(name), pgs),
-        ('/ceph/pools/{}/stats'.format(name), '{}'),
-        ('/ceph/volumes/{}'.format(name), ''),
-        ('/ceph/snapshots/{}'.format(name), ''),
+        (('pool', name), ''),
+        (('pool.pgs', name), pgs),
+        (('pool.stats', name), '{}'),
+        (('volume', name), ''),
+        (('snapshot', name), ''),
     ])
 
     return True, 'Created RBD pool "{}" with {} PGs'.format(name, pgs)
@@ -390,7 +394,7 @@ def remove_pool(zkhandler, name):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(name)
 
     # 1. Remove pool volumes
-    for volume in zkhandler.children('/ceph/volumes/{}'.format(name)):
+    for volume in zkhandler.children(('volume', name)):
         remove_volume(zkhandler, name, volume)
 
     # 2. Remove the pool
@@ -399,16 +403,18 @@ def remove_pool(zkhandler, name):
         return False, 'ERROR: Failed to remove pool "{}": {}'.format(name, stderr)
 
     # 3. Delete pool from Zookeeper
-    zkhandler.delete('/ceph/pools/{}'.format(name))
-    zkhandler.delete('/ceph/volumes/{}'.format(name))
-    zkhandler.delete('/ceph/snapshots/{}'.format(name))
+    zkhandler.delete([
+        ('pool', name),
+        ('volume', name),
+        ('snapshot', name),
+    ])
 
     return True, 'Removed RBD pool "{}" and all volumes.'.format(name)
 
 
 def get_list_pool(zkhandler, limit, is_fuzzy=True):
     pool_list = []
-    full_pool_list = zkhandler.children('/ceph/pools')
+    full_pool_list = zkhandler.children('base.pool')
 
     if limit:
         if not is_fuzzy:
@@ -433,12 +439,12 @@ def get_list_pool(zkhandler, limit, is_fuzzy=True):
 def getCephVolumes(zkhandler, pool):
     volume_list = list()
     if not pool:
-        pool_list = zkhandler.children('/ceph/pools')
+        pool_list = zkhandler.children('base.pool')
     else:
         pool_list = [pool]
 
     for pool_name in pool_list:
-        for volume_name in zkhandler.children('/ceph/volumes/{}'.format(pool_name)):
+        for volume_name in zkhandler.children(('volume', pool_name)):
             volume_list.append('{}/{}'.format(pool_name, volume_name))
 
     return volume_list
@@ -446,7 +452,7 @@ def getCephVolumes(zkhandler, pool):
 
 def getVolumeInformation(zkhandler, pool, volume):
     # Parse the stats data
-    volume_stats_raw = zkhandler.read('/ceph/volumes/{}/{}/stats'.format(pool, volume))
+    volume_stats_raw = zkhandler.read(('volume.stats', f'{pool}/{volume}'))
     volume_stats = dict(json.loads(volume_stats_raw))
     # Format the size to something nicer
     volume_stats['size'] = format_bytes_tohuman(volume_stats['size'])
@@ -481,9 +487,9 @@ def add_volume(zkhandler, pool, name, size):
 
     # 3. Add the new volume to Zookeeper
     zkhandler.write([
-        ('/ceph/volumes/{}/{}'.format(pool, name), ''),
-        ('/ceph/volumes/{}/{}/stats'.format(pool, name), volstats),
-        ('/ceph/snapshots/{}/{}'.format(pool, name), ''),
+        (('volume', f'{pool}/{name}'), ''),
+        (('volume.stats', f'{pool}/{name}'), volstats),
+        (('snapshot', f'{pool}/{name}'), ''),
     ])
 
     return True, 'Created RBD volume "{}/{}" ({}).'.format(pool, name, size)
@@ -504,9 +510,9 @@ def clone_volume(zkhandler, pool, name_src, name_new):
 
     # 3. Add the new volume to Zookeeper
     zkhandler.write([
-        ('/ceph/volumes/{}/{}'.format(pool, name_new), ''),
-        ('/ceph/volumes/{}/{}/stats'.format(pool, name_new), volstats),
-        ('/ceph/snapshots/{}/{}'.format(pool, name_new), ''),
+        (('volume', f'{pool}/{name_new}'), ''),
+        (('volume.stats', f'{pool}/{name_new}'), volstats),
+        (('snapshot', f'{pool}/{name_new}'), ''),
     ])
 
     return True, 'Cloned RBD volume "{}" to "{}" in pool "{}"'.format(name_src, name_new, pool)
@@ -551,9 +557,9 @@ def resize_volume(zkhandler, pool, name, size):
 
     # 3. Add the new volume to Zookeeper
     zkhandler.write([
-        ('/ceph/volumes/{}/{}'.format(pool, name), ''),
-        ('/ceph/volumes/{}/{}/stats'.format(pool, name), volstats),
-        ('/ceph/snapshots/{}/{}'.format(pool, name), ''),
+        (('volume', f'{pool}/{name}'), ''),
+        (('volume.stats', f'{pool}/{name}'), volstats),
+        (('snapshot', f'{pool}/{name}'), ''),
     ])
 
     return True, 'Resized RBD volume "{}" to size "{}" in pool "{}".'.format(name, size, pool)
@@ -570,8 +576,8 @@ def rename_volume(zkhandler, pool, name, new_name):
 
     # 2. Rename the volume in Zookeeper
     zkhandler.rename([
-        ('/ceph/volumes/{}/{}'.format(pool, name), '/ceph/volumes/{}/{}'.format(pool, new_name)),
-        ('/ceph/snapshots/{}/{}'.format(pool, name), '/ceph/snapshots/{}/{}'.format(pool, new_name))
+        (('volume', f'{pool}/{name}'), ('volume', f'{pool}/{new_name}')),
+        (('snapshot', f'{pool}/{name}'), ('snapshot', f'{pool}/{new_name}')),
     ])
 
     # 3. Get volume stats
@@ -580,7 +586,7 @@ def rename_volume(zkhandler, pool, name, new_name):
 
     # 4. Update the volume stats in Zookeeper
     zkhandler.write([
-        ('/ceph/volumes/{}/{}/stats'.format(pool, new_name), volstats)
+        (('volume.stats', f'{pool}/{new_name}'), volstats),
     ])
 
     return True, 'Renamed RBD volume "{}" to "{}" in pool "{}".'.format(name, new_name, pool)
@@ -591,7 +597,7 @@ def remove_volume(zkhandler, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
     # 1. Remove volume snapshots
-    for snapshot in zkhandler.children('/ceph/snapshots/{}/{}'.format(pool, name)):
+    for snapshot in zkhandler.children(('snapshot', f'{pool}/{name}')):
         remove_snapshot(zkhandler, pool, name, snapshot)
 
     # 2. Remove the volume
@@ -600,8 +606,10 @@ def remove_volume(zkhandler, pool, name):
         return False, 'ERROR: Failed to remove RBD volume "{}" in pool "{}": {}'.format(name, pool, stderr)
 
     # 3. Delete volume from Zookeeper
-    zkhandler.delete('/ceph/volumes/{}/{}'.format(pool, name))
-    zkhandler.delete('/ceph/snapshots/{}/{}'.format(pool, name))
+    zkhandler.delete([
+        ('volume', f'{pool}/{name}'),
+        ('snapshot', f'{pool}/{name}'),
+    ])
 
     return True, 'Removed RBD volume "{}" in pool "{}".'.format(name, pool)
 
@@ -689,7 +697,7 @@ def getCephSnapshots(zkhandler, pool, volume):
                 volume_list = ['{}/{}'.format(volume_pool, volume_name)]
 
     for volume_entry in volume_list:
-        for snapshot_name in zkhandler.children('/ceph/snapshots/{}'.format(volume_entry)):
+        for snapshot_name in zkhandler.children(('snapshot', volume_entry)):
             snapshot_list.append('{}@{}'.format(volume_entry, snapshot_name))
 
     return snapshot_list
@@ -706,18 +714,18 @@ def add_snapshot(zkhandler, pool, volume, name):
 
     # 2. Add the snapshot to Zookeeper
     zkhandler.write([
-        ('/ceph/snapshots/{}/{}/{}'.format(pool, volume, name), ''),
-        ('/ceph/snapshots/{}/{}/{}/stats'.format(pool, volume, name), '{}')
+        (('snapshot', f'{pool}/{volume}/{name}'), ''),
+        (('snapshot.stats', f'{pool}/{volume}/{name}'), '{}'),
     ])
 
     # 3. Update the count of snapshots on this volume
-    volume_stats_raw = zkhandler.read('/ceph/volumes/{}/{}/stats'.format(pool, volume))
+    volume_stats_raw = zkhandler.read(('volume.stats', f'{pool}/{volume}'))
     volume_stats = dict(json.loads(volume_stats_raw))
     # Format the size to something nicer
     volume_stats['snapshot_count'] = volume_stats['snapshot_count'] + 1
     volume_stats_raw = json.dumps(volume_stats)
     zkhandler.write([
-        ('/ceph/volumes/{}/{}/stats'.format(pool, volume), volume_stats_raw)
+        (('volume.stats', f'{pool}/{volume}'), volume_stats_raw),
     ])
 
     return True, 'Created RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
@@ -736,7 +744,7 @@ def rename_snapshot(zkhandler, pool, volume, name, new_name):
 
     # 2. Rename the snapshot in ZK
     zkhandler.rename([
-        ('/ceph/snapshots/{}/{}/{}'.format(pool, volume, name), '/ceph/snapshots/{}/{}/{}'.format(pool, volume, new_name))
+        (('snapshot', f'{pool}/{volume}/{name}'), ('snapshot', f'{pool}/{volume}/{new_name}')),
     ])
 
     return True, 'Renamed RBD snapshot "{}" to "{}" for volume "{}" in pool "{}".'.format(name, new_name, volume, pool)
@@ -754,16 +762,18 @@ def remove_snapshot(zkhandler, pool, volume, name):
         return False, 'Failed to remove RBD snapshot "{}" of volume "{}" in pool "{}": {}'.format(name, volume, pool, stderr)
 
     # 2. Delete snapshot from Zookeeper
-    zkhandler.delete('/ceph/snapshots/{}/{}/{}'.format(pool, volume, name))
+    zkhandler.delete([
+        ('snapshot', f'{pool}/{volume}/{name}')
+    ])
 
     # 3. Update the count of snapshots on this volume
-    volume_stats_raw = zkhandler.read('/ceph/volumes/{}/{}/stats'.format(pool, volume))
+    volume_stats_raw = zkhandler.read(('volume.stats', f'{pool}/{volume}'))
     volume_stats = dict(json.loads(volume_stats_raw))
     # Format the size to something nicer
     volume_stats['snapshot_count'] = volume_stats['snapshot_count'] - 1
     volume_stats_raw = json.dumps(volume_stats)
     zkhandler.write([
-        ('/ceph/volumes/{}/{}/stats'.format(pool, volume), volume_stats_raw)
+        (('volume.stats', f'{pool}/{volume}'), volume_stats_raw)
     ])
 
     return True, 'Removed RBD snapshot "{}" of volume "{}" in pool "{}".'.format(name, volume, pool)
