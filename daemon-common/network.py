@@ -27,11 +27,11 @@ import re
 #
 def getClusterNetworkList(zkhandler):
     # Get a list of VNIs by listing the children of /networks
-    vni_list = zkhandler.children('/networks')
+    vni_list = zkhandler.children('base.network')
     description_list = []
     # For each VNI, get the corresponding description from the data
     for vni in vni_list:
-        description_list.append(zkhandler.read('/networks/{}'.format(vni)))
+        description_list.append(zkhandler.read(('network', vni)))
     return vni_list, description_list
 
 
@@ -91,14 +91,14 @@ def getNetworkDescription(zkhandler, network):
 
 def getNetworkDHCPLeases(zkhandler, vni):
     # Get a list of DHCP leases by listing the children of /networks/<vni>/dhcp4_leases
-    dhcp4_leases = zkhandler.children('/networks/{}/dhcp4_leases'.format(vni))
-    return sorted(dhcp4_leases)
+    leases = zkhandler.children(('network.lease', vni))
+    return sorted(leases)
 
 
 def getNetworkDHCPReservations(zkhandler, vni):
     # Get a list of DHCP reservations by listing the children of /networks/<vni>/dhcp4_reservations
-    dhcp4_reservations = zkhandler.children('/networks/{}/dhcp4_reservations'.format(vni))
-    return sorted(dhcp4_reservations)
+    reservations = zkhandler.children(('network.reservation', vni))
+    return sorted(reservations)
 
 
 def getNetworkACLs(zkhandler, vni, _direction):
@@ -110,32 +110,32 @@ def getNetworkACLs(zkhandler, vni, _direction):
 
     full_acl_list = []
     for direction in directions:
-        unordered_acl_list = zkhandler.children('/networks/{}/firewall_rules/{}'.format(vni, direction))
+        unordered_acl_list = zkhandler.children((f'network.rules.{direction}', vni))
         ordered_acls = dict()
         for acl in unordered_acl_list:
-            order = zkhandler.read('/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, acl))
+            order = zkhandler.read((f'network.rule.{direction}', vni, 'rule.order', acl))
             ordered_acls[order] = acl
 
         for order in sorted(ordered_acls.keys()):
-            rule = zkhandler.read('/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, acl))
+            rule = zkhandler.read((f'network.rule.{direction}', vni, 'rule.rule', acl))
             full_acl_list.append({'direction': direction, 'order': int(order), 'description': ordered_acls[order], 'rule': rule})
 
     return full_acl_list
 
 
 def getNetworkInformation(zkhandler, vni):
-    description = zkhandler.read('/networks/{}'.format(vni))
-    nettype = zkhandler.read('/networks/{}/nettype'.format(vni))
-    domain = zkhandler.read('/networks/{}/domain'.format(vni))
-    name_servers = zkhandler.read('/networks/{}/name_servers'.format(vni))
-    ip6_network = zkhandler.read('/networks/{}/ip6_network'.format(vni))
-    ip6_gateway = zkhandler.read('/networks/{}/ip6_gateway'.format(vni))
-    dhcp6_flag = zkhandler.read('/networks/{}/dhcp6_flag'.format(vni))
-    ip4_network = zkhandler.read('/networks/{}/ip4_network'.format(vni))
-    ip4_gateway = zkhandler.read('/networks/{}/ip4_gateway'.format(vni))
-    dhcp4_flag = zkhandler.read('/networks/{}/dhcp4_flag'.format(vni))
-    dhcp4_start = zkhandler.read('/networks/{}/dhcp4_start'.format(vni))
-    dhcp4_end = zkhandler.read('/networks/{}/dhcp4_end'.format(vni))
+    description = zkhandler.read(('network', vni))
+    nettype = zkhandler.read(('network.type', vni))
+    domain = zkhandler.read(('network.domain', vni))
+    name_servers = zkhandler.read(('network.nameservers', vni))
+    ip6_network = zkhandler.read(('network.ip6.network', vni))
+    ip6_gateway = zkhandler.read(('network.ip6.gateway', vni))
+    dhcp6_flag = zkhandler.read(('network.ip6.dhcp', vni))
+    ip4_network = zkhandler.read(('network.ip4.network', vni))
+    ip4_gateway = zkhandler.read(('network.ip4.gateway', vni))
+    dhcp4_flag = zkhandler.read(('network.ip4.dhcp', vni))
+    dhcp4_start = zkhandler.read(('network.ip4.dhcp_start', vni))
+    dhcp4_end = zkhandler.read(('network.ip4.dhcp_end', vni))
 
     # Construct a data structure to represent the data
     network_information = {
@@ -162,17 +162,17 @@ def getNetworkInformation(zkhandler, vni):
 
 def getDHCPLeaseInformation(zkhandler, vni, mac_address):
     # Check whether this is a dynamic or static lease
-    if zkhandler.exists('/networks/{}/dhcp4_leases/{}'.format(vni, mac_address)):
-        type_key = 'dhcp4_leases'
-    elif zkhandler.exists('/networks/{}/dhcp4_reservations/{}'.format(vni, mac_address)):
-        type_key = 'dhcp4_reservations'
+    if zkhandler.exists(('network.lease', vni, 'lease', mac_address)):
+        type_key = 'lease'
+    if zkhandler.exists(('network.reservation', vni, 'reservation', mac_address)):
+        type_key = 'reservation'
     else:
         return {}
 
-    hostname = zkhandler.read('/networks/{}/{}/{}/hostname'.format(vni, type_key, mac_address))
-    ip4_address = zkhandler.read('/networks/{}/{}/{}/ipaddr'.format(vni, type_key, mac_address))
+    hostname = zkhandler.read((f'network.{type_key}', vni, f'{type_key}', mac_address))
+    ip4_address = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.ip', mac_address))
     if type_key == 'dhcp4_leases':
-        timestamp = zkhandler.read('/networks/{}/{}/{}/expiry'.format(vni, type_key, mac_address))
+        timestamp = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.expiry', mac_address))
     else:
         timestamp = 'static'
 
@@ -186,14 +186,14 @@ def getDHCPLeaseInformation(zkhandler, vni, mac_address):
     return lease_information
 
 
-def getACLInformation(zkhandler, vni, direction, description):
-    order = zkhandler.read('/networks/{}/firewall_rules/{}/{}/order'.format(vni, direction, description))
-    rule = zkhandler.read('/networks/{}/firewall_rules/{}/{}/rule'.format(vni, direction, description))
+def getACLInformation(zkhandler, vni, direction, acl):
+    order = zkhandler.read((f'network.rule.{direction}', vni, 'rule.order', acl))
+    rule = zkhandler.read((f'network.rule.{direction}', vni, 'rule.rule', acl))
 
     # Construct a data structure to represent the data
     acl_information = {
         'order': order,
-        'description': description,
+        'description': acl,
         'rule': rule,
         'direction': direction
     }
@@ -201,12 +201,7 @@ def getACLInformation(zkhandler, vni, direction, description):
 
 
 def isValidMAC(macaddr):
-    allowed = re.compile(r"""
-                         (
-                            ^([0-9A-F]{2}[:]){5}([0-9A-F]{2})$
-                         )
-                         """,
-                         re.VERBOSE | re.IGNORECASE)
+    allowed = re.compile(r'(^([0-9A-F]{2}[:]){5}([0-9A-F]{2})$)', re.VERBOSE | re.IGNORECASE)
 
     if allowed.match(macaddr):
         return True
@@ -239,10 +234,11 @@ def add_network(zkhandler, vni, description, nettype,
         return False, 'ERROR: DHCPv4 start and end addresses are required for a DHCPv4-enabled network.'
 
     # Check if a network with this VNI or description already exists
-    if zkhandler.exists('/networks/{}'.format(vni)):
+    if zkhandler.exists(('network', vni)):
         return False, 'ERROR: A network with VNI "{}" already exists!'.format(vni)
-    for network in zkhandler.children('/networks'):
-        network_description = zkhandler.read('/networks/{}'.format(network))
+
+    for network in zkhandler.children('base.network'):
+        network_description = zkhandler.read(('network', network))
         if network_description == description:
             return False, 'ERROR: A network with description "{}" already exists!'.format(description)
 
@@ -255,28 +251,28 @@ def add_network(zkhandler, vni, description, nettype,
     else:
         dhcp6_flag = 'False'
 
-    if nettype == 'managed' and not domain:
+    if nettype in ['managed'] and not domain:
         domain = '{}.local'.format(description)
 
     # Add the new network to Zookeeper
     zkhandler.write([
-        ('/networks/{}'.format(vni), description),
-        ('/networks/{}/nettype'.format(vni), nettype),
-        ('/networks/{}/domain'.format(vni), domain),
-        ('/networks/{}/name_servers'.format(vni), name_servers),
-        ('/networks/{}/ip6_network'.format(vni), ip6_network),
-        ('/networks/{}/ip6_gateway'.format(vni), ip6_gateway),
-        ('/networks/{}/dhcp6_flag'.format(vni), dhcp6_flag),
-        ('/networks/{}/ip4_network'.format(vni), ip4_network),
-        ('/networks/{}/ip4_gateway'.format(vni), ip4_gateway),
-        ('/networks/{}/dhcp4_flag'.format(vni), dhcp4_flag),
-        ('/networks/{}/dhcp4_start'.format(vni), dhcp4_start),
-        ('/networks/{}/dhcp4_end'.format(vni), dhcp4_end),
-        ('/networks/{}/dhcp4_leases'.format(vni), ''),
-        ('/networks/{}/dhcp4_reservations'.format(vni), ''),
-        ('/networks/{}/firewall_rules'.format(vni), ''),
-        ('/networks/{}/firewall_rules/in'.format(vni), ''),
-        ('/networks/{}/firewall_rules/out'.format(vni), '')
+        (('network', vni), description),
+        (('network.type', vni), nettype),
+        (('network.domain', vni), domain),
+        (('network.nameservers', vni), name_servers),
+        (('network.ip6.network', vni), ip6_network),
+        (('network.ip6.gateway', vni), ip6_gateway),
+        (('network.ip4.dhcp', vni), dhcp6_flag),
+        (('network.ip4.network', vni), ip4_network),
+        (('network.ip4.gateway', vni), ip4_gateway),
+        (('network.ip4.dhcp', vni), dhcp4_flag),
+        (('network.ip4.dhcp_start', vni), dhcp4_start),
+        (('network.ip4.dhcp_end', vni), dhcp4_end),
+        (('network.lease', vni), ''),
+        (('network.reservation', vni), ''),
+        (('network.rule', vni), ''),
+        (('network.rule.in', vni), ''),
+        (('network.rule.out', vni), '')
     ])
 
     return True, 'Network "{}" added successfully!'.format(description)
@@ -288,36 +284,36 @@ def modify_network(zkhandler, vni, description=None, domain=None, name_servers=N
     # Add the modified parameters to Zookeeper
     update_data = list()
     if description is not None:
-        update_data.append(('/networks/{}'.format(vni), description))
+        update_data.append((('network', vni), description))
     if domain is not None:
-        update_data.append(('/networks/{}/domain'.format(vni), domain))
+        update_data.append((('network.domain', vni), domain))
     if name_servers is not None:
-        update_data.append(('/networks/{}/name_servers'.format(vni), name_servers))
+        update_data.append((('network.nameservers', vni), name_servers))
     if ip4_network is not None:
-        update_data.append(('/networks/{}/ip4_network'.format(vni), ip4_network))
+        update_data.append((('network.ip4.network', vni), ip4_network))
     if ip4_gateway is not None:
-        update_data.append(('/networks/{}/ip4_gateway'.format(vni), ip4_gateway))
+        update_data.append((('network.ip4.gateway', vni), ip4_gateway))
     if ip6_network is not None:
-        update_data.append(('/networks/{}/ip6_network'.format(vni), ip6_network))
+        update_data.append((('network.ip6.network', vni), ip6_network))
         if ip6_network:
-            update_data.append(('/networks/{}/dhcp6_flag'.format(vni), 'True'))
+            update_data.append((('network.ip6.dhcp', vni), 'True'))
         else:
-            update_data.append(('/networks/{}/dhcp6_flag'.format(vni), 'False'))
+            update_data.append((('network.ip6.dhcp', vni), 'False'))
     if ip6_gateway is not None:
-        update_data.append(('/networks/{}/ip6_gateway'.format(vni), ip6_gateway))
+        update_data.append((('network.ip6.gateway', vni), ip6_gateway))
     else:
         # If we're changing the network, but don't also specify the gateway,
         # generate a new one automatically
         if ip6_network:
             ip6_netpart, ip6_maskpart = ip6_network.split('/')
             ip6_gateway = '{}1'.format(ip6_netpart)
-            update_data.append(('/networks/{}/ip6_gateway'.format(vni), ip6_gateway))
+            update_data.append((('network.ip6.gateway', vni), ip6_gateway))
     if dhcp4_flag is not None:
-        update_data.append(('/networks/{}/dhcp4_flag'.format(vni), dhcp4_flag))
+        update_data.append((('network.ip4.dhcp', vni), dhcp4_flag))
     if dhcp4_start is not None:
-        update_data.append(('/networks/{}/dhcp4_start'.format(vni), dhcp4_start))
+        update_data.append((('network.ip4.dhcp_start', vni), dhcp4_start))
     if dhcp4_end is not None:
-        update_data.append(('/networks/{}/dhcp4_end'.format(vni), dhcp4_end))
+        update_data.append((('network.ip4.dhcp_end', vni), dhcp4_end))
 
     zkhandler.write(update_data)
 
@@ -332,7 +328,9 @@ def remove_network(zkhandler, network):
         return False, 'ERROR: Could not find network "{}" in the cluster!'.format(network)
 
     # Delete the configuration
-    zkhandler.delete('/networks/{}'.format(vni))
+    zkhandler.delete([
+        ('network', vni)
+    ])
 
     return True, 'Network "{}" removed successfully!'.format(description)
 
@@ -352,18 +350,15 @@ def add_dhcp_reservation(zkhandler, network, ipaddress, macaddress, hostname):
     if not isValidIP(ipaddress):
         return False, 'ERROR: IP address "{}" is not valid!'.format(macaddress)
 
-    if zkhandler.exists('/networks/{}/dhcp4_reservations/{}'.format(net_vni, macaddress)):
+    if zkhandler.exists(('network.reservation', net_vni, 'reservation', macaddress)):
         return False, 'ERROR: A reservation with MAC "{}" already exists!'.format(macaddress)
 
     # Add the new static lease to ZK
-    try:
-        zkhandler.write([
-            ('/networks/{}/dhcp4_reservations/{}'.format(net_vni, macaddress), 'static'),
-            ('/networks/{}/dhcp4_reservations/{}/hostname'.format(net_vni, macaddress), hostname),
-            ('/networks/{}/dhcp4_reservations/{}/ipaddr'.format(net_vni, macaddress), ipaddress)
-        ])
-    except Exception as e:
-        return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
+    zkhandler.write([
+        (('network.reservation', net_vni, 'reservation', macaddress), 'static'),
+        (('network.reservation', net_vni, 'reservation.hostname', macaddress), hostname),
+        (('network.reservation', net_vni, 'reservation.ip', macaddress), ipaddress),
+    ])
 
     return True, 'DHCP reservation "{}" added successfully!'.format(macaddress)
 
@@ -379,28 +374,30 @@ def remove_dhcp_reservation(zkhandler, network, reservation):
     # Check if the reservation matches a static reservation description, a mac, or an IP address currently in the database
     dhcp4_reservations_list = getNetworkDHCPReservations(zkhandler, net_vni)
     for macaddr in dhcp4_reservations_list:
-        hostname = zkhandler.read('/networks/{}/dhcp4_reservations/{}/hostname'.format(net_vni, macaddr))
-        ipaddress = zkhandler.read('/networks/{}/dhcp4_reservations/{}/ipaddr'.format(net_vni, macaddr))
+        hostname = zkhandler.read(('network.reservation', net_vni, 'reservation.hostname', macaddr))
+        ipaddress = zkhandler.read(('network.reservation', net_vni, 'reservation.ip', macaddr))
         if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
-            lease_type_zk = 'reservations'
+            lease_type_zk = 'reservation'
             lease_type_human = 'static reservation'
 
     # Check if the reservation matches a dynamic reservation description, a mac, or an IP address currently in the database
     dhcp4_leases_list = getNetworkDHCPLeases(zkhandler, net_vni)
     for macaddr in dhcp4_leases_list:
-        hostname = zkhandler.read('/networks/{}/dhcp4_leases/{}/hostname'.format(net_vni, macaddr))
-        ipaddress = zkhandler.read('/networks/{}/dhcp4_leases/{}/ipaddr'.format(net_vni, macaddr))
+        hostname = zkhandler.read(('network.lease', net_vni, 'lease.hostname', macaddr))
+        ipaddress = zkhandler.read(('network.lease', net_vni, 'lease.ip', macaddr))
         if reservation == macaddr or reservation == hostname or reservation == ipaddress:
             match_description = macaddr
-            lease_type_zk = 'leases'
+            lease_type_zk = 'lease'
             lease_type_human = 'dynamic lease'
 
     if not match_description:
         return False, 'ERROR: No DHCP reservation or lease exists matching "{}"!'.format(reservation)
 
     # Remove the entry from zookeeper
-    zkhandler.delete('/networks/{}/dhcp4_{}/{}'.format(net_vni, lease_type_zk, match_description))
+    zkhandler.delete([
+        (f'network.{lease_type_zk}', net_vni, f'{lease_type_zk}', match_description),
+    ])
 
     return True, 'DHCP {} "{}" removed successfully!'.format(lease_type_human, match_description)
 
@@ -449,14 +446,14 @@ def add_acl(zkhandler, network, direction, description, rule, order):
             continue
         else:
             zkhandler.write([
-                ('/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, acl['description']), idx)
+                ((f'network.rule.{direction}', net_vni, 'rule.order', acl['description']), idx)
             ])
 
     # Add the new rule
     zkhandler.write([
-        ('/networks/{}/firewall_rules/{}/{}'.format(net_vni, direction, description), ''),
-        ('/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, direction, description), order),
-        ('/networks/{}/firewall_rules/{}/{}/rule'.format(net_vni, direction, description), rule)
+        ((f'network.rule.{direction}', net_vni, 'rule', description), ''),
+        ((f'network.rule.{direction}', net_vni, 'rule.order', description), order),
+        ((f'network.rule.{direction}', net_vni, 'rule.rule', description), rule),
     ])
 
     return True, 'Firewall rule "{}" added successfully!'.format(description)
@@ -481,10 +478,9 @@ def remove_acl(zkhandler, network, description):
         return False, 'ERROR: No firewall rule exists matching description "{}"!'.format(description)
 
     # Remove the entry from zookeeper
-    try:
-        zkhandler.delete('/networks/{}/firewall_rules/{}/{}'.format(net_vni, match_direction, match_description))
-    except Exception as e:
-        return False, 'ERROR: Failed to write to Zookeeper! Exception: "{}".'.format(e)
+    zkhandler.delete([
+        (f'network.rule.{match_direction}', net_vni, 'rule', match_description)
+    ])
 
     # Update the existing ordering
     updated_acl_list = getNetworkACLs(zkhandler, net_vni, match_direction)
@@ -496,7 +492,7 @@ def remove_acl(zkhandler, network, description):
             continue
         else:
             zkhandler.write([
-                ('/networks/{}/firewall_rules/{}/{}/order'.format(net_vni, match_direction, acl['description']), idx)
+                ((f'network.rule.{match_direction}', net_vni, 'rule.order', acl['description']), idx),
             ])
 
     return True, 'Firewall rule "{}" removed successfully!'.format(match_description)
@@ -517,10 +513,10 @@ def get_info(zkhandler, network):
 
 def get_list(zkhandler, limit, is_fuzzy=True):
     net_list = []
-    full_net_list = zkhandler.children('/networks')
+    full_net_list = zkhandler.children('base.network')
 
     for net in full_net_list:
-        description = zkhandler.read('/networks/{}'.format(net))
+        description = zkhandler.read(('network', net))
         if limit:
             try:
                 if not is_fuzzy:
