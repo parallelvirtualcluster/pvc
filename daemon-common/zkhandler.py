@@ -23,6 +23,7 @@ import os
 import time
 import uuid
 import json
+import re
 from functools import wraps
 from kazoo.client import KazooClient, KazooState
 from kazoo.exceptions import NoNodeError
@@ -179,6 +180,10 @@ class ZKHandler(object):
             # This is a key string with just an ipath
             ipath = key
             item = None
+
+            # Temporary workaround until I refactor API
+            if re.match(r'^/', ipath):
+                return ipath
         else:
             # This is an invalid key
             return None
@@ -498,6 +503,7 @@ class ZKSchema(object):
             'nameservers': '/name_servers',
             'domain': '/domain',
             'reservation': '/dhcp4_reservations',
+            'lease': '/dhcp4_leases',
             'ip4.gateway': '/ip4_gateway',
             'ip4.network': '/ip4_network',
             'ip4.dhcp': '/dhcp4_flag',
@@ -512,6 +518,14 @@ class ZKSchema(object):
             'mac': '',  # The root key
             'ip': '/ipaddr',
             'hostname': '/hostname'
+        },
+        # The schema of an individual network DHCP(v4) lease entry (/networks/{vni}/dhcp4_leases/{mac})
+        'lease': {
+            'mac': '',  # The root key
+            'ip': '/ipaddr',
+            'hostname': '/hostname',
+            'expiry': '/expiry',
+            'client_id': '/clientid'
         },
         # The schema for an individual network ACL entry (/networks/{vni}/firewall_rules/(in|out)/{acl}
         'rule': {
