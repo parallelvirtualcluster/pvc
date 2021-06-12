@@ -133,7 +133,7 @@ def validateUUID(dom_uuid):
 #
 def getDomainXML(zkhandler, dom_uuid):
     try:
-        xml = zkhandler.read('/domains/{}/xml'.format(dom_uuid))
+        xml = zkhandler.read(('domain.xml', dom_uuid))
     except Exception:
         return None
 
@@ -260,25 +260,25 @@ def getInformationFromXML(zkhandler, uuid):
     Gather information about a VM from the Libvirt XML configuration in the Zookeper database
     and return a dict() containing it.
     """
-    domain_state = zkhandler.read('/domains/{}/state'.format(uuid))
-    domain_node = zkhandler.read('/domains/{}/node'.format(uuid))
-    domain_lastnode = zkhandler.read('/domains/{}/lastnode'.format(uuid))
-    domain_failedreason = zkhandler.read('/domains/{}/failedreason'.format(uuid))
+    domain_state = zkhandler.read(('domain.state', uuid))
+    domain_node = zkhandler.read(('domain.node', uuid))
+    domain_lastnode = zkhandler.read(('domain.last_node', uuid))
+    domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
 
     try:
-        domain_node_limit = zkhandler.read('/domains/{}/node_limit'.format(uuid))
+        domain_node_limit = zkhandler.read(('domain.meta.node_limit', uuid))
     except Exception:
         domain_node_limit = None
     try:
-        domain_node_selector = zkhandler.read('/domains/{}/node_selector'.format(uuid))
+        domain_node_selector = zkhandler.read(('domain.meta.node_selector', uuid))
     except Exception:
         domain_node_selector = None
     try:
-        domain_node_autostart = zkhandler.read('/domains/{}/node_autostart'.format(uuid))
+        domain_node_autostart = zkhandler.read(('domain.meta.autostart', uuid))
     except Exception:
         domain_node_autostart = None
     try:
-        domain_migration_method = zkhandler.read('/domains/{}/migration_method'.format(uuid))
+        domain_migration_method = zkhandler.read(('domain.meta.migrate_method', uuid))
     except Exception:
         domain_migration_method = None
 
@@ -291,12 +291,12 @@ def getInformationFromXML(zkhandler, uuid):
         domain_node_autostart = None
 
     try:
-        domain_profile = zkhandler.read('/domains/{}/profile'.format(uuid))
+        domain_profile = zkhandler.read(('domain.profile', uuid))
     except Exception:
         domain_profile = None
 
     try:
-        domain_vnc = zkhandler.read('/domains/{}/vnc'.format(uuid))
+        domain_vnc = zkhandler.read(('domain.console.vnc', uuid))
         domain_vnc_listen, domain_vnc_port = domain_vnc.split(':')
     except Exception:
         domain_vnc_listen = 'None'
@@ -305,7 +305,7 @@ def getInformationFromXML(zkhandler, uuid):
     parsed_xml = getDomainXML(zkhandler, uuid)
 
     try:
-        stats_data = loads(zkhandler.read('/domains/{}/stats'.format(uuid)))
+        stats_data = loads(zkhandler.read(('domain.stats', uuid)))
     except Exception:
         stats_data = {}
 
@@ -439,7 +439,7 @@ def getDomainControllers(parsed_xml):
 # Verify node is valid in cluster
 #
 def verifyNode(zkhandler, node):
-    return zkhandler.exists('/nodes/{}'.format(node))
+    return zkhandler.exists(('node', node))
 
 
 #
@@ -449,7 +449,7 @@ def getPrimaryNode(zkhandler):
     failcount = 0
     while True:
         try:
-            primary_node = zkhandler.read('/config/primary_node')
+            primary_node = zkhandler.read('base.config.primary_node')
         except Exception:
             primary_node == 'none'
 
@@ -473,7 +473,7 @@ def getPrimaryNode(zkhandler):
 def findTargetNode(zkhandler, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
-        node_limit = zkhandler.read('/domains/{}/node_limit'.format(dom_uuid)).split(',')
+        node_limit = zkhandler.read(('domain.meta.node_limit', dom_uuid)).split(',')
         if not any(node_limit):
             node_limit = None
     except Exception:
@@ -481,13 +481,13 @@ def findTargetNode(zkhandler, dom_uuid):
 
     # Determine VM search field or use default; set config value if read fails
     try:
-        search_field = zkhandler.read('/domains/{}/node_selector'.format(dom_uuid))
+        search_field = zkhandler.read(('domain.meta.node_selector', dom_uuid))
     except Exception:
         search_field = None
 
     # If our search field is invalid, use the default
     if search_field is None or search_field == 'None':
-        search_field = zkhandler.read('/config/migration_target_selector')
+        search_field = zkhandler.read('base.config.migration_target_selector')
 
     # Execute the search
     if search_field == 'mem':
@@ -508,15 +508,15 @@ def findTargetNode(zkhandler, dom_uuid):
 #
 def getNodes(zkhandler, node_limit, dom_uuid):
     valid_node_list = []
-    full_node_list = zkhandler.children('/nodes')
-    current_node = zkhandler.read('/domains/{}/node'.format(dom_uuid))
+    full_node_list = zkhandler.children('base.node')
+    current_node = zkhandler.read(('domain.node', dom_uuid))
 
     for node in full_node_list:
         if node_limit and node not in node_limit:
             continue
 
-        daemon_state = zkhandler.read('/nodes/{}/daemonstate'.format(node))
-        domain_state = zkhandler.read('/nodes/{}/domainstate'.format(node))
+        daemon_state = zkhandler.read(('node.state.daemon', node))
+        domain_state = zkhandler.read(('node.state.domain', node))
 
         if node == current_node:
             continue
@@ -538,9 +538,9 @@ def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        memprov = int(zkhandler.read('/nodes/{}/memprov'.format(node)))
-        memused = int(zkhandler.read('/nodes/{}/memused'.format(node)))
-        memfree = int(zkhandler.read('/nodes/{}/memfree'.format(node)))
+        memprov = int(zkhandler.read(('node.memory.prov', node)))
+        memused = int(zkhandler.read(('node.memory.used', node)))
+        memfree = int(zkhandler.read(('node.memory.free', node)))
         memtotal = memused + memfree
         provfree = memtotal - memprov
 
@@ -560,7 +560,7 @@ def findTargetNodeLoad(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        load = float(zkhandler.read('/nodes/{}/cpuload'.format(node)))
+        load = float(zkhandler.read(('node.cpu.load', node)))
 
         if load < least_load:
             least_load = load
@@ -578,7 +578,7 @@ def findTargetNodeVCPUs(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        vcpus = int(zkhandler.read('/nodes/{}/vcpualloc'.format(node)))
+        vcpus = int(zkhandler.read(('node.vcpu.allocated', node)))
 
         if vcpus < least_vcpus:
             least_vcpus = vcpus
@@ -596,7 +596,7 @@ def findTargetNodeVMs(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        vms = int(zkhandler.read('/nodes/{}/domainscount'.format(node)))
+        vms = int(zkhandler.read(('node.count.provisioned_domains', node)))
 
         if vms < least_vms:
             least_vms = vms
