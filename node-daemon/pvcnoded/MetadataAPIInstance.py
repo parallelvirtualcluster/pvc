@@ -152,8 +152,11 @@ class MetadataAPIInstance(object):
         cur.execute(query, args)
         data_raw = cur.fetchone()
         self.close_database(conn, cur)
-        data = data_raw.get('userdata', None)
-        return data
+        if data_raw is not None:
+            data = data_raw.get('userdata', None)
+            return data
+        else:
+            return None
 
     # VM details function
     def get_vm_details(self, source_address):
