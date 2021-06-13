@@ -181,7 +181,7 @@ class ZKHandler(object):
             ipath = key
             item = None
 
-            # Temporary workaround until I refactor API
+            # This is a raw key path, used by backup/restore functionality
             if re.match(r'^/', ipath):
                 return ipath
         else:
@@ -429,6 +429,7 @@ class ZKSchema(object):
         'root': f'{_schema_root}',
         # Base schema defining core keys; this is all that is initialized on cluster init()
         'base': {
+            'root': f'{_schema_root}',
             'schema': f'{_schema_root}/schema',
             'schema.version': f'{_schema_root}/schema/version',
             'config': f'{_schema_root}/config',
@@ -453,6 +454,7 @@ class ZKSchema(object):
         },
         # The schema of an individual node entry (/nodes/{node_name})
         'node': {
+            'name': '',  # The root key
             'keepalive': '/keepalive',
             'mode': '/daemonmode',
             'data.active_schema': '/activeschema',
@@ -496,6 +498,7 @@ class ZKSchema(object):
         },
         # The schema of an individual network entry (/networks/{vni})
         'network': {
+            'vni': '',  # The root key
             'type': '/nettype',
             'rule': '/firewall_rules',
             'rule.in': '/firewall_rules/in',
@@ -529,26 +532,31 @@ class ZKSchema(object):
         },
         # The schema for an individual network ACL entry (/networks/{vni}/firewall_rules/(in|out)/{acl}
         'rule': {
+            'description': '',  # The root key
             'rule': '/rule',
             'order': '/order'
         },
         # The schema of an individual OSD entry (/ceph/osds/{osd_id})
         'osd': {
+            'id': '',  # The root key
             'node': '/node',
             'device': '/device',
             'stats': '/stats'
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})
         'pool': {
+            'name': '',  # The root key
             'pgs': '/pgs',
             'stats': '/stats'
         },
         # The schema of an individual volume entry (/ceph/volumes/{pool_name}/{volume_name})
         'volume': {
+            'name': '',  # The root key
             'stats': '/stats'
         },
         # The schema of an individual snapshot entry (/ceph/volumes/{pool_name}/{volume_name}/{snapshot_name})
         'snapshot': {
+            'name': '',  # The root key
             'stats': '/stats'
         }
     }
