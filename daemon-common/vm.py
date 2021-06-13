@@ -211,7 +211,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         formatted_rbd_list = ''
 
     # Add the new domain to Zookeeper
-    zkhandler.write([
+    result = zkhandler.write([
         (('domain', dom_uuid), dom_name),
         (('domain.xml', dom_uuid), config_data),
         (('domain.state', dom_uuid), initial_state),
@@ -227,10 +227,13 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         (('domain.meta.migrate_method', dom_uuid), migration_method),
         (('domain.meta.node_limit', dom_uuid), formatted_node_limit),
         (('domain.meta.node_selector', dom_uuid), node_selector),
-        (('domain.migrate.sync-lock', dom_uuid), ''),
+        (('domain.migrate.sync_lock', dom_uuid), ''),
     ])
 
-    return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
+    if result:
+        return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
+    else:
+        return False, 'ERROR: Failed to add new VM.'
 
 
 def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
