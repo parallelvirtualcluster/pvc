@@ -255,14 +255,14 @@ def add_network(zkhandler, vni, description, nettype,
         domain = '{}.local'.format(description)
 
     # Add the new network to Zookeeper
-    zkhandler.write([
+    result = zkhandler.write([
         (('network', vni), description),
         (('network.type', vni), nettype),
         (('network.domain', vni), domain),
         (('network.nameservers', vni), name_servers),
         (('network.ip6.network', vni), ip6_network),
         (('network.ip6.gateway', vni), ip6_gateway),
-        (('network.ip4.dhcp', vni), dhcp6_flag),
+        (('network.ip6.dhcp', vni), dhcp6_flag),
         (('network.ip4.network', vni), ip4_network),
         (('network.ip4.gateway', vni), ip4_gateway),
         (('network.ip4.dhcp', vni), dhcp4_flag),
@@ -275,7 +275,10 @@ def add_network(zkhandler, vni, description, nettype,
         (('network.rule.out', vni), '')
     ])
 
-    return True, 'Network "{}" added successfully!'.format(description)
+    if result:
+        return True, 'Network "{}" added successfully!'.format(description)
+    else:
+        return False, 'ERROR: Failed to add network.'
 
 
 def modify_network(zkhandler, vni, description=None, domain=None, name_servers=None,
