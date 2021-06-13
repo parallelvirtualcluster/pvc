@@ -538,7 +538,7 @@ def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        memprov = int(zkhandler.read(('node.memory.prov', node)))
+        memprov = int(zkhandler.read(('node.memory.provisioned', node)))
         memused = int(zkhandler.read(('node.memory.used', node)))
         memfree = int(zkhandler.read(('node.memory.free', node)))
         memtotal = memused + memfree
