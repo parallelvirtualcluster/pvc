@@ -200,7 +200,7 @@ class VMInstance(object):
                 self.this_node.domain_list.append(self.domuuid)
                 # Push the change up to Zookeeper
                 self.zkhandler.write([
-                    (('node.running_domains', self.this_node_name), ' '.join(self.this_node.domain_list))
+                    (('node.running_domains', self.this_node.name), ' '.join(self.this_node.domain_list))
                 ])
             except Exception as e:
                 self.logger.out('Error adding domain to list: {}'.format(e), state='e')
@@ -212,7 +212,7 @@ class VMInstance(object):
                 self.this_node.domain_list.remove(self.domuuid)
                 # Push the change up to Zookeeper
                 self.zkhandler.write([
-                    (('node.running_domains', self.this_node_name), ' '.join(self.this_node.domain_list))
+                    (('node.running_domains', self.this_node.name), ' '.join(self.this_node.domain_list))
                 ])
             except Exception as e:
                 self.logger.out('Error removing domain from list: {}'.format(e), state='e')
