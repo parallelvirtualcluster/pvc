@@ -318,12 +318,12 @@ def cluster_restore(zkhandler, cluster_data):
     kv = []
     schema_version = None
     for key in cluster_data:
-        if key == zkhandler.zkschema.path('base.schema.version'):
+        if key == zkhandler.schema.path('base.schema.version'):
             schema_version = cluster_data[key]
         data = cluster_data[key]
         kv.append((key, data))
 
-    if schema_version != zkhandler.schema.version:
+    if int(schema_version) != int(zkhandler.schema.version):
         return False, 'ERROR: Schema version of backup ({}) does not match cluster schema version ({}).'.format(schema_version, zkhandler.schema.version)
 
     # Close the Zookeeper connection
