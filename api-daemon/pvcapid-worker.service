@@ -9,7 +9,7 @@ Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVC_CONFIG_FILE=/etc/pvc/pvcapid.yaml
-ExecStart = /usr/bin/celery worker -A pvcapid.flaskapi.celery --concurrency 1 --loglevel INFO
+ExecStart = /usr/bin/celery --app pvcapid.flaskapi.celery worker --concurrency 1 --loglevel INFO
 Restart = on-failure
 
 [Install]
