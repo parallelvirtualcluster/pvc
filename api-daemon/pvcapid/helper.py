@@ -45,89 +45,33 @@ def initialize_cluster(zkhandler, overwrite=False):
     """
     Initialize a new cluster
     """
-    # Abort if we've initialized the cluster before
-    if zkhandler.exists('/config/primary_node') and not overwrite:
-        return False
+    retflag, retmsg = pvc_cluster.cluster_initialize(zkhandler, overwrite)
 
-    if overwrite:
-        # Delete the existing keys; ignore any errors
-        status = zkhandler.delete([
-            '/config'
-            '/nodes',
-            '/domains',
-            '/networks',
-            '/ceph',
-            '/ceph/osds',
-            '/ceph/pools',
-            '/ceph/volumes',
-            '/ceph/snapshots',
-            '/cmd',
-            '/cmd/domains',
-            '/cmd/ceph',
-            '/locks',
-            '/locks/flush_lock',
-            '/locks/primary_node'
-        ], recursive=True)
+    retmsg = {
+        'message': retmsg
+    }
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
 
-        if not status:
-            return False
-
-    # Create the root keys
-    status = zkhandler.write([
-        ('/config', ''),
-        ('/config/primary_node', 'none'),
-        ('/config/upstream_ip', 'none'),
-        ('/config/maintenance', 'False'),
-        ('/config/migration_target_selector', 'none'),
-        ('/nodes', ''),
-        ('/domains', ''),
-        ('/networks', ''),
-        ('/ceph', ''),
-        ('/ceph/osds', ''),
-        ('/ceph/pools', ''),
-        ('/ceph/volumes', ''),
-        ('/ceph/snapshots', ''),
-        ('/cmd', ''),
-        ('/cmd/domains', ''),
-        ('/cmd/ceph', ''),
-        ('/locks', ''),
-        ('/locks/flush_lock', ''),
-        ('/locks/primary_node', ''),
-    ])
-
-    return status
+    return retmsg, retcode
 
 
 @ZKConnection(config)
 def backup_cluster(zkhandler):
-    # Dictionary of values to come
-    cluster_data = dict()
+    retflag, retdata = pvc_cluster.cluster_backup(zkhandler)
 
-    def get_data(path):
-        data = zkhandler.read(path)
-        children = zkhandler.children(path)
+    if retflag:
+        retcode = 200
+        retdata = json.dumps(retdata)
+    else:
+        retcode = 400
+        retdata = {
+            'message': retdata
+        }
 
-        cluster_data[path] = data
-
-        if children:
-            if path == '/':
-                child_prefix = '/'
-            else:
-                child_prefix = path + '/'
-
-            for child in children:
-                if child_prefix + child == '/zookeeper':
-                    # We must skip the built-in /zookeeper tree
-                    continue
-                if child_prefix + child == '/patroni':
-                    # We must skip the /patroni tree
-                    continue
-
-                get_data(child_prefix + child)
-
-    get_data('/')
-
-    return json.dumps(cluster_data), 200
+    return retdata, retcode
 
 
 @ZKConnection(config)
@@ -135,21 +79,19 @@ def restore_cluster(zkhandler, cluster_data_raw):
     try:
         cluster_data = json.loads(cluster_data_raw)
     except Exception as e:
-        return {"message": "Failed to parse JSON data: {}.".format(e)}, 400
+        return {'message': 'ERROR: Failed to parse JSON data: {}'.format(e)}, 400
 
-    # Build a key+value list
-    kv = []
-    for key in cluster_data:
-        data = cluster_data[key]
-        kv.append((key, data))
+    retflag, retdata = pvc_cluster.cluster_restore(zkhandler, cluster_data)
 
-    # Close the Zookeeper connection
-    result = zkhandler.write(kv)
-
-    if result:
-        return {'message': 'Restore completed successfully.'}, 200
+    retdata = {
+        'message': retdata
+    }
+    if retflag:
+        retcode = 200
     else:
-        return {'message': 'Restore failed.'}, 500
+        retcode = 400
+
+    return retdata, retcode
 
 
 #

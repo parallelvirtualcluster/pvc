@@ -259,3 +259,77 @@ def get_info(zkhandler):
         return True, cluster_information
     else:
         return False, 'ERROR: Failed to obtain cluster information!'
+
+
+def cluster_initialize(zkhandler, overwrite=False):
+    # Abort if we've initialized the cluster before
+    if zkhandler.exists('base.config.primary_node') and not overwrite:
+        return False, 'ERROR: Cluster contains data and overwrite not set.'
+
+    if overwrite:
+        # Delete the existing keys; ignore any errors
+        status = zkhandler.delete(zkhandler.schema.keys('base'), recursive=True)
+
+        if not status:
+            return False, 'ERROR: Failed to delete data in cluster; running nodes perhaps?'
+
+    # Create the root keys
+    zkhandler.schema.apply(zkhandler)
+
+    return True, 'Successfully initialized cluster'
+
+
+def cluster_backup(zkhandler):
+    # Dictionary of values to come
+    cluster_data = dict()
+
+    def get_data(path):
+        data = zkhandler.read(path)
+        children = zkhandler.children(path)
+
+        cluster_data[path] = data
+
+        if children:
+            if path == '/':
+                child_prefix = '/'
+            else:
+                child_prefix = path + '/'
+
+            for child in children:
+                if child_prefix + child == '/zookeeper':
+                    # We must skip the built-in /zookeeper tree
+                    continue
+                if child_prefix + child == '/patroni':
+                    # We must skip the /patroni tree
+                    continue
+
+                get_data(child_prefix + child)
+
+    try:
+        get_data('/')
+    except Exception as e:
+        return False, 'ERROR: Failed to obtain backup: {}'.format(e)
+
+    return True, cluster_data
+
+
+def cluster_restore(zkhandler, cluster_data):
+    # Build a key+value list
+    kv = []
+    schema_version = None
+    for key in cluster_data:
+        if key == zkhandler.zkschema.path('base.schema.version'):
+            schema_version = cluster_data[key]
+        data = cluster_data[key]
+        kv.append((key, data))
+
+    if schema_version != zkhandler.schema.version:
+        return False, 'ERROR: Schema version of backup ({}) does not match cluster schema version ({}).'.format(schema_version, zkhandler.schema.version)
+
+    # Close the Zookeeper connection
+    result = zkhandler.write(kv)
+
+    if result:
+        return True, 'Restore completed successfully.'
+    else:
+        return False, 'Restore failed.'
