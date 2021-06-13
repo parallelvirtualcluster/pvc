@@ -208,8 +208,13 @@ class ZKHandler(object):
         """
         Read data from a key
         """
-        path = self.get_schema_path(key)
-        return self.zk_conn.get(path)[0].decode(self.encoding)
+        if self.exists(key):
+            path = self.get_schema_path(key)
+            data = self.zk_conn.get(path)[0].decode(self.encoding)
+        else:
+            data = None
+
+        return data
 
     def write(self, kvpairs):
         """
