@@ -110,7 +110,7 @@ def getNetworkACLs(zkhandler, vni, _direction):
 
     full_acl_list = []
     for direction in directions:
-        unordered_acl_list = zkhandler.children((f'network.rules.{direction}', vni))
+        unordered_acl_list = zkhandler.children((f'network.rule.{direction}', vni))
         if len(unordered_acl_list) < 1:
             continue
 
