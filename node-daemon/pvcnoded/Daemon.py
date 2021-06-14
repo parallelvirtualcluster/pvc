@@ -21,6 +21,7 @@
 
 import kazoo.client
 import libvirt
+import sys
 import os
 import signal
 import psutil
@@ -561,9 +562,10 @@ def update_schema(new_schema_version, stat, event=''):
     new_schema_version = int(new_schema_version.decode('ascii'))
 
     if new_schema_version == node_schema_version:
-        return
+        return True
 
     logger.out('Hot update of schema version started', state='s')
+    logger.out('Current version: {}  New version: {}'.format(node_schema_version, new_schema_version), state='s')
 
     # Prevent any keepalive updates while this happens
     if update_timer is not None:
@@ -595,31 +597,26 @@ def update_schema(new_schema_version, stat, event=''):
         time.sleep(1)
 
     # Update the local schema version
-    logger.out('Updating node schema version', state='s')
-    zkhandler.schema.load(new_schema_version)
+    logger.out('Updating node target schema version', state='s')
     zkhandler.write([
         (('node.data.active_schema', myhostname), new_schema_version)
     ])
     node_schema_version = new_schema_version
-    time.sleep(1)
 
     # Restart the API daemons if applicable
-    logger.out('Restarting API services', state='s')
+    logger.out('Restarting services', state='s')
+    common.run_os_command('systemctl restart pvcapid-worker.service')
     if zkhandler.read('base.config.primary_node') == myhostname:
-        common.run_os_command('systemctl start pvcapid.service')
-        common.run_os_command('systemctl start pvcapid-worker.service')
+        common.run_os_command('systemctl restart pvcapid.service')
 
-    # Terminate ourselves and restart with the new schema
-    # THIS IS SUBOPTIMAL, but since DataWatch and ChildrenWatch elements in Kazoo cannot
-    # be hot updated, a restart of the service is required for the change to be picked up.
-    logger.out('Restarting node daemon', state='s')
+    # Restart ourselves with the new schema
+    logger.out('Reloading node daemon', state='s')
     try:
         zkhandler.disconnect()
         del zkhandler
     except Exception:
         pass
-
-    os._exit(150)
+    os.execv(sys.argv[0], sys.argv)
 
 
 # If we are the last node to get a schema update, fire the master update
