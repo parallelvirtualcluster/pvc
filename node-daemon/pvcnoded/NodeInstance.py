@@ -503,6 +503,7 @@ class NodeInstance(object):
         # 6. Start client API (and provisioner worker)
         if self.config['enable_api']:
             self.logger.out('Starting PVC API client service', state='i')
+            common.run_os_command("systemctl enable pvcapid.service")
             common.run_os_command("systemctl start pvcapid.service")
             self.logger.out('Starting PVC Provisioner Worker service', state='i')
             common.run_os_command("systemctl start pvcapid-worker.service")
@@ -567,6 +568,7 @@ class NodeInstance(object):
         if self.config['enable_api']:
             self.logger.out('Stopping PVC API client service', state='i')
             common.run_os_command("systemctl stop pvcapid.service")
+            common.run_os_command("systemctl disable pvcapid.service")
         # 4. Stop metadata API
         self.metadata_api.stop()
         time.sleep(0.1)  # Time fir new writer to acquire the lock
