@@ -18,6 +18,15 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.20
+
+  * [Daemons] Implemented a Zookeeper schema handler and version 0 schema
+  * [Daemons] Completes major refactoring of codebase to make use of the schema handler
+  * [Daemons] Adds support for dynamic chema changges and "hot reloading" of pvcnoded processes
+  * [Daemons] Adds a functional testing script for verifying operation against a test cluster
+  * [Daemons, CLI] Fixes several minor bugs found by the above script
+  * [Daemons, CLI] Add support for Debian 11 "Bullseye"
+
 #### v0.9.19
 
   * [CLI] Corrects some flawed conditionals
