@@ -152,13 +152,11 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=12
 
 
 def cleanup(retcode, retmsg):
+    if retmsg != '':
+        click.echo(retmsg)
     if retcode is True:
-        if retmsg != '':
-            click.echo(retmsg)
         exit(0)
     else:
-        if retmsg != '':
-            click.echo(retmsg)
         exit(1)
 
 
@@ -1576,24 +1574,34 @@ def vm_info(domain, long_output):
 # pvc vm dump
 ###############################################################################
 @click.command(name='dump', short_help='Dump a virtual machine XML to stdout.')
+@click.option(
+    '-f', '--file', 'filename',
+    default=None, type=click.File(mode='w'),
+    help='Write VM XML to this file.'
+)
 @click.argument(
     'domain'
 )
 @cluster_req
-def vm_dump(domain):
+def vm_dump(filename, domain):
     """
     Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
     """
 
-    retcode, vm_information = pvc_vm.vm_info(config, domain)
-    if not retcode or not vm_information.get('name', None):
+    retcode, retdata = pvc_vm.vm_info(config, domain)
+    if not retcode or not retdata.get('name', None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    # Grab the current config
-    current_vm_cfg_raw = vm_information.get('xml')
+    current_vm_cfg_raw = retdata.get('xml')
     xml_data = etree.fromstring(current_vm_cfg_raw)
     current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
-    click.echo(current_vm_cfgfile.strip())
+    xml = current_vm_cfgfile.strip()
+
+    if filename is not None:
+        filename.write(xml)
+        cleanup(retcode, 'VM XML written to "{}".'.format(filename.name))
+    else:
+        cleanup(retcode, xml)
 
 
 ###############################################################################
