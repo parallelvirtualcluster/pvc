@@ -19,8 +19,6 @@
 #
 ###############################################################################
 
-import ast
-
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 
 import cli_lib.ansiprint as ansiprint
@@ -721,10 +719,10 @@ def task_status(config, task_id=None, is_watching=False):
                         task['type'] = task_type
                     task['worker'] = task_host
                     task['id'] = task_job.get('id')
-                    task_args = ast.literal_eval(task_job.get('args'))
+                    task_args = task_job.get('args')
                     task['vm_name'] = task_args[0]
                     task['vm_profile'] = task_args[1]
-                    task_kwargs = ast.literal_eval(task_job.get('kwargs'))
+                    task_kwargs = task_job.get('kwargs')
                     task['vm_define'] = str(bool(task_kwargs['define_vm']))
                     task['vm_start'] = str(bool(task_kwargs['start_vm']))
                     task_data.append(task)
