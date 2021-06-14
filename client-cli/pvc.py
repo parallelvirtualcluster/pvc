@@ -4252,7 +4252,7 @@ def cli_task():
 @click.command(name='backup', short_help='Create JSON backup of cluster.')
 @click.option(
     '-f', '--file', 'filename',
-    default=None, type=click.File(),
+    default=None, type=click.File(mode='w'),
     help='Write backup data to this file.'
 )
 @cluster_req
@@ -4262,11 +4262,14 @@ def task_backup(filename):
     """
 
     retcode, retdata = pvc_cluster.backup(config)
-    if filename:
-        with open(filename, 'wb') as fh:
-            fh.write(retdata)
-            retdata = 'Data written to {}'.format(filename)
-    cleanup(retcode, retdata)
+    if retcode:
+        if filename is not None:
+            json.dump(json.loads(retdata), filename)
+            cleanup(retcode, 'Backup written to "{}".'.format(filename.name))
+        else:
+            cleanup(retcode, retdata)
+    else:
+        cleanup(retcode, retdata)
 
 
 ###############################################################################
