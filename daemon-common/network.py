@@ -178,7 +178,7 @@ def getDHCPLeaseInformation(zkhandler, vni, mac_address):
 
     hostname = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.hostname', mac_address))
     ip4_address = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.ip', mac_address))
-    if type_key == 'dhcp4_leases':
+    if type_key == 'lease':
         timestamp = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.expiry', mac_address))
     else:
         timestamp = 'static'
