@@ -480,6 +480,9 @@ class AXFRDaemonInstance(object):
                             except psycopg2.IntegrityError as e:
                                 if self.config['debug']:
                                     self.logger.out('Failed to add record due to {}: {}'.format(e, name), state='d', prefix='dns-aggregator')
+                            except psycopg2.errors.InFailedSqlTransaction as e:
+                                if self.config['debug']:
+                                    self.logger.out('Failed to add record due to {}: {}'.format(e, name), state='d', prefix='dns-aggregator')
 
                     if changed:
                         # Increase SOA serial
