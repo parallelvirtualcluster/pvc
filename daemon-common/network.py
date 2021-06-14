@@ -171,12 +171,12 @@ def getDHCPLeaseInformation(zkhandler, vni, mac_address):
     # Check whether this is a dynamic or static lease
     if zkhandler.exists(('network.lease', vni, 'lease', mac_address)):
         type_key = 'lease'
-    if zkhandler.exists(('network.reservation', vni, 'reservation', mac_address)):
+    elif zkhandler.exists(('network.reservation', vni, 'reservation', mac_address)):
         type_key = 'reservation'
     else:
-        return {}
+        return None
 
-    hostname = zkhandler.read((f'network.{type_key}', vni, f'{type_key}', mac_address))
+    hostname = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.hostname', mac_address))
     ip4_address = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.ip', mac_address))
     if type_key == 'dhcp4_leases':
         timestamp = zkhandler.read((f'network.{type_key}', vni, f'{type_key}.expiry', mac_address))
