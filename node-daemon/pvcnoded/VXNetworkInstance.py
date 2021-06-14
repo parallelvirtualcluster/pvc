@@ -419,10 +419,10 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         full_ordered_rules = []
 
         for acl in self.firewall_rules_in:
-            order = self.zkhandler.read(('network.rule.in', self.vni, 'acl.order', acl))
+            order = self.zkhandler.read(('network.rule.in', self.vni, 'rule.order', acl))
             ordered_acls_in[order] = acl
         for acl in self.firewall_rules_out:
-            order = self.zkhandler.read(('network.rule.out', self.vni, 'acl.order', acl))
+            order = self.zkhandler.read(('network.rule.out', self.vni, 'rule.order', acl))
             ordered_acls_out[order] = acl
 
         for order in sorted(ordered_acls_in.keys()):
@@ -433,7 +433,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         for direction in 'in', 'out':
             for acl in sorted_acl_list[direction]:
                 rule_prefix = "add rule inet filter vxlan{}-{} counter".format(self.vni, direction)
-                rule_data = self.zkhandler.read((f'network.rule.{direction}', self.vni, 'acl.rule', acl))
+                rule_data = self.zkhandler.read((f'network.rule.{direction}', self.vni, 'rule.rule', acl))
                 rule = '{} {}'.format(rule_prefix, rule_data)
                 full_ordered_rules.append(rule)
 
