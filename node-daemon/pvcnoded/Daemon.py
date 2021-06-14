@@ -546,16 +546,10 @@ zkhandler.schema.load(node_schema_version)
 
 # Record the latest intalled schema version
 latest_schema_version = zkhandler.schema.find_latest()
+logger.out('Latest installed schema is {}'.format(latest_schema_version), state='i')
 zkhandler.write([
     (('node.data.latest_schema', myhostname), latest_schema_version)
 ])
-
-# Validate our schema against that version
-if not zkhandler.schema.validate(zkhandler, logger):
-    logger.out('Found schema violations, applying', state='i')
-    zkhandler.schema.apply(zkhandler)
-else:
-    logger.out('Schema successfully validated', state='o')
 
 
 # Watch for a global schema update and fire
@@ -601,7 +595,7 @@ def update_schema(new_schema_version, stat, event=''):
         time.sleep(1)
 
     # Update the local schema version
-    logger.out('Updating local schema', state='s')
+    logger.out('Updating node schema version', state='s')
     zkhandler.schema.load(new_schema_version)
     zkhandler.write([
         (('node.data.active_schema', myhostname), new_schema_version)
@@ -609,14 +603,23 @@ def update_schema(new_schema_version, stat, event=''):
     node_schema_version = new_schema_version
     time.sleep(1)
 
-    # Restart the update timer
-    if update_timer is not None:
-        update_timer = startKeepaliveTimer()
-
     # Restart the API daemons if applicable
+    logger.out('Restarting API services', state='s')
     if zkhandler.read('base.config.primary_node') == myhostname:
         common.run_os_command('systemctl start pvcapid.service')
         common.run_os_command('systemctl start pvcapid-worker.service')
+
+    # Terminate ourselves and restart with the new schema
+    # THIS IS SUBOPTIMAL, but since DataWatch and ChildrenWatch elements in Kazoo cannot
+    # be hot updated, a restart of the service is required for the change to be picked up.
+    logger.out('Restarting node daemon', state='s')
+    try:
+        zkhandler.disconnect()
+        del zkhandler
+    except Exception:
+        pass
+
+    os._exit(150)
 
 
 # If we are the last node to get a schema update, fire the master update
@@ -631,6 +634,14 @@ if latest_schema_version > node_schema_version:
         zkhandler.write([
             ('base.schema.version', latest_schema_version)
         ])
+
+# Validate our schema against the active version
+if not zkhandler.schema.validate(zkhandler, logger):
+    logger.out('Found schema violations, applying', state='i')
+    zkhandler.schema.apply(zkhandler)
+else:
+    logger.out('Schema successfully validated', state='o')
+
 
 ###############################################################################
 # PHASE 5 - Gracefully handle termination
