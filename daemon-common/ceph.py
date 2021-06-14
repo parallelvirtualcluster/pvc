@@ -144,7 +144,7 @@ def format_pct_tohuman(datapct):
 # Status functions
 #
 def get_status(zkhandler):
-    primary_node = zkhandler.read('base.primary_node')
+    primary_node = zkhandler.read('base.config.primary_node')
     ceph_status = zkhandler.read('base.storage').rstrip()
 
     # Create a data structure for the information
@@ -157,7 +157,7 @@ def get_status(zkhandler):
 
 
 def get_util(zkhandler):
-    primary_node = zkhandler.read('base.primary_node')
+    primary_node = zkhandler.read('base.config.primary_node')
     ceph_df = zkhandler.read('base.storage.util').rstrip()
 
     # Create a data structure for the information
