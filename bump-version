@@ -7,7 +7,7 @@ if [[ -z ${new_version} ]]; then
     exit 1
 fi
 
-current_version="$( grep 'version = ' node-daemon/pvcnoded/Daemon.py | awk -F "'" '{ print $2 }' )"
+current_version="$( grep '^version = ' node-daemon/pvcnoded/Daemon.py | awk -F "'" '{ print $2 }' )"
 echo "${current_version} -> ${new_version}"
 
 changelog_file=$( mktemp )
