@@ -300,7 +300,7 @@ class ZKHandler(object):
 
         transaction = self.zk_conn.transaction()
 
-        def rename_element(transaction, source_path, destnation_path):
+        def rename_element(transaction, source_path, destination_path):
             data = self.zk_conn.get(source_path)[0]
             transaction.create(destination_path, data)
 
