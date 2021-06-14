@@ -111,13 +111,20 @@ def getNetworkACLs(zkhandler, vni, _direction):
     full_acl_list = []
     for direction in directions:
         unordered_acl_list = zkhandler.children((f'network.rules.{direction}', vni))
+        if len(unordered_acl_list) < 1:
+            continue
+
         ordered_acls = dict()
         for acl in unordered_acl_list:
             order = zkhandler.read((f'network.rule.{direction}', vni, 'rule.order', acl))
+            if order is None:
+                continue
             ordered_acls[order] = acl
 
         for order in sorted(ordered_acls.keys()):
             rule = zkhandler.read((f'network.rule.{direction}', vni, 'rule.rule', acl))
+            if rule is None:
+                continue
             full_acl_list.append({'direction': direction, 'order': int(order), 'description': ordered_acls[order], 'rule': rule})
 
     return full_acl_list
