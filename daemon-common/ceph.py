@@ -738,7 +738,7 @@ def rename_snapshot(zkhandler, pool, volume, name, new_name):
         return False, 'ERROR: No snapshot with name "{}" is present for volume "{}" in pool "{}".'.format(name, volume, pool)
 
     # 1. Rename the snapshot
-    retcode, stdout, stderr = common.run_os_command('rbd snap rename {}/{}@{} {}'.format(pool, volume, name, new_name))
+    retcode, stdout, stderr = common.run_os_command('rbd snap rename {pool}/{volume}@{name} {pool}/{volume}@{new_name}'.format(pool=pool, volume=volume, name=name, new_name=new_name))
     if retcode:
         return False, 'ERROR: Failed to rename RBD snapshot "{}" to "{}" for volume "{}" in pool "{}": {}'.format(name, new_name, volume, pool, stderr)
 
