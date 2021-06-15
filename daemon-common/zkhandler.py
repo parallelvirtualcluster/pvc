@@ -751,7 +751,12 @@ class ZKSchema(object):
             for key in self.keys(elem):
                 kpath = f'{elem}.{key}'
                 if not zkhandler.zk_conn.exists(self.path(kpath)):
-                    zkhandler.zk_conn.create(self.path(kpath), ''.encode(zkhandler.encoding))
+                    # Ensure that we create base.schema.version with the current valid version value
+                    if kpath == 'base.schema.version':
+                        data = str(self.version)
+                    else:
+                        data = ''
+                    zkhandler.zk_conn.create(self.path(kpath), data.encode(zkhandler.encoding))
 
         for elem in ['node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
@@ -805,8 +810,6 @@ class ZKSchema(object):
                             # Validate that the key exists for that child
                             if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                                 zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
-
-        zkhandler.zk_conn.create(self.path('base.schema.version'), self.version)
 
     # Migrate key diffs
     def run_migrate(self, zkhandler, changes):
