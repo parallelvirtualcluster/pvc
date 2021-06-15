@@ -1242,13 +1242,7 @@ def format_list(config, vm_list, raw):
         # Network list
         net_list = []
         for net in domain_information['networks']:
-            # Split out just the numerical (VNI) part of the brXXXX name
-            net_vnis = re.findall(r'\d+', net['source'])
-            if net_vnis:
-                net_vni = net_vnis[0]
-            else:
-                net_vni = re.sub('br', '', net['source'])
-            net_list.append(net_vni)
+            net_list.append(net['vni'])
         return net_list
 
     # Handle raw mode since it just lists the names
@@ -1348,7 +1342,7 @@ def format_list(config, vm_list, raw):
         for net_vni in raw_net_list:
             if net_vni not in valid_net_list:
                 response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-                if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
+                if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^e.*', net_vni):
                     vm_net_colour = ansiprint.red()
                 else:
                     valid_net_list.append(net_vni)
