@@ -538,6 +538,8 @@ try:
     node_schema_version = int(zkhandler.read(('node.data.active_schema', myhostname)))
 except Exception:
     node_schema_version = zkhandler.read('base.schema.version')
+    if node_schema_version is None:
+        node_schema_version = 0
     zkhandler.write([
         (('node.data.active_schema', myhostname), node_schema_version)
     ])
@@ -559,7 +561,10 @@ zkhandler.write([
 def update_schema(new_schema_version, stat, event=''):
     global zkhandler, update_timer, node_schema_version
 
-    new_schema_version = int(new_schema_version.decode('ascii'))
+    try:
+        new_schema_version = int(new_schema_version.decode('ascii'))
+    except Exception:
+        new_schema_version = 0
 
     if new_schema_version == node_schema_version:
         return True
