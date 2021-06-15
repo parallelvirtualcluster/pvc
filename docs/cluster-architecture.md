@@ -235,9 +235,16 @@ When using geographic redundancy, there are several caveats to keep in mind:
 
 * The number of sites and positioning of coordinators at those sites is important. A majority (at least 2 in a 3-coordinator cluster, or 3 in a 5-coordinator) of coordinators must be able to reach each other in a failure scenario for the cluster as a whole to remain functional. Thus, configurations such as 2 + 1 or 3 + 2 splits across 2 sites do *not* provide full redundancy, and the whole cluster will be down if the majority site is down. It is thus recommended to always have an odd number of sites to match the odd number of coordinators, for instance a 1 + 1 + 1 or 2 + 2 + 1 configuration. Also note that all hypervisors much be able to reach the majority coordinator group or their storage will be impacted as well.
 
+    This diagram outlines the supported and unsupported/unreliable georedundant configurations for 3 nodes. Care must always be taken to ensure that the cluster can operate with the loss of any given georeundant site.
+
+    ![georeundancy-caveats](/images/georedundancy-caveats.png)
+
+    *Above: Supported and unsupported/unreliable georedundant configurations* 
+
 * Even if the PVC software itself is in an unmanageable state, VMs will continue to run if at all possible. However, since the storage subsystem makes use of the same quorum, losing more than half of the nodes will very likely result in storage interruption as well, which will affect running VMs.
 
 If these requirements cannot be fulfilled, it may be best to have separate PVC clusters at each site and handle service redundancy at a higher layer to avoid a major disruption.
+
 
 ## Example Configurations
 
