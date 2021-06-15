@@ -528,23 +528,7 @@ class VMInstance(object):
 
         def migrate_shutdown():
             self.logger.out('Shutting down VM for offline migration', state='i', prefix='Domain {}'.format(self.domuuid))
-            self.zkhandler.write([
-                (('domain.state', self.domuuid), 'shutdown')
-            ])
-
-            ticks = 0
-            while self.zkhandler.read(('domain.state', self.domuuid)) != 'stop':
-                ticks += 1
-                if ticks > self.config['vm_shutdown_timeout'] * 2:
-                    # We've hit the timeout, forcibly stop the VM and continue
-                    self.zkhandler.write([
-                        (('domain.state', self.domuuid), 'stop')
-                    ])
-                    # Wait 1/2 of a second for the state propagation
-                    time.sleep(0.5)
-                    break
-                time.sleep(0.5)
-
+            self.shutdown_vm()
             return True
 
         do_migrate_shutdown = False
