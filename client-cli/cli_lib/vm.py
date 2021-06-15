@@ -1175,17 +1175,14 @@ def format_info(config, domain_information, long_output):
 
     # Network list
     net_list = []
+    cluster_net_list = call_api(config, 'get', '/network').json()
     for net in domain_information['networks']:
-        # Split out just the numerical (VNI) part of the brXXXX name
-        net_vnis = re.findall(r'\d+', net['source'])
-        if net_vnis:
-            net_vni = net_vnis[0]
-        else:
-            net_vni = re.sub('br', '', net['source'])
-
-        response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-        if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
-            net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
+        net_vni = net['vni']
+        if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^e.*', net_vni):
+            if int(net_vni) not in [net['vni'] for net in cluster_net_list]:
+                net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
+            else:
+                net_list.append(net_vni)
         else:
             net_list.append(net_vni)
 
@@ -1318,8 +1315,6 @@ def format_list(config, vm_list, raw):
         )
     )
 
-    # Keep track of nets we found to be valid to cut down on duplicate API hits
-    valid_net_list = []
     # Format the string (elements)
     for domain_information in vm_list:
         if domain_information['state'] == 'start':
@@ -1336,18 +1331,13 @@ def format_list(config, vm_list, raw):
             vm_state_colour = ansiprint.blue()
 
         # Handle colouring for an invalid network config
-        raw_net_list = getNiceNetID(domain_information)
-        net_list = []
+        net_list = getNiceNetID(domain_information)
+        cluster_net_list = call_api(config, 'get', '/network').json()
         vm_net_colour = ''
-        for net_vni in raw_net_list:
-            if net_vni not in valid_net_list:
-                response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-                if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^e.*', net_vni):
+        for net_vni in net_list:
+            if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^e.*', net_vni):
+                if int(net_vni) not in [net['vni'] for net in cluster_net_list]:
                     vm_net_colour = ansiprint.red()
-                else:
-                    valid_net_list.append(net_vni)
-
-            net_list.append(net_vni)
 
         vm_list_output.append(
             '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
