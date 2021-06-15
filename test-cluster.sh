@@ -94,7 +94,7 @@ _pvc storage osd out 0
 _pvc storage osd in 0
 _pvc storage osd unset noout
 _pvc storage osd list
-_pvc storage pool add testing 64 --replcfg "'copies=3,mincopies=2'"
+_pvc storage pool add testing 64 --replcfg "copies=3,mincopies=2"
 sleep 5
 _pvc storage pool list
 _pvc storage volume add testing testX 1G
