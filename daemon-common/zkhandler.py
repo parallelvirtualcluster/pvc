@@ -50,7 +50,10 @@ class ZKConnection(object):
         def connection(*args, **kwargs):
             zkhandler = ZKHandler(self.config)
             zkhandler.connect()
-            zkhandler.schema.load(zkhandler.read('base.schema.version'), quiet=True)
+            schema_version = zkhandler.read('base.schema.version')
+            if schema_version is None:
+                schema_version = 0
+            zkhandler.schema.load(schema_version, quiet=True)
 
             ret = function(zkhandler, *args, **kwargs)
 
