@@ -111,6 +111,7 @@ _pvc storage volume remove --yes testing testerX
 _pvc storage pool remove --yes testing
 
 # Remove the VM
+_pvc vm stop --yes testX
 _pvc vm remove --yes testX
 
 time_end=$(date +%s)
