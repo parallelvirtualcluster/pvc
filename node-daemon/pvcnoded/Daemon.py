@@ -223,6 +223,12 @@ def readConfig(pvcnoded_config_file, myhostname):
                 'upstream_mtu': o_config['pvc']['system']['configuration']['networking']['upstream']['mtu'],
                 'upstream_dev_ip': o_config['pvc']['system']['configuration']['networking']['upstream']['address'],
             }
+
+            # Check if SR-IOV is enabled and activate
+            config_networking['enable_sriov'] = o_config['pvc']['system']['configuration']['networking'].get('sriov_enable', False)
+            if config_networking['enable_sriov']:
+                config_networking['sriov_device'] = list(o_config['pvc']['system']['configuration']['networking']['sriov_device'])
+
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
             exit(1)
@@ -289,6 +295,7 @@ if debug:
 # Handle the enable values
 enable_hypervisor = config['enable_hypervisor']
 enable_networking = config['enable_networking']
+enable_sriov = config['enable_sriov']
 enable_storage = config['enable_storage']
 
 ###############################################################################
@@ -380,7 +387,39 @@ else:
     fmt_purple = ''
 
 ###############################################################################
-# PHASE 2a - Create local IP addresses for static networks
+# PHASE 2a - Activate SR-IOV support
+###############################################################################
+
+if enable_networking and enable_sriov:
+    logger.out('Setting up SR-IOV device support', state='i')
+    # Enable unsafe interruptts for the vfio_iommu_type1 kernel module
+    try:
+        common.run_os_command('modprobe vfio_iommu_type1 allow_unsafe_interrupts=1')
+        with open('/sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts', 'w') as mfh:
+            mfh.write('Y')
+    except Exception:
+        logger.out('Failed to enable kernel modules; SR-IOV may fail.', state='w')
+
+    # Loop through our SR-IOV NICs and enable the numvfs for each
+    for device in config['sriov_device']:
+        logger.out('Preparing SR-IOV PF {} with {} VFs'.format(device['phy'], device['vfcount']), state='i')
+        try:
+            with open('/sys/class/net/{}/device/sriov_numvfs'.format(device['phy']), 'r') as vfh:
+                current_sriov_count = vfh.read().strip()
+            with open('/sys/class/net/{}/device/sriov_numvfs'.format(device['phy']), 'w') as vfh:
+                vfh.write(str(device['vfcount']))
+        except FileNotFoundError:
+            logger.out('Failed to open SR-IOV configuration for PF {}; device may not support SR-IOV.'.format(device), state='w')
+        except OSError:
+            logger.out('Failed to set SR-IOV VF count for PF {} to {}; already set to {}.'.format(device['phy'], device['vfcount'], current_sriov_count), state='w')
+
+        if device.get('mtu', None) is not None:
+            logger.out('Setting SR-IOV PF {} to MTU {}'.format(device['phy'], device['mtu']), state='i')
+            common.run_os_command('ip link set {} mtu {} up'.format(device['phy'], device['mtu']))
+
+
+###############################################################################
+# PHASE 2b - Create local IP addresses for static networks
 ###############################################################################
 
 if enable_networking:
@@ -444,7 +483,7 @@ if enable_networking:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brupstream'))
 
 ###############################################################################
-# PHASE 2b - Prepare sysctl for pvcnoded
+# PHASE 2c - Prepare sysctl for pvcnoded
 ###############################################################################
 
 if enable_networking:
