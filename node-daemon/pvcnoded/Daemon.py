@@ -1655,6 +1655,9 @@ def collect_vm_stats(queue):
             logger.out("Getting network statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_network_stats = []
         for interface in tree.findall('devices/interface'):
+            interface_type = interface.get('type')
+            if interface_type in ['hostdev']:
+                continue
             interface_name = interface.find('target').get('dev')
             interface_bridge = interface.find('source').get('bridge')
             interface_stats = domain.interfaceStats(interface_name)
