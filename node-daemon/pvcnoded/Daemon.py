@@ -49,6 +49,7 @@ import daemon_lib.common as common
 import pvcnoded.VMInstance as VMInstance
 import pvcnoded.NodeInstance as NodeInstance
 import pvcnoded.VXNetworkInstance as VXNetworkInstance
+import pvcnoded.SRIOVVFInstance as SRIOVVFInstance
 import pvcnoded.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.CephInstance as CephInstance
 import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
@@ -390,6 +391,7 @@ else:
 # PHASE 2a - Activate SR-IOV support
 ###############################################################################
 
+# This happens before other networking steps to enable using VFs for cluster functions.
 if enable_networking and enable_sriov:
     logger.out('Setting up SR-IOV device support', state='i')
     # Enable unsafe interruptts for the vfio_iommu_type1 kernel module
@@ -916,12 +918,15 @@ logger.out('Setting up objects', state='i')
 
 d_node = dict()
 d_network = dict()
+d_sriov_vf = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
 d_volume = dict()  # Dict of Dicts
 node_list = []
 network_list = []
+sriov_pf_list = []
+sriov_vf_list = []
 domain_list = []
 osd_list = []
 pool_list = []
@@ -1075,6 +1080,91 @@ if enable_networking:
         # Update node objects' list
         for node in d_node:
             d_node[node].update_network_list(d_network)
+
+    # Add the SR-IOV PFs and VFs to Zookeeper
+    # These do not behave like the objects; they are not dynamic (the API cannot change them), and they
+    # exist for the lifetime of this Node instance. The objects are set here in Zookeeper on a per-node
+    # basis, under the Node configuration tree.
+    # MIGRATION: The schema.schema.get ensures that the current active Schema contains the required keys
+    if enable_sriov and zkhandler.schema.schema.get('sriov_pf', None) is not None:
+        vf_list = list()
+        for device in config['sriov_device']:
+            pf = device['phy']
+            vfcount = device['vfcount']
+            if device.get('mtu', None) is None:
+                mtu = 1500
+            else:
+                mtu = device['mtu']
+
+            # Create the PF device in Zookeeper
+            zkhandler.write([
+                (('node.sriov.pf', myhostname, 'sriov_pf', pf), ''),
+                (('node.sriov.pf', myhostname, 'sriov_pf.mtu', pf), mtu),
+                (('node.sriov.pf', myhostname, 'sriov_pf.vfcount', pf), vfcount),
+            ])
+            # Append the device to the list of PFs
+            sriov_pf_list.append(pf)
+
+            # Get the list of VFs from `ip link show`
+            vf_list = json.loads(common.run_os_command('ip --json link show {}'.format(pf))[1])[0].get('vfinfo_list', [])
+            for vf in vf_list:
+                # {
+                #   'vf': 3,
+                #   'link_type': 'ether',
+                #   'address': '00:00:00:00:00:00',
+                #   'broadcast': 'ff:ff:ff:ff:ff:ff',
+                #   'vlan_list': [{'vlan': 101, 'qos': 2}],
+                #   'rate': {'max_tx': 0, 'min_tx': 0},
+                #   'spoofchk': True,
+                #   'link_state': 'auto',
+                #   'trust': False,
+                #   'query_rss_en': False
+                # }
+                vfphy = '{}v{}'.format(pf, vf['vf'])
+                zkhandler.write([
+                    (('node.sriov.vf', myhostname, 'sriov_vf', vfphy), ''),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.mtu', vfphy), mtu),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.mac', vfphy), vf['address']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config', vfphy), ''),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_id', vfphy), vf['vlan_list'][0].get('vlan', '')),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_qos', vfphy), vf['vlan_list'][0].get('qos', '')),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_min', vfphy), vf['rate']['min_tx']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_max', vfphy), vf['rate']['max_tx']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.spoof_check', vfphy), vf['spoofchk']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
+                    (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
+                ])
+                # Append the device to the list of VFs
+                sriov_vf_list.append(vfphy)
+
+        # Remove any obsolete PFs from Zookeeper if they go away
+        for pf in zkhandler.children(('node.sriov.pf', myhostname)):
+            if pf not in sriov_pf_list:
+                zkhandler.delete([
+                    ('node.sriov.pf', myhostname, 'sriov_pf', pf)
+                ])
+        # Remove any obsolete VFs from Zookeeper if their PF goes away
+        for vf in zkhandler.children(('node.sriov.vf', myhostname)):
+            vf_pf = zkhandler.read(('node.sriov.vf', myhostname, 'sriov_vf.pf', vf))
+            if vf_pf not in sriov_pf_list:
+                zkhandler.delete([
+                    ('node.sriov.vf', myhostname, 'sriov_vf', vf)
+                ])
+
+        # SR-IOV VF objects
+        # This is a ChildrenWatch just for consistency; the list never changes at runtime
+        @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path('node.sriov.vf', myhostname))
+        def update_sriov_pfs(new_sriov_vf_list):
+            global sriov_vf_list, d_sriov_vf
+
+            # Add VFs to the list
+            for vf in new_sriov_vf_list:
+                d_sriov_vf[vf] = SRIOVVFInstance.SRIOVVFInstance(vf, zkhandler, config, logger, this_node)
+
+            sriov_vf_list = new_sriov_vf_list
+            logger.out('{}SR-IOV VF list:{} {}'.format(fmt_blue, fmt_end, ' '.join(sriov_vf_list)), state='i')
 
 if enable_hypervisor:
     # VM command pipeline key
