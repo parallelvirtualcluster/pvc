@@ -1121,21 +1121,23 @@ if enable_networking:
                 #   'query_rss_en': False
                 # }
                 vfphy = '{}v{}'.format(pf, vf['vf'])
-                zkhandler.write([
-                    (('node.sriov.vf', myhostname, 'sriov_vf', vfphy), ''),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.mtu', vfphy), mtu),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.mac', vfphy), vf['address']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config', vfphy), ''),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_id', vfphy), vf['vlan_list'][0].get('vlan', '')),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_qos', vfphy), vf['vlan_list'][0].get('qos', '')),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_min', vfphy), vf['rate']['min_tx']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_max', vfphy), vf['rate']['max_tx']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.spoof_check', vfphy), vf['spoofchk']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
-                    (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
-                ])
+                # Add the VF to Zookeeper if it does not yet exist
+                if not zkhandler.exists(('node.sriov.vf', myhostname, 'sriov_vf', vfphy)):
+                    zkhandler.write([
+                        (('node.sriov.vf', myhostname, 'sriov_vf', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.mtu', vfphy), mtu),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.mac', vfphy), vf['address']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_id', vfphy), vf['vlan_list'][0].get('vlan', '')),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_qos', vfphy), vf['vlan_list'][0].get('qos', '')),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_min', vfphy), vf['rate']['min_tx']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_max', vfphy), vf['rate']['max_tx']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.spoof_check', vfphy), vf['spoofchk']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
+                    ])
                 # Append the device to the list of VFs
                 sriov_vf_list.append(vfphy)
 

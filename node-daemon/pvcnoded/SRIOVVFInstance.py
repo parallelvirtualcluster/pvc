@@ -43,16 +43,17 @@ class SRIOVVFInstance(object):
         self.mtu = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.mtu', self.vf))
 
         self.vfid = self.vf.replace('{}v'.format(self.pf), '')
-        self.mac = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.mac', self.vf))
 
-        self.vlan_id = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.vlan_id', self.vf))
-        self.vlan_qos = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.vlan_qos', self.vf))
-        self.tx_rate_min = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.tx_rate_min', self.vf))
-        self.tx_rate_max = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.tx_rate_max', self.vf))
-        self.spoof_check = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.spoof_check', self.vf))
-        self.link_state = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.link_state', self.vf))
-        self.trust = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.trust', self.vf))
-        self.query_rss = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.config.query_rss', self.vf))
+        # These properties are set via the DataWatch functions, to ensure they are configured on the system
+        self.mac = None
+        self.vlan_id = None
+        self.vlan_qos = None
+        self.tx_rate_min = None
+        self.tx_rate_max = None
+        self.spoof_check = None
+        self.link_state = None
+        self.trust = None
+        self.query_rss = None
 
         # Zookeeper handlers for changed configs
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.mac', self.vf))
