@@ -397,7 +397,7 @@ def getDomainNetworks(parsed_xml, stats_data):
             net_wr_packets = net_stats.get('wr_packets', 0)
             net_wr_errors = net_stats.get('wr_errors', 0)
             net_wr_drops = net_stats.get('wr_drops', 0)
-            if net_type in ['direct']:
+            if net_type in ['direct', 'hostdev']:
                 net_vni = device.source.attrib.get('dev')
             else:
                 net_vni = re_match(r'[vm]*br([0-9a-z]+)', net_bridge).group(1)
