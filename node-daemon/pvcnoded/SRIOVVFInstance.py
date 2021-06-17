@@ -85,6 +85,7 @@ class SRIOVVFInstance(object):
 
             if data != self.vlan_id:
                 self.vlan_id = data
+                self.logger.out('Setting vLAN ID to {}'.format(self.vlan_id), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} vlan {} qos {}'.format(self.pf, self.vfid, self.vlan_id, self.vlan_qos))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.vlan_qos', self.vf))
@@ -101,6 +102,7 @@ class SRIOVVFInstance(object):
 
             if data != self.vlan_qos:
                 self.vlan_qos = data
+                self.logger.out('Setting vLAN QOS to {}'.format(self.vlan_qos), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} vlan {} qos {}'.format(self.pf, self.vfid, self.vlan_id, self.vlan_qos))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.tx_rate_min', self.vf))
@@ -117,6 +119,7 @@ class SRIOVVFInstance(object):
 
             if data != self.tx_rate_min:
                 self.tx_rate_min = data
+                self.logger.out('Setting minimum TX rate to {}'.format(self.tx_rate_min), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} min_tx_rate {}'.format(self.pf, self.vfid, self.tx_rate_min))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.tx_rate_max', self.vf))
@@ -133,6 +136,7 @@ class SRIOVVFInstance(object):
 
             if data != self.tx_rate_max:
                 self.tx_rate_max = data
+                self.logger.out('Setting maximum TX rate to {}'.format(self.tx_rate_max), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} max_tx_rate {}'.format(self.pf, self.vfid, self.tx_rate_max))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.spoof_check', self.vf))
@@ -149,6 +153,7 @@ class SRIOVVFInstance(object):
 
             if data != self.spoof_check:
                 self.spoof_check = data
+                self.logger.out('Setting spoof checking {}'.format(boolToOnOff(self.spoof_check)), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} spoofchk {}'.format(self.pf, self.vfid, boolToOnOff(self.spoof_check)))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.link_state', self.vf))
@@ -165,6 +170,7 @@ class SRIOVVFInstance(object):
 
             if data != self.link_state:
                 self.link_state = data
+                self.logger.out('Setting link state to {}'.format(boolToOnOff(self.link_state)), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} state {}'.format(self.pf, self.vfid, self.link_state))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.trust', self.vf))
@@ -181,6 +187,7 @@ class SRIOVVFInstance(object):
 
             if data != self.trust:
                 self.trust = data
+                self.logger.out('Setting trust mode {}'.format(boolToOnOff(self.trust)), state='i', prefix='SR-IOV VF {}'.format(self.vf))
                 common.run_os_command('ip link set {} vf {} trust {}'.format(self.pf, self.vfid, boolToOnOff(self.trust)))
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.sriov.vf', self.myhostname) + self.zkhandler.schema.path('sriov_vf.config.query_rss', self.vf))
@@ -197,4 +204,5 @@ class SRIOVVFInstance(object):
 
             if data != self.query_rss:
                 self.query_rss = data
-                common.run_os_command('ip link set {} vf {} trust {}'.format(self.pf, self.vfid, boolToOnOff(self.query_rss)))
+                self.logger.out('Setting RSS query ability {}'.format(boolToOnOff(self.query_rss)), state='i', prefix='SR-IOV VF {}'.format(self.vf))
+                common.run_os_command('ip link set {} vf {} query_rss {}'.format(self.pf, self.vfid, boolToOnOff(self.query_rss)))
