@@ -641,7 +641,8 @@ def getSRIOVPFInformation(zkhandler, node, pf):
 
     retcode, vf_list = get_list_sriov_vf(zkhandler, node, pf)
     if retcode:
-        vfs = [vf['phy'] for vf in vf_list if vf['pf'] == pf]
+        unsorted_vfs = [vf['phy'] for vf in vf_list if vf['pf'] == pf]
+        vfs = sorted(unsorted_vfs, key=lambda k: int(''.join(re.findall(r'[0-9]', k))))
     else:
         vfs = []
 
