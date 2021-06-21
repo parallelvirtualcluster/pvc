@@ -764,6 +764,99 @@
             },
             "type": "object"
         },
+        "sriov_pf": {
+            "properties": {
+                "mtu": {
+                    "description": "The MTU of the SR-IOV PF device",
+                    "type": "string"
+                },
+                "phy": {
+                    "description": "The name of the SR-IOV PF device",
+                    "type": "string"
+                },
+                "vfs": {
+                    "items": {
+                        "description": "The PHY name of a VF of this PF",
+                        "type": "string"
+                    },
+                    "type": "list"
+                }
+            },
+            "type": "object"
+        },
+        "sriov_vf": {
+            "properties": {
+                "config": {
+                    "id": "sriov_vf_config",
+                    "properties": {
+                        "link_state": {
+                            "description": "The current SR-IOV VF link state (either enabled, disabled, or auto)",
+                            "type": "string"
+                        },
+                        "query_rss": {
+                            "description": "Whether VF RSS querying is enabled or disabled",
+                            "type": "boolean"
+                        },
+                        "spoof_check": {
+                            "description": "Whether device spoof checking is enabled or disabled",
+                            "type": "boolean"
+                        },
+                        "trust": {
+                            "description": "Whether guest device trust is enabled or disabled",
+                            "type": "boolean"
+                        },
+                        "tx_rate_max": {
+                            "description": "The maximum TX rate of the SR-IOV VF device",
+                            "type": "string"
+                        },
+                        "tx_rate_min": {
+                            "description": "The minimum TX rate of the SR-IOV VF device",
+                            "type": "string"
+                        },
+                        "vlan_id": {
+                            "description": "The tagged vLAN ID of the SR-IOV VF device",
+                            "type": "string"
+                        },
+                        "vlan_qos": {
+                            "description": "The QOS group of the tagged vLAN",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
+                "mac": {
+                    "description": "The current MAC address of the VF device",
+                    "type": "string"
+                },
+                "mtu": {
+                    "description": "The current MTU of the VF device",
+                    "type": "integer"
+                },
+                "pf": {
+                    "description": "The name of the SR-IOV PF parent of this VF device",
+                    "type": "string"
+                },
+                "phy": {
+                    "description": "The name of the SR-IOV VF device",
+                    "type": "string"
+                },
+                "usage": {
+                    "id": "sriov_vf_usage",
+                    "properties": {
+                        "domain": {
+                            "description": "The UUID of the domain the SR-IOV VF is currently used by",
+                            "type": "boolean"
+                        },
+                        "used": {
+                            "description": "Whether the SR-IOV VF is currently used by a VM or not",
+                            "type": "boolean"
+                        }
+                    },
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        },
         "storage-template": {
             "properties": {
                 "disks": {
@@ -1459,8 +1552,15 @@
         },
         "/api/v1/initialize": {
             "post": {
-                "description": "Note: Normally used only once during cluster bootstrap; checks for the existence of the \"/primary_node\" key before proceeding and returns 400 if found",
+                "description": "<br/>If the 'overwrite' option is not True, the cluster will return 400 if the `/config/primary_node` key is found. If 'overwrite' is True, the existing cluster<br/>data will be erased and new, empty data written in its place.<br/><br/>All node daemons should be stopped before running this command, and the API daemon started manually to avoid undefined behavior.",
                 "parameters": [
+                    {
+                        "description": "A flag to enable or disable (default) overwriting existing data",
+                        "in": "query",
+                        "name": "overwrite",
+                        "required": false,
+                        "type": "bool"
+                    },
                     {
                         "description": "A confirmation string to ensure that the API consumer really means it",
                         "in": "query",
@@ -4453,6 +4553,97 @@
                 ]
             }
         },
+        "/api/v1/sriov/pf": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sriov_pf"
+                        }
+                    }
+                },
+                "summary": "Return a list of SR-IOV PFs on a given node",
+                "tags": [
+                    "network / sriov"
+                ]
+            }
+        },
+        "/api/v1/sriov/pf/{node}": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sriov_pf"
+                        }
+                    }
+                },
+                "summary": "Return a list of SR-IOV PFs on node {node}",
+                "tags": [
+                    "network / sriov"
+                ]
+            }
+        },
+        "/api/v1/sriov/vf": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sriov_vf"
+                        }
+                    }
+                },
+                "summary": "Return a list of SR-IOV VFs on a given node, optionally limited to those in the specified PF",
+                "tags": [
+                    "network / sriov"
+                ]
+            }
+        },
+        "/api/v1/sriov/vf/{node}": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sriov_vf"
+                        }
+                    }
+                },
+                "summary": "Return a list of SR-IOV VFs on node {node}, optionally limited to those in the specified PF",
+                "tags": [
+                    "network / sriov"
+                ]
+            }
+        },
+        "/api/v1/sriov/vf/{node}/{vf}": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/sriov_vf"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return information about {vf} on {node}",
+                "tags": [
+                    "network / sriov"
+                ]
+            }
+        },
         "/api/v1/status": {
             "get": {
                 "description": "",
@@ -5721,7 +5912,8 @@
                             "mem",
                             "vcpus",
                             "load",
-                            "vms"
+                            "vms",
+                            "none (cluster default)"
                         ],
                         "in": "query",
                         "name": "selector",

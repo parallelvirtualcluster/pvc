@@ -2770,6 +2770,27 @@ class API_SRIOV_PF_Root(Resource):
 api.add_resource(API_SRIOV_PF_Root, '/sriov/pf')
 
 
+# /sriov/pf/<node>
+class API_SRIOV_PF_Node(Resource):
+    @Authenticator
+    def get(self, node):
+        """
+        Return a list of SR-IOV PFs on node {node}
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_pf'
+        """
+        return api_helper.sriov_pf_list(node)
+
+
+api.add_resource(API_SRIOV_PF_Node, '/sriov/pf/<node>')
+
+
 # /sriov/vf
 class API_SRIOV_VF_Root(Resource):
     @RequestParser([
@@ -2845,6 +2866,65 @@ class API_SRIOV_VF_Root(Resource):
 
 
 api.add_resource(API_SRIOV_VF_Root, '/sriov/vf')
+
+
+# /sriov/vf/<node>
+class API_SRIOV_VF_Node(Resource):
+    @RequestParser([
+        {'name': 'pf', 'required': False, 'helptext': "A PF parent may be specified."},
+    ])
+    @Authenticator
+    def get(self, node, reqargs):
+        """
+        Return a list of SR-IOV VFs on node {node}, optionally limited to those in the specified PF
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_vf'
+        """
+        return api_helper.sriov_vf_list(node, reqargs.get('pf', None))
+
+
+api.add_resource(API_SRIOV_VF_Node, '/sriov/vf/<node>')
+
+
+# /sriov/vf/<node>/<vf>
+class API_SRIOV_VF_Element(Resource):
+    @Authenticator
+    def get(self, node, vf):
+        """
+        Return information about {vf} on {node}
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_vf'
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        vf_list = list()
+        full_vf_list, _ = api_helper.sriov_vf_list(node)
+        for vf_element in full_vf_list:
+            if vf_element['phy'] == vf:
+                vf_list.append(vf_element)
+
+        if len(vf_list) == 1:
+            return vf_list, 200
+        else:
+            return {'message': "No VF '{}' found on node '{}'".format(vf, node)}, 404
+
+
+api.add_resource(API_SRIOV_VF_Element, '/sriov/vf/<node>/<vf>')
 
 
 ##########################################################
