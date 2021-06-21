@@ -2102,6 +2102,120 @@ def net_acl_list(net, limit, direction):
 
 
 ###############################################################################
+# pvc network sriov
+###############################################################################
+@click.group(name='sriov', short_help='Manage SR-IOV network resources.', context_settings=CONTEXT_SETTINGS)
+def net_sriov():
+    """
+    Manage SR-IOV network resources on nodes (PFs and VFs).
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov pf
+###############################################################################
+@click.group(name='pf', short_help='Manage PF devices.', context_settings=CONTEXT_SETTINGS)
+def net_sriov_pf():
+    """
+    Manage SR-IOV PF devices on nodes.
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov pf list
+###############################################################################
+@click.command(name='list', short_help='List PF devices.')
+@click.argument(
+    'node'
+)
+@cluster_req
+def net_sriov_pf_list(node):
+    """
+    List all SR-IOV PFs on NODE.
+    """
+    retcode, retdata = pvc_network.net_sriov_pf_list(config, node)
+    if retcode:
+        retdata = pvc_network.format_list_sriov_pf(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov vf
+###############################################################################
+@click.group(name='vf', short_help='Manage VF devices.', context_settings=CONTEXT_SETTINGS)
+def net_sriov_vf():
+    """
+    Manage SR-IOV VF devices on nodes.
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov vf set
+###############################################################################
+@click.command(name='set', short_help='Set VF device properties.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'vf'
+)
+@cluster_req
+def net_sriov_vf_set(node, pf):
+    """
+    Set a property of SR-IOV VF on NODE.
+    """
+    retcode, retdata = pvc_network.net_sriov_vf_list(config, node, pf)
+    if retcode:
+        retdata = pvc_network.format_list_sriov_vf(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov vf list
+###############################################################################
+@click.command(name='list', short_help='List VF devices.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'pf', default=None, required=False
+)
+@cluster_req
+def net_sriov_vf_list(node, pf):
+    """
+    List all SR-IOV VFs on NODE, optionally limited to device PF.
+    """
+    retcode, retdata = pvc_network.net_sriov_vf_list(config, node, pf)
+    if retcode:
+        retdata = pvc_network.format_list_sriov_vf(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov vf info
+###############################################################################
+@click.command(name='info', short_help='List VF devices.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'vf'
+)
+@cluster_req
+def net_sriov_vf_info(node, vf):
+    """
+    Show details of the SR-IOV VF on NODE.
+    """
+    retcode, retdata = pvc_network.net_sriov_vf_info(config, node, vf)
+    if retcode:
+        retdata = pvc_network.format_info_sriov_vf(config, retdata, node)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
 # pvc storage
 ###############################################################################
 # Note: The prefix `storage` allows future potential storage subsystems.
@@ -4475,6 +4589,7 @@ cli_network.add_command(net_info)
 cli_network.add_command(net_list)
 cli_network.add_command(net_dhcp)
 cli_network.add_command(net_acl)
+cli_network.add_command(net_sriov)
 
 net_dhcp.add_command(net_dhcp_list)
 net_dhcp.add_command(net_dhcp_add)
@@ -4483,6 +4598,15 @@ net_dhcp.add_command(net_dhcp_remove)
 net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
+
+net_sriov.add_command(net_sriov_pf)
+net_sriov.add_command(net_sriov_vf)
+
+net_sriov_pf.add_command(net_sriov_pf_list)
+
+net_sriov_vf.add_command(net_sriov_vf_list)
+net_sriov_vf.add_command(net_sriov_vf_info)
+net_sriov_vf.add_command(net_sriov_vf_set)
 
 ceph_benchmark.add_command(ceph_benchmark_run)
 ceph_benchmark.add_command(ceph_benchmark_info)
