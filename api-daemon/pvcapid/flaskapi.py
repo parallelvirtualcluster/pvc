@@ -2720,6 +2720,134 @@ api.add_resource(API_Network_ACL_Element, '/network/<vni>/acl/<description>')
 
 
 ##########################################################
+# Client API - SR-IOV
+##########################################################
+
+# /sriov
+class API_SRIOV_Root(Resource):
+    @Authenticator
+    def get(self):
+        pass
+
+
+api.add_resource(API_SRIOV_Root, '/sriov')
+
+
+# /sriov/pf
+class API_SRIOV_PF_Root(Resource):
+    @RequestParser([
+        {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of SR-IOV PFs on a given node
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: sriov_pf
+              properties:
+                phy:
+                  type: string
+                  description: The name of the SR-IOV PF device
+                mtu:
+                  type: string
+                  description: The MTU of the SR-IOV PF device
+                vfs:
+                  type: list
+                  items:
+                    type: string
+                    description: The PHY name of a VF of this PF
+        """
+        return api_helper.sriov_pf_list(reqargs.get('node'))
+
+
+api.add_resource(API_SRIOV_PF_Root, '/sriov/pf')
+
+
+# /sriov/vf
+class API_SRIOV_VF_Root(Resource):
+    @RequestParser([
+        {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
+        {'name': 'pf', 'required': False, 'helptext': "A PF parent may be specified."},
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of SR-IOV VFs on a given node, optionally limited to those in the specified PF
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: sriov_vf
+              properties:
+                phy:
+                  type: string
+                  description: The name of the SR-IOV VF device
+                pf:
+                  type: string
+                  description: The name of the SR-IOV PF parent of this VF device
+                mtu:
+                  type: integer
+                  description: The current MTU of the VF device
+                mac:
+                  type: string
+                  description: The current MAC address of the VF device
+                config:
+                  type: object
+                  id: sriov_vf_config
+                  properties:
+                    vlan_id:
+                      type: string
+                      description: The tagged vLAN ID of the SR-IOV VF device
+                    vlan_qos:
+                      type: string
+                      description: The QOS group of the tagged vLAN
+                    tx_rate_min:
+                      type: string
+                      description: The minimum TX rate of the SR-IOV VF device
+                    tx_rate_max:
+                      type: string
+                      description: The maximum TX rate of the SR-IOV VF device
+                    spoof_check:
+                      type: boolean
+                      description: Whether device spoof checking is enabled or disabled
+                    link_state:
+                      type: string
+                      description: The current SR-IOV VF link state (either enabled, disabled, or auto)
+                    trust:
+                      type: boolean
+                      description: Whether guest device trust is enabled or disabled
+                    query_rss:
+                      type: boolean
+                      description: Whether VF RSS querying is enabled or disabled
+                usage:
+                  type: object
+                  id: sriov_vf_usage
+                  properties:
+                    used:
+                      type: boolean
+                      description: Whether the SR-IOV VF is currently used by a VM or not
+                    domain:
+                      type: boolean
+                      description: The UUID of the domain the SR-IOV VF is currently used by
+        """
+        return api_helper.sriov_vf_list(reqargs.get('node'), reqargs.get('pf', None))
+
+
+api.add_resource(API_SRIOV_VF_Root, '/sriov/vf')
+
+
+##########################################################
 # Client API - Storage
 ##########################################################
 # Note: The prefix `/storage` allows future potential storage subsystems.

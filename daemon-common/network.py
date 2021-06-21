@@ -629,3 +629,114 @@ def get_list_acl(zkhandler, network, limit, direction, is_fuzzy=True):
             acl_list.append(acl)
 
     return True, acl_list
+
+
+#
+# SR-IOV functions
+#
+# These are separate since they don't work like other network types
+#
+def getSRIOVPFInformation(zkhandler, node, pf):
+    mtu = zkhandler.read(('node.sriov.pf', node, 'sriov_pf.mtu', pf))
+
+    retcode, vf_list = get_list_sriov_vf(zkhandler, node, pf)
+    if retcode:
+        vfs = [vf['phy'] for vf in vf_list if vf['pf'] == pf]
+    else:
+        vfs = []
+
+    # Construct a data structure to represent the data
+    pf_information = {
+        'phy': pf,
+        'mtu': mtu,
+        'vfs': vfs,
+    }
+    return pf_information
+
+
+def get_info_sriov_pf(zkhandler, node, pf):
+    pf_information = getSRIOVPFInformation(zkhandler, node, pf)
+    if not pf_information:
+        return False, 'ERROR: Could not get information about SR-IOV PF "{}" on node "{}"'.format(pf, node)
+
+    return True, pf_information
+
+
+def get_list_sriov_pf(zkhandler, node):
+    pf_list = list()
+    pf_phy_list = zkhandler.children(('node.sriov.pf', node))
+    for phy in pf_phy_list:
+        retcode, pf_information = get_info_sriov_pf(zkhandler, node, phy)
+        if retcode:
+            pf_list.append(pf_information)
+
+    return True, pf_list
+
+
+def getSRIOVVFInformation(zkhandler, node, vf):
+    pf = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pf', vf))
+    mtu = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.mtu', vf))
+    mac = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.mac', vf))
+    vlan_id = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.vlan_id', vf))
+    vlan_qos = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.vlan_qos', vf))
+    tx_rate_min = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.tx_rate_min', vf))
+    tx_rate_max = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.tx_rate_max', vf))
+    spoof_check = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.spoof_check', vf))
+    link_state = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.link_state', vf))
+    trust = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.trust', vf))
+    query_rss = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.query_rss', vf))
+    used = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.used', vf))
+    used_by_domain = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.used_by', vf))
+
+    vf_information = {
+        'phy': vf,
+        'pf': pf,
+        'mtu': mtu,
+        'mac': mac,
+        'config': {
+            'vlan_id': vlan_id,
+            'vlan_qos': vlan_qos,
+            'tx_rate_min': tx_rate_min,
+            'tx_rate_max': tx_rate_max,
+            'spoof_check': spoof_check,
+            'link_state': link_state,
+            'trust': trust,
+            'query_rss': query_rss,
+        },
+        'usage': {
+            'used': used,
+            'domain': used_by_domain,
+        }
+    }
+    return vf_information
+
+
+def get_info_sriov_vf(zkhandler, node, vf):
+    vf_information = getSRIOVVFInformation(zkhandler, node, vf)
+    if not vf_information:
+        return False, 'ERROR: Could not get information about SR-IOV VF "{}" on node "{}"'.format(vf, node)
+
+    return True, vf_information
+
+
+def get_list_sriov_vf(zkhandler, node, pf=None):
+    vf_list = list()
+    vf_phy_list = sorted(zkhandler.children(('node.sriov.vf', node)))
+    for phy in vf_phy_list:
+        retcode, vf_information = get_info_sriov_vf(zkhandler, node, phy)
+        if retcode:
+            if pf is not None:
+                if vf_information['pf'] == pf:
+                    vf_list.append(vf_information)
+            else:
+                vf_list.append(vf_information)
+
+    return True, vf_list
+
+
+def set_sriov_vf_config(zkhandler, node, vf, vlan_id=None, vlan_qos=None, tx_rate_min=None, tx_rate_max=None, spoof_check=None, link_state=None, trust=None, query_rss=None):
+    pass
+
+
+def set_sriov_vf_vm(zkhandler, node, vf, vm_name, vm_macaddr):
+    pass
