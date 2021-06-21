@@ -1160,11 +1160,11 @@ if enable_networking:
         # SR-IOV VF objects
         # This is a ChildrenWatch just for consistency; the list never changes at runtime
         @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path('node.sriov.vf', myhostname))
-        def update_sriov_pfs(new_sriov_vf_list):
+        def update_sriov_vfs(new_sriov_vf_list):
             global sriov_vf_list, d_sriov_vf
 
             # Add VFs to the list
-            for vf in sorted(new_sriov_vf_list):
+            for vf in common.sortInterfaceNames(new_sriov_vf_list):
                 d_sriov_vf[vf] = SRIOVVFInstance.SRIOVVFInstance(vf, zkhandler, config, logger, this_node)
 
             sriov_vf_list = sorted(new_sriov_vf_list)

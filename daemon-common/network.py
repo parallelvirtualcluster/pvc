@@ -21,6 +21,8 @@
 
 import re
 
+import daemon_lib.common as common
+
 
 #
 # Cluster search functions
@@ -641,8 +643,7 @@ def getSRIOVPFInformation(zkhandler, node, pf):
 
     retcode, vf_list = get_list_sriov_vf(zkhandler, node, pf)
     if retcode:
-        unsorted_vfs = [vf['phy'] for vf in vf_list if vf['pf'] == pf]
-        vfs = sorted(unsorted_vfs, key=lambda k: int(''.join(re.findall(r'[0-9]', k))))
+        vfs = common.sortInterfaceNames([vf['phy'] for vf in vf_list if vf['pf'] == pf])
     else:
         vfs = []
 
@@ -675,6 +676,9 @@ def get_list_sriov_pf(zkhandler, node):
 
 
 def getSRIOVVFInformation(zkhandler, node, vf):
+    if not zkhandler.exists(('node.sriov.vf', node, 'sriov_vf', vf)):
+        return []
+
     pf = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pf', vf))
     mtu = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.mtu', vf))
     mac = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.mac', vf))
@@ -682,8 +686,8 @@ def getSRIOVVFInformation(zkhandler, node, vf):
     vlan_qos = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.vlan_qos', vf))
     tx_rate_min = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.tx_rate_min', vf))
     tx_rate_max = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.tx_rate_max', vf))
-    spoof_check = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.spoof_check', vf))
     link_state = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.link_state', vf))
+    spoof_check = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.spoof_check', vf))
     trust = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.trust', vf))
     query_rss = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.query_rss', vf))
     used = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.used', vf))
@@ -699,8 +703,8 @@ def getSRIOVVFInformation(zkhandler, node, vf):
             'vlan_qos': vlan_qos,
             'tx_rate_min': tx_rate_min,
             'tx_rate_max': tx_rate_max,
-            'spoof_check': spoof_check,
             'link_state': link_state,
+            'spoof_check': spoof_check,
             'trust': trust,
             'query_rss': query_rss,
         },
@@ -713,16 +717,26 @@ def getSRIOVVFInformation(zkhandler, node, vf):
 
 
 def get_info_sriov_vf(zkhandler, node, vf):
+    # Verify node is valid
+    valid_node = common.verifyNode(zkhandler, node)
+    if not valid_node:
+        return False, 'ERROR: Specified node "{}" is invalid.'.format(node)
+
     vf_information = getSRIOVVFInformation(zkhandler, node, vf)
     if not vf_information:
-        return False, 'ERROR: Could not get information about SR-IOV VF "{}" on node "{}"'.format(vf, node)
+        return False, 'ERROR: Could not find SR-IOV VF "{}" on node "{}"'.format(vf, node)
 
     return True, vf_information
 
 
 def get_list_sriov_vf(zkhandler, node, pf=None):
+    # Verify node is valid
+    valid_node = common.verifyNode(zkhandler, node)
+    if not valid_node:
+        return False, 'ERROR: Specified node "{}" is invalid.'.format(node)
+
     vf_list = list()
-    vf_phy_list = sorted(zkhandler.children(('node.sriov.vf', node)))
+    vf_phy_list = common.sortInterfaceNames(zkhandler.children(('node.sriov.vf', node)))
     for phy in vf_phy_list:
         retcode, vf_information = get_info_sriov_vf(zkhandler, node, phy)
         if retcode:
@@ -735,9 +749,87 @@ def get_list_sriov_vf(zkhandler, node, pf=None):
     return True, vf_list
 
 
-def set_sriov_vf_config(zkhandler, node, vf, vlan_id=None, vlan_qos=None, tx_rate_min=None, tx_rate_max=None, spoof_check=None, link_state=None, trust=None, query_rss=None):
-    pass
+def set_sriov_vf_config(zkhandler, node, vf, vlan_id=None, vlan_qos=None, tx_rate_min=None, tx_rate_max=None, link_state=None, spoof_check=None, trust=None, query_rss=None):
+    # Verify node is valid
+    valid_node = common.verifyNode(zkhandler, node)
+    if not valid_node:
+        return False, 'ERROR: Specified node "{}" is invalid.'.format(node)
+
+    # Verify VF is valid
+    vf_information = getSRIOVVFInformation(zkhandler, node, vf)
+    if not vf_information:
+        return False, 'ERROR: Could not find SR-IOV VF "{}" on node "{}".'.format(vf, node)
+
+    update_list = list()
+
+    if vlan_id is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.vlan_id', vf), vlan_id))
+
+    if vlan_qos is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.vlan_qos', vf), vlan_qos))
+
+    if tx_rate_min is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.tx_rate_min', vf), tx_rate_min))
+
+    if tx_rate_max is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.tx_rate_max', vf), tx_rate_max))
+
+    if link_state is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.link_state', vf), link_state))
+
+    if spoof_check is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.spoof_check', vf), spoof_check))
+
+    if trust is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.trust', vf), trust))
+
+    if query_rss is not None:
+        update_list.append((('node.sriov.vf', node, 'sriov_vf.config.query_rss', vf), query_rss))
+
+    if len(update_list) < 1:
+        return False, 'ERROR: No changes to apply.'
+
+    result = zkhandler.write(update_list)
+    if result:
+        return True, 'Successfully modified configuration of SR-IOV VF "{}" on node "{}".'.format(vf, node)
+    else:
+        return False, 'Failed to modify configuration of SR-IOV VF "{}" on node "{}".'.format(vf, node)
 
 
 def set_sriov_vf_vm(zkhandler, node, vf, vm_name, vm_macaddr):
-    pass
+    # Verify node is valid
+    valid_node = common.verifyNode(zkhandler, node)
+    if not valid_node:
+        return False
+
+    # Verify VF is valid
+    vf_information = getSRIOVVFInformation(zkhandler, node, vf)
+    if not vf_information:
+        return False
+
+    zkhandler.write([
+        (('node.sriov.vf', node, 'sriov_vf.used', vf), 'True'),
+        (('node.sriov.vf', node, 'sriov_vf.used_by', vf), vm_name),
+        (('node.sriov.vf', node, 'sriov_vf.mac', vf), vm_macaddr),
+    ])
+
+    return True
+
+
+def unset_sriov_vf_vm(zkhandler, node, vf):
+    # Verify node is valid
+    valid_node = common.verifyNode(zkhandler, node)
+    if not valid_node:
+        return False
+
+    # Verify VF is valid
+    vf_information = getSRIOVVFInformation(zkhandler, node, vf)
+    if not vf_information:
+        return False
+
+    zkhandler.write([
+        (('node.sriov.vf', node, 'sriov_vf.used', vf), 'False'),
+        (('node.sriov.vf', node, 'sriov_vf.used_by', vf), ''),
+    ])
+
+    return True

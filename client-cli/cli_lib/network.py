@@ -385,7 +385,7 @@ def net_sriov_pf_list(config, node):
     List all PFs on NODE
 
     API endpoint: GET /api/v1/sriov/pf/<node>
-    API arguments: node=node
+    API arguments: node={node}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
     response = call_api(config, 'get', '/sriov/pf/{}'.format(node))
@@ -396,12 +396,59 @@ def net_sriov_pf_list(config, node):
         return False, response.json().get('message', '')
 
 
+def net_sriov_vf_set(config, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+    """
+    Mdoify configuration of a SR-IOV VF
+
+    API endpoint: PUT /api/v1/sriov/vf/<node>/<vf>
+    API arguments: vlan_id={vlan_id}, vlan_qos={vlan_qos}, tx_rate_min={tx_rate_min}, tx_rate_max={tx_rate_max},
+                   link_state={link_state}, spoof_check={spoof_check}, trust={trust}, query_rss={query_rss}
+    API schema: {"message": "{data}"}
+    """
+    params = dict()
+
+    # Update any params that we've sent
+    if vlan_id is not None:
+        params['vlan_id'] = vlan_id
+
+    if vlan_qos is not None:
+        params['vlan_qos'] = vlan_qos
+
+    if tx_rate_min is not None:
+        params['tx_rate_min'] = tx_rate_min
+
+    if tx_rate_max is not None:
+        params['tx_rate_max'] = tx_rate_max
+
+    if link_state is not None:
+        params['link_state'] = link_state
+
+    if spoof_check is not None:
+        params['spoof_check'] = spoof_check
+
+    if trust is not None:
+        params['trust'] = trust
+
+    if query_rss is not None:
+        params['query_rss'] = query_rss
+
+    # Write the new configuration to the API
+    response = call_api(config, 'put', '/sriov/vf/{node}/{vf}'.format(node=node, vf=vf), params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
 def net_sriov_vf_list(config, node, pf=None):
     """
     List all VFs on NODE, optionally limited by PF
 
     API endpoint: GET /api/v1/sriov/vf/<node>
-    API arguments: node=node, pf=pf
+    API arguments: node={node}, pf={pf}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
     params = dict()
@@ -843,7 +890,6 @@ def format_list_sriov_pf(pf_list):
 
         if len(nice_vfs_list) > 1:
             for idx in range(1, len(nice_vfs_list)):
-                print(idx)
                 pf_list_output.append('{bold}\
 {pf_phy: <{pf_phy_length}} \
 {pf_mtu: <{pf_mtu_length}} \

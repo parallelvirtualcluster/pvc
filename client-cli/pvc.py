@@ -2156,6 +2156,39 @@ def net_sriov_vf():
 # pvc network sriov vf set
 ###############################################################################
 @click.command(name='set', short_help='Set VF device properties.')
+@click.option(
+    '--vlan-id', 'vlan_id', default=None, show_default=False,
+    help='The vLAN ID for vLAN tagging.'
+)
+@click.option(
+    '--qos-prio', 'vlan_qos', default=None, show_default=False,
+    help='The vLAN QOS priority.'
+)
+@click.option(
+    '--tx-min', 'tx_rate_min', default=None, show_default=False,
+    help='The minimum TX rate.'
+)
+@click.option(
+    '--tx-max', 'tx_rate_max', default=None, show_default=False,
+    help='The maximum TX rate.'
+)
+@click.option(
+    '--link-state', 'link_state', default=None, show_default=False,
+    type=click.Choice(['auto', 'enable', 'disable']),
+    help='The administrative link state.'
+)
+@click.option(
+    '--spoof-check/--no-spoof-check', 'spoof_check', is_flag=True, default=None, show_default=False,
+    help='Enable or disable spoof checking.'
+)
+@click.option(
+    '--trust/--no-trust', 'trust', is_flag=True, default=None, show_default=False,
+    help='Enable or disable VF user trust.'
+)
+@click.option(
+    '--query-rss/--no-query-rss', 'query_rss', is_flag=True, default=None, show_default=False,
+    help='Enable or disable query RSS support.'
+)
 @click.argument(
     'node'
 )
@@ -2163,14 +2196,15 @@ def net_sriov_vf():
     'vf'
 )
 @cluster_req
-def net_sriov_vf_set(node, pf):
+def net_sriov_vf_set(node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
     """
     Set a property of SR-IOV VF on NODE.
     """
-    retcode, retdata = pvc_network.net_sriov_vf_list(config, node, pf)
-    if retcode:
-        retdata = pvc_network.format_list_sriov_vf(retdata)
-    cleanup(retcode, retdata)
+    if vlan_id is None and vlan_qos is None and tx_rate_min is None and tx_rate_max is None and link_state is None and spoof_check is None and trust is None and query_rss is None:
+        cleanup(False, 'At least one configuration property must be specified to update.')
+
+    retcode, retmsg = pvc_network.net_sriov_vf_set(config, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+    cleanup(retcode, retmsg)
 
 
 ###############################################################################

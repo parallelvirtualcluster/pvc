@@ -26,6 +26,7 @@ import subprocess
 import signal
 from json import loads
 from re import match as re_match
+from re import split as re_split
 from distutils.util import strtobool
 from threading import Thread
 from shlex import split as shlex_split
@@ -685,3 +686,25 @@ def removeIPAddress(ipaddr, cidrnetmask, dev):
             dev
         )
     )
+
+
+#
+# Sort a set of interface names (e.g. ens1f1v10)
+#
+def sortInterfaceNames(interface_names):
+    # We can't handle non-list inputs
+    if not isinstance(interface_names, list):
+        return interface_names
+
+    def atoi(text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text):
+        """
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        (See Toothy's implementation in the comments)
+        """
+        return [atoi(c) for c in re_split(r'(\d+)', text)]
+
+    return sorted(interface_names, key=natural_keys)

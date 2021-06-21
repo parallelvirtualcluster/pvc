@@ -1034,6 +1034,24 @@ def sriov_vf_list(zkhandler, node, pf=None):
     return retdata, retcode
 
 
+@ZKConnection(config)
+def update_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+    """
+    Update configuration of a VF on NODE.
+    """
+    retflag, retdata = pvc_network.set_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return output, retcode
+
+
 #
 # Ceph functions
 #

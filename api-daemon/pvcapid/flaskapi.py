@@ -2923,6 +2923,93 @@ class API_SRIOV_VF_Element(Resource):
         else:
             return {'message': "No VF '{}' found on node '{}'".format(vf, node)}, 404
 
+    @RequestParser([
+        {'name': 'vlan_id'},
+        {'name': 'vlan_qos'},
+        {'name': 'tx_rate_min'},
+        {'name': 'tx_rate_max'},
+        {'name': 'link_state', 'choices': ('auto', 'enable', 'disable'), 'helptext': "A valid state must be specified"},
+        {'name': 'spoof_check'},
+        {'name': 'trust'},
+        {'name': 'query_rss'},
+    ])
+    @Authenticator
+    def put(self, node, vf, reqargs):
+        """
+        Set the configuration of {vf} on {node}
+        ---
+        tags:
+          - network / sriov
+        parameters:
+          - in: query
+            name: vlan_id
+            type: integer
+            required: false
+            description: The vLAN ID for vLAN tagging (0 is disabled)
+          - in: query
+            name: vlan_qos
+            type: integer
+            required: false
+            description: The vLAN QOS priority (0 is disabled)
+          - in: query
+            name: tx_rate_min
+            type: integer
+            required: false
+            description: The minimum TX rate (0 is disabled)
+          - in: query
+            name: tx_rate_max
+            type: integer
+            required: false
+            description: The maximum TX rate (0 is disabled)
+          - in: query
+            name: link_state
+            type: string
+            required: false
+            description: The administrative link state
+            enum:
+              - auto
+              - enable
+              - disable
+          - in: query
+            name: spoof_check
+            type: boolean
+            required: false
+            description: Enable or disable spoof checking
+          - in: query
+            name: trust
+            type: boolean
+            required: false
+            description: Enable or disable VF user trust
+          - in: query
+            name: query_rss
+            type: boolean
+            required: false
+            description: Enable or disable query RSS support
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.update_sriov_vf_config(
+            node,
+            vf,
+            reqargs.get('vlan_id', None),
+            reqargs.get('vlan_qos', None),
+            reqargs.get('tx_rate_min', None),
+            reqargs.get('tx_rate_max', None),
+            reqargs.get('link_state', None),
+            reqargs.get('spoof_check', None),
+            reqargs.get('trust', None),
+            reqargs.get('query_rss', None),
+        )
+
 
 api.add_resource(API_SRIOV_VF_Element, '/sriov/vf/<node>/<vf>')
 
