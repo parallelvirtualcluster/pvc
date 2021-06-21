@@ -1137,6 +1137,8 @@ if enable_networking:
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.used', vfphy), False),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.used_by', vfphy), ''),
                     ])
                 # Append the device to the list of VFs
                 sriov_vf_list.append(vfphy)
