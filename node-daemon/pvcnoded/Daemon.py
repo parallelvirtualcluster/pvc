@@ -1164,10 +1164,10 @@ if enable_networking:
             global sriov_vf_list, d_sriov_vf
 
             # Add VFs to the list
-            for vf in new_sriov_vf_list:
+            for vf in sorted(new_sriov_vf_list):
                 d_sriov_vf[vf] = SRIOVVFInstance.SRIOVVFInstance(vf, zkhandler, config, logger, this_node)
 
-            sriov_vf_list = new_sriov_vf_list
+            sriov_vf_list = sorted(new_sriov_vf_list)
             logger.out('{}SR-IOV VF list:{} {}'.format(fmt_blue, fmt_end, ' '.join(sriov_vf_list)), state='i')
 
 if enable_hypervisor:
