@@ -500,6 +500,7 @@ class ZKSchema(object):
             'pf': '/pf',
             'mtu': '/mtu',
             'mac': '/mac',
+            'phy_mac': '/phy_mac',
             'config': '/config',
             'config.vlan_id': '/config/vlan_id',
             'config.vlan_qos': '/config/vlan_qos',

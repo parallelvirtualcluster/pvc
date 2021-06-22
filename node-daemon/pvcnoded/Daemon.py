@@ -1150,6 +1150,7 @@ if enable_networking:
                         (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
                         (('node.sriov.vf', myhostname, 'sriov_vf.mtu', vfphy), mtu),
                         (('node.sriov.vf', myhostname, 'sriov_vf.mac', vfphy), vf['address']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.phy_mac', vfphy), vf['address']),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config', vfphy), ''),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_id', vfphy), vf['vlan_list'][0].get('vlan', '0')),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_qos', vfphy), vf['vlan_list'][0].get('qos', '0')),

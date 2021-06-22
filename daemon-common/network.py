@@ -848,6 +848,7 @@ def unset_sriov_vf_vm(zkhandler, node, vf):
     update_list = [
         (('node.sriov.vf', node, 'sriov_vf.used', vf), 'False'),
         (('node.sriov.vf', node, 'sriov_vf.used_by', vf), ''),
+        (('node.sriov.vf', node, 'sriov_vf.mac', vf), zkhandler.read(('node.sriov.vf', node, 'sriov_vf.phy_mac', vf)))
     ]
 
     zkhandler.write(update_list)
