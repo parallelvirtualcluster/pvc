@@ -690,6 +690,10 @@ def getSRIOVVFInformation(zkhandler, node, vf):
     spoof_check = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.spoof_check', vf))
     trust = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.trust', vf))
     query_rss = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.config.query_rss', vf))
+    pci_domain = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pci.domain', vf))
+    pci_bus = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pci.bus', vf))
+    pci_slot = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pci.slot', vf))
+    pci_function = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.pci.function', vf))
     used = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.used', vf))
     used_by_domain = zkhandler.read(('node.sriov.vf', node, 'sriov_vf.used_by', vf))
 
@@ -707,6 +711,12 @@ def getSRIOVVFInformation(zkhandler, node, vf):
             'spoof_check': spoof_check,
             'trust': trust,
             'query_rss': query_rss,
+        },
+        'pci': {
+            'domain': pci_domain,
+            'bus': pci_bus,
+            'slot': pci_slot,
+            'function': pci_function,
         },
         'usage': {
             'used': used,

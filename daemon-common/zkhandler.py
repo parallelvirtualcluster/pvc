@@ -509,6 +509,11 @@ class ZKSchema(object):
             'config.link_state': '/config/link_state',
             'config.trust': '/config/trust',
             'config.query_rss': '/config/query_rss',
+            'pci': '/pci',
+            'pci.domain': '/pci/domain',
+            'pci.bus': '/pci/bus',
+            'pci.slot': '/pci/slot',
+            'pci.function': '/pci/function',
             'used': '/used',
             'used_by': '/used_by'
         },

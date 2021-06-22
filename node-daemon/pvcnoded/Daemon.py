@@ -1121,8 +1121,30 @@ if enable_networking:
                 #   'query_rss_en': False
                 # }
                 vfphy = '{}v{}'.format(pf, vf['vf'])
+
+                # Get the PCIe bus information
+                dev_pcie_path = None
+                try:
+                    with open('/sys/class/net/{}/device/uevent'.format(vfphy)) as vfh:
+                        dev_uevent = vfh.readlines()
+                    for line in dev_uevent:
+                        if re.match(r'^PCI_SLOT_NAME=.*', line):
+                            dev_pcie_path = line.split('=')[-1]
+                except FileNotFoundError:
+                    # Something must already be using the PCIe device
+                    pass
+
                 # Add the VF to Zookeeper if it does not yet exist
                 if not zkhandler.exists(('node.sriov.vf', myhostname, 'sriov_vf', vfphy)):
+                    if dev_pcie_path is not None:
+                        pcie_domain, pcie_bus, pcie_slot, pcie_function = re.split(r':|\.', dev_pcie_path)
+                    else:
+                        # We can't add the device - for some reason we can't get any information on its PCIe bus path,
+                        # so just ignore this one, and continue.
+                        # This shouldn't happen under any real circumstances, unless the admin tries to attach a non-existent
+                        # VF to a VM manually, then goes ahead and adds that VF to the system with the VM running.
+                        continue
+
                     zkhandler.write([
                         (('node.sriov.vf', myhostname, 'sriov_vf', vfphy), ''),
                         (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
@@ -1137,9 +1159,15 @@ if enable_networking:
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
                         (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.domain', vfphy), pcie_domain),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.bus', vfphy), pcie_bus),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.slot', vfphy), pcie_slot),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.function', vfphy), pcie_function),
                         (('node.sriov.vf', myhostname, 'sriov_vf.used', vfphy), False),
                         (('node.sriov.vf', myhostname, 'sriov_vf.used_by', vfphy), ''),
                     ])
+
                 # Append the device to the list of VFs
                 sriov_vf_list.append(vfphy)
 
@@ -1660,7 +1688,7 @@ def collect_vm_stats(queue):
         domain_network_stats = []
         for interface in tree.findall('devices/interface'):
             interface_type = interface.get('type')
-            if interface_type in ['hostdev']:
+            if interface_type not in ['bridge']:
                 continue
             interface_name = interface.find('target').get('dev')
             interface_bridge = interface.find('source').get('bridge')
