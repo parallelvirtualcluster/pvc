@@ -4642,6 +4642,90 @@
                 "tags": [
                     "network / sriov"
                 ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The vLAN ID for vLAN tagging (0 is disabled)",
+                        "in": "query",
+                        "name": "vlan_id",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The vLAN QOS priority (0 is disabled)",
+                        "in": "query",
+                        "name": "vlan_qos",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The minimum TX rate (0 is disabled)",
+                        "in": "query",
+                        "name": "tx_rate_min",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The maximum TX rate (0 is disabled)",
+                        "in": "query",
+                        "name": "tx_rate_max",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "The administrative link state",
+                        "enum": [
+                            "auto",
+                            "enable",
+                            "disable"
+                        ],
+                        "in": "query",
+                        "name": "link_state",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Enable or disable spoof checking",
+                        "in": "query",
+                        "name": "spoof_check",
+                        "required": false,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Enable or disable VF user trust",
+                        "in": "query",
+                        "name": "trust",
+                        "required": false,
+                        "type": "boolean"
+                    },
+                    {
+                        "description": "Enable or disable query RSS support",
+                        "in": "query",
+                        "name": "query_rss",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the configuration of {vf} on {node}",
+                "tags": [
+                    "network / sriov"
+                ]
             }
         },
         "/api/v1/status": {
