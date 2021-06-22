@@ -567,7 +567,7 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, rest
                 pci_slot=sriov_vf_information['pci']['slot'],
                 pci_function=sriov_vf_information['pci']['function'],
             )
-            device_string = '<interface type="hostdev"><mac address="{macaddr}"/><source><address type="pci" {bus_address}/></source><sriov_device>{network}</sriov_device></interface>'.format(
+            device_string = '<interface type="hostdev" managed="yes"><mac address="{macaddr}"/><source><address type="pci" {bus_address}/></source><sriov_device>{network}</sriov_device></interface>'.format(
                 macaddr=macaddr,
                 bus_address=bus_address,
                 network=network
