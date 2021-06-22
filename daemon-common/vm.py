@@ -300,7 +300,7 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     dnetworks = common.getDomainNetworks(parsed_xml, {})
     for network in dnetworks:
         # Ignore networks that are already there
-        if network in old_dnetworks:
+        if network['source'] in [net['source'] for net in old_dnetworks]:
             continue
 
         if network['type'] in ['direct', 'hostdev']:
