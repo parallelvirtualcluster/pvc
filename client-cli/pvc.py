@@ -672,7 +672,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
     type=click.Choice(['none', 'live', 'shutdown']),
-    help='The preferred migration method of the VM between nodes; saved with VM.'
+    help='The preferred migration method of the VM between nodes.'
 )
 @click.option(
     '-p', '--profile', 'provisioner_profile', default=None, show_default=False,
@@ -1316,7 +1316,7 @@ def vm_network_get(domain, raw):
     help='Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.'
 )
 @click.option(
-    '-m', '--model', 'model', default='virtio',
+    '-m', '--model', 'model', default='virtio', show_default=True,
     help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.'
 )
 @click.option(
@@ -1324,7 +1324,7 @@ def vm_network_get(domain, raw):
     help='Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.'
 )
 @click.option(
-    '-d', '--sriov-mode', 'sriov_mode', default='hostdev',
+    '-d', '--sriov-mode', 'sriov_mode', default='macvtap', show_default=True,
     type=click.Choice(['hostdev', 'macvtap']),
     help='For SR-IOV NETs, the SR-IOV network device mode.'
 )
