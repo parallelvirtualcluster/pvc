@@ -1323,6 +1323,30 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
         vm_architecture=system_architecture
     )
 
+    # Add disk devices
+    monitor_list = list()
+    coordinator_names = config['storage_hosts']
+    for coordinator in coordinator_names:
+        monitor_list.append("{}.{}".format(coordinator, config['storage_domain']))
+
+    ceph_storage_secret = config['ceph_storage_secret_uuid']
+
+    for volume in vm_data['volumes']:
+        vm_schema += libvirt_schema.devices_disk_header.format(
+            ceph_storage_secret=ceph_storage_secret,
+            disk_pool=volume['pool'],
+            vm_name=vm_name,
+            disk_id=volume['disk_id']
+        )
+        for monitor in monitor_list:
+            vm_schema += libvirt_schema.devices_disk_coordinator.format(
+                coordinator_name=monitor,
+                coordinator_ceph_mon_port=config['ceph_monitor_port']
+            )
+        vm_schema += libvirt_schema.devices_disk_footer
+
+    vm_schema += libvirt_schema.devices_vhostmd
+
     # Add network devices
     network_id = 0
     for network in vm_data['networks']:
@@ -1363,30 +1387,6 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
         )
 
         network_id += 1
-
-    # Add disk devices
-    monitor_list = list()
-    coordinator_names = config['storage_hosts']
-    for coordinator in coordinator_names:
-        monitor_list.append("{}.{}".format(coordinator, config['storage_domain']))
-
-    ceph_storage_secret = config['ceph_storage_secret_uuid']
-
-    for volume in vm_data['volumes']:
-        vm_schema += libvirt_schema.devices_disk_header.format(
-            ceph_storage_secret=ceph_storage_secret,
-            disk_pool=volume['pool'],
-            vm_name=vm_name,
-            disk_id=volume['disk_id']
-        )
-        for monitor in monitor_list:
-            vm_schema += libvirt_schema.devices_disk_coordinator.format(
-                coordinator_name=monitor,
-                coordinator_ceph_mon_port=config['ceph_monitor_port']
-            )
-        vm_schema += libvirt_schema.devices_disk_footer
-
-    vm_schema += libvirt_schema.devices_vhostmd
 
     # Add default devices
     vm_schema += libvirt_schema.devices_default
