@@ -146,6 +146,11 @@ pvc:
         console_log_lines: 1000
       networking:
         bridge_device: ens4
+        sriov_enable: True
+        sriov_device:
+          - phy: ens1f0
+            mtu: 9000
+            vfcount: 7
         upstream:
           device: ens4
           mtu: 1500
@@ -421,6 +426,34 @@ How many lines of VM console logs to keep in the Zookeeper database for each VM.
 * *requires* `functions` → `enable_networking`
 
 The network interface device used to create Bridged client network vLANs on. For most clusters, should match the underlying device of the various static networks (e.g. `ens4` or `bond0`), though may also use a separate network interface.
+
+#### `system` → `configuration` → `networking` → `sriov_enable`
+
+* *optional*, defaults to `False`
+* *requires* `functions` → `enable_networking`
+
+Enables (or disables) SR-IOV functionality in PVC. If enabled, at least one `sriov_device` entry should be specified.
+
+#### `system` → `configuration` → `networking` → `sriov_device`
+
+* *optional*
+* *requires* `functions` → `enable_networking`
+
+Contains a list of SR-IOV PF (physical function) devices and their basic configuration. Each element contains the following entries:
+
+##### `phy`:
+
+* *required*
+
+The raw Linux network device with SR-IOV PF functionality.
+
+##### `mtu`
+
+The MTU of the PF device, set on daemon startup.
+
+##### `vfcount`
+
+The number of VF devices to create on this PF. VF devices are then managed via PVC on a per-node basis.
 
 #### `system` → `configuration` → `networking`
 
