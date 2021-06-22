@@ -373,23 +373,28 @@ def getDomainNetworks(parsed_xml, stats_data):
                 net_type = device.attrib.get('type')
             except Exception:
                 net_type = None
+
             try:
                 net_mac = device.mac.attrib.get('address')
             except Exception:
                 net_mac = None
+
             try:
                 net_bridge = device.source.attrib.get(net_type)
             except Exception:
                 net_bridge = None
+
             try:
                 net_model = device.model.attrib.get('type')
             except Exception:
                 net_model = None
+
             try:
                 net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
                 net_stats = net_stats_list[0]
             except Exception:
                 net_stats = {}
+
             net_rd_bytes = net_stats.get('rd_bytes', 0)
             net_rd_packets = net_stats.get('rd_packets', 0)
             net_rd_errors = net_stats.get('rd_errors', 0)
@@ -398,10 +403,16 @@ def getDomainNetworks(parsed_xml, stats_data):
             net_wr_packets = net_stats.get('wr_packets', 0)
             net_wr_errors = net_stats.get('wr_errors', 0)
             net_wr_drops = net_stats.get('wr_drops', 0)
-            if net_type in ['direct', 'hostdev']:
-                net_vni = device.source.attrib.get('dev')
+
+            if net_type == 'direct':
+                net_vni = 'macvtap:' + device.source.attrib.get('dev')
+                net_bridge = device.source.attrib.get('dev')
+            elif net_type == 'hostdev':
+                net_vni = 'hostdev:' + str(device.sriov_device)
+                net_bridge = str(device.sriov_device)
             else:
                 net_vni = re_match(r'[vm]*br([0-9a-z]+)', net_bridge).group(1)
+
             net_obj = {
                 'type': net_type,
                 'vni': net_vni,

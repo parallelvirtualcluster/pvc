@@ -806,7 +806,7 @@ def set_sriov_vf_config(zkhandler, node, vf, vlan_id=None, vlan_qos=None, tx_rat
         return False, 'Failed to modify configuration of SR-IOV VF "{}" on node "{}".'.format(vf, node)
 
 
-def set_sriov_vf_vm(zkhandler, node, vf, vm_name, vm_macaddr):
+def set_sriov_vf_vm(zkhandler, vm_uuid, node, vf, vf_macaddr, vf_type):
     # Verify node is valid
     valid_node = common.verifyNode(zkhandler, node)
     if not valid_node:
@@ -817,11 +817,19 @@ def set_sriov_vf_vm(zkhandler, node, vf, vm_name, vm_macaddr):
     if not vf_information:
         return False
 
-    zkhandler.write([
+    update_list = [
         (('node.sriov.vf', node, 'sriov_vf.used', vf), 'True'),
-        (('node.sriov.vf', node, 'sriov_vf.used_by', vf), vm_name),
-        (('node.sriov.vf', node, 'sriov_vf.mac', vf), vm_macaddr),
-    ])
+        (('node.sriov.vf', node, 'sriov_vf.used_by', vf), vm_uuid),
+        (('node.sriov.vf', node, 'sriov_vf.mac', vf), vf_macaddr),
+    ]
+
+    # Hostdev type SR-IOV prevents the guest from live migrating
+    if vf_type == 'hostdev':
+        update_list.append(
+            (('domain.meta.migrate_method', vm_uuid), 'shutdown')
+        )
+
+    zkhandler.write(update_list)
 
     return True
 
@@ -837,9 +845,11 @@ def unset_sriov_vf_vm(zkhandler, node, vf):
     if not vf_information:
         return False
 
-    zkhandler.write([
+    update_list = [
         (('node.sriov.vf', node, 'sriov_vf.used', vf), 'False'),
         (('node.sriov.vf', node, 'sriov_vf.used_by', vf), ''),
-    ])
+    ]
+
+    zkhandler.write(update_list)
 
     return True

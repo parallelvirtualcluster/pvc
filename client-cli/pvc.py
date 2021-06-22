@@ -1309,15 +1309,24 @@ def vm_network_get(domain, raw):
     'domain'
 )
 @click.argument(
-    'vni'
+    'net'
 )
 @click.option(
     '-a', '--macaddr', 'macaddr', default=None,
-    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-deliniated format.'
+    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.'
 )
 @click.option(
     '-m', '--model', 'model', default='virtio',
-    help='The model for the interface; must be a valid libvirt model.'
+    help='The model for the interface; must be a valid libvirt model. Not used for SR-IOV NETs.'
+)
+@click.option(
+    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    help='Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.'
+)
+@click.option(
+    '-d', '--sriov-mode', 'sriov_mode', default='hostdev',
+    type=click.Choice(['hostdev', 'macvtap']),
+    help='For SR-IOV NETs, the SR-IOV network device mode.'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1329,9 +1338,18 @@ def vm_network_get(domain, raw):
     help='Confirm the restart'
 )
 @cluster_req
-def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
+def vm_network_add(domain, net, macaddr, model, sriov, sriov_mode, restart, confirm_flag):
     """
-    Add the network VNI to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+    Add the network NET to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
+
+    NOTE: Adding a SR-IOV network device in the "hostdev" mode has the following caveats:
+
+      1. The VM will not be able to be live migrated; it must be shut down to migrate between nodes. The VM metadata will be updated to force this.
+
+      2. If an identical SR-IOV VF device is not present on the target node, post-migration startup will fail. It may be prudent to use a node limit here.
+
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1339,7 +1357,7 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
+    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, net, macaddr, model, sriov, sriov_mode, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
@@ -1353,7 +1371,11 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     'domain'
 )
 @click.argument(
-    'vni'
+    'net'
+)
+@click.option(
+    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    help='Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1365,9 +1387,11 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     help='Confirm the restart'
 )
 @cluster_req
-def vm_network_remove(domain, vni, restart, confirm_flag):
+def vm_network_remove(domain, net, sriov, restart, confirm_flag):
     """
-    Remove the network VNI to the virtual machine DOMAIN.
+    Remove the network NET from the virtual machine DOMAIN.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1375,7 +1399,7 @@ def vm_network_remove(domain, vni, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, sriov, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)

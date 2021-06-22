@@ -1034,6 +1034,12 @@ def format_info_sriov_vf(config, vf_information, node):
     ainformation.append('{}VF User Trust:{}     {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['config']['trust']), vf_information['config']['trust'], ansiprint.end()))
     ainformation.append('{}Query RSS Config:{}  {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['config']['query_rss']), vf_information['config']['query_rss'], ansiprint.end()))
     ainformation.append('')
+    # PCIe bus information
+    ainformation.append('{}PCIe domain:{}       {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['domain']))
+    ainformation.append('{}PCIe bus:{}          {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['bus']))
+    ainformation.append('{}PCIe slot:{}         {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['slot']))
+    ainformation.append('{}PCIe function:{}     {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['function']))
+    ainformation.append('')
     # Usage information
     ainformation.append('{}VF Used:{}           {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['usage']['used']), vf_information['usage']['used'], ansiprint.end()))
     if vf_information['usage']['used'] == 'True' and vm_information is not None:

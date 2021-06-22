@@ -27,6 +27,7 @@ import lxml.etree
 import daemon_lib.common as common
 
 import daemon_lib.ceph as ceph
+from daemon_lib.network import set_sriov_vf_vm, unset_sriov_vf_vm
 
 
 #
@@ -191,6 +192,21 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         if not valid_node:
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
+    # If a SR-IOV network device is being added, set its used state
+    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    for network in dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            dom_node = zkhandler.read(('domain.node', dom_uuid))
+
+            # Check if the network is already in use
+            is_used = zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used', network['source']))
+            if is_used == 'True':
+                used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used_by', network['source'])))
+                return False, 'ERROR: Attempted to use SR-IOV network "{}" which is already used by VM "{}" on node "{}".'.format(network['source'], used_by_name, dom_node)
+
+            # We must update the "used" section
+            set_sriov_vf_vm(zkhandler, dom_uuid, dom_node, network['source'], network['mac'], network['type'])
+
     # Obtain the RBD disk list using the common functions
     ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
@@ -211,7 +227,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         formatted_rbd_list = ''
 
     # Add the new domain to Zookeeper
-    result = zkhandler.write([
+    zkhandler.write([
         (('domain', dom_uuid), dom_name),
         (('domain.xml', dom_uuid), config_data),
         (('domain.state', dom_uuid), initial_state),
@@ -230,10 +246,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         (('domain.migrate.sync_lock', dom_uuid), ''),
     ])
 
-    if result:
-        return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
-    else:
-        return False, 'ERROR: Failed to add new VM.'
+    return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
 
 def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
@@ -276,7 +289,36 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     try:
         parsed_xml = lxml.objectify.fromstring(new_vm_config)
     except Exception:
-        return False, 'ERROR: Failed to parse XML data.'
+        return False, 'ERROR: Failed to parse new XML data.'
+
+    # If a SR-IOV network device is being added, set its used state
+    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    for network in dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            dom_node = zkhandler.read(('domain.node', dom_uuid))
+
+            # Check if the network is already in use
+            is_used = zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used', network['source']))
+            if is_used == 'True':
+                used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used_by', network['source'])))
+                return False, 'ERROR: Attempted to use SR-IOV network "{}" which is already used by VM "{}" on node "{}".'.format(network['source'], used_by_name, dom_node)
+
+            # We must update the "used" section
+            set_sriov_vf_vm(zkhandler, dom_uuid, dom_node, network['source'], network['mac'], network['type'])
+
+    # If a SR-IOV network device is being removed, unset its used state
+    old_vm_config = zkhandler.read(('domain.xml', dom_uuid))
+    try:
+        old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
+    except Exception:
+        return False, 'ERROR: Failed to parse old XML data.'
+    old_dnetworks = common.getDomainNetworks(old_parsed_xml, {})
+    for network in old_dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            if network['mac'] not in [n['mac'] for n in dnetworks]:
+                dom_node = zkhandler.read(('domain.node', dom_uuid))
+                # We must update the "used" section
+                unset_sriov_vf_vm(zkhandler, dom_node, network['source'])
 
     # Obtain the RBD disk list using the common functions
     ddisks = common.getDomainDisks(parsed_xml, {})

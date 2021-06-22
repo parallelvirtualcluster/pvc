@@ -1129,7 +1129,7 @@ if enable_networking:
                         dev_uevent = vfh.readlines()
                     for line in dev_uevent:
                         if re.match(r'^PCI_SLOT_NAME=.*', line):
-                            dev_pcie_path = line.split('=')[-1]
+                            dev_pcie_path = line.rstrip().split('=')[-1]
                 except FileNotFoundError:
                     # Something must already be using the PCIe device
                     pass
