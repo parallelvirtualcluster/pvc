@@ -34,8 +34,6 @@ import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
 import daemon_lib.common as daemon_common
 
-from daemon_lib.vm import update_vm_sriov_nics
-
 
 def flush_locks(zkhandler, logger, dom_uuid, this_node=None):
     logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
@@ -673,11 +671,6 @@ class VMInstance(object):
         lock.acquire()
         self.logger.out('Acquired write lock for synchronization phase D', state='o', prefix='Domain {}'.format(self.domuuid))
         time.sleep(0.5)  # Time for reader to acquire the lock
-
-        # Update any SR-IOV NIC states now
-        sriov_update_result, sriov_update_error = update_vm_sriov_nics(self.zkhandler, self.domuuid, self.last_currentnode, self.node)
-        if not sriov_update_result:
-            self.logger.out('{}; VM will likely fail to start.'.format(sriov_update_error), state='w', prefix='Domain {}'.format(self.domuuid))
 
         self.state = self.zkhandler.read(('domain.state', self.domuuid))
         self.dom = self.lookupByUUID(self.domuuid)
