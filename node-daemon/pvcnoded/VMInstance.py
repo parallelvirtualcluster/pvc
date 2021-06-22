@@ -382,7 +382,7 @@ class VMInstance(object):
 
             # Abort shutdown if the state changes to start
             current_state = self.zkhandler.read(('domain.state', self.domuuid))
-            if current_state not in ['shutdown', 'restart']:
+            if current_state not in ['shutdown', 'restart', 'migrate']:
                 self.logger.out('Aborting VM shutdown due to state change', state='i', prefix='Domain {}'.format(self.domuuid))
                 is_aborted = True
                 break
