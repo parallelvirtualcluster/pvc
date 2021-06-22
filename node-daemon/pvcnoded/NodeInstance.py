@@ -466,7 +466,6 @@ class NodeInstance(object):
                 """
                 patronictl
                     -c /etc/patroni/config.yml
-                    -d zookeeper://localhost:2181
                     switchover
                     --candidate {}
                     --force
