@@ -291,9 +291,18 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     except Exception:
         return False, 'ERROR: Failed to parse new XML data.'
 
+    # Get our old network list for comparison purposes
+    old_vm_config = zkhandler.read(('domain.xml', dom_uuid))
+    old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
+    old_dnetworks = common.getDomainNetworks(old_parsed_xml, {})
+
     # If a SR-IOV network device is being added, set its used state
     dnetworks = common.getDomainNetworks(parsed_xml, {})
     for network in dnetworks:
+        # Ignore networks that are already there
+        if network in old_dnetworks:
+            continue
+
         if network['type'] in ['direct', 'hostdev']:
             dom_node = zkhandler.read(('domain.node', dom_uuid))
 
@@ -307,12 +316,6 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
             set_sriov_vf_vm(zkhandler, dom_uuid, dom_node, network['source'], network['mac'], network['type'])
 
     # If a SR-IOV network device is being removed, unset its used state
-    old_vm_config = zkhandler.read(('domain.xml', dom_uuid))
-    try:
-        old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
-    except Exception:
-        return False, 'ERROR: Failed to parse old XML data.'
-    old_dnetworks = common.getDomainNetworks(old_parsed_xml, {})
     for network in old_dnetworks:
         if network['type'] in ['direct', 'hostdev']:
             if network['mac'] not in [n['mac'] for n in dnetworks]:
