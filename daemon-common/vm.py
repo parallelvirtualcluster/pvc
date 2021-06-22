@@ -569,15 +569,20 @@ def update_vm_sriov_nics(zkhandler, dom_uuid, source_node, target_node):
             if is_used == 'True':
                 used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', target_node, 'sriov_vf.used_by', network['source'])))
                 if retcode:
-                    retcode = False
+                    retcode_this = False
                     retmsg = 'Attempting to use SR-IOV network "{}" which is already used by VM "{}"'.format(network['source'], used_by_name)
+            else:
+                retcode_this = True
 
             # We must update the "used" section
-            if retcode:
+            if retcode_this:
                 # This conditional ensure that if we failed the is_used check, we don't try to overwrite the information of a VF that belongs to another VM
                 set_sriov_vf_vm(zkhandler, dom_uuid, target_node, network['source'], network['mac'], network['type'])
             # ... but we still want to free the old node in an case
             unset_sriov_vf_vm(zkhandler, source_node, network['source'])
+
+            if not retcode_this:
+                retcode = retcode_this
 
     return retcode, retmsg
 
