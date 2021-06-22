@@ -630,6 +630,10 @@ def move_vm(zkhandler, domain, target_node, wait=False, force_live=False):
 
     retmsg = 'Permanently migrating VM "{}" to node "{}".'.format(domain, target_node)
 
+    if target_state not in ['migrate', 'migrate-live']:
+        # Update any SR-IOV NICs - with online migrations this is done by pvcnoded, but offline we must do it here
+        update_vm_sriov_nics(zkhandler, dom_uuid, zkhandler.read(('domain.node', dom_uuid)), target_node)
+
     lock = zkhandler.exclusivelock(('domain.state', dom_uuid))
     with lock:
         zkhandler.write([
@@ -698,6 +702,10 @@ def migrate_vm(zkhandler, domain, target_node, force_migrate, wait=False, force_
 
     retmsg = 'Migrating VM "{}" to node "{}".'.format(domain, target_node)
 
+    if target_state not in ['migrate', 'migrate-live']:
+        # Update any SR-IOV NICs - with online migrations this is done by pvcnoded, but offline we must do it here
+        update_vm_sriov_nics(zkhandler, dom_uuid, zkhandler.read(('domain.node', dom_uuid)), target_node)
+
     lock = zkhandler.exclusivelock(('domain.state', dom_uuid))
     with lock:
         zkhandler.write([
@@ -740,6 +748,10 @@ def unmigrate_vm(zkhandler, domain, wait=False, force_live=False):
         return False, 'ERROR: VM "{}" has not been previously migrated.'.format(domain)
 
     retmsg = 'Unmigrating VM "{}" back to node "{}".'.format(domain, target_node)
+
+    if target_state not in ['migrate', 'migrate-live']:
+        # Update any SR-IOV NICs - with online migrations this is done by pvcnoded, but offline we must do it here
+        update_vm_sriov_nics(zkhandler, dom_uuid, zkhandler.read(('domain.node', dom_uuid)), target_node)
 
     lock = zkhandler.exclusivelock(('domain.state', dom_uuid))
     with lock:
