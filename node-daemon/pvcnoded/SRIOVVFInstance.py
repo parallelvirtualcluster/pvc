@@ -41,8 +41,10 @@ class SRIOVVFInstance(object):
 
         self.pf = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.pf', self.vf))
         self.mtu = self.zkhandler.read(('node.sriov.vf', self.myhostname, 'sriov_vf.mtu', self.vf))
-
         self.vfid = self.vf.replace('{}v'.format(self.pf), '')
+
+        self.logger.out('Setting MTU to {}'.format(self.mtu), state='i', prefix='SR-IOV VF {}'.format(self.vf))
+        common.run_os_command('ip link set {} mtu {}'.format(self.vf, self.mtu))
 
         # These properties are set via the DataWatch functions, to ensure they are configured on the system
         self.mac = None
