@@ -722,6 +722,7 @@ class VMInstance(object):
         self.state = self.zkhandler.read(('domain.state', self.domuuid))
         self.node = self.zkhandler.read(('domain.node', self.domuuid))
         self.lastnode = self.zkhandler.read(('domain.last_node', self.domuuid))
+        self.migration_method = self.zkhandler.read(('domain.meta.migrate_method', self.domuuid))
 
         # Check the current state of the VM
         try:
