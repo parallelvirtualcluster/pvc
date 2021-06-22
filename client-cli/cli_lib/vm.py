@@ -912,7 +912,7 @@ def vm_volumes_remove(config, vm, volume, restart):
 
     xml = domain_information.get('xml', None)
     if xml is None:
-        return False, "VM does not have a valid XML doccument."
+        return False, "VM does not have a valid XML document."
 
     try:
         parsed_xml = fromstring(xml)

@@ -1506,7 +1506,7 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     'domain'
 )
 @click.argument(
-    'vni'
+    'volume'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1518,9 +1518,9 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     help='Confirm the restart'
 )
 @cluster_req
-def vm_volume_remove(domain, vni, restart, confirm_flag):
+def vm_volume_remove(domain, volume, restart, confirm_flag):
     """
-    Remove the volume VNI to the virtual machine DOMAIN.
+    Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1528,7 +1528,7 @@ def vm_volume_remove(domain, vni, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
+    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, volume, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
