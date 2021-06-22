@@ -598,10 +598,10 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, rest
             if sriov_mode == 'hostdev':
                 if interface.attrib.get('type') == 'hostdev':
                     interface_address = 'domain="{pci_domain}" bus="{pci_bus}" slot="{pci_slot}" function="{pci_function}"'.format(
-                        interface.source.address.attrib.get('domain'),
-                        interface.source.address.attrib.get('bus'),
-                        interface.source.address.attrib.get('slot'),
-                        interface.source.address.attrib.get('function')
+                        pci_domain=interface.source.address.attrib.get('domain'),
+                        pci_bus=interface.source.address.attrib.get('bus'),
+                        pci_slot=interface.source.address.attrib.get('slot'),
+                        pci_function=interface.source.address.attrib.get('function')
                     )
                     if interface_address == bus_address:
                         return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
