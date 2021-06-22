@@ -22,10 +22,11 @@ _pvc maintenance off
 backup_tmp=$(mktemp)
 _pvc task backup --file ${backup_tmp}
 _pvc task restore --yes --file ${backup_tmp}
-rm ${backup_tmp}
+rm ${backup_tmp} || true
 
 # Provisioner tests
 _pvc provisioner profile list test
+_pvc vm network get testX
 _pvc provisioner create --wait testX test
 sleep 30
 
@@ -50,9 +51,16 @@ sleep 5
 _pvc vm move --wait --target hv1 testX
 sleep 5
 _pvc vm meta testX --limit hv1 --selector vms --method live --profile test --no-autostart
+_pvc vm vcpu set testX 4
+_pvc vm vcpu get testX
+_pvc vm memory set testX 4096
+_pvc vm memory get testX
+_pvc vm vcpu set testX 2
+_pvc vm memory set testX 2048 --restart --yes
+sleep 5
 _pvc vm list testX
 _pvc vm info --long testX
-rm ${vm_tmp}
+rm ${vm_tmp} || true
 
 # Node tests
 _pvc node primary --wait hv1
@@ -84,6 +92,14 @@ _pvc network dhcp remove --yes 10001 12:34:56:78:90:ab
 _pvc network modify --domain test10001.local 10001
 _pvc network list
 _pvc network info --long 10001
+
+# Network-VM interaction tests
+_pvc vm network add testX 10001 --model virtio --restart --yes
+sleep 30
+_pvc vm network get testX
+_pvc vm network remove testX 10001 --restart --yes
+sleep 5
+
 _pvc network remove --yes 10001
 
 # Storage tests
@@ -106,6 +122,14 @@ _pvc storage volume snapshot add testing testerX asnapshotX
 _pvc storage volume snapshot rename testing testerX asnapshotX asnapshotY
 _pvc storage volume snapshot list
 _pvc storage volume snapshot remove --yes testing testerX asnapshotY
+
+# Storage-VM interaction tests
+_pvc vm volume add testX --type rbd --disk-id sdh --bus scsi testing/testerY --restart --yes
+sleep 30
+_pvc vm volume get testX
+_pvc vm volume remove testX testing/testerY --restart --yes
+sleep 5
+
 _pvc storage volume remove --yes testing testerY
 _pvc storage volume remove --yes testing testerX
 _pvc storage pool remove --yes testing
