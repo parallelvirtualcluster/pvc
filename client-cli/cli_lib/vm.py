@@ -574,9 +574,10 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, rest
             )
         # Add a macvtap SR-IOV network
         elif sriov_mode == 'macvtap':
-            device_string = '<interface type="direct"><mac address="{macaddr}"/><source dev="{network}" mode="passthrough"/></interface>'.format(
+            device_string = '<interface type="direct"><mac address="{macaddr}"/><source dev="{network}" mode="passthrough"/><model type="{model}"/></interface>'.format(
                 macaddr=macaddr,
-                network=network
+                network=network,
+                model=model
             )
         else:
             return False, "ERROR: Invalid SR-IOV mode specified."

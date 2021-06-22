@@ -1317,7 +1317,7 @@ def vm_network_get(domain, raw):
 )
 @click.option(
     '-m', '--model', 'model', default='virtio',
-    help='The model for the interface; must be a valid libvirt model. Not used for SR-IOV NETs.'
+    help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.'
 )
 @click.option(
     '-s', '--sriov', 'sriov', is_flag=True, default=False,
