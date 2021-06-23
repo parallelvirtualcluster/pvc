@@ -1,4 +1,6 @@
 #!/bin/sh
 
-# Install client binary to /usr/bin via symlink
-ln -s /usr/share/pvc/pvc.py /usr/bin/pvc
+# Generate the bash completion configuration
+if [ -d /etc/bash_completion.d ]; then
+    _PVC_COMPLETE=source_bash pvc > /etc/bash_completion.d/pvc
+fi

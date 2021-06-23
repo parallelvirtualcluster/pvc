@@ -1,4 +1,8 @@
 *.pyc
 *.tmp
 *.swp
-venv/
+# Ignore build artifacts
+debian/pvc-*/
+debian/*.log
+debian/*.substvars
+debian/files

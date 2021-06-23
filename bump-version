@@ -7,7 +7,7 @@ if [[ -z ${new_version} ]]; then
     exit 1
 fi
 
-current_version="$( grep '^version = ' node-daemon/pvcnoded/Daemon.py | awk -F "'" '{ print $2 }' )"
+current_version="$( cat .version )"
 echo "${current_version} -> ${new_version}"
 
 changelog_file=$( mktemp )
@@ -18,6 +18,8 @@ changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
 
 sed -i "s,version = '${current_version}',version = '${new_version}'," node-daemon/pvcnoded/Daemon.py
 sed -i "s,version = '${current_version}',version = '${new_version}'," api-daemon/pvcapid/Daemon.py
+sed -i "s,version='${current_version}',version='${new_version}'," client-cli/setup.py
+echo ${new_version} > .version
 
 readme_tmpdir=$( mktemp -d )
 cp README.md ${readme_tmpdir}/

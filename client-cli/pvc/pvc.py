@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # pvc.py - PVC client command-line interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
@@ -34,13 +32,13 @@ from distutils.util import strtobool
 
 from functools import wraps
 
-import cli_lib.ansiprint as ansiprint
-import cli_lib.cluster as pvc_cluster
-import cli_lib.node as pvc_node
-import cli_lib.vm as pvc_vm
-import cli_lib.network as pvc_network
-import cli_lib.ceph as pvc_ceph
-import cli_lib.provisioner as pvc_provisioner
+import pvc.cli_lib.ansiprint as ansiprint
+import pvc.cli_lib.cluster as pvc_cluster
+import pvc.cli_lib.node as pvc_node
+import pvc.cli_lib.vm as pvc_vm
+import pvc.cli_lib.network as pvc_network
+import pvc.cli_lib.ceph as pvc_ceph
+import pvc.cli_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''

@@ -22,8 +22,8 @@
 import time
 import re
 
-import cli_lib.ansiprint as ansiprint
-from cli_lib.common import call_api, format_bytes, format_metric
+import pvc.cli_lib.ansiprint as ansiprint
+from pvc.cli_lib.common import call_api, format_bytes, format_metric
 
 
 #
@@ -512,7 +512,7 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, rest
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from random import randint
-    import cli_lib.network as pvc_network
+    import pvc.cli_lib.network as pvc_network
 
     # Verify that the provided network is valid (not in SR-IOV mode)
     if not sriov:
@@ -800,7 +800,7 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from copy import deepcopy
-    import cli_lib.ceph as pvc_ceph
+    import pvc.cli_lib.ceph as pvc_ceph
 
     if disk_type == 'rbd':
         # Verify that the provided volume is valid

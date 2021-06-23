@@ -20,8 +20,8 @@
 ###############################################################################
 
 import re
-import cli_lib.ansiprint as ansiprint
-from cli_lib.common import call_api
+import pvc.cli_lib.ansiprint as ansiprint
+from pvc.cli_lib.common import call_api
 
 
 def isValidMAC(macaddr):

@@ -1,4 +1,6 @@
 #!/bin/sh
 
-# Remove client binary symlink
-rm -f /usr/bin/pvc
+# Remove the bash completion
+if [ -f /etc/bash_completion.d/pvc ]; then
+    rm -f /etc/bash_completion.d/pvc
+fi
