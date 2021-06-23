@@ -451,6 +451,12 @@ pvc_nodes:
 
 pvc_bridge_device: bondU
 
+pvc_sriov_enable: True
+pvc_sriov_device:
+  - phy: ens1f0
+    mtu: 9000
+    vfcount: 6
+
 pvc_upstream_device: "{{ networks['upstream']['device'] }}"
 pvc_upstream_mtu: "{{ networks['upstream']['mtu'] }}"
 pvc_upstream_domain: "{{ networks['upstream']['domain'] }}"
@@ -900,6 +906,18 @@ The IPMI password for the node management controller. Unless a per-host override
 * *required*
 
 The device name of the underlying network interface to be used for "bridged"-type client networks. For each "bridged"-type network, an IEEE 802.3q vLAN and bridge will be created on top of this device to pass these networks. In most cases, using the reflexive `networks['cluster']['raw_device']` or `networks['upstream']['raw_device']` from the Base role is sufficient.
+
+#### `pvc_sriov_enable`
+
+* *optional*
+
+Whether to enable or disable SR-IOV functionality.
+
+#### `pvc_sriov_device`
+
+* *optional*
+
+A list of SR-IOV devices. See the Daemon manual for details.
 
 #### `pvc_<network>_*`
 

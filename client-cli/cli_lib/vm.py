@@ -501,7 +501,7 @@ def format_vm_memory(config, name, memory):
     return '\n'.join(output_list)
 
 
-def vm_networks_add(config, vm, network, macaddr, model, restart):
+def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, restart):
     """
     Add a new network to the VM
 
@@ -514,17 +514,19 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
     from random import randint
     import cli_lib.network as pvc_network
 
-    # Verify that the provided network is valid
-    retcode, retdata = pvc_network.net_info(config, network)
-    if not retcode:
-        # Ignore the three special networks
-        if network not in ['upstream', 'cluster', 'storage']:
-            return False, "Network {} is not present in the cluster.".format(network)
+    # Verify that the provided network is valid (not in SR-IOV mode)
+    if not sriov:
+        retcode, retdata = pvc_network.net_info(config, network)
+        if not retcode:
+            # Ignore the three special networks
+            if network not in ['upstream', 'cluster', 'storage']:
+                return False, "Network {} is not present in the cluster.".format(network)
 
-    if network in ['upstream', 'cluster', 'storage']:
-        br_prefix = 'br'
-    else:
-        br_prefix = 'vmbr'
+        # Set the bridge prefix
+        if network in ['upstream', 'cluster', 'storage']:
+            br_prefix = 'br'
+        else:
+            br_prefix = 'vmbr'
 
     status, domain_information = vm_info(config, vm)
     if not status:
@@ -551,24 +553,74 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
             octetC=random_octet_C
         )
 
-    device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
-        macaddr=macaddr,
-        bridge="{}{}".format(br_prefix, network),
-        model=model
-    )
+    # Add an SR-IOV network
+    if sriov:
+        valid, sriov_vf_information = pvc_network.net_sriov_vf_info(config, domain_information['node'], network)
+        if not valid:
+            return False, 'Specified SR-IOV VF "{}" does not exist on VM node "{}".'.format(network, domain_information['node'])
+
+        # Add a hostdev (direct PCIe) SR-IOV network
+        if sriov_mode == 'hostdev':
+            bus_address = 'domain="0x{pci_domain}" bus="0x{pci_bus}" slot="0x{pci_slot}" function="0x{pci_function}"'.format(
+                pci_domain=sriov_vf_information['pci']['domain'],
+                pci_bus=sriov_vf_information['pci']['bus'],
+                pci_slot=sriov_vf_information['pci']['slot'],
+                pci_function=sriov_vf_information['pci']['function'],
+            )
+            device_string = '<interface type="hostdev" managed="yes"><mac address="{macaddr}"/><source><address type="pci" {bus_address}/></source><sriov_device>{network}</sriov_device></interface>'.format(
+                macaddr=macaddr,
+                bus_address=bus_address,
+                network=network
+            )
+        # Add a macvtap SR-IOV network
+        elif sriov_mode == 'macvtap':
+            device_string = '<interface type="direct"><mac address="{macaddr}"/><source dev="{network}" mode="passthrough"/><model type="{model}"/></interface>'.format(
+                macaddr=macaddr,
+                network=network,
+                model=model
+            )
+        else:
+            return False, "ERROR: Invalid SR-IOV mode specified."
+    # Add a normal bridged PVC network
+    else:
+        device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
+            macaddr=macaddr,
+            bridge="{}{}".format(br_prefix, network),
+            model=model
+        )
+
     device_xml = fromstring(device_string)
 
-    last_interface = None
     all_interfaces = parsed_xml.devices.find('interface')
     if all_interfaces is None:
         all_interfaces = []
     for interface in all_interfaces:
-        last_interface = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
-        if last_interface == network:
-            return False, 'Network {} is already configured for VM {}.'.format(network, vm)
-    if last_interface is not None:
-        for interface in parsed_xml.devices.find('interface'):
-            if last_interface == re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1):
+        if sriov:
+            if sriov_mode == 'hostdev':
+                if interface.attrib.get('type') == 'hostdev':
+                    interface_address = 'domain="{pci_domain}" bus="{pci_bus}" slot="{pci_slot}" function="{pci_function}"'.format(
+                        pci_domain=interface.source.address.attrib.get('domain'),
+                        pci_bus=interface.source.address.attrib.get('bus'),
+                        pci_slot=interface.source.address.attrib.get('slot'),
+                        pci_function=interface.source.address.attrib.get('function')
+                    )
+                    if interface_address == bus_address:
+                        return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
+            elif sriov_mode == 'macvtap':
+                if interface.attrib.get('type') == 'direct':
+                    interface_dev = interface.source.attrib.get('dev')
+                    if interface_dev == network:
+                        return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
+        else:
+            if interface.attrib.get('type') == 'bridge':
+                interface_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+                if interface_vni == network:
+                    return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
+
+    # Add the interface at the end of the list (or, right above emulator)
+    if len(all_interfaces) > 0:
+        for idx, interface in enumerate(parsed_xml.devices.find('interface')):
+            if idx == len(all_interfaces) - 1:
                 interface.addnext(device_xml)
     else:
         parsed_xml.devices.find('emulator').addprevious(device_xml)
@@ -581,7 +633,7 @@ def vm_networks_add(config, vm, network, macaddr, model, restart):
     return vm_modify(config, vm, new_xml, restart)
 
 
-def vm_networks_remove(config, vm, network, restart):
+def vm_networks_remove(config, vm, network, sriov, restart):
     """
     Remove a network to the VM
 
@@ -605,17 +657,33 @@ def vm_networks_remove(config, vm, network, restart):
     except Exception:
         return False, 'ERROR: Failed to parse XML data.'
 
+    changed = False
     for interface in parsed_xml.devices.find('interface'):
-        if_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
-        if network == if_vni:
-            interface.getparent().remove(interface)
+        if sriov:
+            if interface.attrib.get('type') == 'hostdev':
+                if_dev = str(interface.sriov_device)
+                if network == if_dev:
+                    interface.getparent().remove(interface)
+                    changed = True
+            elif interface.attrib.get('type') == 'direct':
+                if_dev = str(interface.source.attrib.get('dev'))
+                if network == if_dev:
+                    interface.getparent().remove(interface)
+                    changed = True
+        else:
+            if_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+            if network == if_vni:
+                interface.getparent().remove(interface)
+                changed = True
+    if changed:
+        try:
+            new_xml = tostring(parsed_xml, pretty_print=True)
+        except Exception:
+            return False, 'ERROR: Failed to dump XML data.'
 
-    try:
-        new_xml = tostring(parsed_xml, pretty_print=True)
-    except Exception:
-        return False, 'ERROR: Failed to dump XML data.'
-
-    return vm_modify(config, vm, new_xml, restart)
+        return vm_modify(config, vm, new_xml, restart)
+    else:
+        return False, 'ERROR: Network "{}" does not exist on VM.'.format(network)
 
 
 def vm_networks_get(config, vm):
@@ -844,7 +912,7 @@ def vm_volumes_remove(config, vm, volume, restart):
 
     xml = domain_information.get('xml', None)
     if xml is None:
-        return False, "VM does not have a valid XML doccument."
+        return False, "VM does not have a valid XML document."
 
     try:
         parsed_xml = fromstring(xml)
@@ -1175,17 +1243,14 @@ def format_info(config, domain_information, long_output):
 
     # Network list
     net_list = []
+    cluster_net_list = call_api(config, 'get', '/network').json()
     for net in domain_information['networks']:
-        # Split out just the numerical (VNI) part of the brXXXX name
-        net_vnis = re.findall(r'\d+', net['source'])
-        if net_vnis:
-            net_vni = net_vnis[0]
-        else:
-            net_vni = re.sub('br', '', net['source'])
-
-        response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-        if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
-            net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
+        net_vni = net['vni']
+        if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^macvtap:.*', net_vni) and not re.match(r'^hostdev:.*', net_vni):
+            if int(net_vni) not in [net['vni'] for net in cluster_net_list]:
+                net_list.append(ansiprint.red() + net_vni + ansiprint.end() + ' [invalid]')
+            else:
+                net_list.append(net_vni)
         else:
             net_list.append(net_vni)
 
@@ -1213,17 +1278,31 @@ def format_info(config, domain_information, long_output):
                 width=name_length
             ))
         ainformation.append('')
-        ainformation.append('{}Interfaces:{}   {}ID  Type    Source     Model    MAC                 Data (r/w)   Packets (r/w)   Errors (r/w){}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
+        ainformation.append('{}Interfaces:{}   {}ID  Type     Source       Model    MAC                 Data (r/w)   Packets (r/w)   Errors (r/w){}'.format(ansiprint.purple(), ansiprint.end(), ansiprint.bold(), ansiprint.end()))
         for net in domain_information['networks']:
-            ainformation.append('              {0: <3} {1: <7} {2: <10} {3: <8} {4: <18}  {5: <12} {6: <15} {7: <12}'.format(
+            net_type = net['type']
+            net_source = net['source']
+            net_mac = net['mac']
+            if net_type in ['direct', 'hostdev']:
+                net_model = 'N/A'
+                net_bytes = 'N/A'
+                net_packets = 'N/A'
+                net_errors = 'N/A'
+            elif net_type in ['bridge']:
+                net_model = net['model']
+                net_bytes = '/'.join([str(format_bytes(net.get('rd_bytes', 0))), str(format_bytes(net.get('wr_bytes', 0)))])
+                net_packets = '/'.join([str(format_metric(net.get('rd_packets', 0))), str(format_metric(net.get('wr_packets', 0)))])
+                net_errors = '/'.join([str(format_metric(net.get('rd_errors', 0))), str(format_metric(net.get('wr_errors', 0)))])
+
+            ainformation.append('              {0: <3} {1: <8} {2: <12} {3: <8} {4: <18}  {5: <12} {6: <15} {7: <12}'.format(
                 domain_information['networks'].index(net),
-                net['type'],
-                net['source'],
-                net['model'],
-                net['mac'],
-                '/'.join([str(format_bytes(net.get('rd_bytes', 0))), str(format_bytes(net.get('wr_bytes', 0)))]),
-                '/'.join([str(format_metric(net.get('rd_packets', 0))), str(format_metric(net.get('wr_packets', 0)))]),
-                '/'.join([str(format_metric(net.get('rd_errors', 0))), str(format_metric(net.get('wr_errors', 0)))]),
+                net_type,
+                net_source,
+                net_model,
+                net_mac,
+                net_bytes,
+                net_packets,
+                net_errors
             ))
         # Controller list
         ainformation.append('')
@@ -1242,13 +1321,7 @@ def format_list(config, vm_list, raw):
         # Network list
         net_list = []
         for net in domain_information['networks']:
-            # Split out just the numerical (VNI) part of the brXXXX name
-            net_vnis = re.findall(r'\d+', net['source'])
-            if net_vnis:
-                net_vni = net_vnis[0]
-            else:
-                net_vni = re.sub('br', '', net['source'])
-            net_list.append(net_vni)
+            net_list.append(net['vni'])
         return net_list
 
     # Handle raw mode since it just lists the names
@@ -1268,7 +1341,7 @@ def format_list(config, vm_list, raw):
     vm_nets_length = 9
     vm_ram_length = 8
     vm_vcpu_length = 6
-    vm_node_length = 8
+    vm_node_length = 5
     vm_migrated_length = 10
     for domain_information in vm_list:
         net_list = getNiceNetID(domain_information)
@@ -1324,8 +1397,6 @@ def format_list(config, vm_list, raw):
         )
     )
 
-    # Keep track of nets we found to be valid to cut down on duplicate API hits
-    valid_net_list = []
     # Format the string (elements)
     for domain_information in vm_list:
         if domain_information['state'] == 'start':
@@ -1342,18 +1413,13 @@ def format_list(config, vm_list, raw):
             vm_state_colour = ansiprint.blue()
 
         # Handle colouring for an invalid network config
-        raw_net_list = getNiceNetID(domain_information)
-        net_list = []
+        net_list = getNiceNetID(domain_information)
+        cluster_net_list = call_api(config, 'get', '/network').json()
         vm_net_colour = ''
-        for net_vni in raw_net_list:
-            if net_vni not in valid_net_list:
-                response = call_api(config, 'get', '/network/{net}'.format(net=net_vni))
-                if response.status_code != 200 and net_vni not in ['cluster', 'storage', 'upstream']:
+        for net_vni in net_list:
+            if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^macvtap:.*', net_vni) and not re.match(r'^hostdev:.*', net_vni):
+                if int(net_vni) not in [net['vni'] for net in cluster_net_list]:
                     vm_net_colour = ansiprint.red()
-                else:
-                    valid_net_list.append(net_vni)
-
-            net_list.append(net_vni)
 
         vm_list_output.append(
             '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \

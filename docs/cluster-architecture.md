@@ -12,6 +12,7 @@
     + [PVC client networks](#pvc-client-networks)
         - [Bridged (unmanaged) Client Networks](#bridged--unmanaged--client-networks)
         - [VXLAN (managed) Client Networks](#vxlan--managed--client-networks)
+        - [SR-IOV Client Networks](#sriov-client-networks)
         - [Other Client Networks](#other-client-networks)
   * [Node Layout: Considering how nodes are laid out](#node-layout--considering-how-nodes-are-laid-out)
     + [Node Functions: Coordinators versus Hypervisors](#node-functions--coordinators-versus-hypervisors)
@@ -183,6 +184,26 @@ The second type of client network is the managed VXLAN network. These networks m
 With this client network type, PVC is in full control of the network. No vLAN configuration is required on the switchports of each node's physical interfaces, as the virtual layer 2 tunnel travels over the cluster layer 3 network. All client network traffic destined for outside the network will exit via the upstream network interface of the active primary coordinator node.
 
 NOTE: These networks may introduce a bottleneck and tromboning if there is a large amount of external and/or inter-network traffic on the cluster. The administrator should consider this carefully when deciding whether to use managed or bridged networks and properly evaluate the inter-network traffic requirements.
+
+#### SR-IOV Client Networks
+
+The third type of client network is the SR-IOV network. SR-IOV (Single-Root I/O Virtualization) is a technique and feature enabled on modern high-performance NICs (for instance, those from Intel or nVidia) which allows a single physical Ethernet port (a "PF" in SR-IOV terminology) to be split, at a hardware level, into multiple virtual Ethernet ports ("VF"s), which can then be managed separately. Starting with version 0.9.21, PVC support SR-IOV PF and VF configuration at the node level, and these VFs can be passed into VMs in two ways.
+
+SR-IOV's main benefit is to offload bridging and network functions from the hypervisor layer, and direct them onto the hardware itself. This can increase network throughput in some situations, as well as provide near-complete isolation of guest networks from the hypervisors (in contrast with bridges which *can* expose client traffic to the hypervisors, and VXLANs which *do* expose client traffic to the hypervisors). For instance, a VF can have a vLAN specified, and the tagging/untagging of packets is then carried out at the hardware layer.
+
+There are however caveats to working with SR-IOV. At the most basic level, the biggest difference with SR-IOV compared to the other two network types is that SR-IOV must be configured on a per-node basis. That is, each node must have SR-IOV explicitly enabled, it's specific PF devices defined, and a set of VFs created at PVC startup. Generally, with identical PVC nodes, this will not be a problem but is something to consider, especially if the servers are mismatched in any way. It is thus also possible to set some nodes with SR-IOV functionality, and others without, though care must be taken in this situation to set node limits in the VM metadata of any VMs which use SR-IOV VFs to prevent failed migrations.
+
+PFs are defined in the `pvcnoded.yml` configuration of each node, via the `sriov_device` list. Each PF can have an arbitrary number of VFs (`vfcount`) allocated, though each NIC vendor and model has specific limits. Once configured, specifically with Intel NICs, PFs (and specifically, the `vfcount` attribute in the driver) are immutable and cannot be changed easily without completely flushing the node and rebooting it, so care should be taken to select the desired settings as early in the cluster configuration as possible.
+
+Once created, VFs are also managed on a per-node basis. That is, each VF, on each host, even if they have the exact same device names, is managed separately. For instance, the PF `ens1f0` creating a VF `ens1f0v0` on "`hv1`", can have a different configuration from the identically-named VF `ens1f0v0` on "`hv2`". The administrator is responsible for ensuring consistency here, and for ensuring that devices do not overlap (e.g. assigning the same VF name to VMs on two separate nodes which might migrate to each other). PVC will however explicitly prevent two VMs from being assigned to the same VF on the same node, even if this may be technically possible in some cases.
+
+When attaching VFs to VMs, there are two supported modes: `macvtap`, and `hostdev`.
+
+`macvtap`, as the name suggests, uses the Linux `macvtap` driver to connect the VF to the VM. Once attached, the vNIC behaves just like a "bridged" network connection above, and like "bridged" connections, the "mode" of the NIC can be specificed, defaulting to "virtio" but supporting various emulated devices instead. Note that in this mode, vLANs cannot be configured on the guest side; they must be specified in the VF configuration (`pvc network sriov vf set`) with one vLAN per VF. VMs with `macvtap` interfaces can be live migrated between nodes without issue, assuming there is a corresponding free VF on the destination node, and the SR-IOV functionality is transparent to the VM.
+
+`hostdev` is a direct PCIe passthrough method. With a VF attached to a VM in `hostdev` mode, the virtual PCIe NIC device itself becomes hidden from the node, and is visible only to the guest, where it appears as a discrete PCIe device. In this mode, vLANs and other attributes can be set on the guest side at will, though setting vLANs and other properties in the VF configuration is still supported. The main caveat to this mode is that VMs with connected `hostdev` SR-IOV VFs *cannot be live migrated between nodes*. Only a `shutdown` migration is supported, and, like `macvtap`, an identical PCIe device at the same bus address must be present on the target node. To prevent unexpected failures, PVC will explicitly set the VM metadata for the "migration method" to "shutdown" the first time that a `hostdev` VF is attached to it; if this changes later, the administrator must change this back explicitly.
+
+Generally speaking, SR-IOV connections are not recommended unless there is a good usecase for them. On modern hardware, software bridges are extremely performant, and are much simpler to manage. The functionality is provided for those rare usecases where SR-IOV is asbolutely required by the administrator, but care must be taken to understand all the requirements and caveats of SR-IOV before using it in production.
 
 #### Other Client Networks
 

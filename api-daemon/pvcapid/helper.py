@@ -979,6 +979,80 @@ def net_acl_remove(zkhandler, network, description):
 
 
 #
+# SR-IOV functions
+#
+@ZKConnection(config)
+def sriov_pf_list(zkhandler, node):
+    """
+    List all PFs on a given node.
+    """
+    retflag, retdata = pvc_network.get_list_sriov_pf(zkhandler, node)
+
+    if retflag:
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'PF not found.'
+            }
+    else:
+        retcode = 400
+        retdata = {
+            'message': retdata
+        }
+
+    return retdata, retcode
+
+
+@ZKConnection(config)
+def sriov_vf_list(zkhandler, node, pf=None):
+    """
+    List all VFs on a given node, optionally limited to PF.
+    """
+    retflag, retdata = pvc_network.get_list_sriov_vf(zkhandler, node, pf)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    if retflag:
+        if retdata:
+            retcode = 200
+        else:
+            retcode = 404
+            retdata = {
+                'message': 'VF not found.'
+            }
+    else:
+        retcode = 400
+        retdata = {
+            'message': retdata
+        }
+
+    return retdata, retcode
+
+
+@ZKConnection(config)
+def update_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+    """
+    Update configuration of a VF on NODE.
+    """
+    retflag, retdata = pvc_network.set_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return output, retcode
+
+
+#
 # Ceph functions
 #
 @ZKConnection(config)

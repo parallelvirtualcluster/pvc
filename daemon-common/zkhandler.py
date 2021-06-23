@@ -426,7 +426,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 0
+    _version = 1
 
     # Root for doing nested keys
     _schema_root = ''
@@ -483,7 +483,40 @@ class ZKSchema(object):
             'memory.provisioned': '/memprov',
             'ipmi.hostname': '/ipmihostname',
             'ipmi.username': '/ipmiusername',
-            'ipmi.password': '/ipmipassword'
+            'ipmi.password': '/ipmipassword',
+            'sriov': '/sriov',
+            'sriov.pf': '/sriov/pf',
+            'sriov.vf': '/sriov/vf',
+        },
+        # The schema of an individual SR-IOV PF entry (/nodes/{node_name}/sriov/pf/{pf})
+        'sriov_pf': {
+            'phy': '',  # The root key
+            'mtu': '/mtu',
+            'vfcount': '/vfcount'
+        },
+        # The schema of an individual SR-IOV VF entry (/nodes/{node_name}/sriov/vf/{vf})
+        'sriov_vf': {
+            'phy': '',  # The root key
+            'pf': '/pf',
+            'mtu': '/mtu',
+            'mac': '/mac',
+            'phy_mac': '/phy_mac',
+            'config': '/config',
+            'config.vlan_id': '/config/vlan_id',
+            'config.vlan_qos': '/config/vlan_qos',
+            'config.tx_rate_min': '/config/tx_rate_min',
+            'config.tx_rate_max': '/config/tx_rate_max',
+            'config.spoof_check': '/config/spoof_check',
+            'config.link_state': '/config/link_state',
+            'config.trust': '/config/trust',
+            'config.query_rss': '/config/query_rss',
+            'pci': '/pci',
+            'pci.domain': '/pci/domain',
+            'pci.bus': '/pci/bus',
+            'pci.slot': '/pci/slot',
+            'pci.function': '/pci/function',
+            'used': '/used',
+            'used_by': '/used_by'
         },
         # The schema of an individual domain entry (/domains/{domain_uuid})
         'domain': {
@@ -709,6 +742,10 @@ class ZKSchema(object):
                                 if not zkhandler.zk_conn.exists(nkipath):
                                     result = False
 
+                    # One might expect child keys under node (specifically, sriov.pf and sriov.vf) to be
+                    # managed here as well, but those are created automatically every time pvcnoded starts
+                    # and thus never need to be validated or applied.
+
         # These two have several children layers that must be parsed through
         for elem in ['volume']:
             # First read all the subelements of the key class (pool layer)
@@ -781,6 +818,10 @@ class ZKSchema(object):
                                 nkipath = f'{nkpath}/{esikey}'
                                 if not zkhandler.zk_conn.exists(nkipath):
                                     zkhandler.zk_conn.create(nkipath, ''.encode(zkhandler.encoding))
+
+                    # One might expect child keys under node (specifically, sriov.pf and sriov.vf) to be
+                    # managed here as well, but those are created automatically every time pvcnoded starts
+                    # and thus never need to be validated or applied.
 
         # These two have several children layers that must be parsed through
         for elem in ['volume']:

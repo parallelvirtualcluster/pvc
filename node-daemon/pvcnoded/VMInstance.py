@@ -380,7 +380,7 @@ class VMInstance(object):
 
             # Abort shutdown if the state changes to start
             current_state = self.zkhandler.read(('domain.state', self.domuuid))
-            if current_state not in ['shutdown', 'restart']:
+            if current_state not in ['shutdown', 'restart', 'migrate']:
                 self.logger.out('Aborting VM shutdown due to state change', state='i', prefix='Domain {}'.format(self.domuuid))
                 is_aborted = True
                 break
@@ -528,11 +528,7 @@ class VMInstance(object):
 
         def migrate_shutdown():
             self.logger.out('Shutting down VM for offline migration', state='i', prefix='Domain {}'.format(self.domuuid))
-            self.zkhandler.write([
-                (('domain.state', self.domuuid), 'shutdown')
-            ])
-            while self.zkhandler.read(('domain.state', self.domuuid)) != 'stop':
-                time.sleep(0.5)
+            self.shutdown_vm()
             return True
 
         do_migrate_shutdown = False
@@ -726,6 +722,7 @@ class VMInstance(object):
         self.state = self.zkhandler.read(('domain.state', self.domuuid))
         self.node = self.zkhandler.read(('domain.node', self.domuuid))
         self.lastnode = self.zkhandler.read(('domain.last_node', self.domuuid))
+        self.migration_method = self.zkhandler.read(('domain.meta.migrate_method', self.domuuid))
 
         # Check the current state of the VM
         try:

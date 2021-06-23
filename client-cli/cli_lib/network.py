@@ -360,7 +360,6 @@ def net_acl_add(config, net, direction, description, rule, order):
 
 
 def net_acl_remove(config, net, description):
-
     """
     Remove a network ACL
 
@@ -379,26 +378,134 @@ def net_acl_remove(config, net, description):
 
 
 #
+# SR-IOV functions
+#
+def net_sriov_pf_list(config, node):
+    """
+    List all PFs on NODE
+
+    API endpoint: GET /api/v1/sriov/pf/<node>
+    API arguments: node={node}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    response = call_api(config, 'get', '/sriov/pf/{}'.format(node))
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json().get('message', '')
+
+
+def net_sriov_vf_set(config, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+    """
+    Mdoify configuration of a SR-IOV VF
+
+    API endpoint: PUT /api/v1/sriov/vf/<node>/<vf>
+    API arguments: vlan_id={vlan_id}, vlan_qos={vlan_qos}, tx_rate_min={tx_rate_min}, tx_rate_max={tx_rate_max},
+                   link_state={link_state}, spoof_check={spoof_check}, trust={trust}, query_rss={query_rss}
+    API schema: {"message": "{data}"}
+    """
+    params = dict()
+
+    # Update any params that we've sent
+    if vlan_id is not None:
+        params['vlan_id'] = vlan_id
+
+    if vlan_qos is not None:
+        params['vlan_qos'] = vlan_qos
+
+    if tx_rate_min is not None:
+        params['tx_rate_min'] = tx_rate_min
+
+    if tx_rate_max is not None:
+        params['tx_rate_max'] = tx_rate_max
+
+    if link_state is not None:
+        params['link_state'] = link_state
+
+    if spoof_check is not None:
+        params['spoof_check'] = spoof_check
+
+    if trust is not None:
+        params['trust'] = trust
+
+    if query_rss is not None:
+        params['query_rss'] = query_rss
+
+    # Write the new configuration to the API
+    response = call_api(config, 'put', '/sriov/vf/{node}/{vf}'.format(node=node, vf=vf), params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
+def net_sriov_vf_list(config, node, pf=None):
+    """
+    List all VFs on NODE, optionally limited by PF
+
+    API endpoint: GET /api/v1/sriov/vf/<node>
+    API arguments: node={node}, pf={pf}
+    API schema: [{json_data_object},{json_data_object},etc.]
+    """
+    params = dict()
+    params['pf'] = pf
+
+    response = call_api(config, 'get', '/sriov/vf/{}'.format(node), params=params)
+
+    if response.status_code == 200:
+        return True, response.json()
+    else:
+        return False, response.json().get('message', '')
+
+
+def net_sriov_vf_info(config, node, vf):
+    """
+    Get info about VF on NODE
+
+    API endpoint: GET /api/v1/sriov/vf/<node>/<vf>
+    API arguments:
+    API schema: [{json_data_object}]
+    """
+    response = call_api(config, 'get', '/sriov/vf/{}/{}'.format(node, vf))
+
+    if response.status_code == 200:
+        if isinstance(response.json(), list) and len(response.json()) != 1:
+            # No exact match; return not found
+            return False, "VF not found."
+        else:
+            # Return a single instance if the response is a list
+            if isinstance(response.json(), list):
+                return True, response.json()[0]
+            # This shouldn't happen, but is here just in case
+            else:
+                return True, response.json()
+    else:
+        return False, response.json().get('message', '')
+
+
+#
 # Output display functions
 #
-def getOutputColours(network_information):
-    if network_information['ip6']['network'] != "None":
-        v6_flag_colour = ansiprint.green()
+def getColour(value):
+    if value in ['True', "start"]:
+        return ansiprint.green()
+    elif value in ["restart", "shutdown"]:
+        return ansiprint.yellow()
+    elif value in ["stop", "fail"]:
+        return ansiprint.red()
     else:
-        v6_flag_colour = ansiprint.blue()
-    if network_information['ip4']['network'] != "None":
-        v4_flag_colour = ansiprint.green()
-    else:
-        v4_flag_colour = ansiprint.blue()
+        return ansiprint.blue()
 
-    if network_information['ip6']['dhcp_flag'] == "True":
-        dhcp6_flag_colour = ansiprint.green()
-    else:
-        dhcp6_flag_colour = ansiprint.blue()
-    if network_information['ip4']['dhcp_flag'] == "True":
-        dhcp4_flag_colour = ansiprint.green()
-    else:
-        dhcp4_flag_colour = ansiprint.blue()
+
+def getOutputColours(network_information):
+    v6_flag_colour = getColour(network_information['ip6']['network'])
+    v4_flag_colour = getColour(network_information['ip4']['network'])
+    dhcp6_flag_colour = getColour(network_information['ip6']['dhcp_flag'])
+    dhcp4_flag_colour = getColour(network_information['ip4']['dhcp_flag'])
 
     return v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour
 
@@ -700,3 +807,245 @@ def format_list_acl(acl_list):
         )
 
     return '\n'.join(sorted(acl_list_output))
+
+
+def format_list_sriov_pf(pf_list):
+    # The maximum column width of the VFs column
+    max_vfs_length = 70
+
+    # Handle when we get an empty entry
+    if not pf_list:
+        pf_list = list()
+
+    pf_list_output = []
+
+    # Determine optimal column widths
+    pf_phy_length = 6
+    pf_mtu_length = 4
+    pf_vfs_length = 4
+
+    for pf_information in pf_list:
+        # phy column
+        _pf_phy_length = len(str(pf_information['phy'])) + 1
+        if _pf_phy_length > pf_phy_length:
+            pf_phy_length = _pf_phy_length
+        # mtu column
+        _pf_mtu_length = len(str(pf_information['mtu'])) + 1
+        if _pf_mtu_length > pf_mtu_length:
+            pf_mtu_length = _pf_mtu_length
+        # vfs column
+        _pf_vfs_length = len(str(', '.join(pf_information['vfs']))) + 1
+        if _pf_vfs_length > pf_vfs_length:
+            pf_vfs_length = _pf_vfs_length
+
+    # We handle columnizing very long lists later
+    if pf_vfs_length > max_vfs_length:
+        pf_vfs_length = max_vfs_length
+
+    # Format the string (header)
+    pf_list_output.append('{bold}\
+{pf_phy: <{pf_phy_length}} \
+{pf_mtu: <{pf_mtu_length}} \
+{pf_vfs: <{pf_vfs_length}} \
+{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        pf_phy_length=pf_phy_length,
+        pf_mtu_length=pf_mtu_length,
+        pf_vfs_length=pf_vfs_length,
+        pf_phy='Device',
+        pf_mtu='MTU',
+        pf_vfs='VFs')
+    )
+
+    for pf_information in pf_list:
+        # Figure out how to nicely columnize our list
+        nice_vfs_list = [list()]
+        vfs_lines = 0
+        cur_vfs_length = 0
+        for vfs in pf_information['vfs']:
+            vfs_len = len(vfs)
+            cur_vfs_length += vfs_len + 2  # for the comma and space
+            if cur_vfs_length > max_vfs_length:
+                cur_vfs_length = 0
+                vfs_lines += 1
+                nice_vfs_list.append(list())
+            nice_vfs_list[vfs_lines].append(vfs)
+
+        # Append the lines
+        pf_list_output.append('{bold}\
+{pf_phy: <{pf_phy_length}} \
+{pf_mtu: <{pf_mtu_length}} \
+{pf_vfs: <{pf_vfs_length}} \
+{end_bold}'.format(
+            bold='',
+            end_bold='',
+            pf_phy_length=pf_phy_length,
+            pf_mtu_length=pf_mtu_length,
+            pf_vfs_length=pf_vfs_length,
+            pf_phy=pf_information['phy'],
+            pf_mtu=pf_information['mtu'],
+            pf_vfs=', '.join(nice_vfs_list[0]))
+        )
+
+        if len(nice_vfs_list) > 1:
+            for idx in range(1, len(nice_vfs_list)):
+                pf_list_output.append('{bold}\
+{pf_phy: <{pf_phy_length}} \
+{pf_mtu: <{pf_mtu_length}} \
+{pf_vfs: <{pf_vfs_length}} \
+{end_bold}'.format(
+                    bold='',
+                    end_bold='',
+                    pf_phy_length=pf_phy_length,
+                    pf_mtu_length=pf_mtu_length,
+                    pf_vfs_length=pf_vfs_length,
+                    pf_phy='',
+                    pf_mtu='',
+                    pf_vfs=', '.join(nice_vfs_list[idx]))
+                )
+
+    return '\n'.join(pf_list_output)
+
+
+def format_list_sriov_vf(vf_list):
+    # Handle when we get an empty entry
+    if not vf_list:
+        vf_list = list()
+
+    vf_list_output = []
+
+    # Determine optimal column widths
+    vf_phy_length = 4
+    vf_pf_length = 3
+    vf_mtu_length = 4
+    vf_mac_length = 11
+    vf_used_length = 5
+    vf_domain_length = 5
+
+    for vf_information in vf_list:
+        # phy column
+        _vf_phy_length = len(str(vf_information['phy'])) + 1
+        if _vf_phy_length > vf_phy_length:
+            vf_phy_length = _vf_phy_length
+        # pf column
+        _vf_pf_length = len(str(vf_information['pf'])) + 1
+        if _vf_pf_length > vf_pf_length:
+            vf_pf_length = _vf_pf_length
+        # mtu column
+        _vf_mtu_length = len(str(vf_information['mtu'])) + 1
+        if _vf_mtu_length > vf_mtu_length:
+            vf_mtu_length = _vf_mtu_length
+        # mac column
+        _vf_mac_length = len(str(vf_information['mac'])) + 1
+        if _vf_mac_length > vf_mac_length:
+            vf_mac_length = _vf_mac_length
+        # used column
+        _vf_used_length = len(str(vf_information['usage']['used'])) + 1
+        if _vf_used_length > vf_used_length:
+            vf_used_length = _vf_used_length
+        # domain column
+        _vf_domain_length = len(str(vf_information['usage']['domain'])) + 1
+        if _vf_domain_length > vf_domain_length:
+            vf_domain_length = _vf_domain_length
+
+    # Format the string (header)
+    vf_list_output.append('{bold}\
+{vf_phy: <{vf_phy_length}} \
+{vf_pf: <{vf_pf_length}} \
+{vf_mtu: <{vf_mtu_length}} \
+{vf_mac: <{vf_mac_length}} \
+{vf_used: <{vf_used_length}} \
+{vf_domain: <{vf_domain_length}} \
+{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        vf_phy_length=vf_phy_length,
+        vf_pf_length=vf_pf_length,
+        vf_mtu_length=vf_mtu_length,
+        vf_mac_length=vf_mac_length,
+        vf_used_length=vf_used_length,
+        vf_domain_length=vf_domain_length,
+        vf_phy='Device',
+        vf_pf='PF',
+        vf_mtu='MTU',
+        vf_mac='MAC Address',
+        vf_used='Used',
+        vf_domain='Domain')
+    )
+
+    for vf_information in vf_list:
+        vf_list_output.append('{bold}\
+{vf_phy: <{vf_phy_length}} \
+{vf_pf: <{vf_pf_length}} \
+{vf_mtu: <{vf_mtu_length}} \
+{vf_mac: <{vf_mac_length}} \
+{vf_used: <{vf_used_length}} \
+{vf_domain: <{vf_domain_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            vf_phy_length=vf_phy_length,
+            vf_pf_length=vf_pf_length,
+            vf_mtu_length=vf_mtu_length,
+            vf_mac_length=vf_mac_length,
+            vf_used_length=vf_used_length,
+            vf_domain_length=vf_domain_length,
+            vf_phy=vf_information['phy'],
+            vf_pf=vf_information['pf'],
+            vf_mtu=vf_information['mtu'],
+            vf_mac=vf_information['mac'],
+            vf_used=vf_information['usage']['used'],
+            vf_domain=vf_information['usage']['domain'])
+        )
+
+    return '\n'.join(vf_list_output)
+
+
+def format_info_sriov_vf(config, vf_information, node):
+    if not vf_information:
+        return "No VF found"
+
+    # Get information on the using VM if applicable
+    if vf_information['usage']['used'] == 'True' and vf_information['usage']['domain']:
+        vm_information = call_api(config, 'get', '/vm/{vm}'.format(vm=vf_information['usage']['domain'])).json()
+        if isinstance(vm_information, list) and len(vm_information) > 0:
+            vm_information = vm_information[0]
+        else:
+            vm_information = None
+
+    # Format a nice output: do this line-by-line then concat the elements at the end
+    ainformation = []
+    ainformation.append('{}SR-IOV VF information:{}'.format(ansiprint.bold(), ansiprint.end()))
+    ainformation.append('')
+    # Basic information
+    ainformation.append('{}PHY:{}               {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['phy']))
+    ainformation.append('{}PF:{}                {} @ {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pf'], node))
+    ainformation.append('{}MTU:{}               {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['mtu']))
+    ainformation.append('{}MAC Address:{}       {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['mac']))
+    ainformation.append('')
+    # Configuration information
+    ainformation.append('{}vLAN ID:{}           {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['config']['vlan_id']))
+    ainformation.append('{}vLAN QOS priority:{} {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['config']['vlan_qos']))
+    ainformation.append('{}Minimum TX Rate:{}   {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['config']['tx_rate_min']))
+    ainformation.append('{}Maximum TX Rate:{}   {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['config']['tx_rate_max']))
+    ainformation.append('{}Link State:{}        {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['config']['link_state']))
+    ainformation.append('{}Spoof Checking:{}    {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['config']['spoof_check']), vf_information['config']['spoof_check'], ansiprint.end()))
+    ainformation.append('{}VF User Trust:{}     {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['config']['trust']), vf_information['config']['trust'], ansiprint.end()))
+    ainformation.append('{}Query RSS Config:{}  {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['config']['query_rss']), vf_information['config']['query_rss'], ansiprint.end()))
+    ainformation.append('')
+    # PCIe bus information
+    ainformation.append('{}PCIe domain:{}       {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['domain']))
+    ainformation.append('{}PCIe bus:{}          {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['bus']))
+    ainformation.append('{}PCIe slot:{}         {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['slot']))
+    ainformation.append('{}PCIe function:{}     {}'.format(ansiprint.purple(), ansiprint.end(), vf_information['pci']['function']))
+    ainformation.append('')
+    # Usage information
+    ainformation.append('{}VF Used:{}           {}{}{}'.format(ansiprint.purple(), ansiprint.end(), getColour(vf_information['usage']['used']), vf_information['usage']['used'], ansiprint.end()))
+    if vf_information['usage']['used'] == 'True' and vm_information is not None:
+        ainformation.append('{}Using Domain:{}      {} ({}) ({}{}{})'.format(ansiprint.purple(), ansiprint.end(), vf_information['usage']['domain'], vm_information['name'], getColour(vm_information['state']), vm_information['state'], ansiprint.end()))
+    else:
+        ainformation.append('{}Using Domain:{}      N/A'.format(ansiprint.purple(), ansiprint.end()))
+
+    # Join it all together
+    return '\n'.join(ainformation)

@@ -27,6 +27,7 @@ import lxml.etree
 import daemon_lib.common as common
 
 import daemon_lib.ceph as ceph
+from daemon_lib.network import set_sriov_vf_vm, unset_sriov_vf_vm
 
 
 #
@@ -191,6 +192,21 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         if not valid_node:
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
+    # If a SR-IOV network device is being added, set its used state
+    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    for network in dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            dom_node = zkhandler.read(('domain.node', dom_uuid))
+
+            # Check if the network is already in use
+            is_used = zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used', network['source']))
+            if is_used == 'True':
+                used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used_by', network['source'])))
+                return False, 'ERROR: Attempted to use SR-IOV network "{}" which is already used by VM "{}" on node "{}".'.format(network['source'], used_by_name, dom_node)
+
+            # We must update the "used" section
+            set_sriov_vf_vm(zkhandler, dom_uuid, dom_node, network['source'], network['mac'], network['type'])
+
     # Obtain the RBD disk list using the common functions
     ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
@@ -211,7 +227,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         formatted_rbd_list = ''
 
     # Add the new domain to Zookeeper
-    result = zkhandler.write([
+    zkhandler.write([
         (('domain', dom_uuid), dom_name),
         (('domain.xml', dom_uuid), config_data),
         (('domain.state', dom_uuid), initial_state),
@@ -230,10 +246,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         (('domain.migrate.sync_lock', dom_uuid), ''),
     ])
 
-    if result:
-        return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
-    else:
-        return False, 'ERROR: Failed to add new VM.'
+    return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
 
 def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):
@@ -276,7 +289,39 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     try:
         parsed_xml = lxml.objectify.fromstring(new_vm_config)
     except Exception:
-        return False, 'ERROR: Failed to parse XML data.'
+        return False, 'ERROR: Failed to parse new XML data.'
+
+    # Get our old network list for comparison purposes
+    old_vm_config = zkhandler.read(('domain.xml', dom_uuid))
+    old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
+    old_dnetworks = common.getDomainNetworks(old_parsed_xml, {})
+
+    # If a SR-IOV network device is being added, set its used state
+    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    for network in dnetworks:
+        # Ignore networks that are already there
+        if network['source'] in [net['source'] for net in old_dnetworks]:
+            continue
+
+        if network['type'] in ['direct', 'hostdev']:
+            dom_node = zkhandler.read(('domain.node', dom_uuid))
+
+            # Check if the network is already in use
+            is_used = zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used', network['source']))
+            if is_used == 'True':
+                used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', dom_node, 'sriov_vf.used_by', network['source'])))
+                return False, 'ERROR: Attempted to use SR-IOV network "{}" which is already used by VM "{}" on node "{}".'.format(network['source'], used_by_name, dom_node)
+
+            # We must update the "used" section
+            set_sriov_vf_vm(zkhandler, dom_uuid, dom_node, network['source'], network['mac'], network['type'])
+
+    # If a SR-IOV network device is being removed, unset its used state
+    for network in old_dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            if network['mac'] not in [n['mac'] for n in dnetworks]:
+                dom_node = zkhandler.read(('domain.node', dom_uuid))
+                # We must update the "used" section
+                unset_sriov_vf_vm(zkhandler, dom_node, network['source'])
 
     # Obtain the RBD disk list using the common functions
     ddisks = common.getDomainDisks(parsed_xml, {})
@@ -513,6 +558,38 @@ def disable_vm(zkhandler, domain):
     return True, 'Marked VM "{}" as disable.'.format(domain)
 
 
+def update_vm_sriov_nics(zkhandler, dom_uuid, source_node, target_node):
+    # Update all the SR-IOV device states on both nodes, used during migrations but called by the node-side
+    vm_config = zkhandler.read(('domain.xml', dom_uuid))
+    parsed_xml = lxml.objectify.fromstring(vm_config)
+    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    retcode = True
+    retmsg = ''
+    for network in dnetworks:
+        if network['type'] in ['direct', 'hostdev']:
+            # Check if the network is already in use
+            is_used = zkhandler.read(('node.sriov.vf', target_node, 'sriov_vf.used', network['source']))
+            if is_used == 'True':
+                used_by_name = searchClusterByUUID(zkhandler, zkhandler.read(('node.sriov.vf', target_node, 'sriov_vf.used_by', network['source'])))
+                if retcode:
+                    retcode_this = False
+                    retmsg = 'Attempting to use SR-IOV network "{}" which is already used by VM "{}"'.format(network['source'], used_by_name)
+            else:
+                retcode_this = True
+
+            # We must update the "used" section
+            if retcode_this:
+                # This conditional ensure that if we failed the is_used check, we don't try to overwrite the information of a VF that belongs to another VM
+                set_sriov_vf_vm(zkhandler, dom_uuid, target_node, network['source'], network['mac'], network['type'])
+            # ... but we still want to free the old node in an case
+            unset_sriov_vf_vm(zkhandler, source_node, network['source'])
+
+            if not retcode_this:
+                retcode = retcode_this
+
+    return retcode, retmsg
+
+
 def move_vm(zkhandler, domain, target_node, wait=False, force_live=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -572,6 +649,9 @@ def move_vm(zkhandler, domain, target_node, wait=False, force_live=False):
         # Wait for 1/2 second for migration to start
         time.sleep(0.5)
 
+    # Update any SR-IOV NICs
+    update_vm_sriov_nics(zkhandler, dom_uuid, current_node, target_node)
+
     if wait:
         while zkhandler.read(('domain.state', dom_uuid)) == target_state:
             time.sleep(0.5)
@@ -624,6 +704,7 @@ def migrate_vm(zkhandler, domain, target_node, force_migrate, wait=False, force_
         return False, 'ERROR: Could not find a valid migration target for VM "{}".'.format(domain)
 
     # Don't overwrite an existing last_node when using force_migrate
+    real_current_node = current_node  # Used for the SR-IOV update
     if last_node and force_migrate:
         current_node = last_node
 
@@ -639,6 +720,9 @@ def migrate_vm(zkhandler, domain, target_node, force_migrate, wait=False, force_
 
         # Wait for 1/2 second for migration to start
         time.sleep(0.5)
+
+    # Update any SR-IOV NICs
+    update_vm_sriov_nics(zkhandler, dom_uuid, real_current_node, target_node)
 
     if wait:
         while zkhandler.read(('domain.state', dom_uuid)) == target_state:
@@ -665,6 +749,7 @@ def unmigrate_vm(zkhandler, domain, wait=False, force_live=False):
         else:
             target_state = 'migrate'
 
+    current_node = zkhandler.read(('domain.node', dom_uuid))
     target_node = zkhandler.read(('domain.last_node', dom_uuid))
 
     if target_node == '':
@@ -682,6 +767,9 @@ def unmigrate_vm(zkhandler, domain, wait=False, force_live=False):
 
         # Wait for 1/2 second for migration to start
         time.sleep(0.5)
+
+    # Update any SR-IOV NICs
+    update_vm_sriov_nics(zkhandler, dom_uuid, current_node, target_node)
 
     if wait:
         while zkhandler.read(('domain.state', dom_uuid)) == target_state:

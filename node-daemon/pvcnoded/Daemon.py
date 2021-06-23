@@ -49,6 +49,7 @@ import daemon_lib.common as common
 import pvcnoded.VMInstance as VMInstance
 import pvcnoded.NodeInstance as NodeInstance
 import pvcnoded.VXNetworkInstance as VXNetworkInstance
+import pvcnoded.SRIOVVFInstance as SRIOVVFInstance
 import pvcnoded.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.CephInstance as CephInstance
 import pvcnoded.MetadataAPIInstance as MetadataAPIInstance
@@ -223,6 +224,12 @@ def readConfig(pvcnoded_config_file, myhostname):
                 'upstream_mtu': o_config['pvc']['system']['configuration']['networking']['upstream']['mtu'],
                 'upstream_dev_ip': o_config['pvc']['system']['configuration']['networking']['upstream']['address'],
             }
+
+            # Check if SR-IOV is enabled and activate
+            config_networking['enable_sriov'] = o_config['pvc']['system']['configuration']['networking'].get('sriov_enable', False)
+            if config_networking['enable_sriov']:
+                config_networking['sriov_device'] = list(o_config['pvc']['system']['configuration']['networking']['sriov_device'])
+
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
             exit(1)
@@ -289,6 +296,7 @@ if debug:
 # Handle the enable values
 enable_hypervisor = config['enable_hypervisor']
 enable_networking = config['enable_networking']
+enable_sriov = config['enable_sriov']
 enable_storage = config['enable_storage']
 
 ###############################################################################
@@ -380,7 +388,40 @@ else:
     fmt_purple = ''
 
 ###############################################################################
-# PHASE 2a - Create local IP addresses for static networks
+# PHASE 2a - Activate SR-IOV support
+###############################################################################
+
+# This happens before other networking steps to enable using VFs for cluster functions.
+if enable_networking and enable_sriov:
+    logger.out('Setting up SR-IOV device support', state='i')
+    # Enable unsafe interruptts for the vfio_iommu_type1 kernel module
+    try:
+        common.run_os_command('modprobe vfio_iommu_type1 allow_unsafe_interrupts=1')
+        with open('/sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts', 'w') as mfh:
+            mfh.write('Y')
+    except Exception:
+        logger.out('Failed to enable kernel modules; SR-IOV may fail.', state='w')
+
+    # Loop through our SR-IOV NICs and enable the numvfs for each
+    for device in config['sriov_device']:
+        logger.out('Preparing SR-IOV PF {} with {} VFs'.format(device['phy'], device['vfcount']), state='i')
+        try:
+            with open('/sys/class/net/{}/device/sriov_numvfs'.format(device['phy']), 'r') as vfh:
+                current_sriov_count = vfh.read().strip()
+            with open('/sys/class/net/{}/device/sriov_numvfs'.format(device['phy']), 'w') as vfh:
+                vfh.write(str(device['vfcount']))
+        except FileNotFoundError:
+            logger.out('Failed to open SR-IOV configuration for PF {}; device may not support SR-IOV.'.format(device), state='w')
+        except OSError:
+            logger.out('Failed to set SR-IOV VF count for PF {} to {}; already set to {}.'.format(device['phy'], device['vfcount'], current_sriov_count), state='w')
+
+        if device.get('mtu', None) is not None:
+            logger.out('Setting SR-IOV PF {} to MTU {}'.format(device['phy'], device['mtu']), state='i')
+            common.run_os_command('ip link set {} mtu {} up'.format(device['phy'], device['mtu']))
+
+
+###############################################################################
+# PHASE 2b - Create local IP addresses for static networks
 ###############################################################################
 
 if enable_networking:
@@ -444,7 +485,7 @@ if enable_networking:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brupstream'))
 
 ###############################################################################
-# PHASE 2b - Prepare sysctl for pvcnoded
+# PHASE 2c - Prepare sysctl for pvcnoded
 ###############################################################################
 
 if enable_networking:
@@ -877,12 +918,15 @@ logger.out('Setting up objects', state='i')
 
 d_node = dict()
 d_network = dict()
+d_sriov_vf = dict()
 d_domain = dict()
 d_osd = dict()
 d_pool = dict()
 d_volume = dict()  # Dict of Dicts
 node_list = []
 network_list = []
+sriov_pf_list = []
+sriov_vf_list = []
 domain_list = []
 osd_list = []
 pool_list = []
@@ -1036,6 +1080,124 @@ if enable_networking:
         # Update node objects' list
         for node in d_node:
             d_node[node].update_network_list(d_network)
+
+    # Add the SR-IOV PFs and VFs to Zookeeper
+    # These do not behave like the objects; they are not dynamic (the API cannot change them), and they
+    # exist for the lifetime of this Node instance. The objects are set here in Zookeeper on a per-node
+    # basis, under the Node configuration tree.
+    # MIGRATION: The schema.schema.get ensures that the current active Schema contains the required keys
+    if enable_sriov and zkhandler.schema.schema.get('sriov_pf', None) is not None:
+        vf_list = list()
+        for device in config['sriov_device']:
+            pf = device['phy']
+            vfcount = device['vfcount']
+            if device.get('mtu', None) is None:
+                mtu = 1500
+            else:
+                mtu = device['mtu']
+
+            # Create the PF device in Zookeeper
+            zkhandler.write([
+                (('node.sriov.pf', myhostname, 'sriov_pf', pf), ''),
+                (('node.sriov.pf', myhostname, 'sriov_pf.mtu', pf), mtu),
+                (('node.sriov.pf', myhostname, 'sriov_pf.vfcount', pf), vfcount),
+            ])
+            # Append the device to the list of PFs
+            sriov_pf_list.append(pf)
+
+            # Get the list of VFs from `ip link show`
+            vf_list = json.loads(common.run_os_command('ip --json link show {}'.format(pf))[1])[0].get('vfinfo_list', [])
+            for vf in vf_list:
+                # {
+                #   'vf': 3,
+                #   'link_type': 'ether',
+                #   'address': '00:00:00:00:00:00',
+                #   'broadcast': 'ff:ff:ff:ff:ff:ff',
+                #   'vlan_list': [{'vlan': 101, 'qos': 2}],
+                #   'rate': {'max_tx': 0, 'min_tx': 0},
+                #   'spoofchk': True,
+                #   'link_state': 'auto',
+                #   'trust': False,
+                #   'query_rss_en': False
+                # }
+                vfphy = '{}v{}'.format(pf, vf['vf'])
+
+                # Get the PCIe bus information
+                dev_pcie_path = None
+                try:
+                    with open('/sys/class/net/{}/device/uevent'.format(vfphy)) as vfh:
+                        dev_uevent = vfh.readlines()
+                    for line in dev_uevent:
+                        if re.match(r'^PCI_SLOT_NAME=.*', line):
+                            dev_pcie_path = line.rstrip().split('=')[-1]
+                except FileNotFoundError:
+                    # Something must already be using the PCIe device
+                    pass
+
+                # Add the VF to Zookeeper if it does not yet exist
+                if not zkhandler.exists(('node.sriov.vf', myhostname, 'sriov_vf', vfphy)):
+                    if dev_pcie_path is not None:
+                        pcie_domain, pcie_bus, pcie_slot, pcie_function = re.split(r':|\.', dev_pcie_path)
+                    else:
+                        # We can't add the device - for some reason we can't get any information on its PCIe bus path,
+                        # so just ignore this one, and continue.
+                        # This shouldn't happen under any real circumstances, unless the admin tries to attach a non-existent
+                        # VF to a VM manually, then goes ahead and adds that VF to the system with the VM running.
+                        continue
+
+                    zkhandler.write([
+                        (('node.sriov.vf', myhostname, 'sriov_vf', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pf', vfphy), pf),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.mtu', vfphy), mtu),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.mac', vfphy), vf['address']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.phy_mac', vfphy), vf['address']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_id', vfphy), vf['vlan_list'][0].get('vlan', '0')),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.vlan_qos', vfphy), vf['vlan_list'][0].get('qos', '0')),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_min', vfphy), vf['rate']['min_tx']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.tx_rate_max', vfphy), vf['rate']['max_tx']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.spoof_check', vfphy), vf['spoofchk']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.link_state', vfphy), vf['link_state']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.trust', vfphy), vf['trust']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.config.query_rss', vfphy), vf['query_rss_en']),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci', vfphy), ''),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.domain', vfphy), pcie_domain),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.bus', vfphy), pcie_bus),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.slot', vfphy), pcie_slot),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.pci.function', vfphy), pcie_function),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.used', vfphy), False),
+                        (('node.sriov.vf', myhostname, 'sriov_vf.used_by', vfphy), ''),
+                    ])
+
+                # Append the device to the list of VFs
+                sriov_vf_list.append(vfphy)
+
+        # Remove any obsolete PFs from Zookeeper if they go away
+        for pf in zkhandler.children(('node.sriov.pf', myhostname)):
+            if pf not in sriov_pf_list:
+                zkhandler.delete([
+                    ('node.sriov.pf', myhostname, 'sriov_pf', pf)
+                ])
+        # Remove any obsolete VFs from Zookeeper if their PF goes away
+        for vf in zkhandler.children(('node.sriov.vf', myhostname)):
+            vf_pf = zkhandler.read(('node.sriov.vf', myhostname, 'sriov_vf.pf', vf))
+            if vf_pf not in sriov_pf_list:
+                zkhandler.delete([
+                    ('node.sriov.vf', myhostname, 'sriov_vf', vf)
+                ])
+
+        # SR-IOV VF objects
+        # This is a ChildrenWatch just for consistency; the list never changes at runtime
+        @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path('node.sriov.vf', myhostname))
+        def update_sriov_vfs(new_sriov_vf_list):
+            global sriov_vf_list, d_sriov_vf
+
+            # Add VFs to the list
+            for vf in common.sortInterfaceNames(new_sriov_vf_list):
+                d_sriov_vf[vf] = SRIOVVFInstance.SRIOVVFInstance(vf, zkhandler, config, logger, this_node)
+
+            sriov_vf_list = sorted(new_sriov_vf_list)
+            logger.out('{}SR-IOV VF list:{} {}'.format(fmt_blue, fmt_end, ' '.join(sriov_vf_list)), state='i')
 
 if enable_hypervisor:
     # VM command pipeline key
@@ -1526,6 +1688,9 @@ def collect_vm_stats(queue):
             logger.out("Getting network statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_network_stats = []
         for interface in tree.findall('devices/interface'):
+            interface_type = interface.get('type')
+            if interface_type not in ['bridge']:
+                continue
             interface_name = interface.find('target').get('dev')
             interface_bridge = interface.find('source').get('bridge')
             interface_stats = domain.interfaceStats(interface_name)

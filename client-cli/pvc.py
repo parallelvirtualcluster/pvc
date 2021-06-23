@@ -672,7 +672,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
 @click.option(
     '-m', '--method', 'migration_method', default='none', show_default=True,
     type=click.Choice(['none', 'live', 'shutdown']),
-    help='The preferred migration method of the VM between nodes; saved with VM.'
+    help='The preferred migration method of the VM between nodes.'
 )
 @click.option(
     '-p', '--profile', 'provisioner_profile', default=None, show_default=False,
@@ -1309,15 +1309,24 @@ def vm_network_get(domain, raw):
     'domain'
 )
 @click.argument(
-    'vni'
+    'net'
 )
 @click.option(
     '-a', '--macaddr', 'macaddr', default=None,
-    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-deliniated format.'
+    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.'
 )
 @click.option(
-    '-m', '--model', 'model', default='virtio',
-    help='The model for the interface; must be a valid libvirt model.'
+    '-m', '--model', 'model', default='virtio', show_default=True,
+    help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.'
+)
+@click.option(
+    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    help='Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.'
+)
+@click.option(
+    '-d', '--sriov-mode', 'sriov_mode', default='macvtap', show_default=True,
+    type=click.Choice(['hostdev', 'macvtap']),
+    help='For SR-IOV NETs, the SR-IOV network device mode.'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1329,9 +1338,18 @@ def vm_network_get(domain, raw):
     help='Confirm the restart'
 )
 @cluster_req
-def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
+def vm_network_add(domain, net, macaddr, model, sriov, sriov_mode, restart, confirm_flag):
     """
-    Add the network VNI to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+    Add the network NET to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
+
+    NOTE: Adding a SR-IOV network device in the "hostdev" mode has the following caveats:
+
+      1. The VM will not be able to be live migrated; it must be shut down to migrate between nodes. The VM metadata will be updated to force this.
+
+      2. If an identical SR-IOV VF device is not present on the target node, post-migration startup will fail. It may be prudent to use a node limit here.
+
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1339,7 +1357,7 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, vni, macaddr, model, restart)
+    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, net, macaddr, model, sriov, sriov_mode, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
@@ -1353,7 +1371,11 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     'domain'
 )
 @click.argument(
-    'vni'
+    'net'
+)
+@click.option(
+    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    help='Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1365,9 +1387,11 @@ def vm_network_add(domain, vni, macaddr, model, restart, confirm_flag):
     help='Confirm the restart'
 )
 @cluster_req
-def vm_network_remove(domain, vni, restart, confirm_flag):
+def vm_network_remove(domain, net, sriov, restart, confirm_flag):
     """
-    Remove the network VNI to the virtual machine DOMAIN.
+    Remove the network NET from the virtual machine DOMAIN.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1375,7 +1399,7 @@ def vm_network_remove(domain, vni, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, vni, restart)
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, sriov, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
@@ -1482,7 +1506,7 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     'domain'
 )
 @click.argument(
-    'vni'
+    'volume'
 )
 @click.option(
     '-r', '--restart', 'restart', is_flag=True, default=False,
@@ -1494,9 +1518,9 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     help='Confirm the restart'
 )
 @cluster_req
-def vm_volume_remove(domain, vni, restart, confirm_flag):
+def vm_volume_remove(domain, volume, restart, confirm_flag):
     """
-    Remove the volume VNI to the virtual machine DOMAIN.
+    Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
     """
     if restart and not confirm_flag and not config['unsafe']:
         try:
@@ -1504,7 +1528,7 @@ def vm_volume_remove(domain, vni, restart, confirm_flag):
         except Exception:
             restart = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, vni, restart)
+    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, volume, restart)
     if retcode and not restart:
         retmsg = retmsg + " Changes will be applied on next VM start/restart."
     cleanup(retcode, retmsg)
@@ -2098,6 +2122,154 @@ def net_acl_list(net, limit, direction):
     retcode, retdata = pvc_network.net_acl_list(config, net, limit, direction)
     if retcode:
         retdata = pvc_network.format_list_acl(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov
+###############################################################################
+@click.group(name='sriov', short_help='Manage SR-IOV network resources.', context_settings=CONTEXT_SETTINGS)
+def net_sriov():
+    """
+    Manage SR-IOV network resources on nodes (PFs and VFs).
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov pf
+###############################################################################
+@click.group(name='pf', short_help='Manage PF devices.', context_settings=CONTEXT_SETTINGS)
+def net_sriov_pf():
+    """
+    Manage SR-IOV PF devices on nodes.
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov pf list
+###############################################################################
+@click.command(name='list', short_help='List PF devices.')
+@click.argument(
+    'node'
+)
+@cluster_req
+def net_sriov_pf_list(node):
+    """
+    List all SR-IOV PFs on NODE.
+    """
+    retcode, retdata = pvc_network.net_sriov_pf_list(config, node)
+    if retcode:
+        retdata = pvc_network.format_list_sriov_pf(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov vf
+###############################################################################
+@click.group(name='vf', short_help='Manage VF devices.', context_settings=CONTEXT_SETTINGS)
+def net_sriov_vf():
+    """
+    Manage SR-IOV VF devices on nodes.
+    """
+    pass
+
+
+###############################################################################
+# pvc network sriov vf set
+###############################################################################
+@click.command(name='set', short_help='Set VF device properties.')
+@click.option(
+    '--vlan-id', 'vlan_id', default=None, show_default=False,
+    help='The vLAN ID for vLAN tagging.'
+)
+@click.option(
+    '--qos-prio', 'vlan_qos', default=None, show_default=False,
+    help='The vLAN QOS priority.'
+)
+@click.option(
+    '--tx-min', 'tx_rate_min', default=None, show_default=False,
+    help='The minimum TX rate.'
+)
+@click.option(
+    '--tx-max', 'tx_rate_max', default=None, show_default=False,
+    help='The maximum TX rate.'
+)
+@click.option(
+    '--link-state', 'link_state', default=None, show_default=False,
+    type=click.Choice(['auto', 'enable', 'disable']),
+    help='The administrative link state.'
+)
+@click.option(
+    '--spoof-check/--no-spoof-check', 'spoof_check', is_flag=True, default=None, show_default=False,
+    help='Enable or disable spoof checking.'
+)
+@click.option(
+    '--trust/--no-trust', 'trust', is_flag=True, default=None, show_default=False,
+    help='Enable or disable VF user trust.'
+)
+@click.option(
+    '--query-rss/--no-query-rss', 'query_rss', is_flag=True, default=None, show_default=False,
+    help='Enable or disable query RSS support.'
+)
+@click.argument(
+    'node'
+)
+@click.argument(
+    'vf'
+)
+@cluster_req
+def net_sriov_vf_set(node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+    """
+    Set a property of SR-IOV VF on NODE.
+    """
+    if vlan_id is None and vlan_qos is None and tx_rate_min is None and tx_rate_max is None and link_state is None and spoof_check is None and trust is None and query_rss is None:
+        cleanup(False, 'At least one configuration property must be specified to update.')
+
+    retcode, retmsg = pvc_network.net_sriov_vf_set(config, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc network sriov vf list
+###############################################################################
+@click.command(name='list', short_help='List VF devices.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'pf', default=None, required=False
+)
+@cluster_req
+def net_sriov_vf_list(node, pf):
+    """
+    List all SR-IOV VFs on NODE, optionally limited to device PF.
+    """
+    retcode, retdata = pvc_network.net_sriov_vf_list(config, node, pf)
+    if retcode:
+        retdata = pvc_network.format_list_sriov_vf(retdata)
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc network sriov vf info
+###############################################################################
+@click.command(name='info', short_help='List VF devices.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'vf'
+)
+@cluster_req
+def net_sriov_vf_info(node, vf):
+    """
+    Show details of the SR-IOV VF on NODE.
+    """
+    retcode, retdata = pvc_network.net_sriov_vf_info(config, node, vf)
+    if retcode:
+        retdata = pvc_network.format_info_sriov_vf(config, retdata, node)
     cleanup(retcode, retdata)
 
 
@@ -4475,6 +4647,7 @@ cli_network.add_command(net_info)
 cli_network.add_command(net_list)
 cli_network.add_command(net_dhcp)
 cli_network.add_command(net_acl)
+cli_network.add_command(net_sriov)
 
 net_dhcp.add_command(net_dhcp_list)
 net_dhcp.add_command(net_dhcp_add)
@@ -4483,6 +4656,15 @@ net_dhcp.add_command(net_dhcp_remove)
 net_acl.add_command(net_acl_add)
 net_acl.add_command(net_acl_remove)
 net_acl.add_command(net_acl_list)
+
+net_sriov.add_command(net_sriov_pf)
+net_sriov.add_command(net_sriov_vf)
+
+net_sriov_pf.add_command(net_sriov_pf_list)
+
+net_sriov_vf.add_command(net_sriov_vf_list)
+net_sriov_vf.add_command(net_sriov_vf_info)
+net_sriov_vf.add_command(net_sriov_vf_set)
 
 ceph_benchmark.add_command(ceph_benchmark_run)
 ceph_benchmark.add_command(ceph_benchmark_info)

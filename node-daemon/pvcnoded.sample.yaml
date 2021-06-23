@@ -157,6 +157,21 @@ pvc:
       networking:
         # bridge_device: Underlying device to use for bridged vLAN networks; usually the device underlying <cluster>
         bridge_device: ens4
+        # sriov_enable: Enable or disable (default if absent) SR-IOV network support
+        sriov_enable: False
+        # sriov_device: Underlying device(s) to use for SR-IOV networks; can be bridge_device or other NIC(s)
+        sriov_device:
+            # The physical device name
+          - phy: ens1f1 
+            # The preferred MTU of the physical device; OPTIONAL - defaults to the interface default if unset
+            mtu: 9000
+            # The number of VFs to enable on this device
+            # NOTE: This defines the maximum number of VMs which can be provisioned on this physical device; VMs
+            #       are allocated to these VFs manually by the administrator and thus all nodes should have the
+            #       same number
+            # NOTE: This value cannot be changed at runtime on Intel(R) NICs; the node will need to be restarted
+            #       if this value changes
+            vfcount: 8
         # upstream: Upstream physical interface device
         upstream:
           # device: Upstream interface device name

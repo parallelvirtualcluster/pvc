@@ -2720,6 +2720,301 @@ api.add_resource(API_Network_ACL_Element, '/network/<vni>/acl/<description>')
 
 
 ##########################################################
+# Client API - SR-IOV
+##########################################################
+
+# /sriov
+class API_SRIOV_Root(Resource):
+    @Authenticator
+    def get(self):
+        pass
+
+
+api.add_resource(API_SRIOV_Root, '/sriov')
+
+
+# /sriov/pf
+class API_SRIOV_PF_Root(Resource):
+    @RequestParser([
+        {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of SR-IOV PFs on a given node
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: sriov_pf
+              properties:
+                phy:
+                  type: string
+                  description: The name of the SR-IOV PF device
+                mtu:
+                  type: string
+                  description: The MTU of the SR-IOV PF device
+                vfs:
+                  type: list
+                  items:
+                    type: string
+                    description: The PHY name of a VF of this PF
+        """
+        return api_helper.sriov_pf_list(reqargs.get('node'))
+
+
+api.add_resource(API_SRIOV_PF_Root, '/sriov/pf')
+
+
+# /sriov/pf/<node>
+class API_SRIOV_PF_Node(Resource):
+    @Authenticator
+    def get(self, node):
+        """
+        Return a list of SR-IOV PFs on node {node}
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_pf'
+        """
+        return api_helper.sriov_pf_list(node)
+
+
+api.add_resource(API_SRIOV_PF_Node, '/sriov/pf/<node>')
+
+
+# /sriov/vf
+class API_SRIOV_VF_Root(Resource):
+    @RequestParser([
+        {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
+        {'name': 'pf', 'required': False, 'helptext': "A PF parent may be specified."},
+    ])
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of SR-IOV VFs on a given node, optionally limited to those in the specified PF
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: sriov_vf
+              properties:
+                phy:
+                  type: string
+                  description: The name of the SR-IOV VF device
+                pf:
+                  type: string
+                  description: The name of the SR-IOV PF parent of this VF device
+                mtu:
+                  type: integer
+                  description: The current MTU of the VF device
+                mac:
+                  type: string
+                  description: The current MAC address of the VF device
+                config:
+                  type: object
+                  id: sriov_vf_config
+                  properties:
+                    vlan_id:
+                      type: string
+                      description: The tagged vLAN ID of the SR-IOV VF device
+                    vlan_qos:
+                      type: string
+                      description: The QOS group of the tagged vLAN
+                    tx_rate_min:
+                      type: string
+                      description: The minimum TX rate of the SR-IOV VF device
+                    tx_rate_max:
+                      type: string
+                      description: The maximum TX rate of the SR-IOV VF device
+                    spoof_check:
+                      type: boolean
+                      description: Whether device spoof checking is enabled or disabled
+                    link_state:
+                      type: string
+                      description: The current SR-IOV VF link state (either enabled, disabled, or auto)
+                    trust:
+                      type: boolean
+                      description: Whether guest device trust is enabled or disabled
+                    query_rss:
+                      type: boolean
+                      description: Whether VF RSS querying is enabled or disabled
+                usage:
+                  type: object
+                  id: sriov_vf_usage
+                  properties:
+                    used:
+                      type: boolean
+                      description: Whether the SR-IOV VF is currently used by a VM or not
+                    domain:
+                      type: boolean
+                      description: The UUID of the domain the SR-IOV VF is currently used by
+        """
+        return api_helper.sriov_vf_list(reqargs.get('node'), reqargs.get('pf', None))
+
+
+api.add_resource(API_SRIOV_VF_Root, '/sriov/vf')
+
+
+# /sriov/vf/<node>
+class API_SRIOV_VF_Node(Resource):
+    @RequestParser([
+        {'name': 'pf', 'required': False, 'helptext': "A PF parent may be specified."},
+    ])
+    @Authenticator
+    def get(self, node, reqargs):
+        """
+        Return a list of SR-IOV VFs on node {node}, optionally limited to those in the specified PF
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_vf'
+        """
+        return api_helper.sriov_vf_list(node, reqargs.get('pf', None))
+
+
+api.add_resource(API_SRIOV_VF_Node, '/sriov/vf/<node>')
+
+
+# /sriov/vf/<node>/<vf>
+class API_SRIOV_VF_Element(Resource):
+    @Authenticator
+    def get(self, node, vf):
+        """
+        Return information about {vf} on {node}
+        ---
+        tags:
+          - network / sriov
+        responses:
+          200:
+            description: OK
+            schema:
+              $ref: '#/definitions/sriov_vf'
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        vf_list = list()
+        full_vf_list, _ = api_helper.sriov_vf_list(node)
+        for vf_element in full_vf_list:
+            if vf_element['phy'] == vf:
+                vf_list.append(vf_element)
+
+        if len(vf_list) == 1:
+            return vf_list, 200
+        else:
+            return {'message': "No VF '{}' found on node '{}'".format(vf, node)}, 404
+
+    @RequestParser([
+        {'name': 'vlan_id'},
+        {'name': 'vlan_qos'},
+        {'name': 'tx_rate_min'},
+        {'name': 'tx_rate_max'},
+        {'name': 'link_state', 'choices': ('auto', 'enable', 'disable'), 'helptext': "A valid state must be specified"},
+        {'name': 'spoof_check'},
+        {'name': 'trust'},
+        {'name': 'query_rss'},
+    ])
+    @Authenticator
+    def put(self, node, vf, reqargs):
+        """
+        Set the configuration of {vf} on {node}
+        ---
+        tags:
+          - network / sriov
+        parameters:
+          - in: query
+            name: vlan_id
+            type: integer
+            required: false
+            description: The vLAN ID for vLAN tagging (0 is disabled)
+          - in: query
+            name: vlan_qos
+            type: integer
+            required: false
+            description: The vLAN QOS priority (0 is disabled)
+          - in: query
+            name: tx_rate_min
+            type: integer
+            required: false
+            description: The minimum TX rate (0 is disabled)
+          - in: query
+            name: tx_rate_max
+            type: integer
+            required: false
+            description: The maximum TX rate (0 is disabled)
+          - in: query
+            name: link_state
+            type: string
+            required: false
+            description: The administrative link state
+            enum:
+              - auto
+              - enable
+              - disable
+          - in: query
+            name: spoof_check
+            type: boolean
+            required: false
+            description: Enable or disable spoof checking
+          - in: query
+            name: trust
+            type: boolean
+            required: false
+            description: Enable or disable VF user trust
+          - in: query
+            name: query_rss
+            type: boolean
+            required: false
+            description: Enable or disable query RSS support
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.update_sriov_vf_config(
+            node,
+            vf,
+            reqargs.get('vlan_id', None),
+            reqargs.get('vlan_qos', None),
+            reqargs.get('tx_rate_min', None),
+            reqargs.get('tx_rate_max', None),
+            reqargs.get('link_state', None),
+            reqargs.get('spoof_check', None),
+            reqargs.get('trust', None),
+            reqargs.get('query_rss', None),
+        )
+
+
+api.add_resource(API_SRIOV_VF_Element, '/sriov/vf/<node>/<vf>')
+
+
+##########################################################
 # Client API - Storage
 ##########################################################
 # Note: The prefix `/storage` allows future potential storage subsystems.
