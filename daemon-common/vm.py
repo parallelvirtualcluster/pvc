@@ -821,7 +821,6 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
             return False, 'VM state "{}" is not valid.'.format(state)
 
     full_vm_list = zkhandler.children('base.domain')
-    vm_list = []
 
     # Set our limit to a sensible regex
     if limit and is_fuzzy:
@@ -834,38 +833,46 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
         except Exception as e:
             return False, 'Regex Error: {}'.format(e)
 
-    # If we're limited, remove other nodes' VMs
-    vm_node = {}
-    vm_state = {}
+    get_vm_info = dict()
     for vm in full_vm_list:
-        # Check we don't match the limit
         name = zkhandler.read(('domain', vm))
-        vm_node[vm] = zkhandler.read(('domain.node', vm))
-        vm_state[vm] = zkhandler.read(('domain.state', vm))
-        # Handle limiting
+        is_limit_match = False
+        is_node_match = False
+        is_state_match = False
+
+        # Check on limit
         if limit:
             try:
                 if re.match(limit, vm):
-                    if not node and not state:
-                        vm_list.append(common.getInformationFromXML(zkhandler, vm))
-                    else:
-                        if vm_node[vm] == node or vm_state[vm] == state:
-                            vm_list.append(common.getInformationFromXML(zkhandler, vm))
-
+                    is_limit_match = True
                 if re.match(limit, name):
-                    if not node and not state:
-                        vm_list.append(common.getInformationFromXML(zkhandler, vm))
-                    else:
-                        if vm_node[vm] == node or vm_state[vm] == state:
-                            vm_list.append(common.getInformationFromXML(zkhandler, vm))
+                    is_limit_match = True
             except Exception as e:
                 return False, 'Regex Error: {}'.format(e)
         else:
-            # Check node to avoid unneeded ZK calls
-            if not node and not state:
-                vm_list.append(common.getInformationFromXML(zkhandler, vm))
-            else:
-                if vm_node[vm] == node or vm_state[vm] == state:
-                    vm_list.append(common.getInformationFromXML(zkhandler, vm))
+            is_limit_match = True
+
+        # Check on node
+        if node:
+            vm_node = zkhandler.read(('domain.node', vm))
+            if vm_node == node:
+                is_node_match = True
+        else:
+            is_node_match = True
+
+        # Check on state
+        if state:
+            vm_state = zkhandler.read(('domain.state', vm))
+            if vm_state == state:
+                is_state_match = True
+        else:
+            is_state_match = True
+
+        if is_limit_match and is_node_match and is_state_match:
+            get_vm_info[vm] = True
+        else:
+            get_vm_info[vm] = False
+
+    vm_list = [common.getInformationFromXML(zkhandler, vm) for vm in full_vm_list if get_vm_info[vm]]
 
     return True, vm_list
