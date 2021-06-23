@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # pvc.py - PVC client command-line interface
 # Part of the Parallel Virtual Cluster (PVC) system
 #
@@ -42,6 +44,7 @@ import pvc.cli_lib.provisioner as pvc_provisioner
 
 myhostname = socket.gethostname().split('.')[0]
 zk_host = ''
+is_completion = True if os.environ.get('_PVC_COMPLETE', '') == 'complete' else False
 
 default_store_data = {
     'cfgfile': '/etc/pvc/pvcapid.yaml'
@@ -131,20 +134,21 @@ def update_store(store_path, store_data):
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
 
 
-pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
-home_dir = os.environ.get('HOME', None)
-if pvc_client_dir:
-    store_path = '{}'.format(pvc_client_dir)
-elif home_dir:
-    store_path = '{}/.config/pvc'.format(home_dir)
-else:
-    print('WARNING: No client or home config dir found, using /tmp instead')
-    store_path = '/tmp/pvc'
+if not is_completion:
+    pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
+    home_dir = os.environ.get('HOME', None)
+    if pvc_client_dir:
+        store_path = '{}'.format(pvc_client_dir)
+    elif home_dir:
+        store_path = '{}/.config/pvc'.format(home_dir)
+    else:
+        print('WARNING: No client or home config dir found, using /tmp instead')
+        store_path = '/tmp/pvc'
 
-if not os.path.isdir(store_path):
-    os.makedirs(store_path)
-if not os.path.isfile(store_path + '/pvc-cli.json'):
-    update_store(store_path, {"local": default_store_data})
+    if not os.path.isdir(store_path):
+        os.makedirs(store_path)
+    if not os.path.isfile(store_path + '/pvc-cli.json'):
+        update_store(store_path, {"local": default_store_data})
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
 
