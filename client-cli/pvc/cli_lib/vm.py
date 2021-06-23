@@ -1397,6 +1397,9 @@ def format_list(config, vm_list, raw):
         )
     )
 
+    # Get a list of cluster networks for validity comparisons
+    cluster_net_list = call_api(config, 'get', '/network').json()
+
     # Format the string (elements)
     for domain_information in vm_list:
         if domain_information['state'] == 'start':
@@ -1414,7 +1417,6 @@ def format_list(config, vm_list, raw):
 
         # Handle colouring for an invalid network config
         net_list = getNiceNetID(domain_information)
-        cluster_net_list = call_api(config, 'get', '/network').json()
         vm_net_colour = ''
         for net_vni in net_list:
             if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^macvtap:.*', net_vni) and not re.match(r'^hostdev:.*', net_vni):
