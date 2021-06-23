@@ -843,8 +843,6 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
         # Check on limit
         if limit:
             try:
-                if re.match(limit, vm):
-                    is_limit_match = True
                 if re.match(limit, name):
                     is_limit_match = True
             except Exception as e:
