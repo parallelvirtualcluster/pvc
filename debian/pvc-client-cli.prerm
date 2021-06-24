@@ -4,3 +4,5 @@
 if [ -f /etc/bash_completion.d/pvc ]; then
     rm -f /etc/bash_completion.d/pvc
 fi
+
+exit 0

@@ -4,3 +4,5 @@
 if [ -d /etc/bash_completion.d ]; then
     _PVC_COMPLETE=source_bash pvc > /etc/bash_completion.d/pvc
 fi
+
+exit 0
