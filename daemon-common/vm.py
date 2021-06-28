@@ -24,6 +24,8 @@ import re
 import lxml.objectify
 import lxml.etree
 
+from uuid import UUID
+
 import daemon_lib.common as common
 
 import daemon_lib.ceph as ceph
@@ -823,15 +825,25 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
     full_vm_list = zkhandler.children('base.domain')
 
     # Set our limit to a sensible regex
-    if limit and is_fuzzy:
+    if limit:
+        # Check if the limit is a UUID
+        is_limit_uuid = False
         try:
-            # Implcitly assume fuzzy limits
-            if not re.match(r'\^.*', limit):
-                limit = '.*' + limit
-            if not re.match(r'.*\$', limit):
-                limit = limit + '.*'
-        except Exception as e:
-            return False, 'Regex Error: {}'.format(e)
+            uuid_obj = UUID(limit, version=4)
+            limit = str(uuid_obj)
+            is_limit_uuid = True
+        except ValueError:
+            pass
+
+        if is_fuzzy and not is_limit_uuid:
+            try:
+                # Implcitly assume fuzzy limits
+                if not re.match(r'\^.*', limit):
+                    limit = '.*' + limit
+                if not re.match(r'.*\$', limit):
+                    limit = limit + '.*'
+            except Exception as e:
+                return False, 'Regex Error: {}'.format(e)
 
     get_vm_info = dict()
     for vm in full_vm_list:
@@ -842,7 +854,10 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
 
         # Check on limit
         if limit:
+            # Try to match the limit against the UUID (if applicable) and name
             try:
+                if is_limit_uuid and re.match(limit, vm):
+                    is_limit_match = True
                 if re.match(limit, name):
                     is_limit_match = True
             except Exception as e:
