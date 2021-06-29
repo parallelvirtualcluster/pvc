@@ -304,10 +304,7 @@ class API_Initialize(Resource):
         else:
             overwrite_flag = False
 
-        if api_helper.initialize_cluster(overwrite=overwrite_flag):
-            return {"message": "Successfully initialized a new PVC cluster"}, 200
-        else:
-            return {"message": "PVC cluster already initialized"}, 400
+        return api_helper.initialize_cluster(overwrite=overwrite_flag)
 
 
 api.add_resource(API_Initialize, '/initialize')
