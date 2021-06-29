@@ -1,5 +1,5 @@
 <p align="center">
-<img alt="Logo banner" src="docs/images/pvc_logo_black.png"/>
+<img alt="Logo banner" src="docs/images/pvc_logo_white.png"/>
 <br/><br/>
 <a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
 <a href="https://github.com/parallelvirtualcluster/pvc/releases"><img alt="Release" src="https://img.shields.io/github/release-pre/parallelvirtualcluster/pvc"/></a>
