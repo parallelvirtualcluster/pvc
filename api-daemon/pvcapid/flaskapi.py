@@ -299,8 +299,10 @@ class API_Initialize(Resource):
           400:
             description: Bad request
         """
-        if reqargs.get('overwrite', False):
+        if reqargs.get('overwrite', 'False') == 'True':
             overwrite_flag = True
+        else:
+            overwrite_flag = False
 
         if api_helper.initialize_cluster(overwrite=overwrite_flag):
             return {"message": "Successfully initialized a new PVC cluster"}, 200
