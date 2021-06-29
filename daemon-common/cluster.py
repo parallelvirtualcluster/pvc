@@ -267,11 +267,15 @@ def cluster_initialize(zkhandler, overwrite=False):
         return False, 'ERROR: Cluster contains data and overwrite not set.'
 
     if overwrite:
-        # Delete the existing keys; ignore any errors
-        status = zkhandler.delete(zkhandler.schema.keys('base'), recursive=True)
+        # Delete the existing keys
+        for key in zkhandler.schema.keys('base'):
+            if key == 'root':
+                # Don't delete the root key
+                continue
 
-        if not status:
-            return False, 'ERROR: Failed to delete data in cluster; running nodes perhaps?'
+            status = zkhandler.delete('base.{}'.format(key), recursive=True)
+            if not status:
+                return False, 'ERROR: Failed to delete data in cluster; running nodes perhaps?'
 
     # Create the root keys
     zkhandler.schema.apply(zkhandler)
