@@ -4490,7 +4490,7 @@ def task_restore(filename, confirm_flag):
 ###############################################################################
 @click.command(name='init', short_help='Initialize a new cluster.')
 @click.option(
-    '-o', '--overwite', 'overwrite_flag',
+    '-o', '--overwrite', 'overwrite_flag',
     is_flag=True, default=False,
     help='Remove and overwrite any existing data'
 )
