@@ -1,7 +1,5 @@
-# PVC - The Parallel Virtual Cluster system
-
 <p align="center">
-<img alt="Logo banner" src="https://git.bonifacelabs.ca/uploads/-/system/project/avatar/135/pvc_logo.png"/>
+<img alt="Logo banner" src="docs/images/pvc_logo_black.png"/>
 <br/><br/>
 <a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
 <a href="https://github.com/parallelvirtualcluster/pvc/releases"><img alt="Release" src="https://img.shields.io/github/release-pre/parallelvirtualcluster/pvc"/></a>
