@@ -42,6 +42,23 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.21
+
+  * [API Daemon] Ensures VMs stop before removing them
+  * [Node Daemon] Fixes a bug with VM shutdowns not timing out
+  * [Documentation] Adds information about georedundancy caveats
+  * [All] Adds support for SR-IOV NICs (hostdev and macvtap) and surrounding documentation
+  * [Node Daemon] Fixes a bug where shutdown aborted migrations unexpectedly
+  * [Node Daemon] Fixes a bug where the migration method was not updated realtime
+  * [Node Daemon] Adjusts the Patroni commands to remove reference to Zookeeper path
+  * [CLI Client] Adjusts several help messages and fixes some typos
+  * [CLI Client] Converts the CLI client to a proper Python module
+  * [API Daemon] Improves VM list performance
+  * [API Daemon] Adjusts VM list matching critera (only matches against the UUID if it's a full UUID)
+  * [API Worker] Fixes incompatibility between Deb 10 and 11 in launching Celery worker
+  * [API Daemon] Corrects several bugs with initialization command
+  * [Documentation] Adds a shiny new logo and revamps introduction text
+
 #### v0.9.20
 
   * [Daemons] Implemented a Zookeeper schema handler and version 0 schema
