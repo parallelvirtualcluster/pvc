@@ -578,7 +578,7 @@ logger.out('Validating Zookeeper schema', state='i')
 try:
     node_schema_version = int(zkhandler.read(('node.data.active_schema', myhostname)))
 except Exception:
-    node_schema_version = zkhandler.read('base.schema.version')
+    node_schema_version = int(zkhandler.read('base.schema.version'))
     if node_schema_version is None:
         node_schema_version = 0
     zkhandler.write([
