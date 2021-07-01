@@ -364,6 +364,9 @@ class ZKHandler(object):
                 lock_id = str(uuid.uuid1())
                 lock = self.zk_conn.ReadLock(path, lock_id)
                 break
+            except NoNodeError:
+                self.log("ZKHandler warning: Failed to acquire read lock on nonexistent path {}".format(path), state='e')
+                return None
             except Exception as e:
                 if count > 5:
                     self.log("ZKHandler warning: Failed to acquire read lock after 5 tries: {}".format(e), state='e')
@@ -389,6 +392,9 @@ class ZKHandler(object):
                 lock_id = str(uuid.uuid1())
                 lock = self.zk_conn.WriteLock(path, lock_id)
                 break
+            except NoNodeError:
+                self.log("ZKHandler warning: Failed to acquire write lock on nonexistent path {}".format(path), state='e')
+                return None
             except Exception as e:
                 if count > 5:
                     self.log("ZKHandler warning: Failed to acquire write lock after 5 tries: {}".format(e), state='e')
@@ -414,6 +420,9 @@ class ZKHandler(object):
                 lock_id = str(uuid.uuid1())
                 lock = self.zk_conn.Lock(path, lock_id)
                 break
+            except NoNodeError:
+                self.log("ZKHandler warning: Failed to acquire exclusive lock on nonexistent path {}".format(path), state='e')
+                return None
             except Exception as e:
                 if count > 5:
                     self.log("ZKHandler warning: Failed to acquire exclusive lock after 5 tries: {}".format(e), state='e')
