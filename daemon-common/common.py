@@ -30,6 +30,59 @@ from re import split as re_split
 from distutils.util import strtobool
 from threading import Thread
 from shlex import split as shlex_split
+from functools import wraps
+
+
+###############################################################################
+# Performance Profiler decorator
+###############################################################################
+
+# Get performance statistics on a function or class
+class Profiler(object):
+    def __init__(self, config):
+        self.is_debug = config['debug']
+        self.pvc_logdir = '/var/log/pvc'
+
+    def __call__(self, function):
+        if not callable(function):
+            return
+
+        if not self.is_debug:
+            return function
+
+        @wraps(function)
+        def profiler_wrapper(*args, **kwargs):
+            import cProfile
+            import pstats
+            from os import path, makedirs
+            from datetime import datetime
+
+            if not path.exists(self.pvc_logdir):
+                print('Profiler: Requested profiling of {} but no log dir present; printing instead.'.format(str(function.__name__)))
+                log_result = False
+            else:
+                log_result = True
+                profiler_logdir = '{}/profiler'.format(self.pvc_logdir)
+                if not path.exists(profiler_logdir):
+                    makedirs(profiler_logdir)
+
+            pr = cProfile.Profile()
+            pr.enable()
+
+            ret = function(*args, **kwargs)
+
+            pr.disable()
+            stats = pstats.Stats(pr)
+            stats.sort_stats(pstats.SortKey.TIME)
+
+            if log_result:
+                stats.dump_stats(filename='{}/{}_{}.log'.format(profiler_logdir, str(function.__name__), str(datetime.now()).replace(' ', '_')))
+            else:
+                print('Profiler stats for function {} at {}:'.format(str(function.__name__), str(datetime.now())))
+                stats.print_stats()
+
+            return ret
+        return profiler_wrapper
 
 
 ###############################################################################
