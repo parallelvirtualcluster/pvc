@@ -211,10 +211,10 @@ class ZKHandler(object):
         """
         Read data from a key
         """
-        if self.exists(key):
+        try:
             path = self.get_schema_path(key)
             data = self.zk_conn.get(path)[0].decode(self.encoding)
-        else:
+        except NoNodeError:
             data = None
 
         return data
@@ -290,8 +290,13 @@ class ZKHandler(object):
         """
         Lists all children of a key
         """
-        path = self.get_schema_path(key)
-        return self.zk_conn.get_children(path)
+        try:
+            path = self.get_schema_path(key)
+            children = self.zk_conn.get_children(path)
+        except NoNodeError:
+            children = None
+
+        return children
 
     def rename(self, kkpairs):
         """
