@@ -25,6 +25,7 @@ import lxml.objectify
 import lxml.etree
 
 from uuid import UUID
+from concurrent.futures import ThreadPoolExecutor
 
 import daemon_lib.common as common
 
@@ -881,11 +882,21 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
         else:
             is_state_match = True
 
-        if is_limit_match and is_node_match and is_state_match:
-            get_vm_info[vm] = True
-        else:
-            get_vm_info[vm] = False
+        get_vm_info[vm] = True if is_limit_match and is_node_match and is_state_match else False
 
-    vm_list = [common.getInformationFromXML(zkhandler, vm) for vm in full_vm_list if get_vm_info[vm]]
+    # Obtain our VM data in a thread pool
+    # This helps parallelize the numerous Zookeeper calls a bit, within the bounds of the GIL, and
+    # should help prevent this task from becoming absurdly slow with very large numbers of VMs.
+    # The max_workers is capped at 32 to avoid creating an absurd number of threads especially if
+    # the list gets called multiple times simultaneously by the API, but still provides a noticeable
+    # speedup.
+    vm_execute_list = [vm for vm in full_vm_list if get_vm_info[vm]]
+    vm_data_list = list()
+    with ThreadPoolExecutor(max_workers=32, thread_name_prefix='vm_list') as executor:
+        futures = []
+        for vm_uuid in vm_execute_list:
+            futures.append(executor.submit(common.getInformationFromXML, zkhandler, vm_uuid))
+        for future in futures:
+            vm_data_list.append(future.result())
 
-    return True, vm_list
+    return True, vm_data_list
