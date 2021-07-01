@@ -97,6 +97,7 @@ def restore_cluster(zkhandler, cluster_data_raw):
 #
 # Cluster functions
 #
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def cluster_status(zkhandler):
     """
