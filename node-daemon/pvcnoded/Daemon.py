@@ -1744,6 +1744,7 @@ def collect_vm_stats(queue):
 
 
 # Keepalive update function
+@common.Profiler(config)
 def node_keepalive():
     if debug:
         logger.out("Keepalive starting", state='d', prefix='main-thread')
