@@ -335,6 +335,13 @@ class VMInstance(object):
         self.instop = True
         try:
             self.dom.destroy()
+            time.sleep(0.2)
+            try:
+                if self.getdom().state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+                    # It didn't terminate, try again
+                    self.dom.destroy()
+            except libvirt.libvirtError:
+                pass
         except AttributeError:
             self.logger.out('Failed to terminate VM', state='e', prefix='Domain {}'.format(self.domuuid))
         self.removeDomainFromList()
@@ -351,6 +358,13 @@ class VMInstance(object):
         self.instop = True
         try:
             self.dom.destroy()
+            time.sleep(0.2)
+            try:
+                if self.getdom().state()[0] == libvirt.VIR_DOMAIN_RUNNING:
+                    # It didn't terminate, try again
+                    self.dom.destroy()
+            except libvirt.libvirtError:
+                pass
         except AttributeError:
             self.logger.out('Failed to stop VM', state='e', prefix='Domain {}'.format(self.domuuid))
         self.removeDomainFromList()
