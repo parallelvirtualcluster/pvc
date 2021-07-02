@@ -129,6 +129,7 @@ def cluster_maintenance(zkhandler, maint_state='false'):
 #
 # Node functions
 #
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def node_list(zkhandler, limit=None, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
     """
@@ -319,6 +320,7 @@ def vm_is_migrated(zkhandler, vm):
     return retdata
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def vm_state(zkhandler, vm):
     """
@@ -347,6 +349,7 @@ def vm_state(zkhandler, vm):
     return retdata, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def vm_node(zkhandler, vm):
     """
@@ -404,6 +407,7 @@ def vm_console(zkhandler, vm, lines=None):
     return retdata, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def vm_list(zkhandler, node=None, state=None, limit=None, is_fuzzy=True):
     """
@@ -453,6 +457,7 @@ def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method
     return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def get_vm_meta(zkhandler, vm):
     """
@@ -768,6 +773,7 @@ def vm_flush_locks(zkhandler, vm):
 #
 # Network functions
 #
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def net_list(zkhandler, limit=None, is_fuzzy=True):
     """
@@ -859,6 +865,7 @@ def net_remove(zkhandler, network):
     return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def net_dhcp_list(zkhandler, network, limit=None, static=False):
     """
@@ -919,6 +926,7 @@ def net_dhcp_remove(zkhandler, network, macaddress):
     return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def net_acl_list(zkhandler, network, limit=None, direction=None, is_fuzzy=True):
     """
@@ -982,6 +990,7 @@ def net_acl_remove(zkhandler, network, description):
 #
 # SR-IOV functions
 #
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def sriov_pf_list(zkhandler, node):
     """
@@ -1006,6 +1015,7 @@ def sriov_pf_list(zkhandler, node):
     return retdata, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def sriov_vf_list(zkhandler, node, pf=None):
     """
@@ -1086,6 +1096,7 @@ def ceph_util(zkhandler):
     return retdata, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def ceph_osd_list(zkhandler, limit=None):
     """
@@ -1242,6 +1253,7 @@ def ceph_osd_unset(zkhandler, option):
     return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def ceph_pool_list(zkhandler, limit=None, is_fuzzy=True):
     """
@@ -1302,6 +1314,7 @@ def ceph_pool_remove(zkhandler, name):
     return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
     """
@@ -1556,6 +1569,7 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
         return output, retcode
 
 
+@pvc_common.Profiler(config)
 @ZKConnection(config)
 def ceph_volume_snapshot_list(zkhandler, pool=None, volume=None, limit=None, is_fuzzy=True):
     """
