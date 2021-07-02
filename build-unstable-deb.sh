@@ -10,7 +10,9 @@ new_ver="${base_ver}~git-$(git rev-parse --short HEAD)"
 echo ${new_ver} >&3
 # Back up the existing changelog and Daemon.py files
 tmpdir=$( mktemp -d )
-cp -a debian/changelog node-daemon/pvcnoded/Daemon.py ${tmpdir}/
+cp -a debian/changelog client-cli/setup.py ${tmpdir}/
+cp -a node-daemon/pvcnoded/Daemon.py ${tmpdir}/node-Daemon.py
+cp -a api-daemon/pvcapid/Daemon.py ${tmpdir}/api-Daemon.py
 # Replace the "base" version with the git revision version
 sed -i "s/version = '${base_ver}'/version = '${new_ver}'/" node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py
 sed -i "s/${base_ver}-0/${new_ver}/" debian/changelog 
@@ -27,7 +29,10 @@ dh_make -p pvc_${new_ver} --createorig --single --yes
 dpkg-buildpackage -us -uc
 # Restore original changelog and Daemon.py files
 cp -a ${tmpdir}/changelog debian/changelog
-cp -a ${tmpdir}/Daemon.py node-daemon/pvcnoded/Daemon.py
+cp -a ${tmpdir}/setup.py client-cli/setup.py
+cp -a ${tmpdir}/node-Daemon.py node-daemon/pvcnoded/Daemon.py
+cp -a ${tmpdir}/api-Daemon.py api-daemon/pvcapid/Daemon.py
+
 # Clean up
 rm -r ${tmpdir}
 dh_clean
