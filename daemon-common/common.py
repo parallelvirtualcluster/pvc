@@ -319,22 +319,10 @@ def getInformationFromXML(zkhandler, uuid):
     domain_lastnode = zkhandler.read(('domain.last_node', uuid))
     domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
 
-    try:
-        domain_node_limit = zkhandler.read(('domain.meta.node_limit', uuid))
-    except Exception:
-        domain_node_limit = None
-    try:
-        domain_node_selector = zkhandler.read(('domain.meta.node_selector', uuid))
-    except Exception:
-        domain_node_selector = None
-    try:
-        domain_node_autostart = zkhandler.read(('domain.meta.autostart', uuid))
-    except Exception:
-        domain_node_autostart = None
-    try:
-        domain_migration_method = zkhandler.read(('domain.meta.migrate_method', uuid))
-    except Exception:
-        domain_migration_method = None
+    domain_node_limit = zkhandler.read(('domain.meta.node_limit', uuid))
+    domain_node_selector = zkhandler.read(('domain.meta.node_selector', uuid))
+    domain_node_autostart = zkhandler.read(('domain.meta.autostart', uuid))
+    domain_migration_method = zkhandler.read(('domain.meta.migrate_method', uuid))
 
     if not domain_node_limit:
         domain_node_limit = None
@@ -344,23 +332,19 @@ def getInformationFromXML(zkhandler, uuid):
     if not domain_node_autostart:
         domain_node_autostart = None
 
-    try:
-        domain_profile = zkhandler.read(('domain.profile', uuid))
-    except Exception:
-        domain_profile = None
+    domain_profile = zkhandler.read(('domain.profile', uuid))
 
-    try:
-        domain_vnc = zkhandler.read(('domain.console.vnc', uuid))
+    domain_vnc = zkhandler.read(('domain.console.vnc', uuid))
+    if domain_vnc:
         domain_vnc_listen, domain_vnc_port = domain_vnc.split(':')
-    except Exception:
+    else:
         domain_vnc_listen = 'None'
         domain_vnc_port = 'None'
 
     parsed_xml = getDomainXML(zkhandler, uuid)
 
-    try:
-        stats_data = loads(zkhandler.read(('domain.stats', uuid)))
-    except Exception:
+    stats_data = loads(zkhandler.read(('domain.stats', uuid)))
+    if stats_data is None:
         stats_data = {}
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
