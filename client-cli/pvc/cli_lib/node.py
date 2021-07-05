@@ -169,6 +169,7 @@ def format_info(node_information, long_output):
     ainformation = []
     # Basic information
     ainformation.append('{}Name:{}                  {}'.format(ansiprint.purple(), ansiprint.end(), node_information['name']))
+    ainformation.append('{}PVC Version:{}           {}'.format(ansiprint.purple(), ansiprint.end(), node_information['pvc_version']))
     ainformation.append('{}Daemon State:{}          {}{}{}'.format(ansiprint.purple(), ansiprint.end(), daemon_state_colour, node_information['daemon_state'], ansiprint.end()))
     ainformation.append('{}Coordinator State:{}     {}{}{}'.format(ansiprint.purple(), ansiprint.end(), coordinator_state_colour, node_information['coordinator_state'], ansiprint.end()))
     ainformation.append('{}Domain State:{}          {}{}{}'.format(ansiprint.purple(), ansiprint.end(), domain_state_colour, node_information['domain_state'], ansiprint.end()))
@@ -204,9 +205,10 @@ def format_list(node_list, raw):
 
     # Determine optimal column widths
     node_name_length = 5
+    pvc_version_length = 8
     daemon_state_length = 7
     coordinator_state_length = 12
-    domain_state_length = 8
+    domain_state_length = 7
     domains_count_length = 4
     cpu_count_length = 6
     load_length = 5
@@ -220,6 +222,10 @@ def format_list(node_list, raw):
         _node_name_length = len(node_information['name']) + 1
         if _node_name_length > node_name_length:
             node_name_length = _node_name_length
+        # node_pvc_version column
+        _pvc_version_length = len(node_information.get('pvc_version', 'N/A')) + 1
+        if _pvc_version_length > pvc_version_length:
+            pvc_version_length = _pvc_version_length
         # daemon_state column
         _daemon_state_length = len(node_information['daemon_state']) + 1
         if _daemon_state_length > daemon_state_length:
@@ -268,11 +274,27 @@ def format_list(node_list, raw):
 
     # Format the string (header)
     node_list_output.append(
-        '{bold}{node_name: <{node_name_length}} \
-St: {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
-Res: {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
-Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}} {node_mem_provisioned: <{mem_prov_length}}{end_bold}'.format(
+        '{bold}{node_header: <{node_header_length}} {state_header: <{state_header_length}} {resource_header: <{resource_header_length}} {memory_header: <{memory_header_length}}{end_bold}'.format(
+            node_header_length=node_name_length + pvc_version_length + 1,
+            state_header_length=daemon_state_length + coordinator_state_length + domain_state_length + 2,
+            resource_header_length=domains_count_length + cpu_count_length + load_length + 2,
+            memory_header_length=mem_total_length + mem_used_length + mem_free_length + mem_alloc_length + mem_prov_length + 4,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            node_header='Nodes ' + ''.join(['-' for _ in range(6, node_name_length + pvc_version_length)]),
+            state_header='States ' + ''.join(['-' for _ in range(7, daemon_state_length + coordinator_state_length + domain_state_length + 1)]),
+            resource_header='Resources ' + ''.join(['-' for _ in range(10, domains_count_length + cpu_count_length + load_length + 1)]),
+            memory_header='Memory (M) ' + ''.join(['-' for _ in range(11, mem_total_length + mem_used_length + mem_free_length + mem_alloc_length + mem_prov_length + 3)])
+        )
+    )
+
+    node_list_output.append(
+        '{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} \
+{daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+{node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
+{node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}} {node_mem_provisioned: <{mem_prov_length}}{end_bold}'.format(
             node_name_length=node_name_length,
+            pvc_version_length=pvc_version_length,
             daemon_state_length=daemon_state_length,
             coordinator_state_length=coordinator_state_length,
             domain_state_length=domain_state_length,
@@ -291,6 +313,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             domain_state_colour='',
             end_colour='',
             node_name='Name',
+            node_pvc_version='Version',
             node_daemon_state='Daemon',
             node_coordinator_state='Coordinator',
             node_domain_state='Domain',
@@ -306,14 +329,15 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
     )
 
     # Format the string (elements)
-    for node_information in node_list:
+    for node_information in sorted(node_list, key=lambda n: n['name']):
         daemon_state_colour, coordinator_state_colour, domain_state_colour, mem_allocated_colour, mem_provisioned_colour = getOutputColours(node_information)
         node_list_output.append(
-            '{bold}{node_name: <{node_name_length}} \
-    {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
-     {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
-         {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {mem_allocated_colour}{node_mem_allocated: <{mem_alloc_length}}{end_colour} {mem_provisioned_colour}{node_mem_provisioned: <{mem_prov_length}}{end_colour}{end_bold}'.format(
+            '{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} \
+{daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
+{node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
+{node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {mem_allocated_colour}{node_mem_allocated: <{mem_alloc_length}}{end_colour} {mem_provisioned_colour}{node_mem_provisioned: <{mem_prov_length}}{end_colour}{end_bold}'.format(
                 node_name_length=node_name_length,
+                pvc_version_length=pvc_version_length,
                 daemon_state_length=daemon_state_length,
                 coordinator_state_length=coordinator_state_length,
                 domain_state_length=domain_state_length,
@@ -334,6 +358,7 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
                 mem_provisioned_colour=mem_allocated_colour,
                 end_colour=ansiprint.end(),
                 node_name=node_information['name'],
+                node_pvc_version=node_information.get('pvc_version', 'N/A'),
                 node_daemon_state=node_information['daemon_state'],
                 node_coordinator_state=node_information['coordinator_state'],
                 node_domain_state=node_information['domain_state'],
@@ -348,4 +373,4 @@ Mem (M): {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length
             )
         )
 
-    return '\n'.join(sorted(node_list_output))
+    return '\n'.join(node_list_output)
