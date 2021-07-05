@@ -24,7 +24,7 @@ import psycopg2.extras
 
 from pvcapid.Daemon import config
 
-from daemon_lib.zkhandler import ZKConnection
+from daemon_lib.zkhandler import ZKHandler
 
 import daemon_lib.common as pvc_common
 import daemon_lib.ceph as pvc_ceph
@@ -103,8 +103,7 @@ def list_benchmarks(job=None):
         return {'message': 'No benchmark found.'}, 404
 
 
-@ZKConnection(config)
-def run_benchmark(self, zkhandler, pool):
+def run_benchmark(self, pool):
     # Runtime imports
     import time
     import json
@@ -121,6 +120,13 @@ def run_benchmark(self, zkhandler, pool):
         db_conn, db_cur = open_database(config)
     except Exception:
         print('FATAL - failed to connect to Postgres')
+        raise Exception
+
+    try:
+        zkhandler = ZKHandler(config)
+        zkhandler.connect()
+    except Exception:
+        print('FATAL - failed to connect to Zookeeper')
         raise Exception
 
     print("Storing running status for job '{}' in database".format(cur_time))
@@ -445,4 +451,7 @@ def run_benchmark(self, zkhandler, pool):
         raise BenchmarkError("Failed to store test results: {}".format(e), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
 
     close_database(db_conn, db_cur)
+    zkhandler.disconnect()
+    del zkhandler
+
     return {'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3}
