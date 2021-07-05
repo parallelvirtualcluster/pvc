@@ -1152,8 +1152,8 @@ def format_info(config, domain_information, long_output):
     ainformation.append('{}Virtual machine information:{}'.format(ansiprint.bold(), ansiprint.end()))
     ainformation.append('')
     # Basic information
-    ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['uuid']))
     ainformation.append('{}Name:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['name']))
+    ainformation.append('{}UUID:{}               {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['uuid']))
     ainformation.append('{}Description:{}        {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['description']))
     ainformation.append('{}Profile:{}            {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['profile']))
     ainformation.append('{}Memory (M):{}         {}'.format(ansiprint.purple(), ansiprint.end(), domain_information['memory']))
@@ -1336,13 +1336,12 @@ def format_list(config, vm_list, raw):
     # Determine optimal column widths
     # Dynamic columns: node_name, node, migrated
     vm_name_length = 5
-    vm_uuid_length = 37
     vm_state_length = 6
     vm_nets_length = 9
     vm_ram_length = 8
     vm_vcpu_length = 6
-    vm_node_length = 5
-    vm_migrated_length = 10
+    vm_node_length = 8
+    vm_migrated_length = 9
     for domain_information in vm_list:
         net_list = getNiceNetID(domain_information)
         # vm_name column
@@ -1368,14 +1367,26 @@ def format_list(config, vm_list, raw):
 
     # Format the string (header)
     vm_list_output.append(
-        '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
+        '{bold}{vm_header: <{vm_header_length}} {resource_header: <{resource_header_length}} {node_header: <{node_header_length}}{end_bold}'.format(
+            vm_header_length=vm_name_length + vm_state_length + 1,
+            resource_header_length=vm_nets_length + vm_ram_length + vm_vcpu_length + 2,
+            node_header_length=vm_node_length + vm_migrated_length + 1,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            vm_header='VMs ' + ''.join(['-' for _ in range(4, vm_name_length + vm_state_length)]),
+            resource_header='Resources ' + ''.join(['-' for _ in range(10, vm_nets_length + vm_ram_length + vm_vcpu_length + 1)]),
+            node_header='Node ' + ''.join(['-' for _ in range(5, vm_node_length + vm_migrated_length)])
+        )
+    )
+
+    vm_list_output.append(
+        '{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_networks: <{vm_nets_length}} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
             vm_name_length=vm_name_length,
-            vm_uuid_length=vm_uuid_length,
             vm_state_length=vm_state_length,
             vm_nets_length=vm_nets_length,
             vm_ram_length=vm_ram_length,
@@ -1387,12 +1398,11 @@ def format_list(config, vm_list, raw):
             vm_state_colour='',
             end_colour='',
             vm_name='Name',
-            vm_uuid='UUID',
             vm_state='State',
             vm_networks='Networks',
             vm_memory='RAM (M)',
             vm_vcpu='vCPUs',
-            vm_node='Node',
+            vm_node='Current',
             vm_migrated='Migrated'
         )
     )
@@ -1401,7 +1411,7 @@ def format_list(config, vm_list, raw):
     cluster_net_list = call_api(config, 'get', '/network').json()
 
     # Format the string (elements)
-    for domain_information in vm_list:
+    for domain_information in sorted(vm_list, key=lambda v: v['name']):
         if domain_information['state'] == 'start':
             vm_state_colour = ansiprint.green()
         elif domain_information['state'] == 'restart':
@@ -1424,14 +1434,13 @@ def format_list(config, vm_list, raw):
                     vm_net_colour = ansiprint.red()
 
         vm_list_output.append(
-            '{bold}{vm_name: <{vm_name_length}} {vm_uuid: <{vm_uuid_length}} \
+            '{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_net_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
                 vm_name_length=vm_name_length,
-                vm_uuid_length=vm_uuid_length,
                 vm_state_length=vm_state_length,
                 vm_nets_length=vm_nets_length,
                 vm_ram_length=vm_ram_length,
@@ -1443,7 +1452,6 @@ def format_list(config, vm_list, raw):
                 vm_state_colour=vm_state_colour,
                 end_colour=ansiprint.end(),
                 vm_name=domain_information['name'],
-                vm_uuid=domain_information['uuid'],
                 vm_state=domain_information['state'],
                 vm_net_colour=vm_net_colour,
                 vm_networks=','.join(net_list),
@@ -1454,4 +1462,4 @@ def format_list(config, vm_list, raw):
             )
         )
 
-    return '\n'.join(sorted(vm_list_output))
+    return '\n'.join(vm_list_output)
