@@ -599,6 +599,14 @@ def format_list(config, network_list):
             net_domain_length = _net_domain_length
 
     # Format the string (header)
+    network_list_output.append('{bold}{networks_header: <{networks_header_length}} {config_header: <{config_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        networks_header_length=net_vni_length + net_description_length + 1,
+        config_header_length=net_nettype_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 6,
+        networks_header='Networks ' + ''.join(['-' for _ in range(9, net_vni_length + net_description_length)]),
+        config_header='Config ' + ''.join(['-' for _ in range(7, net_nettype_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 5)]))
+    )
     network_list_output.append('{bold}\
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
@@ -629,7 +637,7 @@ def format_list(config, network_list):
         net_dhcp4_flag='DHCPv4')
     )
 
-    for network_information in network_list:
+    for network_information in sorted(network_list, key=lambda n: int(n['vni'])):
         v6_flag_colour, v4_flag_colour, dhcp6_flag_colour, dhcp4_flag_colour = getOutputColours(network_information)
         if network_information['ip4']['network'] != "None":
             v4_flag = 'True'
@@ -676,7 +684,7 @@ def format_list(config, network_list):
             colour_off=ansiprint.end())
         )
 
-    return '\n'.join(sorted(network_list_output))
+    return '\n'.join(network_list_output)
 
 
 def format_list_dhcp(dhcp_lease_list):
@@ -686,7 +694,7 @@ def format_list_dhcp(dhcp_lease_list):
     lease_hostname_length = 9
     lease_ip4_address_length = 11
     lease_mac_address_length = 13
-    lease_timestamp_length = 13
+    lease_timestamp_length = 10
     for dhcp_lease_information in dhcp_lease_list:
         # hostname column
         _lease_hostname_length = len(str(dhcp_lease_information['hostname'])) + 1
@@ -700,8 +708,19 @@ def format_list_dhcp(dhcp_lease_list):
         _lease_mac_address_length = len(str(dhcp_lease_information['mac_address'])) + 1
         if _lease_mac_address_length > lease_mac_address_length:
             lease_mac_address_length = _lease_mac_address_length
+        # timestamp column
+        _lease_timestamp_length = len(str(dhcp_lease_information['timestamp'])) + 1
+        if _lease_timestamp_length > lease_timestamp_length:
+            lease_timestamp_length = _lease_timestamp_length
 
     # Format the string (header)
+    dhcp_lease_list_output.append('{bold}{lease_header: <{lease_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        lease_header_length=lease_hostname_length + lease_ip4_address_length + lease_mac_address_length + lease_timestamp_length + 3,
+        lease_header='Leases ' + ''.join(['-' for _ in range(7, lease_hostname_length + lease_ip4_address_length + lease_mac_address_length + lease_timestamp_length + 2)]))
+    )
+
     dhcp_lease_list_output.append('{bold}\
 {lease_hostname: <{lease_hostname_length}} \
 {lease_ip4_address: <{lease_ip4_address_length}} \
@@ -720,7 +739,7 @@ def format_list_dhcp(dhcp_lease_list):
         lease_timestamp='Timestamp')
     )
 
-    for dhcp_lease_information in dhcp_lease_list:
+    for dhcp_lease_information in sorted(dhcp_lease_list, key=lambda l: l['hostname']):
         dhcp_lease_list_output.append('{bold}\
 {lease_hostname: <{lease_hostname_length}} \
 {lease_ip4_address: <{lease_ip4_address_length}} \
@@ -739,7 +758,7 @@ def format_list_dhcp(dhcp_lease_list):
             lease_timestamp=str(dhcp_lease_information['timestamp']))
         )
 
-    return '\n'.join(sorted(dhcp_lease_list_output))
+    return '\n'.join(dhcp_lease_list_output)
 
 
 def format_list_acl(acl_list):
@@ -769,6 +788,13 @@ def format_list_acl(acl_list):
             acl_rule_length = _acl_rule_length
 
     # Format the string (header)
+    acl_list_output.append('{bold}{acl_header: <{acl_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        acl_header_length=acl_direction_length + acl_order_length + acl_description_length + acl_rule_length + 3,
+        acl_header='ACLs ' + ''.join(['-' for _ in range(5, acl_direction_length + acl_order_length + acl_description_length + acl_rule_length + 2)]))
+    )
+
     acl_list_output.append('{bold}\
 {acl_direction: <{acl_direction_length}} \
 {acl_order: <{acl_order_length}} \
@@ -787,7 +813,7 @@ def format_list_acl(acl_list):
         acl_rule='Rule')
     )
 
-    for acl_information in acl_list:
+    for acl_information in sorted(acl_list, key=lambda l: l['direction'] + str(l['order'])):
         acl_list_output.append('{bold}\
 {acl_direction: <{acl_direction_length}} \
 {acl_order: <{acl_order_length}} \
@@ -806,7 +832,7 @@ def format_list_acl(acl_list):
             acl_rule=acl_information['rule'])
         )
 
-    return '\n'.join(sorted(acl_list_output))
+    return '\n'.join(acl_list_output)
 
 
 def format_list_sriov_pf(pf_list):
@@ -843,6 +869,13 @@ def format_list_sriov_pf(pf_list):
         pf_vfs_length = max_vfs_length
 
     # Format the string (header)
+    pf_list_output.append('{bold}{pf_header: <{pf_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        pf_header_length=pf_phy_length + pf_mtu_length + pf_vfs_length + 2,
+        pf_header='PFs ' + ''.join(['-' for _ in range(4, pf_phy_length + pf_mtu_length + pf_vfs_length + 1)]))
+    )
+
     pf_list_output.append('{bold}\
 {pf_phy: <{pf_phy_length}} \
 {pf_mtu: <{pf_mtu_length}} \
@@ -858,7 +891,7 @@ def format_list_sriov_pf(pf_list):
         pf_vfs='VFs')
     )
 
-    for pf_information in pf_list:
+    for pf_information in sorted(pf_list, key=lambda p: p['phy']):
         # Figure out how to nicely columnize our list
         nice_vfs_list = [list()]
         vfs_lines = 0
@@ -950,6 +983,13 @@ def format_list_sriov_vf(vf_list):
             vf_domain_length = _vf_domain_length
 
     # Format the string (header)
+    vf_list_output.append('{bold}{vf_header: <{vf_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        vf_header_length=vf_phy_length + vf_pf_length + vf_mtu_length + vf_mac_length + vf_used_length + vf_domain_length + 5,
+        vf_header='VFs ' + ''.join(['-' for _ in range(4, vf_phy_length + vf_pf_length + vf_mtu_length + vf_mac_length + vf_used_length + vf_domain_length + 4)]))
+    )
+
     vf_list_output.append('{bold}\
 {vf_phy: <{vf_phy_length}} \
 {vf_pf: <{vf_pf_length}} \
@@ -974,7 +1014,11 @@ def format_list_sriov_vf(vf_list):
         vf_domain='Domain')
     )
 
-    for vf_information in vf_list:
+    for vf_information in sorted(vf_list, key=lambda v: v['phy']):
+        vf_domain = vf_information['usage']['domain']
+        if not vf_domain:
+            vf_domain = 'N/A'
+
         vf_list_output.append('{bold}\
 {vf_phy: <{vf_phy_length}} \
 {vf_pf: <{vf_pf_length}} \
@@ -996,7 +1040,7 @@ def format_list_sriov_vf(vf_list):
             vf_mtu=vf_information['mtu'],
             vf_mac=vf_information['mac'],
             vf_used=vf_information['usage']['used'],
-            vf_domain=vf_information['usage']['domain'])
+            vf_domain=vf_domain)
         )
 
     return '\n'.join(vf_list_output)
