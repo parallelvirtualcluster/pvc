@@ -38,7 +38,7 @@ class NodeInstance(object):
         # Which node is primary
         self.primary_node = None
         # States
-        self.daemon_mode = self.zkhandler.read(('node.mode.daemon', self.name))
+        self.daemon_mode = self.zkhandler.read(('node.mode', self.name))
         self.daemon_state = 'stop'
         self.router_state = 'client'
         self.domain_state = 'ready'
