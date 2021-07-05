@@ -26,7 +26,6 @@ rm ${backup_tmp} || true
 
 # Provisioner tests
 _pvc provisioner profile list test
-_pvc vm network get testX
 _pvc provisioner create --wait testX test
 sleep 30
 
@@ -51,6 +50,7 @@ sleep 5
 _pvc vm move --wait --target hv1 testX
 sleep 5
 _pvc vm meta testX --limit hv1 --selector vms --method live --profile test --no-autostart
+_pvc vm network get testX
 _pvc vm vcpu set testX 4
 _pvc vm vcpu get testX
 _pvc vm memory set testX 4096
