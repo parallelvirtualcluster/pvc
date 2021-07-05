@@ -42,6 +42,19 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.22
+
+  * [API Daemon] Drastically improves performance when getting large lists (e.g. VMs)
+  * [Daemons] Adds profiler functions for use in debug mode
+  * [Daemons] Improves reliability of ZK locking
+  * [Daemons] Adds the new logo in ASCII form to the Daemon startup message
+  * [Node Daemon] Fixes bug where VMs would sometimes not stop
+  * [Node Daemon] Code cleanups in various classes
+  * [Node Daemon] Fixes a bug when reading node schema data
+  * [All] Adds node PVC version information to the list output
+  * [CLI Client] Improves the style and formatting of list output including a new header line
+  * [API Worker] Fixes a bug that prevented the storage benchmark job from running
+
 #### v0.9.21
 
   * [API Daemon] Ensures VMs stop before removing them
