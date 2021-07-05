@@ -713,7 +713,14 @@ def vm_networks_get(config, vm):
     for interface in parsed_xml.devices.find('interface'):
         mac_address = interface.mac.attrib.get('address')
         model = interface.model.attrib.get('type')
-        network = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+        interface_type = interface.attrib.get('type')
+        if interface_type == 'bridge':
+            network = re.search(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
+        elif interface_type == 'direct':
+            network = 'macvtap:{}'.format(interface.source.attrib.get('dev'))
+        elif interface_type == 'hostdev':
+            network = 'hostdev:{}'.format(interface.source.attrib.get('dev'))
+
         network_data.append((network, mac_address, model))
 
     return True, network_data
