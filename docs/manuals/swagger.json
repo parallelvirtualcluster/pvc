@@ -464,6 +464,10 @@
                     "description": "The current operating system type",
                     "type": "string"
                 },
+                "pvc_version": {
+                    "description": "The current running PVC node daemon version",
+                    "type": "string"
+                },
                 "running_domains": {
                     "description": "The list of running domains (VMs) by UUID",
                     "type": "string"

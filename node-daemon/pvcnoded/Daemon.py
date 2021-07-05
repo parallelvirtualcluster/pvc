@@ -786,6 +786,7 @@ if config['daemon_mode'] == 'coordinator':
     init_routerstate = 'secondary'
 else:
     init_routerstate = 'client'
+
 if zkhandler.exists(('node', myhostname)):
     logger.out("Node is " + fmt_green + "present" + fmt_end + " in Zookeeper", state='i')
     # Update static data just in case it's changed
@@ -794,6 +795,7 @@ if zkhandler.exists(('node', myhostname)):
         (('node.state.daemon', myhostname), 'init'),
         (('node.state.router', myhostname), init_routerstate),
         (('node.data.static', myhostname), ' '.join(staticdata)),
+        (('node.data.pvc_version', myhostname), version),
         (('node.ipmi.hostname', myhostname), config['ipmi_hostname']),
         (('node.ipmi.username', myhostname), config['ipmi_username']),
         (('node.ipmi.password', myhostname), config['ipmi_password']),
@@ -809,6 +811,7 @@ else:
         (('node.state.domain', myhostname), 'flushed'),
         (('node.state.router', myhostname), init_routerstate),
         (('node.data.static', myhostname), ' '.join(staticdata)),
+        (('node.data.pvc_version', myhostname), version),
         (('node.ipmi.hostname', myhostname), config['ipmi_hostname']),
         (('node.ipmi.username', myhostname), config['ipmi_username']),
         (('node.ipmi.password', myhostname), config['ipmi_password']),

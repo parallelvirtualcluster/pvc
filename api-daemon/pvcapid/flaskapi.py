@@ -535,6 +535,9 @@ class API_Node_Root(Resource):
                 domain_state:
                   type: string
                   description: The current domain (VM) state
+                pvc_version:
+                  type: string
+                  description: The current running PVC node daemon version
                 cpu_count:
                   type: integer
                   description: The number of available CPU cores

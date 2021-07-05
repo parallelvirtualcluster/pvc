@@ -440,7 +440,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 1
+    _version = 2
 
     # Root for doing nested keys
     _schema_root = ''
@@ -482,6 +482,7 @@ class ZKSchema(object):
             'data.active_schema': '/activeschema',
             'data.latest_schema': '/latestschema',
             'data.static': '/staticdata',
+            'data.pvc_version': '/pvcversion',
             'running_domains': '/runningdomains',
             'count.provisioned_domains': '/domainscount',
             'count.networks': '/networkscount',

@@ -33,6 +33,7 @@ def getNodeInformation(zkhandler, node_name):
     node_coordinator_state = zkhandler.read(('node.state.router', node_name))
     node_domain_state = zkhandler.read(('node.state.domain', node_name))
     node_static_data = zkhandler.read(('node.data.static', node_name)).split()
+    node_pvc_version = zkhandler.read(('node.data.pvc_version', node_name))
     node_cpu_count = int(node_static_data[0])
     node_kernel = node_static_data[1]
     node_os = node_static_data[2]
@@ -53,6 +54,7 @@ def getNodeInformation(zkhandler, node_name):
         'daemon_state': node_daemon_state,
         'coordinator_state': node_coordinator_state,
         'domain_state': node_domain_state,
+        'pvc_version': node_pvc_version,
         'cpu_count': node_cpu_count,
         'kernel': node_kernel,
         'os': node_os,
