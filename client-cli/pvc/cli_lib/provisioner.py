@@ -753,22 +753,16 @@ def format_list_template(template_data, template_type=None):
         normalized_template_data = template_data
 
     if 'system' in template_types:
-        ainformation.append('System templates:')
-        ainformation.append('')
         ainformation.append(format_list_template_system(normalized_template_data['system_templates']))
         if len(template_types) > 1:
             ainformation.append('')
 
     if 'network' in template_types:
-        ainformation.append('Network templates:')
-        ainformation.append('')
         ainformation.append(format_list_template_network(normalized_template_data['network_templates']))
         if len(template_types) > 1:
             ainformation.append('')
 
     if 'storage' in template_types:
-        ainformation.append('Storage templates:')
-        ainformation.append('')
         ainformation.append(format_list_template_storage(normalized_template_data['storage_templates']))
 
     return '\n'.join(ainformation)
@@ -781,13 +775,13 @@ def format_list_template_system(template_data):
     template_list_output = []
 
     # Determine optimal column widths
-    template_name_length = 5
-    template_id_length = 3
+    template_name_length = 15
+    template_id_length = 5
     template_vcpu_length = 6
-    template_vram_length = 10
+    template_vram_length = 9
     template_serial_length = 7
     template_vnc_length = 4
-    template_vnc_bind_length = 10
+    template_vnc_bind_length = 9
     template_node_limit_length = 6
     template_node_selector_length = 9
     template_node_autostart_length = 10
@@ -840,16 +834,33 @@ def format_list_template_system(template_data):
             template_migration_method_length = _template_migration_method_length
 
     # Format the string (header)
-    template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
+    template_list_output.append('{bold}{template_header: <{template_header_length}} {resources_header: <{resources_header_length}} {consoles_header: <{consoles_header_length}} {metadata_header: <{metadata_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_header_length=template_name_length + template_id_length + 1,
+        resources_header_length=template_vcpu_length + template_vram_length + 1,
+        consoles_header_length=template_serial_length + template_vnc_length + template_vnc_bind_length + 2,
+        metadata_header_length=template_node_limit_length + template_node_selector_length + template_node_autostart_length + template_migration_method_length + 3,
+        template_header='System Templates ' + ''.join(['-' for _ in range(17, template_name_length + template_id_length)]),
+        resources_header='Resources ' + ''.join(['-' for _ in range(10, template_vcpu_length + template_vram_length)]),
+        consoles_header='Consoles ' + ''.join(['-' for _ in range(9, template_serial_length + template_vnc_length + template_vnc_bind_length + 1)]),
+        metadata_header='Metadata ' + ''.join(['-' for _ in range(9, template_node_limit_length + template_node_selector_length + template_node_autostart_length + template_migration_method_length + 2)]))
+    )
+
+    template_list_output.append('{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_vcpu: <{template_vcpu_length}} \
 {template_vram: <{template_vram_length}} \
-Console: {template_serial: <{template_serial_length}} \
+{template_serial: <{template_serial_length}} \
 {template_vnc: <{template_vnc_length}} \
 {template_vnc_bind: <{template_vnc_bind_length}} \
-Meta: {template_node_limit: <{template_node_limit_length}} \
+{template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}} \
 {template_migration_method: <{template_migration_method_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_state_colour='',
+        end_colour='',
         template_name_length=template_name_length,
         template_id_length=template_id_length,
         template_vcpu_length=template_vcpu_length,
@@ -861,14 +872,10 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
         template_node_selector_length=template_node_selector_length,
         template_node_autostart_length=template_node_autostart_length,
         template_migration_method_length=template_migration_method_length,
-        bold=ansiprint.bold(),
-        end_bold=ansiprint.end(),
-        template_state_colour='',
-        end_colour='',
         template_name='Name',
         template_id='ID',
         template_vcpu='vCPUs',
-        template_vram='vRAM [MB]',
+        template_vram='vRAM [M]',
         template_serial='Serial',
         template_vnc='VNC',
         template_vnc_bind='VNC bind',
@@ -876,6 +883,7 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
         template_node_selector='Selector',
         template_node_autostart='Autostart',
         template_migration_method='Migration')
+    )
 
     # Format the string (elements)
     for template in sorted(template_data, key=lambda i: i.get('name', None)):
@@ -883,10 +891,10 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
             '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_vcpu: <{template_vcpu_length}} \
 {template_vram: <{template_vram_length}} \
-         {template_serial: <{template_serial_length}} \
+{template_serial: <{template_serial_length}} \
 {template_vnc: <{template_vnc_length}} \
 {template_vnc_bind: <{template_vnc_bind_length}} \
-      {template_node_limit: <{template_node_limit_length}} \
+{template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}} \
 {template_migration_method: <{template_migration_method_length}}{end_bold}'.format(
@@ -917,9 +925,7 @@ Meta: {template_node_limit: <{template_node_limit_length}} \
             )
         )
 
-    return '\n'.join([template_list_output_header] + template_list_output)
-
-    return True, ''
+    return '\n'.join(template_list_output)
 
 
 def format_list_template_network(template_template):
@@ -929,8 +935,8 @@ def format_list_template_network(template_template):
     template_list_output = []
 
     # Determine optimal column widths
-    template_name_length = 5
-    template_id_length = 3
+    template_name_length = 18
+    template_id_length = 5
     template_mac_template_length = 13
     template_networks_length = 10
 
@@ -960,7 +966,16 @@ def format_list_template_network(template_template):
             template_networks_length = _template_networks_length
 
     # Format the string (header)
-    template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
+    template_list_output.append('{bold}{template_header: <{template_header_length}} {details_header: <{details_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_header_length=template_name_length + template_id_length + 1,
+        details_header_length=template_mac_template_length + template_networks_length + 1,
+        template_header='Network Templates ' + ''.join(['-' for _ in range(18, template_name_length + template_id_length)]),
+        details_header='Details ' + ''.join(['-' for _ in range(8, template_mac_template_length + template_networks_length)]))
+    )
+
+    template_list_output.append('{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_mac_template: <{template_mac_template_length}} \
 {template_networks: <{template_networks_length}}{end_bold}'.format(
         template_name_length=template_name_length,
@@ -973,6 +988,7 @@ def format_list_template_network(template_template):
         template_id='ID',
         template_mac_template='MAC template',
         template_networks='Network VNIs')
+    )
 
     # Format the string (elements)
     for template in sorted(template_template, key=lambda i: i.get('name', None)):
@@ -993,7 +1009,7 @@ def format_list_template_network(template_template):
             )
         )
 
-    return '\n'.join([template_list_output_header] + template_list_output)
+    return '\n'.join(template_list_output)
 
 
 def format_list_template_storage(template_template):
@@ -1003,12 +1019,12 @@ def format_list_template_storage(template_template):
     template_list_output = []
 
     # Determine optimal column widths
-    template_name_length = 5
-    template_id_length = 3
+    template_name_length = 18
+    template_id_length = 5
     template_disk_id_length = 8
-    template_disk_pool_length = 8
+    template_disk_pool_length = 5
     template_disk_source_length = 14
-    template_disk_size_length = 10
+    template_disk_size_length = 9
     template_disk_filesystem_length = 11
     template_disk_fsargs_length = 10
     template_disk_mountpoint_length = 10
@@ -1054,7 +1070,16 @@ def format_list_template_storage(template_template):
                 template_disk_mountpoint_length = _template_disk_mountpoint_length
 
     # Format the string (header)
-    template_list_output_header = '{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
+    template_list_output.append('{bold}{template_header: <{template_header_length}} {details_header: <{details_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        template_header_length=template_name_length + template_id_length + 1,
+        details_header_length=template_disk_id_length + template_disk_pool_length + template_disk_source_length + template_disk_size_length + template_disk_filesystem_length + template_disk_fsargs_length + template_disk_mountpoint_length + 7,
+        template_header='Storage Templates ' + ''.join(['-' for _ in range(18, template_name_length + template_id_length)]),
+        details_header='Details ' + ''.join(['-' for _ in range(8, template_disk_id_length + template_disk_pool_length + template_disk_source_length + template_disk_size_length + template_disk_filesystem_length + template_disk_fsargs_length + template_disk_mountpoint_length + 6)]))
+    )
+
+    template_list_output.append('{bold}{template_name: <{template_name_length}} {template_id: <{template_id_length}} \
 {template_disk_id: <{template_disk_id_length}} \
 {template_disk_pool: <{template_disk_pool_length}} \
 {template_disk_source: <{template_disk_source_length}} \
@@ -1078,10 +1103,11 @@ def format_list_template_storage(template_template):
         template_disk_id='Disk ID',
         template_disk_pool='Pool',
         template_disk_source='Source Volume',
-        template_disk_size='Size [GB]',
+        template_disk_size='Size [G]',
         template_disk_filesystem='Filesystem',
         template_disk_fsargs='Arguments',
         template_disk_mountpoint='Mountpoint')
+    )
 
     # Format the string (elements)
     for template in sorted(template_template, key=lambda i: i.get('name', None)):
@@ -1128,7 +1154,7 @@ def format_list_template_storage(template_template):
                 )
             )
 
-    return '\n'.join([template_list_output_header] + template_list_output)
+    return '\n'.join(template_list_output)
 
 
 def format_list_userdata(userdata_data, lines=None):
@@ -1138,8 +1164,9 @@ def format_list_userdata(userdata_data, lines=None):
     userdata_list_output = []
 
     # Determine optimal column widths
-    userdata_name_length = 5
-    userdata_id_length = 3
+    userdata_name_length = 12
+    userdata_id_length = 5
+    userdata_document_length = 92 - userdata_name_length - userdata_id_length
 
     for userdata in userdata_data:
         # userdata_name column
@@ -1152,7 +1179,14 @@ def format_list_userdata(userdata_data, lines=None):
             userdata_id_length = _userdata_id_length
 
     # Format the string (header)
-    userdata_list_output_header = '{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
+    userdata_list_output.append('{bold}{userdata_header: <{userdata_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        userdata_header_length=userdata_name_length + userdata_id_length + userdata_document_length + 2,
+        userdata_header='Userdata ' + ''.join(['-' for _ in range(9, userdata_name_length + userdata_id_length + userdata_document_length + 1)]))
+    )
+
+    userdata_list_output.append('{bold}{userdata_name: <{userdata_name_length}} {userdata_id: <{userdata_id_length}} \
 {userdata_data}{end_bold}'.format(
         userdata_name_length=userdata_name_length,
         userdata_id_length=userdata_id_length,
@@ -1161,6 +1195,7 @@ def format_list_userdata(userdata_data, lines=None):
         userdata_name='Name',
         userdata_id='ID',
         userdata_data='Document')
+    )
 
     # Format the string (elements)
     for data in sorted(userdata_data, key=lambda i: i.get('name', None)):
@@ -1202,7 +1237,7 @@ def format_list_userdata(userdata_data, lines=None):
                 )
             )
 
-    return '\n'.join([userdata_list_output_header] + userdata_list_output)
+    return '\n'.join(userdata_list_output)
 
 
 def format_list_script(script_data, lines=None):
@@ -1212,8 +1247,9 @@ def format_list_script(script_data, lines=None):
     script_list_output = []
 
     # Determine optimal column widths
-    script_name_length = 5
-    script_id_length = 3
+    script_name_length = 12
+    script_id_length = 5
+    script_data_length = 92 - script_name_length - script_id_length
 
     for script in script_data:
         # script_name column
@@ -1226,7 +1262,14 @@ def format_list_script(script_data, lines=None):
             script_id_length = _script_id_length
 
     # Format the string (header)
-    script_list_output_header = '{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
+    script_list_output.append('{bold}{script_header: <{script_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        script_header_length=script_name_length + script_id_length + script_data_length + 2,
+        script_header='Script ' + ''.join(['-' for _ in range(7, script_name_length + script_id_length + script_data_length + 1)]))
+    )
+
+    script_list_output.append('{bold}{script_name: <{script_name_length}} {script_id: <{script_id_length}} \
 {script_data}{end_bold}'.format(
         script_name_length=script_name_length,
         script_id_length=script_id_length,
@@ -1235,6 +1278,7 @@ def format_list_script(script_data, lines=None):
         script_name='Name',
         script_id='ID',
         script_data='Script')
+    )
 
     # Format the string (elements)
     for script in sorted(script_data, key=lambda i: i.get('name', None)):
@@ -1276,7 +1320,7 @@ def format_list_script(script_data, lines=None):
                 )
             )
 
-    return '\n'.join([script_list_output_header] + script_list_output)
+    return '\n'.join(script_list_output)
 
 
 def format_list_ova(ova_data):
@@ -1286,8 +1330,8 @@ def format_list_ova(ova_data):
     ova_list_output = []
 
     # Determine optimal column widths
-    ova_name_length = 5
-    ova_id_length = 3
+    ova_name_length = 18
+    ova_id_length = 5
     ova_disk_id_length = 8
     ova_disk_size_length = 10
     ova_disk_pool_length = 5
@@ -1327,7 +1371,16 @@ def format_list_ova(ova_data):
                 ova_disk_volume_name_length = _ova_disk_volume_name_length
 
     # Format the string (header)
-    ova_list_output_header = '{bold}{ova_name: <{ova_name_length}} {ova_id: <{ova_id_length}} \
+    ova_list_output.append('{bold}{ova_header: <{ova_header_length}} {details_header: <{details_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        ova_header_length=ova_name_length + ova_id_length + 1,
+        details_header_length=ova_disk_id_length + ova_disk_size_length + ova_disk_pool_length + ova_disk_volume_format_length + ova_disk_volume_name_length + 4,
+        ova_header='OVAs ' + ''.join(['-' for _ in range(5, ova_name_length + ova_id_length)]),
+        details_header='Details ' + ''.join(['-' for _ in range(8, ova_disk_id_length + ova_disk_size_length + ova_disk_pool_length + ova_disk_volume_format_length + ova_disk_volume_name_length + 3)]))
+    )
+
+    ova_list_output.append('{bold}{ova_name: <{ova_name_length}} {ova_id: <{ova_id_length}} \
 {ova_disk_id: <{ova_disk_id_length}} \
 {ova_disk_size: <{ova_disk_size_length}} \
 {ova_disk_pool: <{ova_disk_pool_length}} \
@@ -1349,6 +1402,7 @@ def format_list_ova(ova_data):
         ova_disk_pool='Pool',
         ova_disk_volume_format='Format',
         ova_disk_volume_name='Source Volume')
+    )
 
     # Format the string (elements)
     for ova in sorted(ova_data, key=lambda i: i.get('name', None)):
@@ -1389,7 +1443,7 @@ def format_list_ova(ova_data):
                 )
             )
 
-    return '\n'.join([ova_list_output_header] + ova_list_output)
+    return '\n'.join(ova_list_output)
 
 
 def format_list_profile(profile_data):
@@ -1409,8 +1463,8 @@ def format_list_profile(profile_data):
     profile_list_output = []
 
     # Determine optimal column widths
-    profile_name_length = 5
-    profile_id_length = 3
+    profile_name_length = 18
+    profile_id_length = 5
     profile_source_length = 7
 
     profile_system_template_length = 7
@@ -1418,6 +1472,7 @@ def format_list_profile(profile_data):
     profile_storage_template_length = 8
     profile_userdata_length = 9
     profile_script_length = 7
+    profile_arguments_length = 18
 
     for profile in profile_data:
         # profile_name column
@@ -1454,11 +1509,22 @@ def format_list_profile(profile_data):
             profile_script_length = _profile_script_length
 
     # Format the string (header)
-    profile_list_output_header = '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} {profile_source: <{profile_source_length}} \
-Templates: {profile_system_template: <{profile_system_template_length}} \
+    profile_list_output.append('{bold}{profile_header: <{profile_header_length}} {templates_header: <{templates_header_length}} {data_header: <{data_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        profile_header_length=profile_name_length + profile_id_length + profile_source_length + 2,
+        templates_header_length=profile_system_template_length + profile_network_template_length + profile_storage_template_length + 2,
+        data_header_length=profile_userdata_length + profile_script_length + profile_arguments_length + 2,
+        profile_header='Profiles ' + ''.join(['-' for _ in range(9, profile_name_length + profile_id_length + profile_source_length + 1)]),
+        templates_header='Templates ' + ''.join(['-' for _ in range(10, profile_system_template_length + profile_network_template_length + profile_storage_template_length + 1)]),
+        data_header='Data ' + ''.join(['-' for _ in range(5, profile_userdata_length + profile_script_length + profile_arguments_length + 1)]))
+    )
+
+    profile_list_output.append('{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} {profile_source: <{profile_source_length}} \
+{profile_system_template: <{profile_system_template_length}} \
 {profile_network_template: <{profile_network_template_length}} \
 {profile_storage_template: <{profile_storage_template_length}} \
-Data: {profile_userdata: <{profile_userdata_length}} \
+{profile_userdata: <{profile_userdata_length}} \
 {profile_script: <{profile_script_length}} \
 {profile_arguments}{end_bold}'.format(
         profile_name_length=profile_name_length,
@@ -1480,15 +1546,19 @@ Data: {profile_userdata: <{profile_userdata_length}} \
         profile_userdata='Userdata',
         profile_script='Script',
         profile_arguments='Script Arguments')
+    )
 
     # Format the string (elements)
     for profile in sorted(profile_data, key=lambda i: i.get('name', None)):
+        arguments_list = ', '.join(profile['arguments'])
+        if not arguments_list:
+            arguments_list = 'N/A'
         profile_list_output.append(
             '{bold}{profile_name: <{profile_name_length}} {profile_id: <{profile_id_length}} {profile_source: <{profile_source_length}} \
-           {profile_system_template: <{profile_system_template_length}} \
+{profile_system_template: <{profile_system_template_length}} \
 {profile_network_template: <{profile_network_template_length}} \
 {profile_storage_template: <{profile_storage_template_length}} \
-      {profile_userdata: <{profile_userdata_length}} \
+{profile_userdata: <{profile_userdata_length}} \
 {profile_script: <{profile_script_length}} \
 {profile_arguments}{end_bold}'.format(
                 profile_name_length=profile_name_length,
@@ -1509,11 +1579,11 @@ Data: {profile_userdata: <{profile_userdata_length}} \
                 profile_storage_template=profile['storage_template'],
                 profile_userdata=profile['userdata'],
                 profile_script=profile['script'],
-                profile_arguments=', '.join(profile['arguments'])
+                profile_arguments=arguments_list,
             )
         )
 
-    return '\n'.join([profile_list_output_header] + profile_list_output)
+    return '\n'.join(profile_list_output)
 
 
 def format_list_task(task_data):
@@ -1522,17 +1592,21 @@ def format_list_task(task_data):
     # Determine optimal column widths
     task_id_length = 7
     task_type_length = 7
+    task_worker_length = 7
     task_vm_name_length = 5
     task_vm_profile_length = 8
     task_vm_define_length = 8
     task_vm_start_length = 7
-    task_worker_length = 8
 
     for task in task_data:
         # task_id column
         _task_id_length = len(str(task['id'])) + 1
         if _task_id_length > task_id_length:
             task_id_length = _task_id_length
+        # task_worker column
+        _task_worker_length = len(str(task['worker'])) + 1
+        if _task_worker_length > task_worker_length:
+            task_worker_length = _task_worker_length
         # task_type column
         _task_type_length = len(str(task['type'])) + 1
         if _task_type_length > task_type_length:
@@ -1553,15 +1627,20 @@ def format_list_task(task_data):
         _task_vm_start_length = len(str(task['vm_start'])) + 1
         if _task_vm_start_length > task_vm_start_length:
             task_vm_start_length = _task_vm_start_length
-        # task_worker column
-        _task_worker_length = len(str(task['worker'])) + 1
-        if _task_worker_length > task_worker_length:
-            task_worker_length = _task_worker_length
 
     # Format the string (header)
-    task_list_output_header = '{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+    task_list_output.append('{bold}{task_header: <{task_header_length}} {vms_header: <{vms_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        task_header_length=task_id_length + task_type_length + task_worker_length + 2,
+        vms_header_length=task_vm_name_length + task_vm_profile_length + task_vm_define_length + task_vm_start_length + 3,
+        task_header='Tasks ' + ''.join(['-' for _ in range(6, task_id_length + task_type_length + task_worker_length + 1)]),
+        vms_header='VM Details ' + ''.join(['-' for _ in range(11, task_vm_name_length + task_vm_profile_length + task_vm_define_length + task_vm_start_length + 2)]))
+    )
+
+    task_list_output.append('{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
 {task_worker: <{task_worker_length}} \
-VM: {task_vm_name: <{task_vm_name_length}} \
+{task_vm_name: <{task_vm_name_length}} \
 {task_vm_profile: <{task_vm_profile_length}} \
 {task_vm_define: <{task_vm_define_length}} \
 {task_vm_start: <{task_vm_start_length}}{end_bold}'.format(
@@ -1581,13 +1660,14 @@ VM: {task_vm_name: <{task_vm_name_length}} \
         task_vm_profile='Profile',
         task_vm_define='Define?',
         task_vm_start='Start?')
+    )
 
     # Format the string (elements)
     for task in sorted(task_data, key=lambda i: i.get('type', None)):
         task_list_output.append(
             '{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
 {task_worker: <{task_worker_length}} \
-    {task_vm_name: <{task_vm_name_length}} \
+{task_vm_name: <{task_vm_name_length}} \
 {task_vm_profile: <{task_vm_profile_length}} \
 {task_vm_define: <{task_vm_define_length}} \
 {task_vm_start: <{task_vm_start_length}}{end_bold}'.format(
@@ -1610,4 +1690,4 @@ VM: {task_vm_name: <{task_vm_name_length}} \
             )
         )
 
-    return '\n'.join([task_list_output_header] + task_list_output)
+    return '\n'.join(task_list_output)
