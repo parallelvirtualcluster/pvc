@@ -419,6 +419,21 @@ def format_list_osd(osd_list):
             osd_rddata_length = _osd_rddata_length
 
     # Format the output header
+    osd_list_output.append('{bold}{osd_header: <{osd_header_length}} {state_header: <{state_header_length}} {details_header: <{details_header_length}} {read_header: <{read_header_length}} {write_header: <{write_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        osd_header_length=osd_id_length + osd_node_length + 1,
+        state_header_length=osd_up_length + osd_in_length + 1,
+        details_header_length=osd_size_length + osd_pgs_length + osd_weight_length + osd_reweight_length + osd_used_length + osd_free_length + osd_util_length + osd_var_length + 7,
+        read_header_length=osd_rdops_length + osd_rddata_length + 1,
+        write_header_length=osd_wrops_length + osd_wrdata_length + 1,
+        osd_header='OSDs ' + ''.join(['-' for _ in range(5, osd_id_length + osd_node_length)]),
+        state_header='State ' + ''.join(['-' for _ in range(6, osd_up_length + osd_in_length)]),
+        details_header='Details ' + ''.join(['-' for _ in range(8, osd_size_length + osd_pgs_length + osd_weight_length + osd_reweight_length + osd_used_length + osd_free_length + osd_util_length + osd_var_length + 6)]),
+        read_header='Read ' + ''.join(['-' for _ in range(5, osd_rdops_length + osd_rddata_length)]),
+        write_header='Write ' + ''.join(['-' for _ in range(6, osd_wrops_length + osd_wrdata_length)]))
+    )
+
     osd_list_output.append('{bold}\
 {osd_id: <{osd_id_length}} \
 {osd_node: <{osd_node_length}} \
@@ -428,13 +443,13 @@ def format_list_osd(osd_list):
 {osd_pgs: <{osd_pgs_length}} \
 {osd_weight: <{osd_weight_length}} \
 {osd_reweight: <{osd_reweight_length}} \
-Sp: {osd_used: <{osd_used_length}} \
+{osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
 {osd_var: <{osd_var_length}} \
-Rd: {osd_rdops: <{osd_rdops_length}} \
+{osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
-Wr: {osd_wrops: <{osd_wrops_length}} \
+{osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
@@ -495,13 +510,13 @@ Wr: {osd_wrops: <{osd_wrops_length}} \
 {osd_pgs: <{osd_pgs_length}} \
 {osd_weight: <{osd_weight_length}} \
 {osd_reweight: <{osd_reweight_length}} \
-    {osd_used: <{osd_used_length}} \
+{osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
 {osd_var: <{osd_var_length}} \
-    {osd_rdops: <{osd_rdops_length}} \
+{osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
-    {osd_wrops: <{osd_wrops_length}} \
+{osd_wrops: <{osd_wrops_length}} \
 {osd_wrdata: <{osd_wrdata_length}} \
 {end_bold}'.format(
             bold='',
@@ -648,7 +663,7 @@ def format_list_pool(pool_list):
     pool_name_length = 5
     pool_id_length = 3
     pool_used_length = 5
-    pool_usedpct_length = 5
+    pool_usedpct_length = 6
     pool_free_length = 5
     pool_num_objects_length = 6
     pool_num_clones_length = 7
@@ -737,19 +752,32 @@ def format_list_pool(pool_list):
             pool_read_data_length = _pool_read_data_length
 
     # Format the output header
+    pool_list_output.append('{bold}{pool_header: <{pool_header_length}} {objects_header: <{objects_header_length}} {read_header: <{read_header_length}} {write_header: <{write_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        pool_header_length=pool_id_length + pool_name_length + pool_used_length + pool_usedpct_length + pool_free_length + 4,
+        objects_header_length=pool_num_objects_length + pool_num_clones_length + pool_num_copies_length + pool_num_degraded_length + 3,
+        read_header_length=pool_read_ops_length + pool_read_data_length + 1,
+        write_header_length=pool_write_ops_length + pool_write_data_length + 1,
+        pool_header='Pools ' + ''.join(['-' for _ in range(6, pool_id_length + pool_name_length + pool_used_length + pool_usedpct_length + pool_free_length + 3)]),
+        objects_header='Objects ' + ''.join(['-' for _ in range(8, pool_num_objects_length + pool_num_clones_length + pool_num_copies_length + pool_num_degraded_length + 2)]),
+        read_header='Read ' + ''.join(['-' for _ in range(5, pool_read_ops_length + pool_read_data_length)]),
+        write_header='Write ' + ''.join(['-' for _ in range(6, pool_write_ops_length + pool_write_data_length)]))
+    )
+
     pool_list_output.append('{bold}\
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
-Obj: {pool_objects: <{pool_objects_length}} \
+{pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-Rd: {pool_read_ops: <{pool_read_ops_length}} \
+{pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
-Wr: {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
         bold=ansiprint.bold(),
@@ -770,7 +798,7 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
         pool_id='ID',
         pool_name='Name',
         pool_used='Used',
-        pool_usedpct='%',
+        pool_usedpct='Used%',
         pool_free='Free',
         pool_objects='Count',
         pool_clones='Clones',
@@ -790,13 +818,13 @@ Wr: {pool_write_ops: <{pool_write_ops_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
-     {pool_objects: <{pool_objects_length}} \
+{pool_objects: <{pool_objects_length}} \
 {pool_clones: <{pool_clones_length}} \
 {pool_copies: <{pool_copies_length}} \
 {pool_degraded: <{pool_degraded_length}} \
-    {pool_read_ops: <{pool_read_ops_length}} \
+{pool_read_ops: <{pool_read_ops_length}} \
 {pool_read_data: <{pool_read_data_length}} \
-    {pool_write_ops: <{pool_write_ops_length}} \
+{pool_write_ops: <{pool_write_ops_length}} \
 {pool_write_data: <{pool_write_data_length}} \
 {end_bold}'.format(
             bold='',
@@ -1057,6 +1085,15 @@ def format_list_volume(volume_list):
             volume_features_length = _volume_features_length
 
     # Format the output header
+    volume_list_output.append('{bold}{volume_header: <{volume_header_length}} {details_header: <{details_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        volume_header_length=volume_name_length + volume_pool_length + 1,
+        details_header_length=volume_size_length + volume_objects_length + volume_order_length + volume_format_length + volume_features_length + 4,
+        volume_header='Volumes ' + ''.join(['-' for _ in range(8, volume_name_length + volume_pool_length)]),
+        details_header='Details ' + ''.join(['-' for _ in range(8, volume_size_length + volume_objects_length + volume_order_length + volume_format_length + volume_features_length + 3)]))
+    )
+
     volume_list_output.append('{bold}\
 {volume_name: <{volume_name_length}} \
 {volume_pool: <{volume_pool_length}} \
@@ -1084,7 +1121,7 @@ def format_list_volume(volume_list):
         volume_features='Features')
     )
 
-    for volume_information in volume_list:
+    for volume_information in sorted(volume_list, key=lambda v: v['pool'] + v['name']):
         volume_list_output.append('{bold}\
 {volume_name: <{volume_name_length}} \
 {volume_pool: <{volume_pool_length}} \
@@ -1112,7 +1149,7 @@ def format_list_volume(volume_list):
             volume_features=','.join(volume_information['stats']['features']))
         )
 
-    return '\n'.join(sorted(volume_list_output))
+    return '\n'.join(volume_list_output)
 
 
 #
@@ -1263,6 +1300,13 @@ def format_list_snapshot(snapshot_list):
             snapshot_pool_length = _snapshot_pool_length
 
     # Format the output header
+    snapshot_list_output.append('{bold}{snapshot_header: <{snapshot_header_length}}{end_bold}'.format(
+        bold=ansiprint.bold(),
+        end_bold=ansiprint.end(),
+        snapshot_header_length=snapshot_name_length + snapshot_volume_length + snapshot_pool_length + 2,
+        snapshot_header='Snapshots ' + ''.join(['-' for _ in range(10, snapshot_name_length + snapshot_volume_length + snapshot_pool_length + 1)]))
+    )
+
     snapshot_list_output.append('{bold}\
 {snapshot_name: <{snapshot_name_length}} \
 {snapshot_volume: <{snapshot_volume_length}} \
@@ -1278,7 +1322,7 @@ def format_list_snapshot(snapshot_list):
         snapshot_pool='Pool')
     )
 
-    for snapshot_information in snapshot_list:
+    for snapshot_information in sorted(snapshot_list, key=lambda s: s['pool'] + s['volume'] + s['snapshot']):
         snapshot_name = snapshot_information['snapshot']
         snapshot_volume = snapshot_information['volume']
         snapshot_pool = snapshot_information['pool']
@@ -1297,7 +1341,7 @@ def format_list_snapshot(snapshot_list):
             snapshot_pool=snapshot_pool)
         )
 
-    return '\n'.join(sorted(snapshot_list_output))
+    return '\n'.join(snapshot_list_output)
 
 
 #
@@ -1365,6 +1409,11 @@ def format_list_benchmark(config, benchmark_information):
         benchmark_bandwidth_length[test] = 7
         benchmark_iops_length[test] = 6
 
+    benchmark_seq_bw_length = 15
+    benchmark_seq_iops_length = 10
+    benchmark_rand_bw_length = 15
+    benchmark_rand_iops_length = 10
+
     for benchmark in benchmark_information:
         benchmark_job = benchmark['job']
         _benchmark_job_length = len(benchmark_job)
@@ -1373,53 +1422,68 @@ def format_list_benchmark(config, benchmark_information):
 
         if benchmark['benchmark_result'] == 'Running':
             continue
+
         benchmark_data = json.loads(benchmark['benchmark_result'])
 
         benchmark_bandwidth = dict()
         benchmark_iops = dict()
         for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
+            benchmark_data = json.loads(benchmark['benchmark_result'])
             benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
             benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
 
-            _benchmark_bandwidth_length = len(benchmark_bandwidth[test]) + 1
-            if _benchmark_bandwidth_length > benchmark_bandwidth_length[test]:
-                benchmark_bandwidth_length[test] = _benchmark_bandwidth_length
+        seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
+        seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
+        rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
+        rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
 
-            _benchmark_iops_length = len(benchmark_iops[test]) + 1
-            if _benchmark_iops_length > benchmark_bandwidth_length[test]:
-                benchmark_iops_length[test] = _benchmark_iops_length
+        _benchmark_seq_bw_length = len(seq_benchmark_bandwidth) + 1
+        if _benchmark_seq_bw_length > benchmark_seq_bw_length:
+            benchmark_seq_bw_length = _benchmark_seq_bw_length
+
+        _benchmark_seq_iops_length = len(seq_benchmark_iops) + 1
+        if _benchmark_seq_iops_length > benchmark_seq_iops_length:
+            benchmark_seq_iops_length = _benchmark_seq_iops_length
+
+        _benchmark_rand_bw_length = len(rand_benchmark_bandwidth) + 1
+        if _benchmark_rand_bw_length > benchmark_rand_bw_length:
+            benchmark_rand_bw_length = _benchmark_rand_bw_length
+
+        _benchmark_rand_iops_length = len(rand_benchmark_iops) + 1
+        if _benchmark_rand_iops_length > benchmark_rand_iops_length:
+            benchmark_rand_iops_length = _benchmark_rand_iops_length
 
     # Format the output header line 1
     benchmark_list_output.append('{bold}\
-{benchmark_job: <{benchmark_job_length}} \
- {seq_header: <{seq_header_length}} \
-{rand_header: <{rand_header_length}} \
+{benchmark_job: <{benchmark_job_length}}  \
+{seq_header: <{seq_header_length}}  \
+{rand_header: <{rand_header_length}}\
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         benchmark_job_length=benchmark_job_length,
-        seq_header_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'] + 3,
-        rand_header_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'] + 2,
-        benchmark_job='Benchmark Job',
-        seq_header='Sequential (4M blocks):',
-        rand_header='Random (4K blocks):')
+        seq_header_length=benchmark_seq_bw_length + benchmark_seq_iops_length + 1,
+        rand_header_length=benchmark_rand_bw_length + benchmark_rand_iops_length + 1,
+        benchmark_job='Benchmarks ' + ''.join(['-' for _ in range(11, benchmark_job_length - 1)]),
+        seq_header='Sequential (4M blocks) ' + ''.join(['-' for _ in range(23, benchmark_seq_bw_length + benchmark_seq_iops_length)]),
+        rand_header='Random (4K blocks) ' + ''.join(['-' for _ in range(19, benchmark_rand_bw_length + benchmark_rand_iops_length)]))
     )
 
     benchmark_list_output.append('{bold}\
-{benchmark_job: <{benchmark_job_length}} \
- {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
-{seq_benchmark_iops: <{seq_benchmark_iops_length}} \
+{benchmark_job: <{benchmark_job_length}}  \
+{seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
+{seq_benchmark_iops: <{seq_benchmark_iops_length}}  \
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
-{rand_benchmark_iops: <{rand_benchmark_iops_length}} \
+{rand_benchmark_iops: <{rand_benchmark_iops_length}}\
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         benchmark_job_length=benchmark_job_length,
-        seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-        seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-        rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-        rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
-        benchmark_job='',
+        seq_benchmark_bandwidth_length=benchmark_seq_bw_length,
+        seq_benchmark_iops_length=benchmark_seq_iops_length,
+        rand_benchmark_bandwidth_length=benchmark_rand_bw_length,
+        rand_benchmark_iops_length=benchmark_rand_iops_length,
+        benchmark_job='Job',
         seq_benchmark_bandwidth='R/W Bandwith/s',
         seq_benchmark_iops='R/W IOPS',
         rand_benchmark_bandwidth='R/W Bandwith/s',
@@ -1448,19 +1512,19 @@ def format_list_benchmark(config, benchmark_information):
             rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
 
         benchmark_list_output.append('{bold}\
-{benchmark_job: <{benchmark_job_length}} \
- {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
-{seq_benchmark_iops: <{seq_benchmark_iops_length}} \
+{benchmark_job: <{benchmark_job_length}}  \
+{seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
+{seq_benchmark_iops: <{seq_benchmark_iops_length}}  \
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
-{rand_benchmark_iops: <{rand_benchmark_iops_length}} \
+{rand_benchmark_iops: <{rand_benchmark_iops_length}}\
 {end_bold}'.format(
             bold='',
             end_bold='',
             benchmark_job_length=benchmark_job_length,
-            seq_benchmark_bandwidth_length=benchmark_bandwidth_length['seq_read'] + benchmark_bandwidth_length['seq_write'] + 2,
-            seq_benchmark_iops_length=benchmark_iops_length['seq_read'] + benchmark_iops_length['seq_write'],
-            rand_benchmark_bandwidth_length=benchmark_bandwidth_length['rand_read_4K'] + benchmark_bandwidth_length['rand_write_4K'] + 1,
-            rand_benchmark_iops_length=benchmark_iops_length['rand_read_4K'] + benchmark_iops_length['rand_write_4K'],
+            seq_benchmark_bandwidth_length=benchmark_seq_bw_length,
+            seq_benchmark_iops_length=benchmark_seq_iops_length,
+            rand_benchmark_bandwidth_length=benchmark_rand_bw_length,
+            rand_benchmark_iops_length=benchmark_rand_iops_length,
             benchmark_job=benchmark_job,
             seq_benchmark_bandwidth=seq_benchmark_bandwidth,
             seq_benchmark_iops=seq_benchmark_iops,
