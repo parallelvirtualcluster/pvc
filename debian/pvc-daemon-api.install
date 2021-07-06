@@ -5,5 +5,6 @@ api-daemon/pvcapid.sample.yaml etc/pvc
 api-daemon/pvcapid usr/share/pvc
 api-daemon/pvcapid.service lib/systemd/system
 api-daemon/pvcapid-worker.service lib/systemd/system
+api-daemon/pvcapid-worker.sh usr/share/pvc
 api-daemon/provisioner usr/share/pvc
 api-daemon/migrations usr/share/pvc
