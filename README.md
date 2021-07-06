@@ -42,6 +42,11 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.23
+
+  * [Daemons] Fixes a critical overwriting bug in zkhandler when schema paths are not yet valid
+  * [Node Daemon] Ensures the daemon mode is updated on every startup (fixes the side effect of the above bug in 0.9.22)
+
 #### v0.9.22
 
   * [API Daemon] Drastically improves performance when getting large lists (e.g. VMs)

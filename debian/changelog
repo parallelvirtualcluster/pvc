@@ -1,3 +1,10 @@
+pvc (0.9.23-0) unstable; urgency=high
+
+  * [Daemons] Fixes a critical overwriting bug in zkhandler when schema paths are not yet valid
+  * [Node Daemon] Ensures the daemon mode is updated on every startup (fixes the side effect of the above bug in 0.9.22)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 05 Jul 2021 23:40:32 -0400
+
 pvc (0.9.22-0) unstable; urgency=high
 
   * [API Daemon] Drastically improves performance when getting large lists (e.g. VMs)
