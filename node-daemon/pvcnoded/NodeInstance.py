@@ -246,7 +246,7 @@ class NodeInstance(object):
             if data != self.domain_list:
                 self.domain_list = data
 
-        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.count.provisioned_domainss', self.name))
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('node.count.provisioned_domains', self.name))
         def watch_node_domainscount(data, stat, event=''):
             if event and event.type == 'DELETED':
                 # The key has been deleted after existing before; terminate this watcher
