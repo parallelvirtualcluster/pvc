@@ -791,6 +791,7 @@ if zkhandler.exists(('node', myhostname)):
     logger.out("Node is " + fmt_green + "present" + fmt_end + " in Zookeeper", state='i')
     # Update static data just in case it's changed
     zkhandler.write([
+        (('node', myhostname), config['daemon_mode']),
         (('node.mode', myhostname), config['daemon_mode']),
         (('node.state.daemon', myhostname), 'init'),
         (('node.state.router', myhostname), init_routerstate),
