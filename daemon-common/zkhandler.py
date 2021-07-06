@@ -201,6 +201,10 @@ class ZKHandler(object):
         Check if a key exists
         """
         path = self.get_schema_path(key)
+        if path is None:
+            # This path is invalid, this is likely due to missing schema entries, so return False
+            return False
+
         stat = self.zk_conn.exists(path)
         if stat:
             return True
@@ -213,11 +217,13 @@ class ZKHandler(object):
         """
         try:
             path = self.get_schema_path(key)
-            data = self.zk_conn.get(path)[0].decode(self.encoding)
-        except NoNodeError:
-            data = None
+            if path is None:
+                # This path is invalid; this is likely due to missing schema entries, so return None
+                return None
 
-        return data
+            return self.zk_conn.get(path)[0].decode(self.encoding)
+        except NoNodeError:
+            return None
 
     def write(self, kvpairs):
         """
@@ -238,6 +244,9 @@ class ZKHandler(object):
             value = kvpair[1]
 
             path = self.get_schema_path(key)
+            if path is None:
+                # This path is invalid; this is likely due to missing schema entries, so continue
+                continue
 
             if not self.exists(key):
                 # Creating a new key
@@ -276,9 +285,9 @@ class ZKHandler(object):
             keys = [keys]
 
         for key in keys:
-            path = self.get_schema_path(key)
             if self.exists(key):
                 try:
+                    path = self.get_schema_path(key)
                     self.zk_conn.delete(path, recursive=recursive)
                 except Exception as e:
                     self.log("ZKHandler error: Failed to delete key {}: {}".format(path, e), state='e')
@@ -292,11 +301,13 @@ class ZKHandler(object):
         """
         try:
             path = self.get_schema_path(key)
-            children = self.zk_conn.get_children(path)
-        except NoNodeError:
-            children = None
+            if path is None:
+                # This path is invalid; this is likely due to missing schema entries, so return None
+                return None
 
-        return children
+            return self.zk_conn.get_children(path)
+        except NoNodeError:
+            return None
 
     def rename(self, kkpairs):
         """
@@ -327,13 +338,20 @@ class ZKHandler(object):
 
             source_key = kkpair[0]
             source_path = self.get_schema_path(source_key)
+            if source_path is None:
+                # This path is invalid; this is likely due to missing schema entries, so continue
+                continue
 
             destination_key = kkpair[1]
             destination_path = self.get_schema_path(destination_key)
+            if destination_path is None:
+                # This path is invalid; this is likely due to missing schema entries, so continue
+                continue
 
             if not self.exists(source_key):
                 self.log("ZKHander error: Source key '{}' does not exist".format(source_path), state='e')
                 return False
+
             if self.exists(destination_key):
                 self.log("ZKHander error: Destination key '{}' already exists".format(destination_path), state='e')
                 return False
@@ -698,9 +716,16 @@ class ZKSchema(object):
             if base_path is None:
                 # This should only really happen for second-layer key types where the helper functions join them together
                 base_path = ''
+
+            if not ipath:
+                # This is a root path
+                return f'{base_path}/{item}'
+
             sub_path = self.schema.get(itype).get('.'.join(ipath))
             if sub_path is None:
-                sub_path = ''
+                # We didn't find the path we're looking for, so we don't want to do anything
+                return None
+
             return f'{base_path}/{item}{sub_path}'
 
     # Get keys of a schema location
