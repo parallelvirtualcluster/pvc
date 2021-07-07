@@ -125,23 +125,9 @@ class ZKHandler(object):
     #
     def listener(self, state):
         if state == KazooState.CONNECTED:
-            self.log('Connection to Zookeeper started', state='o')
+            self.log('Connection to Zookeeper resumed', state='o')
         else:
-            self.log('Connection to Zookeeper lost', state='w')
-
-            while True:
-                time.sleep(0.5)
-
-                _zk_conn = KazooClient(hosts=self.coordinators)
-                try:
-                    _zk_conn.start()
-                except Exception:
-                    del _zk_conn
-                    continue
-
-                self.zk_conn = _zk_conn
-                self.zk_conn.add_listener(self.listener)
-                break
+            self.log('Connection to Zookeeper lost with state {}'.format(state), state='w')
 
     def connect(self, persistent=False):
         """
@@ -149,6 +135,7 @@ class ZKHandler(object):
         """
         try:
             self.zk_conn.start()
+            self.log('Connection to Zookeeper started', state='o')
             if persistent:
                 self.zk_conn.add_listener(self.listener)
         except Exception as e:
@@ -162,6 +149,7 @@ class ZKHandler(object):
         """
         self.zk_conn.stop()
         self.zk_conn.close()
+        self.log('Connection to Zookeeper terminated', state='o')
 
     #
     # Schema helper actions
