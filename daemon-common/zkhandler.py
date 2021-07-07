@@ -124,6 +124,11 @@ class ZKHandler(object):
     # State/connection management
     #
     def listener(self, state):
+        """
+        Listen for KazooState changes and log accordingly.
+
+        This function does not do anything except for log the state, and Kazoo handles the rest.
+        """
         if state == KazooState.CONNECTED:
             self.log('Connection to Zookeeper resumed', state='o')
         else:
@@ -131,7 +136,7 @@ class ZKHandler(object):
 
     def connect(self, persistent=False):
         """
-        Start the zk_conn object and connect to the cluster, then load the current schema version
+        Start the zk_conn object and connect to the cluster
         """
         try:
             self.zk_conn.start()
@@ -155,6 +160,20 @@ class ZKHandler(object):
     # Schema helper actions
     #
     def get_schema_path(self, key):
+        """
+        Get the Zookeeper path for {key} from the current schema based on its format.
+
+        If {key} is a tuple of length 2, it's treated as a path plus an item instance of that path (e.g. a node, a VM, etc.).
+
+        If {key} is a tuple of length 4, it is treated as a path plus an item instance, as well as another item instance of the subpath.
+
+        If {key} is just a string, it's treated as a lone path (mostly used for the 'base' schema group.
+
+        Otherwise, returns None since this is not a valid key.
+
+        This function also handles the special case where a string that looks like an existing path (i.e. starts with '/') is passed;
+        in that case it will silently return the same path back. This was mostly a migration functionality and is deprecated.
+        """
         if isinstance(key, tuple):
             # This is a key tuple with both an ipath and an item
             if len(key) == 2:
