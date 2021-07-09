@@ -791,6 +791,9 @@ def get_console_log(zkhandler, domain, lines=1000):
     # Get the data from ZK
     console_log = zkhandler.read(('domain.log.console', dom_uuid))
 
+    if console_log is None:
+        return True, ''
+
     # Shrink the log buffer to length lines
     shrunk_log = console_log.split('\n')[-lines:]
     loglines = '\n'.join(shrunk_log)
