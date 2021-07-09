@@ -449,27 +449,29 @@ def remove_vm(zkhandler, domain):
     if current_vm_state != 'stop':
         change_state(zkhandler, dom_uuid, 'stop')
 
-    # Gracefully terminate the class instances
-    change_state(zkhandler, dom_uuid, 'delete')
-
-    # Delete the configurations
-    zkhandler.delete([
-        ('domain', dom_uuid)
-    ])
-
     # Wait for 1 second to allow state to flow to all nodes
     time.sleep(1)
 
     # Remove disks
     for disk in disk_list:
         # vmpool/vmname_volume
-        try:
-            disk_pool, disk_name = disk.split('/')
-            retcode, message = ceph.remove_volume(zkhandler, disk_pool, disk_name)
-        except ValueError:
-            continue
+        disk_pool, disk_name = disk.split('/')
+        retcode, message = ceph.remove_volume(zkhandler, disk_pool, disk_name)
+        if not retcode:
+            return False, message
 
-    return True, 'Removed VM "{}" and disks from the cluster.'.format(domain)
+    # Gracefully terminate the class instances
+    change_state(zkhandler, dom_uuid, 'delete')
+
+    # Wait for 1/2 second to allow state to flow to all nodes
+    time.sleep(0.5)
+
+    # Delete the VM configuration from Zookeeper
+    zkhandler.delete([
+        ('domain', dom_uuid)
+    ])
+
+    return True, 'Removed VM "{}" and its disks from the cluster.'.format(domain)
 
 
 def start_vm(zkhandler, domain):
