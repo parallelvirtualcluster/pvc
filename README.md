@@ -42,6 +42,14 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.24
+
+  * [Node Daemon] Removes Rados module polling of Ceph cluster and returns to command-based polling for timeout purposes, and removes some flaky return statements
+  * [Node Daemon] Removes flaky Zookeeper connection renewals that caused problems
+  * [CLI Client] Allow raw lists of clusters from `pvc cluster list`
+  * [API Daemon] Fixes several issues when getting VM data without stats
+  * [API Daemon] Fixes issues with removing VMs while disks are still in use (failed provisioning, etc.)
+
 #### v0.9.23
 
   * [Daemons] Fixes a critical overwriting bug in zkhandler when schema paths are not yet valid
