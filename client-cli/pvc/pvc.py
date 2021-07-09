@@ -1660,7 +1660,7 @@ def vm_dump(filename, domain):
 @cluster_req
 def vm_list(target_node, target_state, limit, raw):
     """
-    List all virtual machines; optionally only match names matching regex LIMIT.
+    List all virtual machines; optionally only match names or full UUIDs matching regex LIMIT.
 
     NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
