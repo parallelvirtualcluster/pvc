@@ -798,7 +798,7 @@ def get_console_log(zkhandler, domain, lines=1000):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Get the data from ZK
-    console_log = zkhandler.read(('domain.log.console', dom_uuid))
+    console_log = zkhandler.read(('domain.console.log', dom_uuid))
 
     if console_log is None:
         return True, ''
