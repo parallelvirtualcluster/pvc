@@ -455,10 +455,17 @@ def remove_vm(zkhandler, domain):
     # Remove disks
     for disk in disk_list:
         # vmpool/vmname_volume
-        disk_pool, disk_name = disk.split('/')
+        try:
+            disk_pool, disk_name = disk.split('/')
+        except ValueError:
+            continue
+
         retcode, message = ceph.remove_volume(zkhandler, disk_pool, disk_name)
         if not retcode:
-            return False, message
+            if re.match('^ERROR: No volume with name', message):
+                continue
+            else:
+                return False, message
 
     # Gracefully terminate the class instances
     change_state(zkhandler, dom_uuid, 'delete')
