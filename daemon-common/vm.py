@@ -897,6 +897,9 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
         for vm_uuid in vm_execute_list:
             futures.append(executor.submit(common.getInformationFromXML, zkhandler, vm_uuid))
         for future in futures:
-            vm_data_list.append(future.result())
+            try:
+                vm_data_list.append(future.result())
+            except Exception:
+                pass
 
     return True, vm_data_list
