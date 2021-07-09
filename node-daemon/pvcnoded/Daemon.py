@@ -1322,7 +1322,6 @@ def collect_ceph_stats(queue):
         ceph_health = json.loads(stdout)['status']
     except Exception as e:
         logger.out('Failed to obtain Ceph health data: {}'.format(e), state='e')
-        return
 
     if ceph_health == 'HEALTH_OK':
         ceph_health_colour = fmt_green
@@ -1343,7 +1342,6 @@ def collect_ceph_stats(queue):
             ])
         except Exception as e:
             logger.out('Failed to set Ceph status data: {}'.format(e), state='e')
-            return
 
         if debug:
             logger.out("Set ceph rados df information in zookeeper (primary only)", state='d', prefix='ceph-thread')
@@ -1356,7 +1354,6 @@ def collect_ceph_stats(queue):
             ])
         except Exception as e:
             logger.out('Failed to set Ceph utilization data: {}'.format(e), state='e')
-            return
 
         if debug:
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
@@ -1589,7 +1586,6 @@ def collect_vm_stats(queue):
     lv_conn = libvirt.open(libvirt_name)
     if lv_conn is None:
         logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
-        return
 
     memalloc = 0
     memprov = 0
@@ -1849,7 +1845,6 @@ def node_keepalive():
         ])
     except Exception:
         logger.out('Failed to set keepalive data', state='e')
-        return
 
     # Display node information to the terminal
     if config['log_keepalives']:
