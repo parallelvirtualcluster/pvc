@@ -251,7 +251,11 @@ def cluster_remove(name):
 # pvc cluster list
 ###############################################################################
 @click.command(name='list', short_help='List all available clusters.')
-def cluster_list():
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw list of cluster names only.'
+)
+def cluster_list(raw):
     """
     List all the available PVC clusters configured in this CLI instance.
     """
@@ -302,27 +306,28 @@ def cluster_list():
         if _api_key_length > api_key_length:
             api_key_length = _api_key_length
 
-    # Display the data nicely
-    click.echo("Available clusters:")
-    click.echo()
-    click.echo(
-        '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
-            bold=ansiprint.bold(),
-            end_bold=ansiprint.end(),
-            name="Name",
-            name_length=name_length,
-            description="Description",
-            description_length=description_length,
-            address="Address",
-            address_length=address_length,
-            port="Port",
-            port_length=port_length,
-            scheme="Scheme",
-            scheme_length=scheme_length,
-            api_key="API Key",
-            api_key_length=api_key_length
+    if not raw:
+        # Display the data nicely
+        click.echo("Available clusters:")
+        click.echo()
+        click.echo(
+            '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
+                bold=ansiprint.bold(),
+                end_bold=ansiprint.end(),
+                name="Name",
+                name_length=name_length,
+                description="Description",
+                description_length=description_length,
+                address="Address",
+                address_length=address_length,
+                port="Port",
+                port_length=port_length,
+                scheme="Scheme",
+                scheme_length=scheme_length,
+                api_key="API Key",
+                api_key_length=api_key_length
+            )
         )
-    )
 
     for cluster in clusters:
         cluster_details = clusters[cluster]
@@ -341,24 +346,27 @@ def cluster_list():
             if not api_key:
                 api_key = 'N/A'
 
-        click.echo(
-            '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
-                bold='',
-                end_bold='',
-                name=cluster,
-                name_length=name_length,
-                description=description,
-                description_length=description_length,
-                address=address,
-                address_length=address_length,
-                port=port,
-                port_length=port_length,
-                scheme=scheme,
-                scheme_length=scheme_length,
-                api_key=api_key,
-                api_key_length=api_key_length
+        if not raw:
+            click.echo(
+                '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
+                    bold='',
+                    end_bold='',
+                    name=cluster,
+                    name_length=name_length,
+                    description=description,
+                    description_length=description_length,
+                    address=address,
+                    address_length=address_length,
+                    port=port,
+                    port_length=port_length,
+                    scheme=scheme,
+                    scheme_length=scheme_length,
+                    api_key=api_key,
+                    api_key_length=api_key_length
+                )
             )
-        )
+        else:
+            click.echo(cluster)
 
 
 # Validate that the cluster is set for a given command
