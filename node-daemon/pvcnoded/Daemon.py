@@ -1322,10 +1322,13 @@ def collect_ceph_stats(queue):
         ceph_health = json.loads(stdout)['status']
     except Exception as e:
         logger.out('Failed to obtain Ceph health data: {}'.format(e), state='e')
+        ceph_health = 'HEALTH_UNKN'
 
-    if ceph_health == 'HEALTH_OK':
+    if ceph_health in ['HEALTH_OK']:
         ceph_health_colour = fmt_green
-    elif ceph_health == 'HEALTH_WARN':
+    elif ceph_health in ['HEALTH_UNKN']:
+        ceph_health_colour = fmt_cyan
+    elif ceph_health in ['HEALTH_WARN']:
         ceph_health_colour = fmt_yellow
     else:
         ceph_health_colour = fmt_red
