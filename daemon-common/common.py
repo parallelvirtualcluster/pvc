@@ -343,8 +343,13 @@ def getInformationFromXML(zkhandler, uuid):
 
     parsed_xml = getDomainXML(zkhandler, uuid)
 
-    stats_data = loads(zkhandler.read(('domain.stats', uuid)))
-    if stats_data is None:
+    stats_data = zkhandler.read(('domain.stats', uuid))
+    if stats_data is not None:
+        try:
+            stats_data = loads(stats_data)
+        except Exception:
+            stats_data = {}
+    else:
         stats_data = {}
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
