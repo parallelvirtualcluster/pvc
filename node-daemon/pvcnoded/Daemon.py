@@ -38,6 +38,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from distutils.util import strtobool
 from queue import Queue
 from xml.etree import ElementTree
+from rados import Rados
 
 from daemon_lib.zkhandler import ZKHandler
 
@@ -1313,13 +1314,24 @@ def collect_ceph_stats(queue):
     if debug:
         logger.out("Thread starting", state='d', prefix='ceph-thread')
 
+    # Connect to the Ceph cluster
+    try:
+        ceph_conn = Rados(conffile=config['ceph_config_file'], conf=dict(keyring=config['ceph_admin_keyring']))
+        if debug:
+            logger.out("Connecting to cluster", state='d', prefix='ceph-thread')
+        ceph_conn.connect(timeout=1)
+    except Exception as e:
+        logger.out('Failed to open connection to Ceph cluster: {}'.format(e), state='e')
+        return
+
     if debug:
         logger.out("Getting health stats from monitor", state='d', prefix='ceph-thread')
 
     # Get Ceph cluster health for local status output
-    _, stdout, _ = common.run_os_command('ceph health --format json', timeout=1)
+    command = {"prefix": "health", "format": "json"}
     try:
-        ceph_health = json.loads(stdout)['status']
+        health_status = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])
+        ceph_health = health_status['status']
     except Exception as e:
         logger.out('Failed to obtain Ceph health data: {}'.format(e), state='e')
         ceph_health = 'HEALTH_UNKN'
@@ -1338,7 +1350,8 @@ def collect_ceph_stats(queue):
         if debug:
             logger.out("Set ceph health information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
-        _, ceph_status, _ = common.run_os_command('ceph status --format plain', timeout=1)
+        command = {"prefix": "status", "format": "pretty"}
+        ceph_status = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.write([
                 ('base.storage', str(ceph_status))
@@ -1350,7 +1363,8 @@ def collect_ceph_stats(queue):
             logger.out("Set ceph rados df information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get rados df info
-        _, ceph_df, _ = common.run_os_command('ceph df --format plain', timeout=1)
+        command = {"prefix": "df", "format": "pretty"}
+        ceph_df = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
             zkhandler.write([
                 ('base.storage.util', str(ceph_df))
@@ -1362,14 +1376,14 @@ def collect_ceph_stats(queue):
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
-        _, stdout, _ = common.run_os_command('ceph df --format json', timeout=1)
+        retcode, stdout, stderr = common.run_os_command('ceph df --format json', timeout=1)
         try:
             ceph_pool_df_raw = json.loads(stdout)['pools']
         except Exception as e:
             logger.out('Failed to obtain Pool data (ceph df): {}'.format(e), state='w')
             ceph_pool_df_raw = []
 
-        _, stdout, _ = common.run_os_command('rados df --format json', timeout=1)
+        retcode, stdout, stderr = common.run_os_command('rados df --format json', timeout=1)
         try:
             rados_pool_df_raw = json.loads(stdout)['pools']
         except Exception as e:
@@ -1434,8 +1448,9 @@ def collect_ceph_stats(queue):
         # Parse the dump data
         osd_dump = dict()
 
-        _, stdout, _ = common.run_os_command('ceph osd dump --format json --connect-timeout 1', timeout=1)
+        command = {"prefix": "osd dump", "format": "json"}
         try:
+            retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json --connect-timeout 2', timeout=2)
             osd_dump_raw = json.loads(stdout)['osds']
         except Exception as e:
             logger.out('Failed to obtain OSD data: {}'.format(e), state='w')
@@ -1459,9 +1474,9 @@ def collect_ceph_stats(queue):
 
         osd_df = dict()
 
-        _, osd_df_out, _ = common.run_os_command('ceph osd df --format json', timeout=1)
+        command = {"prefix": "osd df", "format": "json"}
         try:
-            osd_df_raw = json.loads(osd_df_out)['nodes']
+            osd_df_raw = json.loads(ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1])['nodes']
         except Exception as e:
             logger.out('Failed to obtain OSD data: {}'.format(e), state='w')
             osd_df_raw = []
@@ -1486,10 +1501,12 @@ def collect_ceph_stats(queue):
 
         osd_status = dict()
 
-        retcode, osd_status_raw, stderr = common.run_os_command('ceph osd status --format plain', timeout=1)
-        if retcode != 0:
-            logger.out('Failed to obtain OSD status data: {}'.format(stderr), state='w')
-            osd_status_raw = ''
+        command = {"prefix": "osd status", "format": "pretty"}
+        try:
+            osd_status_raw = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
+        except Exception as e:
+            logger.out('Failed to obtain OSD status data: {}'.format(e), state='w')
+            osd_status_raw = []
 
         if debug:
             logger.out("Loop through OSD status data", state='d', prefix='ceph-thread')
@@ -1555,6 +1572,8 @@ def collect_ceph_stats(queue):
                 except KeyError as e:
                     # One or more of the status commands timed out, just continue
                     logger.out('Failed to upload OSD stats from dictionary: {}'.format(e), state='w')
+
+    ceph_conn.shutdown()
 
     queue.put(ceph_health_colour)
     queue.put(ceph_health)
