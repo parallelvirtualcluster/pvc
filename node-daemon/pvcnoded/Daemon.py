@@ -1376,9 +1376,10 @@ def collect_ceph_stats(queue):
             logger.out("Set pool information in zookeeper (primary only)", state='d', prefix='ceph-thread')
 
         # Get pool info
-        retcode, stdout, stderr = common.run_os_command('ceph df --format json', timeout=1)
+        command = {"prefix": "df", "format": "json"}
+        ceph_df_output = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
-            ceph_pool_df_raw = json.loads(stdout)['pools']
+            ceph_pool_df_raw = json.loads(ceph_df_output)['pools']
         except Exception as e:
             logger.out('Failed to obtain Pool data (ceph df): {}'.format(e), state='w')
             ceph_pool_df_raw = []
@@ -1449,9 +1450,9 @@ def collect_ceph_stats(queue):
         osd_dump = dict()
 
         command = {"prefix": "osd dump", "format": "json"}
+        osd_dump_output = ceph_conn.mon_command(json.dumps(command), b'', timeout=1)[1].decode('ascii')
         try:
-            retcode, stdout, stderr = common.run_os_command('ceph osd dump --format json --connect-timeout 2', timeout=2)
-            osd_dump_raw = json.loads(stdout)['osds']
+            osd_dump_raw = json.loads(osd_dump_output)['osds']
         except Exception as e:
             logger.out('Failed to obtain OSD data: {}'.format(e), state='w')
             osd_dump_raw = []
