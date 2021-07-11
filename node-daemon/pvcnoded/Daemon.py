@@ -32,6 +32,7 @@ import yaml
 import json
 
 from socket import gethostname
+from datetime import datetime
 from threading import Thread
 from ipaddress import ip_address, ip_network
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -1878,9 +1879,10 @@ def node_keepalive():
         else:
             cst_colour = fmt_cyan
         logger.out(
-            '{}{} keepalive{} [{}{}{}]'.format(
+            '{}{} keepalive @ {}{} [{}{}{}]'.format(
                 fmt_purple,
                 myhostname,
+                datetime.now(),
                 fmt_end,
                 fmt_bold + cst_colour,
                 this_node.router_state,
