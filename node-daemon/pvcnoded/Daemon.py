@@ -659,7 +659,7 @@ def update_schema(new_schema_version, stat, event=''):
     # Restart ourselves with the new schema
     logger.out('Reloading node daemon', state='s')
     try:
-        zkhandler.disconnect()
+        zkhandler.disconnect(persistent=True)
         del zkhandler
     except Exception:
         pass
@@ -752,7 +752,7 @@ def cleanup():
 
     # Close the Zookeeper connection
     try:
-        zkhandler.disconnect()
+        zkhandler.disconnect(persistent=True)
         del zkhandler
     except Exception:
         pass

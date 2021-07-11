@@ -140,13 +140,13 @@ class ZKHandler(object):
         """
         try:
             self.zk_conn.start()
-            self.log('Connection to Zookeeper started', state='o')
             if persistent:
+                self.log('Connection to Zookeeper started', state='o')
                 self.zk_conn.add_listener(self.listener)
         except Exception as e:
             raise ZKConnectionException(self, e)
 
-    def disconnect(self):
+    def disconnect(self, persistent=False):
         """
         Stop and close the zk_conn object and disconnect from the cluster
 
@@ -154,7 +154,8 @@ class ZKHandler(object):
         """
         self.zk_conn.stop()
         self.zk_conn.close()
-        self.log('Connection to Zookeeper terminated', state='o')
+        if persistent:
+            self.log('Connection to Zookeeper terminated', state='o')
 
     #
     # Schema helper actions
