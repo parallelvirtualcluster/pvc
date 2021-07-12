@@ -1779,8 +1779,9 @@ def node_keepalive():
     # Get past state and update if needed
     if debug:
         logger.out("Get past state and update if needed", state='d', prefix='main-thread')
+
     past_state = zkhandler.read(('node.state.daemon', this_node.name))
-    if past_state != 'run':
+    if past_state != 'run' and past_state != 'shutdown':
         this_node.daemon_state = 'run'
         zkhandler.write([
             (('node.state.daemon', this_node.name), 'run')
