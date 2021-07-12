@@ -42,6 +42,14 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.25
+
+  * [Node Daemon] Returns to Rados library calls for Ceph due to performance problems
+  * [Node Daemon] Adds a date output to keepalive messages
+  * [Daemons] Configures ZK connection logging only for persistent connections
+  * [API Provisioner] Add context manager-based chroot to Debootstrap example script
+  * [Node Daemon] Fixes a bug where shutdown daemon state was overwritten
+
 #### v0.9.24
 
   * [Node Daemon] Removes Rados module polling of Ceph cluster and returns to command-based polling for timeout purposes, and removes some flaky return statements

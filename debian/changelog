@@ -1,3 +1,13 @@
+pvc (0.9.25-0) unstable; urgency=high
+
+  * [Node Daemon] Returns to Rados library calls for Ceph due to performance problems
+  * [Node Daemon] Adds a date output to keepalive messages
+  * [Daemons] Configures ZK connection logging only for persistent connections
+  * [API Provisioner] Add context manager-based chroot to Debootstrap example script
+  * [Node Daemon] Fixes a bug where shutdown daemon state was overwritten
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 11 Jul 2021 23:19:09 -0400
+
 pvc (0.9.24-0) unstable; urgency=high
 
   * [Node Daemon] Removes Rados module polling of Ceph cluster and returns to command-based polling for timeout purposes, and removes some flaky return statements
