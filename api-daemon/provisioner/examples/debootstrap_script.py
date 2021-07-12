@@ -34,6 +34,29 @@
 # with that.
 
 import os
+from contextlib import contextmanager
+
+
+# Create a chroot context manager
+# This can be used later in the script to chroot to the destination directory
+# for instance to run commands within the target.
+@contextmanager
+def chroot_target(destination):
+    try:
+        real_root = os.open("/", os.O_RDONLY)
+        os.chroot(destination)
+        fake_root = os.open("/", os.O_RDONLY)
+        os.fchdir(fake_root)
+        yield
+    finally:
+        os.fchdir(real_root)
+        os.chroot(".")
+        os.fchdir(real_root)
+        os.close(fake_root)
+        os.close(real_root)
+        del fake_root
+        del real_root
+
 
 # Installation function - performs a debootstrap install of a Debian system
 # Note that the only arguments are keyword arguments.
@@ -193,40 +216,25 @@ GRUB_DISABLE_LINUX_UUID=false
         fh.write(data)
 
     # Chroot, do some in-root tasks, then exit the chroot
-    # EXITING THE CHROOT IS VERY IMPORTANT OR THE FOLLOWING STAGES OF THE PROVISIONER
-    # WILL FAIL IN UNEXPECTED WAYS! Keep this in mind when using chroot in your scripts.
-    real_root = os.open("/", os.O_RDONLY)
-    os.chroot(temporary_directory)
-    fake_root = os.open("/", os.O_RDONLY)
-    os.fchdir(fake_root)
-
-    # Install and update GRUB
-    os.system(
-        "grub-install --force /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
-    )
-    os.system(
-        "update-grub"
-    )
-    # Set a really dumb root password [TEMPORARY]
-    os.system(
-        "echo root:test123 | chpasswd"
-    )
-    # Enable cloud-init target on (first) boot
-    # NOTE: Your user-data should handle this and disable it once done, or things get messy.
-    #       That cloud-init won't run without this hack seems like a bug... but even the official
-    #       Debian cloud images are affected, so who knows.
-    os.system(
-        "systemctl enable cloud-init.target"
-    )
-
-    # Restore our original root/exit the chroot
-    # EXITING THE CHROOT IS VERY IMPORTANT OR THE FOLLOWING STAGES OF THE PROVISIONER
-    # WILL FAIL IN UNEXPECTED WAYS! Keep this in mind when using chroot in your scripts.
-    os.fchdir(real_root)
-    os.chroot(".")
-    os.fchdir(real_root)
-    os.close(fake_root)
-    os.close(real_root)
+    with chroot_target(temporary_directory):
+        # Install and update GRUB
+        os.system(
+            "grub-install --force /dev/rbd/{}/{}_{}".format(root_disk['pool'], vm_name, root_disk['disk_id'])
+        )
+        os.system(
+            "update-grub"
+        )
+        # Set a really dumb root password [TEMPORARY]
+        os.system(
+            "echo root:test123 | chpasswd"
+        )
+        # Enable cloud-init target on (first) boot
+        # NOTE: Your user-data should handle this and disable it once done, or things get messy.
+        #       That cloud-init won't run without this hack seems like a bug... but even the official
+        #       Debian cloud images are affected, so who knows.
+        os.system(
+            "systemctl enable cloud-init.target"
+        )
 
     # Unmount the bound devfs
     os.system(
@@ -234,9 +242,5 @@ GRUB_DISABLE_LINUX_UUID=false
             temporary_directory
         )
     )
-
-    # Clean up file handles so paths can be unmounted
-    del fake_root
-    del real_root
 
     # Everything else is done via cloud-init user-data

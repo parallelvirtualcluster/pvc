@@ -29,7 +29,7 @@
 # This script will run under root privileges as the provisioner does. Be careful
 # with that.
 
-# Installation function - performs a debootstrap install of a Debian system
+# Installation function - performs no actions then returns
 # Note that the only arguments are keyword arguments.
 def install(**kwargs):
     # The provisioner has already mounted the disks on kwargs['temporary_directory'].
