@@ -892,6 +892,22 @@ class API_VM_Root(Resource):
                 migration_method:
                   type: string
                   description: The preferred migration method (live, shutdown, none)
+                tags:
+                  type: array
+                  description: The tag(s) of the VM
+                  items:
+                    type: object
+                    id: VMTag
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the tag
+                      type:
+                        type: string
+                        description: The type of the tag (user, system)
+                      protected:
+                        type: boolean
+                        description: Whether the tag is protected or not
                 description:
                   type: string
                   description: The description of the VM
@@ -1107,7 +1123,8 @@ class API_VM_Root(Resource):
         {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
-        {'name': 'tags'},
+        {'name': 'user_tags', 'action': 'append'},
+        {'name': 'protected_tags', 'action': 'append'},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
@@ -1160,10 +1177,17 @@ class API_VM_Root(Resource):
               - shutdown
               - none
           - in: query
-            name: tags
+            name: user_tags
             type: array
             required: false
-            description: The tag(s) of the VM
+            description: The user tag(s) of the VM
+            items:
+              type: string
+          - in: query
+            name: protected_tags
+            type: array
+            required: false
+            description: The protected user tag(s) of the VM
             items:
               type: string
         responses:
@@ -1178,6 +1202,13 @@ class API_VM_Root(Resource):
               type: object
               id: Message
         """
+        user_tags = reqargs.get('user_tags', None)
+        if user_tags is None:
+            user_tags = []
+        protected_tags = reqargs.get('protected_tags', None)
+        if protected_tags is None:
+            protected_tags = []
+
         return api_helper.vm_define(
             reqargs.get('xml'),
             reqargs.get('node', None),
@@ -1185,7 +1216,8 @@ class API_VM_Root(Resource):
             reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
             reqargs.get('migration_method', 'none'),
-            reqargs.get('tags', [])
+            user_tags,
+            protected_tags
         )
 
 
@@ -1220,7 +1252,8 @@ class API_VM_Element(Resource):
         {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
-        {'name': 'tags'},
+        {'name': 'user_tags', 'action': 'append'},
+        {'name': 'protected_tags', 'action': 'append'},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
@@ -1276,10 +1309,17 @@ class API_VM_Element(Resource):
               - shutdown
               - none
           - in: query
-            name: tags
+            name: user_tags
             type: array
             required: false
-            description: The tag(s) of the VM
+            description: The user tag(s) of the VM
+            items:
+              type: string
+          - in: query
+            name: protected_tags
+            type: array
+            required: false
+            description: The protected user tag(s) of the VM
             items:
               type: string
         responses:
@@ -1294,6 +1334,13 @@ class API_VM_Element(Resource):
               type: object
               id: Message
         """
+        user_tags = reqargs.get('user_tags', None)
+        if user_tags is None:
+            user_tags = []
+        protected_tags = reqargs.get('protected_tags', None)
+        if protected_tags is None:
+            protected_tags = []
+
         return api_helper.vm_define(
             reqargs.get('xml'),
             reqargs.get('node', None),
@@ -1301,7 +1348,8 @@ class API_VM_Element(Resource):
             reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
             reqargs.get('migration_method', 'none'),
-            reqargs.get('tags', [])
+            user_tags,
+            protected_tags
         )
 
     @RequestParser([
@@ -1529,7 +1577,8 @@ class API_VM_Tags(Resource):
                   type: array
                   description: The tag(s) of the VM
                   items:
-                    type: string
+                    type: object
+                    id: VMTag
           404:
             description: VM not found
             schema:
@@ -1539,8 +1588,9 @@ class API_VM_Tags(Resource):
         return api_helper.get_vm_tags(vm)
 
     @RequestParser([
-        {'name': 'action', 'choices': ('add', 'remove', 'replace'), 'helptext': "A valid action must be specified"},
-        {'name': 'tags'},
+        {'name': 'action', 'choices': ('add', 'remove'), 'helptext': "A valid action must be specified"},
+        {'name': 'tag'},
+        {'name': 'protected'}
     ])
     @Authenticator
     def post(self, vm, reqargs):
@@ -1554,18 +1604,21 @@ class API_VM_Tags(Resource):
             name: action
             type: string
             required: true
-            description: The action to perform with the tags, either "add" to existing, "remove" from existing, or "replace" all existing
+            description: The action to perform with the tag
             enum:
               - add
               - remove
-              - replace
           - in: query
-            name: tags
-            type: array
+            name: tag
+            type: string
             required: true
-            description: The list of text tags to add/remove/replace-with
-            items:
-              type: string
+            description: The text value of the tag
+          - in: query
+            name: protected
+            type: boolean
+            required: false
+            default: false
+            description: Set the protected state of the tag
         responses:
           200:
             description: OK
@@ -1583,10 +1636,11 @@ class API_VM_Tags(Resource):
               type: object
               id: Message
         """
-        return api_helper.update_vm_tags(
+        return api_helper.update_vm_tag(
             vm,
             reqargs.get('action'),
-            reqargs.get('tags')
+            reqargs.get('tag'),
+            reqargs.get('protected', False)
         )
 
 

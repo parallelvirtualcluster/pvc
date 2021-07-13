@@ -638,11 +638,21 @@ def cli_vm():
     type=click.Choice(['none', 'live', 'shutdown']),
     help='The preferred migration method of the VM between nodes; saved with VM.'
 )
+@click.option(
+    '-g', '--tag', 'user_tags',
+    default=[], multiple=True,
+    help='User tag(s) for the VM.'
+)
+@click.option(
+    '-G', '--protected-tag', 'protected_tags',
+    default=[], multiple=True,
+    help='Protected user tag(s) for the VM.'
+)
 @click.argument(
     'vmconfig', type=click.File()
 )
 @cluster_req
-def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, migration_method):
+def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, migration_method, user_tags, protected_tags):
     """
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
     """
@@ -658,7 +668,7 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
     except Exception:
         cleanup(False, 'Error: XML is malformed or invalid')
 
-    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method)
+    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method, user_tags, protected_tags)
     cleanup(retcode, retmsg)
 
 
@@ -1108,6 +1118,90 @@ def vm_flush_locks(domain):
     """
 
     retcode, retmsg = pvc_vm.vm_locks(config, domain)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm tag
+###############################################################################
+@click.group(name='tag', short_help='Manage tags of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+def vm_tags():
+    """
+    Manage the tags of a virtual machine in the PVC cluster."
+    """
+    pass
+
+
+###############################################################################
+# pvc vm tag get
+###############################################################################
+@click.command(name='get', short_help='Get the current tags of a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.option(
+    '-r', '--raw', 'raw', is_flag=True, default=False,
+    help='Display the raw value only without formatting.'
+)
+@cluster_req
+def vm_tags_get(domain, raw):
+    """
+    Get the current tags of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc_vm.vm_tags_get(config, domain)
+    if retcode:
+        if not raw:
+            retdata = pvc_vm.format_vm_tags(config, domain, retdata['tags'])
+        else:
+            if len(retdata['tags']) > 0:
+                retdata = '\n'.join([tag['name'] for tag in retdata['tags']])
+            else:
+                retdata = 'No tags found.'
+    cleanup(retcode, retdata)
+
+
+###############################################################################
+# pvc vm tag add
+###############################################################################
+@click.command(name='add', short_help='Add new tags to a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'tag'
+)
+@click.option(
+    '-p', '--protected', 'protected', is_flag=True, required=False, default=False,
+    help="Set this tag as protected; protected tags cannot be removed."
+)
+@cluster_req
+def vm_tags_add(domain, tag, protected):
+    """
+    Add TAG to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, 'add', tag, protected)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc vm tag remove
+###############################################################################
+@click.command(name='remove', short_help='Remove tags from a virtual machine.')
+@click.argument(
+    'domain'
+)
+@click.argument(
+    'tag'
+)
+@cluster_req
+def vm_tags_remove(domain, tag):
+    """
+    Remove TAG from the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, 'remove', tag)
     cleanup(retcode, retmsg)
 
 
@@ -4612,6 +4706,10 @@ cli_node.add_command(node_unflush)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 
+vm_tags.add_command(vm_tags_get)
+vm_tags.add_command(vm_tags_add)
+vm_tags.add_command(vm_tags_remove)
+
 vm_vcpu.add_command(vm_vcpu_get)
 vm_vcpu.add_command(vm_vcpu_set)
 
@@ -4642,6 +4740,7 @@ cli_vm.add_command(vm_move)
 cli_vm.add_command(vm_migrate)
 cli_vm.add_command(vm_unmigrate)
 cli_vm.add_command(vm_flush_locks)
+cli_vm.add_command(vm_tags)
 cli_vm.add_command(vm_vcpu)
 cli_vm.add_command(vm_memory)
 cli_vm.add_command(vm_network)

@@ -78,12 +78,12 @@ def vm_list(config, limit, target_node, target_state):
         return False, response.json().get('message', '')
 
 
-def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migration_method):
+def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migration_method, user_tags, protected_tags):
     """
     Define a new VM on the cluster
 
     API endpoint: POST /vm
-    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method}
+    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method}, user_tags={user_tags}, protected_tags={protected_tags}
     API schema: {"message":"{data}"}
     """
     params = {
@@ -91,7 +91,9 @@ def vm_define(config, xml, node, node_limit, node_selector, node_autostart, migr
         'limit': node_limit,
         'selector': node_selector,
         'autostart': node_autostart,
-        'migration_method': migration_method
+        'migration_method': migration_method,
+        'user_tags': user_tags,
+        'protected_tags': protected_tags
     }
     data = {
         'xml': xml
@@ -155,7 +157,7 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration
     """
     Modify PVC metadata of a VM
 
-    API endpoint: GET /vm/{vm}/meta,  POST /vm/{vm}/meta
+    API endpoint: POST /vm/{vm}/meta
     API arguments: limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method} profile={provisioner_profile}
     API schema: {"message":"{data}"}
     """
@@ -186,6 +188,119 @@ def vm_metadata(config, vm, node_limit, node_selector, node_autostart, migration
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
+
+def vm_tags_get(config, vm):
+    """
+    Get PVC tags of a VM
+
+    API endpoint: GET /vm/{vm}/tags
+    API arguments:
+    API schema: {{"name": "{name}", "type": "{type}"},...}
+    """
+
+    response = call_api(config, 'get', '/vm/{vm}/tags'.format(vm=vm))
+
+    if response.status_code == 200:
+        retstatus = True
+        retdata = response.json()
+    else:
+        retstatus = False
+        retdata = response.json().get('message', '')
+
+    return retstatus, retdata
+
+
+def vm_tag_set(config, vm, action, tag, protected=False):
+    """
+    Modify PVC tags of a VM
+
+    API endpoint: POST /vm/{vm}/tags
+    API arguments: action={action}, tag={tag}, protected={protected}
+    API schema: {"message":"{data}"}
+    """
+
+    params = {
+        'action': action,
+        'tag': tag,
+        'protected': protected
+    }
+
+    # Update the tags
+    response = call_api(config, 'post', '/vm/{vm}/tags'.format(vm=vm), params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
+def format_vm_tags(config, name, tags):
+    """
+    Format the output of a tags dictionary in a nice table
+    """
+    if len(tags) < 1:
+        return "No tags found."
+
+    output_list = []
+
+    name_length = 5
+    _name_length = len(name) + 1
+    if _name_length > name_length:
+        name_length = _name_length
+
+    tags_name_length = 4
+    tags_type_length = 5
+    tags_protected_length = 10
+    for tag in tags:
+        _tags_name_length = len(tag['name']) + 1
+        if _tags_name_length > tags_name_length:
+            tags_name_length = _tags_name_length
+
+        _tags_type_length = len(tag['type']) + 1
+        if _tags_type_length > tags_type_length:
+            tags_type_length = _tags_type_length
+
+        _tags_protected_length = len(str(tag['protected'])) + 1
+        if _tags_protected_length > tags_protected_length:
+            tags_protected_length = _tags_protected_length
+
+    output_list.append(
+        '{bold}{tags_name: <{tags_name_length}}  \
+{tags_type: <{tags_type_length}}  \
+{tags_protected: <{tags_protected_length}}{end_bold}'.format(
+            name_length=name_length,
+            tags_name_length=tags_name_length,
+            tags_type_length=tags_type_length,
+            tags_protected_length=tags_protected_length,
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            tags_name='Name',
+            tags_type='Type',
+            tags_protected='Protected'
+        )
+    )
+
+    for tag in sorted(tags, key=lambda t: t['name']):
+        output_list.append(
+            '{bold}{tags_name: <{tags_name_length}}  \
+{tags_type: <{tags_type_length}}  \
+{tags_protected: <{tags_protected_length}}{end_bold}'.format(
+                name_length=name_length,
+                tags_type_length=tags_type_length,
+                tags_name_length=tags_name_length,
+                tags_protected_length=tags_protected_length,
+                bold='',
+                end_bold='',
+                tags_name=tag['name'],
+                tags_type=tag['type'],
+                tags_protected=str(tag['protected'])
+            )
+        )
+
+    return '\n'.join(output_list)
 
 
 def vm_remove(config, vm, delete_disks=False):
@@ -1248,6 +1363,46 @@ def format_info(config, domain_information, long_output):
     ainformation.append('{}Autostart:{}          {}'.format(ansiprint.purple(), ansiprint.end(), formatted_node_autostart))
     ainformation.append('{}Migration Method:{}   {}'.format(ansiprint.purple(), ansiprint.end(), formatted_migration_method))
 
+    # Tag list
+    tags_name_length = 5
+    tags_type_length = 5
+    tags_protected_length = 10
+    for tag in domain_information['tags']:
+        _tags_name_length = len(tag['name']) + 1
+        if _tags_name_length > tags_name_length:
+            tags_name_length = _tags_name_length
+
+        _tags_type_length = len(tag['type']) + 1
+        if _tags_type_length > tags_type_length:
+            tags_type_length = _tags_type_length
+
+        _tags_protected_length = len(str(tag['protected'])) + 1
+        if _tags_protected_length > tags_protected_length:
+            tags_protected_length = _tags_protected_length
+
+    ainformation.append('')
+    ainformation.append('{purple}Tags:{end}               {bold}{tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}{end}'.format(
+        purple=ansiprint.purple(),
+        bold=ansiprint.bold(),
+        end=ansiprint.end(),
+        tags_name_length=tags_name_length,
+        tags_type_length=tags_type_length,
+        tags_protected_length=tags_protected_length,
+        tags_name='Name',
+        tags_type='Type',
+        tags_protected='Protected'
+    ))
+
+    for tag in sorted(domain_information['tags'], key=lambda t: t['type'] + t['name']):
+        ainformation.append('                    {tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}'.format(
+            tags_name_length=tags_name_length,
+            tags_type_length=tags_type_length,
+            tags_protected_length=tags_protected_length,
+            tags_name=tag['name'],
+            tags_type=tag['type'],
+            tags_protected=str(tag['protected'])
+        ))
+
     # Network list
     net_list = []
     cluster_net_list = call_api(config, 'get', '/network').json()
@@ -1331,6 +1486,14 @@ def format_list(config, vm_list, raw):
             net_list.append(net['vni'])
         return net_list
 
+    # Function to get tag names and returna  nicer list
+    def getNiceTagName(domain_information):
+        # Tag list
+        tag_list = []
+        for tag in sorted(domain_information['tags'], key=lambda t: t['type'] + t['name']):
+            tag_list.append(tag['name'])
+        return tag_list
+
     # Handle raw mode since it just lists the names
     if raw:
         ainformation = list()
@@ -1344,6 +1507,7 @@ def format_list(config, vm_list, raw):
     # Dynamic columns: node_name, node, migrated
     vm_name_length = 5
     vm_state_length = 6
+    vm_tags_length = 5
     vm_nets_length = 9
     vm_ram_length = 8
     vm_vcpu_length = 6
@@ -1351,6 +1515,7 @@ def format_list(config, vm_list, raw):
     vm_migrated_length = 9
     for domain_information in vm_list:
         net_list = getNiceNetID(domain_information)
+        tag_list = getNiceTagName(domain_information)
         # vm_name column
         _vm_name_length = len(domain_information['name']) + 1
         if _vm_name_length > vm_name_length:
@@ -1359,6 +1524,10 @@ def format_list(config, vm_list, raw):
         _vm_state_length = len(domain_information['state']) + 1
         if _vm_state_length > vm_state_length:
             vm_state_length = _vm_state_length
+        # vm_tags column
+        _vm_tags_length = len(','.join(tag_list)) + 1
+        if _vm_tags_length > vm_tags_length:
+            vm_tags_length = _vm_tags_length
         # vm_nets column
         _vm_nets_length = len(','.join(net_list)) + 1
         if _vm_nets_length > vm_nets_length:
@@ -1375,12 +1544,12 @@ def format_list(config, vm_list, raw):
     # Format the string (header)
     vm_list_output.append(
         '{bold}{vm_header: <{vm_header_length}} {resource_header: <{resource_header_length}} {node_header: <{node_header_length}}{end_bold}'.format(
-            vm_header_length=vm_name_length + vm_state_length + 1,
+            vm_header_length=vm_name_length + vm_state_length + vm_tags_length + 2,
             resource_header_length=vm_nets_length + vm_ram_length + vm_vcpu_length + 2,
             node_header_length=vm_node_length + vm_migrated_length + 1,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            vm_header='VMs ' + ''.join(['-' for _ in range(4, vm_name_length + vm_state_length)]),
+            vm_header='VMs ' + ''.join(['-' for _ in range(4, vm_name_length + vm_state_length + vm_tags_length + 1)]),
             resource_header='Resources ' + ''.join(['-' for _ in range(10, vm_nets_length + vm_ram_length + vm_vcpu_length + 1)]),
             node_header='Node ' + ''.join(['-' for _ in range(5, vm_node_length + vm_migrated_length)])
         )
@@ -1389,12 +1558,14 @@ def format_list(config, vm_list, raw):
     vm_list_output.append(
         '{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
+{vm_tags: <{vm_tags_length}} \
 {vm_networks: <{vm_nets_length}} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
             vm_name_length=vm_name_length,
             vm_state_length=vm_state_length,
+            vm_tags_length=vm_tags_length,
             vm_nets_length=vm_nets_length,
             vm_ram_length=vm_ram_length,
             vm_vcpu_length=vm_vcpu_length,
@@ -1406,6 +1577,7 @@ def format_list(config, vm_list, raw):
             end_colour='',
             vm_name='Name',
             vm_state='State',
+            vm_tags='Tags',
             vm_networks='Networks',
             vm_memory='RAM (M)',
             vm_vcpu='vCPUs',
@@ -1434,6 +1606,9 @@ def format_list(config, vm_list, raw):
 
         # Handle colouring for an invalid network config
         net_list = getNiceNetID(domain_information)
+        tag_list = getNiceTagName(domain_information)
+        if len(tag_list) < 1:
+            tag_list = ['N/A']
         vm_net_colour = ''
         for net_vni in net_list:
             if net_vni not in ['cluster', 'storage', 'upstream'] and not re.match(r'^macvtap:.*', net_vni) and not re.match(r'^hostdev:.*', net_vni):
@@ -1443,12 +1618,14 @@ def format_list(config, vm_list, raw):
         vm_list_output.append(
             '{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
+{vm_tags: <{vm_tags_length}} \
 {vm_net_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}'.format(
                 vm_name_length=vm_name_length,
                 vm_state_length=vm_state_length,
+                vm_tags_length=vm_tags_length,
                 vm_nets_length=vm_nets_length,
                 vm_ram_length=vm_ram_length,
                 vm_vcpu_length=vm_vcpu_length,
@@ -1460,6 +1637,7 @@ def format_list(config, vm_list, raw):
                 end_colour=ansiprint.end(),
                 vm_name=domain_information['name'],
                 vm_state=domain_information['state'],
+                vm_tags=','.join(tag_list),
                 vm_net_colour=vm_net_colour,
                 vm_networks=','.join(net_list),
                 vm_memory=domain_information['memory'],

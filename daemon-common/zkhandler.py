@@ -579,6 +579,12 @@ class ZKSchema(object):
             'meta.tags': '/tags',
             'migrate.sync_lock': '/migrate_sync_lock'
         },
+        # The schema of an individual domain tag entry (/domains/{domain}/tags/{tag})
+        'tag': {
+            'name': '',  # The root key
+            'type': '/type',
+            'protected': '/protected'
+        },
         # The schema of an individual network entry (/networks/{vni})
         'network': {
             'vni': '',  # The root key

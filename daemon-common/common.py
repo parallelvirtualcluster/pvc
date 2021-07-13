@@ -310,7 +310,18 @@ def getDomainDiskList(zkhandler, dom_uuid):
 # Get a list of domain tags
 #
 def getDomainTags(zkhandler, dom_uuid):
-    tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
+    """
+    Get a list of tags for domain dom_uuid
+
+    The UUID must be validated before calling this function!
+    """
+    tags = list()
+
+    for tag in zkhandler.children(('domain.meta.tags', dom_uuid)):
+        tag_type = zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.type', tag))
+        protected = bool(strtobool(zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.protected', tag))))
+        tags.append({'name': tag, 'type': tag_type, 'protected': protected})
+
     return tags
 
 
@@ -318,10 +329,15 @@ def getDomainTags(zkhandler, dom_uuid):
 # Get a set of domain metadata
 #
 def getDomainMetadata(zkhandler, dom_uuid):
-    domain_node_limit = zkhandler.read(('domain.meta.node_limit', uuid))
-    domain_node_selector = zkhandler.read(('domain.meta.node_selector', uuid))
-    domain_node_autostart = zkhandler.read(('domain.meta.autostart', uuid))
-    domain_migration_method = zkhandler.read(('domain.meta.migrate_method', uuid))
+    """
+    Get the domain metadata for domain dom_uuid
+
+    The UUID must be validated before calling this function!
+    """
+    domain_node_limit = zkhandler.read(('domain.meta.node_limit', dom_uuid))
+    domain_node_selector = zkhandler.read(('domain.meta.node_selector', dom_uuid))
+    domain_node_autostart = zkhandler.read(('domain.meta.autostart', dom_uuid))
+    domain_migration_method = zkhandler.read(('domain.meta.migrate_method', dom_uuid))
 
     if not domain_node_limit:
         domain_node_limit = None
@@ -348,7 +364,7 @@ def getInformationFromXML(zkhandler, uuid):
     domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
 
     domain_node_limit, domain_node_selector, domain_node_autostart, domain_migration_method = getDomainMetadata(zkhandler, uuid)
-
+    domain_tags = getDomainTags(zkhandler, uuid)
     domain_profile = zkhandler.read(('domain.profile', uuid))
 
     domain_vnc = zkhandler.read(('domain.console.vnc', uuid))
@@ -368,8 +384,6 @@ def getInformationFromXML(zkhandler, uuid):
             stats_data = {}
     else:
         stats_data = {}
-
-    domain_tags = getDomainTags(zkhandler, uuid)
 
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
     domain_networks = getDomainNetworks(parsed_xml, stats_data)

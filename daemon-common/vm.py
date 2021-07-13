@@ -24,6 +24,7 @@ import re
 import lxml.objectify
 import lxml.etree
 
+from distutils.util import strtobool
 from uuid import UUID
 from concurrent.futures import ThreadPoolExecutor
 
@@ -246,9 +247,17 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         (('domain.meta.migrate_method', dom_uuid), migration_method),
         (('domain.meta.node_limit', dom_uuid), formatted_node_limit),
         (('domain.meta.node_selector', dom_uuid), node_selector),
-        (('domain.meta.tags', dom_uuid), ','.join(tags)),
+        (('domain.meta.tags', dom_uuid), ''),
         (('domain.migrate.sync_lock', dom_uuid), ''),
     ])
+
+    for tag in tags:
+        tag_name = tag['name']
+        zkhandler.write([
+            (('domain.meta.tags', dom_uuid, 'tag.name', tag_name), tag['name']),
+            (('domain.meta.tags', dom_uuid, 'tag.type', tag_name), tag['type']),
+            (('domain.meta.tags', dom_uuid, 'tag.protected', tag_name), tag['protected']),
+        ])
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
 
@@ -283,33 +292,36 @@ def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autost
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
 
 
-def modify_vm_tags(zkhandler, domain, action, tags):
+def modify_vm_tag(zkhandler, domain, action, tag, protected=False):
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    if action in ['replace']:
+    if action == 'add':
         zkhandler.write([
-            (('domain.meta.tags', dom_uuid), ','.join(tags))
+            (('domain.meta.tags', dom_uuid, 'tag.name', tag), tag),
+            (('domain.meta.tags', dom_uuid, 'tag.type', tag), 'user'),
+            (('domain.meta.tags', dom_uuid, 'tag.protected', tag), protected),
         ])
-    elif action in ['add']:
-        current_tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
-        updated_tags = current_tags + tags
-        zkhandler.write([
-            (('domain.meta.tags', dom_uuid), ','.join(updated_tags))
+
+        return True, 'Successfully added tag "{}" to VM "{}".'.format(tag, domain)
+    elif action == 'remove':
+        if not zkhandler.exists(('domain.meta.tags', dom_uuid, 'tag', tag)):
+            return False, 'The tag "{}" does not exist.'.format(tag)
+
+        if zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.type', tag)) != 'user':
+            return False, 'The tag "{}" is not a user tag and cannot be removed.'.format(tag)
+
+        if bool(strtobool(zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.protected', tag)))):
+            return False, 'The tag "{}" is protected and cannot be removed.'.format(tag)
+
+        zkhandler.delete([
+            (('domain.meta.tags', dom_uuid, 'tag', tag))
         ])
-    elif action in ['remove']:
-        current_tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
-        for tag in tags:
-            if tag in current_tags:
-                current_tags.remove(tag)
-        zkhandler.write([
-            (('domain.meta.tags', dom_uuid), ','.join(current_tags))
-        ])
+
+        return True, 'Successfully removed tag "{}" from VM "{}".'.format(tag, domain)
     else:
         return False, 'Specified tag action is not available.'
-
-    return True, 'Successfully modified tags of VM "{}".'.format(domain)
 
 
 def modify_vm(zkhandler, domain, restart, new_vm_config):
@@ -433,7 +445,7 @@ def rename_vm(zkhandler, domain, new_domain):
     undefine_vm(zkhandler, dom_uuid)
 
     # Define the new VM
-    define_vm(zkhandler, vm_config_new, dom_info['node'], dom_info['node_limit'], dom_info['node_selector'], dom_info['node_autostart'], migration_method=dom_info['migration_method'], profile=dom_info['profile'], initial_state='stop')
+    define_vm(zkhandler, vm_config_new, dom_info['node'], dom_info['node_limit'], dom_info['node_selector'], dom_info['node_autostart'], migration_method=dom_info['migration_method'], profile=dom_info['profile'], tags=dom_info['tags'], initial_state='stop')
 
     # If the VM is migrated, store that
     if dom_info['migrated'] != 'no':

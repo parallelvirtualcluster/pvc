@@ -433,7 +433,7 @@ def vm_list(zkhandler, node=None, state=None, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method, tags=[]):
+def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method, user_tags=[], protected_tags=[]):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
@@ -443,6 +443,12 @@ def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method
         new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
     except Exception as e:
         return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+
+    tags = list()
+    for tag in user_tags:
+        tags.append({'name': tag, 'type': 'user', 'protected': False})
+    for tag in protected_tags:
+        tags.append({'name': tag, 'type': 'user', 'protected': True})
 
     retflag, retdata = pvc_vm.define_vm(zkhandler, new_cfg, node, limit, selector, autostart, migration_method, profile=None, tags=tags)
 
@@ -530,18 +536,18 @@ def get_vm_tags(zkhandler, vm):
 
 
 @ZKConnection(config)
-def update_vm_tags(zkhandler, vm, action, tags):
+def update_vm_tag(zkhandler, vm, action, tag, protected=False):
     """
-    Update the tags of a VM.
+    Update a tag of a VM.
     """
-    if action not in ['add', 'remove', 'replace']:
-        return {"message": "Tag action must be one of 'add', 'remove', 'replace'."}, 400
+    if action not in ['add', 'remove']:
+        return {"message": "Tag action must be one of 'add', 'remove'."}, 400
 
     dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
     if not dom_uuid:
         return {"message": "VM not found."}, 404
 
-    retflag, retdata = pvc_vm.modify_vm_tags(zkhandler, vm, action, tags)
+    retflag, retdata = pvc_vm.modify_vm_tag(zkhandler, vm, action, tag, protected=protected)
 
     if retflag:
         retcode = 200
