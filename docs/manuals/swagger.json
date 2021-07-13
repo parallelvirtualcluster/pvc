@@ -215,6 +215,22 @@
             },
             "type": "object"
         },
+        "VMTags": {
+            "properties": {
+                "name": {
+                    "description": "The name of the VM",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "The tag(s) of the VM",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "type": "object"
+        },
         "acl": {
             "properties": {
                 "description": {
@@ -5889,6 +5905,16 @@
                         "name": "migration_method",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "description": "The tag(s) of the VM",
+                        "in": "query",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "tags",
+                        "required": false,
+                        "type": "array"
                     }
                 ],
                 "responses": {
@@ -6027,6 +6053,16 @@
                         "name": "migration_method",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "description": "The tag(s) of the VM",
+                        "in": "query",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "tags",
+                        "required": false,
+                        "type": "array"
                     }
                 ],
                 "responses": {
@@ -6151,7 +6187,7 @@
                         }
                     },
                     "404": {
-                        "description": "Not found",
+                        "description": "VM not found",
                         "schema": {
                             "$ref": "#/definitions/Message"
                         }
@@ -6222,6 +6258,12 @@
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "VM not found",
                         "schema": {
                             "$ref": "#/definitions/Message"
                         }
@@ -6408,6 +6450,80 @@
                     }
                 },
                 "summary": "Set the state of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/tags": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/VMTags"
+                        }
+                    },
+                    "404": {
+                        "description": "VM not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the tags of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The action to perform with the tags, either \"add\" to existing, \"remove\" from existing, or \"replace\" all existing",
+                        "enum": [
+                            "add",
+                            "remove",
+                            "replace"
+                        ],
+                        "in": "query",
+                        "name": "action",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The list of text tags to add/remove/replace-with",
+                        "in": "query",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "tags",
+                        "required": true,
+                        "type": "array"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "VM not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Set the tags of {vm}",
                 "tags": [
                     "vm"
                 ]

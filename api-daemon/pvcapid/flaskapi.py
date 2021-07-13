@@ -1107,6 +1107,7 @@ class API_VM_Root(Resource):
         {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
+        {'name': 'tags'},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
@@ -1158,6 +1159,13 @@ class API_VM_Root(Resource):
               - live
               - shutdown
               - none
+          - in: query
+            name: tags
+            type: array
+            required: false
+            description: The tag(s) of the VM
+            items:
+              type: string
         responses:
           200:
             description: OK
@@ -1176,7 +1184,8 @@ class API_VM_Root(Resource):
             reqargs.get('limit', None),
             reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
-            reqargs.get('migration_method', 'none')
+            reqargs.get('migration_method', 'none'),
+            reqargs.get('tags', [])
         )
 
 
@@ -1211,6 +1220,7 @@ class API_VM_Element(Resource):
         {'name': 'selector', 'choices': ('mem', 'vcpus', 'load', 'vms', 'none'), 'helptext': "A valid selector must be specified"},
         {'name': 'autostart'},
         {'name': 'migration_method', 'choices': ('live', 'shutdown', 'none'), 'helptext': "A valid migration_method must be specified"},
+        {'name': 'tags'},
         {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML document must be specified"},
     ])
     @Authenticator
@@ -1265,6 +1275,13 @@ class API_VM_Element(Resource):
               - live
               - shutdown
               - none
+          - in: query
+            name: tags
+            type: array
+            required: false
+            description: The tag(s) of the VM
+            items:
+              type: string
         responses:
           200:
             description: OK
@@ -1283,7 +1300,8 @@ class API_VM_Element(Resource):
             reqargs.get('limit', None),
             reqargs.get('selector', 'none'),
             bool(strtobool(reqargs.get('autostart', 'false'))),
-            reqargs.get('migration_method', 'none')
+            reqargs.get('migration_method', 'none'),
+            reqargs.get('tags', [])
         )
 
     @RequestParser([
@@ -1401,7 +1419,7 @@ class API_VM_Metadata(Resource):
                   type: string
                   description: The preferred migration method (live, shutdown, none)
           404:
-            description: Not found
+            description: VM not found
             schema:
               type: object
               id: Message
@@ -1469,6 +1487,11 @@ class API_VM_Metadata(Resource):
             schema:
               type: object
               id: Message
+          404:
+            description: VM not found
+            schema:
+              type: object
+              id: Message
         """
         return api_helper.update_vm_meta(
             vm,
@@ -1481,6 +1504,93 @@ class API_VM_Metadata(Resource):
 
 
 api.add_resource(API_VM_Metadata, '/vm/<vm>/meta')
+
+
+# /vm/<vm>/tags
+class API_VM_Tags(Resource):
+    @Authenticator
+    def get(self, vm):
+        """
+        Return the tags of {vm}
+        ---
+        tags:
+          - vm
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: VMTags
+              properties:
+                name:
+                  type: string
+                  description: The name of the VM
+                tags:
+                  type: array
+                  description: The tag(s) of the VM
+                  items:
+                    type: string
+          404:
+            description: VM not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.get_vm_tags(vm)
+
+    @RequestParser([
+        {'name': 'action', 'choices': ('add', 'remove', 'replace'), 'helptext': "A valid action must be specified"},
+        {'name': 'tags'},
+    ])
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Set the tags of {vm}
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: action
+            type: string
+            required: true
+            description: The action to perform with the tags, either "add" to existing, "remove" from existing, or "replace" all existing
+            enum:
+              - add
+              - remove
+              - replace
+          - in: query
+            name: tags
+            type: array
+            required: true
+            description: The list of text tags to add/remove/replace-with
+            items:
+              type: string
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+          404:
+            description: VM not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.update_vm_tags(
+            vm,
+            reqargs.get('action'),
+            reqargs.get('tags')
+        )
+
+
+api.add_resource(API_VM_Tags, '/vm/<vm>/tags')
 
 
 # /vm/<vm</state

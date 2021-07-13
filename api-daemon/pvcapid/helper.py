@@ -433,7 +433,7 @@ def vm_list(zkhandler, node=None, state=None, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method):
+def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method, tags=[]):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
@@ -444,7 +444,7 @@ def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method
     except Exception as e:
         return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
 
-    retflag, retdata = pvc_vm.define_vm(zkhandler, new_cfg, node, limit, selector, autostart, migration_method, profile=None)
+    retflag, retdata = pvc_vm.define_vm(zkhandler, new_cfg, node, limit, selector, autostart, migration_method, profile=None, tags=tags)
 
     if retflag:
         retcode = 200
@@ -486,6 +486,10 @@ def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profil
     """
     Update metadata of a VM.
     """
+    dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
+    if not dom_uuid:
+        return {"message": "VM not found."}, 404
+
     if autostart is not None:
         try:
             autostart = bool(strtobool(autostart))
@@ -493,6 +497,51 @@ def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profil
             autostart = False
 
     retflag, retdata = pvc_vm.modify_vm_metadata(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {
+        'message': retdata.replace('\"', '\'')
+    }
+    return output, retcode
+
+
+@ZKConnection(config)
+def get_vm_tags(zkhandler, vm):
+    """
+    Get the tags of a VM.
+    """
+    dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
+    if not dom_uuid:
+        return {"message": "VM not found."}, 404
+
+    tags = pvc_common.getDomainTags(zkhandler, dom_uuid)
+
+    retcode = 200
+    retdata = {
+        'name': vm,
+        'tags': tags
+    }
+
+    return retdata, retcode
+
+
+@ZKConnection(config)
+def update_vm_tags(zkhandler, vm, action, tags):
+    """
+    Update the tags of a VM.
+    """
+    if action not in ['add', 'remove', 'replace']:
+        return {"message": "Tag action must be one of 'add', 'remove', 'replace'."}, 400
+
+    dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
+    if not dom_uuid:
+        return {"message": "VM not found."}, 404
+
+    retflag, retdata = pvc_vm.modify_vm_tags(zkhandler, vm, action, tags)
 
     if retflag:
         retcode = 200
