@@ -463,28 +463,20 @@ def get_vm_meta(zkhandler, vm):
     """
     Get metadata of a VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
+    dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
+    if not dom_uuid:
+        return {"message": "VM not found."}, 404
 
-    if retflag:
-        if retdata:
-            retcode = 200
-            retdata = {
-                'name': vm,
-                'node_limit': retdata['node_limit'],
-                'node_selector': retdata['node_selector'],
-                'node_autostart': retdata['node_autostart'],
-                'migration_method': retdata['migration_method']
-            }
-        else:
-            retcode = 404
-            retdata = {
-                'message': 'VM not found.'
-            }
-    else:
-        retcode = 400
-        retdata = {
-            'message': retdata
-        }
+    domain_node_limit, domain_node_selector, domain_node_autostart, domain_migrate_method = pvc_common.getDomainMetadata(zkhandler, dom_uuid)
+
+    retcode = 200
+    retdata = {
+        'name': vm,
+        'node_limit': domain_node_limit,
+        'node_selector': domain_node_selector,
+        'node_autostart': domain_node_autostart,
+        'migration_method': domain_migrate_method
+    }
 
     return retdata, retcode
 
@@ -499,6 +491,7 @@ def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profil
             autostart = bool(strtobool(autostart))
         except Exception:
             autostart = False
+
     retflag, retdata = pvc_vm.modify_vm_metadata(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method)
 
     if retflag:

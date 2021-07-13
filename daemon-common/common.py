@@ -315,18 +315,9 @@ def getDomainTags(zkhandler, dom_uuid):
 
 
 #
-# Get domain information from XML
+# Get a set of domain metadata
 #
-def getInformationFromXML(zkhandler, uuid):
-    """
-    Gather information about a VM from the Libvirt XML configuration in the Zookeper database
-    and return a dict() containing it.
-    """
-    domain_state = zkhandler.read(('domain.state', uuid))
-    domain_node = zkhandler.read(('domain.node', uuid))
-    domain_lastnode = zkhandler.read(('domain.last_node', uuid))
-    domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
-
+def getDomainMetadata(zkhandler, dom_uuid):
     domain_node_limit = zkhandler.read(('domain.meta.node_limit', uuid))
     domain_node_selector = zkhandler.read(('domain.meta.node_selector', uuid))
     domain_node_autostart = zkhandler.read(('domain.meta.autostart', uuid))
@@ -339,6 +330,24 @@ def getInformationFromXML(zkhandler, uuid):
 
     if not domain_node_autostart:
         domain_node_autostart = None
+
+    return domain_node_limit, domain_node_selector, domain_node_autostart, domain_migration_method
+
+
+#
+# Get domain information from XML
+#
+def getInformationFromXML(zkhandler, uuid):
+    """
+    Gather information about a VM from the Libvirt XML configuration in the Zookeper database
+    and return a dict() containing it.
+    """
+    domain_state = zkhandler.read(('domain.state', uuid))
+    domain_node = zkhandler.read(('domain.node', uuid))
+    domain_lastnode = zkhandler.read(('domain.last_node', uuid))
+    domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
+
+    domain_node_limit, domain_node_selector, domain_node_autostart, domain_migration_method = getDomainMetadata(zkhandler, uuid)
 
     domain_profile = zkhandler.read(('domain.profile', uuid))
 
