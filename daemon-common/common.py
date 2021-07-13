@@ -307,6 +307,14 @@ def getDomainDiskList(zkhandler, dom_uuid):
 
 
 #
+# Get a list of domain tags
+#
+def getDomainTags(zkhandler, dom_uuid):
+    tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
+    return tags
+
+
+#
 # Get domain information from XML
 #
 def getInformationFromXML(zkhandler, uuid):
@@ -352,6 +360,8 @@ def getInformationFromXML(zkhandler, uuid):
     else:
         stats_data = {}
 
+    domain_tags = getDomainTags(zkhandler, uuid)
+
     domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
     domain_networks = getDomainNetworks(parsed_xml, stats_data)
 
@@ -378,6 +388,7 @@ def getInformationFromXML(zkhandler, uuid):
         'node_selector': domain_node_selector,
         'node_autostart': bool(strtobool(domain_node_autostart)),
         'migration_method': domain_migration_method,
+        'tags': domain_tags,
         'description': domain_description,
         'profile': domain_profile,
         'memory': int(domain_memory),

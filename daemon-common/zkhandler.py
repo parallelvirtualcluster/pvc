@@ -466,7 +466,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 2
+    _version = 3
 
     # Root for doing nested keys
     _schema_root = ''
@@ -576,6 +576,7 @@ class ZKSchema(object):
             'meta.migrate_method': '/migration_method',
             'meta.node_selector': '/node_selector',
             'meta.node_limit': '/node_limit',
+            'meta.tags': '/tags',
             'migrate.sync_lock': '/migrate_sync_lock'
         },
         # The schema of an individual network entry (/networks/{vni})

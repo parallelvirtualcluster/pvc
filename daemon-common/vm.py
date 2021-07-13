@@ -174,7 +174,7 @@ def flush_locks(zkhandler, domain):
     return success, message
 
 
-def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, node_autostart, migration_method=None, profile=None, initial_state='stop'):
+def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, node_autostart, migration_method=None, profile=None, tags=[], initial_state='stop'):
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
@@ -246,6 +246,7 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         (('domain.meta.migrate_method', dom_uuid), migration_method),
         (('domain.meta.node_limit', dom_uuid), formatted_node_limit),
         (('domain.meta.node_selector', dom_uuid), node_selector),
+        (('domain.meta.tags', dom_uuid), ','.join(tags)),
         (('domain.migrate.sync_lock', dom_uuid), ''),
     ])
 
@@ -280,6 +281,35 @@ def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autost
     zkhandler.write(update_list)
 
     return True, 'Successfully modified PVC metadata of VM "{}".'.format(domain)
+
+
+def modify_vm_tags(zkhandler, domain, action, tags):
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    if action in ['replace']:
+        zkhandler.write([
+            (('domain.meta.tags', dom_uuid), ','.join(tags))
+        ])
+    elif action in ['add']:
+        current_tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
+        updated_tags = current_tags + tags
+        zkhandler.write([
+            (('domain.meta.tags', dom_uuid), ','.join(updated_tags))
+        ])
+    elif action in ['remove']:
+        current_tags = zkhandler.read(('domain.meta.tags', dom_uuid)).split(',')
+        for tag in tags:
+            if tag in current_tags:
+                current_tags.remove(tag)
+        zkhandler.write([
+            (('domain.meta.tags', dom_uuid), ','.join(current_tags))
+        ])
+    else:
+        return False, 'Specified tag action is not available.'
+
+    return True, 'Successfully modified tags of VM "{}".'.format(domain)
 
 
 def modify_vm(zkhandler, domain, restart, new_vm_config):
