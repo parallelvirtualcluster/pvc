@@ -38,7 +38,7 @@ sleep 30
 _pvc vm stop --yes testX
 _pvc vm disable testX
 _pvc vm undefine --yes testX
-_pvc vm define --target hv3 ${vm_tmp}
+_pvc vm define --target hv3 --tag pvc-test ${vm_tmp}
 _pvc vm start testX
 sleep 30
 _pvc vm restart --yes --wait testX
@@ -50,6 +50,10 @@ sleep 5
 _pvc vm move --wait --target hv1 testX
 sleep 5
 _pvc vm meta testX --limit hv1 --selector vms --method live --profile test --no-autostart
+_pvc vm tag add testX mytag
+_pvc vm tag get testX
+_pvc vm list --tag mytag
+_pvc vm tag remove testX mytag
 _pvc vm network get testX
 _pvc vm vcpu set testX 4
 _pvc vm vcpu get testX
