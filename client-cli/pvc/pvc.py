@@ -641,12 +641,12 @@ def cli_vm():
 @click.option(
     '-g', '--tag', 'user_tags',
     default=[], multiple=True,
-    help='User tag(s) for the VM.'
+    help='User tag for the VM; can be specified multiple times, once per tag.'
 )
 @click.option(
     '-G', '--protected-tag', 'protected_tags',
     default=[], multiple=True,
-    help='Protected user tag(s) for the VM.'
+    help='Protected user tag for the VM; can be specified multiple times, once per tag.'
 )
 @click.argument(
     'vmconfig', type=click.File()
