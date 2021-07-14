@@ -592,7 +592,7 @@ class API_Node_Root(Resource):
             name: limit
             type: string
             required: false
-            description: A search limit; fuzzy by default, use ^/$ to force exact matches
+            description: A search limit in the name, tags, or an exact UUID; fuzzy by default, use ^/$ to force exact matches
           - in: query
             name: daemon_state
             type: string
@@ -844,6 +844,7 @@ class API_VM_Root(Resource):
         {'name': 'limit'},
         {'name': 'node'},
         {'name': 'state'},
+        {'name': 'tag'},
     ])
     @Authenticator
     def get(self, reqargs):
@@ -1092,7 +1093,7 @@ class API_VM_Root(Resource):
             name: limit
             type: string
             required: false
-            description: A name search limit; fuzzy by default, use ^/$ to force exact matches
+            description: A search limit in the name, tags, or an exact UUID; fuzzy by default, use ^/$ to force exact matches
           - in: query
             name: node
             type: string
@@ -1103,6 +1104,11 @@ class API_VM_Root(Resource):
             type: string
             required: false
             description: Limit list to VMs in this state
+          - in: query
+            name: tag
+            type: string
+            required: false
+            description: Limit list to VMs with this tag
         responses:
           200:
             description: OK
@@ -1114,6 +1120,7 @@ class API_VM_Root(Resource):
         return api_helper.vm_list(
             reqargs.get('node', None),
             reqargs.get('state', None),
+            reqargs.get('tag', None),
             reqargs.get('limit', None)
         )
 
@@ -1244,7 +1251,7 @@ class API_VM_Element(Resource):
               type: object
               id: Message
         """
-        return api_helper.vm_list(None, None, vm, is_fuzzy=False)
+        return api_helper.vm_list(None, None, None, vm, is_fuzzy=False)
 
     @RequestParser([
         {'name': 'limit'},

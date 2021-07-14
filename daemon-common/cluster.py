@@ -60,7 +60,7 @@ def getClusterInformation(zkhandler):
     retcode, node_list = pvc_node.get_list(zkhandler, None)
 
     # Get vm information object list
-    retcode, vm_list = pvc_vm.get_list(zkhandler, None, None, None)
+    retcode, vm_list = pvc_vm.get_list(zkhandler, None, None, None, None)
 
     # Get network information object list
     retcode, network_list = pvc_network.get_list(zkhandler, None, None)

@@ -326,7 +326,7 @@ def vm_state(zkhandler, vm):
     """
     Return the state of virtual machine VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
+    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False)
 
     if retflag:
         if retdata:
@@ -355,7 +355,7 @@ def vm_node(zkhandler, vm):
     """
     Return the current node of virtual machine VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
+    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False)
 
     if retflag:
         if retdata:
@@ -409,11 +409,11 @@ def vm_console(zkhandler, vm, lines=None):
 
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def vm_list(zkhandler, node=None, state=None, limit=None, is_fuzzy=True):
+def vm_list(zkhandler, node=None, state=None, tag=None, limit=None, is_fuzzy=True):
     """
     Return a list of VMs with limit LIMIT.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, node, state, limit, is_fuzzy)
+    retflag, retdata = pvc_vm.get_list(zkhandler, node, state, tag, limit, is_fuzzy)
 
     if retflag:
         if retdata:
@@ -800,7 +800,7 @@ def vm_flush_locks(zkhandler, vm):
     """
     Flush locks of a (stopped) VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, vm, is_fuzzy=False)
+    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False)
 
     if retdata[0].get('state') not in ['stop', 'disable']:
         return {"message": "VM must be stopped to flush locks"}, 400

@@ -224,7 +224,8 @@
                 "tags": {
                     "description": "The tag(s) of the VM",
                     "items": {
-                        "type": "string"
+                        "id": "VMTag",
+                        "type": "object"
                     },
                     "type": "array"
                 }
@@ -1386,6 +1387,28 @@
                     "description": "The current state of the VM",
                     "type": "string"
                 },
+                "tags": {
+                    "description": "The tag(s) of the VM",
+                    "items": {
+                        "id": "VMTag",
+                        "properties": {
+                            "name": {
+                                "description": "The name of the tag",
+                                "type": "string"
+                            },
+                            "protected": {
+                                "description": "Whether the tag is protected or not",
+                                "type": "boolean"
+                            },
+                            "type": {
+                                "description": "The type of the tag (user, system)",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
                 "type": {
                     "description": "The type of the VM",
                     "type": "string"
@@ -2431,7 +2454,7 @@
                 "description": "",
                 "parameters": [
                     {
-                        "description": "A search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "description": "A search limit in the name, tags, or an exact UUID; fuzzy by default, use ^/$ to force exact matches",
                         "in": "query",
                         "name": "limit",
                         "required": false,
@@ -5811,7 +5834,7 @@
                 "description": "",
                 "parameters": [
                     {
-                        "description": "A name search limit; fuzzy by default, use ^/$ to force exact matches",
+                        "description": "A search limit in the name, tags, or an exact UUID; fuzzy by default, use ^/$ to force exact matches",
                         "in": "query",
                         "name": "limit",
                         "required": false,
@@ -5828,6 +5851,13 @@
                         "description": "Limit list to VMs in this state",
                         "in": "query",
                         "name": "state",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "description": "Limit list to VMs with this tag",
+                        "in": "query",
+                        "name": "tag",
                         "required": false,
                         "type": "string"
                     }
@@ -5907,12 +5937,22 @@
                         "type": "string"
                     },
                     {
-                        "description": "The tag(s) of the VM",
+                        "description": "The user tag(s) of the VM",
                         "in": "query",
                         "items": {
                             "type": "string"
                         },
-                        "name": "tags",
+                        "name": "user_tags",
+                        "required": false,
+                        "type": "array"
+                    },
+                    {
+                        "description": "The protected user tag(s) of the VM",
+                        "in": "query",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "protected_tags",
                         "required": false,
                         "type": "array"
                     }
@@ -6055,12 +6095,22 @@
                         "type": "string"
                     },
                     {
-                        "description": "The tag(s) of the VM",
+                        "description": "The user tag(s) of the VM",
                         "in": "query",
                         "items": {
                             "type": "string"
                         },
-                        "name": "tags",
+                        "name": "user_tags",
+                        "required": false,
+                        "type": "array"
+                    },
+                    {
+                        "description": "The protected user tag(s) of the VM",
+                        "in": "query",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "protected_tags",
                         "required": false,
                         "type": "array"
                     }
@@ -6481,11 +6531,10 @@
                 "description": "",
                 "parameters": [
                     {
-                        "description": "The action to perform with the tags, either \"add\" to existing, \"remove\" from existing, or \"replace\" all existing",
+                        "description": "The action to perform with the tag",
                         "enum": [
                             "add",
-                            "remove",
-                            "replace"
+                            "remove"
                         ],
                         "in": "query",
                         "name": "action",
@@ -6493,14 +6542,19 @@
                         "type": "string"
                     },
                     {
-                        "description": "The list of text tags to add/remove/replace-with",
+                        "description": "The text value of the tag",
                         "in": "query",
-                        "items": {
-                            "type": "string"
-                        },
-                        "name": "tags",
+                        "name": "tag",
                         "required": true,
-                        "type": "array"
+                        "type": "string"
+                    },
+                    {
+                        "default": false,
+                        "description": "Set the protected state of the tag",
+                        "in": "query",
+                        "name": "protected",
+                        "required": false,
+                        "type": "boolean"
                     }
                 ],
                 "responses": {

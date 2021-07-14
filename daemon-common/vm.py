@@ -866,7 +866,7 @@ def get_info(zkhandler, domain):
     return True, domain_information
 
 
-def get_list(zkhandler, node, state, limit, is_fuzzy=True):
+def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True):
     if node:
         # Verify node is valid
         if not common.verifyNode(zkhandler, node):
@@ -904,6 +904,7 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
     for vm in full_vm_list:
         name = zkhandler.read(('domain', vm))
         is_limit_match = False
+        is_tag_match = False
         is_node_match = False
         is_state_match = False
 
@@ -919,6 +920,13 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
                 return False, 'Regex Error: {}'.format(e)
         else:
             is_limit_match = True
+
+        if tag:
+            vm_tags = zkhandler.children(('domain.meta.tags', vm))
+            if tag in vm_tags:
+                is_tag_match = True
+        else:
+            is_tag_match = True
 
         # Check on node
         if node:
@@ -936,7 +944,7 @@ def get_list(zkhandler, node, state, limit, is_fuzzy=True):
         else:
             is_state_match = True
 
-        get_vm_info[vm] = True if is_limit_match and is_node_match and is_state_match else False
+        get_vm_info[vm] = True if is_limit_match and is_tag_match and is_node_match and is_state_match else False
 
     # Obtain our VM data in a thread pool
     # This helps parallelize the numerous Zookeeper calls a bit, within the bounds of the GIL, and
