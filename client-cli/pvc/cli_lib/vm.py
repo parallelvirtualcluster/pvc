@@ -1382,27 +1382,35 @@ def format_info(config, domain_information, long_output):
         if _tags_protected_length > tags_protected_length:
             tags_protected_length = _tags_protected_length
 
-    ainformation.append('')
-    ainformation.append('{purple}Tags:{end}               {bold}{tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}{end}'.format(
-        purple=ansiprint.purple(),
-        bold=ansiprint.bold(),
-        end=ansiprint.end(),
-        tags_name_length=tags_name_length,
-        tags_type_length=tags_type_length,
-        tags_protected_length=tags_protected_length,
-        tags_name='Name',
-        tags_type='Type',
-        tags_protected='Protected'
-    ))
-
-    for tag in sorted(domain_information['tags'], key=lambda t: t['type'] + t['name']):
-        ainformation.append('                    {tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}'.format(
+    if len(domain_information['tags']) > 0:
+        ainformation.append('')
+        ainformation.append('{purple}Tags:{end}               {bold}{tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}{end}'.format(
+            purple=ansiprint.purple(),
+            bold=ansiprint.bold(),
+            end=ansiprint.end(),
             tags_name_length=tags_name_length,
             tags_type_length=tags_type_length,
             tags_protected_length=tags_protected_length,
-            tags_name=tag['name'],
-            tags_type=tag['type'],
-            tags_protected=str(tag['protected'])
+            tags_name='Name',
+            tags_type='Type',
+            tags_protected='Protected'
+        ))
+
+        for tag in sorted(domain_information['tags'], key=lambda t: t['type'] + t['name']):
+            ainformation.append('                    {tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}'.format(
+                tags_name_length=tags_name_length,
+                tags_type_length=tags_type_length,
+                tags_protected_length=tags_protected_length,
+                tags_name=tag['name'],
+                tags_type=tag['type'],
+                tags_protected=str(tag['protected'])
+            ))
+    else:
+        ainformation.append('')
+        ainformation.append('{purple}Tags:{end}               N/A'.format(
+            purple=ansiprint.purple(),
+            bold=ansiprint.bold(),
+            end=ansiprint.end(),
         ))
 
     # Network list
