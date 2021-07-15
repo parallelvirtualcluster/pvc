@@ -41,6 +41,7 @@ libvirt_header = """<domain type='kvm'>
     <bootmenu enable='yes'/>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
+    <bios useserial='yes' rebootTimeout='5'/>
   </os>
   <features>
     <acpi/>
