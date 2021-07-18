@@ -147,6 +147,7 @@ def readConfig(pvcnoded_config_file, myhostname):
     # Handle the basic config (hypervisor-only)
     try:
         config_general = {
+            'node': o_config['pvc']['node'],
             'coordinators': o_config['pvc']['cluster']['coordinators'],
             'enable_hypervisor': o_config['pvc']['functions']['enable_hypervisor'],
             'enable_networking': o_config['pvc']['functions']['enable_networking'],
