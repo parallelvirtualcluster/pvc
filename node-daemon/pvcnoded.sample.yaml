@@ -140,6 +140,8 @@ pvc:
         file_logging: True
         # stdout_logging: Enable or disable logging to stdout (i.e. journald)
         stdout_logging: True
+        # zookeeper_logging: Enable ot disable logging to Zookeeper (for `pvc node log` functionality)
+        zookeeper_logging: True
         # log_colours: Enable or disable ANSI colours in log output
         log_colours: True
         # log_dates: Enable or disable date strings in log output
@@ -152,10 +154,12 @@ pvc:
         log_keepalive_storage_details: True
         # console_log_lines: Number of console log lines to store in Zookeeper per VM
         console_log_lines: 1000
+        # node_log_lines: Number of node log lines to store in Zookeeper per node
+        node_log_lines: 2000
       # networking: PVC networking configuration
       # OPTIONAL if enable_networking: False
       networking:
-        # bridge_device: Underlying device to use for bridged vLAN networks; usually the device underlying <cluster>
+        # bridge_device: Underlying device to use for bridged vLAN networks; usually the device of <cluster>
         bridge_device: ens4
         # sriov_enable: Enable or disable (default if absent) SR-IOV network support
         sriov_enable: False

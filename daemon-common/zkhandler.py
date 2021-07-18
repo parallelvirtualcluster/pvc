@@ -466,7 +466,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 3
+    _version = 4
 
     # Root for doing nested keys
     _schema_root = ''
@@ -490,6 +490,7 @@ class ZKSchema(object):
             'cmd.node': f'{_schema_root}/cmd/nodes',
             'cmd.domain': f'{_schema_root}/cmd/domains',
             'cmd.ceph': f'{_schema_root}/cmd/ceph',
+            'logs': '/logs',
             'node': f'{_schema_root}/nodes',
             'domain': f'{_schema_root}/domains',
             'network': f'{_schema_root}/networks',
@@ -499,6 +500,11 @@ class ZKSchema(object):
             'pool': f'{_schema_root}/ceph/pools',
             'volume': f'{_schema_root}/ceph/volumes',
             'snapshot': f'{_schema_root}/ceph/snapshots',
+        },
+        # The schema of an individual logs entry (/logs/{node_name})
+        'logs': {
+            'node': '',  # The root key
+            'messages': '/messages',
         },
         # The schema of an individual node entry (/nodes/{node_name})
         'node': {
@@ -771,7 +777,7 @@ class ZKSchema(object):
                         logger.out(f'Key not found: {self.path(kpath)}', state='w')
                     result = False
 
-        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ['logs', 'node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
             for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
@@ -850,7 +856,7 @@ class ZKSchema(object):
                         data = ''
                     zkhandler.zk_conn.create(self.path(kpath), data.encode(zkhandler.encoding))
 
-        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ['logs', 'node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
             for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
