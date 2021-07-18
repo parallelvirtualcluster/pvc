@@ -182,6 +182,24 @@ def ready_node(zkhandler, node, wait=False):
     return True, retmsg
 
 
+def get_node_log(zkhandler, node, lines=2000):
+    # Verify node is valid
+    if not common.verifyNode(zkhandler, node):
+        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
+
+    # Get the data from ZK
+    node_log = zkhandler.read(('logs.messages', node))
+
+    if node_log is None:
+        return True, ''
+
+    # Shrink the log buffer to length lines
+    shrunk_log = node_log.split('\n')[-lines:]
+    loglines = '\n'.join(shrunk_log)
+
+    return True, loglines
+
+
 def get_info(zkhandler, node):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):

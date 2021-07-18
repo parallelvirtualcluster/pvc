@@ -307,6 +307,34 @@ def node_ready(zkhandler, node, wait):
     return output, retcode
 
 
+@ZKConnection(config)
+def node_log(zkhandler, node, lines=None):
+    """
+    Return the current logs for Node.
+    """
+    # Default to 10 lines of log if not set
+    try:
+        lines = int(lines)
+    except TypeError:
+        lines = 10
+
+    retflag, retdata = pvc_node.get_node_log(zkhandler, node, lines)
+
+    if retflag:
+        retcode = 200
+        retdata = {
+            'name': node,
+            'data': retdata
+        }
+    else:
+        retcode = 400
+        retdata = {
+            'message': retdata
+        }
+
+    return retdata, retcode
+
+
 #
 # VM functions
 #

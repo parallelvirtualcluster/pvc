@@ -834,6 +834,52 @@ class API_Node_DomainState(Resource):
 api.add_resource(API_Node_DomainState, '/node/<node>/domain-state')
 
 
+# /node/<node</log
+class API_Node_Log(Resource):
+    @RequestParser([
+        {'name': 'lines'}
+    ])
+    @Authenticator
+    def get(self, node, reqargs):
+        """
+        Return the recent logs of {node}
+        ---
+        tags:
+          - node
+        parameters:
+          - in: query
+            name: lines
+            type: integer
+            required: false
+            description: The number of lines to retrieve
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: NodeLog
+              properties:
+                name:
+                  type: string
+                  description: The name of the Node
+                data:
+                  type: string
+                  description: The recent log text
+          404:
+            description: Node not found
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.node_log(
+            node,
+            reqargs.get('lines', None)
+        )
+
+
+api.add_resource(API_Node_Log, '/node/<node>/log')
+
+
 ##########################################################
 # Client API - VM
 ##########################################################

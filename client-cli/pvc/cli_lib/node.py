@@ -19,6 +19,8 @@
 #
 ###############################################################################
 
+import time
+
 import pvc.cli_lib.ansiprint as ansiprint
 from pvc.cli_lib.common import call_api
 
@@ -67,6 +69,91 @@ def node_domain_state(config, node, action, wait):
         retstatus = False
 
     return retstatus, response.json().get('message', '')
+
+
+def view_node_log(config, node, lines=100):
+    """
+    Return node log lines from the API (and display them in a pager in the main CLI)
+
+    API endpoint: GET /node/{node}/log
+    API arguments: lines={lines}
+    API schema: {"name":"{node}","data":"{node_log}"}
+    """
+    params = {
+        'lines': lines
+    }
+    response = call_api(config, 'get', '/node/{node}/log'.format(node=node), params=params)
+
+    if response.status_code != 200:
+        return False, response.json().get('message', '')
+
+    node_log = response.json()['data']
+
+    # Shrink the log buffer to length lines
+    shrunk_log = node_log.split('\n')[-lines:]
+    loglines = '\n'.join(shrunk_log)
+
+    return True, loglines
+
+
+def follow_node_log(config, node, lines=10):
+    """
+    Return and follow node log lines from the API
+
+    API endpoint: GET /node/{node}/log
+    API arguments: lines={lines}
+    API schema: {"name":"{nodename}","data":"{node_log}"}
+    """
+    # We always grab 500 to match the follow call, but only _show_ `lines` number
+    params = {
+        'lines': 500
+    }
+    response = call_api(config, 'get', '/node/{node}/log'.format(node=node), params=params)
+
+    if response.status_code != 200:
+        return False, response.json().get('message', '')
+
+    # Shrink the log buffer to length lines
+    node_log = response.json()['data']
+    shrunk_log = node_log.split('\n')[-int(lines):]
+    loglines = '\n'.join(shrunk_log)
+
+    # Print the initial data and begin following
+    print(loglines, end='')
+
+    while True:
+        # Grab the next line set (500 is a reasonable number of lines per second; any more are skipped)
+        try:
+            params = {
+                'lines': 500
+            }
+            response = call_api(config, 'get', '/node/{node}/log'.format(node=node), params=params)
+            new_node_log = response.json()['data']
+        except Exception:
+            break
+        # Split the new and old log strings into constitutent lines
+        old_node_loglines = node_log.split('\n')
+        new_node_loglines = new_node_log.split('\n')
+        # Set the node log to the new log value for the next iteration
+        node_log = new_node_log
+        # Remove the lines from the old log until we hit the first line of the new log; this
+        # ensures that the old log is a string that we can remove from the new log entirely
+        for index, line in enumerate(old_node_loglines, start=0):
+            if line == new_node_loglines[0]:
+                del old_node_loglines[0:index]
+                break
+        # Rejoin the log lines into strings
+        old_node_log = '\n'.join(old_node_loglines)
+        new_node_log = '\n'.join(new_node_loglines)
+        # Remove the old lines from the new log
+        diff_node_log = new_node_log.replace(old_node_log, "")
+        # If there's a difference, print it out
+        if diff_node_log:
+            print(diff_node_log, end='')
+        # Wait a second
+        time.sleep(1)
+
+    return True, ''
 
 
 def node_info(config, node):
