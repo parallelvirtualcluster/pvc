@@ -96,7 +96,7 @@ class Logger(object):
 
         # Get the date
         if self.config['log_dates']:
-            date = '{} - '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
+            date = '{} '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
         else:
             date = ''
 
@@ -177,7 +177,7 @@ class ZookeeperLogger(Thread):
             logs = deque(self.zkhandler.read(('logs.messages', self.node)).split('\n'), self.max_lines)
             if not self.config['log_dates']:
                 # We want to log dates here, even if the log_dates config is not set
-                date = '{} - '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
+                date = '{} '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
             else:
                 date = ''
             logs.append(f'{date}{message}')
