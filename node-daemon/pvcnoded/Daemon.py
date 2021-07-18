@@ -761,7 +761,6 @@ def cleanup():
         pass
 
     logger.out('Terminated pvc daemon', state='s')
-    del logger
 
     os._exit(0)
 
