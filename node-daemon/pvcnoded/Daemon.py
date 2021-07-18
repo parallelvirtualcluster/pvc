@@ -697,7 +697,7 @@ else:
 
 # Cleanup function
 def cleanup():
-    global zkhandler, update_timer, d_domain
+    global logger, zkhandler, update_timer, d_domain
 
     logger.out('Terminating pvcnoded and cleaning up', state='s')
 
@@ -761,6 +761,8 @@ def cleanup():
         pass
 
     logger.out('Terminated pvc daemon', state='s')
+    del logger
+
     os._exit(0)
 
 
