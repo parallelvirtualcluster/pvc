@@ -76,8 +76,11 @@ version = '0.9.28'
 # Daemon functions
 ###############################################################################
 
-# Ensure the update_timer is None until it's set for real
+# Ensure update_timer, this_node, and d_domain are None until they're set for real
+# Ensures cleanup() doesn't fail due to these items not being created yet
 update_timer = None
+this_node = None
+d_domain = None
 
 
 # Create timer to update this node in Zookeeper
@@ -711,19 +714,19 @@ def cleanup():
 
     # Waiting for any flushes to complete
     logger.out('Waiting for any active flushes', state='s')
-    while this_node.flush_thread is not None:
-        time.sleep(0.5)
+    if this_node is not None:
+        while this_node.flush_thread is not None:
+            time.sleep(0.5)
 
     # Stop console logging on all VMs
     logger.out('Stopping domain console watchers', state='s')
-    for domain in d_domain:
-        if d_domain[domain].getnode() == myhostname:
-            try:
-                d_domain[domain].console_log_instance.stop()
-            except NameError:
-                pass
-            except AttributeError:
-                pass
+    if d_domain is not None:
+        for domain in d_domain:
+            if d_domain[domain].getnode() == myhostname:
+                try:
+                    d_domain[domain].console_log_instance.stop()
+                except Exception:
+                    pass
 
     # Force into secondary coordinator state if needed
     try:
@@ -740,13 +743,11 @@ def cleanup():
     # Stop keepalive thread
     try:
         stopKeepaliveTimer()
-    except NameError:
-        pass
-    except AttributeError:
-        pass
 
-    logger.out('Performing final keepalive update', state='s')
-    node_keepalive()
+        logger.out('Performing final keepalive update', state='s')
+        node_keepalive()
+    except Exception:
+        pass
 
     # Set stop state in Zookeeper
     zkhandler.write([
