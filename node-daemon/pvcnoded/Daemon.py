@@ -147,6 +147,7 @@ def readConfig(pvcnoded_config_file, myhostname):
     # Handle the basic config (hypervisor-only)
     try:
         config_general = {
+            'node': o_config['pvc']['node'],
             'coordinators': o_config['pvc']['cluster']['coordinators'],
             'enable_hypervisor': o_config['pvc']['functions']['enable_hypervisor'],
             'enable_networking': o_config['pvc']['functions']['enable_networking'],
@@ -157,12 +158,14 @@ def readConfig(pvcnoded_config_file, myhostname):
             'console_log_directory': o_config['pvc']['system']['configuration']['directories']['console_log_directory'],
             'file_logging': o_config['pvc']['system']['configuration']['logging']['file_logging'],
             'stdout_logging': o_config['pvc']['system']['configuration']['logging']['stdout_logging'],
+            'zookeeper_logging': o_config['pvc']['system']['configuration']['logging'].get('zookeeper_logging', False),
             'log_colours': o_config['pvc']['system']['configuration']['logging']['log_colours'],
             'log_dates': o_config['pvc']['system']['configuration']['logging']['log_dates'],
             'log_keepalives': o_config['pvc']['system']['configuration']['logging']['log_keepalives'],
             'log_keepalive_cluster_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_cluster_details'],
             'log_keepalive_storage_details': o_config['pvc']['system']['configuration']['logging']['log_keepalive_storage_details'],
             'console_log_lines': o_config['pvc']['system']['configuration']['logging']['console_log_lines'],
+            'node_log_lines': o_config['pvc']['system']['configuration']['logging'].get('node_log_lines', 0),
             'vm_shutdown_timeout': int(o_config['pvc']['system']['intervals']['vm_shutdown_timeout']),
             'keepalive_interval': int(o_config['pvc']['system']['intervals']['keepalive_interval']),
             'fence_intervals': int(o_config['pvc']['system']['intervals']['fence_intervals']),
@@ -694,7 +697,7 @@ else:
 
 # Cleanup function
 def cleanup():
-    global zkhandler, update_timer, d_domain
+    global logger, zkhandler, update_timer, d_domain
 
     logger.out('Terminating pvcnoded and cleaning up', state='s')
 
@@ -758,6 +761,8 @@ def cleanup():
         pass
 
     logger.out('Terminated pvc daemon', state='s')
+    logger.terminate()
+
     os._exit(0)
 
 

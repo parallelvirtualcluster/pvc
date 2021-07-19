@@ -1215,9 +1215,9 @@ def follow_console_log(config, vm, lines=10):
     API arguments: lines={lines}
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
-    # We always grab 500 to match the follow call, but only _show_ `lines` number
+    # We always grab 200 to match the follow call, but only _show_ `lines` number
     params = {
-        'lines': 500
+        'lines': 200
     }
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
@@ -1233,10 +1233,10 @@ def follow_console_log(config, vm, lines=10):
     print(loglines, end='')
 
     while True:
-        # Grab the next line set (500 is a reasonable number of lines per second; any more are skipped)
+        # Grab the next line set (200 is a reasonable number of lines per half-second; any more are skipped)
         try:
             params = {
-                'lines': 500
+                'lines': 200
             }
             response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
             new_console_log = response.json()['data']
@@ -1245,8 +1245,10 @@ def follow_console_log(config, vm, lines=10):
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')
         new_console_loglines = new_console_log.split('\n')
+
         # Set the console log to the new log value for the next iteration
         console_log = new_console_log
+
         # Remove the lines from the old log until we hit the first line of the new log; this
         # ensures that the old log is a string that we can remove from the new log entirely
         for index, line in enumerate(old_console_loglines, start=0):
@@ -1261,8 +1263,8 @@ def follow_console_log(config, vm, lines=10):
         # If there's a difference, print it out
         if diff_console_log:
             print(diff_console_log, end='')
-        # Wait a second
-        time.sleep(1)
+        # Wait half a second
+        time.sleep(0.5)
 
     return True, ''
 

@@ -541,6 +541,43 @@ def node_unflush(node, wait):
 
 
 ###############################################################################
+# pvc node log
+###############################################################################
+@click.command(name='log', short_help='Show logs of a node.')
+@click.argument(
+    'node'
+)
+@click.option(
+    '-l', '--lines', 'lines', default=None, show_default=False,
+    help='Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]'
+)
+@click.option(
+    '-f', '--follow', 'follow', is_flag=True, default=False,
+    help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
+)
+@cluster_req
+def node_log(node, lines, follow):
+    """
+    Show node logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
+    """
+
+    # Set the default here so we can handle it
+    if lines is None:
+        if follow:
+            lines = 10
+        else:
+            lines = 1000
+
+    if follow:
+        retcode, retmsg = pvc_node.follow_node_log(config, node, lines)
+    else:
+        retcode, retmsg = pvc_node.view_node_log(config, node, lines)
+        click.echo_via_pager(retmsg)
+        retmsg = ''
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc node info
 ###############################################################################
 @click.command(name='info', short_help='Show details of a node object.')
@@ -4707,6 +4744,7 @@ cli_node.add_command(node_primary)
 cli_node.add_command(node_flush)
 cli_node.add_command(node_ready)
 cli_node.add_command(node_unflush)
+cli_node.add_command(node_log)
 cli_node.add_command(node_info)
 cli_node.add_command(node_list)
 

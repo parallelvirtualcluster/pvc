@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# log.py - Output (stdout + logfile) functions
+# log.py - PVC daemon logger functions
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2021 Joshua M. Boniface <joshua@boniface.me>
@@ -19,7 +19,12 @@
 #
 ###############################################################################
 
-import datetime
+from collections import deque
+from threading import Thread
+from queue import Queue
+from datetime import datetime
+
+from daemon_lib.zkhandler import ZKHandler
 
 
 class Logger(object):
@@ -77,17 +82,32 @@ class Logger(object):
         self.last_colour = ''
         self.last_prompt = ''
 
+        if self.config['zookeeper_logging']:
+            self.zookeeper_logger = ZookeeperLogger(config)
+            self.zookeeper_logger.start()
+
     # Provide a hup function to close and reopen the writer
     def hup(self):
         self.writer.close()
         self.writer = open(self.logfile, 'a', buffering=0)
+
+    # Provide a termination function so all messages are flushed before terminating the main daemon
+    def terminate(self):
+        if self.config['file_logging']:
+            self.writer.close()
+        if self.config['zookeeper_logging']:
+            self.out("Waiting for Zookeeper message queue to drain", state='s')
+            while not self.zookeeper_logger.queue.empty():
+                pass
+            self.zookeeper_logger.stop()
+            self.zookeeper_logger.join()
 
     # Output function
     def out(self, message, state=None, prefix=''):
 
         # Get the date
         if self.config['log_dates']:
-            date = '{} - '.format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
+            date = '{} '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
         else:
             date = ''
 
@@ -123,6 +143,64 @@ class Logger(object):
         if self.config['file_logging']:
             self.writer.write(message + '\n')
 
+        # Log to Zookeeper
+        if self.config['zookeeper_logging']:
+            self.zookeeper_logger.queue.put(message)
+
         # Set last message variables
         self.last_colour = colour
         self.last_prompt = prompt
+
+
+class ZookeeperLogger(Thread):
+    """
+    Defines a threaded writer for Zookeeper locks. Threading prevents the blocking of other
+    daemon events while the records are written. They will be eventually-consistent
+    """
+    def __init__(self, config):
+        self.config = config
+        self.node = self.config['node']
+        self.max_lines = self.config['node_log_lines']
+        self.queue = Queue()
+        self.zkhandler = None
+        self.start_zkhandler()
+        self.zkhandler.write([(('logs', self.node), '')])
+        self.running = False
+        Thread.__init__(self, args=(), kwargs=None)
+
+    def start_zkhandler(self):
+        # We must open our own dedicated Zookeeper instance because we can't guarantee one already exists when this starts
+        if self.zkhandler is not None:
+            try:
+                self.zkhandler.disconnect()
+            except Exception:
+                pass
+        self.zkhandler = ZKHandler(self.config, logger=None)
+        self.zkhandler.connect(persistent=True)
+
+    def run(self):
+        self.running = True
+        # Get the logs that are currently in Zookeeper and populate our deque
+        logs = deque(self.zkhandler.read(('logs.messages', self.node)).split('\n'), self.max_lines)
+        while self.running:
+            # Get a new message
+            try:
+                message = self.queue.get(block=False)
+                if not message:
+                    continue
+            except Exception:
+                continue
+
+            if not self.config['log_dates']:
+                # We want to log dates here, even if the log_dates config is not set
+                date = '{} '.format(datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
+            else:
+                date = ''
+            # Add the message to the deque
+            logs.append(f'{date}{message}')
+            # Write the updated messages into Zookeeper
+            self.zkhandler.write([(('logs.messages', self.node), '\n'.join(logs))])
+        return
+
+    def stop(self):
+        self.running = False

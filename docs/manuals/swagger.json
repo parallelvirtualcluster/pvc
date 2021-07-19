@@ -144,6 +144,19 @@
             },
             "type": "object"
         },
+        "NodeLog": {
+            "properties": {
+                "data": {
+                    "description": "The recent log text",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the Node",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "VMLog": {
             "properties": {
                 "data": {
@@ -2660,6 +2673,38 @@
                     }
                 },
                 "summary": "Set the domain state of {node}",
+                "tags": [
+                    "node"
+                ]
+            }
+        },
+        "/api/v1/node/{node}/log": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The number of lines to retrieve",
+                        "in": "query",
+                        "name": "lines",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/NodeLog"
+                        }
+                    },
+                    "404": {
+                        "description": "Node not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Return the recent logs of {node}",
                 "tags": [
                     "node"
                 ]
