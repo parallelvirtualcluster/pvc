@@ -764,9 +764,19 @@ def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method,
     help='Immediately restart VM to apply new config.'
 )
 @click.option(
-    '-y', '--yes', 'confirm_flag',
+    '-d', '--confirm-diff', 'confirm_diff_flag',
     is_flag=True, default=False,
-    help='Confirm the restart'
+    help='Confirm the diff.'
+)
+@click.option(
+    '-c', '--confirm-restart', 'confirm_restart_flag',
+    is_flag=True, default=False,
+    help='Confirm the restart.'
+)
+@click.option(
+    '-y', '--yes', 'confirm_all_flag',
+    is_flag=True, default=False,
+    help='Confirm the diff and the restart.'
 )
 @click.argument(
     'domain'
@@ -774,7 +784,7 @@ def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method,
 @click.argument(
     'cfgfile', type=click.File(), default=None, required=False
 )
-def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
+def vm_modify(domain, cfgfile, editor, restart, confirm_diff_flag, confirm_restart_flag, confirm_all_flag):
     """
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
@@ -831,9 +841,10 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
     except Exception as e:
         cleanup(False, 'Error: XML is malformed or invalid: {}'.format(e))
 
-    click.confirm('Write modifications to cluster?', abort=True)
+    if not confirm_diff_flag and not confirm_all_flag and not config['unsafe']:
+        click.confirm('Write modifications to cluster?', abort=True)
 
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart and not confirm_restart_flag and not confirm_all_flag and not config['unsafe']:
         try:
             click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
