@@ -192,7 +192,7 @@ class ZookeeperLogger(Thread):
         while self.running:
             # Get a new message
             try:
-                message = self.queue.get()
+                message = self.queue.get(timeout=1)
                 if not message:
                     continue
             except Exception:
