@@ -110,7 +110,7 @@ try:
     pvcnoded_config_file = os.environ['PVCD_CONFIG_FILE']
 except Exception:
     print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set before starting pvcnoded.')
-    exit(1)
+    os._exit(1)
 
 # Set local hostname and domain variables
 myfqdn = gethostname()
@@ -142,7 +142,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             o_config = yaml.load(cfgfile, Loader=yaml.SafeLoader)
         except Exception as e:
             print('ERROR: Failed to parse configuration file: {}'.format(e))
-            exit(1)
+            os._exit(1)
 
     # Handle the basic config (hypervisor-only)
     try:
@@ -179,7 +179,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         }
     except Exception as e:
         print('ERROR: Failed to load configuration: {}'.format(e))
-        exit(1)
+        cleanup()
     config = config_general
 
     # Handle debugging config
@@ -236,7 +236,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
-            exit(1)
+            cleanup()
         config = {**config, **config_networking}
 
         # Create the by-id address entries
@@ -250,7 +250,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                 network = ip_network(config[network_key])
             except Exception:
                 print('ERROR: Network address {} for {} is not valid!'.format(config[network_key], network_key))
-                exit(1)
+                cleanup()
 
             # If we should be autoselected
             if config[address_key] == 'by-id':
@@ -270,7 +270,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                     raise
             except Exception:
                 print('ERROR: Floating address {} for {} is not valid!'.format(config[floating_key], floating_key))
-                exit(1)
+                cleanup()
 
     # Handle the storage config
     if config['enable_storage']:
@@ -281,7 +281,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             }
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
-            exit(1)
+            cleanup()
         config = {**config, **config_storage}
 
     # Handle an empty ipmi_hostname
@@ -578,7 +578,7 @@ try:
     zkhandler.connect(persistent=True)
 except Exception as e:
     logger.out('ERROR: Failed to connect to Zookeeper cluster: {}'.format(e), state='e')
-    exit(1)
+    os._exit(1)
 
 logger.out('Validating Zookeeper schema', state='i')
 
@@ -871,7 +871,7 @@ if enable_hypervisor:
         lv_conn.close()
     except Exception as e:
         logger.out('ERROR: Failed to connect to Libvirt daemon: {}'.format(e), state='e')
-        exit(1)
+        cleanup()
 
 ###############################################################################
 # PHASE 7c - Ensure NFT is running on the local host
