@@ -1,3 +1,9 @@
+pvc (0.9.29-0) unstable; urgency=high
+
+  * [Node Daemon] Corrects numerous bugs with node logging framework
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 19 Jul 2021 16:55:41 -0400
+
 pvc (0.9.28-0) unstable; urgency=high
 
   * [CLI Client] Revamp confirmation options for "vm modify" command

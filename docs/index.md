@@ -42,6 +42,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.29
+
+  * [Node Daemon] Corrects numerous bugs with node logging framework
+
 #### v0.9.28
 
   * [CLI Client] Revamp confirmation options for "vm modify" command
