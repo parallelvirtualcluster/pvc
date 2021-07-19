@@ -1245,8 +1245,10 @@ def follow_console_log(config, vm, lines=10):
         # Split the new and old log strings into constitutent lines
         old_console_loglines = console_log.split('\n')
         new_console_loglines = new_console_log.split('\n')
+
         # Set the console log to the new log value for the next iteration
         console_log = new_console_log
+
         # Remove the lines from the old log until we hit the first line of the new log; this
         # ensures that the old log is a string that we can remove from the new log entirely
         for index, line in enumerate(old_console_loglines, start=0):
