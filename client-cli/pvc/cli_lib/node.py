@@ -104,9 +104,9 @@ def follow_node_log(config, node, lines=10):
     API arguments: lines={lines}
     API schema: {"name":"{nodename}","data":"{node_log}"}
     """
-    # We always grab 500 to match the follow call, but only _show_ `lines` number
+    # We always grab 200 to match the follow call, but only _show_ `lines` number
     params = {
-        'lines': 500
+        'lines': 200
     }
     response = call_api(config, 'get', '/node/{node}/log'.format(node=node), params=params)
 
@@ -123,10 +123,10 @@ def follow_node_log(config, node, lines=10):
     print('\n', end='')
 
     while True:
-        # Grab the next line set (500 is a reasonable number of lines per second; any more are skipped)
+        # Grab the next line set (200 is a reasonable number of lines per half-second; any more are skipped)
         try:
             params = {
-                'lines': 500
+                'lines': 200
             }
             response = call_api(config, 'get', '/node/{node}/log'.format(node=node), params=params)
             new_node_log = response.json()['data']

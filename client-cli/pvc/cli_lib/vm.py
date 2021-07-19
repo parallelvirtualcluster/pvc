@@ -1215,9 +1215,9 @@ def follow_console_log(config, vm, lines=10):
     API arguments: lines={lines}
     API schema: {"name":"{vmname}","data":"{console_log}"}
     """
-    # We always grab 500 to match the follow call, but only _show_ `lines` number
+    # We always grab 200 to match the follow call, but only _show_ `lines` number
     params = {
-        'lines': 500
+        'lines': 200
     }
     response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
 
@@ -1233,10 +1233,10 @@ def follow_console_log(config, vm, lines=10):
     print(loglines, end='')
 
     while True:
-        # Grab the next line set (500 is a reasonable number of lines per second; any more are skipped)
+        # Grab the next line set (200 is a reasonable number of lines per half-second; any more are skipped)
         try:
             params = {
-                'lines': 500
+                'lines': 200
             }
             response = call_api(config, 'get', '/vm/{vm}/console'.format(vm=vm), params=params)
             new_console_log = response.json()['data']
