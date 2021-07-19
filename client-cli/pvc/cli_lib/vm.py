@@ -1263,8 +1263,8 @@ def follow_console_log(config, vm, lines=10):
         # If there's a difference, print it out
         if diff_console_log:
             print(diff_console_log, end='')
-        # Wait a second
-        time.sleep(1)
+        # Wait half a second
+        time.sleep(0.5)
 
     return True, ''
 
