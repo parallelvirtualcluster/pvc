@@ -139,10 +139,9 @@ def follow_node_log(config, node, lines=10):
         # Set the node log to the new log value for the next iteration
         node_log = new_node_log
 
-        # Get the set difference between the two sets of lines
-        # We can safely use sets here since, due to the timestamps, we can guarantee that every
-        # individual log line is distinct, and similarly we can re-sort the diff afterwards.
-        diff_node_loglines = sorted(list(set(new_node_loglines) - set(old_node_loglines)))
+        # Get the difference between the two sets of lines
+        old_node_loglines_set = set(old_node_loglines)
+        diff_node_loglines = [x for x in new_node_loglines if x not in old_node_loglines_set]
 
         # If there's a difference, print it out
         if len(diff_node_loglines) > 0:
