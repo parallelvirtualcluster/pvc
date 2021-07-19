@@ -182,7 +182,7 @@ def readConfig(pvcnoded_config_file, myhostname):
         }
     except Exception as e:
         print('ERROR: Failed to load configuration: {}'.format(e))
-        cleanup()
+        cleanup(failure=True)
     config = config_general
 
     # Handle debugging config
@@ -239,7 +239,7 @@ def readConfig(pvcnoded_config_file, myhostname):
 
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
-            cleanup()
+            cleanup(failure=True)
         config = {**config, **config_networking}
 
         # Create the by-id address entries
@@ -253,7 +253,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                 network = ip_network(config[network_key])
             except Exception:
                 print('ERROR: Network address {} for {} is not valid!'.format(config[network_key], network_key))
-                cleanup()
+                cleanup(failure=True)
 
             # If we should be autoselected
             if config[address_key] == 'by-id':
@@ -273,7 +273,7 @@ def readConfig(pvcnoded_config_file, myhostname):
                     raise
             except Exception:
                 print('ERROR: Floating address {} for {} is not valid!'.format(config[floating_key], floating_key))
-                cleanup()
+                cleanup(failure=True)
 
     # Handle the storage config
     if config['enable_storage']:
@@ -284,7 +284,7 @@ def readConfig(pvcnoded_config_file, myhostname):
             }
         except Exception as e:
             print('ERROR: Failed to load configuration: {}'.format(e))
-            cleanup()
+            cleanup(failure=True)
         config = {**config, **config_storage}
 
     # Handle an empty ipmi_hostname
@@ -702,7 +702,7 @@ else:
 
 
 # Cleanup function
-def cleanup():
+def cleanup(failure=False):
     global logger, zkhandler, update_timer, d_domain
 
     logger.out('Terminating pvcnoded and cleaning up', state='s')
@@ -767,12 +767,17 @@ def cleanup():
     logger.out('Terminated pvc daemon', state='s')
     logger.terminate()
 
-    os._exit(0)
+    if failure:
+        retcode = 1
+    else:
+        retcode = 0
+
+    os._exit(retcode)
 
 
 # Termination function
 def term(signum='', frame=''):
-    cleanup()
+    cleanup(failure=False)
 
 
 # Hangup (logrotate) function
@@ -872,7 +877,7 @@ if enable_hypervisor:
         lv_conn.close()
     except Exception as e:
         logger.out('ERROR: Failed to connect to Libvirt daemon: {}'.format(e), state='e')
-        cleanup()
+        cleanup(failure=True)
 
 ###############################################################################
 # PHASE 7c - Ensure NFT is running on the local host
