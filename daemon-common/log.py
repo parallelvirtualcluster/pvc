@@ -228,14 +228,20 @@ class ZookeeperLogger(Thread):
             # Add the message to the deque
             logs.append(f'{date}{message}')
 
+            tick_count = 0
             while True:
                 try:
                     # Write the updated messages into Zookeeper
                     self.zkhandler.write([(('logs.messages', self.node), '\n'.join(logs))])
                     break
                 except Exception:
-                    sleep(0.1)
-                    continue
+                    # The write failed (connection loss, etc.) so retry for 15 seconds
+                    sleep(0.5)
+                    tick_count += 1
+                    if tick_count > 30:
+                        break
+                    else:
+                        continue
         return
 
     def stop(self):
