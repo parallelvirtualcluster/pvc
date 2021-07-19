@@ -120,6 +120,7 @@ def follow_node_log(config, node, lines=10):
 
     # Print the initial data and begin following
     print(loglines, end='')
+    print('\n', end='')
 
     while True:
         # Grab the next line set (500 is a reasonable number of lines per second; any more are skipped)
@@ -134,24 +135,22 @@ def follow_node_log(config, node, lines=10):
         # Split the new and old log strings into constitutent lines
         old_node_loglines = node_log.split('\n')
         new_node_loglines = new_node_log.split('\n')
+
         # Set the node log to the new log value for the next iteration
         node_log = new_node_log
-        # Remove the lines from the old log until we hit the first line of the new log; this
-        # ensures that the old log is a string that we can remove from the new log entirely
-        for index, line in enumerate(old_node_loglines, start=0):
-            if line == new_node_loglines[0]:
-                del old_node_loglines[0:index]
-                break
-        # Rejoin the log lines into strings
-        old_node_log = '\n'.join(old_node_loglines)
-        new_node_log = '\n'.join(new_node_loglines)
-        # Remove the old lines from the new log
-        diff_node_log = new_node_log.replace(old_node_log, "")
+
+        # Get the set difference between the two sets of lines
+        # We can safely use sets here since, due to the timestamps, we can guarantee that every
+        # individual log line is distinct, and similarly we can re-sort the diff afterwards.
+        diff_node_loglines = sorted(list(set(new_node_loglines) - set(old_node_loglines)))
+
         # If there's a difference, print it out
-        if diff_node_log:
-            print(diff_node_log, end='')
-        # Wait a second
-        time.sleep(1)
+        if len(diff_node_loglines) > 0:
+            print('\n'.join(diff_node_loglines), end='')
+            print('\n', end='')
+
+        # Wait half a second
+        time.sleep(0.5)
 
     return True, ''
 
