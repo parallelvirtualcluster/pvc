@@ -488,6 +488,9 @@ if enable_networking:
         else:
             common.run_os_command('ip route add default via {} dev {}'.format(upstream_gateway, 'brupstream'))
 
+    logger.out('Waiting 3s for networking to come up', state='s')
+    time.sleep(3)
+
 ###############################################################################
 # PHASE 2c - Prepare sysctl for pvcnoded
 ###############################################################################
@@ -559,8 +562,8 @@ if enable_storage:
         logger.out('Starting Ceph manager daemon', state='i')
         common.run_os_command('systemctl start ceph-mgr@{}'.format(myhostname))
 
-logger.out('Waiting 5s for daemons to start', state='s')
-time.sleep(5)
+logger.out('Waiting 3s for daemons to start', state='s')
+time.sleep(3)
 
 ###############################################################################
 # PHASE 4 - Attempt to connect to the coordinators and start zookeeper client
