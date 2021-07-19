@@ -1,3 +1,11 @@
+pvc (0.9.26-0) unstable; urgency=high
+
+  * [Node Daemon] Corrects some bad assumptions about fencing results during hardware failures
+  * [All] Implements VM tagging functionality
+  * [All] Implements Node log access via PVC functionality
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 18 Jul 2021 20:49:52 -0400
+
 pvc (0.9.25-0) unstable; urgency=high
 
   * [Node Daemon] Returns to Rados library calls for Ceph due to performance problems

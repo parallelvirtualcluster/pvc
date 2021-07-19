@@ -42,6 +42,12 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.26
+
+  * [Node Daemon] Corrects some bad assumptions about fencing results during hardware failures
+  * [All] Implements VM tagging functionality
+  * [All] Implements Node log access via PVC functionality
+
 #### v0.9.25
 
   * [Node Daemon] Returns to Rados library calls for Ceph due to performance problems
