@@ -164,7 +164,11 @@ class ZookeeperLogger(Thread):
         self.queue = Queue()
         self.zkhandler = None
         self.start_zkhandler()
-        self.zkhandler.write([(('logs', self.node), '')])
+        # Ensure the root keys for this are instantiated
+        self.zkhandler.write([
+            ('base.logs', ''),
+            (('logs', self.node), '')
+        ])
         self.running = False
         Thread.__init__(self, args=(), kwargs=None)
 
@@ -181,7 +185,10 @@ class ZookeeperLogger(Thread):
     def run(self):
         self.running = True
         # Get the logs that are currently in Zookeeper and populate our deque
-        logs = deque(self.zkhandler.read(('logs.messages', self.node)).split('\n'), self.max_lines)
+        raw_logs = self.zkhandler.read(('logs.messages', self.node))
+        if raw_logs is None:
+            raw_logs = ''
+        logs = deque(raw_logs.split('\n'), self.max_lines)
         while self.running:
             # Get a new message
             try:
