@@ -42,6 +42,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.28
+
+  * [CLI Client] Revamp confirmation options for "vm modify" command
+
 #### v0.9.27
 
   * [CLI Client] Fixes a bug with vm modify command when passed a file
