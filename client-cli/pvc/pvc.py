@@ -788,12 +788,12 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_flag):
 
     dom_name = vm_information.get('name')
 
-    if editor is True:
-        # Grab the current config
-        current_vm_cfg_raw = vm_information.get('xml')
-        xml_data = etree.fromstring(current_vm_cfg_raw)
-        current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8').strip()
+    # Grab the current config
+    current_vm_cfg_raw = vm_information.get('xml')
+    xml_data = etree.fromstring(current_vm_cfg_raw)
+    current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8').strip()
 
+    if editor is True:
         new_vm_cfgfile = click.edit(text=current_vm_cfgfile, require_save=True, extension='.xml')
         if new_vm_cfgfile is None:
             click.echo('Aborting with no modifications.')
