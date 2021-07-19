@@ -227,8 +227,15 @@ class ZookeeperLogger(Thread):
                 date = ''
             # Add the message to the deque
             logs.append(f'{date}{message}')
-            # Write the updated messages into Zookeeper
-            self.zkhandler.write([(('logs.messages', self.node), '\n'.join(logs))])
+
+            while True:
+                try:
+                    # Write the updated messages into Zookeeper
+                    self.zkhandler.write([(('logs.messages', self.node), '\n'.join(logs))])
+                    break
+                except Exception:
+                    sleep(0.1)
+                    continue
         return
 
     def stop(self):
