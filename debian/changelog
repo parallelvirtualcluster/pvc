@@ -1,3 +1,9 @@
+pvc (0.9.30-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes bug with schema validation
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 20 Jul 2021 00:01:45 -0400
+
 pvc (0.9.29-0) unstable; urgency=high
 
   * [Node Daemon] Corrects numerous bugs with node logging framework

@@ -42,6 +42,10 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.30
+
+  * [Node Daemon] Fixes bug with schema validation
+
 #### v0.9.29
 
   * [Node Daemon] Corrects numerous bugs with node logging framework
