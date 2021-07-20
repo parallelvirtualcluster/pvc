@@ -777,7 +777,7 @@ class ZKSchema(object):
                         logger.out(f'Key not found: {self.path(kpath)}', state='w')
                     result = False
 
-        for elem in ['logs', 'node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
             for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
@@ -856,7 +856,7 @@ class ZKSchema(object):
                         data = ''
                     zkhandler.zk_conn.create(self.path(kpath), data.encode(zkhandler.encoding))
 
-        for elem in ['logs', 'node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
             # First read all the subelements of the key class
             for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
                 # For each key in the schema for that particular elem
