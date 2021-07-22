@@ -635,7 +635,7 @@ class VMInstance(object):
 
         self.inreceive = True
 
-        self.logger.out('Receiving VM migration from node "{}"'.format(self.node), state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Receiving VM migration from node "{}"'.format(self.last_currentnode), state='i', prefix='Domain {}'.format(self.domuuid))
 
         # Short delay to ensure sender is in sync
         time.sleep(0.5)
