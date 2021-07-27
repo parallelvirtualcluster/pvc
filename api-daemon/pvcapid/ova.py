@@ -414,6 +414,7 @@ class OVFParser(object):
         "5": "ide-controller",
         "6": "scsi-controller",
         "10": "ethernet-adapter",
+        "14": "floppy",
         "15": "cdrom",
         "17": "disk",
         "20": "other-storage-device",
