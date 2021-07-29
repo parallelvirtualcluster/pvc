@@ -485,13 +485,10 @@ def add_volume(zkhandler, pool, name, size):
     size_bytes = format_bytes_fromhuman(size)
     if size_bytes >= int(pool_information['stats']['free_bytes']):
         return False, 'ERROR: Requested volume size is greater than the available free space in the pool'
-
-    # Add 'B' if the volume is in bytes
-    if re.match(r'^[0-9]+$', size):
-        size = '{}B'.format(size)
+    size_megabytes = size_bytes / 1024 / 1024
 
     # 2. Create the volume
-    retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
+    retcode, stdout, stderr = common.run_os_command('rbd create --size {}M --image-feature layering,exclusive-lock {}/{}'.format(size_megabytes, pool, name))
     if retcode:
         return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
 
@@ -536,8 +533,12 @@ def resize_volume(zkhandler, pool, name, size):
     if not verifyVolume(zkhandler, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
+    # 0. Get the size in megabytes
+    size_bytes = format_bytes_fromhuman(size)
+    size_megabytes = size_bytes / 1024 / 1024
+
     # 1. Resize the volume
-    retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
+    retcode, stdout, stderr = common.run_os_command('rbd resize --size {}M {}/{}'.format(size_megabytes, pool, name))
     if retcode:
         return False, 'ERROR: Failed to resize RBD volume "{}" to size "{}" in pool "{}": {}'.format(name, size, pool, stderr)
 
@@ -560,7 +561,7 @@ def resize_volume(zkhandler, pool, name, size):
             target_lv_conn = libvirt.open(dest_lv)
             target_vm_conn = target_lv_conn.lookupByName(vm_info['name'])
             if target_vm_conn:
-                target_vm_conn.blockResize(volume_id, format_bytes_fromhuman(size), libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
+                target_vm_conn.blockResize(volume_id, size_bytes, libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES)
             target_lv_conn.close()
         except Exception:
             pass
