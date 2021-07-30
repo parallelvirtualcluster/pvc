@@ -42,6 +42,14 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
+#### v0.9.31
+
+  * [Packages] Cleans up obsolete Suggests lines
+  * [Node Daemon] Adjusts log text of VM migrations to show the correct source node
+  * [API Daemon] Adjusts the OVA importer to support floppy RASD types for compatability
+  * [API Daemon] Ensures that volume resize commands without a suffix get B appended
+  * [API Daemon] Removes the explicit setting of image-features in PVC; defaulting to the limited set has been moved to the ceph.conf configuration on nodes via PVC Ansible
+
 #### v0.9.30
 
   * [Node Daemon] Fixes bug with schema validation

@@ -1,3 +1,13 @@
+pvc (0.9.31-0) unstable; urgency=high
+
+  * [Packages] Cleans up obsolete Suggests lines
+  * [Node Daemon] Adjusts log text of VM migrations to show the correct source node
+  * [API Daemon] Adjusts the OVA importer to support floppy RASD types for compatability
+  * [API Daemon] Ensures that volume resize commands without a suffix get B appended
+  * [API Daemon] Removes the explicit setting of image-features in PVC; defaulting to the limited set has been moved to the ceph.conf configuration on nodes via PVC Ansible
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 30 Jul 2021 12:08:12 -0400
+
 pvc (0.9.30-0) unstable; urgency=high
 
   * [Node Daemon] Fixes bug with schema validation
