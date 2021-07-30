@@ -536,6 +536,10 @@ def resize_volume(zkhandler, pool, name, size):
     if not verifyVolume(zkhandler, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(name, pool)
 
+    # Add 'B' if the volume is in bytes
+    if re.match(r'^[0-9]+$', size):
+        size = '{}B'.format(size)
+
     # 1. Resize the volume
     retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
     if retcode:
