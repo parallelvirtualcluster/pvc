@@ -491,7 +491,7 @@ def add_volume(zkhandler, pool, name, size):
         size = '{}B'.format(size)
 
     # 2. Create the volume
-    retcode, stdout, stderr = common.run_os_command('rbd create --size {} --image-feature layering,exclusive-lock {}/{}'.format(size, pool, name))
+    retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(size, pool, name))
     if retcode:
         return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
 
