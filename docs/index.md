@@ -40,6 +40,19 @@ The core node and API daemons, as well as the CLI API client, are written in Pyt
 To get started with PVC, please see the [About](https://parallelvirtualcluster.readthedocs.io/en/latest/about/) page for general information about the project, and the [Getting Started](https://parallelvirtualcluster.readthedocs.io/en/latest/getting-started/) page for details on configuring your first cluster.
 
 
+## Screenshots
+
+While PVC's API and internals aren't very screenshot-worthy, here is some example output of the CLI tool.
+
+<p><img alt="Node listing" src="images/pvc-nodes.png"/><br/><i>Listing the nodes in a cluster</i></p>
+
+<p><img alt="Network listing" src="images/pvc-networks.png"/><br/><i>Listing the networks in a cluster, showing 3 bridged and 1 IPv4-only managed networks</i></p>
+
+<p><img alt="VM listing and migration" src="images/pvc-migration.png"/><br/><i>Listing a limited set of VMs and migrating one with status updates</i></p>
+
+<p><img alt="Node logs" src="images/pvc-nodelog.png"/><br/><i>Viewing the logs of a node (keepalives and VM [un]migration)</i></p>
+
+
 ## Changelog
 
 #### v0.9.31
