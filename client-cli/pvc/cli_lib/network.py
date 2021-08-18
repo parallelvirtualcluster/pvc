@@ -491,14 +491,10 @@ def net_sriov_vf_info(config, node, vf):
 # Output display functions
 #
 def getColour(value):
-    if value in ['True', "start"]:
-        return ansiprint.green()
-    elif value in ["restart", "shutdown"]:
-        return ansiprint.yellow()
-    elif value in ["stop", "fail"]:
-        return ansiprint.red()
-    else:
+    if value in ["False", "None"]:
         return ansiprint.blue()
+    else:
+        return ansiprint.green()
 
 
 def getOutputColours(network_information):
