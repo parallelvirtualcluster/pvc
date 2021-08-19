@@ -1675,11 +1675,7 @@ def collect_vm_stats(queue):
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
         except Exception as e:
-            if debug:
-                try:
-                    logger.out("Failed getting VM information for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
-                except Exception:
-                    pass
+            logger.out("Failed getting VM information for {}: {}".format(domain.name(), e), state='w', prefix='vm-thread')
             continue
 
         # Ensure VM is present in the domain_list
@@ -1689,42 +1685,50 @@ def collect_vm_stats(queue):
         if debug:
             logger.out("Getting disk statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_disk_stats = []
-        for disk in tree.findall('devices/disk'):
-            disk_name = disk.find('source').get('name')
-            if not disk_name:
-                disk_name = disk.find('source').get('file')
-            disk_stats = domain.blockStats(disk.find('target').get('dev'))
-            domain_disk_stats.append({
-                "name": disk_name,
-                "rd_req": disk_stats[0],
-                "rd_bytes": disk_stats[1],
-                "wr_req": disk_stats[2],
-                "wr_bytes": disk_stats[3],
-                "err": disk_stats[4]
-            })
+        try:
+            for disk in tree.findall('devices/disk'):
+                disk_name = disk.find('source').get('name')
+                if not disk_name:
+                    disk_name = disk.find('source').get('file')
+                disk_stats = domain.blockStats(disk.find('target').get('dev'))
+                domain_disk_stats.append({
+                    "name": disk_name,
+                    "rd_req": disk_stats[0],
+                    "rd_bytes": disk_stats[1],
+                    "wr_req": disk_stats[2],
+                    "wr_bytes": disk_stats[3],
+                    "err": disk_stats[4]
+                })
+        except Exception as e:
+            logger.out("Failed to get disk stats for VM {}: {}".format(domain_name, e), state='w', prefix='vm-thread')
+            continue
 
         if debug:
             logger.out("Getting network statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_network_stats = []
-        for interface in tree.findall('devices/interface'):
-            interface_type = interface.get('type')
-            if interface_type not in ['bridge']:
-                continue
-            interface_name = interface.find('target').get('dev')
-            interface_bridge = interface.find('source').get('bridge')
-            interface_stats = domain.interfaceStats(interface_name)
-            domain_network_stats.append({
-                "name": interface_name,
-                "bridge": interface_bridge,
-                "rd_bytes": interface_stats[0],
-                "rd_packets": interface_stats[1],
-                "rd_errors": interface_stats[2],
-                "rd_drops": interface_stats[3],
-                "wr_bytes": interface_stats[4],
-                "wr_packets": interface_stats[5],
-                "wr_errors": interface_stats[6],
-                "wr_drops": interface_stats[7]
-            })
+        try:
+            for interface in tree.findall('devices/interface'):
+                interface_type = interface.get('type')
+                if interface_type not in ['bridge']:
+                    continue
+                interface_name = interface.find('target').get('dev')
+                interface_bridge = interface.find('source').get('bridge')
+                interface_stats = domain.interfaceStats(interface_name)
+                domain_network_stats.append({
+                    "name": interface_name,
+                    "bridge": interface_bridge,
+                    "rd_bytes": interface_stats[0],
+                    "rd_packets": interface_stats[1],
+                    "rd_errors": interface_stats[2],
+                    "rd_drops": interface_stats[3],
+                    "wr_bytes": interface_stats[4],
+                    "wr_packets": interface_stats[5],
+                    "wr_errors": interface_stats[6],
+                    "wr_drops": interface_stats[7]
+                })
+        except Exception as e:
+            logger.out("Failed to get network stats for VM {}: {}".format(domain_name, e), state='w', prefix='vm-thread')
+            continue
 
         # Create the final dictionary
         domain_stats = {
