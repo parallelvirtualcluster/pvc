@@ -55,6 +55,12 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.32
+
+  * [CLI Client] Fixes some incorrect colours in network lists
+  * [Documentation] Adds documentation screenshots of CLI client
+  * [Node Daemon] Fixes a bug if VM stats gathering fails
+
 #### v0.9.31
 
   * [Packages] Cleans up obsolete Suggests lines
