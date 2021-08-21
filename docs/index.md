@@ -55,6 +55,12 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.33
+
+  * [Node Daemon] A major refactoring of the node daemon
+  * [CLI Client] Fixes output errors if a node has no provisioner data
+  * [Packages] Fixes issues with including __pycache__ directories in .deb files
+
 #### v0.9.32
 
   * [CLI Client] Fixes some incorrect colours in network lists
