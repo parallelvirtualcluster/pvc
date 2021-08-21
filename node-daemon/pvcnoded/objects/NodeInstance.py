@@ -65,9 +65,9 @@ class NodeInstance(object):
             self.upstream_dev = self.config['upstream_dev']
             self.upstream_floatingipaddr = self.config['upstream_floating_ip'].split('/')[0]
             self.upstream_ipaddr, self.upstream_cidrnetmask = self.config['upstream_dev_ip'].split('/')
-            self.vni_dev = self.config['vni_dev']
-            self.vni_floatingipaddr = self.config['vni_floating_ip'].split('/')[0]
-            self.vni_ipaddr, self.vni_cidrnetmask = self.config['vni_dev_ip'].split('/')
+            self.cluster_dev = self.config['cluster_dev']
+            self.cluster_floatingipaddr = self.config['cluster_floating_ip'].split('/')[0]
+            self.cluster_ipaddr, self.cluster_cidrnetmask = self.config['cluster_dev_ip'].split('/')
             self.storage_dev = self.config['storage_dev']
             self.storage_floatingipaddr = self.config['storage_floating_ip'].split('/')[0]
             self.storage_ipaddr, self.storage_cidrnetmask = self.config['storage_dev_ip'].split('/')
@@ -76,10 +76,10 @@ class NodeInstance(object):
             self.upstream_floatingipaddr = None
             self.upstream_ipaddr = None
             self.upstream_cidrnetmask = None
-            self.vni_dev = None
-            self.vni_floatingipaddr = None
-            self.vni_ipaddr = None
-            self.vni_cidrnetmask = None
+            self.cluster_dev = None
+            self.cluster_floatingipaddr = None
+            self.cluster_ipaddr = None
+            self.cluster_cidrnetmask = None
             self.storage_dev = None
             self.storage_floatingipaddr = None
             self.storage_ipaddr = None
@@ -387,13 +387,13 @@ class NodeInstance(object):
         # 2. Add Cluster & Storage floating IP
         self.logger.out(
             'Creating floating management IP {}/{} on interface {}'.format(
-                self.vni_floatingipaddr,
-                self.vni_cidrnetmask,
+                self.cluster_floatingipaddr,
+                self.cluster_cidrnetmask,
                 'brcluster'
             ),
             state='o'
         )
-        common.createIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
+        common.createIPAddress(self.cluster_floatingipaddr, self.cluster_cidrnetmask, 'brcluster')
         self.logger.out(
             'Creating floating storage IP {}/{} on interface {}'.format(
                 self.storage_floatingipaddr,
@@ -599,13 +599,13 @@ class NodeInstance(object):
         # 6. Remove Cluster & Storage floating IP
         self.logger.out(
             'Removing floating management IP {}/{} from interface {}'.format(
-                self.vni_floatingipaddr,
-                self.vni_cidrnetmask,
+                self.cluster_floatingipaddr,
+                self.cluster_cidrnetmask,
                 'brcluster'
             ),
             state='o'
         )
-        common.removeIPAddress(self.vni_floatingipaddr, self.vni_cidrnetmask, 'brcluster')
+        common.removeIPAddress(self.cluster_floatingipaddr, self.cluster_cidrnetmask, 'brcluster')
         self.logger.out(
             'Removing floating storage IP {}/{} from interface {}'.format(
                 self.storage_floatingipaddr,

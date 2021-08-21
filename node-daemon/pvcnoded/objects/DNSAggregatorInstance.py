@@ -74,7 +74,7 @@ class PowerDNSInstance(object):
         self.dns_server_daemon = None
 
         # Floating upstreams
-        self.vni_floatingipaddr, self.vni_cidrnetmask = self.config['vni_floating_ip'].split('/')
+        self.cluster_floatingipaddr, self.cluster_cidrnetmask = self.config['cluster_floating_ip'].split('/')
         self.upstream_floatingipaddr, self.upstream_cidrnetmask = self.config['upstream_floating_ip'].split('/')
 
     def start(self):
@@ -91,7 +91,7 @@ class PowerDNSInstance(object):
             '--disable-syslog=yes',              # Log only to stdout (which is then captured)
             '--disable-axfr=no',                 # Allow AXFRs
             '--allow-axfr-ips=0.0.0.0/0',        # Allow AXFRs to anywhere
-            '--local-address={},{}'.format(self.vni_floatingipaddr, self.upstream_floatingipaddr),  # Listen on floating IPs
+            '--local-address={},{}'.format(self.cluster_floatingipaddr, self.upstream_floatingipaddr),  # Listen on floating IPs
             '--local-port=53',                   # On port 53
             '--log-dns-details=on',              # Log details
             '--loglevel=3',                      # Log info

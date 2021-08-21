@@ -36,8 +36,8 @@ class VXNetworkInstance(object):
         self.logger = logger
         self.this_node = this_node
         self.dns_aggregator = dns_aggregator
-        self.vni_dev = config['vni_dev']
-        self.vni_mtu = config['vni_mtu']
+        self.cluster_dev = config['cluster_dev']
+        self.cluster_mtu = config['cluster_mtu']
         self.bridge_dev = config['bridge_dev']
 
         self.nettype = self.zkhandler.read(('network.type', self.vni))
@@ -481,7 +481,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
 
         # Set MTU of vLAN and bridge NICs
-        vx_mtu = self.vni_mtu
+        vx_mtu = self.cluster_mtu
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
                 self.vlan_nic,
@@ -521,7 +521,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     def createNetworkManaged(self):
         self.logger.out(
             'Creating VXLAN device on interface {}'.format(
-                self.vni_dev
+                self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
@@ -532,7 +532,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             'ip link add {} type vxlan id {} dstport 4789 dev {}'.format(
                 self.vxlan_nic,
                 self.vni,
-                self.vni_dev
+                self.cluster_dev
             )
         )
         # Create bridge interface
@@ -543,7 +543,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
 
         # Set MTU of VXLAN and bridge NICs
-        vx_mtu = self.vni_mtu - 50
+        vx_mtu = self.cluster_mtu - 50
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
                 self.vxlan_nic,
@@ -716,7 +716,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     def removeNetworkBridged(self):
         self.logger.out(
             'Removing VNI device on interface {}'.format(
-                self.vni_dev
+                self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
@@ -752,7 +752,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     def removeNetworkManaged(self):
         self.logger.out(
             'Removing VNI device on interface {}'.format(
-                self.vni_dev
+                self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'

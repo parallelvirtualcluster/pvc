@@ -30,84 +30,9 @@ from xml.etree import ElementTree
 
 import daemon_lib.common as common
 
-import pvcnoded.VMConsoleWatcherInstance as VMConsoleWatcherInstance
+import pvcnoded.objects.VMConsoleWatcherInstance as VMConsoleWatcherInstance
 
 import daemon_lib.common as daemon_common
-
-
-def flush_locks(zkhandler, logger, dom_uuid, this_node=None):
-    logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
-    # Get the list of RBD images
-    rbd_list = zkhandler.read(('domain.storage.volumes', dom_uuid)).split(',')
-
-    for rbd in rbd_list:
-        # Check if a lock exists
-        lock_list_retcode, lock_list_stdout, lock_list_stderr = common.run_os_command('rbd lock list --format json {}'.format(rbd))
-        if lock_list_retcode != 0:
-            logger.out('Failed to obtain lock list for volume "{}"'.format(rbd), state='e')
-            continue
-
-        try:
-            lock_list = json.loads(lock_list_stdout)
-        except Exception as e:
-            logger.out('Failed to parse lock list for volume "{}": {}'.format(rbd, e), state='e')
-            continue
-
-        # If there's at least one lock
-        if lock_list:
-            # Loop through the locks
-            for lock in lock_list:
-                if this_node is not None and zkhandler.read(('domain.state', dom_uuid)) != 'stop' and lock['address'].split(':')[0] != this_node.storage_ipaddr:
-                    logger.out('RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting'.format(lock['address'].split(':')[0], state='e'))
-                    zkhandler.write([
-                        (('domain.state', dom_uuid), 'fail'),
-                        (('domain.failed_reason', dom_uuid), 'Could not safely free RBD lock {} ({}) on volume {}; stop VM and flush locks manually'.format(lock['id'], lock['address'], rbd)),
-                    ])
-                    break
-                # Free the lock
-                lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock['id'], lock['locker']))
-                if lock_remove_retcode != 0:
-                    logger.out('Failed to free RBD lock "{}" on volume "{}": {}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
-                    zkhandler.write([
-                        (('domain.state', dom_uuid), 'fail'),
-                        (('domain.failed_reason', dom_uuid), 'Could not free RBD lock {} ({}) on volume {}: {}'.format(lock['id'], lock['address'], rbd, lock_remove_stderr)),
-                    ])
-                    break
-                logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock['id'], rbd), state='o')
-
-    return True
-
-
-# Primary command function
-def run_command(zkhandler, logger, this_node, data):
-    # Get the command and args
-    command, args = data.split()
-
-    # Flushing VM RBD locks
-    if command == 'flush_locks':
-        dom_uuid = args
-
-        # Verify that the VM is set to run on this node
-        if this_node.d_domain[dom_uuid].getnode() == this_node.name:
-            # Lock the command queue
-            zk_lock = zkhandler.writelock('base.cmd.domain')
-            with zk_lock:
-                # Flush the lock
-                result = flush_locks(zkhandler, logger, dom_uuid, this_node)
-                # Command succeeded
-                if result:
-                    # Update the command queue
-                    zkhandler.write([
-                        ('base.cmd.domain', 'success-{}'.format(data))
-                    ])
-                # Command failed
-                else:
-                    # Update the command queue
-                    zkhandler.write([
-                        ('base.cmd.domain', 'failure-{}'.format(data))
-                    ])
-                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
-                time.sleep(1)
 
 
 class VMInstance(object):
@@ -265,7 +190,7 @@ class VMInstance(object):
         if self.getdom() is None or self.getdom().state()[0] != libvirt.VIR_DOMAIN_RUNNING:
             # Flush locks
             self.logger.out('Flushing RBD locks', state='i', prefix='Domain {}'.format(self.domuuid))
-            flush_locks(self.zkhandler, self.logger, self.domuuid, self.this_node)
+            VMInstance.flush_locks(self.zkhandler, self.logger, self.domuuid, self.this_node)
             if self.zkhandler.read(('domain.state', self.domuuid)) == 'fail':
                 lv_conn.close()
                 self.dom = None
@@ -877,3 +802,79 @@ class VMInstance(object):
 
         # Return the dom object (or None)
         return dom
+
+    # Flush the locks of a VM based on UUID
+    @staticmethod
+    def flush_locks(zkhandler, logger, dom_uuid, this_node=None):
+        logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state='i')
+        # Get the list of RBD images
+        rbd_list = zkhandler.read(('domain.storage.volumes', dom_uuid)).split(',')
+
+        for rbd in rbd_list:
+            # Check if a lock exists
+            lock_list_retcode, lock_list_stdout, lock_list_stderr = common.run_os_command('rbd lock list --format json {}'.format(rbd))
+            if lock_list_retcode != 0:
+                logger.out('Failed to obtain lock list for volume "{}"'.format(rbd), state='e')
+                continue
+
+            try:
+                lock_list = json.loads(lock_list_stdout)
+            except Exception as e:
+                logger.out('Failed to parse lock list for volume "{}": {}'.format(rbd, e), state='e')
+                continue
+
+            # If there's at least one lock
+            if lock_list:
+                # Loop through the locks
+                for lock in lock_list:
+                    if this_node is not None and zkhandler.read(('domain.state', dom_uuid)) != 'stop' and lock['address'].split(':')[0] != this_node.storage_ipaddr:
+                        logger.out('RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting'.format(lock['address'].split(':')[0], state='e'))
+                        zkhandler.write([
+                            (('domain.state', dom_uuid), 'fail'),
+                            (('domain.failed_reason', dom_uuid), 'Could not safely free RBD lock {} ({}) on volume {}; stop VM and flush locks manually'.format(lock['id'], lock['address'], rbd)),
+                        ])
+                        break
+                    # Free the lock
+                    lock_remove_retcode, lock_remove_stdout, lock_remove_stderr = common.run_os_command('rbd lock remove {} "{}" "{}"'.format(rbd, lock['id'], lock['locker']))
+                    if lock_remove_retcode != 0:
+                        logger.out('Failed to free RBD lock "{}" on volume "{}": {}'.format(lock['id'], rbd, lock_remove_stderr), state='e')
+                        zkhandler.write([
+                            (('domain.state', dom_uuid), 'fail'),
+                            (('domain.failed_reason', dom_uuid), 'Could not free RBD lock {} ({}) on volume {}: {}'.format(lock['id'], lock['address'], rbd, lock_remove_stderr)),
+                        ])
+                        break
+                    logger.out('Freed RBD lock "{}" on volume "{}"'.format(lock['id'], rbd), state='o')
+
+        return True
+
+
+# Primary command function
+def vm_command(zkhandler, logger, this_node, data):
+    # Get the command and args
+    command, args = data.split()
+
+    # Flushing VM RBD locks
+    if command == 'flush_locks':
+        dom_uuid = args
+
+        # Verify that the VM is set to run on this node
+        if this_node.d_domain[dom_uuid].getnode() == this_node.name:
+            # Lock the command queue
+            zk_lock = zkhandler.writelock('base.cmd.domain')
+            with zk_lock:
+                # Flush the lock
+                result = VMInstance.flush_locks(zkhandler, logger, dom_uuid, this_node)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.write([
+                        ('base.cmd.domain', 'success-{}'.format(data))
+                    ])
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.write([
+                        ('base.cmd.domain', 'failure-{}'.format(data))
+                    ])
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)

@@ -182,15 +182,15 @@ pvc:
           device: ens4
           # mtu: Upstream interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Upstream interface IP address, options: None, by-id, <static>/<mask>
-          address: None
+          # address: Upstream interface IP address, options: by-id, <static>/<mask>
+          address: by-id
         # cluster: Cluster (VNIC) physical interface device
         cluster:
           # device: Cluster (VNIC) interface device name
           device: ens4
           # mtu: Cluster (VNIC) interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Cluster (VNIC) interface IP address, options: None, by-id, <static>/<mask>
+          # address: Cluster (VNIC) interface IP address, options: by-id, <static>/<mask>
           address: by-id
         # storage: Storage (Ceph OSD) physical interface device
         storage:
@@ -198,7 +198,7 @@ pvc:
           device: ens4
           # mtu: Storage (Ceph OSD) interface MTU; use 9000 for jumbo frames (requires switch support)
           mtu: 1500
-          # address: Storage (Ceph OSD) interface IP address, options: None, by-id, <static>/<mask>
+          # address: Storage (Ceph OSD) interface IP address, options: by-id, <static>/<mask>
           address: by-id
       # storage; PVC storage configuration
       # OPTIONAL if enable_storage: False

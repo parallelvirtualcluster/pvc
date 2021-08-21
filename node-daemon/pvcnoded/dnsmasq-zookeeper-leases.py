@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # dnsmasq-zookeeper-leases.py - DNSMASQ leases script for Zookeeper
 # Part of the Parallel Virtual Cluster (PVC) system

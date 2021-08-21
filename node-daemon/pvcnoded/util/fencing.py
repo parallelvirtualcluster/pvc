@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# fencing.py - PVC daemon function library, node fencing functions
+# fencing.py - Utility functions for pvcnoded fencing
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2021 Joshua M. Boniface <joshua@boniface.me>
@@ -22,13 +22,14 @@
 import time
 
 import daemon_lib.common as common
-import pvcnoded.VMInstance as VMInstance
+
+from pvcnoded.objects.VMInstance import VMInstance
 
 
 #
 # Fence thread entry function
 #
-def fenceNode(node_name, zkhandler, config, logger):
+def fence_node(node_name, zkhandler, config, logger):
     # We allow exactly 6 saving throws (30 seconds) for the host to come back online or we kill it
     failcount_limit = 6
     failcount = 0
@@ -40,13 +41,13 @@ def fenceNode(node_name, zkhandler, config, logger):
         # Is it still 'dead'
         if node_daemon_state == 'dead':
             failcount += 1
-            logger.out('Node "{}" failed {}/{} saving throws'.format(node_name, failcount, failcount_limit), state='w')
+            logger.out('Node "{}" failed {}/{} saving throws'.format(node_name, failcount, failcount_limit), state='s')
         # It changed back to something else so it must be alive
         else:
             logger.out('Node "{}" passed a saving throw; canceling fence'.format(node_name), state='o')
             return
 
-    logger.out('Fencing node "{}" via IPMI reboot signal'.format(node_name), state='w')
+    logger.out('Fencing node "{}" via IPMI reboot signal'.format(node_name), state='s')
 
     # Get IPMI information
     ipmi_hostname = zkhandler.read(('node.ipmi.hostname', node_name))
@@ -54,7 +55,7 @@ def fenceNode(node_name, zkhandler, config, logger):
     ipmi_password = zkhandler.read(('node.ipmi.password', node_name))
 
     # Shoot it in the head
-    fence_status = rebootViaIPMI(ipmi_hostname, ipmi_username, ipmi_password, logger)
+    fence_status = reboot_via_ipmi(ipmi_hostname, ipmi_username, ipmi_password, logger)
     # Hold to ensure the fence takes effect and system stabilizes
     time.sleep(config['keepalive_interval'] * 2)
 
@@ -123,7 +124,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 #
 # Perform an IPMI fence
 #
-def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
+def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
     # Forcibly reboot the node
     ipmi_command_reset = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
         ipmi_hostname, ipmi_user, ipmi_password
@@ -131,8 +132,7 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
     ipmi_reset_retcode, ipmi_reset_stdout, ipmi_reset_stderr = common.run_os_command(ipmi_command_reset)
 
     if ipmi_reset_retcode != 0:
-        logger.out('Failed to reboot dead node', state='e')
-        print(ipmi_reset_stderr)
+        logger.out(f'Failed to reboot dead node: {ipmi_reset_stderr}', state='e')
 
     time.sleep(1)
 
@@ -178,12 +178,10 @@ def rebootViaIPMI(ipmi_hostname, ipmi_user, ipmi_password, logger):
 #
 # Verify that IPMI connectivity to this host exists (used during node init)
 #
-def verifyIPMI(ipmi_hostname, ipmi_user, ipmi_password):
-    ipmi_command_status = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power status'.format(
-        ipmi_hostname, ipmi_user, ipmi_password
-    )
-    ipmi_status_retcode, ipmi_status_stdout, ipmi_status_stderr = common.run_os_command(ipmi_command_status, timeout=2)
-    if ipmi_status_retcode == 0 and ipmi_status_stdout != "Chassis Power is on":
+def verify_ipmi(ipmi_hostname, ipmi_user, ipmi_password):
+    ipmi_command = f'/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_user} -P {ipmi_password} chassis power status'
+    retcode, stdout, stderr = common.run_os_command(ipmi_command, timeout=2)
+    if retcode == 0 and stdout != "Chassis Power is on":
         return True
     else:
         return False
