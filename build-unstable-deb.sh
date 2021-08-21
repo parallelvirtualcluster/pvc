@@ -23,6 +23,7 @@ pvc (${new_ver}) unstable; urgency=medium
 
  -- Joshua Boniface <joshua@boniface.me>  $( date -R )
 EOF
+find . -name "__pycache__" -exec rm -r {} \;
 # Build source tarball
 dh_make -p pvc_${new_ver} --createorig --single --yes
 # Build packages
