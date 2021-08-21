@@ -707,7 +707,11 @@ def task_status(config, task_id=None, is_watching=False):
         # Format the Celery data into a more useful data structure
         task_data = list()
         for task_type in ['active', 'reserved', 'scheduled']:
-            type_data = task_data_raw[task_type]
+            try:
+                type_data = task_data_raw[task_type]
+            except Exception:
+                type_data = None
+
             if not type_data:
                 type_data = dict()
             for task_host in type_data:
