@@ -115,7 +115,7 @@ def setup_interfaces(logger, config):
 
     upstream_gateway = config['upstream_gateway']
     if upstream_gateway is not None:
-        logger.out(f'Setting up Upstream networok default gateway IP {upstream_gateway}', state='i')
+        logger.out(f'Setting up Upstream network default gateway IP {upstream_gateway}', state='i')
         if upstream_dev == cluster_dev:
             common.run_os_command(f'ip route add default via {upstream_gateway} dev brcluster')
         else:
