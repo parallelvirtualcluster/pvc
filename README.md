@@ -55,6 +55,12 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.34
+
+  * [Provisioner] Adds support for filesystem arguments containing =
+  * [CLI Client] Fixes bug with pvc provisioner status output formatting
+  * [Node Daemon] Fixes minor typo in startup message
+
 #### v0.9.33
 
   * [Node Daemon] A major refactoring of the node daemon

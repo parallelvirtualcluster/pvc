@@ -1,3 +1,11 @@
+pvc (0.9.34-0) unstable; urgency=high
+
+  * [Provisioner] Adds support for filesystem arguments containing =
+  * [CLI Client] Fixes bug with pvc provisioner status output formatting
+  * [Node Daemon] Fixes minor typo in startup message
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 24 Aug 2021 16:15:25 -0400
+
 pvc (0.9.33-0) unstable; urgency=high
 
   * [Node Daemon] A major refactoring of the node daemon
