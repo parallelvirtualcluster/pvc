@@ -1510,14 +1510,16 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
                 if volume.get('filesystem') is None:
                     continue
 
-                print("Creating {} filesystem on {}:\n{}".format(volume['filesystem'], dst_volume, stdout))
-
                 filesystem_args_list = list()
                 for arg in volume['filesystem_args'].split():
-                    arg_entry, arg_data = arg.split('=')
+                    arg_entry, *arg_data = arg.split('=')
+                    arg_data = '='.join(arg_data)
                     filesystem_args_list.append(arg_entry)
                     filesystem_args_list.append(arg_data)
                 filesystem_args = ' '.join(filesystem_args_list)
+
+                print("Creating {} filesystem on {}".format(volume['filesystem'], dst_volume))
+                print("Args: {}".format(filesystem_args))
 
                 # Map the RBD device
                 retcode, retmsg = pvc_ceph.map_volume(zkhandler, volume['pool'], dst_volume_name)
@@ -1533,6 +1535,8 @@ def create_vm(self, vm_name, vm_profile, define_vm=True, start_vm=True, script_r
                     retcode, stdout, stderr = pvc_common.run_os_command("mkfs.{} {} /dev/rbd/{}".format(volume['filesystem'], filesystem_args, dst_volume))
                     if retcode:
                         raise ProvisioningError('Failed to create {} filesystem on "{}": {}'.format(volume['filesystem'], dst_volume, stderr))
+
+                print(stdout)
 
         if is_script_install:
             # Create temporary directory
