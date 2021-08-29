@@ -207,9 +207,13 @@ def entrypoint():
 
         # Waiting for any flushes to complete
         logger.out('Waiting for any active flushes', state='s')
-        if this_node is not None:
-            while this_node.flush_thread is not None:
-                sleep(0.5)
+        try:
+            if this_node is not None:
+                while this_node.flush_thread is not None:
+                    sleep(0.5)
+        except Exception:
+            # We really don't care here, just proceed
+            pass
 
         # Stop console logging on all VMs
         logger.out('Stopping domain console watchers', state='s')
