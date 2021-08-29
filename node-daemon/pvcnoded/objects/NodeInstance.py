@@ -41,7 +41,7 @@ class NodeInstance(object):
         self.daemon_mode = self.zkhandler.read(('node.mode', self.name))
         self.daemon_state = 'stop'
         self.router_state = 'client'
-        self.domain_state = 'ready'
+        self.domain_state = 'flushed'
         # Object lists
         self.d_node = d_node
         self.d_network = d_network
