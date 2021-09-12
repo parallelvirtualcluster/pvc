@@ -41,7 +41,7 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO systemctl restart pvcapid-worker &>/dev/null
     ssh $HOST $SUDO systemctl restart pvcnoded &>/dev/null
     echo "done."
-    echo -n "Waiting 15s for host to stabilize... "
-    sleep 15
+    echo -n "Waiting 30s for host to stabilize... "
+    sleep 30
     echo "done."
 done
