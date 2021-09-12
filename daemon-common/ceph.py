@@ -480,15 +480,15 @@ def getVolumeInformation(zkhandler, pool, volume):
 
 
 def add_volume(zkhandler, pool, name, size):
+    # Add 'B' if the volume is in bytes
+    if re.match(r'^[0-9]+$', size):
+        size = '{}B'.format(size)
+
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zkhandler, pool)
     size_bytes = format_bytes_fromhuman(size)
     if size_bytes >= int(pool_information['stats']['free_bytes']):
         return False, 'ERROR: Requested volume size is greater than the available free space in the pool'
-
-    # Add 'B' if the volume is in bytes
-    if re.match(r'^[0-9]+$', size):
-        size = '{}B'.format(size)
 
     # 2. Create the volume
     retcode, stdout, stderr = common.run_os_command('rbd create --size {} {}/{}'.format(size, pool, name))
@@ -540,12 +540,18 @@ def resize_volume(zkhandler, pool, name, size):
     if re.match(r'^[0-9]+$', size):
         size = '{}B'.format(size)
 
-    # 1. Resize the volume
+    # 1. Verify the size of the volume
+    pool_information = getPoolInformation(zkhandler, pool)
+    size_bytes = format_bytes_fromhuman(size)
+    if size_bytes >= int(pool_information['stats']['free_bytes']):
+        return False, 'ERROR: Requested volume size is greater than the available free space in the pool'
+
+    # 2. Resize the volume
     retcode, stdout, stderr = common.run_os_command('rbd resize --size {} {}/{}'.format(size, pool, name))
     if retcode:
         return False, 'ERROR: Failed to resize RBD volume "{}" to size "{}" in pool "{}": {}'.format(name, size, pool, stderr)
 
-    # 2a. Determine the node running this VM if applicable
+    # 3a. Determine the node running this VM if applicable
     active_node = None
     volume_vm_name = name.split('_')[0]
     retcode, vm_info = vm.get_info(zkhandler, volume_vm_name)
@@ -555,7 +561,7 @@ def resize_volume(zkhandler, pool, name, size):
             if disk['name'] == '{}/{}'.format(pool, name):
                 active_node = vm_info['node']
                 volume_id = disk['dev']
-    # 2b. Perform a live resize in libvirt if the VM is running
+    # 3b. Perform a live resize in libvirt if the VM is running
     if active_node is not None and vm_info.get('state', '') == 'start':
         import libvirt
         # Run the libvirt command against the target host
@@ -569,11 +575,11 @@ def resize_volume(zkhandler, pool, name, size):
         except Exception:
             pass
 
-    # 2. Get volume stats
+    # 4. Get volume stats
     retcode, stdout, stderr = common.run_os_command('rbd info --format json {}/{}'.format(pool, name))
     volstats = stdout
 
-    # 3. Add the new volume to Zookeeper
+    # 5. Update the volume in Zookeeper
     zkhandler.write([
         (('volume', f'{pool}/{name}'), ''),
         (('volume.stats', f'{pool}/{name}'), volstats),
