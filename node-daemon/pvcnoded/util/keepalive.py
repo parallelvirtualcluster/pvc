@@ -429,42 +429,58 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
         if debug:
             logger.out("Getting disk statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_disk_stats = []
-        for disk in tree.findall('devices/disk'):
-            disk_name = disk.find('source').get('name')
-            if not disk_name:
-                disk_name = disk.find('source').get('file')
-            disk_stats = domain.blockStats(disk.find('target').get('dev'))
-            domain_disk_stats.append({
-                "name": disk_name,
-                "rd_req": disk_stats[0],
-                "rd_bytes": disk_stats[1],
-                "wr_req": disk_stats[2],
-                "wr_bytes": disk_stats[3],
-                "err": disk_stats[4]
-            })
+        try:
+            for disk in tree.findall('devices/disk'):
+                disk_name = disk.find('source').get('name')
+                if not disk_name:
+                    disk_name = disk.find('source').get('file')
+                disk_stats = domain.blockStats(disk.find('target').get('dev'))
+                domain_disk_stats.append({
+                    "name": disk_name,
+                    "rd_req": disk_stats[0],
+                    "rd_bytes": disk_stats[1],
+                    "wr_req": disk_stats[2],
+                    "wr_bytes": disk_stats[3],
+                    "err": disk_stats[4]
+                })
+        except Exception as e:
+            if debug:
+                try:
+                    logger.out("Failed getting disk stats for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
+                except Exception:
+                    pass
+            continue
 
         if debug:
             logger.out("Getting network statistics for VM {}".format(domain_name), state='d', prefix='vm-thread')
         domain_network_stats = []
-        for interface in tree.findall('devices/interface'):
-            interface_type = interface.get('type')
-            if interface_type not in ['bridge']:
-                continue
-            interface_name = interface.find('target').get('dev')
-            interface_bridge = interface.find('source').get('bridge')
-            interface_stats = domain.interfaceStats(interface_name)
-            domain_network_stats.append({
-                "name": interface_name,
-                "bridge": interface_bridge,
-                "rd_bytes": interface_stats[0],
-                "rd_packets": interface_stats[1],
-                "rd_errors": interface_stats[2],
-                "rd_drops": interface_stats[3],
-                "wr_bytes": interface_stats[4],
-                "wr_packets": interface_stats[5],
-                "wr_errors": interface_stats[6],
-                "wr_drops": interface_stats[7]
-            })
+        try:
+            for interface in tree.findall('devices/interface'):
+                interface_type = interface.get('type')
+                if interface_type not in ['bridge']:
+                    continue
+                interface_name = interface.find('target').get('dev')
+                interface_bridge = interface.find('source').get('bridge')
+                interface_stats = domain.interfaceStats(interface_name)
+                domain_network_stats.append({
+                    "name": interface_name,
+                    "bridge": interface_bridge,
+                    "rd_bytes": interface_stats[0],
+                    "rd_packets": interface_stats[1],
+                    "rd_errors": interface_stats[2],
+                    "rd_drops": interface_stats[3],
+                    "wr_bytes": interface_stats[4],
+                    "wr_packets": interface_stats[5],
+                    "wr_errors": interface_stats[6],
+                    "wr_drops": interface_stats[7]
+                })
+        except Exception as e:
+            if debug:
+                try:
+                    logger.out("Failed getting network stats for {}: {}".format(domain.name(), e), state='d', prefix='vm-thread')
+                except Exception:
+                    pass
+            continue
 
         # Create the final dictionary
         domain_stats = {
@@ -488,7 +504,7 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
             ])
         except Exception as e:
             if debug:
-                logger.out("{}".format(e), state='d', prefix='vm-thread')
+                logger.out("Failed to write domain statistics: {}".format(e), state='d', prefix='vm-thread')
 
     # Close the Libvirt connection
     lv_conn.close()
