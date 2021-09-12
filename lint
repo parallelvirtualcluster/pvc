@@ -6,7 +6,7 @@ if ! which flake8 &>/dev/null; then
 fi
 
 flake8 \
-    --ignore=E501,E241 \
+    --ignore=E501,E241,F522,F523,F541 \
     --exclude=debian,api-daemon/migrations/versions,api-daemon/provisioner/examples
 ret=$?
 if [[ $ret -eq 0 ]]; then
