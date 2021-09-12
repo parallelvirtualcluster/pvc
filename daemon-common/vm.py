@@ -105,14 +105,14 @@ def getDomainName(zkhandler, domain):
 # Helper functions
 #
 def change_state(zkhandler, dom_uuid, new_state):
-        lock = zkhandler.exclusivelock(('domain.state', dom_uuid))
-        with lock:
-            zkhandler.write([
-                (('domain.state', dom_uuid), new_state)
-            ])
+    lock = zkhandler.exclusivelock(('domain.state', dom_uuid))
+    with lock:
+        zkhandler.write([
+            (('domain.state', dom_uuid), new_state)
+        ])
 
-            # Wait for 1/2 second to allow state to flow to all nodes
-            time.sleep(0.5)
+        # Wait for 1/2 second to allow state to flow to all nodes
+        time.sleep(0.5)
 
 
 #
@@ -260,6 +260,94 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         ])
 
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(dom_name, dom_uuid)
+
+
+def attach_vm_device(zkhandler, domain, device_spec_xml):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
+    state = zkhandler.read(('domain.state', dom_uuid))
+    if state != 'start':
+        return False, 'ERROR: VM "{}" is not in started state; live-add unneccessary.'.format(domain)
+
+    # Tell the cluster to attach the device
+    attach_device_string = 'attach_device {} {}'.format(dom_uuid, device_spec_xml)
+    zkhandler.write([
+        ('base.cmd.domain', attach_device_string)
+    ])
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock('base.cmd.domain')
+    with lock:
+        try:
+            result = zkhandler.read('base.cmd.domain').split()[0]
+            if result == 'success-attach_device':
+                message = 'Attached device on VM "{}"'.format(domain)
+                success = True
+            else:
+                message = 'ERROR: Failed to attach device on VM "{}"; check node logs for details.'.format(domain)
+                success = False
+        except Exception:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock('base.cmd.domain')
+    with lock:
+        time.sleep(0.5)
+        zkhandler.write([
+            ('base.cmd.domain', '')
+        ])
+
+    return success, message
+
+
+def detach_vm_device(zkhandler, domain, device_spec_xml):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
+    state = zkhandler.read(('domain.state', dom_uuid))
+    if state != 'start':
+        return False, 'ERROR: VM "{}" is not in started state; live-add unneccessary.'.format(domain)
+
+    # Tell the cluster to detach the device
+    detach_device_string = 'detach_device {} {}'.format(dom_uuid, device_spec_xml)
+    zkhandler.write([
+        ('base.cmd.domain', detach_device_string)
+    ])
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    lock = zkhandler.readlock('base.cmd.domain')
+    with lock:
+        try:
+            result = zkhandler.read('base.cmd.domain').split()[0]
+            if result == 'success-detach_device':
+                message = 'Attached device on VM "{}"'.format(domain)
+                success = True
+            else:
+                message = 'ERROR: Failed to detach device on VM "{}"; check node logs for details.'.format(domain)
+                success = False
+        except Exception:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    lock = zkhandler.writelock('base.cmd.domain')
+    with lock:
+        time.sleep(0.5)
+        zkhandler.write([
+            ('base.cmd.domain', '')
+        ])
+
+    return success, message
 
 
 def modify_vm_metadata(zkhandler, domain, node_limit, node_selector, node_autostart, provisioner_profile, migration_method):

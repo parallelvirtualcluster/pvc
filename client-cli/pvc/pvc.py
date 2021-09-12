@@ -1472,7 +1472,7 @@ def vm_network_get(domain, raw):
     help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.'
 )
 @click.option(
-    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    '-s', '--sriov', 'sriov_flag', is_flag=True, default=False,
     help='Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.'
 )
 @click.option(
@@ -1481,16 +1481,20 @@ def vm_network_get(domain, raw):
     help='For SR-IOV NETs, the SR-IOV network device mode.'
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
+    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
+    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+)
+@click.option(
+    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config; requires "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the restart'
+    help='Confirm the VM restart.'
 )
 @cluster_req
-def vm_network_add(domain, net, macaddr, model, sriov, sriov_mode, restart, confirm_flag):
+def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_flag, restart_flag, confirm_flag):
     """
     Add the network NET to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
 
@@ -1503,15 +1507,17 @@ def vm_network_add(domain, net, macaddr, model, sriov, sriov_mode, restart, conf
       2. If an identical SR-IOV VF device is not present on the target node, post-migration startup will fail. It may be prudent to use a node limit here.
 
     """
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart_flag and live_flag:
+        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
+        exit(1)
+
+    if restart_flag and not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            restart = False
+            restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, net, macaddr, model, sriov, sriov_mode, restart)
-    if retcode and not restart:
-        retmsg = retmsg + " Changes will be applied on next VM start/restart."
+    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, net, macaddr, model, sriov_flag, sriov_mode, live_flag, restart_flag)
     cleanup(retcode, retmsg)
 
 
@@ -1526,34 +1532,40 @@ def vm_network_add(domain, net, macaddr, model, sriov, sriov_mode, restart, conf
     'net'
 )
 @click.option(
-    '-s', '--sriov', 'sriov', is_flag=True, default=False,
+    '-s', '--sriov', 'sriov_flag', is_flag=True, default=False,
     help='Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.'
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
+    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
+    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+)
+@click.option(
+    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config; requires "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the restart'
+    help='Confirm the restart.'
 )
 @cluster_req
-def vm_network_remove(domain, net, sriov, restart, confirm_flag):
+def vm_network_remove(domain, net, sriov_flag, live_flag, restart_flag, confirm_flag):
     """
     Remove the network NET from the virtual machine DOMAIN.
 
     NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
     """
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart_flag and live_flag:
+        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
+        exit(1)
+
+    if restart_flag and not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            restart = False
+            restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, sriov, restart)
-    if retcode and not restart:
-        retmsg = retmsg + " Changes will be applied on next VM start/restart."
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, sriov_flag, live_flag, restart_flag)
     cleanup(retcode, retmsg)
 
 
@@ -1623,8 +1635,12 @@ def vm_volume_get(domain, raw):
     help='The type of volume to add.'
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
+    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
+    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+)
+@click.option(
+    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config; requires "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1632,21 +1648,23 @@ def vm_volume_get(domain, raw):
     help='Confirm the restart'
 )
 @cluster_req
-def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag):
+def vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_flag, confirm_flag):
     """
     Add the volume VOLUME to the virtual machine DOMAIN.
 
     VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
     """
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart_flag and live_flag:
+        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
+        exit(1)
+
+    if restart_flag and not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            restart = False
+            restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, restart)
-    if retcode and not restart:
-        retmsg = retmsg + " Changes will be applied on next VM start/restart."
+    retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, live_flag, restart_flag)
     cleanup(retcode, retmsg)
 
 
@@ -1661,8 +1679,12 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     'volume'
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
+    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
+    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+)
+@click.option(
+    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
+    help='Immediately restart VM to apply new config; requires "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1670,19 +1692,21 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, restart, confirm_flag
     help='Confirm the restart'
 )
 @cluster_req
-def vm_volume_remove(domain, volume, restart, confirm_flag):
+def vm_volume_remove(domain, volume, live_flag, restart_flag, confirm_flag):
     """
     Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
     """
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart_flag and live_flag:
+        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
+        exit(1)
+
+    if restart_flag and not confirm_flag and not config['unsafe']:
         try:
             click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
         except Exception:
-            restart = False
+            restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, volume, restart)
-    if retcode and not restart:
-        retmsg = retmsg + " Changes will be applied on next VM start/restart."
+    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, volume, live_flag, restart_flag)
     cleanup(retcode, retmsg)
 
 

@@ -491,6 +491,58 @@ def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method
     return output, retcode
 
 
+@ZKConnection(config)
+def vm_attach_device(zkhandler, vm, device_spec_xml):
+    """
+    Hot-attach a device (via XML spec) to a VM.
+    """
+    try:
+        _ = etree.fromstring(device_spec_xml)
+    except Exception as e:
+        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+
+    retflag, retdata = pvc_vm.attach_vm_device(zkhandler, vm, device_spec_xml)
+
+    if retflag:
+        retcode = 200
+        output = {
+            'message': retdata.replace('\"', '\'')
+        }
+    else:
+        retcode = 400
+        output = {
+            'message': 'WARNING: Failed to perform hot attach; device will be added on next VM start/restart.'
+        }
+
+    return output, retcode
+
+
+@ZKConnection(config)
+def vm_detach_device(zkhandler, vm, device_spec_xml):
+    """
+    Hot-detach a device (via XML spec) from a VM.
+    """
+    try:
+        _ = etree.fromstring(device_spec_xml)
+    except Exception as e:
+        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+
+    retflag, retdata = pvc_vm.detach_vm_device(zkhandler, vm, device_spec_xml)
+
+    if retflag:
+        retcode = 200
+        output = {
+            'message': retdata.replace('\"', '\'')
+        }
+    else:
+        retcode = 400
+        output = {
+            'message': 'WARNING: Failed to perform hot detach; device will be removed on next VM start/restart.'
+        }
+
+    return output, retcode
+
+
 @pvc_common.Profiler(config)
 @ZKConnection(config)
 def get_vm_meta(zkhandler, vm):

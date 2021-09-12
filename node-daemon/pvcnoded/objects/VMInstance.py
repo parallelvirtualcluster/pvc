@@ -28,6 +28,8 @@ from threading import Thread
 
 from xml.etree import ElementTree
 
+from re import match
+
 import daemon_lib.common as common
 
 import pvcnoded.objects.VMConsoleWatcherInstance as VMConsoleWatcherInstance
@@ -162,6 +164,34 @@ class VMInstance(object):
             self.zkhandler.write([
                 (('domain.console.vnc', self.domuuid), '')
             ])
+
+    # Attach a device to the running domain
+    def attach_device(self, xml_spec):
+        if not self.dom:
+            self.logger.out('Cannot attach device to non-running domain', state='w', prefix='Domain {}'.format(self.domuuid))
+            return False
+
+        try:
+            self.logger.out('Attaching new device to VM', state='i', prefix='Domain {}'.format(self.domuuid))
+            self.dom.attachDevice(xml_spec)
+            return True
+        except Exception as e:
+            self.logger.out('Failed to attach device: {}'.format(e), state='e', prefix='Domain {}'.format(self.domuuid))
+            return False
+
+    # Detach a device from the running domain
+    def detach_device(self, xml_spec):
+        if not self.dom:
+            self.logger.out('Cannot detach device from non-running domain', state='w', prefix='Domain {}'.format(self.domuuid))
+            return False
+
+        try:
+            self.logger.out('Detaching device from VM', state='i', prefix='Domain {}'.format(self.domuuid))
+            self.dom.detachDevice(xml_spec)
+            return True
+        except Exception as e:
+            self.logger.out('Failed to detach device: {}'.format(e), state='e', prefix='Domain {}'.format(self.domuuid))
+            return False
 
     # Start up the VM
     def start_vm(self):
@@ -851,30 +881,51 @@ class VMInstance(object):
 # Primary command function
 def vm_command(zkhandler, logger, this_node, data):
     # Get the command and args
-    command, args = data.split()
+    command, dom_uuid, *args = data.split()
 
-    # Flushing VM RBD locks
-    if command == 'flush_locks':
-        dom_uuid = args
+    if match('success-.*', command) or match('failure-.*', command):
+        return
 
-        # Verify that the VM is set to run on this node
-        if this_node.d_domain[dom_uuid].getnode() == this_node.name:
-            # Lock the command queue
-            zk_lock = zkhandler.writelock('base.cmd.domain')
-            with zk_lock:
-                # Flush the lock
-                result = VMInstance.flush_locks(zkhandler, logger, dom_uuid, this_node)
-                # Command succeeded
-                if result:
-                    # Update the command queue
-                    zkhandler.write([
-                        ('base.cmd.domain', 'success-{}'.format(data))
-                    ])
-                # Command failed
-                else:
-                    # Update the command queue
-                    zkhandler.write([
-                        ('base.cmd.domain', 'failure-{}'.format(data))
-                    ])
-                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
-                time.sleep(1)
+    logger.out('Getting command "{}" for domain "{}"'.format(command, dom_uuid), state='i')
+
+    # Verify that the VM is set to run on this node
+    domain = this_node.d_domain.get(dom_uuid, None)
+    if domain is None:
+        return False
+
+    if domain.getnode() != this_node.name:
+        return
+
+    # Lock the command queue
+    zk_lock = zkhandler.writelock('base.cmd.domain')
+    with zk_lock:
+        # Flushing VM RBD locks
+        if command == 'flush_locks':
+            result = VMInstance.flush_locks(zkhandler, logger, dom_uuid, this_node)
+        # Attaching a device
+        elif command == 'attach_device':
+            xml_spec = ' '.join(args)
+            result = domain.attach_device(xml_spec)
+        # Detaching a device
+        elif command == 'detach_device':
+            xml_spec = ' '.join(args)
+            result = domain.detach_device(xml_spec)
+        # Command not defined
+        else:
+            result = False
+
+        # Command succeeded
+        if result:
+            # Update the command queue
+            zkhandler.write([
+                ('base.cmd.domain', 'success-{}'.format(data))
+            ])
+        # Command failed
+        else:
+            # Update the command queue
+            zkhandler.write([
+                ('base.cmd.domain', 'failure-{}'.format(data))
+            ])
+
+        # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+        time.sleep(1)

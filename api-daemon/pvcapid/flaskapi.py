@@ -2003,6 +2003,72 @@ class API_VM_Rename(Resource):
 api.add_resource(API_VM_Rename, '/vm/<vm>/rename')
 
 
+# /vm/<vm>/device
+class API_VM_Device(Resource):
+    @RequestParser([
+        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML device document must be specified"},
+    ])
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Hot-attach device XML to {vm}
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: xml
+            type: string
+            required: true
+            description: The raw Libvirt XML definition of the device to attach
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_attach_device(vm, reqargs.get('xml', None))
+
+    @RequestParser([
+        {'name': 'xml', 'required': True, 'helptext': "A Libvirt XML device document must be specified"},
+    ])
+    @Authenticator
+    def delete(self, vm, reqargs):
+        """
+        Hot-detach device XML to {vm}
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: xml
+            type: string
+            required: true
+            description: The raw Libvirt XML definition of the device to detach
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.vm_detach_device(vm, reqargs.get('xml', None))
+
+
+api.add_resource(API_VM_Device, '/vm/<vm>/device')
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

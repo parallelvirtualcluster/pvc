@@ -134,6 +134,48 @@ def vm_modify(config, vm, xml, restart):
     return retstatus, response.json().get('message', '')
 
 
+def vm_device_attach(config, vm, xml):
+    """
+    Attach a device to a VM
+
+    API endpoint: POST /vm/{vm}/device
+    API arguments: xml={xml}
+    API schema: {"message":"{data}"}
+    """
+    data = {
+        'xml': xml
+    }
+    response = call_api(config, 'post', '/vm/{vm}/device'.format(vm=vm), data=data)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
+def vm_device_detach(config, vm, xml):
+    """
+    Detach a device from a VM
+
+    API endpoint: DELETE /vm/{vm}/device
+    API arguments: xml={xml}
+    API schema: {"message":"{data}"}
+    """
+    data = {
+        'xml': xml
+    }
+    response = call_api(config, 'delete', '/vm/{vm}/device'.format(vm=vm), data=data)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
 def vm_rename(config, vm, new_name):
     """
     Rename VM to new name
@@ -618,13 +660,15 @@ def format_vm_memory(config, name, memory):
     return '\n'.join(output_list)
 
 
-def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, restart):
+def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, live, restart):
     """
     Add a new network to the VM
 
     Calls vm_info to get the VM XML.
 
     Calls vm_modify to set the VM XML.
+
+    Calls vm_device_attach if live to hot-attach the device.
     """
     from lxml.objectify import fromstring
     from lxml.etree import tostring
@@ -747,16 +791,36 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, rest
     except Exception:
         return False, 'ERROR: Failed to dump XML data.'
 
-    return vm_modify(config, vm, new_xml, restart)
+    modify_retcode, modify_retmsg = vm_modify(config, vm, new_xml, restart)
+
+    if not modify_retcode:
+        return modify_retcode, modify_retmsg
+
+    if live:
+        attach_retcode, attach_retmsg = vm_device_attach(config, vm, device_string)
+
+        if not attach_retcode:
+            retcode = attach_retcode
+            retmsg = attach_retmsg
+        else:
+            retcode = attach_retcode
+            retmsg = "Network '{}' successfully added to VM config and hot attached to running VM.".format(network)
+    else:
+        retcode = modify_retcode
+        retmsg = modify_retmsg
+
+    return retcode, retmsg
 
 
-def vm_networks_remove(config, vm, network, sriov, restart):
+def vm_networks_remove(config, vm, network, sriov, live, restart):
     """
     Remove a network to the VM
 
     Calls vm_info to get the VM XML.
 
     Calls vm_modify to set the VM XML.
+
+    Calls vm_device_detach to hot-remove the device.
     """
     from lxml.objectify import fromstring
     from lxml.etree import tostring
@@ -775,6 +839,7 @@ def vm_networks_remove(config, vm, network, sriov, restart):
         return False, 'ERROR: Failed to parse XML data.'
 
     changed = False
+    device_string = None
     for interface in parsed_xml.devices.find('interface'):
         if sriov:
             if interface.attrib.get('type') == 'hostdev':
@@ -792,15 +857,36 @@ def vm_networks_remove(config, vm, network, sriov, restart):
             if network == if_vni:
                 interface.getparent().remove(interface)
                 changed = True
+        if changed:
+            device_string = tostring(interface)
+
     if changed:
         try:
             new_xml = tostring(parsed_xml, pretty_print=True)
         except Exception:
             return False, 'ERROR: Failed to dump XML data.'
-
-        return vm_modify(config, vm, new_xml, restart)
     else:
         return False, 'ERROR: Network "{}" does not exist on VM.'.format(network)
+
+    modify_retcode, modify_retmsg = vm_modify(config, vm, new_xml, restart)
+
+    if not modify_retcode:
+        return modify_retcode, modify_retmsg
+
+    if live and device_string:
+        detach_retcode, detach_retmsg = vm_device_detach(config, vm, device_string)
+
+        if not detach_retcode:
+            retcode = detach_retcode
+            retmsg = detach_retmsg
+        else:
+            retcode = detach_retcode
+            retmsg = "Network '{}' successfully removed from VM config and hot detached from running VM.".format(network)
+    else:
+        retcode = modify_retcode
+        retmsg = modify_retmsg
+
+    return retcode, retmsg
 
 
 def vm_networks_get(config, vm):
@@ -913,7 +999,7 @@ def format_vm_networks(config, name, networks):
     return '\n'.join(output_list)
 
 
-def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
+def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, live, restart):
     """
     Add a new volume to the VM
 
@@ -1001,6 +1087,7 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
         new_disk_details.source.set('name', volume)
     elif disk_type == 'file':
         new_disk_details.source.set('file', volume)
+    device_xml = new_disk_details
 
     all_disks = parsed_xml.devices.find('disk')
     if all_disks is None:
@@ -1008,18 +1095,42 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, restart):
     for disk in all_disks:
         last_disk = disk
 
-    if last_disk is None:
-        parsed_xml.devices.find('emulator').addprevious(new_disk_details)
+    # Add the disk at the end of the list (or, right above emulator)
+    if len(all_disks) > 0:
+        for idx, disk in enumerate(parsed_xml.devices.find('disk')):
+            if idx == len(all_disks) - 1:
+                disk.addnext(device_xml)
+    else:
+        parsed_xml.devices.find('emulator').addprevious(device_xml)
 
     try:
         new_xml = tostring(parsed_xml, pretty_print=True)
     except Exception:
         return False, 'ERROR: Failed to dump XML data.'
 
-    return vm_modify(config, vm, new_xml, restart)
+    modify_retcode, modify_retmsg = vm_modify(config, vm, new_xml, restart)
+
+    if not modify_retcode:
+        return modify_retcode, modify_retmsg
+
+    if live:
+        device_string = tostring(device_xml)
+        attach_retcode, attach_retmsg = vm_device_attach(config, vm, device_string)
+
+        if not attach_retcode:
+            retcode = attach_retcode
+            retmsg = attach_retmsg
+        else:
+            retcode = attach_retcode
+            retmsg = "Volume '{}/{}' successfully added to VM config and hot attached to running VM.".format(vpool, vname)
+    else:
+        retcode = modify_retcode
+        retmsg = modify_retmsg
+
+    return retcode, retmsg
 
 
-def vm_volumes_remove(config, vm, volume, restart):
+def vm_volumes_remove(config, vm, volume, live, restart):
     """
     Remove a volume to the VM
 
@@ -1043,19 +1154,44 @@ def vm_volumes_remove(config, vm, volume, restart):
     except Exception:
         return False, 'ERROR: Failed to parse XML data.'
 
+    changed = False
+    device_string = None
     for disk in parsed_xml.devices.find('disk'):
         disk_name = disk.source.attrib.get('name')
         if not disk_name:
             disk_name = disk.source.attrib.get('file')
         if volume == disk_name:
+            device_string = tostring(disk)
             disk.getparent().remove(disk)
+            changed = True
 
-    try:
-        new_xml = tostring(parsed_xml, pretty_print=True)
-    except Exception:
-        return False, 'ERROR: Failed to dump XML data.'
+    if changed:
+        try:
+            new_xml = tostring(parsed_xml, pretty_print=True)
+        except Exception:
+            return False, 'ERROR: Failed to dump XML data.'
+    else:
+        return False, 'ERROR: Volume "{}" does not exist on VM.'.format(volume)
 
-    return vm_modify(config, vm, new_xml, restart)
+    modify_retcode, modify_retmsg = vm_modify(config, vm, new_xml, restart)
+
+    if not modify_retcode:
+        return modify_retcode, modify_retmsg
+
+    if live and device_string:
+        detach_retcode, detach_retmsg = vm_device_detach(config, vm, device_string)
+
+        if not detach_retcode:
+            retcode = detach_retcode
+            retmsg = detach_retmsg
+        else:
+            retcode = detach_retcode
+            retmsg = "Volume '{}' successfully removed from VM config and hot detached from running VM.".format(volume)
+    else:
+        retcode = modify_retcode
+        retmsg = modify_retmsg
+
+    return retcode, retmsg
 
 
 def vm_volumes_get(config, vm):
