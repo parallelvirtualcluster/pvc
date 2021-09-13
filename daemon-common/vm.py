@@ -196,6 +196,16 @@ def define_vm(zkhandler, config_data, target_node, node_limit, node_selector, no
         if not valid_node:
             return False, 'ERROR: Specified node "{}" is invalid.'.format(target_node)
 
+    # Validate the new RAM against the current active node
+    node_total_memory = int(zkhandler.read(('node.memory.total', target_node)))
+    if int(parsed_xml.memory.text) >= node_total_memory:
+        return False, 'ERROR: VM configuration specifies more memory ({} MiB) than node "{}" has available ({} MiB).'.format(parsed_xml.memory.text, target_node, node_total_memory)
+
+    # Validate the number of vCPUs against the current active node
+    node_total_cpus = int(zkhandler.read(('node.data.static', target_node)).split()[0])
+    if (node_total_cpus - 2) <= int(parsed_xml.vcpu.text):
+        return False, 'ERROR: VM configuration specifies more vCPUs ({}) than node "{}" has available ({} minus 2).'.format(parsed_xml.vcpu.text, target_node, node_total_cpus)
+
     # If a SR-IOV network device is being added, set its used state
     dnetworks = common.getDomainNetworks(parsed_xml, {})
     for network in dnetworks:
@@ -428,6 +438,17 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     old_vm_config = zkhandler.read(('domain.xml', dom_uuid))
     old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
     old_dnetworks = common.getDomainNetworks(old_parsed_xml, {})
+
+    # Validate the new RAM against the current active node
+    node_name = zkhandler.read(('domain.node', dom_uuid))
+    node_total_memory = int(zkhandler.read(('node.memory.total', node_name)))
+    if int(parsed_xml.memory.text) >= node_total_memory:
+        return False, 'ERROR: Updated VM configuration specifies more memory ({} MiB) than node "{}" has available ({} MiB).'.format(parsed_xml.memory.text, node_name, node_total_memory)
+
+    # Validate the number of vCPUs against the current active node
+    node_total_cpus = int(zkhandler.read(('node.data.static', node_name)).split()[0])
+    if (node_total_cpus - 2) <= int(parsed_xml.vcpu.text):
+        return False, 'ERROR: Updated VM configuration specifies more vCPUs ({}) than node "{}" has available ({} minus 2).'.format(parsed_xml.vcpu.text, node_name, node_total_cpus)
 
     # If a SR-IOV network device is being added, set its used state
     dnetworks = common.getDomainNetworks(parsed_xml, {})
