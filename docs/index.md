@@ -55,6 +55,14 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.35
+
+  * [Node Daemon] Fixes several bugs and crashes in node daemon
+  * [General] Updates linting rules for newer Flake8 linter
+  * [Daemons/CLI client] Adds VM network and disk hot attach/detach support; NOTE: Changes the default behaviour of `pvc vm network add`/`remove` and `pvc vm volume add`/`remove`
+  * [API Daemon] Adds checks for pool size when resizing volumes
+  * [API Daemon] Adds checks for RAM and vCPU sizes when defining or modifying VMs
+
 #### v0.9.34
 
   * [Provisioner] Adds support for filesystem arguments containing =

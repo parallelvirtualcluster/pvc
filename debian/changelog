@@ -1,3 +1,13 @@
+pvc (0.9.35-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes several bugs and crashes in node daemon
+  * [General] Updates linting rules for newer Flake8 linter
+  * [Daemons/CLI client] Adds VM network and disk hot attach/detach support; NOTE: Changes the default behaviour of `pvc vm network add`/`remove` and `pvc vm volume add`/`remove`
+  * [API Daemon] Adds checks for pool size when resizing volumes
+  * [API Daemon] Adds checks for RAM and vCPU sizes when defining or modifying VMs
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 13 Sep 2021 02:20:46 -0400
+
 pvc (0.9.34-0) unstable; urgency=high
 
   * [Provisioner] Adds support for filesystem arguments containing =
