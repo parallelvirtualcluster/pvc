@@ -1,0 +1,325 @@
+#!/bin/bash
+# -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+ceph_utilization - Plugin to monitor a Ceph cluster's utilization
+
+=head1 CONFIGURATION
+
+Defaults (no config required) for the total utilization thresholds:
+
+[ceph_utilization]
+env.warning 80
+env.critical 90
+
+=head1 AUTHOR
+
+Joshua Boniface <joshua@boniface.me>
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 BUGS
+
+=back
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+is_multigraph
+
+warning=80
+critical=90
+
+RADOSDF_CMD="/usr/bin/sudo /usr/bin/rados df --format json"
+OSDDF_CMD="/usr/bin/sudo /usr/bin/ceph osd df --format json"
+JQ_CMD="/usr/bin/jq"
+
+output_usage() {
+    echo "This plugin outputs information about a Ceph cluster"
+    exit 0
+}
+
+output_autoconf() {
+    $RADOSDF_CMD &>/dev/null
+    radosdf_ret=$?
+    $OSDDF_CMD &>/dev/null
+    osddf_ret=$?
+    $JQ_CMD --version &>/dev/null
+    jq_ret=$?
+
+    if [[ ${radosdf_ret} -eq 0 && ${osddf_ret} -eq 0 && ${jq_ret} -eq 0 ]]; then
+        echo "yes"
+    elif [[ ${radosdf_ret} -ne 0 || ${osddf_ret} -ne 0 ]]; then
+        echo "no (no 'rados' or 'ceph' command found)"
+    elif [[ ${jq_ret} -ne 0 ]]; then
+        echo "no (no 'jq' command found)"
+    else
+        echo "no (general failure)"
+    fi
+}
+
+output_config() {
+    # Graph set 1 - Ceph cluster utilization
+    echo 'multigraph cluster_utilization'
+    echo 'graph_title Cluster Utilization'
+    echo 'graph_args --base 1000'
+    echo 'graph_vlabel % Utilization'
+    echo 'graph_category ceph'
+    echo 'graph_info This graph shows the cluster utilization.'
+
+    echo 'cluster_utilization.label Cluster Utilization'
+    echo 'cluster_utilization.type GAUGE'
+    echo 'cluster_utilization.max 100'
+    echo 'cluster_utilization.info Percentage utilization of the cluster.'
+    print_warning cluster_utilization
+    print_critical cluster_utilization
+
+    # Graph set 2 - Ceph cluster objects
+    echo 'multigraph cluster_objects'
+    echo 'graph_title Cluster Objects'
+    echo 'graph_args --base 1000'
+    echo 'graph_vlabel Objects'
+    echo 'graph_category ceph'
+    echo 'graph_info This graph shows the cluster object count.'
+
+    echo 'cluster_objects.label Cluster Objects'
+    echo 'cluster_objects.type GAUGE'
+    echo 'cluster_objects.min 0'
+    echo 'cluster_objects.info Total objects in the cluster.'
+
+    POOL_LIST="$( $RADOSDF_CMD | jq -r '.pools[].name' )"
+
+    # Graph set 3 - Cluster I/O Bytes Lifetime
+    echo 'multigraph pool_rdbytes'
+    echo "graph_title IO Bytes (Lifetime)"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel bytes read (-) / write (+)"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the lifetime cluster bytes."
+    for pool in ${POOL_LIST}; do
+        # Graph set 3 - Cluster I/O Bytes Lifetime
+        echo "pool_rdbytes_${pool}.label Pool ${pool} IO (Bytes)"
+        echo "pool_rdbytes_${pool}.type GAUGE"
+        echo "pool_rdbytes_${pool}.min 0"
+        echo "pool_rdbytes_${pool}.draw LINE1"
+        echo "pool_rdbytes_${pool}.graph no"
+        echo "pool_wrbytes_${pool}.label Pool ${pool} IO (Bytes)"
+        echo "pool_wrbytes_${pool}.type GAUGE"
+        echo "pool_wrbytes_${pool}.min 0"
+        echo "pool_wrbytes_${pool}.draw LINE1"
+        echo "pool_wrbytes_${pool}.negative pool_rdbytes_${pool}"
+    done
+
+    # Graph set 4 - Cluster I/O Operations Lifetime
+    echo 'multigraph pool_rdops'
+    echo "graph_title IO Operations (Lifetime)"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel IOs read (-) / write (+)"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the lifetime cluster IOs."
+    for pool in ${POOL_LIST}; do
+        # Graph set 4 - Cluster I/O Operations Lifetime
+        echo "pool_rdops_${pool}.label Pool ${pool} IO (Ops)"
+        echo "pool_rdops_${pool}.type GAUGE"
+        echo "pool_rdops_${pool}.min 0"
+        echo "pool_rdops_${pool}.draw LINE1"
+        echo "pool_rdops_${pool}.graph no"
+        echo "pool_wrops_${pool}.label Pool ${pool} IO (Ops)"
+        echo "pool_wrops_${pool}.type GAUGE"
+        echo "pool_wrops_${pool}.min 0"
+        echo "pool_wrops_${pool}.draw LINE1"
+        echo "pool_wrops_${pool}.negative pool_rdops_${pool}"
+    done
+
+    # Graph set 5 - Ceph pool objects
+    echo 'multigraph pool_objects_total'
+    echo "graph_title Objects"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel Objects"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the cluster object count."
+    for pool in ${POOL_LIST}; do
+        # Graph set 5 - Ceph pool objects
+        echo "pool_objects_total_${pool}.label Pool ${pool} Objects"
+        echo "pool_objects_total_${pool}.type GAUGE"
+        echo "pool_objects_total_${pool}.min 0"
+        echo "pool_objects_total_${pool}.info Total objects in the pool."
+    done
+
+    # Graph set 6 - Ceph pool objects copies
+    echo 'multigraph pool_objects_copies'
+    echo "graph_title Objects Copies"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel Objects"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the cluster object copy count."
+    for pool in ${POOL_LIST}; do
+        # Graph set 6 - Ceph pool objects copies
+        echo "pool_objects_copies_${pool}.label Pool ${pool} Objects Copies"
+        echo "pool_objects_copies_${pool}.type GAUGE"
+        echo "pool_objects_copies_${pool}.min 0"
+        echo "pool_objects_copies_${pool}.info Total object copies in the pool."
+    done
+
+    # Graph set 7 - Ceph pool objects degraded
+    echo 'multigraph pool_objects_degraded'
+    echo "graph_title Objects Degraded"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel Objects"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the cluster object degraded count."
+    for pool in ${POOL_LIST}; do
+        # Graph set 7 - Ceph pool objects degraded
+        echo "pool_objects_degraded_${pool}.label Pool ${pool} Objects Degraded"
+        echo "pool_objects_degraded_${pool}.type GAUGE"
+        echo "pool_objects_degraded_${pool}.min 0"
+        echo "pool_objects_degraded_${pool}.info Total degraded objects in the pool."
+    done
+
+    OSD_LIST="$( $OSDDF_CMD | jq -r '.nodes[].id' | sort -n )"
+
+    # Graph set 8 - Ceph OSD status
+    echo 'multigraph osd_status'
+    echo "graph_title OSD Status"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel Status Up (1) / Down (0)"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the OSD status."
+    for osd in ${OSD_LIST}; do
+        # Graph set 8 - Ceph OSD status
+        echo "osd_status_${osd}.label osd.${osd} Status"
+        echo "osd_status_${osd}.type GAUGE"
+        echo "osd_status_${osd}.min 0"
+        echo "osd_status_${osd}.max 1"
+        echo "osd_status_${osd}.info Status of the OSD."
+    done
+
+    # Graph set 9 - Ceph OSD utilization
+    echo 'multigraph osd_utilization'
+    echo "graph_title OSD Utilization"
+    echo "graph_args --base 1000"
+    echo "graph_vlabel % Utilization"
+    echo "graph_category ceph"
+    echo "graph_info This graph shows the OSD utilization."
+    for osd in ${OSD_LIST}; do
+        # Graph set 9 - Ceph OSD utilization
+        echo "osd_utilization_${osd}.label osd.${osd} Utilization"
+        echo "osd_utilization_${osd}.type GAUGE"
+        echo "osd_utilization_${osd}.max 100"
+        echo "osd_utilization_${osd}.info Utilization of the OSD."
+    done
+
+    exit 0
+}
+
+output_values() {
+    RADOS_JSON_OUTPUT="$( $RADOSDF_CMD )"
+    OSD_JSON_OUTPUT="$( $OSDDF_CMD )"
+
+    cluster_utilization="$( $JQ_CMD -r '.total_used' <<<"${RADOS_JSON_OUTPUT}" )"
+    cluster_size="$( $JQ_CMD -r '.total_space' <<<"${RADOS_JSON_OUTPUT}" )"
+    pct_utilization="$( echo "scale=4; ${cluster_utilization} / ${cluster_size} * 100" | bc -l )"
+    cluster_objects="$( $JQ_CMD -r '.total_objects' <<<"${RADOS_JSON_OUTPUT}" )"
+
+    echo "multigraph cluster_utilization"
+    echo "cluster_utilization.value ${pct_utilization}"
+    echo "multigraph cluster_objects"
+    echo "cluster_objects.value ${cluster_objects}"
+
+    cluster_pool_count="$( $JQ_CMD -r '.pools[].name' <<<"${RADOS_JSON_OUTPUT}" | wc -l )"
+    echo "multigraph pool_rdbytes"
+    for id in $( seq 0 $(( ${cluster_pool_count} - 1 )) ); do
+        pool="$( $JQ_CMD -r ".pools[$id].name" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_rdbytes="$( $JQ_CMD -r ".pools[$id].read_bytes" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_wrbytes="$( $JQ_CMD -r ".pools[$id].write_bytes" <<<"${RADOS_JSON_OUTPUT}" )"
+        echo "pool_rdbytes_${pool}.value ${pool_rdbytes}"
+        echo "pool_wrbytes_${pool}.value ${pool_wrbytes}"
+    done
+
+    echo "multigraph pool_rdops"
+    for id in $( seq 0 $(( ${cluster_pool_count} - 1 )) ); do
+        pool="$( $JQ_CMD -r ".pools[$id].name" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_rdops="$( $JQ_CMD -r ".pools[$id].read_ops" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_wrops="$( $JQ_CMD -r ".pools[$id].write_ops" <<<"${RADOS_JSON_OUTPUT}" )"
+        echo "pool_rdops_${pool}.value ${pool_rdops}"
+        echo "pool_wrops_${pool}.value ${pool_wrops}"
+    done
+
+    echo "multigraph pool_objects_total"
+    for id in $( seq 0 $(( ${cluster_pool_count} - 1 )) ); do
+        pool="$( $JQ_CMD -r ".pools[$id].name" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_objects="$( $JQ_CMD -r ".pools[$id].num_objects" <<<"${RADOS_JSON_OUTPUT}" )"
+        echo "pool_objects_total_${pool}.value ${pool_objects}"
+    done
+
+    echo "multigraph pool_objects_copies"
+    for id in $( seq 0 $(( ${cluster_pool_count} - 1 )) ); do
+        pool="$( $JQ_CMD -r ".pools[$id].name" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_copies="$( $JQ_CMD -r ".pools[$id].num_object_copies" <<<"${RADOS_JSON_OUTPUT}" )"
+        echo "pool_objects_copies_${pool}.value ${pool_copies}"
+    done
+
+    echo "multigraph pool_objects_degraded"
+    for id in $( seq 0 $(( ${cluster_pool_count} - 1 )) ); do
+        pool="$( $JQ_CMD -r ".pools[$id].name" <<<"${RADOS_JSON_OUTPUT}" )"
+        pool_degraded="$( $JQ_CMD -r ".pools[$id].num_objects_degraded" <<<"${RADOS_JSON_OUTPUT}" )"
+        echo "pool_objects_degraded_${pool}.value ${pool_degraded}"
+    done
+
+    cluster_osd_count="$( $JQ_CMD -r '.nodes[].id' <<<"${OSD_JSON_OUTPUT}" | wc -l)"
+    echo "multigraph osd_status"
+    for id in $( seq 0 $(( ${cluster_osd_count} - 1 )) ); do
+        osd="$( $JQ_CMD -r ".nodes[$id].id" <<<"${OSD_JSON_OUTPUT}" )"
+        osd_status="$( $JQ_CMD -r ".nodes[$id].status" <<<"${OSD_JSON_OUTPUT}" )"
+        case ${osd_status} in
+            up)
+                osd_status="1"
+                ;;
+            *)
+                osd_status="0"
+                ;;
+        esac
+        echo "osd_status_${osd}.value ${osd_status}"
+    done
+
+    echo "multigraph osd_utilization"
+    for id in $( seq 0 $(( ${cluster_osd_count} - 1 )) ); do
+        osd="$( $JQ_CMD -r ".nodes[$id].id" <<<"${OSD_JSON_OUTPUT}" )"
+        osd_utilization="$( $JQ_CMD -r ".nodes[$id].utilization" <<<"${OSD_JSON_OUTPUT}" )"
+        echo "osd_utilization_${osd}.value ${osd_utilization}"
+    done
+}
+
+case $# in
+    0)
+        output_values
+        ;;
+    1)
+        case $1 in
+            autoconf)
+                output_autoconf
+                ;;
+            config)
+                output_config
+                ;;
+            *)
+                output_usage
+                exit 1
+                ;;
+        esac
+        ;;
+    *)
+        output_usage
+        exit 1
+esac
