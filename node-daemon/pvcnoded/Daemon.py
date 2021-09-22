@@ -217,13 +217,13 @@ def entrypoint():
 
         # Stop console logging on all VMs
         logger.out('Stopping domain console watchers', state='s')
-        if d_domain is not None:
-            for domain in d_domain:
-                if d_domain[domain].getnode() == config['node_hostname']:
-                    try:
+        try:
+            if d_domain is not None:
+                for domain in d_domain:
+                    if d_domain[domain].getnode() == config['node_hostname']:
                         d_domain[domain].console_log_instance.stop()
-                    except Exception:
-                        pass
+        except Exception:
+            pass
 
         # Force into secondary coordinator state if needed
         try:
