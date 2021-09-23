@@ -1,3 +1,10 @@
+pvc (0.9.36-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes a bug during early cleanup
+  * [All] Adds support for OSD database/WAL block devices to improve Ceph performance; NOTE: Applies only to new OSDs
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 23 Sep 2021 14:01:38 -0400
+
 pvc (0.9.35-0) unstable; urgency=high
 
   * [Node Daemon] Fixes several bugs and crashes in node daemon

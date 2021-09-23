@@ -55,6 +55,11 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.36
+
+  * [Node Daemon] Fixes a bug during early cleanup
+  * [All] Adds support for OSD database/WAL block devices to improve Ceph performance; NOTE: Applies only to new OSDs
+
 #### v0.9.35
 
   * [Node Daemon] Fixes several bugs and crashes in node daemon
