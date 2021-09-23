@@ -2584,6 +2584,38 @@ def ceph_osd():
 
 
 ###############################################################################
+# pvc storage osd create-db-vg
+###############################################################################
+@click.command(name='create-db-vg', short_help='Create new OSD database volume group.')
+@click.argument(
+    'node'
+)
+@click.argument(
+    'device'
+)
+@click.option(
+    '-y', '--yes', 'confirm_flag',
+    is_flag=True, default=False,
+    help='Confirm the creation'
+)
+@cluster_req
+def ceph_osd_create_db_vg(node, device, confirm_flag):
+    """
+    Create a new Ceph OSD database volume group on node NODE with block device DEVICE.
+
+    This volume group will be used for Ceph OSD database functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. Only one OSD database volume group on a single physical device is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node; the database volume for each OSD is fixed to 5% of the OSD's size. Attempting to add additional database volume groups after the first will fail.
+    """
+    if not confirm_flag and not config['unsafe']:
+        try:
+            click.confirm('Destroy all data and create a new OSD database volume group on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
+        except Exception:
+            exit(0)
+
+    retcode, retmsg = pvc_ceph.ceph_osd_db_vg_add(config, node, device)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc storage osd add
 ###############################################################################
 @click.command(name='add', short_help='Add new OSD.')
@@ -2599,14 +2631,21 @@ def ceph_osd():
     help='Weight of the OSD within the CRUSH map.'
 )
 @click.option(
+    '-d', '--ext-db', 'ext_db_flag',
+    is_flag=True, default=False,
+    help='Use an external database logical volume for this OSD.'
+)
+@click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the removal'
+    help='Confirm the creation'
 )
 @cluster_req
-def ceph_osd_add(node, device, weight, confirm_flag):
+def ceph_osd_add(node, device, weight, ext_db_flag, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
+
+    If '--ext-db' is specified, the existing OSD database volume group on NODE will be used; it must exist first or OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
     """
     if not confirm_flag and not config['unsafe']:
         try:
@@ -2614,7 +2653,7 @@ def ceph_osd_add(node, device, weight, confirm_flag):
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight)
+    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight, ext_db_flag)
     cleanup(retcode, retmsg)
 
 
@@ -4856,6 +4895,7 @@ ceph_benchmark.add_command(ceph_benchmark_run)
 ceph_benchmark.add_command(ceph_benchmark_info)
 ceph_benchmark.add_command(ceph_benchmark_list)
 
+ceph_osd.add_command(ceph_osd_create_db_vg)
 ceph_osd.add_command(ceph_osd_add)
 ceph_osd.add_command(ceph_osd_remove)
 ceph_osd.add_command(ceph_osd_in)

@@ -180,20 +180,63 @@ def getClusterOSDList(zkhandler):
 
 
 def getOSDInformation(zkhandler, osd_id):
+    # Get the devices
+    osd_device = zkhandler.read(('osd.device', osd_id))
+    osd_db_device = zkhandler.read(('osd.db_device', osd_id))
     # Parse the stats data
     osd_stats_raw = zkhandler.read(('osd.stats', osd_id))
     osd_stats = dict(json.loads(osd_stats_raw))
 
     osd_information = {
         'id': osd_id,
-        'stats': osd_stats
+        'device': osd_device,
+        'db_device': osd_db_device,
+        'stats': osd_stats,
     }
     return osd_information
 
 
+# OSD DB VG actions use the /cmd/ceph pipe
+# These actions must occur on the specific node they reference
+def add_osd_db_vg(zkhandler, node, device):
+    # Verify the target node exists
+    if not common.verifyNode(zkhandler, node):
+        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
+
+    # Tell the cluster to create a new OSD for the host
+    add_osd_db_vg_string = 'db_vg_add {},{}'.format(node, device)
+    zkhandler.write([
+        ('base.cmd.ceph', add_osd_db_vg_string)
+    ])
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    with zkhandler.readlock('base.cmd.ceph'):
+        try:
+            result = zkhandler.read('base.cmd.ceph').split()[0]
+            if result == 'success-db_vg_add':
+                message = 'Created new OSD database VG at "{}" on node "{}".'.format(device, node)
+                success = True
+            else:
+                message = 'ERROR: Failed to create new OSD database VG; check node logs for details.'
+                success = False
+        except Exception:
+            message = 'ERROR: Command ignored by node.'
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    with zkhandler.writelock('base.cmd.ceph'):
+        time.sleep(0.5)
+        zkhandler.write([
+            ('base.cmd.ceph', '')
+        ])
+
+    return success, message
+
+
 # OSD addition and removal uses the /cmd/ceph pipe
 # These actions must occur on the specific node they reference
-def add_osd(zkhandler, node, device, weight):
+def add_osd(zkhandler, node, device, weight, ext_db_flag=False):
     # Verify the target node exists
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -204,7 +247,7 @@ def add_osd(zkhandler, node, device, weight):
         return False, 'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(device, node, block_osd)
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = 'osd_add {},{},{}'.format(node, device, weight)
+    add_osd_string = 'osd_add {},{},{},{}'.format(node, device, weight, ext_db_flag)
     zkhandler.write([
         ('base.cmd.ceph', add_osd_string)
     ])

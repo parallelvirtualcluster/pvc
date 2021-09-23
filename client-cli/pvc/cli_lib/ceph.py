@@ -150,6 +150,31 @@ def format_raw_output(status_data):
 
 
 #
+# OSD DB VG functions
+#
+def ceph_osd_db_vg_add(config, node, device):
+    """
+    Add new Ceph OSD database volume group
+
+    API endpoint: POST /api/v1/storage/ceph/osddb
+    API arguments: node={node}, device={device}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        'node': node,
+        'device': device
+    }
+    response = call_api(config, 'post', '/storage/ceph/osddb', params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get('message', '')
+
+
+#
 # OSD functions
 #
 def ceph_osd_info(config, osd):
@@ -197,18 +222,19 @@ def ceph_osd_list(config, limit):
         return False, response.json().get('message', '')
 
 
-def ceph_osd_add(config, node, device, weight):
+def ceph_osd_add(config, node, device, weight, ext_db_flag):
     """
     Add new Ceph OSD
 
     API endpoint: POST /api/v1/storage/ceph/osd
-    API arguments: node={node}, device={device}, weight={weight}
+    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}
     API schema: {"message":"{data}"}
     """
     params = {
         'node': node,
         'device': device,
-        'weight': weight
+        'weight': weight,
+        'ext_db': ext_db_flag
     }
     response = call_api(config, 'post', '/storage/ceph/osd', params=params)
 
@@ -312,13 +338,15 @@ def format_list_osd(osd_list):
     osd_list_output = []
 
     osd_id_length = 3
+    osd_node_length = 5
+    osd_device_length = 6
+    osd_db_device_length = 9
     osd_up_length = 4
     osd_in_length = 4
     osd_size_length = 5
     osd_weight_length = 3
     osd_reweight_length = 5
     osd_pgs_length = 4
-    osd_node_length = 5
     osd_used_length = 5
     osd_free_length = 6
     osd_util_length = 6
@@ -358,9 +386,20 @@ def format_list_osd(osd_list):
         if _osd_id_length > osd_id_length:
             osd_id_length = _osd_id_length
 
+        # Set the OSD node length
         _osd_node_length = len(osd_information['stats']['node']) + 1
         if _osd_node_length > osd_node_length:
             osd_node_length = _osd_node_length
+
+        # Set the OSD device length
+        _osd_device_length = len(osd_information['device']) + 1
+        if _osd_device_length > osd_device_length:
+            osd_device_length = _osd_device_length
+
+        # Set the OSD db_device length
+        _osd_db_device_length = len(osd_information['db_device']) + 1
+        if _osd_db_device_length > osd_db_device_length:
+            osd_db_device_length = _osd_db_device_length
 
         # Set the size and length
         _osd_size_length = len(str(osd_information['stats']['size'])) + 1
@@ -422,12 +461,12 @@ def format_list_osd(osd_list):
     osd_list_output.append('{bold}{osd_header: <{osd_header_length}} {state_header: <{state_header_length}} {details_header: <{details_header_length}} {read_header: <{read_header_length}} {write_header: <{write_header_length}}{end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
-        osd_header_length=osd_id_length + osd_node_length + 1,
+        osd_header_length=osd_id_length + osd_node_length + osd_device_length + osd_db_device_length + 3,
         state_header_length=osd_up_length + osd_in_length + 1,
         details_header_length=osd_size_length + osd_pgs_length + osd_weight_length + osd_reweight_length + osd_used_length + osd_free_length + osd_util_length + osd_var_length + 7,
         read_header_length=osd_rdops_length + osd_rddata_length + 1,
         write_header_length=osd_wrops_length + osd_wrdata_length + 1,
-        osd_header='OSDs ' + ''.join(['-' for _ in range(5, osd_id_length + osd_node_length)]),
+        osd_header='OSDs ' + ''.join(['-' for _ in range(5, osd_id_length + osd_node_length + osd_device_length + osd_db_device_length + 2)]),
         state_header='State ' + ''.join(['-' for _ in range(6, osd_up_length + osd_in_length)]),
         details_header='Details ' + ''.join(['-' for _ in range(8, osd_size_length + osd_pgs_length + osd_weight_length + osd_reweight_length + osd_used_length + osd_free_length + osd_util_length + osd_var_length + 6)]),
         read_header='Read ' + ''.join(['-' for _ in range(5, osd_rdops_length + osd_rddata_length)]),
@@ -437,6 +476,8 @@ def format_list_osd(osd_list):
     osd_list_output.append('{bold}\
 {osd_id: <{osd_id_length}} \
 {osd_node: <{osd_node_length}} \
+{osd_device: <{osd_device_length}} \
+{osd_db_device: <{osd_db_device_length}} \
 {osd_up: <{osd_up_length}} \
 {osd_in: <{osd_in_length}} \
 {osd_size: <{osd_size_length}} \
@@ -456,6 +497,8 @@ def format_list_osd(osd_list):
         end_bold=ansiprint.end(),
         osd_id_length=osd_id_length,
         osd_node_length=osd_node_length,
+        osd_device_length=osd_device_length,
+        osd_db_device_length=osd_db_device_length,
         osd_up_length=osd_up_length,
         osd_in_length=osd_in_length,
         osd_size_length=osd_size_length,
@@ -472,6 +515,8 @@ def format_list_osd(osd_list):
         osd_rddata_length=osd_rddata_length,
         osd_id='ID',
         osd_node='Node',
+        osd_device='Block',
+        osd_db_device='DB Block',
         osd_up='Up',
         osd_in='In',
         osd_size='Size',
@@ -500,10 +545,16 @@ def format_list_osd(osd_list):
         osd_util = round(osd_information['stats']['utilization'], 2)
         osd_var = round(osd_information['stats']['var'], 2)
 
+        osd_db_device = osd_information['db_device']
+        if not osd_db_device:
+            osd_db_device = 'N/A'
+
         # Format the output header
         osd_list_output.append('{bold}\
 {osd_id: <{osd_id_length}} \
 {osd_node: <{osd_node_length}} \
+{osd_device: <{osd_device_length}} \
+{osd_db_device: <{osd_db_device_length}} \
 {osd_up_colour}{osd_up: <{osd_up_length}}{end_colour} \
 {osd_in_colour}{osd_in: <{osd_in_length}}{end_colour} \
 {osd_size: <{osd_size_length}} \
@@ -524,6 +575,8 @@ def format_list_osd(osd_list):
             end_colour=ansiprint.end(),
             osd_id_length=osd_id_length,
             osd_node_length=osd_node_length,
+            osd_device_length=osd_device_length,
+            osd_db_device_length=osd_db_device_length,
             osd_up_length=osd_up_length,
             osd_in_length=osd_in_length,
             osd_size_length=osd_size_length,
@@ -540,6 +593,8 @@ def format_list_osd(osd_list):
             osd_rddata_length=osd_rddata_length,
             osd_id=osd_information['id'],
             osd_node=osd_information['stats']['node'],
+            osd_device=osd_information['device'],
+            osd_db_device=osd_db_device,
             osd_up_colour=osd_up_colour,
             osd_up=osd_up_flag,
             osd_in_colour=osd_in_colour,

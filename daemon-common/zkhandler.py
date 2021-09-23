@@ -466,7 +466,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 4
+    _version = 5
 
     # Root for doing nested keys
     _schema_root = ''
@@ -636,6 +636,7 @@ class ZKSchema(object):
             'id': '',  # The root key
             'node': '/node',
             'device': '/device',
+            'db_device': '/db_device',
             'stats': '/stats'
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})

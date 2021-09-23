@@ -3599,6 +3599,52 @@ class API_Storage_Ceph_Option(Resource):
 api.add_resource(API_Storage_Ceph_Option, '/storage/ceph/option')
 
 
+# /storage/ceph/osddb
+class API_Storage_Ceph_OSDDB_Root(Resource):
+    @RequestParser([
+        {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
+        {'name': 'device', 'required': True, 'helptext': "A valid device must be specified."},
+    ])
+    @Authenticator
+    def post(self, reqargs):
+        """
+        Add a Ceph OSD database volume group to the cluster
+        Note: This task may take up to 30s to complete and return
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: node
+            type: string
+            required: true
+            description: The PVC node to create the OSD DB volume group on
+          - in: query
+            name: device
+            type: string
+            required: true
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) to create the OSD DB volume group on
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_osd_db_vg_add(
+            reqargs.get('node', None),
+            reqargs.get('device', None)
+        )
+
+
+api.add_resource(API_Storage_Ceph_OSDDB_Root, '/storage/ceph/osddb')
+
+
 # /storage/ceph/osd
 class API_Storage_Ceph_OSD_Root(Resource):
     @RequestParser([
@@ -3619,6 +3665,12 @@ class API_Storage_Ceph_OSD_Root(Resource):
                 id:
                   type: string (containing integer)
                   description: The Ceph ID of the OSD
+                device:
+                  type: string
+                  description: The OSD data block device
+                db_device:
+                  type: string
+                  description: The OSD database/WAL block device (logical volume); empty if not applicable
                 stats:
                   type: object
                   properties:
@@ -3698,6 +3750,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
         {'name': 'node', 'required': True, 'helptext': "A valid node must be specified."},
         {'name': 'device', 'required': True, 'helptext': "A valid device must be specified."},
         {'name': 'weight', 'required': True, 'helptext': "An OSD weight must be specified."},
+        {'name': 'ext_db', 'required': False, 'helptext': "Whether to use an external OSD DB LV device."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3723,6 +3776,11 @@ class API_Storage_Ceph_OSD_Root(Resource):
             type: number
             required: true
             description: The Ceph CRUSH weight for the OSD
+          - in: query
+            name: ext_db
+            type: boolean
+            required: false
+            description: Whether to use an external OSD DB LV device
         responses:
           200:
             description: OK
@@ -3738,7 +3796,8 @@ class API_Storage_Ceph_OSD_Root(Resource):
         return api_helper.ceph_osd_add(
             reqargs.get('node', None),
             reqargs.get('device', None),
-            reqargs.get('weight', None)
+            reqargs.get('weight', None),
+            reqargs.get('ext_db', False),
         )
 
 

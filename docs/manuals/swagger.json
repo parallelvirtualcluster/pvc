@@ -520,6 +520,14 @@
         },
         "osd": {
             "properties": {
+                "db_device": {
+                    "description": "The OSD database/WAL block device (logical volume); empty if not applicable",
+                    "type": "string"
+                },
+                "device": {
+                    "description": "The OSD data block device",
+                    "type": "string"
+                },
                 "id": {
                     "description": "The Ceph ID of the OSD",
                     "type": "string (containing integer)"
@@ -5011,6 +5019,13 @@
                         "name": "weight",
                         "required": true,
                         "type": "number"
+                    },
+                    {
+                        "description": "Whether to use an external OSD DB LV device",
+                        "in": "query",
+                        "name": "ext_db",
+                        "required": false,
+                        "type": "boolean"
                     }
                 ],
                 "responses": {
@@ -5128,6 +5143,45 @@
                     }
                 },
                 "summary": "Set the current state of OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            }
+        },
+        "/api/v1/storage/ceph/osddb": {
+            "post": {
+                "description": "Note: This task may take up to 30s to complete and return",
+                "parameters": [
+                    {
+                        "description": "The PVC node to create the OSD DB volume group on",
+                        "in": "query",
+                        "name": "node",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) to create the OSD DB volume group on",
+                        "in": "query",
+                        "name": "device",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Add a Ceph OSD database volume group to the cluster",
                 "tags": [
                     "storage / ceph"
                 ]
@@ -6243,6 +6297,68 @@
                     }
                 },
                 "summary": "Return the recent console log of {vm}",
+                "tags": [
+                    "vm"
+                ]
+            }
+        },
+        "/api/v1/vm/{vm}/device": {
+            "delete": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The raw Libvirt XML definition of the device to detach",
+                        "in": "query",
+                        "name": "xml",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Hot-detach device XML to {vm}",
+                "tags": [
+                    "vm"
+                ]
+            },
+            "post": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The raw Libvirt XML definition of the device to attach",
+                        "in": "query",
+                        "name": "xml",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Hot-attach device XML to {vm}",
                 "tags": [
                     "vm"
                 ]

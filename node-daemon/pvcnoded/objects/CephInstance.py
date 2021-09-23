@@ -25,6 +25,8 @@ import psutil
 
 import daemon_lib.common as common
 
+from distutils.util import strtobool
+
 
 class CephOSDInstance(object):
     def __init__(self, zkhandler, this_node, osd_id):
@@ -66,7 +68,7 @@ class CephOSDInstance(object):
                 self.stats = json.loads(data)
 
     @staticmethod
-    def add_osd(zkhandler, logger, node, device, weight):
+    def add_osd(zkhandler, logger, node, device, weight, ext_db_flag=False):
         # We are ready to create a new OSD on this node
         logger.out('Creating new OSD disk on block device {}'.format(device), state='i')
         try:
@@ -96,12 +98,26 @@ class CephOSDInstance(object):
                 print(stderr)
                 raise
 
-            # 3b. Create the OSD for real
+            dev_flags = "--data {}".format(device)
+
+            # 3b. Prepare the logical volume if ext_db_flag
+            if ext_db_flag:
+                _, osd_size_bytes, _ = common.run_os_command('blockdev --getsize64 {}'.format(device))
+                osd_size_bytes = int(osd_size_bytes)
+                result = CephOSDInstance.create_osd_db_lv(zkhandler, logger, osd_id, osd_size_bytes)
+                if not result:
+                    raise
+                db_device = "osd-db/osd-{}".format(osd_id)
+                dev_flags += " --block.db {}".format(db_device)
+            else:
+                db_device = ""
+
+            # 3c. Create the OSD for real
             logger.out('Preparing LVM for new OSD disk with ID {} on {}'.format(osd_id, device), state='i')
             retcode, stdout, stderr = common.run_os_command(
-                'ceph-volume lvm prepare --bluestore --data {device}'.format(
+                'ceph-volume lvm prepare --bluestore {devices}'.format(
                     osdid=osd_id,
-                    device=device
+                    devices=dev_flags
                 )
             )
             if retcode:
@@ -177,6 +193,7 @@ class CephOSDInstance(object):
                 (('osd', osd_id), ''),
                 (('osd.node', osd_id), node),
                 (('osd.device', osd_id), device),
+                (('osd.db_device', osd_id), db_device),
                 (('osd.stats', osd_id), '{}'),
             ])
 
@@ -270,7 +287,13 @@ class CephOSDInstance(object):
                 print(stderr)
                 raise
 
-            # 7. Delete OSD from ZK
+            # 7. Remove the DB device
+            if zkhandler.exists(('osd.db_device', osd_id)):
+                db_device = zkhandler.read(('osd.db_device', osd_id))
+                logger.out('Removing OSD DB logical volume "{}"'.format(db_device), state='i')
+                retcode, stdout, stderr = common.run_os_command('lvremove --yes --force {}'.format(db_device))
+
+            # 8. Delete OSD from ZK
             logger.out('Deleting OSD disk with ID {} from Zookeeper'.format(osd_id), state='i')
             zkhandler.delete(('osd', osd_id), recursive=True)
 
@@ -280,6 +303,93 @@ class CephOSDInstance(object):
         except Exception as e:
             # Log it
             logger.out('Failed to purge OSD disk with ID {}: {}'.format(osd_id, e), state='e')
+            return False
+
+    @staticmethod
+    def add_db_vg(zkhandler, logger, device):
+        logger.out('Creating new OSD database volume group on block device {}'.format(device), state='i')
+        try:
+            # 0. Check if an existsing volume group exists
+            retcode, stdout, stderr = common.run_os_command(
+                'vgdisplay osd-db'
+            )
+            if retcode != 5:
+                logger.out('Ceph OSD database VG "osd-db" already exists', state='e')
+                return False
+
+            # 1. Create an empty partition table
+            logger.out('Creating empty partiton table on block device {}'.format(device), state='i')
+            retcode, stdout, stderr = common.run_os_command(
+                'echo -e "o\ny\nn\n\n\n\n8e00\nw\ny\n" | sudo gdisk {}'.format(device)
+            )
+            if retcode:
+                print('gdisk partitioning')
+                print(stdout)
+                print(stderr)
+                raise
+
+            # 2. Create the PV
+            logger.out('Creating PV on block device {}1'.format(device), state='i')
+            retcode, stdout, stderr = common.run_os_command(
+                'pvcreate --force {}1'.format(device)
+            )
+            if retcode:
+                print('pv creation')
+                print(stdout)
+                print(stderr)
+                raise
+
+            # 2. Create the VG (named 'osd-db')
+            logger.out('Creating VG "osd-db" on block device {}1'.format(device), state='i')
+            retcode, stdout, stderr = common.run_os_command(
+                'vgcreate --force osd-db {}1'.format(device)
+            )
+            if retcode:
+                print('vg creation')
+                print(stdout)
+                print(stderr)
+                raise
+
+            # Log it
+            logger.out('Created new OSD database volume group on block device {}'.format(device), state='o')
+            return True
+        except Exception as e:
+            # Log it
+            logger.out('Failed to create OSD database volume group: {}'.format(e), state='e')
+            return False
+
+    @staticmethod
+    def create_osd_db_lv(zkhandler, logger, osd_id, osd_size_bytes):
+        logger.out('Creating new OSD database logical volume for OSD ID {}'.format(osd_id), state='i')
+        try:
+            # 0. Check if an existsing logical volume exists
+            retcode, stdout, stderr = common.run_os_command(
+                'lvdisplay osd-db/osd{}'.format(osd_id)
+            )
+            if retcode != 5:
+                logger.out('Ceph OSD database LV "osd-db/osd{}" already exists'.format(osd_id), state='e')
+                return False
+
+            # 1. Determine LV sizing (5% of OSD size, in MB)
+            osd_db_size = int(osd_size_bytes * 0.05 / 1024 / 1024)
+
+            # 2. Create the LV
+            logger.out('Creating LV "osd-db/osd-{}"'.format(osd_id), state='i')
+            retcode, stdout, stderr = common.run_os_command(
+                'lvcreate --yes --name osd-{} --size {} osd-db'.format(osd_id, osd_db_size)
+            )
+            if retcode:
+                print('db lv creation')
+                print(stdout)
+                print(stderr)
+                raise
+
+            # Log it
+            logger.out('Created new OSD database logical volume "osd-db/osd-{}"'.format(osd_id), state='o')
+            return True
+        except Exception as e:
+            # Log it
+            logger.out('Failed to create OSD database logical volume: {}'.format(e), state='e')
             return False
 
 
@@ -379,13 +489,14 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
 
     # Adding a new OSD
     if command == 'osd_add':
-        node, device, weight = args.split(',')
+        node, device, weight, ext_db_flag = args.split(',')
+        ext_db_flag = bool(strtobool(ext_db_flag))
         if node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock('base.cmd.ceph')
             with zk_lock:
                 # Add the OSD
-                result = CephOSDInstance.add_osd(zkhandler, logger, node, device, weight)
+                result = CephOSDInstance.add_osd(zkhandler, logger, node, device, weight, ext_db_flag)
                 # Command succeeded
                 if result:
                     # Update the command queue
@@ -423,6 +534,30 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
                     # Update the command queue
                     zkhandler.write([
                         ('base.cmd.ceph', 'failure-{}'.format(data))
+                    ])
+                # Wait 1 seconds before we free the lock, to ensure the client hits the lock
+                time.sleep(1)
+
+    # Adding a new DB VG
+    elif command == 'db_vg_add':
+        node, device = args.split(',')
+        if node == this_node.name:
+            # Lock the command queue
+            zk_lock = zkhandler.writelock('base.cmd.ceph')
+            with zk_lock:
+                # Add the VG
+                result = CephOSDInstance.add_db_vg(zkhandler, logger, device)
+                # Command succeeded
+                if result:
+                    # Update the command queue
+                    zkhandler.write([
+                        ('base.cmd.ceph', 'success-{}'.format(data))
+                    ])
+                # Command failed
+                else:
+                    # Update the command queue
+                    zkhandler.write([
+                        ('base.cmd.ceph', 'failure={}'.format(data))
                     ])
                 # Wait 1 seconds before we free the lock, to ensure the client hits the lock
                 time.sleep(1)
