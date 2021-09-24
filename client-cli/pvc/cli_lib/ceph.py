@@ -222,19 +222,20 @@ def ceph_osd_list(config, limit):
         return False, response.json().get('message', '')
 
 
-def ceph_osd_add(config, node, device, weight, ext_db_flag):
+def ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio):
     """
     Add new Ceph OSD
 
     API endpoint: POST /api/v1/storage/ceph/osd
-    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}
+    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}, ext_db_ratio={ext_db_ratio}
     API schema: {"message":"{data}"}
     """
     params = {
         'node': node,
         'device': device,
         'weight': weight,
-        'ext_db': ext_db_flag
+        'ext_db': ext_db_flag,
+        'ext_db_ratio': ext_db_ratio
     }
     response = call_api(config, 'post', '/storage/ceph/osd', params=params)
 

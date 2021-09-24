@@ -2636,16 +2636,23 @@ def ceph_osd_create_db_vg(node, device, confirm_flag):
     help='Use an external database logical volume for this OSD.'
 )
 @click.option(
+    '-r', '--ext-db-ratio', 'ext_db_ratio',
+    default=0.05, show_default=True, type=float,
+    help='Decimal ratio of the external database logical volume to the OSD size.'
+)
+@click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
     help='Confirm the creation'
 )
 @cluster_req
-def ceph_osd_add(node, device, weight, ext_db_flag, confirm_flag):
+def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
 
     If '--ext-db' is specified, the existing OSD database volume group on NODE will be used; it must exist first or OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
+
+    The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
     """
     if not confirm_flag and not config['unsafe']:
         try:
@@ -2653,7 +2660,7 @@ def ceph_osd_add(node, device, weight, ext_db_flag, confirm_flag):
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight, ext_db_flag)
+    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio)
     cleanup(retcode, retmsg)
 
 

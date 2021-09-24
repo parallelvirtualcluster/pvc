@@ -236,7 +236,7 @@ def add_osd_db_vg(zkhandler, node, device):
 
 # OSD addition and removal uses the /cmd/ceph pipe
 # These actions must occur on the specific node they reference
-def add_osd(zkhandler, node, device, weight, ext_db_flag=False):
+def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.05):
     # Verify the target node exists
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(node)
@@ -247,7 +247,7 @@ def add_osd(zkhandler, node, device, weight, ext_db_flag=False):
         return False, 'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(device, node, block_osd)
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = 'osd_add {},{},{},{}'.format(node, device, weight, ext_db_flag)
+    add_osd_string = 'osd_add {},{},{},{},{}'.format(node, device, weight, ext_db_flag, ext_db_ratio)
     zkhandler.write([
         ('base.cmd.ceph', add_osd_string)
     ])

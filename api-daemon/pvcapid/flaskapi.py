@@ -3751,6 +3751,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
         {'name': 'device', 'required': True, 'helptext': "A valid device must be specified."},
         {'name': 'weight', 'required': True, 'helptext': "An OSD weight must be specified."},
         {'name': 'ext_db', 'required': False, 'helptext': "Whether to use an external OSD DB LV device."},
+        {'name': 'ext_db_ratio', 'required': False, 'helptext': "Decimal size ratio of the external OSD DB LV device."},
     ])
     @Authenticator
     def post(self, reqargs):
@@ -3781,6 +3782,11 @@ class API_Storage_Ceph_OSD_Root(Resource):
             type: boolean
             required: false
             description: Whether to use an external OSD DB LV device
+          - in: query
+            name: ext_db_ratio
+            type: float
+            required: false
+            description: Decimal ratio of total OSD size for the external OSD DB LV device, default 0.05 (5%)
         responses:
           200:
             description: OK
@@ -3798,6 +3804,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
             reqargs.get('device', None),
             reqargs.get('weight', None),
             reqargs.get('ext_db', False),
+            float(reqargs.get('ext_db_ratio', 0.05)),
         )
 
 

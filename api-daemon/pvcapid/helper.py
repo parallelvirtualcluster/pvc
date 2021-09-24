@@ -1292,11 +1292,11 @@ def ceph_osd_db_vg_add(zkhandler, node, device):
 
 
 @ZKConnection(config)
-def ceph_osd_add(zkhandler, node, device, weight, ext_db_flag=False):
+def ceph_osd_add(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.05):
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.add_osd(zkhandler, node, device, weight, ext_db_flag)
+    retflag, retdata = pvc_ceph.add_osd(zkhandler, node, device, weight, ext_db_flag, ext_db_ratio)
 
     if retflag:
         retcode = 200

@@ -68,7 +68,7 @@ class CephOSDInstance(object):
                 self.stats = json.loads(data)
 
     @staticmethod
-    def add_osd(zkhandler, logger, node, device, weight, ext_db_flag=False):
+    def add_osd(zkhandler, logger, node, device, weight, ext_db_flag=False, ext_db_ratio=0.05):
         # We are ready to create a new OSD on this node
         logger.out('Creating new OSD disk on block device {}'.format(device), state='i')
         try:
@@ -104,7 +104,7 @@ class CephOSDInstance(object):
             if ext_db_flag:
                 _, osd_size_bytes, _ = common.run_os_command('blockdev --getsize64 {}'.format(device))
                 osd_size_bytes = int(osd_size_bytes)
-                result = CephOSDInstance.create_osd_db_lv(zkhandler, logger, osd_id, osd_size_bytes)
+                result = CephOSDInstance.create_osd_db_lv(zkhandler, logger, osd_id, ext_db_ratio, osd_size_bytes)
                 if not result:
                     raise
                 db_device = "osd-db/osd-{}".format(osd_id)
@@ -359,7 +359,7 @@ class CephOSDInstance(object):
             return False
 
     @staticmethod
-    def create_osd_db_lv(zkhandler, logger, osd_id, osd_size_bytes):
+    def create_osd_db_lv(zkhandler, logger, osd_id, ext_db_ratio, osd_size_bytes):
         logger.out('Creating new OSD database logical volume for OSD ID {}'.format(osd_id), state='i')
         try:
             # 0. Check if an existsing logical volume exists
@@ -370,11 +370,11 @@ class CephOSDInstance(object):
                 logger.out('Ceph OSD database LV "osd-db/osd{}" already exists'.format(osd_id), state='e')
                 return False
 
-            # 1. Determine LV sizing (5% of OSD size, in MB)
-            osd_db_size = int(osd_size_bytes * 0.05 / 1024 / 1024)
+            # 1. Determine LV sizing
+            osd_db_size = int(osd_size_bytes * ext_db_ratio / 1024 / 1024)
 
             # 2. Create the LV
-            logger.out('Creating LV "osd-db/osd-{}"'.format(osd_id), state='i')
+            logger.out('Creating DB LV "osd-db/osd-{}" of {}M ({} * {})'.format(osd_id, osd_db_size, osd_size_bytes, ext_db_ratio), state='i')
             retcode, stdout, stderr = common.run_os_command(
                 'lvcreate --yes --name osd-{} --size {} osd-db'.format(osd_id, osd_db_size)
             )
@@ -489,14 +489,15 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
 
     # Adding a new OSD
     if command == 'osd_add':
-        node, device, weight, ext_db_flag = args.split(',')
+        node, device, weight, ext_db_flag, ext_db_ratio = args.split(',')
         ext_db_flag = bool(strtobool(ext_db_flag))
+        ext_db_ratio = float(ext_db_ratio)
         if node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock('base.cmd.ceph')
             with zk_lock:
                 # Add the OSD
-                result = CephOSDInstance.add_osd(zkhandler, logger, node, device, weight, ext_db_flag)
+                result = CephOSDInstance.add_osd(zkhandler, logger, node, device, weight, ext_db_flag, ext_db_ratio)
                 # Command succeeded
                 if result:
                     # Update the command queue
