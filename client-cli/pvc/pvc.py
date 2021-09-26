@@ -2596,14 +2596,14 @@ def ceph_osd():
 @click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the creation'
+    help='Confirm the creation.'
 )
 @cluster_req
 def ceph_osd_create_db_vg(node, device, confirm_flag):
     """
     Create a new Ceph OSD database volume group on node NODE with block device DEVICE. DEVICE must be a valid raw block device, one of e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...', etc. Using partitions is not supported.
 
-    This volume group will be used for Ceph OSD database functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. Only one OSD database volume group on a single physical device is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node; the database volume for each OSD is fixed to 5% of the OSD's size. Attempting to add additional database volume groups after the first will fail.
+    This volume group will be used for Ceph OSD database and WAL functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. Only one OSD database volume group on a single physical device is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node. Attempting to add additional database volume groups after the first will fail.
     """
     if not confirm_flag and not config['unsafe']:
         try:
@@ -2643,14 +2643,16 @@ def ceph_osd_create_db_vg(node, device, confirm_flag):
 @click.option(
     '-y', '--yes', 'confirm_flag',
     is_flag=True, default=False,
-    help='Confirm the creation'
+    help='Confirm the creation.'
 )
 @cluster_req
 def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE. DEVICE must be a valid raw block device, one of e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...', etc. Using partitions is not supported.
 
-    If '--ext-db' is specified, the existing OSD database volume group on NODE will be used; it must exist first or OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
+    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For example, if all OSDs are the same size as recommended for PVC, 1 (the default) is a valid weight so that all are treated identically. If a new OSD is added later which is 4x the size of the existing OSDs, the new OSD's weight should then be 4 to tell the cluster that 4x the data can be stored on the OSD. Weights can also be tweaked for performance reasons, since OSDs with more data will incur more I/O load. For more information about CRUSH weights, please see the Ceph documentation.
+
+    If '--ext-db' is specified, the OSD database and WAL will be placed on a new logical volume in NODE's OSD database volume group; it must exist or OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
 
     The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
     """
@@ -2681,7 +2683,7 @@ def ceph_osd_remove(osdid, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
 
-    DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which may negatively affect performance or available space.
+    DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance (verified with 'pvc storage status') before removing an OSD.
     """
     if not confirm_flag and not config['unsafe']:
         try:
