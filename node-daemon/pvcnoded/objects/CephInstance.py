@@ -79,7 +79,7 @@ class CephOSDInstance(object):
                 print('ceph osd create')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
             osd_id = stdout.rstrip()
 
             # 2. Remove that newly-created OSD
@@ -88,7 +88,7 @@ class CephOSDInstance(object):
                 print('ceph osd rm')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 3a. Zap the disk to ensure it is ready to go
             logger.out('Zapping disk {}'.format(device), state='i')
@@ -97,7 +97,7 @@ class CephOSDInstance(object):
                 print('ceph-volume lvm zap')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             dev_flags = "--data {}".format(device)
 
@@ -107,7 +107,7 @@ class CephOSDInstance(object):
                 osd_size_bytes = int(osd_size_bytes)
                 result = CephOSDInstance.create_osd_db_lv(zkhandler, logger, osd_id, ext_db_ratio, osd_size_bytes)
                 if not result:
-                    raise
+                    raise Exception
                 db_device = "osd-db/osd-{}".format(osd_id)
                 dev_flags += " --block.db {}".format(db_device)
             else:
@@ -125,7 +125,7 @@ class CephOSDInstance(object):
                 print('ceph-volume lvm prepare')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 4a. Get OSD FSID
             logger.out('Getting OSD FSID for ID {} on {}'.format(osd_id, device), state='i')
@@ -144,7 +144,7 @@ class CephOSDInstance(object):
                 print('Could not find OSD fsid in data:')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 4b. Activate the OSD
             logger.out('Activating new OSD disk with ID {}'.format(osd_id, device), state='i')
@@ -158,7 +158,7 @@ class CephOSDInstance(object):
                 print('ceph-volume lvm activate')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 5. Add it to the crush map
             logger.out('Adding new OSD disk with ID {} to CRUSH map'.format(osd_id), state='i')
@@ -173,7 +173,7 @@ class CephOSDInstance(object):
                 print('ceph osd crush add')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
             time.sleep(0.5)
 
             # 6. Verify it started
@@ -186,7 +186,7 @@ class CephOSDInstance(object):
                 print('systemctl status')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 7. Add the new OSD to the list
             logger.out('Adding new OSD disk with ID {} to Zookeeper'.format(osd_id), state='i')
@@ -224,7 +224,7 @@ class CephOSDInstance(object):
                 print('ceph osd out')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 2. Wait for the OSD to flush
             logger.out('Flushing OSD disk with ID {}'.format(osd_id), state='i')
@@ -240,7 +240,7 @@ class CephOSDInstance(object):
                     if num_pgs > 0:
                         time.sleep(5)
                     else:
-                        raise
+                        raise Exception
                 except Exception:
                     break
 
@@ -251,7 +251,7 @@ class CephOSDInstance(object):
                 print('systemctl stop')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # FIXME: There has to be a better way to do this /shrug
             while True:
@@ -277,7 +277,7 @@ class CephOSDInstance(object):
                 print('ceph-volume lvm zap')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 6. Purge the OSD from Ceph
             logger.out('Purging OSD disk with ID {}'.format(osd_id), state='i')
@@ -286,7 +286,7 @@ class CephOSDInstance(object):
                 print('ceph osd purge')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 7. Remove the DB device
             if zkhandler.exists(('osd.db_device', osd_id)):
@@ -327,7 +327,7 @@ class CephOSDInstance(object):
                 print('sgdisk create partition table')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             retcode, stdout, stderr = common.run_os_command(
                 'sgdisk --new 1:: --typecore 1:8e00 {}'.format(device)
@@ -336,7 +336,7 @@ class CephOSDInstance(object):
                 print('sgdisk create pv partition')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # Handle the partition ID portion
             if match(r'by-path', device) or match(r'by-id', device):
@@ -351,7 +351,7 @@ class CephOSDInstance(object):
                 partition = '{}1'.format(device)
 
             # 2. Create the PV
-            logger.out('Creating PV on block device {}1'.format(device), state='i')
+            logger.out('Creating PV on block device {}'.format(partition), state='i')
             retcode, stdout, stderr = common.run_os_command(
                 'pvcreate --force {}'.format(partition)
             )
@@ -359,10 +359,10 @@ class CephOSDInstance(object):
                 print('pv creation')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # 2. Create the VG (named 'osd-db')
-            logger.out('Creating VG "osd-db" on block device {}1'.format(device), state='i')
+            logger.out('Creating VG "osd-db" on block device {}'.format(partition), state='i')
             retcode, stdout, stderr = common.run_os_command(
                 'vgcreate --force osd-db {}'.format(partition)
             )
@@ -370,7 +370,7 @@ class CephOSDInstance(object):
                 print('vg creation')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # Log it
             logger.out('Created new OSD database volume group on block device {}'.format(device), state='o')
@@ -404,7 +404,7 @@ class CephOSDInstance(object):
                 print('db lv creation')
                 print(stdout)
                 print(stderr)
-                raise
+                raise Exception
 
             # Log it
             logger.out('Created new OSD database logical volume "osd-db/osd-{}"'.format(osd_id), state='o')
