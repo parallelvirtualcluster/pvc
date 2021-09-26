@@ -26,7 +26,7 @@ import psutil
 import daemon_lib.common as common
 
 from distutils.util import strtobool
-from re import match
+from re import search
 
 
 class CephOSDInstance(object):
@@ -339,10 +339,10 @@ class CephOSDInstance(object):
                 raise Exception
 
             # Handle the partition ID portion
-            if match(r'by-path', device) or match(r'by-id', device):
+            if search(r'by-path', device) or search(r'by-id', device):
                 # /dev/disk/by-path/pci-0000:03:00.0-scsi-0:1:0:0 -> pci-0000:03:00.0-scsi-0:1:0:0-part1
                 partition = '{}-part1'.format(device)
-            elif match(r'nvme', device):
+            elif search(r'nvme', device):
                 # /dev/nvme0n1 -> nvme0n1p1
                 partition = '{}p1'.format(device)
             else:
