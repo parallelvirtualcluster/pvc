@@ -330,7 +330,7 @@ class CephOSDInstance(object):
                 raise Exception
 
             retcode, stdout, stderr = common.run_os_command(
-                'sgdisk --new 1:: --typecore 1:8e00 {}'.format(device)
+                'sgdisk --new 1:: --typecode 1:8e00 {}'.format(device)
             )
             if retcode:
                 print('sgdisk create pv partition')
