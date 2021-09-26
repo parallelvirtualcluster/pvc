@@ -26,6 +26,7 @@ import psutil
 import daemon_lib.common as common
 
 from distutils.util import strtobool
+from re import match
 
 
 class CephOSDInstance(object):
@@ -318,20 +319,41 @@ class CephOSDInstance(object):
                 return False
 
             # 1. Create an empty partition table
-            logger.out('Creating empty partiton table on block device {}'.format(device), state='i')
+            logger.out('Creating partitons on block device {}'.format(device), state='i')
             retcode, stdout, stderr = common.run_os_command(
-                'echo -e "o\ny\nn\n\n\n\n8e00\nw\ny\n" | sudo gdisk {}'.format(device)
+                'sgdisk --clear {}'.format(device)
             )
             if retcode:
-                print('gdisk partitioning')
+                print('sgdisk create partition table')
                 print(stdout)
                 print(stderr)
                 raise
 
+            retcode, stdout, stderr = common.run_os_command(
+                'sgdisk --new 1:: --typecore 1:8e00 {}'.format(device)
+            )
+            if retcode:
+                print('sgdisk create pv partition')
+                print(stdout)
+                print(stderr)
+                raise
+
+            # Handle the partition ID portion
+            if match(r'by-path', device) or match(r'by-id', device):
+                # /dev/disk/by-path/pci-0000:03:00.0-scsi-0:1:0:0 -> pci-0000:03:00.0-scsi-0:1:0:0-part1
+                partition = '{}-part1'.format(device)
+            elif match(r'nvme', device):
+                # /dev/nvme0n1 -> nvme0n1p1
+                partition = '{}p1'.format(device)
+            else:
+                # /dev/sda -> sda1
+                # No other '/dev/disk/by-*' types are valid for raw block devices anyways
+                partition = '{}1'.format(device)
+
             # 2. Create the PV
             logger.out('Creating PV on block device {}1'.format(device), state='i')
             retcode, stdout, stderr = common.run_os_command(
-                'pvcreate --force {}1'.format(device)
+                'pvcreate --force {}'.format(partition)
             )
             if retcode:
                 print('pv creation')
@@ -342,7 +364,7 @@ class CephOSDInstance(object):
             # 2. Create the VG (named 'osd-db')
             logger.out('Creating VG "osd-db" on block device {}1'.format(device), state='i')
             retcode, stdout, stderr = common.run_os_command(
-                'vgcreate --force osd-db {}1'.format(device)
+                'vgcreate --force osd-db {}'.format(partition)
             )
             if retcode:
                 print('vg creation')
