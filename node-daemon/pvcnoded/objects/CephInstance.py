@@ -319,7 +319,7 @@ class CephOSDInstance(object):
                 return False
 
             # 1. Create an empty partition table
-            logger.out('Creating partitons on block device {}'.format(device), state='i')
+            logger.out('Creating partitions on block device {}'.format(device), state='i')
             retcode, stdout, stderr = common.run_os_command(
                 'sgdisk --clear {}'.format(device)
             )
