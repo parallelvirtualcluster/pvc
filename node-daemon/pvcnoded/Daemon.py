@@ -689,7 +689,7 @@ def entrypoint():
 
                     # Update the new list
                     volume_list[pool] = new_volume_list
-                    logger.out(f'{logger.fmt_blue}Volume list [{pool}:{logger.fmt_end} {" ".join(volume_list[pool])}', state='i')
+                    logger.out(f'{logger.fmt_blue}Volume list [{pool}]:{logger.fmt_end} {" ".join(volume_list[pool])}', state='i')
 
     # Start keepalived thread
     keepalive_timer = pvcnoded.util.keepalive.start_keepalive_timer(logger, config, zkhandler, this_node)
