@@ -472,13 +472,14 @@ class VMInstance(object):
             self.shutdown_vm()
             return True
 
-        self.logger.out('Acquiring lock for phase B', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring lock for migration phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock = self.zkhandler.exclusivelock(('domain.migrate.sync_lock', self.domuuid))
         try:
             lock.acquire(timeout=30.0)
         except Exception:
             abort_migrate('Timed out waiting for peer')
             return
+        self.logger.out('Acquired lock for migration phase B', state='o', prefix='Domain {}'.format(self.domuuid))
         migrate_live_result = False
         # Do a final verification
         if self.node == self.lastnode or self.node == self.this_node.name:
@@ -534,19 +535,21 @@ class VMInstance(object):
             (('domain.migrate.sync_lock', self.domuuid), self.domuuid)
         ])
 
-        self.logger.out('Acquiring lock for migrate synchronization', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out('Acquiring lock for migration phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock = self.zkhandler.exclusivelock(('domain.migrate.sync_lock', self.domuuid))
         try:
             lock.acquire(timeout=30.0)
         except Exception:
             self.logger.out('Failed to acquire exclusive lock for VM', state='w')
             return
+        self.logger.out('Acquired lock for migration phase A', state='o', prefix='Domain {}'.format(self.domuuid))
         # Exactly twice the amount of time that the other side is waiting
         time.sleep(1)
         lock.release()
 
         self.logger.out('Acquiring lock for phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
+        self.logger.out('Acquired lock for migration phase C', state='o', prefix='Domain {}'.format(self.domuuid))
         # Set the updated data
         self.last_currentnode = self.zkhandler.read(('domain.node', self.domuuid))
         self.last_lastnode = self.zkhandler.read(('domain.last_node', self.domuuid))
