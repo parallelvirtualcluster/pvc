@@ -67,6 +67,9 @@ class VMInstance(object):
         self.inshutdown = False
         self.instop = False
 
+        # State thread
+        self.state_thread = None
+
         # Libvirt domuuid
         self.dom = self.lookupByUUID(self.domuuid)
 
@@ -83,8 +86,8 @@ class VMInstance(object):
 
             # Perform a management command
             self.logger.out('Updating state of VM {}'.format(self.domuuid), state='i')
-            state_thread = Thread(target=self.manage_vm_state, args=(), kwargs={})
-            state_thread.start()
+            self.state_thread = Thread(target=self.manage_vm_state, args=(), kwargs={})
+            self.state_thread.start()
 
     # Get data functions
     def getstate(self):
@@ -715,6 +718,9 @@ class VMInstance(object):
                     # VM should be forcibly terminated
                     else:
                         self.terminate_vm()
+
+        self.state_thread = None
+        return
 
     # This function is a wrapper for libvirt.lookupByUUID which fixes some problems
     # 1. Takes a text UUID and handles converting it to bytes
