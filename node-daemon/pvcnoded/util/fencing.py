@@ -56,8 +56,15 @@ def fence_node(node_name, zkhandler, config, logger):
 
     # Shoot it in the head
     fence_status = reboot_via_ipmi(ipmi_hostname, ipmi_username, ipmi_password, logger)
+
     # Hold to ensure the fence takes effect and system stabilizes
-    time.sleep(config['keepalive_interval'] * 2)
+    logger.out('Waiting {}s for fence of node "{}" to take effect'.format(config['keepalive_interval'], node_name), state='i')
+    time.sleep(config['keepalive_interval'])
+    if fence_status:
+        logger.out('Marking node "{}" as fenced'.format(node_name), state='i')
+        zkhandler.write([
+            (('node.state.daemon', node_name), 'fenced')
+        ])
 
     # Force into secondary network state if needed
     if node_name in config['coordinators']:
@@ -119,6 +126,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
     zkhandler.write([
         (('node.state.domain', node_name), 'flushed')
     ])
+    logger.out('All VMs flushed from dead node "{}" to new hosts'.format(node_name), state='i')
 
 
 #
@@ -152,20 +160,20 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
     ipmi_status_retcode, ipmi_status_stdout, ipmi_status_stderr = common.run_os_command(ipmi_command_status)
 
     if ipmi_reset_retcode == 0:
-        if ipmi_status_stdout == "Chassis Power is on":
+        if ipmi_status_stdout.strip() == "Chassis Power is on":
             # We successfully rebooted the node and it is powered on; this is a succeessful fence
             logger.out('Successfully rebooted dead node', state='o')
             return True
-        elif ipmi_status_stdout == "Chassis Power is off":
+        elif ipmi_status_stdout.strip() == "Chassis Power is off":
             # We successfully rebooted the node but it is powered off; this might be expected or not, but the node is confirmed off so we can call it a successful fence
             logger.out('Chassis power is in confirmed off state after successfuly IPMI reboot; proceeding with fence-flush', state='o')
             return True
         else:
             # We successfully rebooted the node but it is in some unknown power state; since this might indicate a silent failure, we must call it a failed fence
-            logger.out('Chassis power is in an unknown state after successful IPMI reboot; not performing fence-flush', state='e')
+            logger.out('Chassis power is in an unknown state ({}) after successful IPMI reboot; not performing fence-flush'.format(ipmi_status_stdout.strip()), state='e')
             return False
     else:
-        if ipmi_status_stdout == "Chassis Power is off":
+        if ipmi_status_stdout.strip() == "Chassis Power is off":
             # We failed to reboot the node but it is powered off; it has probably suffered a serious hardware failure, but the node is confirmed off so we can call it a successful fence
             logger.out('Chassis power is in confirmed off state after failed IPMI reboot; proceeding with fence-flush', state='o')
             return True
@@ -181,7 +189,7 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
 def verify_ipmi(ipmi_hostname, ipmi_user, ipmi_password):
     ipmi_command = f'/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_user} -P {ipmi_password} chassis power status'
     retcode, stdout, stderr = common.run_os_command(ipmi_command, timeout=2)
-    if retcode == 0 and stdout != "Chassis Power is on":
+    if retcode == 0 and stdout.strip() != "Chassis Power is on":
         return True
     else:
         return False
