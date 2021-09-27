@@ -21,7 +21,7 @@
 
 import time
 
-from threading import Thread
+from threading import Thread, Event
 
 import daemon_lib.common as common
 
@@ -86,6 +86,7 @@ class NodeInstance(object):
             self.storage_cidrnetmask = None
         # Threads
         self.flush_thread = None
+        self.flush_event = Event()
         # Flags
         self.flush_stopper = False
 
@@ -159,8 +160,8 @@ class NodeInstance(object):
                     if self.flush_thread is not None:
                         self.logger.out('Waiting for previous migration to complete'.format(self.name), state='i')
                         self.flush_stopper = True
-                        while self.flush_stopper:
-                            time.sleep(0.1)
+                        self.flush_event.wait()
+                        self.flush_event.clear()
 
                     # Do flushing in a thread so it doesn't block the migrates out
                     if self.domain_state == 'flush':
@@ -679,6 +680,7 @@ class NodeInstance(object):
             # Allow us to cancel the operation
             if self.flush_stopper:
                 self.logger.out('Aborting node flush'.format(self.name), state='i')
+                self.flush_event.set()
                 self.flush_thread = None
                 self.flush_stopper = False
                 return
@@ -711,6 +713,7 @@ class NodeInstance(object):
 
             # Wait for the VM to migrate so the next VM's free RAM count is accurate (they migrate in serial anyways)
             ticks = 0
+            self.logger.out('Waiting for migration of VM "{}"'.format(dom_uuid), state='i')
             while self.zkhandler.read(('domain.state', dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
                 ticks += 1
                 if ticks > 600:
@@ -733,6 +736,7 @@ class NodeInstance(object):
             # Allow us to cancel the operation
             if self.flush_stopper:
                 self.logger.out('Aborting node unflush'.format(self.name), state='i')
+                self.flush_event.set()
                 self.flush_thread = None
                 self.flush_stopper = False
                 return
@@ -766,8 +770,14 @@ class NodeInstance(object):
             ])
 
             # Wait for the VM to migrate back
+            ticks = 0
+            self.logger.out('Waiting for migration of VM "{}"'.format(dom_uuid), state='i')
             while self.zkhandler.read(('domain.state', dom_uuid)) in ['migrate', 'unmigrate', 'shutdown']:
-                time.sleep(0.1)
+                ticks += 1
+                if ticks > 600:
+                    # Abort if we've waited for 120 seconds, the VM is messed and just continue
+                    break
+                time.sleep(0.2)
 
         self.zkhandler.write([
             (('node.state.domain', self.name), 'ready')
