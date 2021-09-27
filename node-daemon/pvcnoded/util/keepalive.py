@@ -592,23 +592,23 @@ def node_keepalive(logger, config, zkhandler, this_node):
 
     # Join against running threads
     if config['enable_hypervisor']:
-        vm_stats_thread.join(timeout=4.0)
+        vm_stats_thread.join(timeout=config['keepalive_interval'])
         if vm_stats_thread.is_alive():
-            logger.out('VM stats gathering exceeded 4s timeout, continuing', state='w')
+            logger.out('VM stats gathering exceeded timeout, continuing', state='w')
     if config['enable_storage']:
-        ceph_stats_thread.join(timeout=4.0)
+        ceph_stats_thread.join(timeout=config['keepalive_interval'])
         if ceph_stats_thread.is_alive():
-            logger.out('Ceph stats gathering exceeded 4s timeout, continuing', state='w')
+            logger.out('Ceph stats gathering exceeded timeout, continuing', state='w')
 
     # Get information from thread queues
     if config['enable_hypervisor']:
         try:
-            this_node.domains_count = vm_thread_queue.get()
-            this_node.memalloc = vm_thread_queue.get()
-            this_node.memprov = vm_thread_queue.get()
-            this_node.vcpualloc = vm_thread_queue.get()
+            this_node.domains_count = vm_thread_queue.get(timeout=config['keepalive_interval'])
+            this_node.memalloc = vm_thread_queue.get(timeout=config['keepalive_interval'])
+            this_node.memprov = vm_thread_queue.get(timeout=config['keepalive_interval'])
+            this_node.vcpualloc = vm_thread_queue.get(timeout=config['keepalive_interval'])
         except Exception:
-            pass
+            logger.out('VM stats queue get exceeded timeout, continuing', state='w')
     else:
         this_node.domains_count = 0
         this_node.memalloc = 0
@@ -617,10 +617,11 @@ def node_keepalive(logger, config, zkhandler, this_node):
 
     if config['enable_storage']:
         try:
-            ceph_health_colour = ceph_thread_queue.get()
-            ceph_health = ceph_thread_queue.get()
-            osds_this_node = ceph_thread_queue.get()
+            ceph_health_colour = ceph_thread_queue.get(timeout=config['keepalive_interval'])
+            ceph_health = ceph_thread_queue.get(timeout=config['keepalive_interval'])
+            osds_this_node = ceph_thread_queue.get(timeout=config['keepalive_interval'])
         except Exception:
+            logger.out('Ceph stats queue get exceeded timeout, continuing', state='w')
             ceph_health_colour = logger.fmt_cyan
             ceph_health = 'UNKNOWN'
             osds_this_node = '?'
