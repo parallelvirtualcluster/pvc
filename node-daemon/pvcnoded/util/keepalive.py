@@ -361,9 +361,13 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
     libvirt_name = "qemu:///system"
     if debug:
         logger.out("Connecting to libvirt", state='d', prefix='vm-thread')
-    lv_conn = libvirt.open(libvirt_name)
-    if lv_conn is None:
+    try:
+        lv_conn = libvirt.open(libvirt_name)
+        if lv_conn is None:
+            raise Exception
+    except Exception:
         logger.out('Failed to open connection to "{}"'.format(libvirt_name), state='e')
+        return
 
     memalloc = 0
     memprov = 0
