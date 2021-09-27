@@ -465,7 +465,6 @@ class VMInstance(object):
             dest_lv_conn.close()
             self.console_log_instance.stop()
             self.removeDomainFromList()
-
             return True
 
         def migrate_shutdown():
@@ -473,7 +472,7 @@ class VMInstance(object):
             self.shutdown_vm()
             return True
 
-        self.logger.out('Acquiring lock for phase B', state='i')
+        self.logger.out('Acquiring lock for phase B', state='i', prefix='Domain {}'.format(self.domuuid))
         lock = self.zkhandler.exclusivelock(('domain.migrate.sync_lock', self.domuuid))
         try:
             lock.acquire(timeout=30.0)
@@ -516,7 +515,7 @@ class VMInstance(object):
 
         time.sleep(0.5)
 
-        self.logger.out('Acquiring lock for phase D', state='i')
+        self.logger.out('Acquiring lock for phase D', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         self.last_currentnode = self.zkhandler.read(('domain.node', self.domuuid))
         self.last_lastnode = self.zkhandler.read(('domain.last_node', self.domuuid))
@@ -542,7 +541,7 @@ class VMInstance(object):
             (('domain.migrate.sync_lock', self.domuuid), self.domuuid)
         ])
 
-        self.logger.out('Acquiring lock for phase A', state='i')
+        self.logger.out('Acquiring lock for phase A', state='i', prefix='Domain {}'.format(self.domuuid))
         lock = self.zkhandler.exclusivelock(('domain.migrate.sync_lock', self.domuuid))
         try:
             lock.acquire(timeout=30.0)
@@ -555,15 +554,14 @@ class VMInstance(object):
 
         time.sleep(0.5)
 
-        self.logger.out('Acquiring lock for phase C', state='i')
+        self.logger.out('Acquiring lock for phase C', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
-        # This is strictly a synchrozing step
-        time.sleep(0.1)
+        # This is strictly a synchronizng step
         lock.release()
 
         time.sleep(0.5)
 
-        self.logger.out('Acquiring lock for phase E', state='i')
+        self.logger.out('Acquiring lock for phase E', state='i', prefix='Domain {}'.format(self.domuuid))
         lock.acquire()
         # Set the updated data
         self.last_currentnode = self.zkhandler.read(('domain.node', self.domuuid))
