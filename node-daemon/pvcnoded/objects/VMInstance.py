@@ -555,9 +555,16 @@ class VMInstance(object):
         time.sleep(0.5)
 
         self.logger.out('Acquiring lock for phase C', state='i', prefix='Domain {}'.format(self.domuuid))
-        lock.acquire()
-        # This is strictly a synchronizng step
-        lock.release()
+        try:
+            # Wait for only 900 seconds on this step since we don't do anything and it can fail
+            # if a flush or unflush is cancelled. 900 seconds should be plenty for real long
+            # migations while still avoiding an indefinite blocking here.
+            # TODO: Really dig into why
+            lock.acquire(timeout=900)
+            # This is strictly a synchronizng step
+            lock.release()
+        except Exception:
+            self.logger.out('Failed to acquire lock for phase C within 15 minutes, continuing', state='w', prefix='Domain {}'.format(self.domuuid))
 
         time.sleep(0.5)
 
