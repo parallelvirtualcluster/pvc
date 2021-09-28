@@ -171,66 +171,77 @@ def run_benchmark(self, pool):
     test_matrix = {
         'seq_read': {
             'direction': 'read',
+            'iodepth': '64',
             'bs': '4M',
             'rw': 'read'
         },
         'seq_write': {
             'direction': 'write',
+            'iodepth': '64',
             'bs': '4M',
             'rw': 'write'
         },
         'rand_read_4M': {
             'direction': 'read',
+            'iodepth': '64',
             'bs': '4M',
             'rw': 'randread'
         },
         'rand_write_4M': {
             'direction': 'write',
+            'iodepth': '64',
             'bs': '4M',
-            'rw': 'randwrite'
-        },
-        'rand_read_256K': {
-            'direction': 'read',
-            'bs': '256K',
-            'rw': 'randread'
-        },
-        'rand_write_256K': {
-            'direction': 'write',
-            'bs': '256K',
             'rw': 'randwrite'
         },
         'rand_read_4K': {
             'direction': 'read',
+            'iodepth': '64',
             'bs': '4K',
             'rw': 'randread'
         },
         'rand_write_4K': {
             'direction': 'write',
+            'iodepth': '64',
             'bs': '4K',
             'rw': 'randwrite'
-        }
+        },
+        'rand_read_4K_lowdepth': {
+            'direction': 'read',
+            'iodepth': '1',
+            'bs': '4K',
+            'rw': 'randread'
+        },
+        'rand_write_4K_lowdepth': {
+            'direction': 'write',
+            'iodepth': '1',
+            'bs': '4K',
+            'rw': 'randwrite'
+        },
     }
     parsed_results = dict()
     for test in test_matrix:
         print("Running test '{}'".format(test))
         fio_cmd = """
             fio \
-                --output-format=terse \
-                --terse-version=5 \
+                --name={test} \
                 --ioengine=rbd \
                 --pool={pool} \
                 --rbdname={volume} \
+                --output-format=terse \
+                --terse-version=5 \
                 --direct=1 \
                 --randrepeat=1 \
-                --iodepth=64 \
-                --size=8G \
-                --name={test} \
+                --iodepth={iodepth} \
+                --numjobs=1 \
+                --time_based \
+                --runtime=60 \
                 --bs={bs} \
                 --readwrite={rw}
         """.format(
+            test=test,
             pool=pool,
             volume=volume,
-            test=test,
+            iodepth=test_matrix[test]['iodepth'],
             bs=test_matrix[test]['bs'],
             rw=test_matrix[test]['rw'])
 

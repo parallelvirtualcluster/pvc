@@ -2526,7 +2526,7 @@ def ceph_benchmark_run(pool):
     Run a storage benchmark on POOL in the background.
     """
     try:
-        click.confirm('NOTE: Storage benchmarks generate significant load on the cluster and can take a very long time to complete on slow storage. They should be run sparingly. Continue', prompt_suffix='? ', abort=True)
+        click.confirm('NOTE: Storage benchmarks take approximately 8 minutes to run and generate significant load on the storage cluster; they should be run sparingly. Continue', prompt_suffix='? ', abort=True)
     except Exception:
         exit(0)
 

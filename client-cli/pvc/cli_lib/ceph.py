@@ -1606,10 +1606,10 @@ def format_info_benchmark(config, benchmark_information):
         "seq_write": "Sequential Write (4M blocks)",
         "rand_read_4M": "Random Read (4M blocks)",
         "rand_write_4M": "Random Write (4M blocks)",
-        "rand_read_256K": "Random Read (256K blocks)",
-        "rand_write_256K": "Random Write (256K blocks)",
         "rand_read_4K": "Random Read (4K blocks)",
-        "rand_write_4K": "Random Write (4K blocks)"
+        "rand_write_4K": "Random Write (4K blocks)",
+        "rand_read_4K_lowdepth": "Random Read (4K blocks, single-queue)",
+        "rand_write_4K_lowdepth": "Random Write (4K blocks, single-queue)",
     }
 
     test_name_length = 30
@@ -1622,7 +1622,16 @@ def format_info_benchmark(config, benchmark_information):
     cpuutil_label_length = 11
     cpuutil_column_length = 9
 
+    # Work around old results that did not have these tests
+    if 'rand_read_4K_lowdepth' not in benchmark_details:
+        del nice_test_name_map['rand_read_4K_lowdepth']
+        del nice_test_name_map['rand_write_4K_lowdepth']
+
     for test in benchmark_details:
+        # Work around old results that had these obsolete tests
+        if test == 'rand_read_256K' or test == 'rand_write_256K':
+            continue
+
         _test_name_length = len(nice_test_name_map[test])
         if _test_name_length > test_name_length:
             test_name_length = _test_name_length
@@ -1659,6 +1668,10 @@ def format_info_benchmark(config, benchmark_information):
                 cpuutil_column_length = _element_length
 
     for test in benchmark_details:
+        # Work around old results that had these obsolete tests
+        if test == 'rand_read_256K' or test == 'rand_write_256K':
+            continue
+
         ainformation.append('')
 
         test_details = benchmark_details[test]
