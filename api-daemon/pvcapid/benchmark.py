@@ -37,12 +37,12 @@ class BenchmarkError(Exception):
     """
     An exception that results from the Benchmark job.
     """
-    def __init__(self, message, cur_time=None, db_conn=None, db_cur=None, zkhandler=None):
+    def __init__(self, message, job_name=None, db_conn=None, db_cur=None, zkhandler=None):
         self.message = message
-        if cur_time is not None:
+        if job_name is not None:
             # Clean up our dangling result
             query = "DELETE FROM storage_benchmarks WHERE job = %s;"
-            args = (cur_time,)
+            args = (job_name,)
             db_cur.execute(query, args)
             db_conn.commit()
             # Close the database connections cleanly
@@ -111,10 +111,6 @@ def run_benchmark(self, pool):
 
     time.sleep(2)
 
-    cur_time = datetime.now().isoformat(timespec='seconds')
-
-    print("Starting storage benchmark '{}' on pool '{}'".format(cur_time, pool))
-
     # Phase 0 - connect to databases
     try:
         db_conn, db_cur = open_database(config)
@@ -129,14 +125,20 @@ def run_benchmark(self, pool):
         print('FATAL - failed to connect to Zookeeper')
         raise Exception
 
-    print("Storing running status for job '{}' in database".format(cur_time))
+    cur_time = datetime.now().isoformat(timespec='seconds')
+    cur_primary = zkhandler.read('base.config.primary_node')
+    job_name = '{}_{}'.format(cur_time, cur_primary)
+
+    print("Starting storage benchmark '{}' on pool '{}'".format(job_name, pool))
+
+    print("Storing running status for job '{}' in database".format(job_name))
     try:
         query = "INSERT INTO storage_benchmarks (job, result) VALUES (%s, %s);"
-        args = (cur_time, "Running",)
+        args = (job_name, "Running",)
         db_cur.execute(query, args)
         db_conn.commit()
     except Exception as e:
-        raise BenchmarkError("Failed to store running status: {}".format(e), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError("Failed to store running status: {}".format(e), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
 
     # Phase 1 - volume preparation
     self.update_state(state='RUNNING', meta={'current': 1, 'total': 3, 'status': 'Creating benchmark volume'})
@@ -147,7 +149,7 @@ def run_benchmark(self, pool):
     # Create the RBD volume
     retcode, retmsg = pvc_ceph.add_volume(zkhandler, pool, volume, "8G")
     if not retcode:
-        raise BenchmarkError('Failed to create volume "{}": {}'.format(volume, retmsg), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError('Failed to create volume "{}": {}'.format(volume, retmsg), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
     else:
         print(retmsg)
 
@@ -234,7 +236,7 @@ def run_benchmark(self, pool):
 
         retcode, stdout, stderr = pvc_common.run_os_command(fio_cmd)
         if retcode:
-            raise BenchmarkError("Failed to run fio test: {}".format(stderr), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+            raise BenchmarkError("Failed to run fio test: {}".format(stderr), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
 
         # Parse the terse results to avoid storing tons of junk
         # Reference: https://fio.readthedocs.io/en/latest/fio_doc.html#terse-output
@@ -437,18 +439,18 @@ def run_benchmark(self, pool):
     # Remove the RBD volume
     retcode, retmsg = pvc_ceph.remove_volume(zkhandler, pool, volume)
     if not retcode:
-        raise BenchmarkError('Failed to remove volume "{}": {}'.format(volume, retmsg), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError('Failed to remove volume "{}": {}'.format(volume, retmsg), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
     else:
         print(retmsg)
 
-    print("Storing result of tests for job '{}' in database".format(cur_time))
+    print("Storing result of tests for job '{}' in database".format(job_name))
     try:
         query = "UPDATE storage_benchmarks SET result = %s WHERE job = %s;"
-        args = (json.dumps(parsed_results), cur_time)
+        args = (json.dumps(parsed_results), job_name)
         db_cur.execute(query, args)
         db_conn.commit()
     except Exception as e:
-        raise BenchmarkError("Failed to store test results: {}".format(e), cur_time=cur_time, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError("Failed to store test results: {}".format(e), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
 
     close_database(db_conn, db_cur)
     zkhandler.disconnect()
