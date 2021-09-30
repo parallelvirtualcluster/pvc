@@ -55,6 +55,18 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.37
+
+  * [All] Adds support for configurable OSD DB size ratios
+  * [Node Daemon] Fixes bugs with OSD creation
+  * [Node Daemon] Fixes exception bugs in CephInstance
+  * [CLI Client] Adjusts descriptions around Ceph OSDs
+  * [Node Daemon] Fixes ordering of pvc-flush unit
+  * [Node Daemon] Fixes bugs in fence handling and libvirt keepalive
+  * [Node Daemon] Simplifies locking for and speeds up VM migrations
+  * [Node Daemon] Fixes bugs in queue get timeouts
+  * [API Daemon] Adjusts benchmark test jobs configuration and naming
+
 #### v0.9.36
 
   * [Node Daemon] Fixes a bug during early cleanup

@@ -1,3 +1,17 @@
+pvc (0.9.37-0) unstable; urgency=high
+
+  * [All] Adds support for configurable OSD DB size ratios
+  * [Node Daemon] Fixes bugs with OSD creation
+  * [Node Daemon] Fixes exception bugs in CephInstance
+  * [CLI Client] Adjusts descriptions around Ceph OSDs
+  * [Node Daemon] Fixes ordering of pvc-flush unit
+  * [Node Daemon] Fixes bugs in fence handling and libvirt keepalive
+  * [Node Daemon] Simplifies locking for and speeds up VM migrations
+  * [Node Daemon] Fixes bugs in queue get timeouts
+  * [API Daemon] Adjusts benchmark test jobs configuration and naming
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 30 Sep 2021 02:02:53 -0400
+
 pvc (0.9.36-0) unstable; urgency=high
 
   * [Node Daemon] Fixes a bug during early cleanup
