@@ -19,7 +19,6 @@
 #
 ###############################################################################
 
-import json
 import math
 
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
@@ -1479,12 +1478,12 @@ def format_list_benchmark(config, benchmark_information):
         if benchmark['benchmark_result'] == 'Running':
             continue
 
-        benchmark_data = json.loads(benchmark['benchmark_result'])
+        benchmark_data = benchmark['benchmark_result']
 
         benchmark_bandwidth = dict()
         benchmark_iops = dict()
         for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
-            benchmark_data = json.loads(benchmark['benchmark_result'])
+            benchmark_data = benchmark['benchmark_result']
             benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
             benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
 
@@ -1558,7 +1557,7 @@ def format_list_benchmark(config, benchmark_information):
             benchmark_bandwidth = dict()
             benchmark_iops = dict()
             for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
-                benchmark_data = json.loads(benchmark['benchmark_result'])
+                benchmark_data = benchmark['benchmark_result']
                 benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
                 benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
 
@@ -1595,7 +1594,7 @@ def format_info_benchmark(config, benchmark_information):
     if benchmark_information[0]['benchmark_result'] == "Running":
         return "Benchmark test is still running."
 
-    benchmark_details = json.loads(benchmark_information[0]['benchmark_result'])
+    benchmark_details = benchmark_information[0]['benchmark_result']
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []

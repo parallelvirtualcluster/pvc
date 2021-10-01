@@ -78,6 +78,8 @@ def close_database(conn, cur, failed=False):
 
 
 def list_benchmarks(job=None):
+    from json import loads
+
     if job is not None:
         query = "SELECT * FROM {} WHERE job = %s;".format('storage_benchmarks')
         args = (job, )
@@ -93,7 +95,7 @@ def list_benchmarks(job=None):
         benchmark_data = dict()
         benchmark_data['id'] = benchmark['id']
         benchmark_data['job'] = benchmark['job']
-        benchmark_data['benchmark_result'] = benchmark['result']
+        benchmark_data['benchmark_result'] = loads(benchmark['result'])
         # Append the new data to our actual output structure
         data.append(benchmark_data)
     close_database(conn, cur)
