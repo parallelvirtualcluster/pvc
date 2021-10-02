@@ -21,6 +21,7 @@
 
 import math
 
+from json import dumps
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 
 import pvc.cli_lib.ansiprint as ansiprint
@@ -1601,7 +1602,7 @@ def format_list_benchmark_legacy(config, benchmark_information):
     return '\n'.join(benchmark_list_output)
 
 
-def format_info_benchmark(config, benchmark_information):
+def format_info_benchmark(config, oformat, benchmark_information):
     # This matrix is a list of the possible format functions for a benchmark result
     # It is extensable in the future should newer formats be required.
     benchmark_matrix = {
@@ -1609,7 +1610,13 @@ def format_info_benchmark(config, benchmark_information):
     }
 
     benchmark_version = benchmark_information['test_format']
-    return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information)
+
+    if oformat == 'json-pretty':
+        return dumps(benchmark_information, indent=4)
+    elif oformat == 'json':
+        return dumps(benchmark_information)
+    else:
+        return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information)
 
 
 def format_info_benchmark_legacy(config, benchmark_information):

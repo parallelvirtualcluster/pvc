@@ -2541,15 +2541,20 @@ def ceph_benchmark_run(pool):
 @click.argument(
     'job', required=True
 )
+@click.option(
+    '-f', '--format', 'oformat', default='pretty', show_default=True,
+    type=click.Choice(['pretty', 'json', 'json-pretty']),
+    help='Output format of benchmark information.'
+)
 @cluster_req
-def ceph_benchmark_info(job):
+def ceph_benchmark_info(job, oformat):
     """
     Show full details of storage benchmark JOB.
     """
 
     retcode, retdata = pvc_ceph.ceph_benchmark_list(config, job)
     if retcode:
-        retdata = pvc_ceph.format_info_benchmark(config, retdata)
+        retdata = pvc_ceph.format_info_benchmark(config, oformat, retdata)
     cleanup(retcode, retdata)
 
 
