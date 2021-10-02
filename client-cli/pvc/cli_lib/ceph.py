@@ -1454,17 +1454,6 @@ def ceph_benchmark_list(config, job):
 
 
 def format_list_benchmark(config, benchmark_information):
-    # This matrix is a list of the possible format functions for a benchmark result
-    # It is extensable in the future should newer formats be required.
-    benchmark_matrix = {
-        0: format_list_benchmark_legacy,
-    }
-
-    benchmark_version = benchmark_information['test_format']
-    return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information)
-
-
-def format_list_benchmark_legacy(config, benchmark_information):
     benchmark_list_output = []
 
     benchmark_job_length = 20
@@ -1483,6 +1472,8 @@ def format_list_benchmark_legacy(config, benchmark_information):
 
     for benchmark in benchmark_information:
         benchmark_job = benchmark['job']
+        benchmark_format = benchmark['test_format']  # noqa: F841
+
         _benchmark_job_length = len(benchmark_job)
         if _benchmark_job_length > benchmark_job_length:
             benchmark_job_length = _benchmark_job_length
@@ -1559,6 +1550,7 @@ def format_list_benchmark_legacy(config, benchmark_information):
 
     for benchmark in benchmark_information:
         benchmark_job = benchmark['job']
+        benchmark_format = benchmark['test_format']  # noqa: F841
 
         if benchmark['benchmark_result'] == 'Running':
             seq_benchmark_bandwidth = 'Running'
