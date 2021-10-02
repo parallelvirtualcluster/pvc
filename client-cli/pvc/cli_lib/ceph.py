@@ -1601,21 +1601,21 @@ def format_info_benchmark(config, oformat, benchmark_information):
         0: format_info_benchmark_legacy,
     }
 
-    benchmark_version = benchmark_information['test_format']
+    benchmark_version = benchmark_information[0]['test_format']
 
     if oformat == 'json-pretty':
         return dumps(benchmark_information, indent=4)
     elif oformat == 'json':
         return dumps(benchmark_information)
     else:
-        return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information)
+        return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information[0])
 
 
 def format_info_benchmark_legacy(config, benchmark_information):
-    if benchmark_information[0]['benchmark_result'] == "Running":
+    if benchmark_information['benchmark_result'] == "Running":
         return "Benchmark test is still running."
 
-    benchmark_details = benchmark_information[0]['benchmark_result']
+    benchmark_details = benchmark_information['benchmark_result']
 
     # Format a nice output; do this line-by-line then concat the elements at the end
     ainformation = []
