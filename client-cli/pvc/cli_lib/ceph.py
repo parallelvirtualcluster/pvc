@@ -81,8 +81,8 @@ def format_ops_tohuman(dataops):
     datahuman = ''
     for unit in sorted(ops_unit_matrix, key=ops_unit_matrix.get, reverse=True):
         new_ops = int(math.ceil(dataops / ops_unit_matrix[unit]))
-        # Round up if 5 or more digits
-        if new_ops > 9999:
+        # Round up if 6 or more digits
+        if new_ops > 99999:
             # We can jump down another level
             continue
         else:
@@ -1453,6 +1453,46 @@ def ceph_benchmark_list(config, job):
     return retvalue, retdata
 
 
+def get_benchmark_list_results_legacy(benchmark_data):
+    benchmark_bandwidth = dict()
+    benchmark_iops = dict()
+    for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
+        benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
+        benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
+
+    return benchmark_bandwidth, benchmark_iops
+
+
+def get_benchmark_list_results_json(benchmark_data):
+    benchmark_bandwidth = dict()
+    benchmark_iops = dict()
+    for test in ['seq_read', 'seq_write', 'rand_read_4K', 'rand_write_4K']:
+        benchmark_test_data = benchmark_data[test]
+        active_class = None
+        for io_class in ['read', 'write']:
+            if benchmark_test_data['jobs'][0][io_class]['io_bytes'] > 0:
+                active_class = io_class
+        if active_class is not None:
+            benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_test_data['jobs'][0][active_class]['bw_bytes']))
+            benchmark_iops[test] = format_ops_tohuman(int(benchmark_test_data['jobs'][0][active_class]['iops']))
+
+    return benchmark_bandwidth, benchmark_iops
+
+
+def get_benchmark_list_results(benchmark_format, benchmark_data):
+    if benchmark_format == 0:
+        benchmark_bandwidth, benchmark_iops = get_benchmark_list_results_legacy(benchmark_data)
+    elif benchmark_format == 1:
+        benchmark_bandwidth, benchmark_iops = get_benchmark_list_results_json(benchmark_data)
+
+    seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
+    seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
+    rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
+    rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
+
+    return seq_benchmark_bandwidth, seq_benchmark_iops, rand_benchmark_bandwidth, rand_benchmark_iops
+
+
 def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
 
@@ -1482,18 +1522,7 @@ def format_list_benchmark(config, benchmark_information):
             continue
 
         benchmark_data = benchmark['benchmark_result']
-
-        benchmark_bandwidth = dict()
-        benchmark_iops = dict()
-        for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
-            benchmark_data = benchmark['benchmark_result']
-            benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
-            benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
-
-        seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
-        seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
-        rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
-        rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
+        seq_benchmark_bandwidth, seq_benchmark_iops, rand_benchmark_bandwidth, rand_benchmark_iops = get_benchmark_list_results(benchmark_format, benchmark_data)
 
         _benchmark_seq_bw_length = len(seq_benchmark_bandwidth) + 1
         if _benchmark_seq_bw_length > benchmark_seq_bw_length:
@@ -1558,17 +1587,8 @@ def format_list_benchmark(config, benchmark_information):
             rand_benchmark_bandwidth = 'Running'
             rand_benchmark_iops = 'Running'
         else:
-            benchmark_bandwidth = dict()
-            benchmark_iops = dict()
-            for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
-                benchmark_data = benchmark['benchmark_result']
-                benchmark_bandwidth[test] = format_bytes_tohuman(int(benchmark_data[test]['overall']['bandwidth']) * 1024)
-                benchmark_iops[test] = format_ops_tohuman(int(benchmark_data[test]['overall']['iops']))
-
-            seq_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['seq_read'], benchmark_bandwidth['seq_write'])
-            seq_benchmark_iops = "{} / {}".format(benchmark_iops['seq_read'], benchmark_iops['seq_write'])
-            rand_benchmark_bandwidth = "{} / {}".format(benchmark_bandwidth['rand_read_4K'], benchmark_bandwidth['rand_write_4K'])
-            rand_benchmark_iops = "{} / {}".format(benchmark_iops['rand_read_4K'], benchmark_iops['rand_write_4K'])
+            benchmark_data = benchmark['benchmark_result']
+            seq_benchmark_bandwidth, seq_benchmark_iops, rand_benchmark_bandwidth, rand_benchmark_iops = get_benchmark_list_results(benchmark_format, benchmark_data)
 
         benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}}  \
