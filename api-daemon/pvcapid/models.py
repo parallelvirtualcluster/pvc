@@ -231,11 +231,13 @@ class DBStorageBenchmarks(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     job = db.Column(db.Text, nullable=False)
+    test_format = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     result = db.Column(db.Text, nullable=False)
 
-    def __init__(self, job, result):
+    def __init__(self, job, result, test_format):
         self.job = job
         self.result = result
+        self.test_format = test_format
 
     def __repr__(self):
         return '<id {}>'.format(self.id)

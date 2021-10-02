@@ -95,6 +95,7 @@ def list_benchmarks(job=None):
         benchmark_data = dict()
         benchmark_data['id'] = benchmark['id']
         benchmark_data['job'] = benchmark['job']
+        benchmark_data['test_format'] = benchmark['test_format']
         benchmark_data['benchmark_result'] = loads(benchmark['result'])
         # Append the new data to our actual output structure
         data.append(benchmark_data)
@@ -110,6 +111,9 @@ def run_benchmark(self, pool):
     import time
     import json
     from datetime import datetime
+
+    # Define the current test format
+    TEST_FORMAT = 0
 
     time.sleep(2)
 
@@ -135,8 +139,8 @@ def run_benchmark(self, pool):
 
     print("Storing running status for job '{}' in database".format(job_name))
     try:
-        query = "INSERT INTO storage_benchmarks (job, result) VALUES (%s, %s);"
-        args = (job_name, "Running",)
+        query = "INSERT INTO storage_benchmarks (job, test_format, result) VALUES (%s, %s);"
+        args = (job_name, TEST_FORMAT, "Running",)
         db_cur.execute(query, args)
         db_conn.commit()
     except Exception as e:

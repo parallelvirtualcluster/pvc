@@ -3420,8 +3420,12 @@ class API_Storage_Ceph_Benchmark(Resource):
                 job:
                   type: string
                   description: The job name (an ISO date) of the test result
+                test_format:
+                  type: integer
+                  description: The PVC benchmark format of the results
                 benchmark_result:
                   type: object
+                  description: A format 0 test result
                   properties:
                     test_name:
                       type: object

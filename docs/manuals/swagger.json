@@ -961,6 +961,7 @@
         "storagebenchmark": {
             "properties": {
                 "benchmark_result": {
+                    "description": "A format 0 test result",
                     "properties": {
                         "test_name": {
                             "properties": {
@@ -1094,6 +1095,10 @@
                 "job": {
                     "description": "The job name (an ISO date) of the test result",
                     "type": "string"
+                },
+                "test_format": {
+                    "description": "The PVC benchmark format of the results",
+                    "type": "integer"
                 }
             },
             "type": "object"
