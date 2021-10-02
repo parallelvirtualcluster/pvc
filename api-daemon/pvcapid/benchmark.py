@@ -96,7 +96,13 @@ def list_benchmarks(job=None):
         benchmark_data['id'] = benchmark['id']
         benchmark_data['job'] = benchmark['job']
         benchmark_data['test_format'] = benchmark['test_format']
-        benchmark_data['benchmark_result'] = loads(benchmark['result'])
+        if benchmark['result'] == 'Running':
+            benchmark_data['benchmark_result'] = 'Running'
+        else:
+            try:
+                benchmark_data['benchmark_result'] = loads(benchmark['result'])
+            except Exception:
+                benchmark_data['benchmark_result'] = {}
         # Append the new data to our actual output structure
         data.append(benchmark_data)
     close_database(conn, cur)
