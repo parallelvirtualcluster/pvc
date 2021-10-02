@@ -1619,6 +1619,7 @@ def format_info_benchmark(config, oformat, benchmark_information):
     # It is extensable in the future should newer formats be required.
     benchmark_matrix = {
         0: format_info_benchmark_legacy,
+        1: format_info_benchmark_json,
     }
 
     benchmark_version = benchmark_information[0]['test_format']
@@ -1628,7 +1629,7 @@ def format_info_benchmark(config, oformat, benchmark_information):
     elif oformat == 'json':
         return dumps(benchmark_information)
     else:
-        return benchmark_matrix.get(benchmark_version, lambda: 'Invalid format function')(config, benchmark_information[0])
+        return benchmark_matrix[benchmark_version](config, benchmark_information[0])
 
 
 def format_info_benchmark_legacy(config, benchmark_information):
@@ -1916,5 +1917,241 @@ def format_info_benchmark_legacy(config, benchmark_information):
         ))
 
         ainformation.append('')
+
+    return '\n'.join(ainformation)
+
+
+def format_info_benchmark_json(config, benchmark_information):
+    if benchmark_information['benchmark_result'] == "Running":
+        return "Benchmark test is still running."
+
+    benchmark_details = benchmark_information['benchmark_result']
+
+    # Format a nice output; do this line-by-line then concat the elements at the end
+    ainformation = []
+    ainformation.append('{}Storage Benchmark details:{}'.format(ansiprint.bold(), ansiprint.end()))
+
+    nice_test_name_map = {
+        "seq_read": "Sequential Read (4M blocks)",
+        "seq_write": "Sequential Write (4M blocks)",
+        "rand_read_4M": "Random Read (4M blocks)",
+        "rand_write_4M": "Random Write (4M blocks)",
+        "rand_read_4K": "Random Read (4K blocks)",
+        "rand_write_4K": "Random Write (4K blocks)",
+        "rand_read_4K_lowdepth": "Random Read (4K blocks, single-queue)",
+        "rand_write_4K_lowdepth": "Random Write (4K blocks, single-queue)",
+    }
+
+    for test in benchmark_details:
+        ainformation.append('')
+
+        io_class = None
+        for _io_class in ['read', 'write']:
+            if benchmark_details[test]['jobs'][0][_io_class]['io_bytes'] > 0:
+                io_class = _io_class
+        if io_class is None:
+            continue
+
+        job_details = benchmark_details[test]['jobs'][0]
+
+        overall_label_length = 0
+        overall_column_length = 0
+        bandwidth_label_length = 0
+        bandwidth_column_length = 9
+        iops_column_length = 4
+        latency_column_length = 12
+        latency_percentile_label_length = 6
+        latency_percentile_column_length = 12
+
+        # Column layout:
+        #    General    Bandwidth   IOPS      Latency   CLAT Percentile
+        #    ---------  ----------  --------  --------  ---------------
+        #    Size       Min         Min       Min       1.00
+        #    BW         Max         Max       Max       5.00
+        #    IOPS       Mean        Mean      Mean      10.00
+        #    Runtime    StdDev      StdDev    StdDev    50.00
+        #    UsrCPU     Samples     Samples             90.00
+        #    SysCPU                                     99.50
+        #    CtxSw                                      99.90
+        #    MajFault                                   99.95
+        #    MinFault                                   99.99
+
+        overall_label = [ 'Overall BW:',
+                          'Overall IOPS:',
+                          'Total I/O:',
+                          'Runtime (s):',
+                          'User CPU %:',
+                          'System CPU %:',
+                          'Ctx Switches:',
+                          'Major Faults:',
+                          'Minor Faults:' ]
+        overall_data =  [ format_bytes_tohuman(int(job_details[io_class]['bw_bytes'])),
+                          format_ops_tohuman(int(job_details[io_class]['iops'])),
+                          format_bytes_tohuman(int(job_details[io_class]['io_bytes'])),
+                          job_details['job_runtime'] / 1000,
+                          job_details['usr_cpu'],
+                          job_details['sys_cpu'],
+                          job_details['ctx'],
+                          job_details['majf'],
+                          job_details['minf'] ]
+        bandwidth_label = [ 'Min:',
+                            'Max:',
+                            'Mean:',
+                            'StdDev:',
+                            'Samples:',
+                            '',
+                            '',
+                            '',
+                            '' ]
+        bandwidth_data =  [ format_bytes_tohuman(int(job_details[io_class]['bw_min']) * 1024),
+                            format_bytes_tohuman(int(job_details[io_class]['bw_max']) * 1024),
+                            format_bytes_tohuman(int(job_details[io_class]['bw_mean']) * 1024),
+                            format_bytes_tohuman(int(job_details[io_class]['bw_dev']) * 1024),
+                            job_details[io_class]['bw_samples'],
+                            '',
+                            '',
+                            '',
+                            '' ]
+        iops_data = [ format_ops_tohuman(int(job_details[io_class]['iops_min'])),
+                      format_ops_tohuman(int(job_details[io_class]['iops_max'])),
+                      format_ops_tohuman(int(job_details[io_class]['iops_mean'])),
+                      format_ops_tohuman(int(job_details[io_class]['iops_stddev'])),
+                      job_details[io_class]['iops_samples'],
+                      '',
+                      '',
+                      '',
+                      '' ]
+        lat_data = [ job_details[io_class]['lat_ns']['min'],
+                     job_details[io_class]['lat_ns']['max'],
+                     job_details[io_class]['lat_ns']['mean'],
+                     job_details[io_class]['lat_ns']['stddev'],
+                     '',
+                     '',
+                     '',
+                     '',
+                     '' ]
+        lat_percentile_label = [ '99.99%:',
+                                 '99.95%:',
+                                 '99.9%:',
+                                 '99.5%:',
+                                 '99%:',
+                                 '90%:',
+                                 '50%:',
+                                 '10%:',
+                                 '1%:' ]
+        lat_percentile_data =  [ job_details[io_class]['clat_ns']['percentile']['99.990000'],
+                                 job_details[io_class]['clat_ns']['percentile']['99.950000'],
+                                 job_details[io_class]['clat_ns']['percentile']['99.900000'],
+                                 job_details[io_class]['clat_ns']['percentile']['99.500000'],
+                                 job_details[io_class]['clat_ns']['percentile']['99.000000'],
+                                 job_details[io_class]['clat_ns']['percentile']['90.000000'],
+                                 job_details[io_class]['clat_ns']['percentile']['50.000000'],
+                                 job_details[io_class]['clat_ns']['percentile']['10.000000'],
+                                 job_details[io_class]['clat_ns']['percentile']['1.000000'] ]
+
+        for item in overall_label:
+            _item_length = len(str(item))
+            if _item_length > overall_label_length:
+                overall_label_length = _item_length
+
+        for item in overall_data:
+            _item_length = len(str(item))
+            if _item_length > overall_column_length:
+                overall_column_length = _item_length
+
+        test_name_length = len(nice_test_name_map[test])
+        if test_name_length > overall_label_length + overall_column_length:
+            _diff = test_name_length - (overall_label_length + overall_column_length)
+            overall_column_length += _diff
+
+        for item in bandwidth_label:
+            _item_length = len(str(item))
+            if _item_length > bandwidth_label_length:
+                bandwidth_label_length = _item_length
+
+        for item in bandwidth_data:
+            _item_length = len(str(item))
+            if _item_length > bandwidth_column_length:
+                bandwidth_column_length = _item_length
+
+        for item in iops_data:
+            _item_length = len(str(item))
+            if _item_length > iops_column_length:
+                iops_column_length = _item_length
+
+        for item in lat_data:
+            _item_length = len(str(item))
+            if _item_length > latency_column_length:
+                latency_column_length = _item_length
+
+        for item in lat_percentile_label:
+            _item_length = len(str(item))
+            if _item_length > latency_percentile_label_length:
+                latency_percentile_label_length = _item_length
+
+        for item in lat_percentile_data:
+            _item_length = len(str(item))
+            if _item_length > latency_percentile_column_length:
+                latency_percentile_column_length = _item_length
+
+        # Top row (Headers)
+        ainformation.append('{bold}\
+{overall_label: <{overall_label_length}}    \
+{bandwidth_label: <{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}}  \
+{iops: <{iops_length}}  \
+{latency: <{latency_length}}   \
+{latency_percentile_label: <{latency_percentile_label_length}} \
+{latency_percentile: <{latency_percentile_length}} \
+{end_bold}'.format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            overall_label=nice_test_name_map[test],
+            overall_label_length=overall_label_length,
+            bandwidth_label='',
+            bandwidth_label_length=bandwidth_label_length,
+            bandwidth='Bandwidth',
+            bandwidth_length=bandwidth_column_length,
+            iops='IOPS',
+            iops_length=iops_column_length,
+            latency='Latency (μs)',
+            latency_length=latency_column_length,
+            latency_percentile_label='CLAT Percentiles (μs)',
+            latency_percentile_label_length=latency_percentile_label_length,
+            latency_percentile='',
+            latency_percentile_length=latency_percentile_column_length,
+        ))
+
+        for idx, _ in enumerate(overall_data):
+            # Top row (Headers)
+            ainformation.append('{bold}\
+{overall_label: >{overall_label_length}} \
+{overall: <{overall_length}}   \
+{bandwidth_label: >{bandwidth_label_length}} \
+{bandwidth: <{bandwidth_length}}  \
+{iops: <{iops_length}}  \
+{latency: <{latency_length}}   \
+{latency_percentile_label: >{latency_percentile_label_length}} \
+{latency_percentile: <{latency_percentile_length}} \
+{end_bold}'.format(
+                bold='',
+                end_bold='',
+                overall_label=overall_label[idx],
+                overall_label_length=overall_label_length,
+                overall=overall_data[idx],
+                overall_length=overall_column_length,
+                bandwidth_label=bandwidth_label[idx],
+                bandwidth_label_length=bandwidth_label_length,
+                bandwidth=bandwidth_data[idx],
+                bandwidth_length=bandwidth_column_length,
+                iops=iops_data[idx],
+                iops_length=iops_column_length,
+                latency=lat_data[idx],
+                latency_length=latency_column_length,
+                latency_percentile_label=lat_percentile_label[idx],
+                latency_percentile_label_length=latency_percentile_label_length,
+                latency_percentile=lat_percentile_data[idx],
+                latency_percentile_length=latency_percentile_column_length,
+            ))
 
     return '\n'.join(ainformation)
