@@ -138,7 +138,7 @@ def run_benchmark(self, pool):
 
     print("Storing running status for job '{}' in database".format(job_name))
     try:
-        query = "INSERT INTO storage_benchmarks (job, test_format, result) VALUES (%s, %s);"
+        query = "INSERT INTO storage_benchmarks (job, test_format, result) VALUES (%s, %s, %s);"
         args = (job_name, TEST_FORMAT, "Running",)
         db_cur.execute(query, args)
         db_conn.commit()
