@@ -244,8 +244,7 @@ def run_benchmark(self, pool):
                 --randrepeat=1 \
                 --numjobs=1 \
                 --time_based \
-                --runtime=60 \
-                --ramp_time=15 \
+                --runtime=75 \
                 --group_reporting \
                 --iodepth={iodepth} \
                 --bs={bs} \
@@ -258,6 +257,7 @@ def run_benchmark(self, pool):
             bs=test_matrix[test]['bs'],
             rw=test_matrix[test]['rw'])
 
+        print("Running fio job: {}".format(' '.join(fio_cmd.split())))
         retcode, stdout, stderr = pvc_common.run_os_command(fio_cmd)
         if retcode:
             raise BenchmarkError("Failed to run fio test: {}".format(stderr), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
