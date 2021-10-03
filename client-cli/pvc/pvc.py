@@ -2542,8 +2542,8 @@ def ceph_benchmark_run(pool):
     'job', required=True
 )
 @click.option(
-    '-f', '--format', 'oformat', default='pretty', show_default=True,
-    type=click.Choice(['pretty', 'json', 'json-pretty']),
+    '-f', '--format', 'oformat', default='summary', show_default=True,
+    type=click.Choice(['summary', 'json', 'json-pretty']),
     help='Output format of benchmark information.'
 )
 @cluster_req

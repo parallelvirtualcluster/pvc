@@ -2051,10 +2051,10 @@ def format_info_benchmark_json(config, benchmark_information):
         while len(iops_data) < max_rows:
             iops_data.append('')
 
-        lat_data = [ job_details[io_class]['lat_ns']['min'],
-                     job_details[io_class]['lat_ns']['max'],
-                     job_details[io_class]['lat_ns']['mean'],
-                     job_details[io_class]['lat_ns']['stddev'],
+        lat_data = [ int(job_details[io_class]['lat_ns']['min']) / 1000,
+                     int(job_details[io_class]['lat_ns']['max']) / 1000,
+                     int(job_details[io_class]['lat_ns']['mean']) / 1000,
+                     int(job_details[io_class]['lat_ns']['stddev']) / 1000,
                      '',
                      '',
                      '',
