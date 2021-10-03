@@ -1497,6 +1497,7 @@ def format_list_benchmark(config, benchmark_information):
     benchmark_list_output = []
 
     benchmark_job_length = 20
+    benchmark_format_length = 6
     benchmark_bandwidth_length = dict()
     benchmark_iops_length = dict()
 
@@ -1542,22 +1543,23 @@ def format_list_benchmark(config, benchmark_information):
 
     # Format the output header line 1
     benchmark_list_output.append('{bold}\
-{benchmark_job: <{benchmark_job_length}}  \
+{benchmark_job: <{benchmark_job_length}}   \
 {seq_header: <{seq_header_length}}  \
 {rand_header: <{rand_header_length}}\
 {end_bold}'.format(
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
-        benchmark_job_length=benchmark_job_length,
+        benchmark_job_length=benchmark_job_length + benchmark_format_length + 1,
         seq_header_length=benchmark_seq_bw_length + benchmark_seq_iops_length + 1,
         rand_header_length=benchmark_rand_bw_length + benchmark_rand_iops_length + 1,
-        benchmark_job='Benchmarks ' + ''.join(['-' for _ in range(11, benchmark_job_length - 1)]),
+        benchmark_job='Benchmarks ' + ''.join(['-' for _ in range(11, benchmark_job_length + benchmark_format_length + 2)]),
         seq_header='Sequential (4M blocks) ' + ''.join(['-' for _ in range(23, benchmark_seq_bw_length + benchmark_seq_iops_length)]),
         rand_header='Random (4K blocks) ' + ''.join(['-' for _ in range(19, benchmark_rand_bw_length + benchmark_rand_iops_length)]))
     )
 
     benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}}  \
+{benchmark_format: <{benchmark_format_length}}   \
 {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
 {seq_benchmark_iops: <{seq_benchmark_iops_length}}  \
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
@@ -1566,11 +1568,13 @@ def format_list_benchmark(config, benchmark_information):
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         benchmark_job_length=benchmark_job_length,
+        benchmark_format_length=benchmark_format_length,
         seq_benchmark_bandwidth_length=benchmark_seq_bw_length,
         seq_benchmark_iops_length=benchmark_seq_iops_length,
         rand_benchmark_bandwidth_length=benchmark_rand_bw_length,
         rand_benchmark_iops_length=benchmark_rand_iops_length,
         benchmark_job='Job',
+        benchmark_format='Format',
         seq_benchmark_bandwidth='R/W Bandwith/s',
         seq_benchmark_iops='R/W IOPS',
         rand_benchmark_bandwidth='R/W Bandwith/s',
@@ -1592,6 +1596,7 @@ def format_list_benchmark(config, benchmark_information):
 
         benchmark_list_output.append('{bold}\
 {benchmark_job: <{benchmark_job_length}}  \
+{benchmark_format: <{benchmark_format_length}}   \
 {seq_benchmark_bandwidth: <{seq_benchmark_bandwidth_length}} \
 {seq_benchmark_iops: <{seq_benchmark_iops_length}}  \
 {rand_benchmark_bandwidth: <{rand_benchmark_bandwidth_length}} \
@@ -1600,11 +1605,13 @@ def format_list_benchmark(config, benchmark_information):
             bold='',
             end_bold='',
             benchmark_job_length=benchmark_job_length,
+            benchmark_format_length=benchmark_format_length,
             seq_benchmark_bandwidth_length=benchmark_seq_bw_length,
             seq_benchmark_iops_length=benchmark_seq_iops_length,
             rand_benchmark_bandwidth_length=benchmark_rand_bw_length,
             rand_benchmark_iops_length=benchmark_rand_iops_length,
             benchmark_job=benchmark_job,
+            benchmark_format=benchmark_format,
             seq_benchmark_bandwidth=seq_benchmark_bandwidth,
             seq_benchmark_iops=seq_benchmark_iops,
             rand_benchmark_bandwidth=rand_benchmark_bandwidth,
