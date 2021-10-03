@@ -5,11 +5,16 @@ systemctl daemon-reload
 
 # Restart the main daemon and apply database migrations (or warn on first install)
 if systemctl is-active --quiet pvcapid.service; then
-    systemctl stop pvcapid-worker.service
     systemctl stop pvcapid.service
     /usr/share/pvc/pvc-api-db-upgrade
     systemctl start pvcapid.service
+fi
+# Restart the worker daemon
+if systemctl is-active --quiet pvcapid-worker.service; then
+    systemctl stop pvcapid-worker.service
     systemctl start pvcapid-worker.service
-else
+fi
+
+if [[ ! -f /etc/pvc/pvcapid.yaml ]]; then
     echo "NOTE: The PVC client API daemon (pvcapid.service) and the PVC provisioner worker daemon (pvcapid-worker.service) have not been started; create a config file at /etc/pvc/pvcapid.yaml, then run the database configuration (/usr/share/pvc/pvc-api-db-upgrade) and start them manually."
 fi
