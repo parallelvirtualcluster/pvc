@@ -1939,14 +1939,14 @@ def format_info_benchmark_json(config, benchmark_information):
     ainformation.append('{}Storage Benchmark details:{}'.format(ansiprint.bold(), ansiprint.end()))
 
     nice_test_name_map = {
-        "seq_read": "Sequential Read (4M blocks)",
-        "seq_write": "Sequential Write (4M blocks)",
-        "rand_read_4M": "Random Read (4M blocks)",
-        "rand_write_4M": "Random Write (4M blocks)",
-        "rand_read_4K": "Random Read (4K blocks)",
-        "rand_write_4K": "Random Write (4K blocks)",
-        "rand_read_4K_lowdepth": "Random Read (4K blocks, single-queue)",
-        "rand_write_4K_lowdepth": "Random Write (4K blocks, single-queue)",
+        "seq_read": "Sequential Read (4M blocks, queue depth 64)",
+        "seq_write": "Sequential Write (4M blocks, queue depth 64)",
+        "rand_read_4M": "Random Read (4M blocks, queue depth 64)",
+        "rand_write_4M": "Random Write (4M blocks queue depth 64)",
+        "rand_read_4K": "Random Read (4K blocks, queue depth 64)",
+        "rand_write_4K": "Random Write (4K blocks, queue depth 64)",
+        "rand_read_4K_lowdepth": "Random Read (4K blocks, queue depth 1)",
+        "rand_write_4K_lowdepth": "Random Write (4K blocks, queue depth 1)",
     }
 
     for test in benchmark_details:
@@ -1961,29 +1961,37 @@ def format_info_benchmark_json(config, benchmark_information):
 
         job_details = benchmark_details[test]['jobs'][0]
 
-        overall_label_length = 0
-        overall_column_length = 0
-        bandwidth_label_length = 0
-        bandwidth_column_length = 9
-        iops_column_length = 4
-        latency_column_length = 12
-        latency_percentile_label_length = 6
-        latency_percentile_column_length = 12
+        # Calculate the unified latency categories (in us)
+        latency_tree = list()
+        for field in job_details['latency_ns']:
+            bucket = str(int(field) / 1000)
+            latency_tree.append((bucket, job_details['latency_ns'][field]))
+        for field in job_details['latency_us']:
+            bucket = field
+            latency_tree.append((bucket, job_details['latency_us'][field]))
+        for field in job_details['latency_ms']:
+            # That one annoying one
+            if field == '>=2000':
+                bucket = '>=2000000'
+            else:
+                bucket = str(int(field) * 1000)
+            latency_tree.append((bucket, job_details['latency_ms'][field]))
 
-        # Column layout:
-        #    General    Bandwidth   IOPS      Latency   CLAT Percentile
-        #    ---------  ----------  --------  --------  ---------------
-        #    Size       Min         Min       Min       1.00
-        #    BW         Max         Max       Max       5.00
-        #    IOPS       Mean        Mean      Mean      10.00
-        #    Runtime    StdDev      StdDev    StdDev    50.00
-        #    UsrCPU     Samples     Samples             90.00
-        #    SysCPU                                     99.50
-        #    CtxSw                                      99.90
-        #    MajFault                                   99.95
-        #    MinFault                                   99.99
+        # Find the minimum entry without a zero
+        useful_latency_tree = list()
+        for element in latency_tree:
+            if element[1] != 0:
+                useful_latency_tree.append(element)
 
-        overall_label = [ 'Overall BW:',
+        max_rows = 9
+        if len(useful_latency_tree) > 9:
+            max_rows = len(useful_latency_tree)
+        elif len(useful_latency_tree) < 9:
+            while len(useful_latency_tree) < 9:
+                useful_latency_tree.append(('', ''))
+
+        # Format the static data
+        overall_label = [ 'Overall BW/s:',
                           'Overall IOPS:',
                           'Total I/O:',
                           'Runtime (s):',
@@ -1992,6 +2000,9 @@ def format_info_benchmark_json(config, benchmark_information):
                           'Ctx Switches:',
                           'Major Faults:',
                           'Minor Faults:' ]
+        while len(overall_label) < max_rows:
+            overall_label.append('')
+
         overall_data =  [ format_bytes_tohuman(int(job_details[io_class]['bw_bytes'])),
                           format_ops_tohuman(int(job_details[io_class]['iops'])),
                           format_bytes_tohuman(int(job_details[io_class]['io_bytes'])),
@@ -2001,6 +2012,9 @@ def format_info_benchmark_json(config, benchmark_information):
                           job_details['ctx'],
                           job_details['majf'],
                           job_details['minf'] ]
+        while len(overall_data) < max_rows:
+            overall_data.append('')
+
         bandwidth_label = [ 'Min:',
                             'Max:',
                             'Mean:',
@@ -2010,6 +2024,9 @@ def format_info_benchmark_json(config, benchmark_information):
                             '',
                             '',
                             '' ]
+        while len(bandwidth_label) < max_rows:
+            bandwidth_label.append('')
+
         bandwidth_data =  [ format_bytes_tohuman(int(job_details[io_class]['bw_min']) * 1024),
                             format_bytes_tohuman(int(job_details[io_class]['bw_max']) * 1024),
                             format_bytes_tohuman(int(job_details[io_class]['bw_mean']) * 1024),
@@ -2019,6 +2036,9 @@ def format_info_benchmark_json(config, benchmark_information):
                             '',
                             '',
                             '' ]
+        while len(bandwidth_data) < max_rows:
+            bandwidth_data.append('')
+
         iops_data = [ format_ops_tohuman(int(job_details[io_class]['iops_min'])),
                       format_ops_tohuman(int(job_details[io_class]['iops_max'])),
                       format_ops_tohuman(int(job_details[io_class]['iops_mean'])),
@@ -2028,6 +2048,9 @@ def format_info_benchmark_json(config, benchmark_information):
                       '',
                       '',
                       '' ]
+        while len(iops_data) < max_rows:
+            iops_data.append('')
+
         lat_data = [ job_details[io_class]['lat_ns']['min'],
                      job_details[io_class]['lat_ns']['max'],
                      job_details[io_class]['lat_ns']['mean'],
@@ -2037,25 +2060,39 @@ def format_info_benchmark_json(config, benchmark_information):
                      '',
                      '',
                      '' ]
-        lat_percentile_label = [ '99.99%:',
-                                 '99.95%:',
-                                 '99.9%:',
-                                 '99.5%:',
-                                 '99%:',
-                                 '90%:',
-                                 '50%:',
-                                 '10%:',
-                                 '1%:' ]
-        lat_percentile_data =  [ job_details[io_class]['clat_ns']['percentile']['99.990000'],
-                                 job_details[io_class]['clat_ns']['percentile']['99.950000'],
-                                 job_details[io_class]['clat_ns']['percentile']['99.900000'],
-                                 job_details[io_class]['clat_ns']['percentile']['99.500000'],
-                                 job_details[io_class]['clat_ns']['percentile']['99.000000'],
-                                 job_details[io_class]['clat_ns']['percentile']['90.000000'],
-                                 job_details[io_class]['clat_ns']['percentile']['50.000000'],
-                                 job_details[io_class]['clat_ns']['percentile']['10.000000'],
-                                 job_details[io_class]['clat_ns']['percentile']['1.000000'] ]
+        while len(lat_data) < max_rows:
+            lat_data.append('')
 
+        # Format the dynamic buckets
+        lat_bucket_label = list()
+        lat_bucket_data = list()
+        for element in useful_latency_tree:
+            lat_bucket_label.append(element[0])
+            lat_bucket_data.append(element[1])
+
+        # Column default widths
+        overall_label_length = 0
+        overall_column_length = 0
+        bandwidth_label_length = 0
+        bandwidth_column_length = 11
+        iops_column_length = 4
+        latency_column_length = 12
+        latency_bucket_label_length = 0
+
+        # Column layout:
+        #    General    Bandwidth   IOPS      Latency   Percentiles
+        #    ---------  ----------  --------  --------  ---------------
+        #    Size       Min         Min       Min       A
+        #    BW         Max         Max       Max       B
+        #    IOPS       Mean        Mean      Mean      ...
+        #    Runtime    StdDev      StdDev    StdDev    Z
+        #    UsrCPU     Samples     Samples
+        #    SysCPU
+        #    CtxSw
+        #    MajFault
+        #    MinFault
+
+        # Set column widths
         for item in overall_label:
             _item_length = len(str(item))
             if _item_length > overall_label_length:
@@ -2091,25 +2128,20 @@ def format_info_benchmark_json(config, benchmark_information):
             if _item_length > latency_column_length:
                 latency_column_length = _item_length
 
-        for item in lat_percentile_label:
+        for item in lat_bucket_label:
             _item_length = len(str(item))
-            if _item_length > latency_percentile_label_length:
-                latency_percentile_label_length = _item_length
-
-        for item in lat_percentile_data:
-            _item_length = len(str(item))
-            if _item_length > latency_percentile_column_length:
-                latency_percentile_column_length = _item_length
+            if _item_length > latency_bucket_label_length:
+                latency_bucket_label_length = _item_length
 
         # Top row (Headers)
         ainformation.append('{bold}\
 {overall_label: <{overall_label_length}}    \
 {bandwidth_label: <{bandwidth_label_length}} \
-{bandwidth: <{bandwidth_length}}  \
-{iops: <{iops_length}}  \
+{bandwidth: <{bandwidth_length}}   \
+{iops: <{iops_length}}   \
 {latency: <{latency_length}}   \
-{latency_percentile_label: <{latency_percentile_label_length}} \
-{latency_percentile: <{latency_percentile_length}} \
+{latency_bucket_label: <{latency_bucket_label_length}} \
+{latency_bucket} \
 {end_bold}'.format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
@@ -2117,29 +2149,28 @@ def format_info_benchmark_json(config, benchmark_information):
             overall_label_length=overall_label_length,
             bandwidth_label='',
             bandwidth_label_length=bandwidth_label_length,
-            bandwidth='Bandwidth',
+            bandwidth='Bandwidth/s',
             bandwidth_length=bandwidth_column_length,
             iops='IOPS',
             iops_length=iops_column_length,
             latency='Latency (μs)',
             latency_length=latency_column_length,
-            latency_percentile_label='CLAT Percentiles (μs)',
-            latency_percentile_label_length=latency_percentile_label_length,
-            latency_percentile='',
-            latency_percentile_length=latency_percentile_column_length,
+            latency_bucket_label='Latency Buckets (μs/%)',
+            latency_bucket_label_length=latency_bucket_label_length,
+            latency_bucket='',
         ))
 
-        for idx, _ in enumerate(overall_data):
+        for idx in range(0, max_rows):
             # Top row (Headers)
             ainformation.append('{bold}\
 {overall_label: >{overall_label_length}} \
 {overall: <{overall_length}}   \
 {bandwidth_label: >{bandwidth_label_length}} \
-{bandwidth: <{bandwidth_length}}  \
-{iops: <{iops_length}}  \
+{bandwidth: <{bandwidth_length}}   \
+{iops: <{iops_length}}   \
 {latency: <{latency_length}}   \
-{latency_percentile_label: >{latency_percentile_label_length}} \
-{latency_percentile: <{latency_percentile_length}} \
+{latency_bucket_label: >{latency_bucket_label_length}} \
+{latency_bucket} \
 {end_bold}'.format(
                 bold='',
                 end_bold='',
@@ -2155,10 +2186,9 @@ def format_info_benchmark_json(config, benchmark_information):
                 iops_length=iops_column_length,
                 latency=lat_data[idx],
                 latency_length=latency_column_length,
-                latency_percentile_label=lat_percentile_label[idx],
-                latency_percentile_label_length=latency_percentile_label_length,
-                latency_percentile=lat_percentile_data[idx],
-                latency_percentile_length=latency_percentile_column_length,
+                latency_bucket_label=lat_bucket_label[idx],
+                latency_bucket_label_length=latency_bucket_label_length,
+                latency_bucket=lat_bucket_data[idx],
             ))
 
     return '\n'.join(ainformation)
