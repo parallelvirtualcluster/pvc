@@ -1,23 +1,24 @@
 # PVC Cluster Architecture considerations
 
-- [Node Specification](#node-specification)
-  * [n-1 Redundancy](#n-1-redundancy)
-  * [CPU](#cpu)
-  * [Memory](#memory)
-  * [Disk](#disk)
-  * [Network](#network)
-- [PVC architecture](#pvc-architecture)
-  * [Operating System](#operating-system)
-  * [Ceph Storage Layout](#ceph-storage-layout)
-  * [Networks](#networks)
-    - [System Networks](#system-networks)
-    - [Client Networks](#client-networks)
-- [Advanced Layouts](#advanced-layouts)
-  * [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
-  * [Georedundancy](#georedundancy)
-- [Example System Diagrams](#example-system-diagrams)
-  * [Small 3-node cluster](#small-3-node-cluster)
-  * [Large 8-node cluster](#large-8-node-cluster)
+- [PVC Cluster Architecture considerations](#pvc-cluster-architecture-considerations)
+  * [Node Specification](#node-specification)
+    - [n-1 Redundancy](#n-1-redundancy)
+    - [CPU](#cpu)
+    - [Memory](#memory)
+    - [Disk](#disk)
+    - [Network](#network)
+  * [PVC architecture](#pvc-architecture)
+    - [Operating System](#operating-system)
+    - [Ceph Storage Layout](#ceph-storage-layout)
+    - [Networks](#networks)
+      + [System Networks](#system-networks)
+      + [Client Networks](#client-networks)
+  * [Advanced Layouts](#advanced-layouts)
+    - [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
+    - [Georedundancy](#georedundancy)
+  * [Example System Diagrams](#example-system-diagrams)
+    - [Small 3-node cluster](#small-3-node-cluster)
+    - [Large 8-node cluster](#large-8-node-cluster)
 
 This document contains considerations the administrator should make when preparing for and building a PVC cluster. It is important that prospective PVC administrators read this document *thoroughly* before deploying a cluster to ensure they understand the requirements, caveats, and important details about how PVC operates.
 
@@ -290,12 +291,6 @@ Generally speaking, SR-IOV connections are not recommended unless there is a goo
 #### Other Client Networks
 
 Future PVC versions may support other client network types, such as direct-routing between VMs.
-
-
-
-- [Advanced Layouts](#advanced-layouts)
-  * [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
-  * [Georedundancy](#georedundancy)
 
 ## Advanced Layouts
 
