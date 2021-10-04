@@ -26,7 +26,7 @@ cp README.md ${readme_tmpdir}/
 cp docs/index.md ${readme_tmpdir}/
 pushd ${readme_tmpdir} &>/dev/null
 
-echo -e "\n#### v${new_version}\n\n${changelog}" >> middle
+echo -e "\n##### v${new_version}\n\n${changelog}" >> middle
 
 csplit README.md "/## Changelog/1" &>/dev/null
 cat xx00 middle xx01 > README.md
