@@ -1,85 +1,169 @@
 # PVC Cluster Architecture considerations
 
-- [PVC Cluster Architecture considerations](#pvc-cluster-architecture-considerations)
-  * [Node Specifications: Considering the size of nodes](#node-specifications--considering-the-size-of-nodes)
-  * [Storage Layout: Ceph and OSDs](#storage-layout--ceph-and-osds)
-  * [Physical network considerations](#physical-network-considerations)
-  * [Network Layout: Considering the required networks](#network-layout--considering-the-required-networks)
-    + [PVC system networks](#pvc-system-networks)
-        - [Upstream: Connecting the nodes to the wider world](#upstream--connecting-the-nodes-to-the-wider-world)
-        - [Cluster: Connecting the nodes with each other](#cluster--connecting-the-nodes-with-each-other)
-        - [Storage: Connecting Ceph OSD with each other](#storage--connecting-ceph-osd-with-each-other)
-    + [PVC client networks](#pvc-client-networks)
-        - [Bridged (unmanaged) Client Networks](#bridged--unmanaged--client-networks)
-        - [VXLAN (managed) Client Networks](#vxlan--managed--client-networks)
-        - [SR-IOV Client Networks](#sriov-client-networks)
-        - [Other Client Networks](#other-client-networks)
-  * [Node Layout: Considering how nodes are laid out](#node-layout--considering-how-nodes-are-laid-out)
-    + [Node Functions: Coordinators versus Hypervisors](#node-functions--coordinators-versus-hypervisors)
-        - [Coordinators](#coordinators)
-            * [The Primary Coordinator](#the-primary-coordinator)
-        - [Hypervisors](#hypervisors)
-    + [Geographic redundancy](#geographic-redundancy)
-  * [Example Configurations](#example-configurations)
-    + [Basic 3-node cluster](#basic-3-node-cluster)
-    + [Mid-sized 8-node cluster with 3 coordinators](#mid-sized-8-node-cluster-with-3-coordinators)
-    + [Large 17-node cluster with 5 coordinators](#large-17-node-cluster-with-5-coordinators)
+- [Node Specification](#node-specification)
+  * [n-1 Redundancy](#n-1-redundancy)
+  * [CPU](#cpu)
+  * [Memory](#memory)
+  * [Disk](#disk)
+  * [Network](#network)
+- [PVC architecture](#pvc-architecture)
+  * [Operating System](#operating-system)
+  * [Ceph Storage Layout](#ceph-storage-layout)
+  * [Networks](#networks)
+    - [System Networks](#system-networks)
+    - [Client Networks](#client-networks)
+- [Advanced Layouts](#advanced-layouts)
+  * [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
+  * [Georedundancy](#georedundancy)
+- [Example System Diagrams](#example-system-diagrams)
+  * [Small 3-node cluster](#small-3-node-cluster)
+  * [Large 8-node cluster](#large-8-node-cluster)
 
 This document contains considerations the administrator should make when preparing for and building a PVC cluster. It is important that prospective PVC administrators read this document *thoroughly* before deploying a cluster to ensure they understand the requirements, caveats, and important details about how PVC operates.
 
-## Node Specifications: Considering the size of nodes
+## Node Specification
 
 PVC nodes, especially coordinator nodes, run a significant number of software applications in addition to the virtual machines (VMs). It is therefore extremely important to size the systems correctly for the expected workload while planning both for redundancy and future capacity. In general, taller nodes are better for performance, providing a more powerful cluster on fewer physical machines, though each workload may be different in this regard.
 
-The following table provides bare-minimum, recommended, and optimal specifications for a cluster. The bare-minimum specification would be suitable for testing or a small lab, but not for production use. The recommended specification would be suitable for a small production cluster running lightweight VMs. The optimal cluster would be the ideal for running a demanding, resource-intensive production cluster. Note that these are the minimum resources required, and actual usage will likely require more resources than those presented here - this is mostly to show the minimums for each specified configuration (i.e. testing, light production, heavy production).
+The following table provides recommended minimum specifications for each component of the cluster nodes. In general, these minimums are the lowest possible for a production-quality cluster that would provide decent performance for up to about a dozen virtual machines. Of course, further upward scaling is recommended and the specific computational and storage needs of the VM workloads should be taken into account.
 
-| Resource | Minimum | Recommended | Optimal|
-|--------------|-----------|---------------|----------|
-| CPU generation | Intel Nehalem (2008) / AMD Bulldozer (2011) | Intel Sandy Bridge (2011) / AMD Naples (2017) | Intel Haswell (2013) / AMD Rome (2019) |
-| CPU cores (per node) | 4x @1.8GHz | 8x @2.0GHz | 12x @2.2 GHz |
-| RAM (per node) | 16GB | 48GB | 64GB |
-| System disk (SSD/HDD/USB/SD/eMMC) | 1x 10GB | 2x 10GB RAID-1 | 2x 32GB RAID-1 |
-| Data disk (SSD only) | 1x 200GB | 1x 400GB | 2x 400GB |
-| Network interfaces | 1x 1Gbps | 2x 1Gbps LAG | 2x 10Gbps LAG |
-| Total CPU cores (healthy) | 12x | 24x | 36x |
-| Total CPU cores (n-1) | 8x | 16x | 24x |
-| Total RAM (healthy) | 48GB | 144GB | 192GB |
-| Total RAM (n-1) | 32GB | 96GB | 128GB |
-| Total disk space | 200GB | 400GB | 800GB |
+| Resource | Recommended Minimum |
+| -------- | --------------------|
+| CPU generation | Intel Sandy Bridge (2011) *or* AMD Naples (2017) |
+| CPU cores per node | 8 @ 2.0GHz |
+| RAM per node | 32GB |
+| System disk (SSD/HDD/USB/SD/eMMC) | 2x 100GB RAID-1 |
+| Data disk (SSD only) | 1x 400GB |
+| Network interfaces | 2x 10Gbps (LACP LAG) |
+| Total CPU cores (healthy) | 24 |
+| Total CPU cores (n-1) | 16 |
+| Total RAM (healthy) | 96GB |
+| Total RAM (n-1) | 64GB |
+| Total disk space | 400GB |
 
-### System Disks
-
-The system disk(s) chosen are important to consider, especially for coordinators. Ideally, an SSD, or two SSDs in RAID-1/mirroring are recommended for system disks. This helps ensure optimal performance for the system (e.g. swap space) and PVC components such as databases as well as the Ceph caches.
-
-It is possible to run PVC on slower disks, for instance HDDs, USB drives, SD cards, or eMMC flash. For hypervisor-only nodes this will be acceptable; however for coordinators be advised that the performance of some aspects of the system may suffer as a result, and the longevity of the storage media must be carefully considered. RAID-1/mirroring is strongly recommended for these storage media as well, especially on coordinator nodes.
+For testing, or low-budget homelab applications, some aspects can be further tuned down, however consider the following sections carefully.
 
 ### n-1 Redundancy
 
 Care should be taken to examine the "healthy" versus "n-1" total resource availability. Under normal operation, PVC will use all available resources and distribute VMs across all cluster nodes. However, during single-node failure or maintenance conditions, all VMs will be required to run on the remaining hypervisors. Thus, care should be taken during planning to ensure there is sufficient resources for the expected workload of the cluster.
 
-The general rule for available resource capacity planning can be though of as "1/3 of the total disks space, 2/3 of the total RAM, 2/3 of the total CPUs" for a 3-node cluster.
+The general values for default resource availability of a 3-node cluster for n-1 availability (1 node offline) are:
 
-For memory provisioning of VMs, PVC will warn the administrator, via a Degraded cluster state, if the "n-1" RAM quantity is exceeded by the total maximum allocation of all running VMs. This situation can be worked around with sufficient swap space on nodes to ensure there is overflow, however the warning cannot be overridden. If nodes are of mismatched sizes, the "n-1" RAM quantity is calculated by removing (one of) the largest node in the cluster and adding the remaining nodes' RAM counts together.
+  * 1/3 of the total data disk space (3 copies of all data, distributed across all 3 nodes)
+  * 2/3 of the total RAM
+  * 2/3 of the total CPU cores
 
-### System Memory Utilization
+For memory provisioning of VMs, PVC will warn the administrator, via a Degraded cluster state, if the "n-1" RAM quantity is exceeded by the total maximum allocation of all running VMs. If nodes are of mismatched sizes, the "n-1" RAM quantity is calculated by removing (one of) the largest node in the cluster and adding the remaining nodes' RAM counts together.
 
-By default, several components of PVC outside of VMs will have large memory allocations, most notably Ceph OSD processes and Zookeeper database processes. These processes should be considered when selecting the RAM allocation of nodes, and adjusted in the Ansible `group_vars` if lower defaults are required.
+### CPU
 
-#### Ceph OSD processes
+CPU resources are a very important part of the overall performance of a PVC cluster. Numerous aspects of the system require high-performance CPU cores, including the VM workloads themselves, the PVC databases, and, especially, the Ceph storage subsystem.
 
-By default, PVC will allow several GB (up to 4-6GB) of RAM allocation per OSD to maximize the available cache space and hence disk performance. This can be lowered as far as 939MB should the administrator require due to a low RAM configuration, but no further due to Ceph limitations; therefore at least 1GB of memory per storage OSD is required even in the most limited case.
+As a general rule, more cores, and faster cores, are always better, and real cores are preferable to SMT virtual cores in most cases.
 
-#### Zookeeper processes
+#### SMT
 
-By default, the Java heap and stack sizes are set to 256MB and 512MB respectively, yieliding a memory usage of 500+MB after serveral days or weeks of uptime. This can be lowered to 32M or less for lightly-used clusters should the administrator require due to a low RAM configuration.
+SMT in particular can be a contentious subject, and performance can vary wildly for different workloads; thus, while they are useful, in terms of performance calculations they should always be considered as an afterthought or "bonus" to assist with many VMs contending for resources, and base specifications should be done based on the number of real CPU cores instead.
 
-### Operating System and Architecture
+#### CPU core counts
 
-As an underlying OS, only Debian GNU/Linux 10.x "Buster" or 11.x "Bullseye" is supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and (for Debian Buster) an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 or 11. PVC will generally be upgraded regularly to support new Debian versions. As a rule, using the current versions of the official node installer and Ansible repository is the preferred and only supported method for deploying PVC.
+The following should be considered recommended minimums for CPU core allocations:
+
+  * PVC system daemons, including Zookeeper and PostgreSQL databases: 2 CPU cores
+  * Ceph Monitor and Manager processes: 1 CPU core
+  * Ceph OSD processes: 2 CPU cores *per OSD disk*
+  * Virtual Machines: 1 CPU core per vCPU in the largest spec'd VM (e.g. 12 vCPUs in a VM = 12 cores here)
+
+To provide an example, consider a cluster that would run 2 OSD disks per node, and want to run several VMs, the largest of which would require 12 vCPUs:
+
+  * PVC system: 2 cores
+  * Ceph Mon/Mgr: 1 core
+  * Ceph OSDs: 2 * 2 = 4 cores
+  * VMs: 12 cores
+
+This gives a total of 19 cores, and thus a 20+ core CPU would be recommended.
+
+Additinal CPU cores, as previously mentioned, are always better. For instance, though 2 is the recommended minimum per OSD disk, better performance can be achieved if there are 4 cores available per OSD instead. This tradeoff depends heavily on the required workload and VM specifications and should be carefully considered.
+
+#### CPU performance
+
+While CPU frequency is not a tell-all or even particularly useful metric across generations or manufacturers, within a specific generation and manufacturer, faster CPUs will almost always improve performance across the board, especially when considering the Ceph storage subsystem. If a 2.0GHz and a 2.6GHz CPU of the same core count are both available, the 2.6GHz one is almost always the better choice from a pure performance perspective. 
+
+### Memory
+
+Memory is extremely important to PVC clusters, and like CPU resources a not-insignificant amount of memory is required for the baseline cluster before VMs are considered.
+
+#### Memory allocations
+
+The following should be considered recommended minimums for memory allocations:
+
+  * PVC daemons: 1 GB
+  * Zookeeper database: 1 GB
+  * PostgreSQL database: 1 GB
+  * Ceph Monitor and Manager processes: 1 GB
+  * Ceph OSD processes: 1 GB *per OSD disk*
+
+All additional memory can be consumed by virtual machines.
+
+To provide an example, in the same cluster as mentioned in the CPU section:
+
+ * PVC system: 1 GB
+ * Zookeeper: 1 GB
+ * PostgreSQL: 1 GB
+ * Ceph Mon/Mgr: 1 GB
+ * Ceph OSDs: 2 * 1 GB = 2 GB
+
+This gives a total of 6 GB of memory for the base system, with VMs requiring additional memory.
+
+#### VM Memory Overprovisioning
+
+An important consideration is that the KVM hypervisor used by PVC will only allocate guest memory *as required by the guest*, but PVC tracks memory allocation based on the allocated maximum. Thus, for example, a VM may be allocated 8192 MB of memory in PVC, and thus the PVC system considers 8 GB "allocated" and "provisioned" to this VM, but if the actual guest is only using 500 MB of that memory, the actual memory usage on the hypervisor node will be 500 MB for that VM. Thus it is possible for "all" memory to be allocated on a node but there still be many GB of "free" memory. This is an intentional design decision to avoid excessive overprovisioning of memory and thus situations where non-VM processes become memory starved, as the PVC system itself does *not* track the usage by the aforementioned processes.
+
+#### Memory Performance
+
+Given the recommended CPU requirements, all PVC hypervisors should contain at least DDR3 memory, which is sufficiently performant for all tasks. Memory latency and performance, however, can become important especially in large NUMA systems, and especially with regards to the Ceph storage subsystem. Care should be taken to optimize the memory layout in nodes, for instance making use of all available memory channels in the CPU architecture and preferring 1 DIMM-per-channel (DPC) over 2 DPC.
+
+#### Ceph OSD memory utilization
+
+While the recommended *minimum* is 1 GB per OSD process, in reality, Ceph can allocate between 4 and 6 GB of memory per OSD process, especially for caching metadata and other frequently-used data. Thus, for maximum performance, 4 GB instead of 1 GB should be allocated per-OSD.
+
+#### Memory limit tuning
+
+The PVC Ansible deployment system allows the administrator to specify limits on some aspects of the aforementioned memory requirements, for instance limiting Zookeeper or Ceph OSD processes to lower amounts of memory. This is not recommended except in situations where memory is extremely constrained; in such situations adding additional memory to nodes is always preferable. For details and examples please see the Ansible variable files.
+
+### Disk
+
+#### System Disks
+
+The performance of system disks is of critical importance in the PVC cluster. At least 32GB of space are required, and at least 100GB is recommended to ensure optimal performance. The system disks should be fast SAS HDDs, SSDs, eMMC flash, class-10 SD, or other flash-based mediums, and RAID-1 is critical for reliability purposes, especially for more wear- or failure-sensitive media types.
+
+PVC will store the various databases on these disks, so overall performance can affect the responsiveness of the system. However note that no VM data is ever stored on system disks; this is provided exclusively by the Ceph data disks (OSDs).
+
+#### Ceph OSD disks
+
+All VM block devices are stored on Ceph OSD data disks. The default pool configuration of the Ceph storage subsystem uses a `copies=3` layout with a `host`-level failure domain; thus, in a 3-node cluster, each block of data is stored 3 times, once per node. This ensures that 2 copies of each piece of data are available even if a host is down, at the cost of 1/3 of the total overall storage space. Other configurations are possible, but this is the minimum recommended.
+
+The performance of VM disks will be dictated almost exclusively by the performance of these disks in combination with the CPU resources of the system as discussed previously. Very fast, robust, and resilient storage is highly recommended for OSD disks to maximize performance and longevity. High-performance SATA, SAS, or NVMe SSDs are recommended for this task, sized according to the expected workload. Spinning disks (HDDs) are *not* recommended for this purpose, and their very low random performance will significantly limit the overall storage performance of the cluster.
+
+Initially, it is optimal if all nodes contain the same number and same size of OSD disks, to ensure even distribution of the data across all disks and thus maximize performance. PVC supports adding additional OSDs at a later time, however the administrator should be cautious to always add new disks in parallel on all nodes at the same time, as otherwise the replication ratio will prevent the new space from being utilized. Thus, in a 3-node cluster, disks must be added 3-at-a-time to all 3 nodes, and these disks must be identically sized, in order to increase the total usable storage space by the value of one of these disks.
+
+In addition to the primary data disks, PVC also supports the offloading of the Ceph BlueStore OSD database and WAL functions of the OSDs onto a separate OSD database volume group on a dedicated storage device. In the normal usecase, this would be an extremely fast and endurant Intel Optane or similar extremely-performant NVMe SSD which is signficiantly faster than the primary data SSDs. This will help accelerate random write I/Os and metadata lookups, especially when using lower-performance SATA or SAS SSDs. Generally speaking this volume should be large enough to support 5% of the capacity of all OSDs on a node, with some room for future expansion. Only one such device and volume group is supported at this time.
+
+### Network
+
+Because PVC makes extensive use of cross-node communications, high-throughput and low-latency networking is critical. At a minimum, 10-gigabit networking is recommended to ensure suitable throughput for the storage subsystem as well as for VM traffic. Higher-speed networking can also improve performance, especially when using extremely fast Ceph OSD disks.
+
+A minimum of 2 network interfaces is recommended. These should then be combined into a logical aggregate (LAG) using 802.3ad (LACP) to provide redundant links and a boost in available bandwidth. Additional NICs can also be used to separate discrete parts of the networking stack, which will be discussed below.
+
+## PVC Architecture
+
+### Operating System
+
+As an underlying OS, only Debian GNU/Linux 10.x "Buster" or 11.x "Bullseye" are supported by PVC. This is the operating system installed by the PVC [node installer](https://github.com/parallelvirtualcluster/pvc-installer) and expected by the PVC [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible). Ubuntu or other Debian-derived distributions may work, but are not officially supported. PVC also makes use of a custom repository to provide the PVC software and (for Debian Buster) an updated version of Ceph beyond what is available in the base operating system, and this is only compatible officially with Debian 10 or 11. PVC will generally be upgraded regularly to support new Debian versions. As a rule, using the current versions of the official node installer and Ansible repository is the preferred and only supported method for deploying PVC.
 
 Currently, only the `amd64` (Intel 64 or AMD64) architecture is officially supported by PVC. Given the cross-platform nature of Python and the various software components in Debian, it may work on `armhf` or `arm64` systems as well, however this has not been tested by the author and is not officially supported at this time.
 
-## Storage Layout: Ceph and OSDs
+### Ceph Storage Layout
 
 PVC makes use of Ceph, a distributed, replicated, self-healing, and self-managing storage system to provide shared VM storage. While a PVC administrator is not required to understand Ceph for day-to-day administraton, and PVC provides interfaces to most of the common storage functions required to operate a cluster, at least some knowledge of Ceph is advisable.
 
@@ -97,21 +181,19 @@ Non-default values can also be set at pool creation time. For instance, one coul
 
 Replication levels cannot be changed within PVC once a pool is created, however they can be changed via manual Ceph commands on a coordinator should the administrator require this, though discussion of this process is outside of the scope of this documentation. The administrator should carefully consider sizing, failure domains, and performance when first selecting storage devices and creating pools, to ensure the right level of resiliency versus data usage for their use-case and planned cluster size.
 
-## Physical network considerations
+## Networks
 
-At a minimum, a production PVC cluster should use at least two 1Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as 802.3q vLANs. PVC is be able to support configurations without bonding or 802.1q vLAN support, using multiple physical interfaces and no bridged client networks, but this is strongly discouraged due to the added complexity this introduces; the switches chosen for the cluster should include these requirements as a minimum.
+At a minimum, a production PVC cluster should use at least two 10Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as 802.3q vLANs. PVC is be able to support configurations without bonding or 802.1q vLAN support, using multiple physical interfaces and no bridged client networks, but this is strongly discouraged due to the added complexity this introduces; the switches chosen for the cluster should include these requirements as a minimum.
 
-More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance. See the [Example Configurations](#example-configurations) section for some basic topology examples.
+More advanced physical network layouts are also possible. For instance, one could have two isolated networks. On the first network, each node has two 10Gbps Ethernet interfaces, which are combined in a bond across two redundant switch fabrics and that handle the upstream and cluster networks. On the second network, each node has an additional two 10Gbps, which are also combined in a bond across the redundant switch fabrics and handle the storage network. This configuration could support up to 10Gbps of aggregate client traffic while also supporting 10Gbps of aggregate storage traffic. Even more complex network configurations are possible if the cluster requires such performance. See the [Example System Diagrams](#example-system-diagrams) section for some basic topology examples.
 
 Only Ethernet networks are supported by PVC. More exotic interconnects such as Infiniband are not supported by default, and must be manually set up with Ethernet (e.g. EoIB) layers on top to be usable with PVC.
 
+Lower-speed networks (e.g. 1Gbps or 100Mbps) should not be used as these will severely bottleneck the performance of the storage subsystem. In an advanced split layout, it may be acceptable to use 1Gbps interfaces for VM guest networks, however the core system networks should always be a minimum of 10Gbps.
+
 PVC manages the IP addressing of all nodes itself and creates the required addresses during node daemon startup; thus, the on-boot network configuration of each interface should be set to "manual" with no IP addresses configured. This can be ignored safely, however, and the addresses specified manually in the networking configurations. PVC nodes use a split (`/etc/network/interfaces.d/<iface>`) network configuration model.
 
-## Network Layout: Considering the required networks
-
-A PVC cluster needs several different networks to operate properly; they are described in detail below and the administrator should ensure they account for all the required networks when planning the cluster.
-
-### PVC system networks
+### System Networks
 
 #### Upstream: Connecting the nodes to the wider world
 
@@ -167,7 +249,7 @@ Nodes in this network are generally assigned IPs automatically based on their no
 
 The administrator may choose to collocate the storage network on the same physical interface as the cluster network, or on a separate physical interface. This should be decided based on the size of the cluster and the perceived ratios of client network versus storage traffic. In large (>3 node) or storage-intensive clusters, this network should generally be a separate set of fast physical interfaces, separate from both the upstream and cluster networks, in order to maximize and isolate the storage bandwidth. If the administrator does choose to collocate these networks, they may also share the same IP address, thus eliminating any distinction between the Cluster and Storage networks. The PVC software handles this natively when the Cluster and Storage IPs of a node are identical.
 
-### PVC client networks
+### Client Networks
 
 #### Bridged (unmanaged) Client Networks
 
@@ -209,17 +291,23 @@ Generally speaking, SR-IOV connections are not recommended unless there is a goo
 
 Future PVC versions may support other client network types, such as direct-routing between VMs.
 
-## Node Layout: Considering how nodes are laid out
 
-A production-grade PVC cluster requires at least 3 nodes running the PVC Daemon software. 1-node clusters are supported for very small clusters, home labs, and testing, but provide no redundancy; they should not be used in production situations.
 
-### Node Functions: Coordinators versus Hypervisors
+- [Advanced Layouts](#advanced-layouts)
+  * [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
+  * [Georedundancy](#georedundancy)
 
-Within PVC, a given node can have one of two main functions: "Coordinator" or "Hypervisor".
+## Advanced Layouts
+
+### Coordinators versus Hypervisors
+
+While a normal basic PVC cluster would consist of 3, or perhaps 5, nodes, PVC is able to scale up much further by differentiating between "coordinator" and "hypervisor" nodes. Such a basic cluster would consist only of coordinator nodes. Scaling up however, it is prudent to add new nodes as hypervisor nodes instead to minimize database scaling problems.
 
 #### Coordinators
 
-Coordinators are a special set of 3 or 5 nodes with additional functionality. The coordinator nodes run, in addition to the PVC software itself, a number of databases and additional functions which are required by the whole cluster. An odd number of coordinators is *always* required to maintain quorum, though there are diminishing returns when creating more than 3. These additional functions are:
+Coordinators are a special set of 3 or 5 nodes with additional functionality. The coordinator nodes run, in addition to the PVC software itself, a number of databases and additional functions which are required by the whole cluster. An odd number of coordinators is *always* required to maintain quorum, though there are diminishing returns when creating more than 3. As mentioned above, generally for small clusters all nodes are coordinators.
+
+These additional functions are:
 
 0. The Zookeeper database cluster containing the cluster state and configuration
 0. The Patroni PostgreSQL database cluster containing DNS records for managed networks and provisioning configurations
@@ -242,9 +330,13 @@ PVC gracefully handles transitioning primary coordinator state, to minimize down
 
 #### Hypervisors
 
-Hypervisors consist of all other PVC nodes in the cluster. For small clusters (3 nodes), there will generally not be any non-coordinator nodes, though adding a 4th would require it to be a hypervisor to preserve quorum between the coordinators. Larger clusters should generally add new nodes as Hypervisors rather than coordinators to preserve the small set of coordinator nodes previously mentioned.
+Hypervisor nodes do not run any of the database or routing functionality of coordinator nodes, nor can they become the primary coordinator node (for obvious reasons). When scaling a cluster up beyond the initial 3, or perhaps 5, coordinator nodes, or when an even number of nodes (e.g. 4) may be desired, any nodes beyond the 3 coordinators should be added as hypervisors.
 
-### Geographic redundancy
+Hypervisor nodes are capable of running VMs and Ceph OSD disks, just like coordinator nodes, though the latter is optional.
+
+PVC has no limit to the number of hypervisor nodes that can connect to a set of coordinators, though beyond a dozen or so total nodes, a more scale-focused infrastructure solution may be warranted.
+
+### Georedundancy
 
 PVC supports geographic redundancy of nodes in order to facilitate disaster recovery scenarios when uptime is critical. Functionally, PVC behaves the same regardless of whether the 3 or more coordinators are in the same physical location, or remote physical locations.
 
@@ -252,9 +344,9 @@ When using geographic redundancy, there are several caveats to keep in mind:
 
 * The Ceph storage subsystem is latency-sensitive. With the default replication configuration, at least 2 writes must succeed for the write to return a success, so the total write latency of a write on any system will be equal to the maximum latency between any two nodes. It is recommended to keep all PVC nodes as "close" as possible latency-wise or storage performance may suffer.
 
-* The inter-node PVC networks must be layer-2 networks (broadcast domains). These networks must be spanned to all nodes in all locations.
+* The inter-node PVC networks (see [System Networks](#system-networks)) must be layer-2 networks (broadcast domains). These networks must be spanned to all nodes in all locations.
 
-* The number of sites and positioning of coordinators at those sites is important. A majority (at least 2 in a 3-coordinator cluster, or 3 in a 5-coordinator) of coordinators must be able to reach each other in a failure scenario for the cluster as a whole to remain functional. Thus, configurations such as 2 + 1 or 3 + 2 splits across 2 sites do *not* provide full redundancy, and the whole cluster will be down if the majority site is down. It is thus recommended to always have an odd number of sites to match the odd number of coordinators, for instance a 1 + 1 + 1 or 2 + 2 + 1 configuration. Also note that all hypervisors much be able to reach the majority coordinator group or their storage will be impacted as well.
+* The number of sites and positioning of coordinators at those sites is important. A majority (at least 2 in a 3-coordinator cluster, or 3 in a 5-coordinator cluster) of coordinators must be able to reach each other in a failure scenario for the cluster as a whole to remain functional. Thus, configurations such as 2 + 1 or 3 + 2 splits across 2 sites do *not* provide full redundancy, and the whole cluster will be down if the majority site is down. It is thus recommended to always have an odd number of sites to match the odd number of coordinators, for instance a 1 + 1 + 1 or 2 + 2 + 1 configuration. Also note that all hypervisors much be able to reach the majority coordinator group or their storage will be impacted as well.
 
     This diagram outlines the supported and unsupported/unreliable georedundant configurations for 3 nodes. Care must always be taken to ensure that the cluster can operate with the loss of any given georeundant site.
 
@@ -262,30 +354,22 @@ When using geographic redundancy, there are several caveats to keep in mind:
 
     *Above: Supported and unsupported/unreliable georedundant configurations* 
 
-* Even if the PVC software itself is in an unmanageable state, VMs will continue to run if at all possible. However, since the storage subsystem makes use of the same quorum, losing more than half of the nodes will very likely result in storage interruption as well, which will affect running VMs.
+* Even if the PVC software itself is in an unmanageable state, VMs will continue to run if at all possible. However, since the storage subsystem makes use of the same quorum, losing more than half of the coordinator nodes will very likely result in storage interruption as well, which will affect running VMs.
 
 If these requirements cannot be fulfilled, it may be best to have separate PVC clusters at each site and handle service redundancy at a higher layer to avoid a major disruption.
 
+## Example System Diagrams
 
-## Example Configurations
+This section provides diagrams of 2 best-practice cluster configurations. These diagrams can be extrapolated out to almost any possible configuration and number of nodes.
 
-This section provides diagrams of 3 possible node configurations. These diagrams can be extrapolated out to almost any possible configuration and number of nodes.
+#### Small 3-node cluster
 
-#### Basic 3-node cluster
+![Small 3-node cluster](/images/pvc-3-node-cluster.png)
 
-![3-node cluster](/images/3-node-cluster.png)
+*Above: A diagram of a simple 3-node cluster with all nodes as coordinators. Dual 10 Gbps network interface per node, unified physical networking with collapsed cluster and storage networks.*
 
-*Above: A diagram of a simple 3-node cluster; all nodes are coordinators, single 1Gbps network interface per node, collapsed cluster and storage networks*
+#### Large 8-node cluster
 
-#### Mid-sized 8-node cluster with 3 coordinators
+![Large 8-node cluster](/images/pvc-8-node-cluster.png)
 
-![8-node cluster](/images/8-node-cluster.png)
-
-*Above: A diagram of a mid-sized 8-node cluster with 3 coordinators, dual bonded 10Gbps network interfaces per node*
-
-#### Large 17-node cluster with 5 coordinators
-
-![17-node cluster](/images/17-node-cluster.png)
-
-*Above: A diagram of a large 17-node cluster with 5 coordinators, dual bonded 10Gbps network interfaces per node for both cluster/upstream and storage networks*
-
+*Above: A diagram of a large 8-node cluster with 3 coordinators and 5 hypervisors. Quad 10Gbps network interfaces per node, split physical networking into guest/cluster and storage networks.*
