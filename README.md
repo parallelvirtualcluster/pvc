@@ -55,6 +55,10 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+#### v0.9.38
+
+  * [All] Significantly improve storage benchmark format and reporting
+
 #### v0.9.37
 
   * [All] Adds support for configurable OSD DB size ratios
