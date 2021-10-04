@@ -351,6 +351,8 @@ When using geographic redundancy, there are several caveats to keep in mind:
 
 * Even if the PVC software itself is in an unmanageable state, VMs will continue to run if at all possible. However, since the storage subsystem makes use of the same quorum, losing more than half of the coordinator nodes will very likely result in storage interruption as well, which will affect running VMs.
 
+* Nodes in remote geographic locations might not be able to be fenced by the remaining PVC nodes if the entire site is unreachable. The cluster will thus be unable to automatically recover VMs at the failed site should it go down. If at all possible, redundant links to georedundant sites are recommended to ensure there is always a network path. Note that the `suicide_interval` configuration option, while it might seem to help here, will not, because the remaining nodes will not be able to reliably confirm if the remote site actually *did* shut itself off. Thus automatic failover of georedundant sides is a potential deficiency that must be considered.
+
 If these requirements cannot be fulfilled, it may be best to have separate PVC clusters at each site and handle service redundancy at a higher layer to avoid a major disruption.
 
 ## Example System Diagrams
