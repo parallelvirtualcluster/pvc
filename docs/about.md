@@ -65,7 +65,7 @@ Nodes are networked together via a set of statically-configured, simple layer-2 
 
  * The "upstream" network is the primary network for the nodes, and provides functions such as upstream Internet access, routing to and from the cluster nodes, and management via the API; it may be either a firewalled public or NAT'd RFC1918 network, but should never be exposed directly to the Internet. It should also contain, or be able to route to, the IPMI BMC management interfaces of the node chassis'.
  * The "cluster" network is an unrouted RFC1918 network which provides inter-node communication for managed client network traffic (VXLANs), cross-node routing, VM migration and failover, and database replication and access.
- * The "storage" network is another unrouted RFC1918 network which provides a dedicated logical and/or physical link between the nodes for storage traffic, including VM block device storage traffic, inter-OSD replication traffic, and Ceph heartbeat traffic, thus allowing it to be completely isolated from the other networks for maximum performance. This network can be optionally colocated with the "cluster" network, by specifying the same device for both, and can be further combined by specifying the same IP for both to completely collapse the "cluster" and "storage" networks. A collapsed cluster+storage configuration may be ideal to simplify management of small clusters, or a split configuration can be used to provide flexbility for large or demanding high-performance clusters - this choice is left to the administrator based on their needs.
+ * The "storage" network is another unrouted RFC1918 network which provides a dedicated logical and/or physical link between the nodes for storage traffic, including VM block device storage traffic, inter-OSD replication traffic, and Ceph heartbeat traffic, thus allowing it to be completely isolated from the other networks for maximum performance. This network can be optionally colocated with the "cluster" network, by specifying the same device for both, and can be further combined by specifying the same IP for both to completely collapse the "cluster" and "storage" networks. A collapsed cluster+storage configuration may be ideal to simplify management of small clusters, or a split configuration can be used to provide flexibility for large or demanding high-performance clusters - this choice is left to the administrator based on their needs.
  
  Within each network is a single "floating" IP address which follows the primary coordinator, providing a single interface to the cluster. Once configured, the cluster is then able to create additional networks of two kinds, "bridged" traditional vLANs and "managed" routed VXLANs, to provide network access to VMs.
 
@@ -97,7 +97,7 @@ The overall management, deployment, bootstrapping, and configuring of nodes is a
 
 The Ansible configuration and architecture manual can be found at the [Ansible manual page](/manuals/ansible).
 
-The [getting started documentation](/getting-started) provides a walkthrough of using these tools to bootstrap a new cluster.
+The [getting started documentation](/getting-started) provides a walk-through of using these tools to bootstrap a new cluster.
 
 ## Frequently Asked Questions
 
@@ -138,7 +138,7 @@ Not yet. Right now, PVC management is done exclusively with the CLI interface to
 
 #### I want feature X, does it fit with PVC?
 
-That depends on the specific feature. I will limit features to those that align with the overall goals of PVC, that is to say, to provide an easy-to-use hyperconverged virtualization system focused on redundancy. If a feature suits this goal it is likely to be considered; if it does not, it will not. PVC is rapidly approaching the completion of its 1.0 roadmap, which I consider feature-complete for the primary usecase, and future versions may expand in scope.
+That depends on the specific feature. I will limit features to those that align with the overall goals of PVC, that is to say, to provide an easy-to-use hyperconverged virtualization system focused on redundancy. If a feature suits this goal it is likely to be considered; if it does not, it will not. PVC is rapidly approaching the completion of its 1.0 road-map, which I consider feature-complete for the primary use-case, and future versions may expand in scope.
 
 ### Storage Questions
 
