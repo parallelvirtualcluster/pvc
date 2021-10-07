@@ -15,6 +15,7 @@ echo "# Write the changelog below; comments will be ignored" >> ${changelog_file
 $EDITOR ${changelog_file}
 
 changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
+rm ${changelog_file}
 
 sed -i "s,version = '${current_version}',version = '${new_version}'," node-daemon/pvcnoded/Daemon.py
 sed -i "s,version = '${current_version}',version = '${new_version}'," api-daemon/pvcapid/Daemon.py
@@ -25,7 +26,7 @@ changelog_tmpdir=$( mktemp -d )
 cp CHANGELOG.md ${changelog_tmpdir}/
 pushd ${changelog_tmpdir} &>/dev/null
 
-echo -e "\n###### v${new_version}\n\n${changelog}" >> middle
+echo -e "\n###### [v${new_version}](https://github.com/parallelvirtualcluster/pvc/releases/tag/v${new_version})\n\n${changelog}" >> middle
 
 csplit CHANGELOG.md "/## PVC Changelog/1" &>/dev/null
 cat xx00 middle xx01 > CHANGELOG.md
