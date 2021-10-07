@@ -21,25 +21,19 @@ sed -i "s,version = '${current_version}',version = '${new_version}'," api-daemon
 sed -i "s,version='${current_version}',version='${new_version}'," client-cli/setup.py
 echo ${new_version} > .version
 
-readme_tmpdir=$( mktemp -d )
-cp README.md ${readme_tmpdir}/
-cp docs/index.md ${readme_tmpdir}/
-pushd ${readme_tmpdir} &>/dev/null
+changelog_tmpdir=$( mktemp -d )
+cp CHANGELOG.md ${changelog_tmpdir}/
+pushd ${changelog_tmpdir} &>/dev/null
 
 echo -e "\n###### v${new_version}\n\n${changelog}" >> middle
 
-csplit README.md "/## Changelog/1" &>/dev/null
-cat xx00 middle xx01 > README.md
-rm xx00 xx01
-
-csplit index.md "/## Changelog/1" &>/dev/null
-cat xx00 middle xx01 > index.md
+csplit CHANGELOG.md "/## PVC Changelog/1" &>/dev/null
+cat xx00 middle xx01 > CHANGELOG.md
 rm xx00 xx01
 
 popd &>/dev/null
-mv ${readme_tmpdir}/README.md README.md
-mv ${readme_tmpdir}/index.md docs/index.md
-rm -r ${readme_tmpdir}
+mv ${changelog_tmpdir}/CHANGELOG.md CHANGELOG.md
+rm -r ${changelog_tmpdir}
 
 deb_changelog_orig="$( cat debian/changelog )"
 deb_changelog_new="pvc (${new_version}-0) unstable; urgency=high\n\n${changelog}\n\n -- $( git config --get user.name ) <$( git config --get user.email )>  $( date --rfc-email )\n"
@@ -49,7 +43,7 @@ echo -e "${deb_changelog_new}" >> ${deb_changelog_file}
 echo -e "${deb_changelog_orig}" >> ${deb_changelog_file}
 mv ${deb_changelog_file} debian/changelog
 
-git add node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py README.md docs/index.md debian/changelog .version
+git add node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py debian/changelog CHANGELOG.md .version
 git commit -v
 
 echo
