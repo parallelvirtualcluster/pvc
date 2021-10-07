@@ -38,11 +38,11 @@ The following table provides recommended minimum specifications for each compone
 | Data disk (SSD only) | 1x 400GB |
 | Network interfaces | 2x 10Gbps (LACP LAG) |
 | Remote IPMI-over-IP | Available and connected |
-| Total CPU cores (healthy) | 24 |
-| Total CPU cores (n-1) | 16 |
-| Total RAM (healthy) | 96GB |
-| Total RAM (n-1) | 64GB |
-| Total disk space | 400GB |
+| Total CPU cores (3 nodes healthy) | 24 |
+| Total CPU cores (3 nodes n-1) | 16 |
+| Total RAM (3 nodes healthy) | 96GB |
+| Total RAM (3 nodes n-1) | 64GB |
+| Total disk space (3 nodes) | 400GB |
 
 For testing, or low-budget homelab applications, some aspects can be further tuned down, however consider the following sections carefully.
 
