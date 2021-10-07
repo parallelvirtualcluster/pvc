@@ -54,12 +54,12 @@ def vm_info(config, vm):
         return False, response.json().get('message', '')
 
 
-def vm_list(config, limit, target_node, target_state, target_tag):
+def vm_list(config, limit, target_node, target_state, target_tag, negate):
     """
     Get list information about VMs (limited by {limit}, {target_node}, or {target_state})
 
     API endpoint: GET /api/v1/vm
-    API arguments: limit={limit}, node={target_node}, state={target_state}, tag={target_tag}
+    API arguments: limit={limit}, node={target_node}, state={target_state}, tag={target_tag}, negate={negate}
     API schema: [{json_data_object},{json_data_object},etc.]
     """
     params = dict()
@@ -71,6 +71,7 @@ def vm_list(config, limit, target_node, target_state, target_tag):
         params['state'] = target_state
     if target_tag:
         params['tag'] = target_tag
+    params['negate'] = negate
 
     response = call_api(config, 'get', '/vm', params=params)
 

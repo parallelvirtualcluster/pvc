@@ -891,6 +891,7 @@ class API_VM_Root(Resource):
         {'name': 'node'},
         {'name': 'state'},
         {'name': 'tag'},
+        {'name': 'negate'},
     ])
     @Authenticator
     def get(self, reqargs):
@@ -1155,6 +1156,11 @@ class API_VM_Root(Resource):
             type: string
             required: false
             description: Limit list to VMs with this tag
+          - in: query
+            name: negate
+            type: boolean
+            required: false
+            description: Negate the specified node, state, or tag limit(s)
         responses:
           200:
             description: OK
@@ -1164,10 +1170,11 @@ class API_VM_Root(Resource):
                 $ref: '#/definitions/vm'
         """
         return api_helper.vm_list(
-            reqargs.get('node', None),
-            reqargs.get('state', None),
-            reqargs.get('tag', None),
-            reqargs.get('limit', None)
+            node=reqargs.get('node', None),
+            state=reqargs.get('state', None),
+            tag=reqargs.get('tag', None),
+            limit=reqargs.get('limit', None),
+            negate=bool(strtobool(reqargs.get('negate', 'False'))),
         )
 
     @RequestParser([
@@ -1297,7 +1304,7 @@ class API_VM_Element(Resource):
               type: object
               id: Message
         """
-        return api_helper.vm_list(None, None, None, vm, is_fuzzy=False)
+        return api_helper.vm_list(node=None, state=None, tag=None, limit=vm, is_fuzzy=False, negate=False)
 
     @RequestParser([
         {'name': 'limit'},

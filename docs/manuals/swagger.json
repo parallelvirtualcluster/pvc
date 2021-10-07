@@ -5971,6 +5971,13 @@
                         "name": "tag",
                         "required": false,
                         "type": "string"
+                    },
+                    {
+                        "description": "Negate the specified node, state, or tag limit(s)",
+                        "in": "query",
+                        "name": "negate",
+                        "required": false,
+                        "type": "boolean"
                     }
                 ],
                 "responses": {

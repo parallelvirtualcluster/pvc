@@ -975,7 +975,7 @@ def get_info(zkhandler, domain):
     return True, domain_information
 
 
-def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True):
+def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
     if node:
         # Verify node is valid
         if not common.verifyNode(zkhandler, node):
@@ -1032,7 +1032,9 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True):
 
         if tag:
             vm_tags = zkhandler.children(('domain.meta.tags', vm))
-            if tag in vm_tags:
+            if negate and tag not in vm_tags:
+                is_tag_match = True
+            if not negate and tag in vm_tags:
                 is_tag_match = True
         else:
             is_tag_match = True
@@ -1040,7 +1042,9 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True):
         # Check on node
         if node:
             vm_node = zkhandler.read(('domain.node', vm))
-            if vm_node == node:
+            if negate and vm_node != node:
+                is_node_match = True
+            if not negate and vm_node == node:
                 is_node_match = True
         else:
             is_node_match = True
@@ -1048,7 +1052,9 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True):
         # Check on state
         if state:
             vm_state = zkhandler.read(('domain.state', vm))
-            if vm_state == state:
+            if negate and vm_state != state:
+                is_state_match = True
+            if not negate and vm_state == state:
                 is_state_match = True
         else:
             is_state_match = True

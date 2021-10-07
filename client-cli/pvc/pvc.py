@@ -1827,15 +1827,19 @@ def vm_dump(filename, domain):
     '-r', '--raw', 'raw', is_flag=True, default=False,
     help='Display the raw list of VM names only.'
 )
+@click.option(
+    '-n', '--negate', 'negate', is_flag=True, default=False,
+    help='Negate the specified node, state, or tag limit(s).'
+)
 @cluster_req
-def vm_list(target_node, target_state, target_tag, limit, raw):
+def vm_list(target_node, target_state, target_tag, limit, raw, negate):
     """
     List all virtual machines; optionally only match names or full UUIDs matching regex LIMIT.
 
     NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
 
-    retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state, target_tag)
+    retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state, target_tag, negate)
     if retcode:
         retdata = pvc_vm.format_list(config, retdata, raw)
     else:
