@@ -42,7 +42,7 @@ To get started with PVC, please see the [About](https://parallelvirtualcluster.r
 
 ## Changelog
 
-View the changelog in [CHANGELOG.md](https://github.com/parallelvirtualcluster/pvc/blob/master/CHANGELOG.md)
+View the changelog in [CHANGELOG.md](https://github.com/parallelvirtualcluster/pvc/blob/master/CHANGELOG.md).
 
 
 ## Screenshots
