@@ -1,3 +1,10 @@
+pvc (0.9.40-0) unstable; urgency=high
+
+  * [Docs] Documentation updates for new Changelog file
+  * [Node Daemon] Fixes bug with schema updates
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 07 Oct 2021 14:42:04 -0400
+
 pvc (0.9.39-0) unstable; urgency=high
 
   * [Documentation] Update several documentation sections

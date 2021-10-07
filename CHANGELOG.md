@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.40](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.40)
+
+  * [Docs] Documentation updates for new Changelog file
+  * [Node Daemon] Fixes bug with schema updates
+
 ###### [v0.9.39](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.39)
 
   * [Documentation] Update several documentation sections
