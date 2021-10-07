@@ -13,6 +13,7 @@
     - [Networks](#networks)
       + [System Networks](#system-networks)
       + [Client Networks](#client-networks)
+    - [Fencing and Recovery](#fencing-and-recovery)
   * [Advanced Layouts](#advanced-layouts)
     - [Coordinators versus Hypervisors](#coordinators-versus-hypervisors)
     - [Georedundancy](#georedundancy)
@@ -36,6 +37,7 @@ The following table provides recommended minimum specifications for each compone
 | System disk (SSD/HDD/USB/SD/eMMC) | 2x 100GB RAID-1 |
 | Data disk (SSD only) | 1x 400GB |
 | Network interfaces | 2x 10Gbps (LACP LAG) |
+| Remote IPMI-over-IP | Available and connected |
 | Total CPU cores (healthy) | 24 |
 | Total CPU cores (n-1) | 16 |
 | Total RAM (healthy) | 96GB |
@@ -156,6 +158,12 @@ Because PVC makes extensive use of cross-node communications, high-throughput an
 
 A minimum of 2 network interfaces is recommended. These should then be combined into a logical aggregate (LAG) using 802.3ad (LACP) to provide redundant links and a boost in available bandwidth. Additional NICs can also be used to separate discrete parts of the networking stack, which will be discussed below.
 
+#### Remote IPMI-over-IP
+
+IPMI provides a method to manage the physical chassis' of nodes from outside of their operating system. Common implementations include Dell iDRAC, HP iLO, Cisco CIMC, and others.
+
+PVC nodes in production deployments should always feature an IPMI-over-IP interface of some kind, which is then reachable either in, or via, the Upstream system network (see [System Networks](#system-networks)). This requirement is discussed in more detail during the [Fencing and Recovery](#fencing-and-recovery) section below.
+
 ## PVC Architecture
 
 ### Operating System
@@ -182,7 +190,7 @@ Non-default values can also be set at pool creation time. For instance, one coul
 
 Replication levels cannot be changed within PVC once a pool is created, however they can be changed via manual Ceph commands on a coordinator should the administrator require this, though discussion of this process is outside of the scope of this documentation. The administrator should carefully consider sizing, failure domains, and performance when first selecting storage devices and creating pools, to ensure the right level of resiliency versus data usage for their use-case and planned cluster size.
 
-## Networks
+### Networks
 
 At a minimum, a production PVC cluster should use at least two 10Gbps Ethernet interfaces, connected in an LACP or active-backup bond on one or more switches. On top of this bond, the various cluster networks should be configured as 802.3q vLANs. PVC is be able to support configurations without bonding or 802.1q vLAN support, using multiple physical interfaces and no bridged client networks, but this is strongly discouraged due to the added complexity this introduces; the switches chosen for the cluster should include these requirements as a minimum.
 
@@ -291,6 +299,40 @@ Generally speaking, SR-IOV connections are not recommended unless there is a goo
 #### Other Client Networks
 
 Future PVC versions may support other client network types, such as direct-routing between VMs.
+
+### Fencing and Recovery
+
+Self-management and self-healing are important components of PVC's design, and to acomplish this, PVC contains automated fencing and recovery functions to handle situations where nodes crash or become unreachable. PVC is then able, if properly configured, to directly power-cycle the failed node, and bring up any VMs that were running on it on the remaining hypervisors. This ensures that, while there might be a few minutes of downtime for VMs, they are recovered as quickly as possible without human intervention.
+
+To operate correctly, these functions require each node in the cluster to have a functional IPMI-over-IP setup with a configured user who is able to perform chassis power commands. This differs depending on the chassis manufacturer and model, and should be tested prior to deploying any production cluster. If IPMI is not configured correctly at node startup, the daemon will warn and disable automatic recovery of the node. The IPMI should be present in the Upstream system network (see [System Networks](#system-networks) above), or in another secured network which is reachable from the Upstream system network, whichever is more convenient for the layout of the networks.
+
+The general process is divided into 3 sections: detecting node failures, fencing nodes, and recovering from fenced nodes.
+
+#### Detecting Failed Nodes
+
+Within the PVC configuration, each node has 3 settings which determine the failure detection time. The first is the `keepalive_interval` setting. This is normally set to 5 seconds, and is the interval at which the node daemon of each node sends its keepalives (as well as gathers statistics about running VMs, Ceph components, etc.). This interval should never need to be changed, but is configurable for maximum flexibility in corner cases. During each keepalive, the node updates a specific key in the Zookeeper cluster with the current UNIX timestamp, which determines when the node was last alive. During their own keepalives, the other nodes check their peers' timestamps to confirm if they are updating normally. Note that, due to this happening during the peer keepalives, if all nodes lose contact with the Zookeeper database, they will *not* immediately beging fencing each other, since the keepalives will not complete; they will, however, upon recovery, jump immediately to the next section when they all realize that their last keepalives were over the threshold, and this situation is discussed there.
+
+The second option is the `fence_intervals` setting. This option determines how many keepalive intervals a node can miss before it is marked `dead` and a fencing sequence started. This is normally set to 6 intervals, which combined with the 5 second `keepalive_interval`, gives a total of 30 seconds (+/- up to another 5 second `keepalive_interval` for peers should they not line up) for the node to be without updates before fencing begins.
+
+The third setting is optional, and is best used in situations where the IPMI connectivity of a node is excessively flaky or can be impared (e.g. georedundant clusters), or where VM uptime is more important than the burden of recovering from a split-brain situation, and is not as extensively tested. This option is `suicide_intervals`, and if set to a non-0 value, is the enumber of keepalive intervals before a node *itself* determines that it should forcibly power itself off, which should always be equal to or less than the normal `fence_intervals` setting. Naturally, the node must be somewhat functional to do this, and this can go very wrong, so using this option is not normally recommended.
+
+#### Fencing Nodes
+
+Once the cluster, and specifically one node in the cluster, has determined that a given node is `dead` due to a lack of keepalives, the fencing process starts. This spawns a dedicated child thread within the node daemon of the detecting node, which continually monitors the state of the `dead` node and then performs the fence.
+
+During the `dead` process, the failed node has 6 chances, called "saving throws", at `keepalive_interval` second windows, to send another keepalive before it is fenced. This additional, fixed, delay helps ensure that the cluster will gracefully recover from intermittent network failures or loss of Zookeeper contact, by providing nodes up to another 6 keepalive intervals to save themselves once the fence timer actually begins. This bring the total time, with default options, of a node stopping contact to a node being fenced, to between 60 and 65 seconds. This duration is considered by the author an acceptable compromise between speedy recovery and avoiding false positives (and hence larger outages).
+
+Once a node has been marked `dead` and has failed its 6 "saving throws", the fence process triggers an IPMI chassis reset sequence. First, the node is issued the standard IPMI `chassis power reset` command to trigger a cold system reset. Next, it waits a fixed 1 second and then issues a `chassis power on` signal to ensure the node is powered on (just in case it had already shut itself off). The node then waits a fixed 2 seconds, and then checks the current `chassis power status`. Using the results of these 3 commands, PVC is then able to determine with near certainty whether the node has truly been forced offline or not, and it can proceed to the next step.
+
+#### Recovery from Node Fences
+
+Once a node has been fenced, successfully or not, the system waits for one keepalive interval before proceeding.
+
+The cluster then determines what to do based both on the result of the fence (whether the node was determined to have been successfully cold-reset or not) and on two additional configuration values. The first, `successful_fence`, specifies what action to take when the fence was successful, and is either `migrate` (VMs to other nodes), the default, or `None` (no action). The second, `failed_fence`, is an identical choice for when the fence was unsuccessful, and defaults to `None`.
+
+If the fence was successful and `successful_fence` is set to `None`, then no migration takes place and the VMs on the fenced node will remain offline until the node recovers. If instead `successful_fence` is set to the default of `migrate`, the system will then begin migrating (and hence, starting) VMs that were active on the failed node to other nodes in the cluster. During this special `fence-flush` action, any stale RBD locks on the storage volumes are forcibly cleared, and this is considered safe since the fenced node is determined to have successfully been powered off and the VMs thus terminated. Once all VMs are migrated, the fenced node will then be set to a normal `flushed` state, as if it had been cleanly flushed before powering off. If and when the node returns to active, healthy service, either automatically (if the reset cleared the fault condition) or after human intervention, VMs can then migrate back and the cluster can resume normal operation; otherwise the custer will remain in the degraded state until corrected.
+
+If the fence was unsuccessful and `failed_fence` is set to the default of `None`, no automatic recovery takes place, since the cluster cannot determine that it is safe to do so. This would most commonly occur during network partitions where the `dead` node potentially remains up with VMs running on it, and the cluster is now in a split-brain situation. The `suicide_interval` option mentioned above is provided for this specific situation, and would allow the administrator to set the `failed_fence` action to `migrate` as well, as they could be somewhat confident that the node will have forcibly terminated itself. However due to the inherent potential for danger in this scenario, it is recommended to leave these options at their defaults, and handle such situations manually instead, as well as ensuring proper network design to avoid the potential for such split-brain situations to occur.
 
 ## Advanced Layouts
 
