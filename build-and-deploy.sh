@@ -12,6 +12,9 @@ else
     SUDO="sudo"
 fi
 
+echo -n "> Linting code for errors... "
+./lint || exit
+
 HOSTS=( ${@} )
 echo "> Deploying to host(s): ${HOSTS[@]}"
 
