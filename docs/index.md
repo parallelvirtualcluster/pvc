@@ -55,6 +55,12 @@ While PVC's API and internals aren't very screenshot-worthy, here is some exampl
 
 ## Changelog
 
+###### v0.9.39
+
+  * [Documentation] Update several documentation sections
+  * [API Daemon/CLI Client] Add negate flag for VM option limits (node, tag, state)
+  * [Build] Add linting check to build-and-deploy.sh
+
 ###### v0.9.38
 
   * [All] Significantly improve storage benchmark format and reporting

@@ -1,3 +1,11 @@
+pvc (0.9.39-0) unstable; urgency=high
+
+  * [Documentation] Update several documentation sections
+  * [API Daemon/CLI Client] Add negate flag for VM option limits (node, tag, state)
+  * [Build] Add linting check to build-and-deploy.sh
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 07 Oct 2021 11:52:38 -0400
+
 pvc (0.9.38-0) unstable; urgency=high
 
   * [All] Significantly improve storage benchmark format and reporting
