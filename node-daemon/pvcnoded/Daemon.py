@@ -142,7 +142,7 @@ def entrypoint():
 
         # Prevent any keepalive updates while this happens
         if keepalive_timer is not None:
-            pvcnoded.util.keepalive.stop_keepalive_timer()
+            pvcnoded.util.keepalive.stop_keepalive_timer(logger, keepalive_timer)
             sleep(1)
 
         # Perform the migration (primary only)
