@@ -189,7 +189,7 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
 def verify_ipmi(ipmi_hostname, ipmi_user, ipmi_password):
     ipmi_command = f'/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_user} -P {ipmi_password} chassis power status'
     retcode, stdout, stderr = common.run_os_command(ipmi_command, timeout=2)
-    if retcode == 0 and stdout.strip() != "Chassis Power is on":
+    if retcode == 0 and stdout.strip() == "Chassis Power is on":
         return True
     else:
         return False
