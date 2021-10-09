@@ -83,36 +83,7 @@ class VXNetworkInstance(object):
         except Exception:
             self.vx_mtu = None
 
-        update_mtu = False
-
-        # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
-        if self.vx_mtu == '' or self.vx_mtu is None:
-            self.logger.out(
-                'MTU not specified; setting to maximum MTU {} instead'.format(self.max_mtu),
-                prefix='VNI {}'.format(self.vni),
-                state='w'
-            )
-            self.vx_mtu = self.max_mtu
-            update_mtu = True
-        self.vx_mtu = int(self.vx_mtu)
-        # Ensure the MTU is valid
-        if self.vx_mtu > self.max_mtu:
-            self.logger.out(
-                'MTU {} is larger than maximum MTU {}; setting to maximum MTU instead'.format(self.vx_mtu, self.max_mtu),
-                prefix='VNI {}'.format(self.vni),
-                state='w'
-            )
-            self.vx_mtu = self.max_mtu
-            update_mtu = True
-
-        if update_mtu:
-            # Try block for migration purposes
-            try:
-                self.zkhandler.write([
-                    (('network.mtu', self.vni), self.vx_mtu)
-                ])
-            except Exception:
-                pass
+        self.validateNetworkMTU()
 
         # Zookeper handlers for changed states
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
@@ -137,6 +108,7 @@ class VXNetworkInstance(object):
 
                 if data and self.vx_mtu != data.decode('ascii'):
                     self.vx_mtu = data.decode('ascii')
+                    self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
             pass
@@ -165,36 +137,7 @@ class VXNetworkInstance(object):
         except Exception:
             self.vx_mtu = None
 
-        update_mtu = False
-
-        # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
-        if self.vx_mtu == '' or self.vx_mtu is None:
-            self.logger.out(
-                'MTU not specified; setting to maximum MTU {} instead'.format(self.max_mtu),
-                prefix='VNI {}'.format(self.vni),
-                state='w'
-            )
-            self.vx_mtu = self.max_mtu
-            update_mtu = True
-        self.vx_mtu = int(self.vx_mtu)
-        # Ensure the MTU is valid
-        if self.vx_mtu > self.max_mtu:
-            self.logger.out(
-                'MTU {} is larger than maximum MTU {}; setting to maximum MTU instead'.format(self.vx_mtu, self.max_mtu),
-                prefix='VNI {}'.format(self.vni),
-                state='w'
-            )
-            self.vx_mtu = self.max_mtu
-            update_mtu = True
-
-        if update_mtu:
-            # Try block for migration purposes
-            try:
-                self.zkhandler.write([
-                    (('network.mtu', self.vni), self.vx_mtu)
-                ])
-            except Exception:
-                pass
+        self.validateNetworkMTU()
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
@@ -311,6 +254,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
                 if data and self.vx_mtu != data.decode('ascii'):
                     self.vx_mtu = data.decode('ascii')
+                    self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
             pass
@@ -488,6 +432,46 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 
     def getvni(self):
         return self.vni
+
+    def validateNetworkMTU(self):
+        update_mtu = False
+
+        # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
+        if self.vx_mtu == '' or self.vx_mtu is None:
+            self.logger.out(
+                'MTU not specified; setting to maximum MTU {} instead'.format(self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
+            self.vx_mtu = self.max_mtu
+            update_mtu = True
+
+        # Set MTU to an integer (if it's not)
+        if not type(self.vx_mtu, int):
+            self.vx_mtu = int(self.vx_mtu)
+
+        # Ensure the MTU is valid
+        if self.vx_mtu > self.max_mtu:
+            self.logger.out(
+                'MTU {} is larger than maximum MTU {}; setting to maximum MTU instead'.format(self.vx_mtu, self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
+            self.vx_mtu = self.max_mtu
+            update_mtu = True
+
+        if update_mtu:
+            # Try block for migration purposes
+            try:
+                self.zkhandler.write([
+                    (('network.mtu', self.vni), self.vx_mtu)
+                ])
+            except Exception as e:
+                self.logger.out(
+                    'Could not update MTU in Zookeeper: {}'.format(e),
+                    prefix='VNI {}'.format(self.vni),
+                    state='w'
+                )
 
     def updateNetworkMTU(self):
         self.logger.out(
