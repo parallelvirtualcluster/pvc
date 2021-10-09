@@ -80,10 +80,19 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-            if self.vx_mtu == '' or self.vx_mtu is None:
-                raise
         except Exception:
+            self.vx_mtu = None
+
+        # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
+        if self.vx_mtu == '' or self.vx_mtu is None:
             self.vx_mtu = self.max_mtu
+            # Try block for migration purposes
+            try:
+                self.zkhandler.write([
+                    (('network.mtu', self.vni), self.vx_mtu)
+                ])
+            except Exception:
+                pass
 
         # Zookeper handlers for changed states
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
@@ -97,6 +106,7 @@ class VXNetworkInstance(object):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
 
+        # Try block for migration purposes
         try:
             @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
             def watch_network_mtu(data, stat, event=''):
@@ -132,10 +142,19 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-            if self.vx_mtu == '' or self.vx_mtu is None:
-                raise
         except Exception:
+            self.vx_mtu = None
+
+        # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
+        if self.vx_mtu == '' or self.vx_mtu is None:
             self.vx_mtu = self.max_mtu
+            try:
+                # Try block for migration purposes
+                self.zkhandler.write([
+                    (('network.mtu', self.vni), self.vx_mtu)
+                ])
+            except Exception:
+                pass
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
@@ -241,6 +260,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
+        # Try block for migration purposes
         try:
             @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
             def watch_network_mtu(data, stat, event=''):
