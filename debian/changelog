@@ -1,3 +1,10 @@
+pvc (0.9.41-0) unstable; urgency=high
+
+  * Fixes a bad conditional check in IPMI verification
+  * Implements per-network MTU configuration; NOTE: Requires new keys in pvcnoded.yaml (`bridge_mtu`) and Ansible group_vars (`pvc_bridge_mtu`)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 09 Oct 2021 19:39:21 -0400
+
 pvc (0.9.40-0) unstable; urgency=high
 
   * [Docs] Documentation updates for new Changelog file

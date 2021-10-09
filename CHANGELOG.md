@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.41](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.41)
+
+  * Fixes a bad conditional check in IPMI verification
+  * Implements per-network MTU configuration; NOTE: Requires new keys in pvcnoded.yaml (`bridge_mtu`) and Ansible group_vars (`pvc_bridge_mtu`)
+
 ###### [v0.9.40](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.40)
 
   * [Docs] Documentation updates for new Changelog file
