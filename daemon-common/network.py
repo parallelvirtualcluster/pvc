@@ -135,6 +135,7 @@ def getNetworkACLs(zkhandler, vni, _direction):
 def getNetworkInformation(zkhandler, vni):
     description = zkhandler.read(('network', vni))
     nettype = zkhandler.read(('network.type', vni))
+    mtu = zkhandler.read(('network.mtu', vni))
     domain = zkhandler.read(('network.domain', vni))
     name_servers = zkhandler.read(('network.nameservers', vni))
     ip6_network = zkhandler.read(('network.ip6.network', vni))
@@ -151,6 +152,7 @@ def getNetworkInformation(zkhandler, vni):
         'vni': int(vni),
         'description': description,
         'type': nettype,
+        'mtu': mtu,
         'domain': domain,
         'name_servers': name_servers.split(','),
         'ip6': {
@@ -235,7 +237,7 @@ def isValidIP(ipaddr):
 #
 # Direct functions
 #
-def add_network(zkhandler, vni, description, nettype,
+def add_network(zkhandler, vni, description, nettype, mtu,
                 domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                 dhcp4_flag, dhcp4_start, dhcp4_end):
     # Ensure start and end DHCP ranges are set if the flag is set
@@ -267,6 +269,7 @@ def add_network(zkhandler, vni, description, nettype,
     result = zkhandler.write([
         (('network', vni), description),
         (('network.type', vni), nettype),
+        (('network.mtu', vni), mtu),
         (('network.domain', vni), domain),
         (('network.nameservers', vni), name_servers),
         (('network.ip6.network', vni), ip6_network),
@@ -290,13 +293,15 @@ def add_network(zkhandler, vni, description, nettype,
         return False, 'ERROR: Failed to add network.'
 
 
-def modify_network(zkhandler, vni, description=None, domain=None, name_servers=None,
+def modify_network(zkhandler, vni, description=None, mtu=None, domain=None, name_servers=None,
                    ip4_network=None, ip4_gateway=None, ip6_network=None, ip6_gateway=None,
                    dhcp4_flag=None, dhcp4_start=None, dhcp4_end=None):
     # Add the modified parameters to Zookeeper
     update_data = list()
     if description is not None:
         update_data.append((('network', vni), description))
+    if mtu is not None:
+        update_data.append((('mtu', vni), mtu))
     if domain is not None:
         update_data.append((('network.domain', vni), domain))
     if name_servers is not None:

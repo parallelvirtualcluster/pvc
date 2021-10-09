@@ -364,6 +364,10 @@
                     },
                     "type": "object"
                 },
+                "mtu": {
+                    "description": "The MTU of the network, if set; empty otherwise",
+                    "type": "integer"
+                },
                 "name_servers": {
                     "description": "The configured DNS nameservers of the network for NS records (\"managed\" networks only)",
                     "items": {
@@ -1766,6 +1770,12 @@
                         "type": "string"
                     },
                     {
+                        "description": "The MTU of the network; defaults to the underlying interface MTU if not set",
+                        "in": "query",
+                        "name": "mtu",
+                        "type": "integer"
+                    },
+                    {
                         "description": "The DNS domain of the network (\"managed\" networks only)",
                         "in": "query",
                         "name": "domain",
@@ -1911,6 +1921,12 @@
                         "type": "string"
                     },
                     {
+                        "description": "The MTU of the network; defaults to the underlying interface MTU if not set",
+                        "in": "query",
+                        "name": "mtu",
+                        "type": "integer"
+                    },
+                    {
                         "description": "The DNS domain of the network (\"managed\" networks only)",
                         "in": "query",
                         "name": "domain",
@@ -1992,6 +2008,12 @@
                         "in": "query",
                         "name": "description",
                         "type": "string"
+                    },
+                    {
+                        "description": "The MTU of the network",
+                        "in": "query",
+                        "name": "mtu",
+                        "type": "integer"
                     },
                     {
                         "description": "The DNS domain of the network (\"managed\" networks only)",

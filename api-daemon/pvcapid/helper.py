@@ -927,7 +927,7 @@ def net_list(zkhandler, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def net_add(zkhandler, vni, description, nettype, domain, name_servers,
+def net_add(zkhandler, vni, description, nettype, mtu, domain, name_servers,
             ip4_network, ip4_gateway, ip6_network, ip6_gateway,
             dhcp4_flag, dhcp4_start, dhcp4_end):
     """
@@ -935,7 +935,7 @@ def net_add(zkhandler, vni, description, nettype, domain, name_servers,
     """
     if dhcp4_flag:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    retflag, retdata = pvc_network.add_network(zkhandler, vni, description, nettype, domain, name_servers,
+    retflag, retdata = pvc_network.add_network(zkhandler, vni, description, nettype, mtu, domain, name_servers,
                                                ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                                dhcp4_flag, dhcp4_start, dhcp4_end)
 
@@ -951,7 +951,7 @@ def net_add(zkhandler, vni, description, nettype, domain, name_servers,
 
 
 @ZKConnection(config)
-def net_modify(zkhandler, vni, description, domain, name_servers,
+def net_modify(zkhandler, vni, description, mtu, domain, name_servers,
                ip4_network, ip4_gateway,
                ip6_network, ip6_gateway,
                dhcp4_flag, dhcp4_start, dhcp4_end):
@@ -960,7 +960,7 @@ def net_modify(zkhandler, vni, description, domain, name_servers,
     """
     if dhcp4_flag is not None:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    retflag, retdata = pvc_network.modify_network(zkhandler, vni, description, domain, name_servers,
+    retflag, retdata = pvc_network.modify_network(zkhandler, vni, description, mtu, domain, name_servers,
                                                   ip4_network, ip4_gateway, ip6_network, ip6_gateway,
                                                   dhcp4_flag, dhcp4_start, dhcp4_end)
 

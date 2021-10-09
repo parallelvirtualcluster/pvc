@@ -2109,6 +2109,9 @@ class API_Network_Root(Resource):
                   enum:
                     - managed
                     - bridged
+                mtu:
+                  type: integer
+                  description: The MTU of the network, if set; empty otherwise
                 domain:
                   type: string
                   description: The DNS domain of the network ("managed" networks only)
@@ -2169,6 +2172,7 @@ class API_Network_Root(Resource):
         {'name': 'vni', 'required': True},
         {'name': 'description', 'required': True},
         {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True},
+        {'name': 'mtu'},
         {'name': 'domain'},
         {'name': 'name_servers'},
         {'name': 'ip4_network'},
@@ -2205,6 +2209,10 @@ class API_Network_Root(Resource):
             enum:
               - managed
               - bridged
+          - in: query
+            name: mtu
+            type: integer
+            description: The MTU of the network; defaults to the underlying interface MTU if not set
           - in: query
             name: domain
             type: string
@@ -2261,6 +2269,7 @@ class API_Network_Root(Resource):
             reqargs.get('vni', None),
             reqargs.get('description', None),
             reqargs.get('nettype', None),
+            reqargs.get('mtu', ''),
             reqargs.get('domain', None),
             name_servers,
             reqargs.get('ip4_network', None),
@@ -2301,6 +2310,7 @@ class API_Network_Element(Resource):
     @RequestParser([
         {'name': 'description', 'required': True},
         {'name': 'nettype', 'choices': ('managed', 'bridged'), 'helptext': 'A valid nettype must be specified', 'required': True},
+        {'name': 'mtu'},
         {'name': 'domain'},
         {'name': 'name_servers'},
         {'name': 'ip4_network'},
@@ -2332,6 +2342,10 @@ class API_Network_Element(Resource):
             enum:
               - managed
               - bridged
+          - in: query
+            name: mtu
+            type: integer
+            description: The MTU of the network; defaults to the underlying interface MTU if not set
           - in: query
             name: domain
             type: string
@@ -2388,6 +2402,7 @@ class API_Network_Element(Resource):
             reqargs.get('vni', None),
             reqargs.get('description', None),
             reqargs.get('nettype', None),
+            reqargs.get('mtu', ''),
             reqargs.get('domain', None),
             name_servers,
             reqargs.get('ip4_network', None),
@@ -2401,6 +2416,7 @@ class API_Network_Element(Resource):
 
     @RequestParser([
         {'name': 'description'},
+        {'name': 'mtu'},
         {'name': 'domain'},
         {'name': 'name_servers'},
         {'name': 'ip4_network'},
@@ -2424,6 +2440,10 @@ class API_Network_Element(Resource):
             name: description
             type: string
             description: The description of the network
+          - in: query
+            name: mtu
+            type: integer
+            description: The MTU of the network
           - in: query
             name: domain
             type: string
@@ -2484,6 +2504,7 @@ class API_Network_Element(Resource):
         return api_helper.net_modify(
             vni,
             reqargs.get('description', None),
+            reqargs.get('mtu', None),
             reqargs.get('domain', None),
             name_servers,
             reqargs.get('ip4_network', None),
