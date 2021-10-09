@@ -450,6 +450,7 @@ pvc_nodes:
     ipmi_password: "{{ passwd_ipmi_host }}"
 
 pvc_bridge_device: bondU
+pvc_bridge_mtu: 1500
 
 pvc_sriov_enable: True
 pvc_sriov_device:
@@ -906,6 +907,12 @@ The IPMI password for the node management controller. Unless a per-host override
 * *required*
 
 The device name of the underlying network interface to be used for "bridged"-type client networks. For each "bridged"-type network, an IEEE 802.3q vLAN and bridge will be created on top of this device to pass these networks. In most cases, using the reflexive `networks['cluster']['raw_device']` or `networks['upstream']['raw_device']` from the Base role is sufficient.
+
+#### `pvc_bridge_mtu`
+
+* *required*
+
+The MTU of the underlying network interface to be used for "bridged"-type client networks. This is the maximum MTU such networks can use.
 
 #### `pvc_sriov_enable`
 

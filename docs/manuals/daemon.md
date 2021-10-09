@@ -146,6 +146,7 @@ pvc:
         console_log_lines: 1000
       networking:
         bridge_device: ens4
+        bridge_mtu: 1500
         sriov_enable: True
         sriov_device:
           - phy: ens1f0
@@ -426,6 +427,13 @@ How many lines of VM console logs to keep in the Zookeeper database for each VM.
 * *requires* `functions` → `enable_networking`
 
 The network interface device used to create Bridged client network vLANs on. For most clusters, should match the underlying device of the various static networks (e.g. `ens4` or `bond0`), though may also use a separate network interface.
+
+#### `system` → `configuration` → `networking` → `bridge_mtu`
+
+* *optional*
+* *requires* `functions` → `enable_networking`
+
+The network interface MTU for the Bridged client network device. This is the maximum MTU a bridged client network can use.
 
 #### `system` → `configuration` → `networking` → `sriov_enable`
 
