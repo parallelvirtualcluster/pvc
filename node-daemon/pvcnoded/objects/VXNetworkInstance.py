@@ -49,7 +49,7 @@ class VXNetworkInstance(object):
             self.logger.out(
                 'Creating new bridged network',
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             self.init_bridged()
         elif self.nettype == 'managed':
@@ -59,7 +59,7 @@ class VXNetworkInstance(object):
             self.logger.out(
                 'Creating new managed network',
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             self.init_managed()
         else:
@@ -69,7 +69,7 @@ class VXNetworkInstance(object):
             self.logger.out(
                 'Invalid network type {}'.format(self.nettype),
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             pass
 
@@ -511,7 +511,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         self.logger.out(
             'Updating firewall rules',
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
         ordered_acls_in = {}
         ordered_acls_out = {}
@@ -557,13 +557,12 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     # Create bridged network configuration
     def createNetworkBridged(self):
         self.logger.out(
-            'Creating bridged vLAN device {} on interface {} MTU {}'.format(
+            'Creating bridged vLAN device {} on interface {}'.format(
                 self.base_nic,
-                self.bridge_dev,
-                self.vx_mtu
+                self.bridge_dev
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
 
         # Create vLAN interface
@@ -608,12 +607,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     # Create managed network configuration
     def createNetworkManaged(self):
         self.logger.out(
-            'Creating VXLAN device on interface {} MTU {}'.format(
-                self.cluster_dev,
-                self.vx_mtu
+            'Creating VXLAN device on interface {}'.format(
+                self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
 
         # Create VXLAN interface
@@ -676,7 +674,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             common.createIPAddress(self.ip6_gateway, self.ip6_cidrnetmask, self.bridge_nic)
 
@@ -689,7 +687,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             common.createIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
@@ -700,7 +698,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
 
             # Recreate the environment we need for dnsmasq
@@ -795,7 +793,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
         common.run_os_command(
             'ip link set {} down'.format(
@@ -831,7 +829,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.cluster_dev
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
         common.run_os_command(
             'ip link set {} down'.format(
@@ -864,7 +862,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         self.logger.out(
             'Removing firewall rules',
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
 
         try:
@@ -891,7 +889,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.bridge_nic
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
         common.removeIPAddress(self.ip6_gateway, self.ip6_cidrnetmask, self.bridge_nic)
 
@@ -903,7 +901,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                 self.bridge_nic
             ),
             prefix='VNI {}'.format(self.vni),
-            state='o'
+            state='i'
         )
         common.removeIPAddress(self.ip4_gateway, self.ip4_cidrnetmask, self.bridge_nic)
 
@@ -914,7 +912,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.bridge_nic
                 ),
                 prefix='VNI {}'.format(self.vni),
-                state='o'
+                state='i'
             )
             # Terminate, then kill
             self.dhcp_server_daemon.signal('term')
