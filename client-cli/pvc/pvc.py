@@ -1875,6 +1875,11 @@ def cli_network():
     help='Network type; managed networks control IP addressing; bridged networks are simple vLAN bridges. All subsequent options are unused for bridged networks.'
 )
 @click.option(
+    '-m', '--mtu', 'mtu',
+    default='',
+    help='MTU of the network interfaces.'
+)
+@click.option(
     '-n', '--domain', 'domain',
     default=None,
     help='Domain name of the network.'
@@ -1924,9 +1929,11 @@ def cli_network():
     'vni'
 )
 @cluster_req
-def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
+def net_add(vni, description, nettype, mtu, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
     """
     Add a new virtual network with VXLAN identifier VNI.
+
+    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. If unset, defaults to the underlying device MTU which will be set explcitly when the network is added to the nodes.
 
     Examples:
 
@@ -1941,7 +1948,7 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
     """
 
-    retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, mtu, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg)
 
 
@@ -1953,6 +1960,11 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     '-d', '--description', 'description',
     default=None,
     help='Description of the network; must be unique and not contain whitespace.'
+)
+@click.option(
+    '-m', '--mtu', 'mtu',
+    default=None,
+    help='MTU of the network interfaces.'
 )
 @click.option(
     '-n', '--domain', 'domain',
@@ -2004,16 +2016,18 @@ def net_add(vni, description, nettype, domain, ip_network, ip_gateway, ip6_netwo
     'vni'
 )
 @cluster_req
-def net_modify(vni, description, domain, name_servers, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_modify(vni, description, mtu, domain, name_servers, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
+
+    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. To reset an explicit MTU to the default underlying device MTU, specify '--mtu' with a quoted empty string argument.
 
     Example:
 
     pvc network modify 1001 --gateway 10.1.1.1 --dhcp
     """
 
-    retcode, retmsg = pvc_network.net_modify(config, vni, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.net_modify(config, vni, description, mtu, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
     cleanup(retcode, retmsg)
 
 

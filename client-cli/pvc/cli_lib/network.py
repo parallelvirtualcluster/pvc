@@ -100,7 +100,7 @@ def net_list(config, limit):
         return False, response.json().get('message', '')
 
 
-def net_add(config, vni, description, nettype, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
+def net_add(config, vni, description, nettype, mtu, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Add new network
 
@@ -112,6 +112,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
         'vni': vni,
         'description': description,
         'nettype': nettype,
+        'mtu': mtu,
         'domain': domain,
         'name_servers': name_servers,
         'ip4_network': ip4_network,
@@ -132,7 +133,7 @@ def net_add(config, vni, description, nettype, domain, name_servers, ip4_network
     return retstatus, response.json().get('message', '')
 
 
-def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
+def net_modify(config, net, description, mtu, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp4_flag, dhcp4_start, dhcp4_end):
     """
     Modify a network
 
@@ -143,6 +144,8 @@ def net_modify(config, net, description, domain, name_servers, ip4_network, ip4_
     params = dict()
     if description is not None:
         params['description'] = description
+    if mtu is not None:
+        params['mtu'] = mtu
     if domain is not None:
         params['domain'] = domain
     if name_servers is not None:
@@ -519,6 +522,7 @@ def format_info(config, network_information, long_output):
     # Basic information
     ainformation.append('{}VNI:{}            {}'.format(ansiprint.purple(), ansiprint.end(), network_information['vni']))
     ainformation.append('{}Type:{}           {}'.format(ansiprint.purple(), ansiprint.end(), network_information['type']))
+    ainformation.append('{}MTU:{}            {}'.format(ansiprint.purple(), ansiprint.end(), network_information['mtu']))
     ainformation.append('{}Description:{}    {}'.format(ansiprint.purple(), ansiprint.end(), network_information['description']))
     if network_information['type'] == 'managed':
         ainformation.append('{}Domain:{}         {}'.format(ansiprint.purple(), ansiprint.end(), network_information['domain']))
@@ -575,6 +579,7 @@ def format_list(config, network_list):
     net_vni_length = 5
     net_description_length = 12
     net_nettype_length = 8
+    net_mtu_length = 4
     net_domain_length = 6
     net_v6_flag_length = 6
     net_dhcp6_flag_length = 7
@@ -589,6 +594,10 @@ def format_list(config, network_list):
         _net_description_length = len(network_information['description']) + 1
         if _net_description_length > net_description_length:
             net_description_length = _net_description_length
+        # mtu column
+        _net_mtu_length = len(str(network_information['mtu'])) + 1
+        if _net_mtu_length > net_mtu_length:
+            net_mtu_length = _net_mtu_length
         # domain column
         _net_domain_length = len(network_information['domain']) + 1
         if _net_domain_length > net_domain_length:
@@ -599,7 +608,7 @@ def format_list(config, network_list):
         bold=ansiprint.bold(),
         end_bold=ansiprint.end(),
         networks_header_length=net_vni_length + net_description_length + 1,
-        config_header_length=net_nettype_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 6,
+        config_header_length=net_nettype_length + net_mtu_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 7,
         networks_header='Networks ' + ''.join(['-' for _ in range(9, net_vni_length + net_description_length)]),
         config_header='Config ' + ''.join(['-' for _ in range(7, net_nettype_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 5)]))
     )
@@ -607,6 +616,7 @@ def format_list(config, network_list):
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
 {net_nettype: <{net_nettype_length}} \
+{net_mtu: <{net_mtu_length}} \
 {net_domain: <{net_domain_length}}  \
 {net_v6_flag: <{net_v6_flag_length}} \
 {net_dhcp6_flag: <{net_dhcp6_flag_length}} \
@@ -618,6 +628,7 @@ def format_list(config, network_list):
         net_vni_length=net_vni_length,
         net_description_length=net_description_length,
         net_nettype_length=net_nettype_length,
+        net_mtu_length=net_mtu_length,
         net_domain_length=net_domain_length,
         net_v6_flag_length=net_v6_flag_length,
         net_dhcp6_flag_length=net_dhcp6_flag_length,
@@ -626,6 +637,7 @@ def format_list(config, network_list):
         net_vni='VNI',
         net_description='Description',
         net_nettype='Type',
+        net_mtu='MTU',
         net_domain='Domain',
         net_v6_flag='IPv6',
         net_dhcp6_flag='DHCPv6',
@@ -649,6 +661,7 @@ def format_list(config, network_list):
 {net_vni: <{net_vni_length}} \
 {net_description: <{net_description_length}} \
 {net_nettype: <{net_nettype_length}} \
+{net_mtu: <{net_mtu_length}} \
 {net_domain: <{net_domain_length}}  \
 {v6_flag_colour}{net_v6_flag: <{net_v6_flag_length}}{colour_off} \
 {dhcp6_flag_colour}{net_dhcp6_flag: <{net_dhcp6_flag_length}}{colour_off} \
@@ -660,6 +673,7 @@ def format_list(config, network_list):
             net_vni_length=net_vni_length,
             net_description_length=net_description_length,
             net_nettype_length=net_nettype_length,
+            net_mtu_length=net_mtu_length,
             net_domain_length=net_domain_length,
             net_v6_flag_length=net_v6_flag_length,
             net_dhcp6_flag_length=net_dhcp6_flag_length,
@@ -668,6 +682,7 @@ def format_list(config, network_list):
             net_vni=network_information['vni'],
             net_description=network_information['description'],
             net_nettype=network_information['type'],
+            net_mtu=network_information['mtu'],
             net_domain=network_information['domain'],
             net_v6_flag=v6_flag,
             v6_flag_colour=v6_flag_colour,
