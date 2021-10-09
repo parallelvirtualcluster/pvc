@@ -610,7 +610,7 @@ def format_list(config, network_list):
         networks_header_length=net_vni_length + net_description_length + 1,
         config_header_length=net_nettype_length + net_mtu_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 7,
         networks_header='Networks ' + ''.join(['-' for _ in range(9, net_vni_length + net_description_length)]),
-        config_header='Config ' + ''.join(['-' for _ in range(7, net_nettype_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 5)]))
+        config_header='Config ' + ''.join(['-' for _ in range(7, net_nettype_length + net_mtu_length + net_domain_length + net_v6_flag_length + net_dhcp6_flag_length + net_v4_flag_length + net_dhcp4_flag_length + 6)]))
     )
     network_list_output.append('{bold}\
 {net_vni: <{net_vni_length}} \
