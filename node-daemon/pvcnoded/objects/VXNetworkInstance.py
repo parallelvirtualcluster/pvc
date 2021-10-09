@@ -490,6 +490,11 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         return self.vni
 
     def updateNetworkMTU(self):
+        self.logger.out(
+            'Setting network MTU to {}'.format(self.vx_mtu),
+            prefix='VNI {}'.format(self.vni),
+            state='i'
+        )
         # Set MTU of base and bridge NICs
         common.run_os_command(
             'ip link set {} mtu {} up'.format(
