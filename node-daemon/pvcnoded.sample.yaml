@@ -161,6 +161,9 @@ pvc:
       networking:
         # bridge_device: Underlying device to use for bridged vLAN networks; usually the device of <cluster>
         bridge_device: ens4
+        # bridge_mtu: The MTU of the underlying device used for bridged vLAN networks, and thus the maximum
+        #             MTU of the overlying bridge devices.
+        bridge_mtu: 1500
         # sriov_enable: Enable or disable (default if absent) SR-IOV network support
         sriov_enable: False
         # sriov_device: Underlying device(s) to use for SR-IOV networks; can be bridge_device or other NIC(s)

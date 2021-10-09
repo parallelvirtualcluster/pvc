@@ -287,6 +287,7 @@ def get_configuration():
             'upstream_mtu':         o_sysnetwork_upstream.get('mtu', None),
             'upstream_dev_ip':      o_sysnetwork_upstream.get('address', None),
             'bridge_dev':           o_sysnetworks.get('bridge_device', None),
+            'bridge_mtu':           o_sysnetworks.get('bridge_mtu', 1500),
             'enable_sriov':         o_sysnetworks.get('sriov_enable', False),
             'sriov_device':         o_sysnetworks.get('sriov_device', list())
         }

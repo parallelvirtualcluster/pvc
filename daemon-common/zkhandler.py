@@ -466,7 +466,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 5
+    _version = 6
 
     # Root for doing nested keys
     _schema_root = ''
@@ -595,6 +595,7 @@ class ZKSchema(object):
         'network': {
             'vni': '',  # The root key
             'type': '/nettype',
+            'mtu': '/mtu',
             'rule': '/firewall_rules',
             'rule.in': '/firewall_rules/in',
             'rule.out': '/firewall_rules/out',

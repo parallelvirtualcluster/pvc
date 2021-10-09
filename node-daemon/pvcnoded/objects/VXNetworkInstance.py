@@ -39,9 +39,13 @@ class VXNetworkInstance(object):
         self.cluster_dev = config['cluster_dev']
         self.cluster_mtu = config['cluster_mtu']
         self.bridge_dev = config['bridge_dev']
+        self.bridge_mtu = config['bridge_mtu']
 
         self.nettype = self.zkhandler.read(('network.type', self.vni))
         if self.nettype == 'bridged':
+            self.base_nic = 'vlan{}'.format(self.vni)
+            self.bridge_nic = 'vmbr{}'.format(self.vni)
+            self.max_mtu = self.bridge_mtu
             self.logger.out(
                 'Creating new bridged network',
                 prefix='VNI {}'.format(self.vni),
@@ -49,6 +53,9 @@ class VXNetworkInstance(object):
             )
             self.init_bridged()
         elif self.nettype == 'managed':
+            self.base_nic = 'vxlan{}'.format(self.vni)
+            self.bridge_nic = 'vmbr{}'.format(self.vni)
+            self.max_mtu = self.cluster_mtu - 50
             self.logger.out(
                 'Creating new managed network',
                 prefix='VNI {}'.format(self.vni),
@@ -56,6 +63,9 @@ class VXNetworkInstance(object):
             )
             self.init_managed()
         else:
+            self.base_nic = None
+            self.bridge_nic = None
+            self.max_mtu = 0
             self.logger.out(
                 'Invalid network type {}'.format(self.nettype),
                 prefix='VNI {}'.format(self.vni),
@@ -68,8 +78,12 @@ class VXNetworkInstance(object):
         self.old_description = None
         self.description = None
 
-        self.vlan_nic = 'vlan{}'.format(self.vni)
-        self.bridge_nic = 'vmbr{}'.format(self.vni)
+        try:
+            self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
+            if self.vx_mtu == '':
+                raise
+        except Exception:
+            self.vx_mtu = self.max_mtu
 
         # Zookeper handlers for changed states
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
@@ -82,6 +96,17 @@ class VXNetworkInstance(object):
             if data and self.description != data.decode('ascii'):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
+
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
+        def watch_network_mtu(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.vx_mtu != data.decode('ascii'):
+                self.vx_mtu = data.decode('ascii')
+                self.updateNetworkMTU()
 
         self.createNetworkBridged()
 
@@ -102,8 +127,12 @@ class VXNetworkInstance(object):
         self.dhcp4_start = self.zkhandler.read(('network.ip4.dhcp_start', self.vni))
         self.dhcp4_end = self.zkhandler.read(('network.ip4.dhcp_end', self.vni))
 
-        self.vxlan_nic = 'vxlan{}'.format(self.vni)
-        self.bridge_nic = 'vmbr{}'.format(self.vni)
+        try:
+            self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
+            if self.vx_mtu == '':
+                raise
+        except Exception:
+            self.vx_mtu = self.max_mtu
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
@@ -138,7 +167,7 @@ add rule inet filter input tcp dport 80 meta iifname {bridgenic} counter accept
 # Block traffic into the router from network
 add rule inet filter input meta iifname {bridgenic} counter drop
 """.format(
-            vxlannic=self.vxlan_nic,
+            vxlannic=self.base_nic,
             bridgenic=self.bridge_nic
         )
 
@@ -147,14 +176,14 @@ add rule inet filter forward ip daddr {netaddr4} counter jump {vxlannic}-in
 add rule inet filter forward ip saddr {netaddr4} counter jump {vxlannic}-out
 """.format(
             netaddr4=self.ip4_network,
-            vxlannic=self.vxlan_nic,
+            vxlannic=self.base_nic,
         )
         self.firewall_rules_v6 = """# Jump from forward chain to this chain when matching net (IPv4)
 add rule inet filter forward ip6 daddr {netaddr6} counter jump {vxlannic}-in
 add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
 """.format(
             netaddr6=self.ip6_network,
-            vxlannic=self.vxlan_nic,
+            vxlannic=self.base_nic,
         )
 
         self.firewall_rules_in = self.zkhandler.children(('network.rule.in', self.vni))
@@ -208,6 +237,17 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.dns_aggregator.add_network(self)
                     self.stopDHCPServer()
                     self.startDHCPServer()
+
+        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
+        def watch_network_mtu(data, stat, event=''):
+            if event and event.type == 'DELETED':
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            if data and self.vx_mtu != data.decode('ascii'):
+                self.vx_mtu = data.decode('ascii')
+                self.updateNetworkMTU()
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
@@ -383,6 +423,21 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     def getvni(self):
         return self.vni
 
+    def updateNetworkMTU(self):
+        # Set MTU of base and bridge NICs
+        common.run_os_command(
+            'ip link set {} mtu {} up'.format(
+                self.base_nic,
+                self.vx_mtu
+            )
+        )
+        common.run_os_command(
+            'ip link set {} mtu {} up'.format(
+                self.bridge_nic,
+                self.vx_mtu
+            )
+        )
+
     def updateDHCPReservations(self, old_reservations_list, new_reservations_list):
         for reservation in new_reservations_list:
             if reservation not in old_reservations_list:
@@ -457,9 +512,10 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
     # Create bridged network configuration
     def createNetworkBridged(self):
         self.logger.out(
-            'Creating bridged vLAN device {} on interface {}'.format(
-                self.vlan_nic,
-                self.bridge_dev
+            'Creating bridged vLAN device {} on interface {} MTU {}'.format(
+                self.base_nic,
+                self.bridge_dev,
+                self.vx_mtu
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
@@ -469,7 +525,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         common.run_os_command(
             'ip link add link {} name {} type vlan id {}'.format(
                 self.bridge_dev,
-                self.vlan_nic,
+                self.base_nic,
                 self.vni
             )
         )
@@ -480,20 +536,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
 
-        # Set MTU of vLAN and bridge NICs
-        vx_mtu = self.cluster_mtu
-        common.run_os_command(
-            'ip link set {} mtu {} up'.format(
-                self.vlan_nic,
-                vx_mtu
-            )
-        )
-        common.run_os_command(
-            'ip link set {} mtu {} up'.format(
-                self.bridge_nic,
-                vx_mtu
-            )
-        )
+        self.updateNetworkMTU()
 
         # Disable tx checksum offload on bridge interface (breaks DHCP on Debian < 9)
         common.run_os_command(
@@ -513,15 +556,16 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         common.run_os_command(
             'brctl addif {} {}'.format(
                 self.bridge_nic,
-                self.vlan_nic
+                self.base_nic
             )
         )
 
     # Create managed network configuration
     def createNetworkManaged(self):
         self.logger.out(
-            'Creating VXLAN device on interface {}'.format(
-                self.cluster_dev
+            'Creating VXLAN device on interface {} MTU {}'.format(
+                self.cluster_dev,
+                self.vx_mtu
             ),
             prefix='VNI {}'.format(self.vni),
             state='o'
@@ -530,7 +574,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         # Create VXLAN interface
         common.run_os_command(
             'ip link add {} type vxlan id {} dstport 4789 dev {}'.format(
-                self.vxlan_nic,
+                self.base_nic,
                 self.vni,
                 self.cluster_dev
             )
@@ -542,20 +586,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
         )
 
-        # Set MTU of VXLAN and bridge NICs
-        vx_mtu = self.cluster_mtu - 50
-        common.run_os_command(
-            'ip link set {} mtu {} up'.format(
-                self.vxlan_nic,
-                vx_mtu
-            )
-        )
-        common.run_os_command(
-            'ip link set {} mtu {} up'.format(
-                self.bridge_nic,
-                vx_mtu
-            )
-        )
+        self.updateNetworkMTU()
 
         # Disable tx checksum offload on bridge interface (breaks DHCP on Debian < 9)
         common.run_os_command(
@@ -575,7 +606,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         common.run_os_command(
             'brctl addif {} {}'.format(
                 self.bridge_nic,
-                self.vxlan_nic
+                self.base_nic
             )
         )
 
@@ -728,13 +759,13 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
         common.run_os_command(
             'ip link set {} down'.format(
-                self.vlan_nic
+                self.base_nic
             )
         )
         common.run_os_command(
             'brctl delif {} {}'.format(
                 self.bridge_nic,
-                self.vlan_nic
+                self.base_nic
             )
         )
         common.run_os_command(
@@ -744,7 +775,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
         common.run_os_command(
             'ip link delete {}'.format(
-                self.vlan_nic
+                self.base_nic
             )
         )
 
@@ -764,13 +795,13 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
         common.run_os_command(
             'ip link set {} down'.format(
-                self.vxlan_nic
+                self.base_nic
             )
         )
         common.run_os_command(
             'brctl delif {} {}'.format(
                 self.bridge_nic,
-                self.vxlan_nic
+                self.base_nic
             )
         )
         common.run_os_command(
@@ -780,7 +811,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
         )
         common.run_os_command(
             'ip link delete {}'.format(
-                self.vxlan_nic
+                self.base_nic
             )
         )
 
