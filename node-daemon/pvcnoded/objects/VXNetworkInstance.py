@@ -80,7 +80,7 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-            if self.vx_mtu == '':
+            if self.vx_mtu == '' or self.vx_mtu is None:
                 raise
         except Exception:
             self.vx_mtu = self.max_mtu
@@ -97,16 +97,19 @@ class VXNetworkInstance(object):
                 self.old_description = self.description
                 self.description = data.decode('ascii')
 
-        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
-        def watch_network_mtu(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
+        try:
+            @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
+            def watch_network_mtu(data, stat, event=''):
+                if event and event.type == 'DELETED':
+                    # The key has been deleted after existing before; terminate this watcher
+                    # because this class instance is about to be reaped in Daemon.py
+                    return False
 
-            if data and self.vx_mtu != data.decode('ascii'):
-                self.vx_mtu = data.decode('ascii')
-                self.updateNetworkMTU()
+                if data and self.vx_mtu != data.decode('ascii'):
+                    self.vx_mtu = data.decode('ascii')
+                    self.updateNetworkMTU()
+        except Exception:
+            pass
 
         self.createNetworkBridged()
 
@@ -129,7 +132,7 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-            if self.vx_mtu == '':
+            if self.vx_mtu == '' or self.vx_mtu is None:
                 raise
         except Exception:
             self.vx_mtu = self.max_mtu
@@ -238,16 +241,19 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.stopDHCPServer()
                     self.startDHCPServer()
 
-        @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
-        def watch_network_mtu(data, stat, event=''):
-            if event and event.type == 'DELETED':
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
+        try:
+            @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.mtu', self.vni))
+            def watch_network_mtu(data, stat, event=''):
+                if event and event.type == 'DELETED':
+                    # The key has been deleted after existing before; terminate this watcher
+                    # because this class instance is about to be reaped in Daemon.py
+                    return False
 
-            if data and self.vx_mtu != data.decode('ascii'):
-                self.vx_mtu = data.decode('ascii')
-                self.updateNetworkMTU()
+                if data and self.vx_mtu != data.decode('ascii'):
+                    self.vx_mtu = data.decode('ascii')
+                    self.updateNetworkMTU()
+        except Exception:
+            pass
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
