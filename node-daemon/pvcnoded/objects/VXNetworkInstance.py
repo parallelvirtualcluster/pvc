@@ -77,13 +77,7 @@ class VXNetworkInstance(object):
     def init_bridged(self):
         self.old_description = None
         self.description = None
-
-        try:
-            self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-        except Exception:
-            self.vx_mtu = None
-
-        self.validateNetworkMTU()
+        self.vx_mtu = None
 
         # Zookeper handlers for changed states
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
@@ -111,7 +105,8 @@ class VXNetworkInstance(object):
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
+            self.updateNetworkMTU()
 
         self.createNetworkBridged()
 
@@ -131,13 +126,7 @@ class VXNetworkInstance(object):
         self.dhcp4_flag = self.zkhandler.read(('network.ip4.dhcp', self.vni))
         self.dhcp4_start = self.zkhandler.read(('network.ip4.dhcp_start', self.vni))
         self.dhcp4_end = self.zkhandler.read(('network.ip4.dhcp_end', self.vni))
-
-        try:
-            self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
-        except Exception:
-            self.vx_mtu = None
-
-        self.validateNetworkMTU()
+        self.vx_mtu = None
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
@@ -257,7 +246,8 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
+            self.updateNetworkMTU()
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
