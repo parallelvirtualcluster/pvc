@@ -447,7 +447,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             update_mtu = True
 
         # Set MTU to an integer (if it's not)
-        if not type(self.vx_mtu, int):
+        if not isinstance(self.vx_mtu, int):
             self.vx_mtu = int(self.vx_mtu)
 
         # Ensure the MTU is valid
