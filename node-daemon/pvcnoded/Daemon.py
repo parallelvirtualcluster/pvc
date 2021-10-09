@@ -316,7 +316,7 @@ def entrypoint():
     pvcnoded.util.networking.create_nft_configuration(logger, config)
 
     # Create our object dictionaries
-    logger.out('Setting up objects', state='i')
+    logger.out('Setting up objects', state='s')
 
     d_node = dict()
     node_list = list()
