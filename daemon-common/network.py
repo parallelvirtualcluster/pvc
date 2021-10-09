@@ -301,7 +301,7 @@ def modify_network(zkhandler, vni, description=None, mtu=None, domain=None, name
     if description is not None:
         update_data.append((('network', vni), description))
     if mtu is not None:
-        update_data.append((('mtu', vni), mtu))
+        update_data.append((('network.mtu', vni), mtu))
     if domain is not None:
         update_data.append((('network.domain', vni), domain))
     if name_servers is not None:
