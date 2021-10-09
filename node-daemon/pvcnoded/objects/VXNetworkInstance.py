@@ -94,6 +94,7 @@ class VXNetworkInstance(object):
             )
             self.vx_mtu = self.max_mtu
             update_mtu = True
+        self.vx_mtu = int(self.vx_mtu)
         # Ensure the MTU is valid
         if self.vx_mtu > self.max_mtu:
             self.logger.out(
@@ -175,6 +176,7 @@ class VXNetworkInstance(object):
             )
             self.vx_mtu = self.max_mtu
             update_mtu = True
+        self.vx_mtu = int(self.vx_mtu)
         # Ensure the MTU is valid
         if self.vx_mtu > self.max_mtu:
             self.logger.out(
