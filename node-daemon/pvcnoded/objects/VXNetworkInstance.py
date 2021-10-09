@@ -83,9 +83,28 @@ class VXNetworkInstance(object):
         except Exception:
             self.vx_mtu = None
 
+        update_mtu = False
+
         # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
         if self.vx_mtu == '' or self.vx_mtu is None:
+            self.logger.out(
+                'MTU not specified; setting to maximum MTU {} instead'.format(self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
             self.vx_mtu = self.max_mtu
+            update_mtu = True
+        # Ensure the MTU is valid
+        if self.vx_mtu > self.max_mtu:
+            self.logger.out(
+                'MTU {} is larger than maximum MTU {}; setting to maximum MTU instead'.format(self.vx_mtu, self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
+            self.vx_mtu = self.max_mtu
+            update_mtu = True
+
+        if update_mtu:
             # Try block for migration purposes
             try:
                 self.zkhandler.write([
@@ -145,11 +164,30 @@ class VXNetworkInstance(object):
         except Exception:
             self.vx_mtu = None
 
+        update_mtu = False
+
         # Explicitly set the MTU to max_mtu if unset (in Zookeeper too assuming the key exists)
         if self.vx_mtu == '' or self.vx_mtu is None:
+            self.logger.out(
+                'MTU not specified; setting to maximum MTU {} instead'.format(self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
             self.vx_mtu = self.max_mtu
+            update_mtu = True
+        # Ensure the MTU is valid
+        if self.vx_mtu > self.max_mtu:
+            self.logger.out(
+                'MTU {} is larger than maximum MTU {}; setting to maximum MTU instead'.format(self.vx_mtu, self.max_mtu),
+                prefix='VNI {}'.format(self.vni),
+                state='w'
+            )
+            self.vx_mtu = self.max_mtu
+            update_mtu = True
+
+        if update_mtu:
+            # Try block for migration purposes
             try:
-                # Try block for migration purposes
                 self.zkhandler.write([
                     (('network.mtu', self.vni), self.vx_mtu)
                 ])
