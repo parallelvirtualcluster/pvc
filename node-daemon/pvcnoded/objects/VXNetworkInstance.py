@@ -83,8 +83,6 @@ class VXNetworkInstance(object):
         except Exception:
             self.vx_mtu = None
 
-        self.validateNetworkMTU()
-
         # Zookeper handlers for changed states
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network', self.vni))
         def watch_network_description(data, stat, event=''):
@@ -106,12 +104,13 @@ class VXNetworkInstance(object):
                     # because this class instance is about to be reaped in Daemon.py
                     return False
 
-                if data and self.vx_mtu != data.decode('ascii'):
+                if data and str(self.vx_mtu) != data.decode('ascii'):
                     self.vx_mtu = data.decode('ascii')
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
+            self.updateNetworkMTU()
 
         self.createNetworkBridged()
 
@@ -136,8 +135,6 @@ class VXNetworkInstance(object):
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
         except Exception:
             self.vx_mtu = None
-
-        self.validateNetworkMTU()
 
         self.nftables_netconf_filename = '{}/networks/{}.nft'.format(self.config['nft_dynamic_directory'], self.vni)
         self.firewall_rules = []
@@ -252,12 +249,13 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     # because this class instance is about to be reaped in Daemon.py
                     return False
 
-                if data and self.vx_mtu != data.decode('ascii'):
+                if data and str(self.vx_mtu) != data.decode('ascii'):
                     self.vx_mtu = data.decode('ascii')
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
+            self.updateNetworkMTU()
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
