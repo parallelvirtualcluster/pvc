@@ -105,6 +105,11 @@ Example configuration:
 cluster_group: mycluster
 timezone_location: Canada/Eastern
 local_domain: upstream.local
+recursive_dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+recursive_dns_search_domains:
+  - "{{ local_domain }}"
 
 username_ipmi_host: "pvc"
 passwd_ipmi_host: "MyPassword2019"
@@ -183,6 +188,18 @@ The TZ database format name of the local timezone, e.g. `America/Toronto` or `Ca
 * *required*
 
 The domain name of the PVC cluster nodes. This is the domain portion of the FQDN of each node, and should usually be the domain of the `upstream` network.
+
+#### `recursive_dns_servers`
+
+* *optional*
+
+A list of recursive DNS servers to be used by cluster nodes. Defaults to Google Public DNS if unspecified.
+
+#### `recursive_dns_search_domains`
+
+* *optional*
+
+A list of domain names (must explicitly include `local_domain` if desired) to be used for shortname DNS lookups.
 
 #### `username_ipmi_host`
 
