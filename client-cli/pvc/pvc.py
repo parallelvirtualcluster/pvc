@@ -52,6 +52,18 @@ default_store_data = {
 
 
 #
+# Version function
+#
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    from pkg_resources import get_distribution
+    version = get_distribution('pvc').version
+    click.echo(f'Parallel Virtual Cluster version {version}')
+    ctx.exit()
+
+
+#
 # Data store handling functions
 #
 def read_from_yaml(cfgfile):
@@ -4792,6 +4804,10 @@ def task_init(confirm_flag, overwrite_flag):
 @click.option(
     '-u', '--unsafe', '_unsafe', envvar='PVC_UNSAFE', is_flag=True, default=False,
     help='Allow unsafe operations without confirmation/"--yes" argument.'
+)
+@click.option(
+    '--version', is_flag=True, callback=print_version,
+    expose_value=False, is_eager=True
 )
 def cli(_cluster, _debug, _quiet, _unsafe):
     """
