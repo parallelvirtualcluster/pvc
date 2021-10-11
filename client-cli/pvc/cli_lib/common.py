@@ -124,6 +124,9 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         request_uri
     )
 
+    # Default timeout is 3 seconds
+    timeout = 3
+
     # Craft the authentication header if required
     if config['api_key']:
         headers['X-Api-Key'] = config['api_key']
@@ -134,6 +137,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         if operation == 'get':
             response = requests.get(
                 uri,
+                timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
@@ -142,6 +146,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         if operation == 'post':
             response = requests.post(
                 uri,
+                timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
@@ -151,6 +156,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         if operation == 'put':
             response = requests.put(
                 uri,
+                timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
@@ -160,6 +166,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         if operation == 'patch':
             response = requests.patch(
                 uri,
+                timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
@@ -168,6 +175,7 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
         if operation == 'delete':
             response = requests.delete(
                 uri,
+                timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
