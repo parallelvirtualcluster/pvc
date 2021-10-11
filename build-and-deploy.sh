@@ -12,6 +12,18 @@ else
     SUDO="sudo"
 fi
 
+KEEP_ARTIFACTS=""
+if [[ -n ${1} ]]; then
+    for arg in ${@}; do
+        case ${arg} in
+            -k|--keep)
+                KEEP_ARTIFACTS="y"
+                shift
+            ;;
+        esac
+    done
+fi
+
 echo -n "> Linting code for errors... "
 ./lint || exit
 
@@ -48,3 +60,6 @@ for HOST in ${HOSTS[@]}; do
     sleep 30
     echo "done."
 done
+if [[ -z ${KEEP_ARTIFACTS} ]]; then
+    rm ../pvc*_${version}*
+fi
