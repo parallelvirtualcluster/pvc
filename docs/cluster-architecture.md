@@ -306,7 +306,7 @@ Self-management and self-healing are important components of PVC's design, and t
 
 To operate correctly, these functions require each node in the cluster to have a functional IPMI-over-IP setup with a configured user who is able to perform chassis power commands. This differs depending on the chassis manufacturer and model, and should be tested prior to deploying any production cluster. If IPMI is not configured correctly at node startup, the daemon will warn and disable automatic recovery of the node. The IPMI should be present in the Upstream system network (see [System Networks](#system-networks) above), or in another secured network which is reachable from the Upstream system network, whichever is more convenient for the layout of the networks.
 
-The general process is divided into 3 sections: detecting node failures, fencing nodes, and recovering from fenced nodes.
+The general process is divided into 3 sections: detecting node failures, fencing nodes, and recovering from fenced nodes. Note that this process only applies to nodes in the `run` "daemon state"; if a node daemon cleanly shuts down (for instance due to a service restart or administrative action), it will not be fenced.
 
 #### Detecting Failed Nodes
 
