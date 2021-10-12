@@ -133,22 +133,38 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 # Perform an IPMI fence
 #
 def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
-    # Forcibly reboot the node
-    ipmi_command_reset = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power reset'.format(
+    # Power off the node the node
+    logger.out('Sending power off to dead node', state='i')
+    ipmi_command_stop = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power off'.format(
         ipmi_hostname, ipmi_user, ipmi_password
     )
-    ipmi_reset_retcode, ipmi_reset_stdout, ipmi_reset_stderr = common.run_os_command(ipmi_command_reset)
+    ipmi_stop_retcode, ipmi_stop_stdout, ipmi_stop_stderr = common.run_os_command(ipmi_command_stop)
 
-    if ipmi_reset_retcode != 0:
-        logger.out(f'Failed to reboot dead node: {ipmi_reset_stderr}', state='e')
+    if ipmi_stop_retcode != 0:
+        logger.out(f'Failed to power off dead node: {ipmi_stop_stderr}', state='e')
 
     time.sleep(1)
 
-    # Power on the node (just in case it is offline)
+    # Check the chassis power state
+    logger.out('Checking power state of dead node', state='i')
+    ipmi_command_status = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power status'.format(
+        ipmi_hostname, ipmi_user, ipmi_password
+    )
+    ipmi_status_retcode, ipmi_status_stdout, ipmi_status_stderr = common.run_os_command(ipmi_command_status)
+    if ipmi_status_retcode == 0:
+        logger.out(f'Current chassis power state is: {ipmi_status_stdout.strip()}', state='i')
+    else:
+        logger.out(f'Current chassis power state is: Unknown', state='w')
+
+    # Power on the node
+    logger.out('Sending power on to dead node', state='i')
     ipmi_command_start = '/usr/bin/ipmitool -I lanplus -H {} -U {} -P {} chassis power on'.format(
         ipmi_hostname, ipmi_user, ipmi_password
     )
     ipmi_start_retcode, ipmi_start_stdout, ipmi_start_stderr = common.run_os_command(ipmi_command_start)
+
+    if ipmi_start_retcode != 0:
+        logger.out(f'Failed to power on dead node: {ipmi_start_stderr}', state='w')
 
     time.sleep(2)
 
@@ -159,7 +175,7 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
     )
     ipmi_status_retcode, ipmi_status_stdout, ipmi_status_stderr = common.run_os_command(ipmi_command_status)
 
-    if ipmi_reset_retcode == 0:
+    if ipmi_stop_retcode == 0:
         if ipmi_status_stdout.strip() == "Chassis Power is on":
             # We successfully rebooted the node and it is powered on; this is a succeessful fence
             logger.out('Successfully rebooted dead node', state='o')
