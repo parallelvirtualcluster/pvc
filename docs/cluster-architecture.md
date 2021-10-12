@@ -403,12 +403,12 @@ This section provides diagrams of 2 best-practice cluster configurations. These 
 
 #### Small 3-node cluster
 
-![Small 3-node cluster](/images/pvc-3-node-cluster.png)
+[![Small 3-node cluster](/images/pvc-3-node-cluster.png)](/images/pvc-3-node-cluster.png)
 
 *Above: A diagram of a simple 3-node cluster with all nodes as coordinators. Dual 10 Gbps network interface per node, unified physical networking with collapsed cluster and storage networks.*
 
 #### Large 8-node cluster
 
-![Large 8-node cluster](/images/pvc-8-node-cluster.png)
+[![Larger 8-node cluster](/images/pvc-8-node-cluster.png)](/images/pvc-8-node-cluster.png)
 
 *Above: A diagram of a large 8-node cluster with 3 coordinators and 5 hypervisors. Quad 10Gbps network interfaces per node, split physical networking into guest/cluster and storage networks.*
