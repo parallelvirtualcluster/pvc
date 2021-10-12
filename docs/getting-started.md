@@ -18,7 +18,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
     * `base.yml` configures the `base` role and some common per-cluster configurations such as an upstream domain, a root password, a set of administrative users, various hardware configuration items, as well as and most importantly, the basic network configuration of the nodes. Make special note of the various items that must be generated such as passwords; these should all be cluster-unique.    
 
-    * `pvc.yml` configures the `pvc` role, including all the dependent software and PVC itself. Important to note is the `pvc_nodes` list, which contains a list of all the nodes as well as per-node configurations for each. All nodes, both coordinator and not, must be a part of this list.    
+    * `pvc.yml` configures the `pvc` role, including all the dependent software and PVC itself. Important to note is the `pvc_nodes` list, which contains a list of all the nodes as well as per-node configurations for each. All nodes must be a part of this list.    
 
 0. In the `pvc-installer` directory, run the `buildiso.sh` script to generate an installer ISO. This script requires `debootstrap`, `isolinux`, and `xorriso` to function. The resulting file will, by default, be named `pvc-installer_<date>.iso` in the current directory. For additional options, use the `-h` flag to show help information for the script.
 
@@ -46,7 +46,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Make note of the IP addresses of all 3 initial nodes, and configure DNS, `/etc/hosts`, or Ansible `ansible_host=` hostvars to map these IP addresses to the hostnames set in the Ansible `hosts` and `group_vars` files.
 
-0. Verify connectivity from your administrative host to the 3 initial nodes, including SSH access. Accept their host keys as required before proceeding as Ansible does not like those prompts.
+0. Verify connectivity from your administrative host to the 3 initial nodes, including SSH access as the `deploy` user. Accept their host keys as required before proceeding as Ansible does not like those prompts. If you did not configure SSH key auth during the PVC installer process, configure it now, as it greatly simplifies Ansible configuration.
 
 0. Verify your `group_vars` setup from part 1, as errors here may require a re-installation and restart of the bootstrap process.
 
