@@ -296,14 +296,14 @@ def get_configuration():
             'sriov_device':         o_sysnetworks.get('sriov_device', list())
         }
 
-        config = {**config, **config_networks}
-
         if config_networks['bridge_mtu'] is None:
             # Read the current MTU of bridge_dev and set bridge_mtu to it; avoids weird resets
             retcode, stdout, stderr = common.run_os_command(f"ip -json link show dev {config_networks['bridge_dev']}")
             current_bridge_mtu = loads(stdout)[0]['mtu']
             print(f"Config key bridge_mtu not explicitly set; using live MTU {current_bridge_mtu} from {config_networks['bridge_dev']}")
             config_networks['bridge_mtu'] = current_bridge_mtu
+
+        config = {**config, **config_networks}
 
         for network_type in ['cluster', 'storage', 'upstream']:
             result, msg = validate_floating_ip(config, network_type)
