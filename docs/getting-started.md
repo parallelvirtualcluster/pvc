@@ -57,14 +57,14 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Wait for the Ansible playbook run to finish. Once completed, the cluster bootstrap will be finished, and all 3 nodes will have rebooted into a working PVC cluster. If any errors occur, carefully evaluate them and re-run the playbook (with `-o bootstrap=yes` - your cluster is not active yet!) as required.
 
-0. Install the CLI client on your administrative host, and add and verify connectivity to the cluster; this will also verify that the API is working. You will need to know the cluster upstream floating IP address you configured in the `networks` section of the `base.yml` playbook, and if you configured SSL or authentication for the API in your `group_vars`, adjust the first command as needed (see `pvc cluster add -h` for details).  
-    `$ pvc cluster add -a <upstream_floating_ip> mycluster`  
+0. Download and install the CLI client package (`pvc-client-cli.deb`) on your administrative host, and add and verify connectivity to the cluster; this will also verify that the API is working. You will need to know the cluster upstream floating IP address you configured in the `networks` section of the `base.yml` playbook, and if you configured SSL or authentication for the API in your `group_vars`, adjust the first command as needed (see `pvc cluster add -h` for details). A human-readable description can also be specified, which is useful if you manage multiple clusters and their names become unweildy.  
+    `$ pvc cluster add -a <upstream_floating_ip> -d "My first PVC cluster" mycluster`  
     `$ pvc -c mycluster node list`
 
-    We can also set a default cluster by exporting the `PVC_CLUSTER` environment variable to avoid requiring `-c cluster` with every subsequent command:  
+    You can also set a default cluster by exporting the `PVC_CLUSTER` environment variable to avoid requiring `-c cluster` with every subsequent command:  
     `$ export PVC_CLUSTER="mycluster"`
 
-    Finally, it is possible to fully administer the cluster from the nodes themselves via SSH should you so choose.
+    **Note:** It is fully possible to administer the cluster from the nodes themselves via SSH should you so choose, to avoid requiring the PVC client on your local machine.
 
 ### Part Four - Configuring the Ceph storage cluster
 
@@ -135,7 +135,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Verify the client networks are reachable by pinging the managed gateway from outside the cluster.
 
 
-### You're D1!
+### You're Done!
 
 0. Set all 3 nodes to `ready` state, allowing them to run virtual machines. The general command is:  
     `$ pvc node ready <node>`
