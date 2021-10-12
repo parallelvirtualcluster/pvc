@@ -80,6 +80,7 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
+            self.validateNetworkMTU()
         except Exception:
             self.vx_mtu = None
 
@@ -133,6 +134,7 @@ class VXNetworkInstance(object):
 
         try:
             self.vx_mtu = self.zkhandler.read(('network.mtu', self.vni))
+            self.validateNetworkMTU()
         except Exception:
             self.vx_mtu = None
 
