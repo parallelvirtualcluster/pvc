@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.42](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.42)
+
+  * [Documentation] Reworks and updates various documentation sections
+  * [Node Daemon] Adjusts the fencing process to use a power off rather than a power reset for maximum certainty
+  * [Node Daemon] Ensures that MTU values are validated during the first read too
+  * [Node Daemon] Corrects the loading of the bridge_mtu value to use the current active setting rather than a fixed default to prevent unintended surprises
+
 ###### [v0.9.41](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.41)
 
   * Fixes a bad conditional check in IPMI verification
