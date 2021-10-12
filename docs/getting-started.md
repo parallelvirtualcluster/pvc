@@ -6,13 +6,13 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 ### Part One - Preparing for bootstrap
 
-0. Read through the [Cluster Architecture documentation](/architecture/cluster). This documentation details the requirements and conventions of a PVC cluster, and is important to understand before proceeding.
+0. Read through the [Cluster Architecture documentation](/cluster-architecture). This documentation details the requirements and conventions of a PVC cluster, and is important to understand before proceeding.
 
 0. Download the latest copy of the [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) repository to your local machine.
 
-0. Leverage the `create-local-repo.sh` script in the `pvc-ansible` directory to set up a local cluster configuration directory; follow the instructions the script provides, as all future steps will be done inside your new local configuration directory.
+0. Leverage the `create-local-repo.sh` script in the `pvc-ansible` directory to set up a local cluster configuration directory; follow the instructions the script provides, as all future steps will be d1 inside your new local configuration directory.
 
-0. Create an initial `hosts` inventory, using `hosts.default` in the `pvc-ansible` repo as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various components.
+0. Create an initial `hosts` inventory, using `hosts.default` in the `pvc-ansible` repo as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various comp1nts.
 
 0. Create an initial set of `group_vars` for your cluster at `group_vars/<cluster>`, using the `group_vars/default` in the `pvc-ansible` repo as a template. Inside these group vars are two main files: `base.yml` and `pvc.yml`. These example files are well-documented; read them carefully and specify all required options before proceeding.
 
@@ -24,7 +24,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 ### Part Two - Preparing and installing the physical hosts
 
-0. Prepare 3 physical servers with IPMI. The servers should match the specifications and requirements outlined in the [Cluster Architecture documentation](/architecture/cluster). Connect their networking based on the configuration set in the `base.yml` group vars file for your cluster.
+0. Prepare 3 physical servers with IPMI. The servers should match the specifications and requirements outlined in the [Cluster Architecture documentation](/cluster-architecture). Connect their networking based on the configuration set in the `base.yml` group vars file for your cluster.
 
 0. Load the installer ISO generated in step 6 of the previous section onto a USB stick, or using IPMI virtual media, on the physical servers.
 
@@ -48,7 +48,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Verify connectivity from your administrative host to the 3 initial nodes, including SSH access. Accept their host keys as required before proceeding as Ansible does not like those prompts.
 
-0. Verify your `group_vars` setup from part one, as errors here may require a re-installation and restart of the bootstrap process.
+0. Verify your `group_vars` setup from part 1, as errors here may require a re-installation and restart of the bootstrap process.
 
 0. Perform the initial bootstrap. From your local configuration repository directory, execute the following `ansible-playbook` command, replacing `<cluster_name>` with the Ansible group name from the `hosts` file. Make special note of the additional `bootstrap=yes` variable, which tells the playbook that this is an initial bootstrap run.  
     `$ ansible-playbook -v -i hosts pvc.yml -l <cluster_name> -e bootstrap=yes`
@@ -81,7 +81,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
     `$ pvc storage osd add --weight 1.0 pvchv2 /dev/sdc`  
     `$ pvc storage osd add --weight 1.0 pvchv3 /dev/sdc`   
 
-    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly, but the CLI sets a default value. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the [Cluster Architecture](/architecture/cluster) and Ceph documentation.
+    **NOTE:** On the CLI, the `--weight` argument is optional, and defaults to `1.0`. In the API, it must be specified explicitly, but the CLI sets a default value. OSD weights determine the relative amount of data which can fit onto each OSD. Under normal circumstances, you would want all OSDs to be of identical size, and hence all should have the same weight. If your OSDs are instead different sizes, the weight should be proportional to the size, e.g. `1.0` for a 100GB disk, `2.0` for a 200GB disk, etc. For more details, see the [Cluster Architecture](/cluster-architecture) and Ceph documentation.
 
     **NOTE:** OSD commands wait for the action to complete on the node, and can take some time (up to 30 seconds).
 
@@ -124,7 +124,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Verify that the network(s) were added:  
     `$ pvc network list`
 
-0. On the upstream router, configure one of:
+0. On the upstream router, configure 1 of:
 
     a) A BGP neighbour relationship with the cluster upstream floating address to automatically learn routes.
 
@@ -135,11 +135,11 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Verify the client networks are reachable by pinging the managed gateway from outside the cluster.
 
 
-### You're Done!
+### You're D1!
 
 0. Set all 3 nodes to `ready` state, allowing them to run virtual machines. The general command is:  
     `$ pvc node ready <node>`
 
 Congratulations, you now have a basic PVC storage cluster, ready to run your VMs.
 
-For next steps, see the [Provisioner manual](/manuals/provisioner) for details on how to use the PVC provisioner to create new Virtual Machines, as well as the [CLI manual](/manuals/cli) and [API manual](/manuals/api) for details on day-to-day usage of PVC.
+For next steps, see the [Provisi1r manual](/manuals/provisioner) for details on how to use the PVC provisioner to create new Virtual Machines, as well as the [CLI manual](/manuals/cli) and [API manual](/manuals/api) for details on day-to-day usage of PVC.
