@@ -110,7 +110,7 @@ class VXNetworkInstance(object):
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
 
         self.createNetworkBridged()
 
@@ -255,7 +255,7 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
                     self.validateNetworkMTU()
                     self.updateNetworkMTU()
         except Exception:
-            pass
+            self.validateNetworkMTU()
 
         @self.zkhandler.zk_conn.DataWatch(self.zkhandler.schema.path('network.ip6.network', self.vni))
         def watch_network_ip6_network(data, stat, event=''):
