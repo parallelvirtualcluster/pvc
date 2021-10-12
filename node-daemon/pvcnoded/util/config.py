@@ -19,13 +19,17 @@
 #
 ###############################################################################
 
+import daemon_lib.common as common
+
 import os
 import subprocess
 import yaml
+
 from socket import gethostname
 from re import findall
 from psutil import cpu_count
 from ipaddress import ip_address, ip_network
+from json import loads
 
 
 class MalformedConfigurationError(Exception):
@@ -287,12 +291,19 @@ def get_configuration():
             'upstream_mtu':         o_sysnetwork_upstream.get('mtu', None),
             'upstream_dev_ip':      o_sysnetwork_upstream.get('address', None),
             'bridge_dev':           o_sysnetworks.get('bridge_device', None),
-            'bridge_mtu':           o_sysnetworks.get('bridge_mtu', 1500),
+            'bridge_mtu':           o_sysnetworks.get('bridge_mtu', None),
             'enable_sriov':         o_sysnetworks.get('sriov_enable', False),
             'sriov_device':         o_sysnetworks.get('sriov_device', list())
         }
 
         config = {**config, **config_networks}
+
+        if config_networks['bridge_mtu'] is None:
+            # Read the current MTU of bridge_dev and set bridge_mtu to it; avoids weird resets
+            retcode, stdout, stderr = common.run_os_command(f"ip -json link show dev {config_networks['bridge_dev']}")
+            current_bridge_mtu = loads(stdout)[0]['mtu']
+            print(f"Config key bridge_mtu not explicitly set; using live MTU {current_bridge_mtu} from {config_networks['bridge_dev']}")
+            config_networks['bridge_mtu'] = current_bridge_mtu
 
         for network_type in ['cluster', 'storage', 'upstream']:
             result, msg = validate_floating_ip(config, network_type)
