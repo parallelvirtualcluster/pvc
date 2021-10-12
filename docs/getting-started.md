@@ -10,9 +10,9 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 0. Download the latest copy of the [`pvc-ansible`](https://github.com/parallelvirtualcluster/pvc-ansible) repository to your local machine.
 
-0. Leverage the `create-local-repo.sh` script in the `pvc-ansible` directory to set up a local cluster configuration directory; follow the instructions the script provides, as all future steps will be d1 inside your new local configuration directory.
+0. Leverage the `create-local-repo.sh` script in the `pvc-ansible` directory to set up a local cluster configuration directory; follow the instructions the script provides, as all future steps will be done inside your new local configuration directory.
 
-0. Create an initial `hosts` inventory, using `hosts.default` in the `pvc-ansible` repo as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various comp1nts.
+0. Create an initial `hosts` inventory, using `hosts.default` in the `pvc-ansible` repo as a template. You can manage multiple PVC clusters ("sites") from the Ansible repository easily, however for simplicity you can use the simple name `cluster` for your initial site. Define the 3 hostnames you will use under the site group; usually the provided names of `pvchv1`, `pvchv2`, and `pvchv3` are sufficient, though you may use any hostname pattern you wish. It is *very important* that the names all contain a sequential number, however, as this is used by various components.
 
 0. Create an initial set of `group_vars` for your cluster at `group_vars/<cluster>`, using the `group_vars/default` in the `pvc-ansible` repo as a template. Inside these group vars are two main files: `base.yml` and `pvc.yml`. These example files are well-documented; read them carefully and specify all required options before proceeding.
 
@@ -93,7 +93,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Create an RBD pool to store VM images on. The general command is:  
     `$ pvc storage pool add <name> <placement_groups>`
 
-    **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. The following are some good starting numbers for 3-node clusters, though the Ceph documentation and the [Ceph placement group calculator](https://ceph.com/pgcalc/) are advisable for anything more complex. There is a tradeoff between CPU usage and the number of total PGs for all pools in the cluster, with more PGs meaning more CPU usage.    
+    **NOTE:** Ceph placement groups are a complex topic; as a general rule it's easier to grow than shrink, so start small and grow as your cluster grows. The following are some good starting numbers for 3-node clusters, though the Ceph documentation and the [Ceph placement group calculator](https://ceph.com/pgcalc/) are advisable for anything more complex. There is a trade-off between CPU usage and the number of total PGs for all pools in the cluster, with more PGs meaning more CPU usage.    
 
     * 3 OSDs total: 128 PGs (1 pool) or 64 PGs (2 or more pools, each)    
     * 6 OSDs total: 256 PGs (1 pool) or 128 PGs (2 or more pools, each)    
@@ -124,7 +124,7 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 0. Verify that the network(s) were added:  
     `$ pvc network list`
 
-0. On the upstream router, configure 1 of:
+0. On the upstream router, configure one of:
 
     a) A BGP neighbour relationship with the cluster upstream floating address to automatically learn routes.
 
@@ -142,4 +142,4 @@ This guide will walk you through setting up a simple 3-node PVC cluster from scr
 
 Congratulations, you now have a basic PVC storage cluster, ready to run your VMs.
 
-For next steps, see the [Provisi1r manual](/manuals/provisioner) for details on how to use the PVC provisioner to create new Virtual Machines, as well as the [CLI manual](/manuals/cli) and [API manual](/manuals/api) for details on day-to-day usage of PVC.
+For next steps, see the [Provisioner manual](/manuals/provisioner) for details on how to use the PVC provisioner to create new Virtual Machines, as well as the [CLI manual](/manuals/cli) and [API manual](/manuals/api) for details on day-to-day usage of PVC.
