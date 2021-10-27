@@ -1498,7 +1498,7 @@ def vm_network_get(domain, raw):
 )
 @click.option(
     '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; requires "--no-live".'
+    help='Immediately restart VM to apply new config; implies "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1520,8 +1520,7 @@ def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_fla
 
     """
     if restart_flag and live_flag:
-        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
-        exit(1)
+        live_flag = False
 
     if restart_flag and not confirm_flag and not config['unsafe']:
         try:
@@ -1553,11 +1552,11 @@ def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_fla
 )
 @click.option(
     '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+    help='Immediately live-detach device to VM [default] or disable this behaviour.'
 )
 @click.option(
     '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; requires "--no-live".'
+    help='Immediately restart VM to apply new config; implies "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1576,8 +1575,7 @@ def vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag,
     If multiple interfaces are present on the VM in network NET, and '-m'/'--mac-address' is not specified, then all interfaces in that network will be removed.
     """
     if restart_flag and live_flag:
-        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
-        exit(1)
+        live_flag = False
 
     if restart_flag and not confirm_flag and not config['unsafe']:
         try:
@@ -1660,7 +1658,7 @@ def vm_volume_get(domain, raw):
 )
 @click.option(
     '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; requires "--no-live".'
+    help='Immediately restart VM to apply new config; implies "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1675,8 +1673,7 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_fl
     VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
     """
     if restart_flag and live_flag:
-        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
-        exit(1)
+        live_flag = False
 
     if restart_flag and not confirm_flag and not config['unsafe']:
         try:
@@ -1700,11 +1697,11 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_fl
 )
 @click.option(
     '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+    help='Immediately live-detach device to VM [default] or disable this behaviour.'
 )
 @click.option(
     '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; requires "--no-live".'
+    help='Immediately restart VM to apply new config; implies "--no-live".'
 )
 @click.option(
     '-y', '--yes', 'confirm_flag',
@@ -1717,8 +1714,7 @@ def vm_volume_remove(domain, volume, live_flag, restart_flag, confirm_flag):
     Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
     """
     if restart_flag and live_flag:
-        click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
-        exit(1)
+        live_flag = False
 
     if restart_flag and not confirm_flag and not config['unsafe']:
         try:
