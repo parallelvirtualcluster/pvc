@@ -60,11 +60,17 @@ def fence_node(node_name, zkhandler, config, logger):
     # Hold to ensure the fence takes effect and system stabilizes
     logger.out('Waiting {}s for fence of node "{}" to take effect'.format(config['keepalive_interval'], node_name), state='i')
     time.sleep(config['keepalive_interval'])
+
     if fence_status:
         logger.out('Marking node "{}" as fenced'.format(node_name), state='i')
-        zkhandler.write([
-            (('node.state.daemon', node_name), 'fenced')
-        ])
+        while True:
+            try:
+                zkhandler.write([
+                    (('node.state.daemon', node_name), 'fenced')
+                ])
+                break
+            except Exception:
+                continue
 
     # Force into secondary network state if needed
     if node_name in config['coordinators']:
@@ -143,7 +149,7 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
     if ipmi_stop_retcode != 0:
         logger.out(f'Failed to power off dead node: {ipmi_stop_stderr}', state='e')
 
-    time.sleep(1)
+    time.sleep(5)
 
     # Check the chassis power state
     logger.out('Checking power state of dead node', state='i')
