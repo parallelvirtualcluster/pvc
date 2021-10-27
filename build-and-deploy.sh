@@ -24,11 +24,12 @@ if [[ -n ${1} ]]; then
     done
 fi
 
-echo -n "> Linting code for errors... "
-./lint || exit
-
 HOSTS=( ${@} )
 echo "> Deploying to host(s): ${HOSTS[@]}"
+
+# Lint to prevent deploying bad code
+echo -n "Linting code for errors... "
+./lint || exit
 
 # Build the packages
 echo -n "Building packages... "
