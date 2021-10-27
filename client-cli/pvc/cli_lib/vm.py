@@ -813,9 +813,9 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, live
     return retcode, retmsg
 
 
-def vm_networks_remove(config, vm, network, sriov, live, restart):
+def vm_networks_remove(config, vm, network, macaddr, sriov, live, restart):
     """
-    Remove a network to the VM
+    Remove a network from the VM, optionally by MAC
 
     Calls vm_info to get the VM XML.
 
@@ -825,6 +825,9 @@ def vm_networks_remove(config, vm, network, sriov, live, restart):
     """
     from lxml.objectify import fromstring
     from lxml.etree import tostring
+
+    if network is None and macaddr is None:
+        return False, "A network or MAC address must be specified for removal."
 
     status, domain_information = vm_info(config, vm)
     if not status:
@@ -845,17 +848,26 @@ def vm_networks_remove(config, vm, network, sriov, live, restart):
         if sriov:
             if interface.attrib.get('type') == 'hostdev':
                 if_dev = str(interface.sriov_device)
-                if network == if_dev:
+                if macaddr is None and network == if_dev:
+                    interface.getparent().remove(interface)
+                    changed = True
+                elif macaddr is not None and macaddr == interface.mac.attrib.get('address'):
                     interface.getparent().remove(interface)
                     changed = True
             elif interface.attrib.get('type') == 'direct':
                 if_dev = str(interface.source.attrib.get('dev'))
-                if network == if_dev:
+                if macaddr is None and network == if_dev:
+                    interface.getparent().remove(interface)
+                    changed = True
+                elif macaddr is not None and macaddr == interface.mac.attrib.get('address'):
                     interface.getparent().remove(interface)
                     changed = True
         else:
             if_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
-            if network == if_vni:
+            if macaddr is None and network == if_vni:
+                interface.getparent().remove(interface)
+                changed = True
+            elif macaddr is not None and macaddr == interface.mac.attrib.get('address'):
                 interface.getparent().remove(interface)
                 changed = True
         if changed:
@@ -866,8 +878,12 @@ def vm_networks_remove(config, vm, network, sriov, live, restart):
             new_xml = tostring(parsed_xml, pretty_print=True)
         except Exception:
             return False, 'ERROR: Failed to dump XML data.'
-    else:
+    elif not changed and network is not None:
         return False, 'ERROR: Network "{}" does not exist on VM.'.format(network)
+    elif not changed and macaddr is not None:
+        return False, 'ERROR: Interface with MAC "{}" does not exist on VM.'.format(macaddr)
+    else:
+        return False, 'ERROR: Unspecified error finding interface to remove.'
 
     modify_retcode, modify_retmsg = vm_modify(config, vm, new_xml, restart)
 

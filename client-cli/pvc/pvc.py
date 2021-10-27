@@ -1541,7 +1541,11 @@ def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_fla
     'domain'
 )
 @click.argument(
-    'net'
+    'net', required=False, default=None
+)
+@click.option(
+    '-m', '--mac-address', 'macaddr', default=None,
+    help='Remove an interface with this MAC address; required if NET is unspecified.'
 )
 @click.option(
     '-s', '--sriov', 'sriov_flag', is_flag=True, default=False,
@@ -1561,11 +1565,15 @@ def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_fla
     help='Confirm the restart.'
 )
 @cluster_req
-def vm_network_remove(domain, net, sriov_flag, live_flag, restart_flag, confirm_flag):
+def vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag, confirm_flag):
     """
     Remove the network NET from the virtual machine DOMAIN.
 
     NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
+
+    NET is optional if the '-m'/'--mac-address' option is specified. If it is, then the specific device with that MAC address is removed instead.
+
+    If multiple interfaces are present on the VM in network NET, and '-m'/'--mac-address' is not specified, then all interfaces in that network will be removed.
     """
     if restart_flag and live_flag:
         click.echo('WARNING: Live flag and restart flag both specified; this can cause unintended behaviour. To disable live changes, use "--no-live".')
@@ -1577,7 +1585,7 @@ def vm_network_remove(domain, net, sriov_flag, live_flag, restart_flag, confirm_
         except Exception:
             restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, sriov_flag, live_flag, restart_flag)
+    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, macaddr, sriov_flag, live_flag, restart_flag)
     cleanup(retcode, retmsg)
 
 
