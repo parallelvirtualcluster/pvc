@@ -865,10 +865,10 @@ def vm_networks_remove(config, vm, network, macaddr, sriov, live, restart):
             new_xml = tostring(parsed_xml, pretty_print=True)
         except Exception:
             return False, 'ERROR: Failed to dump XML data.'
-    elif not changed and network is not None:
-        return False, 'ERROR: Network "{}" does not exist on VM.'.format(network)
     elif not changed and macaddr is not None:
         return False, 'ERROR: Interface with MAC "{}" does not exist on VM.'.format(macaddr)
+    elif not changed and network is not None:
+        return False, 'ERROR: Network "{}" does not exist on VM.'.format(network)
     else:
         return False, 'ERROR: Unspecified error finding interface to remove.'
 
