@@ -676,20 +676,6 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, live
     from random import randint
     import pvc.cli_lib.network as pvc_network
 
-    # Verify that the provided network is valid (not in SR-IOV mode)
-    if not sriov:
-        retcode, retdata = pvc_network.net_info(config, network)
-        if not retcode:
-            # Ignore the three special networks
-            if network not in ['upstream', 'cluster', 'storage']:
-                return False, "Network {} is not present in the cluster.".format(network)
-
-        # Set the bridge prefix
-        if network in ['upstream', 'cluster', 'storage']:
-            br_prefix = 'br'
-        else:
-            br_prefix = 'vmbr'
-
     status, domain_information = vm_info(config, vm)
     if not status:
         return status, domain_information
@@ -745,6 +731,12 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, live
             return False, "ERROR: Invalid SR-IOV mode specified."
     # Add a normal bridged PVC network
     else:
+        # Set the bridge prefix
+        if network in ['upstream', 'cluster', 'storage']:
+            br_prefix = 'br'
+        else:
+            br_prefix = 'vmbr'
+
         device_string = '<interface type="bridge"><mac address="{macaddr}"/><source bridge="{bridge}"/><model type="{model}"/></interface>'.format(
             macaddr=macaddr,
             bridge="{}{}".format(br_prefix, network),
@@ -767,17 +759,12 @@ def vm_networks_add(config, vm, network, macaddr, model, sriov, sriov_mode, live
                         pci_function=interface.source.address.attrib.get('function')
                     )
                     if interface_address == bus_address:
-                        return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
+                        return False, 'SR-IOV device "{}" is already configured for VM "{}".'.format(network, vm)
             elif sriov_mode == 'macvtap':
                 if interface.attrib.get('type') == 'direct':
                     interface_dev = interface.source.attrib.get('dev')
                     if interface_dev == network:
-                        return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
-        else:
-            if interface.attrib.get('type') == 'bridge':
-                interface_vni = re.match(r'[vm]*br([0-9a-z]+)', interface.source.attrib.get('bridge')).group(1)
-                if interface_vni == network:
-                    return False, 'Network "{}" is already configured for VM "{}".'.format(network, vm)
+                        return False, 'SR-IOV device "{}" is already configured for VM "{}".'.format(network, vm)
 
     # Add the interface at the end of the list (or, right above emulator)
     if len(all_interfaces) > 0:
