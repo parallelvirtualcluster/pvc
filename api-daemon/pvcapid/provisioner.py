@@ -1489,9 +1489,7 @@ def create_vm(
                 retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
                 if retcode:
                     raise ProvisioningError(
-                        "Failed to find binary for mkswap: {}".format(
-                            stderr
-                        )
+                        "Failed to find binary for mkswap: {}".format(stderr)
                     )
             else:
                 retcode, stdout, stderr = pvc_common.run_os_command(

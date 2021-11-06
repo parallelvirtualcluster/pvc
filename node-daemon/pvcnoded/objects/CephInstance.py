@@ -164,9 +164,7 @@ class CephOSDInstance(object):
                 raise Exception
 
             # 4b. Activate the OSD
-            logger.out(
-                "Activating new OSD disk with ID {}".format(osd_id), state="i"
-            )
+            logger.out("Activating new OSD disk with ID {}".format(osd_id), state="i")
             retcode, stdout, stderr = common.run_os_command(
                 "ceph-volume lvm activate --bluestore {osdid} {osdfsid}".format(
                     osdid=osd_id, osdfsid=osd_fsid
