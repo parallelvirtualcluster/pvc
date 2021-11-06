@@ -382,7 +382,9 @@ def vm_state(config, vm, target_state, force=False, wait=False):
         "force": str(force).lower(),
         "wait": str(wait).lower(),
     }
-    response = call_api(config, "post", "/vm/{vm}/state".format(vm=vm), params=params)
+    response = call_api(
+        config, "post", "/vm/{vm}/state".format(vm=vm), params=params, timeout=120
+    )
 
     if response.status_code == 200:
         retstatus = True

@@ -116,15 +116,19 @@ class ErrorResponse(requests.Response):
 
 
 def call_api(
-    config, operation, request_uri, headers={}, params=None, data=None, files=None
+    config,
+    operation,
+    request_uri,
+    headers={},
+    params=None,
+    data=None,
+    files=None,
+    timeout=3,
 ):
     # Craft the URI
     uri = "{}://{}{}{}".format(
         config["api_scheme"], config["api_host"], config["api_prefix"], request_uri
     )
-
-    # Default timeout is 3 seconds
-    timeout = 3
 
     # Craft the authentication header if required
     if config["api_key"]:
