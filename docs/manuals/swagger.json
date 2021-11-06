@@ -6681,6 +6681,12 @@
                         "type": "string"
                     },
                     {
+                        "description": "Whether to force stop instead of shutdown VM during disable",
+                        "in": "query",
+                        "name": "force",
+                        "type": "boolean"
+                    },
+                    {
                         "description": "Whether to block waiting for the state change to complete",
                         "in": "query",
                         "name": "wait",

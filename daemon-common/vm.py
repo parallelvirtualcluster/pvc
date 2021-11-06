@@ -837,21 +837,29 @@ def stop_vm(zkhandler, domain):
     return True, 'Forcibly stopping VM "{}".'.format(domain)
 
 
-def disable_vm(zkhandler, domain):
+def disable_vm(zkhandler, domain, force=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
-    # Get state and verify we're OK to proceed
+    # Get state and perform a shutdown/stop if VM is online
     current_state = zkhandler.read(("domain.state", dom_uuid))
     if current_state != "stop":
-        return False, 'ERROR: VM "{}" must be stopped before disabling!'.format(domain)
+        if force:
+            change_state(zkhandler, dom_uuid, "stop")
+            # Wait for the command to be registered by the node
+            time.sleep(0.5)
+        else:
+            change_state(zkhandler, dom_uuid, "shutdown")
+            # Wait for the shutdown to complete
+            while zkhandler.read(("domain.state", dom_uuid)) != "stop":
+                time.sleep(0.5)
 
     # Set the VM to disable
     change_state(zkhandler, dom_uuid, "disable")
 
-    return True, 'Marked VM "{}" as disable.'.format(domain)
+    return True, 'Disabled VM "{}".'.format(domain)
 
 
 def update_vm_sriov_nics(zkhandler, dom_uuid, source_node, target_node):

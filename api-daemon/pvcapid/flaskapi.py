@@ -1868,6 +1868,7 @@ class API_VM_State(Resource):
                 "helptext": "A valid state must be specified",
                 "required": True,
             },
+            {"name": "force"},
             {"name": "wait"},
         ]
     )
@@ -1891,6 +1892,10 @@ class API_VM_State(Resource):
               - restart
               - disable
           - in: query
+            name: force
+            type: boolean
+            description: Whether to force stop instead of shutdown VM during disable
+          - in: query
             name: wait
             type: boolean
             description: Whether to block waiting for the state change to complete
@@ -1907,6 +1912,7 @@ class API_VM_State(Resource):
               id: Message
         """
         state = reqargs.get("state", None)
+        force = bool(strtobool(reqargs.get("force", "false")))
         wait = bool(strtobool(reqargs.get("wait", "false")))
 
         if state == "start":
@@ -1918,7 +1924,7 @@ class API_VM_State(Resource):
         if state == "restart":
             return api_helper.vm_restart(vm, wait)
         if state == "disable":
-            return api_helper.vm_disable(vm)
+            return api_helper.vm_disable(vm, force)
         abort(400)
 
 
