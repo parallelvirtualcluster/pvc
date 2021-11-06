@@ -27,9 +27,9 @@ fi
 HOSTS=( ${@} )
 echo "> Deploying to host(s): ${HOSTS[@]}"
 
-# Lint to prevent deploying bad code
-echo -n "Linting code for errors... "
-./lint || exit
+# Prepare code
+echo "Preparing code (format and lint)..."
+./prepare || exit
 
 # Build the packages
 echo -n "Building packages... "

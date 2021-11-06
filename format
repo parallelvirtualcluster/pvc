@@ -5,6 +5,7 @@ if ! which black &>/dev/null; then
     exit 1
 fi
 
+echo "Formatting..."
 black --safe --exclude api-daemon/migrations .
 ret=$?
 if [[ $ret -eq 0 ]]; then

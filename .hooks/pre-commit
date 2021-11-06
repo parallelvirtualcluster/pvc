@@ -4,11 +4,9 @@ pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 ex=0
 
-# Linting
-echo "Linting..."
-./lint
+./prepare
 if [[ $? -ne 0 ]]; then
-    echo "Aborting commit due to linting errors."
+    echo "Aborting commit due to formatting or linting errors."
     ex=1
 fi
 

@@ -5,6 +5,7 @@ if ! which flake8 &>/dev/null; then
     exit 1
 fi
 
+echo "Linting..."
 flake8
 ret=$?
 if [[ $ret -eq 0 ]]; then
