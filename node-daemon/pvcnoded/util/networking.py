@@ -92,7 +92,7 @@ def setup_interfaces(logger, config):
         state="i",
     )
 
-    common.run_os_command(f"brctl addbr brcluster")
+    common.run_os_command("brctl addbr brcluster")
     common.run_os_command(f"brctl addif brcluster {cluster_dev}")
     common.run_os_command(f"ip link set brcluster mtu {cluster_mtu} up")
     common.run_os_command(f"ip address add {cluster_dev_ip} dev brcluster")
@@ -123,7 +123,7 @@ def setup_interfaces(logger, config):
             state="i",
         )
 
-        common.run_os_command(f"brctl addbr brstorage")
+        common.run_os_command("brctl addbr brstorage")
         common.run_os_command(f"brctl addif brstorage {storage_dev}")
         common.run_os_command(f"ip link set brstorage mtu {storage_mtu} up")
         common.run_os_command(f"ip address add {storage_dev_ip} dev brstorage")
@@ -152,7 +152,7 @@ def setup_interfaces(logger, config):
             state="i",
         )
 
-        common.run_os_command(f"brctl addbr brupstream")
+        common.run_os_command("brctl addbr brupstream")
         common.run_os_command(f"brctl addif brupstream {upstream_dev}")
         common.run_os_command(f"ip link set brupstream mtu {upstream_mtu} up")
         common.run_os_command(f"ip address add {upstream_dev_ip} dev brupstream")
@@ -188,13 +188,13 @@ def setup_interfaces(logger, config):
     common.run_os_command("sysctl net.ipv6.conf.default.accept_source_route=1")
     # Disable RP filtering on Cluster and Upstream interfaces (to allow traffic pivoting)
     common.run_os_command(f"sysctl net.ipv4.conf.{cluster_dev}.rp_filter=0")
-    common.run_os_command(f"sysctl net.ipv4.conf.brcluster.rp_filter=0")
+    common.run_os_command("sysctl net.ipv4.conf.brcluster.rp_filter=0")
     common.run_os_command(f"sysctl net.ipv4.conf.{upstream_dev}.rp_filter=0")
-    common.run_os_command(f"sysctl net.ipv4.conf.brupstream.rp_filter=0")
+    common.run_os_command("sysctl net.ipv4.conf.brupstream.rp_filter=0")
     common.run_os_command(f"sysctl net.ipv6.conf.{cluster_dev}.rp_filter=0")
-    common.run_os_command(f"sysctl net.ipv6.conf.brcluster.rp_filter=0")
+    common.run_os_command("sysctl net.ipv6.conf.brcluster.rp_filter=0")
     common.run_os_command(f"sysctl net.ipv6.conf.{upstream_dev}.rp_filter=0")
-    common.run_os_command(f"sysctl net.ipv6.conf.brupstream.rp_filter=0")
+    common.run_os_command("sysctl net.ipv6.conf.brupstream.rp_filter=0")
 
     # Stop DNSMasq if it is running
     common.run_os_command("systemctl stop dnsmasq.service")

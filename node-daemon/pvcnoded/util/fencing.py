@@ -197,7 +197,7 @@ def reboot_via_ipmi(ipmi_hostname, ipmi_user, ipmi_password, logger):
             f"Current chassis power state is: {ipmi_status_stdout.strip()}", state="i"
         )
     else:
-        logger.out(f"Current chassis power state is: Unknown", state="w")
+        logger.out("Current chassis power state is: Unknown", state="w")
 
     # Power on the node
     logger.out("Sending power on to dead node", state="i")
