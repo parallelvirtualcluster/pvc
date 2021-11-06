@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+if ! which black &>/dev/null; then
+    echo "Black is required to format this project"
+    exit 1
+fi
+
+black .
+ret=$?
+if [[ $ret -eq 0 ]]; then
+    echo "Successfully formatted project!"
+fi
+exit $ret
