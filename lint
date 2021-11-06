@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-
 if ! which flake8 &>/dev/null; then
     echo "Flake8 is required to lint this project"
     exit 1
 fi
 
+# We ignore the following errors:
+#   * W503 (line break before binary operator): Black moves these to new lines
+#   * E501 (line too long): Long lines are a fact of life
 flake8 \
-    --ignore=E201,E202,E222,E501,E241,F522,F523,F541 \
+    --ignore=W503,E501 \
     --exclude=debian,api-daemon/migrations/versions,api-daemon/provisioner/examples
 ret=$?
 if [[ $ret -eq 0 ]]; then
