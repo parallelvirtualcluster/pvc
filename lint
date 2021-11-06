@@ -7,7 +7,7 @@ fi
 
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
-echo "Linting..."
+echo ">>> Linting..."
 flake8
 ret=$?
 if [[ $ret -eq 0 ]]; then

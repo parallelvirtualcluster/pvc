@@ -11,7 +11,7 @@ fi
 
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
-echo "Formatting..."
+echo ">>> Formatting..."
 black --safe ${check} --exclude api-daemon/migrations .
 ret=$?
 if [[ $ret -eq 0 ]]; then
