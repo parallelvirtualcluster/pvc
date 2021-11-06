@@ -1308,15 +1308,22 @@ def vm_stop(domain, confirm_flag):
 ###############################################################################
 @click.command(name="disable", short_help="Mark a virtual machine as disabled.")
 @click.argument("domain")
+@click.option(
+    "--force",
+    "force",
+    is_flag=True,
+    default=False,
+    help="Forcibly stop the VM instead of waiting for shutdown.",
+)
 @cluster_req
-def vm_disable(domain):
+def vm_disable(domain, force):
     """
-    Prevent stopped virtual machine DOMAIN from being counted towards cluster health status. DOMAIN may be a UUID or name.
+    Shut down virtual machine DOMAIN and mark it as disabled. DOMAIN may be a UUID or name.
 
-    Use this option for VM that are stopped intentionally or long-term and which should not impact cluster health if stopped. A VM can be started directly from disable state.
+    Disabled VMs will not be counted towards a degraded cluster health status, unlike stopped VMs. Use this option for a VM that will remain off for an extended period.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, "disable")
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "disable", force=force)
     cleanup(retcode, retmsg)
 
 

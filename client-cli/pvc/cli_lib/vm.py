@@ -369,7 +369,7 @@ def vm_remove(config, vm, delete_disks=False):
     return retstatus, response.json().get("message", "")
 
 
-def vm_state(config, vm, target_state, wait=False):
+def vm_state(config, vm, target_state, force=False, wait=False):
     """
     Modify the current state of VM
 
@@ -377,7 +377,11 @@ def vm_state(config, vm, target_state, wait=False):
     API arguments: state={state}, wait={wait}
     API schema: {"message":"{data}"}
     """
-    params = {"state": target_state, "wait": str(wait).lower()}
+    params = {
+        "state": target_state,
+        "force": str(force).lower(),
+        "wait": str(wait).lower(),
+    }
     response = call_api(config, "post", "/vm/{vm}/state".format(vm=vm), params=params)
 
     if response.status_code == 200:
