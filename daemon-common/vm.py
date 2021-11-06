@@ -845,7 +845,7 @@ def disable_vm(zkhandler, domain, force=False):
 
     # Get state and perform a shutdown/stop if VM is online
     current_state = zkhandler.read(("domain.state", dom_uuid))
-    if current_state != "stop":
+    if current_state in ["start"]:
         if force:
             change_state(zkhandler, dom_uuid, "stop")
             # Wait for the command to be registered by the node
