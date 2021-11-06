@@ -6,10 +6,11 @@ fi
 
 # We ignore the following errors:
 #   * W503 (line break before binary operator): Black moves these to new lines
-#   * E501 (line too long): Long lines are a fact of life
+#   * E501 (line too long): Long lines are a fact of life in comment blocks; Black handles active instances of this
 flake8 \
     --ignore=W503,E501 \
-    --exclude=debian,api-daemon/migrations/versions,api-daemon/provisioner/examples
+    --exclude=debian,api-daemon/migrations/versions,api-daemon/provisioner/examples \
+    --max-line-length=88
 ret=$?
 if [[ $ret -eq 0 ]]; then
     echo "No linting issues found!"
