@@ -32,7 +32,8 @@ pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 # Prepare code
 echo "Preparing code (format and lint)..."
-./prepare || exit
+./format || exit 1
+./lint || exit 1
 
 # Build the packages
 echo -n "Building packages... "

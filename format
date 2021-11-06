@@ -5,10 +5,14 @@ if ! which black &>/dev/null; then
     exit 1
 fi
 
+if [[ $1 == "check" ]]; then
+    check="--check"
+fi
+
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 echo "Formatting..."
-black --safe --exclude api-daemon/migrations .
+black --safe ${check} --exclude api-daemon/migrations .
 ret=$?
 if [[ $ret -eq 0 ]]; then
     echo "Successfully formatted project!"

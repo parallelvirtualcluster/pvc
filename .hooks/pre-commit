@@ -4,9 +4,16 @@ pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 ex=0
 
-./prepare
+./format check
 if [[ $? -ne 0 ]]; then
-    echo "Aborting commit due to formatting or linting errors."
+    ./format
+    echo "Black formatting change detected; review and recommit"
+    ex=1
+fi
+
+./lint
+if [[ $? -ne 0 ]]; then
+    echo "Linting error detected; correct and recommit"
     ex=1
 fi
 
