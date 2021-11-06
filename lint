@@ -5,10 +5,14 @@ if ! which flake8 &>/dev/null; then
     exit 1
 fi
 
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+
 echo "Linting..."
 flake8
 ret=$?
 if [[ $ret -eq 0 ]]; then
     echo "No linting issues found!"
 fi
+
+popd &>/dev/null
 exit $ret

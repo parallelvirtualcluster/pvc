@@ -27,6 +27,9 @@ fi
 HOSTS=( ${@} )
 echo "> Deploying to host(s): ${HOSTS[@]}"
 
+# Move to repo root if we're not
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+
 # Prepare code
 echo "Preparing code (format and lint)..."
 ./prepare || exit
@@ -64,3 +67,5 @@ done
 if [[ -z ${KEEP_ARTIFACTS} ]]; then
     rm ../pvc*_${version}*
 fi
+
+popd &>/dev/null

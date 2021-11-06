@@ -5,10 +5,14 @@ if ! which black &>/dev/null; then
     exit 1
 fi
 
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+
 echo "Formatting..."
 black --safe --exclude api-daemon/migrations .
 ret=$?
 if [[ $ret -eq 0 ]]; then
     echo "Successfully formatted project!"
 fi
+
+popd &>/dev/null
 exit $ret

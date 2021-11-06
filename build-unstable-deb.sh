@@ -2,6 +2,7 @@
 set -o xtrace
 exec 3>&1
 exec 1>&2
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
 # Ensure we're up to date
 git pull --rebase
 # Update the version to a sensible git revision for easy visualization
@@ -37,3 +38,4 @@ cp -a ${tmpdir}/api-Daemon.py api-daemon/pvcapid/Daemon.py
 # Clean up
 rm -r ${tmpdir}
 dh_clean
+popd &>/dev/null

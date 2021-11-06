@@ -7,6 +7,8 @@ if [[ -z ${new_version} ]]; then
     exit 1
 fi
 
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+
 current_version="$( cat .version )"
 echo "${current_version} -> ${new_version}"
 
@@ -46,6 +48,8 @@ mv ${deb_changelog_file} debian/changelog
 
 git add node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py debian/changelog CHANGELOG.md .version
 git commit -v
+
+popd &>/dev/null
 
 echo
 echo "GitLab release message:"

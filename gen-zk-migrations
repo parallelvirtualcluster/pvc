@@ -2,6 +2,8 @@
 
 # Generate the Zookeeper migration files
 
-pushd api-daemon
+pushd $( git rev-parse --show-toplevel ) &>/dev/null
+pushd api-daemon &>/dev/null
 ./pvcapid-manage-zk.py
-popd
+popd &>/dev/null
+popd &>/dev/null
