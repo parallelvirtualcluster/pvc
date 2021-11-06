@@ -47,11 +47,11 @@ import pvcapid.provisioner as provisioner
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(
-        host=config['database_host'],
-        port=config['database_port'],
-        dbname=config['database_name'],
-        user=config['database_user'],
-        password=config['database_password']
+        host=config["database_host"],
+        port=config["database_port"],
+        dbname=config["database_name"],
+        user=config["database_user"],
+        password=config["database_password"],
     )
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
@@ -71,19 +71,19 @@ def list_ova(limit, is_fuzzy=True):
     if limit:
         if is_fuzzy:
             # Handle fuzzy vs. non-fuzzy limits
-            if not re.match(r'\^.*', limit):
-                limit = '%' + limit
+            if not re.match(r"\^.*", limit):
+                limit = "%" + limit
             else:
                 limit = limit[1:]
-            if not re.match(r'.*\$', limit):
-                limit = limit + '%'
+            if not re.match(r".*\$", limit):
+                limit = limit + "%"
             else:
                 limit = limit[:-1]
 
-        query = "SELECT id, name FROM {} WHERE name LIKE %s;".format('ova')
-        args = (limit, )
+        query = "SELECT id, name FROM {} WHERE name LIKE %s;".format("ova")
+        args = (limit,)
     else:
-        query = "SELECT id, name FROM {};".format('ova')
+        query = "SELECT id, name FROM {};".format("ova")
         args = ()
 
     conn, cur = open_database(config)
@@ -94,34 +94,36 @@ def list_ova(limit, is_fuzzy=True):
     ova_data = list()
 
     for ova in data:
-        ova_id = ova.get('id')
-        ova_name = ova.get('name')
+        ova_id = ova.get("id")
+        ova_name = ova.get("name")
 
-        query = "SELECT pool, volume_name, volume_format, disk_id, disk_size_gb FROM {} WHERE ova = %s;".format('ova_volume')
+        query = "SELECT pool, volume_name, volume_format, disk_id, disk_size_gb FROM {} WHERE ova = %s;".format(
+            "ova_volume"
+        )
         args = (ova_id,)
         conn, cur = open_database(config)
         cur.execute(query, args)
         volumes = cur.fetchall()
         close_database(conn, cur)
 
-        ova_data.append({'id': ova_id, 'name': ova_name, 'volumes': volumes})
+        ova_data.append({"id": ova_id, "name": ova_name, "volumes": volumes})
 
     if ova_data:
         return ova_data, 200
     else:
-        return {'message': 'No OVAs found.'}, 404
+        return {"message": "No OVAs found."}, 404
 
 
 @ZKConnection(config)
 def delete_ova(zkhandler, name):
     ova_data, retcode = list_ova(name, is_fuzzy=False)
     if retcode != 200:
-        retmsg = {'message': 'The OVA "{}" does not exist.'.format(name)}
+        retmsg = {"message": 'The OVA "{}" does not exist.'.format(name)}
         retcode = 400
         return retmsg, retcode
 
     conn, cur = open_database(config)
-    ova_id = ova_data[0].get('id')
+    ova_id = ova_data[0].get("id")
     try:
         # Get the list of volumes for this OVA
         query = "SELECT pool, volume_name FROM ova_volume WHERE ova = %s;"
@@ -131,7 +133,9 @@ def delete_ova(zkhandler, name):
 
         # Remove each volume for this OVA
         for volume in volumes:
-            pvc_ceph.remove_volume(zkhandler, volume.get('pool'), volume.get('volume_name'))
+            pvc_ceph.remove_volume(
+                zkhandler, volume.get("pool"), volume.get("volume_name")
+            )
 
         # Delete the volume entries from the database
         query = "DELETE FROM ova_volume WHERE ova = %s;"
@@ -156,7 +160,7 @@ def delete_ova(zkhandler, name):
         retmsg = {"message": 'Removed OVA image "{}".'.format(name)}
         retcode = 200
     except Exception as e:
-        retmsg = {'message': 'Failed to remove OVA "{}": {}'.format(name, e)}
+        retmsg = {"message": 'Failed to remove OVA "{}": {}'.format(name, e)}
         retcode = 400
     close_database(conn, cur)
     return retmsg, retcode
@@ -174,20 +178,22 @@ def upload_ova(zkhandler, pool, name, ova_size):
         # Unmap the OVA temporary blockdev
         retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, "ova_{}".format(name))
         # Remove the OVA temporary blockdev
-        retflag, retdata = pvc_ceph.remove_volume(zkhandler, pool, "ova_{}".format(name))
+        retflag, retdata = pvc_ceph.remove_volume(
+            zkhandler, pool, "ova_{}".format(name)
+        )
 
     # Normalize the OVA size to bytes
     ova_size_bytes = pvc_ceph.format_bytes_fromhuman(ova_size)
-    ova_size = '{}B'.format(ova_size_bytes)
+    ova_size = "{}B".format(ova_size_bytes)
 
     # Verify that the cluster has enough space to store the OVA volumes (2x OVA size, temporarily, 1x permanently)
     pool_information = pvc_ceph.getPoolInformation(zkhandler, pool)
-    pool_free_space_bytes = int(pool_information['stats']['free_bytes'])
+    pool_free_space_bytes = int(pool_information["stats"]["free_bytes"])
     if ova_size_bytes * 2 >= pool_free_space_bytes:
         output = {
-            'message': "The cluster does not have enough free space ({}) to store the OVA volume ({}).".format(
+            "message": "The cluster does not have enough free space ({}) to store the OVA volume ({}).".format(
                 pvc_ceph.format_bytes_tohuman(pool_free_space_bytes),
-                pvc_ceph.format_bytes_tohuman(ova_size_bytes)
+                pvc_ceph.format_bytes_tohuman(ova_size_bytes),
             )
         }
         retcode = 400
@@ -195,11 +201,11 @@ def upload_ova(zkhandler, pool, name, ova_size):
         return output, retcode
 
     # Create a temporary OVA blockdev
-    retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, "ova_{}".format(name), ova_size)
+    retflag, retdata = pvc_ceph.add_volume(
+        zkhandler, pool, "ova_{}".format(name), ova_size
+    )
     if not retflag:
-        output = {
-            'message': retdata.replace('\"', '\'')
-        }
+        output = {"message": retdata.replace('"', "'")}
         retcode = 400
         cleanup_ova_maps_and_volumes()
         return output, retcode
@@ -207,9 +213,7 @@ def upload_ova(zkhandler, pool, name, ova_size):
     # Map the temporary OVA blockdev
     retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, "ova_{}".format(name))
     if not retflag:
-        output = {
-            'message': retdata.replace('\"', '\'')
-        }
+        output = {"message": retdata.replace('"', "'")}
         retcode = 400
         cleanup_ova_maps_and_volumes()
         return output, retcode
@@ -221,13 +225,14 @@ def upload_ova(zkhandler, pool, name, ova_size):
         # rather than the standard stream_factory which writes to a temporary file waiting
         # on a save() call. This will break if the API ever uploaded multiple files, but
         # this is an acceptable workaround.
-        def ova_stream_factory(total_content_length, filename, content_type, content_length=None):
-            return open(ova_blockdev, 'wb')
+        def ova_stream_factory(
+            total_content_length, filename, content_type, content_length=None
+        ):
+            return open(ova_blockdev, "wb")
+
         parse_form_data(flask.request.environ, stream_factory=ova_stream_factory)
     except Exception:
-        output = {
-            'message': "Failed to upload or write OVA file to temporary volume."
-        }
+        output = {"message": "Failed to upload or write OVA file to temporary volume."}
         retcode = 400
         cleanup_ova_maps_and_volumes()
         return output, retcode
@@ -238,15 +243,13 @@ def upload_ova(zkhandler, pool, name, ova_size):
         # Determine the files in the OVA
         members = ova_archive.getmembers()
     except tarfile.TarError:
-        output = {
-            'message': "The uploaded OVA file is not readable."
-        }
+        output = {"message": "The uploaded OVA file is not readable."}
         retcode = 400
         cleanup_ova_maps_and_volumes()
         return output, retcode
 
     # Parse through the members list and extract the OVF file
-    for element in set(x for x in members if re.match(r'.*\.ovf$', x.name)):
+    for element in set(x for x in members if re.match(r".*\.ovf$", x.name)):
         ovf_file = ova_archive.extractfile(element)
 
     # Parse the OVF file to get our VM details
@@ -261,14 +264,14 @@ def upload_ova(zkhandler, pool, name, ova_size):
 
     # Create and upload each disk volume
     for idx, disk in enumerate(disk_map):
-        disk_identifier = "sd{}".format(chr(ord('a') + idx))
+        disk_identifier = "sd{}".format(chr(ord("a") + idx))
         volume = "ova_{}_{}".format(name, disk_identifier)
-        dev_src = disk.get('src')
+        dev_src = disk.get("src")
         dev_size_raw = ova_archive.getmember(dev_src).size
-        vm_volume_size = disk.get('capacity')
+        vm_volume_size = disk.get("capacity")
 
         # Normalize the dev size to bytes
-        dev_size = '{}B'.format(pvc_ceph.format_bytes_fromhuman(dev_size_raw))
+        dev_size = "{}B".format(pvc_ceph.format_bytes_fromhuman(dev_size_raw))
 
         def cleanup_img_maps():
             # Unmap the temporary blockdev
@@ -277,9 +280,7 @@ def upload_ova(zkhandler, pool, name, ova_size):
         # Create the blockdev
         retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, volume, dev_size)
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_img_maps()
             cleanup_ova_maps_and_volumes()
@@ -288,9 +289,7 @@ def upload_ova(zkhandler, pool, name, ova_size):
         # Map the blockdev
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_img_maps()
             cleanup_ova_maps_and_volumes()
@@ -299,10 +298,10 @@ def upload_ova(zkhandler, pool, name, ova_size):
 
         try:
             # Open (extract) the TAR archive file and seek to byte 0
-            vmdk_file = ova_archive.extractfile(disk.get('src'))
+            vmdk_file = ova_archive.extractfile(disk.get("src"))
             vmdk_file.seek(0)
             # Open the temporary blockdev and seek to byte 0
-            blk_file = open(temp_blockdev, 'wb')
+            blk_file = open(temp_blockdev, "wb")
             blk_file.seek(0)
             # Write the contents of vmdk_file into blk_file
             blk_file.write(vmdk_file.read())
@@ -311,10 +310,12 @@ def upload_ova(zkhandler, pool, name, ova_size):
             # Close vmdk_file
             vmdk_file.close()
             # Perform an OS-level sync
-            pvc_common.run_os_command('sync')
+            pvc_common.run_os_command("sync")
         except Exception:
             output = {
-                'message': "Failed to write image file '{}' to temporary volume.".format(disk.get('src'))
+                "message": "Failed to write image file '{}' to temporary volume.".format(
+                    disk.get("src")
+                )
             }
             retcode = 400
             cleanup_img_maps()
@@ -333,27 +334,25 @@ def upload_ova(zkhandler, pool, name, ova_size):
         cur.execute(query, args)
         close_database(conn, cur)
     except Exception as e:
-        output = {
-            'message': 'Failed to create OVA entry "{}": {}'.format(name, e)
-        }
+        output = {"message": 'Failed to create OVA entry "{}": {}'.format(name, e)}
         retcode = 400
         close_database(conn, cur)
         return output, retcode
 
     # Get the OVA database id
     query = "SELECT id FROM ova WHERE name = %s;"
-    args = (name, )
+    args = (name,)
     conn, cur = open_database(config)
     cur.execute(query, args)
-    ova_id = cur.fetchone()['id']
+    ova_id = cur.fetchone()["id"]
     close_database(conn, cur)
 
     # Prepare disk entries in ova_volume
     for idx, disk in enumerate(disk_map):
-        disk_identifier = "sd{}".format(chr(ord('a') + idx))
-        volume_type = disk.get('src').split('.')[-1]
+        disk_identifier = "sd{}".format(chr(ord("a") + idx))
+        volume_type = disk.get("src").split(".")[-1]
         volume = "ova_{}_{}".format(name, disk_identifier)
-        vm_volume_size = disk.get('capacity')
+        vm_volume_size = disk.get("capacity")
 
         # The function always return XXXXB, so strip off the B and convert to an integer
         vm_volume_size_bytes = pvc_ceph.format_bytes_fromhuman(vm_volume_size)
@@ -368,37 +367,49 @@ def upload_ova(zkhandler, pool, name, ova_size):
             close_database(conn, cur)
         except Exception as e:
             output = {
-                'message': 'Failed to create OVA volume entry "{}": {}'.format(volume, e)
+                "message": 'Failed to create OVA volume entry "{}": {}'.format(
+                    volume, e
+                )
             }
             retcode = 400
             close_database(conn, cur)
             return output, retcode
 
     # Prepare a system_template for the OVA
-    vcpu_count = virtual_hardware.get('vcpus')
-    vram_mb = virtual_hardware.get('vram')
-    if virtual_hardware.get('graphics-controller') == 1:
+    vcpu_count = virtual_hardware.get("vcpus")
+    vram_mb = virtual_hardware.get("vram")
+    if virtual_hardware.get("graphics-controller") == 1:
         vnc = True
         serial = False
     else:
         vnc = False
         serial = True
-    retdata, retcode = provisioner.create_template_system(name, vcpu_count, vram_mb, serial, vnc, vnc_bind=None, ova=ova_id)
+    retdata, retcode = provisioner.create_template_system(
+        name, vcpu_count, vram_mb, serial, vnc, vnc_bind=None, ova=ova_id
+    )
     if retcode != 200:
         return retdata, retcode
     system_template, retcode = provisioner.list_template_system(name, is_fuzzy=False)
     if retcode != 200:
         return retdata, retcode
-    system_template_name = system_template[0].get('name')
+    system_template_name = system_template[0].get("name")
 
     # Prepare a barebones profile for the OVA
-    retdata, retcode = provisioner.create_profile(name, 'ova', system_template_name, None, None, userdata=None, script=None, ova=name, arguments=None)
+    retdata, retcode = provisioner.create_profile(
+        name,
+        "ova",
+        system_template_name,
+        None,
+        None,
+        userdata=None,
+        script=None,
+        ova=name,
+        arguments=None,
+    )
     if retcode != 200:
         return retdata, retcode
 
-    output = {
-        'message': "Imported OVA image '{}'.".format(name)
-    }
+    output = {"message": "Imported OVA image '{}'.".format(name)}
     retcode = 200
     return output, retcode
 
@@ -420,7 +431,7 @@ class OVFParser(object):
         "20": "other-storage-device",
         "23": "usb-controller",
         "24": "graphics-controller",
-        "35": "sound-controller"
+        "35": "sound-controller",
     }
 
     def _getFilelist(self):
@@ -438,7 +449,10 @@ class OVFParser(object):
         cap_attr = "{{{schema}}}capacity".format(schema=self.OVF_SCHEMA)
         cap_units = "{{{schema}}}capacityAllocationUnits".format(schema=self.OVF_SCHEMA)
         current_list = self.xml.findall(path)
-        results = [(x.get(id_attr), x.get(ref_attr), x.get(cap_attr), x.get(cap_units)) for x in current_list]
+        results = [
+            (x.get(id_attr), x.get(ref_attr), x.get(cap_attr), x.get(cap_units))
+            for x in current_list
+        ]
         return results
 
     def _getAttributes(self, virtual_system, path, attribute):
@@ -451,36 +465,46 @@ class OVFParser(object):
 
         # Define our schemas
         envelope_tag = self.xml.find(".")
-        self.XML_SCHEMA = envelope_tag.nsmap.get('xsi')
-        self.OVF_SCHEMA = envelope_tag.nsmap.get('ovf')
-        self.RASD_SCHEMA = envelope_tag.nsmap.get('rasd')
-        self.SASD_SCHEMA = envelope_tag.nsmap.get('sasd')
-        self.VSSD_SCHEMA = envelope_tag.nsmap.get('vssd')
+        self.XML_SCHEMA = envelope_tag.nsmap.get("xsi")
+        self.OVF_SCHEMA = envelope_tag.nsmap.get("ovf")
+        self.RASD_SCHEMA = envelope_tag.nsmap.get("rasd")
+        self.SASD_SCHEMA = envelope_tag.nsmap.get("sasd")
+        self.VSSD_SCHEMA = envelope_tag.nsmap.get("vssd")
 
-        self.ovf_version = int(self.OVF_SCHEMA.split('/')[-1])
+        self.ovf_version = int(self.OVF_SCHEMA.split("/")[-1])
 
         # Get the file and disk lists
         self.filelist = self._getFilelist()
         self.disklist = self._getDisklist()
 
     def getVirtualSystems(self):
-        return self.xml.findall("{{{schema}}}VirtualSystem".format(schema=self.OVF_SCHEMA))
+        return self.xml.findall(
+            "{{{schema}}}VirtualSystem".format(schema=self.OVF_SCHEMA)
+        )
 
     def getXML(self):
-        return lxml.etree.tostring(self.xml, pretty_print=True).decode('utf8')
+        return lxml.etree.tostring(self.xml, pretty_print=True).decode("utf8")
 
     def getVirtualHardware(self, virtual_system):
         hardware_list = virtual_system.findall(
-            "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(schema=self.OVF_SCHEMA)
+            "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(
+                schema=self.OVF_SCHEMA
+            )
         )
         virtual_hardware = {}
 
         for item in hardware_list:
             try:
-                item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
+                item_type = self.RASD_TYPE[
+                    item.find(
+                        "{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)
+                    ).text
+                ]
             except Exception:
                 continue
-            quantity = item.find("{{{rasd}}}VirtualQuantity".format(rasd=self.RASD_SCHEMA))
+            quantity = item.find(
+                "{{{rasd}}}VirtualQuantity".format(rasd=self.RASD_SCHEMA)
+            )
             if quantity is None:
                 virtual_hardware[item_type] = 1
             else:
@@ -492,11 +516,15 @@ class OVFParser(object):
         # OVF v2 uses the StorageItem field, while v1 uses the normal Item field
         if self.ovf_version < 2:
             hardware_list = virtual_system.findall(
-                "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(schema=self.OVF_SCHEMA)
+                "{{{schema}}}VirtualHardwareSection/{{{schema}}}Item".format(
+                    schema=self.OVF_SCHEMA
+                )
             )
         else:
             hardware_list = virtual_system.findall(
-                "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(schema=self.OVF_SCHEMA)
+                "{{{schema}}}VirtualHardwareSection/{{{schema}}}StorageItem".format(
+                    schema=self.OVF_SCHEMA
+                )
             )
         disk_list = []
 
@@ -504,38 +532,56 @@ class OVFParser(object):
             item_type = None
 
             if self.SASD_SCHEMA is not None:
-                item_type = self.RASD_TYPE[item.find("{{{sasd}}}ResourceType".format(sasd=self.SASD_SCHEMA)).text]
+                item_type = self.RASD_TYPE[
+                    item.find(
+                        "{{{sasd}}}ResourceType".format(sasd=self.SASD_SCHEMA)
+                    ).text
+                ]
             else:
-                item_type = self.RASD_TYPE[item.find("{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)).text]
+                item_type = self.RASD_TYPE[
+                    item.find(
+                        "{{{rasd}}}ResourceType".format(rasd=self.RASD_SCHEMA)
+                    ).text
+                ]
 
-            if item_type != 'disk':
+            if item_type != "disk":
                 continue
 
             hostref = None
             if self.SASD_SCHEMA is not None:
-                hostref = item.find("{{{sasd}}}HostResource".format(sasd=self.SASD_SCHEMA))
+                hostref = item.find(
+                    "{{{sasd}}}HostResource".format(sasd=self.SASD_SCHEMA)
+                )
             else:
-                hostref = item.find("{{{rasd}}}HostResource".format(rasd=self.RASD_SCHEMA))
+                hostref = item.find(
+                    "{{{rasd}}}HostResource".format(rasd=self.RASD_SCHEMA)
+                )
             if hostref is None:
                 continue
             disk_res = hostref.text
 
             # Determine which file this disk_res ultimately represents
-            (disk_id, disk_ref, disk_capacity, disk_capacity_unit) = [x for x in self.disklist if x[0] == disk_res.split('/')[-1]][0]
+            (disk_id, disk_ref, disk_capacity, disk_capacity_unit) = [
+                x for x in self.disklist if x[0] == disk_res.split("/")[-1]
+            ][0]
             (file_id, disk_src) = [x for x in self.filelist if x[0] == disk_ref][0]
 
             if disk_capacity_unit is not None:
                 # Handle the unit conversion
                 base_unit, action, multiple = disk_capacity_unit.split()
-                multiple_base, multiple_exponent = multiple.split('^')
-                disk_capacity = int(disk_capacity) * (int(multiple_base) ** int(multiple_exponent))
+                multiple_base, multiple_exponent = multiple.split("^")
+                disk_capacity = int(disk_capacity) * (
+                    int(multiple_base) ** int(multiple_exponent)
+                )
 
             # Append the disk with all details to the list
-            disk_list.append({
-                "id": disk_id,
-                "ref": disk_ref,
-                "capacity": disk_capacity,
-                "src": disk_src
-            })
+            disk_list.append(
+                {
+                    "id": disk_id,
+                    "ref": disk_ref,
+                    "capacity": disk_capacity,
+                    "src": disk_src,
+                }
+            )
 
         return disk_list

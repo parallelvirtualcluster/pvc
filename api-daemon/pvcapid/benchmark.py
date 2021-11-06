@@ -39,7 +39,10 @@ class BenchmarkError(Exception):
     """
     An exception that results from the Benchmark job.
     """
-    def __init__(self, message, job_name=None, db_conn=None, db_cur=None, zkhandler=None):
+
+    def __init__(
+        self, message, job_name=None, db_conn=None, db_cur=None, zkhandler=None
+    ):
         self.message = message
         if job_name is not None:
             # Clean up our dangling result
@@ -54,6 +57,7 @@ class BenchmarkError(Exception):
     def __str__(self):
         return str(self.message)
 
+
 #
 # Common functions
 #
@@ -62,11 +66,11 @@ class BenchmarkError(Exception):
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(
-        host=config['database_host'],
-        port=config['database_port'],
-        dbname=config['database_name'],
-        user=config['database_user'],
-        password=config['database_password']
+        host=config["database_host"],
+        port=config["database_port"],
+        dbname=config["database_name"],
+        user=config["database_user"],
+        password=config["database_password"],
     )
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur
@@ -81,10 +85,10 @@ def close_database(conn, cur, failed=False):
 
 def list_benchmarks(job=None):
     if job is not None:
-        query = "SELECT * FROM {} WHERE job = %s;".format('storage_benchmarks')
-        args = (job, )
+        query = "SELECT * FROM {} WHERE job = %s;".format("storage_benchmarks")
+        args = (job,)
     else:
-        query = "SELECT * FROM {} ORDER BY id DESC;".format('storage_benchmarks')
+        query = "SELECT * FROM {} ORDER BY id DESC;".format("storage_benchmarks")
         args = ()
 
     conn, cur = open_database(config)
@@ -93,23 +97,23 @@ def list_benchmarks(job=None):
     data = list()
     for benchmark in orig_data:
         benchmark_data = dict()
-        benchmark_data['id'] = benchmark['id']
-        benchmark_data['job'] = benchmark['job']
-        benchmark_data['test_format'] = benchmark['test_format']
-        if benchmark['result'] == 'Running':
-            benchmark_data['benchmark_result'] = 'Running'
+        benchmark_data["id"] = benchmark["id"]
+        benchmark_data["job"] = benchmark["job"]
+        benchmark_data["test_format"] = benchmark["test_format"]
+        if benchmark["result"] == "Running":
+            benchmark_data["benchmark_result"] = "Running"
         else:
             try:
-                benchmark_data['benchmark_result'] = loads(benchmark['result'])
+                benchmark_data["benchmark_result"] = loads(benchmark["result"])
             except Exception:
-                benchmark_data['benchmark_result'] = {}
+                benchmark_data["benchmark_result"] = {}
         # Append the new data to our actual output structure
         data.append(benchmark_data)
     close_database(conn, cur)
     if data:
         return data, 200
     else:
-        return {'message': 'No benchmark found.'}, 404
+        return {"message": "No benchmark found."}, 404
 
 
 def run_benchmark(self, pool):
@@ -126,46 +130,68 @@ def run_benchmark(self, pool):
     try:
         db_conn, db_cur = open_database(config)
     except Exception:
-        print('FATAL - failed to connect to Postgres')
+        print("FATAL - failed to connect to Postgres")
         raise Exception
 
     try:
         zkhandler = ZKHandler(config)
         zkhandler.connect()
     except Exception:
-        print('FATAL - failed to connect to Zookeeper')
+        print("FATAL - failed to connect to Zookeeper")
         raise Exception
 
-    cur_time = datetime.now().isoformat(timespec='seconds')
-    cur_primary = zkhandler.read('base.config.primary_node')
-    job_name = '{}_{}'.format(cur_time, cur_primary)
+    cur_time = datetime.now().isoformat(timespec="seconds")
+    cur_primary = zkhandler.read("base.config.primary_node")
+    job_name = "{}_{}".format(cur_time, cur_primary)
 
     print("Starting storage benchmark '{}' on pool '{}'".format(job_name, pool))
 
     print("Storing running status for job '{}' in database".format(job_name))
     try:
         query = "INSERT INTO storage_benchmarks (job, test_format, result) VALUES (%s, %s, %s);"
-        args = (job_name, TEST_FORMAT, "Running",)
+        args = (
+            job_name,
+            TEST_FORMAT,
+            "Running",
+        )
         db_cur.execute(query, args)
         db_conn.commit()
     except Exception as e:
-        raise BenchmarkError("Failed to store running status: {}".format(e), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError(
+            "Failed to store running status: {}".format(e),
+            job_name=job_name,
+            db_conn=db_conn,
+            db_cur=db_cur,
+            zkhandler=zkhandler,
+        )
 
     # Phase 1 - volume preparation
-    self.update_state(state='RUNNING', meta={'current': 1, 'total': 3, 'status': 'Creating benchmark volume'})
+    self.update_state(
+        state="RUNNING",
+        meta={"current": 1, "total": 3, "status": "Creating benchmark volume"},
+    )
     time.sleep(1)
 
-    volume = 'pvcbenchmark'
+    volume = "pvcbenchmark"
 
     # Create the RBD volume
     retcode, retmsg = pvc_ceph.add_volume(zkhandler, pool, volume, "8G")
     if not retcode:
-        raise BenchmarkError('Failed to create volume "{}": {}'.format(volume, retmsg), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError(
+            'Failed to create volume "{}": {}'.format(volume, retmsg),
+            job_name=job_name,
+            db_conn=db_conn,
+            db_cur=db_cur,
+            zkhandler=zkhandler,
+        )
     else:
         print(retmsg)
 
     # Phase 2 - benchmark run
-    self.update_state(state='RUNNING', meta={'current': 2, 'total': 3, 'status': 'Running fio benchmarks on volume'})
+    self.update_state(
+        state="RUNNING",
+        meta={"current": 2, "total": 3, "status": "Running fio benchmarks on volume"},
+    )
     time.sleep(1)
 
     # We run a total of 8 tests, to give a generalized idea of performance on the cluster:
@@ -180,53 +206,43 @@ def run_benchmark(self, pool):
     # Taken together, these 8 results should give a very good indication of the overall storage performance
     # for a variety of workloads.
     test_matrix = {
-        'seq_read': {
-            'direction': 'read',
-            'iodepth': '64',
-            'bs': '4M',
-            'rw': 'read'
+        "seq_read": {"direction": "read", "iodepth": "64", "bs": "4M", "rw": "read"},
+        "seq_write": {"direction": "write", "iodepth": "64", "bs": "4M", "rw": "write"},
+        "rand_read_4M": {
+            "direction": "read",
+            "iodepth": "64",
+            "bs": "4M",
+            "rw": "randread",
         },
-        'seq_write': {
-            'direction': 'write',
-            'iodepth': '64',
-            'bs': '4M',
-            'rw': 'write'
+        "rand_write_4M": {
+            "direction": "write",
+            "iodepth": "64",
+            "bs": "4M",
+            "rw": "randwrite",
         },
-        'rand_read_4M': {
-            'direction': 'read',
-            'iodepth': '64',
-            'bs': '4M',
-            'rw': 'randread'
+        "rand_read_4K": {
+            "direction": "read",
+            "iodepth": "64",
+            "bs": "4K",
+            "rw": "randread",
         },
-        'rand_write_4M': {
-            'direction': 'write',
-            'iodepth': '64',
-            'bs': '4M',
-            'rw': 'randwrite'
+        "rand_write_4K": {
+            "direction": "write",
+            "iodepth": "64",
+            "bs": "4K",
+            "rw": "randwrite",
         },
-        'rand_read_4K': {
-            'direction': 'read',
-            'iodepth': '64',
-            'bs': '4K',
-            'rw': 'randread'
+        "rand_read_4K_lowdepth": {
+            "direction": "read",
+            "iodepth": "1",
+            "bs": "4K",
+            "rw": "randread",
         },
-        'rand_write_4K': {
-            'direction': 'write',
-            'iodepth': '64',
-            'bs': '4K',
-            'rw': 'randwrite'
-        },
-        'rand_read_4K_lowdepth': {
-            'direction': 'read',
-            'iodepth': '1',
-            'bs': '4K',
-            'rw': 'randread'
-        },
-        'rand_write_4K_lowdepth': {
-            'direction': 'write',
-            'iodepth': '1',
-            'bs': '4K',
-            'rw': 'randwrite'
+        "rand_write_4K_lowdepth": {
+            "direction": "write",
+            "iodepth": "1",
+            "bs": "4K",
+            "rw": "randwrite",
         },
     }
 
@@ -253,25 +269,41 @@ def run_benchmark(self, pool):
             test=test,
             pool=pool,
             volume=volume,
-            iodepth=test_matrix[test]['iodepth'],
-            bs=test_matrix[test]['bs'],
-            rw=test_matrix[test]['rw'])
+            iodepth=test_matrix[test]["iodepth"],
+            bs=test_matrix[test]["bs"],
+            rw=test_matrix[test]["rw"],
+        )
 
-        print("Running fio job: {}".format(' '.join(fio_cmd.split())))
+        print("Running fio job: {}".format(" ".join(fio_cmd.split())))
         retcode, stdout, stderr = pvc_common.run_os_command(fio_cmd)
         if retcode:
-            raise BenchmarkError("Failed to run fio test: {}".format(stderr), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+            raise BenchmarkError(
+                "Failed to run fio test: {}".format(stderr),
+                job_name=job_name,
+                db_conn=db_conn,
+                db_cur=db_cur,
+                zkhandler=zkhandler,
+            )
 
         results[test] = loads(stdout)
 
     # Phase 3 - cleanup
-    self.update_state(state='RUNNING', meta={'current': 3, 'total': 3, 'status': 'Cleaning up and storing results'})
+    self.update_state(
+        state="RUNNING",
+        meta={"current": 3, "total": 3, "status": "Cleaning up and storing results"},
+    )
     time.sleep(1)
 
     # Remove the RBD volume
     retcode, retmsg = pvc_ceph.remove_volume(zkhandler, pool, volume)
     if not retcode:
-        raise BenchmarkError('Failed to remove volume "{}": {}'.format(volume, retmsg), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError(
+            'Failed to remove volume "{}": {}'.format(volume, retmsg),
+            job_name=job_name,
+            db_conn=db_conn,
+            db_cur=db_cur,
+            zkhandler=zkhandler,
+        )
     else:
         print(retmsg)
 
@@ -282,10 +314,20 @@ def run_benchmark(self, pool):
         db_cur.execute(query, args)
         db_conn.commit()
     except Exception as e:
-        raise BenchmarkError("Failed to store test results: {}".format(e), job_name=job_name, db_conn=db_conn, db_cur=db_cur, zkhandler=zkhandler)
+        raise BenchmarkError(
+            "Failed to store test results: {}".format(e),
+            job_name=job_name,
+            db_conn=db_conn,
+            db_cur=db_cur,
+            zkhandler=zkhandler,
+        )
 
     close_database(db_conn, db_cur)
     zkhandler.disconnect()
     del zkhandler
 
-    return {'status': "Storage benchmark '{}' completed successfully.", 'current': 3, 'total': 3}
+    return {
+        "status": "Storage benchmark '{}' completed successfully.",
+        "current": 3,
+        "total": 3,
+    }

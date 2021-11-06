@@ -42,13 +42,11 @@ import pvc.cli_lib.network as pvc_network
 import pvc.cli_lib.ceph as pvc_ceph
 import pvc.cli_lib.provisioner as pvc_provisioner
 
-myhostname = socket.gethostname().split('.')[0]
-zk_host = ''
-is_completion = True if os.environ.get('_PVC_COMPLETE', '') == 'complete' else False
+myhostname = socket.gethostname().split(".")[0]
+zk_host = ""
+is_completion = True if os.environ.get("_PVC_COMPLETE", "") == "complete" else False
 
-default_store_data = {
-    'cfgfile': '/etc/pvc/pvcapid.yaml'
-}
+default_store_data = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
 
 
 #
@@ -58,8 +56,9 @@ def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
     from pkg_resources import get_distribution
-    version = get_distribution('pvc').version
-    click.echo(f'Parallel Virtual Cluster version {version}')
+
+    version = get_distribution("pvc").version
+    click.echo(f"Parallel Virtual Cluster version {version}")
     ctx.exit()
 
 
@@ -67,106 +66,108 @@ def print_version(ctx, param, value):
 # Data store handling functions
 #
 def read_from_yaml(cfgfile):
-    with open(cfgfile, 'r') as fh:
+    with open(cfgfile, "r") as fh:
         api_config = yaml.load(fh, Loader=yaml.BaseLoader)
-    host = api_config['pvc']['api']['listen_address']
-    port = api_config['pvc']['api']['listen_port']
-    if strtobool(api_config['pvc']['api']['ssl']['enabled']):
-        scheme = 'https'
+    host = api_config["pvc"]["api"]["listen_address"]
+    port = api_config["pvc"]["api"]["listen_port"]
+    if strtobool(api_config["pvc"]["api"]["ssl"]["enabled"]):
+        scheme = "https"
     else:
-        scheme = 'http'
-    if strtobool(api_config['pvc']['api']['authentication']['enabled']):
+        scheme = "http"
+    if strtobool(api_config["pvc"]["api"]["authentication"]["enabled"]):
         # Always use the first token
-        api_key = api_config['pvc']['api']['authentication']['tokens'][0]['token']
+        api_key = api_config["pvc"]["api"]["authentication"]["tokens"][0]["token"]
     else:
-        api_key = 'N/A'
+        api_key = "N/A"
     return cfgfile, host, port, scheme, api_key
 
 
 def get_config(store_data, cluster=None):
     # This is generally static
-    prefix = '/api/v1'
+    prefix = "/api/v1"
 
     cluster_details = store_data.get(cluster)
 
     if not cluster_details:
         cluster_details = default_store_data
-        cluster = 'local'
+        cluster = "local"
 
-    if cluster_details.get('cfgfile', None):
+    if cluster_details.get("cfgfile", None):
         # This is a reference to an API configuration; grab the details from its listen address
-        cfgfile = cluster_details.get('cfgfile')
+        cfgfile = cluster_details.get("cfgfile")
         if os.path.isfile(cfgfile):
             description, host, port, scheme, api_key = read_from_yaml(cfgfile)
         else:
-            return {'badcfg': True}
+            return {"badcfg": True}
         # Handle an all-wildcard address
-        if host == '0.0.0.0':
-            host = '127.0.0.1'
+        if host == "0.0.0.0":
+            host = "127.0.0.1"
     else:
         # This is a static configuration, get the raw details
-        description = cluster_details['description']
-        host = cluster_details['host']
-        port = cluster_details['port']
-        scheme = cluster_details['scheme']
-        api_key = cluster_details['api_key']
+        description = cluster_details["description"]
+        host = cluster_details["host"]
+        port = cluster_details["port"]
+        scheme = cluster_details["scheme"]
+        api_key = cluster_details["api_key"]
 
     config = dict()
-    config['debug'] = False
-    config['cluster'] = cluster
-    config['desctription'] = description
-    config['api_host'] = '{}:{}'.format(host, port)
-    config['api_scheme'] = scheme
-    config['api_key'] = api_key
-    config['api_prefix'] = prefix
-    if cluster == 'local':
-        config['verify_ssl'] = False
+    config["debug"] = False
+    config["cluster"] = cluster
+    config["desctription"] = description
+    config["api_host"] = "{}:{}".format(host, port)
+    config["api_scheme"] = scheme
+    config["api_key"] = api_key
+    config["api_prefix"] = prefix
+    if cluster == "local":
+        config["verify_ssl"] = False
     else:
-        config['verify_ssl'] = bool(strtobool(os.environ.get('PVC_CLIENT_VERIFY_SSL', 'True')))
+        config["verify_ssl"] = bool(
+            strtobool(os.environ.get("PVC_CLIENT_VERIFY_SSL", "True"))
+        )
 
     return config
 
 
 def get_store(store_path):
-    store_file = '{}/pvc-cli.json'.format(store_path)
-    with open(store_file, 'r') as fh:
+    store_file = "{}/pvc-cli.json".format(store_path)
+    with open(store_file, "r") as fh:
         store_data = json.loads(fh.read())
     return store_data
 
 
 def update_store(store_path, store_data):
-    store_file = '{}/pvc-cli.json'.format(store_path)
+    store_file = "{}/pvc-cli.json".format(store_path)
     if not os.path.exists(store_file):
-        with open(store_file, 'w') as fh:
+        with open(store_file, "w") as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
         # Ensure file has sensible permissions due to API key storage, but only when created!
-        os.chmod(store_file, int(os.environ.get('PVC_CLIENT_DB_PERMS', '600'), 8))
+        os.chmod(store_file, int(os.environ.get("PVC_CLIENT_DB_PERMS", "600"), 8))
     else:
-        with open(store_file, 'w') as fh:
+        with open(store_file, "w") as fh:
             fh.write(json.dumps(store_data, sort_keys=True, indent=4))
 
 
 if not is_completion:
-    pvc_client_dir = os.environ.get('PVC_CLIENT_DIR', None)
-    home_dir = os.environ.get('HOME', None)
+    pvc_client_dir = os.environ.get("PVC_CLIENT_DIR", None)
+    home_dir = os.environ.get("HOME", None)
     if pvc_client_dir:
-        store_path = '{}'.format(pvc_client_dir)
+        store_path = "{}".format(pvc_client_dir)
     elif home_dir:
-        store_path = '{}/.config/pvc'.format(home_dir)
+        store_path = "{}/.config/pvc".format(home_dir)
     else:
-        print('WARNING: No client or home config dir found, using /tmp instead')
-        store_path = '/tmp/pvc'
+        print("WARNING: No client or home config dir found, using /tmp instead")
+        store_path = "/tmp/pvc"
 
     if not os.path.isdir(store_path):
         os.makedirs(store_path)
-    if not os.path.isfile(store_path + '/pvc-cli.json'):
+    if not os.path.isfile(store_path + "/pvc-cli.json"):
         update_store(store_path, {"local": default_store_data})
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'], max_content_width=120)
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=120)
 
 
 def cleanup(retcode, retmsg):
-    if retmsg != '':
+    if retmsg != "":
         click.echo(retmsg)
     if retcode is True:
         exit(0)
@@ -177,7 +178,11 @@ def cleanup(retcode, retmsg):
 ###############################################################################
 # pvc cluster
 ###############################################################################
-@click.group(name='cluster', short_help='Manage PVC cluster connections.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="cluster",
+    short_help="Manage PVC cluster connections.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_cluster():
     """
     Manage the PVC clusters this CLI can connect to.
@@ -188,61 +193,80 @@ def cli_cluster():
 ###############################################################################
 # pvc cluster add
 ###############################################################################
-@click.command(name='add', short_help='Add a new cluster to the client.')
+@click.command(name="add", short_help="Add a new cluster to the client.")
 @click.option(
-    '-d', '--description', 'description', required=False, default="N/A",
-    help='A text description of the cluster.'
-)
-@click.option(
-    '-a', '--address', 'address', required=True,
-    help='The IP address or hostname of the cluster API client.'
-)
-@click.option(
-    '-p', '--port', 'port', required=False, default=7370, show_default=True,
-    help='The cluster API client port.'
+    "-d",
+    "--description",
+    "description",
+    required=False,
+    default="N/A",
+    help="A text description of the cluster.",
 )
 @click.option(
-    '-s/-S', '--ssl/--no-ssl', 'ssl', is_flag=True, default=False, show_default=True,
-    help='Whether to use SSL or not.'
+    "-a",
+    "--address",
+    "address",
+    required=True,
+    help="The IP address or hostname of the cluster API client.",
 )
 @click.option(
-    '-k', '--api-key', 'api_key', required=False, default=None,
-    help='An API key to authenticate against the cluster.'
+    "-p",
+    "--port",
+    "port",
+    required=False,
+    default=7370,
+    show_default=True,
+    help="The cluster API client port.",
 )
-@click.argument(
-    'name'
+@click.option(
+    "-s/-S",
+    "--ssl/--no-ssl",
+    "ssl",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Whether to use SSL or not.",
 )
+@click.option(
+    "-k",
+    "--api-key",
+    "api_key",
+    required=False,
+    default=None,
+    help="An API key to authenticate against the cluster.",
+)
+@click.argument("name")
 def cluster_add(description, address, port, ssl, name, api_key):
     """
     Add a new PVC cluster NAME, via its API connection details, to the configuration of the local CLI client. Replaces any existing cluster with this name.
     """
     if ssl:
-        scheme = 'https'
+        scheme = "https"
     else:
-        scheme = 'http'
+        scheme = "http"
 
     # Get the existing data
     existing_config = get_store(store_path)
     # Append our new entry to the end
     existing_config[name] = {
-        'description': description,
-        'host': address,
-        'port': port,
-        'scheme': scheme,
-        'api_key': api_key
+        "description": description,
+        "host": address,
+        "port": port,
+        "scheme": scheme,
+        "api_key": api_key,
     }
     # Update the store
     update_store(store_path, existing_config)
-    click.echo('Added new cluster "{}" at host "{}" to local database'.format(name, address))
+    click.echo(
+        'Added new cluster "{}" at host "{}" to local database'.format(name, address)
+    )
 
 
 ###############################################################################
 # pvc cluster remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a cluster from the client.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove a cluster from the client.")
+@click.argument("name")
 def cluster_remove(name):
     """
     Remove a PVC cluster from the configuration of the local CLI client.
@@ -262,10 +286,14 @@ def cluster_remove(name):
 ###############################################################################
 # pvc cluster list
 ###############################################################################
-@click.command(name='list', short_help='List all available clusters.')
+@click.command(name="list", short_help="List all available clusters.")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw list of cluster names only.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw list of cluster names only.",
 )
 def cluster_list(raw):
     """
@@ -283,21 +311,27 @@ def cluster_list(raw):
 
     for cluster in clusters:
         cluster_details = clusters[cluster]
-        if cluster_details.get('cfgfile', None):
+        if cluster_details.get("cfgfile", None):
             # This is a reference to an API configuration; grab the details from its listen address
-            cfgfile = cluster_details.get('cfgfile')
+            cfgfile = cluster_details.get("cfgfile")
             if os.path.isfile(cfgfile):
                 description, address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
-                description, address, port, scheme, api_key = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
+                description, address, port, scheme, api_key = (
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                    "N/A",
+                )
         else:
-            description = cluster_details.get('description', '')
-            address = cluster_details.get('host', 'N/A')
-            port = cluster_details.get('port', 'N/A')
-            scheme = cluster_details.get('scheme', 'N/A')
-            api_key = cluster_details.get('api_key', 'N/A')
+            description = cluster_details.get("description", "")
+            address = cluster_details.get("host", "N/A")
+            port = cluster_details.get("port", "N/A")
+            scheme = cluster_details.get("scheme", "N/A")
+            api_key = cluster_details.get("api_key", "N/A")
             if not api_key:
-                api_key = 'N/A'
+                api_key = "N/A"
 
         _name_length = len(cluster) + 1
         if _name_length > name_length:
@@ -323,7 +357,7 @@ def cluster_list(raw):
         click.echo("Available clusters:")
         click.echo()
         click.echo(
-            '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
+            "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
                 name="Name",
@@ -337,32 +371,32 @@ def cluster_list(raw):
                 scheme="Scheme",
                 scheme_length=scheme_length,
                 api_key="API Key",
-                api_key_length=api_key_length
+                api_key_length=api_key_length,
             )
         )
 
     for cluster in clusters:
         cluster_details = clusters[cluster]
-        if cluster_details.get('cfgfile', None):
+        if cluster_details.get("cfgfile", None):
             # This is a reference to an API configuration; grab the details from its listen address
             if os.path.isfile(cfgfile):
                 description, address, port, scheme, api_key = read_from_yaml(cfgfile)
             else:
                 continue
         else:
-            address = cluster_details.get('host', 'N/A')
-            description = cluster_details.get('description', 'N/A')
-            port = cluster_details.get('port', 'N/A')
-            scheme = cluster_details.get('scheme', 'N/A')
-            api_key = cluster_details.get('api_key', 'N/A')
+            address = cluster_details.get("host", "N/A")
+            description = cluster_details.get("description", "N/A")
+            port = cluster_details.get("port", "N/A")
+            scheme = cluster_details.get("scheme", "N/A")
+            api_key = cluster_details.get("api_key", "N/A")
             if not api_key:
-                api_key = 'N/A'
+                api_key = "N/A"
 
         if not raw:
             click.echo(
-                '{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}'.format(
-                    bold='',
-                    end_bold='',
+                "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
+                    bold="",
+                    end_bold="",
                     name=cluster,
                     name_length=name_length,
                     description=description,
@@ -374,7 +408,7 @@ def cluster_list(raw):
                     scheme=scheme,
                     scheme_length=scheme_length,
                     api_key=api_key,
-                    api_key_length=api_key_length
+                    api_key_length=api_key_length,
                 )
             )
         else:
@@ -385,17 +419,22 @@ def cluster_list(raw):
 def cluster_req(function):
     @wraps(function)
     def validate_cluster(*args, **kwargs):
-        if config.get('badcfg', None):
-            click.echo('No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.')
+        if config.get("badcfg", None):
+            click.echo(
+                'No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.'
+            )
             exit(1)
         return function(*args, **kwargs)
+
     return validate_cluster
 
 
 ###############################################################################
 # pvc node
 ###############################################################################
-@click.group(name='node', short_help='Manage a PVC node.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="node", short_help="Manage a PVC node.", context_settings=CONTEXT_SETTINGS
+)
 def cli_node():
     """
     Manage the state of a node in the PVC cluster.
@@ -406,13 +445,15 @@ def cli_node():
 ###############################################################################
 # pvc node secondary
 ###############################################################################
-@click.command(name='secondary', short_help='Set a node in secondary node status.')
-@click.argument(
-    'node'
-)
+@click.command(name="secondary", short_help="Set a node in secondary node status.")
+@click.argument("node")
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for transition to complete before returning.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for transition to complete before returning.",
 )
 @cluster_req
 def node_secondary(node, wait):
@@ -422,12 +463,18 @@ def node_secondary(node, wait):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(len(task_retdata)))
-        click.echo("      These jobs will continue executing, but status will not be visible until the current")
+        click.echo(
+            "Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(
+                len(task_retdata)
+            )
+        )
+        click.echo(
+            "      These jobs will continue executing, but status will not be visible until the current"
+        )
         click.echo("      node returns to primary state.")
         click.echo()
 
-    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'secondary')
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, "secondary")
     if not retcode:
         cleanup(retcode, retmsg)
     else:
@@ -438,7 +485,7 @@ def node_secondary(node, wait):
             while True:
                 try:
                     _retcode, _retmsg = pvc_node.node_info(config, node)
-                    if _retmsg['coordinator_state'] == 'secondary':
+                    if _retmsg["coordinator_state"] == "secondary":
                         retmsg = "done."
                         break
                     else:
@@ -451,13 +498,15 @@ def node_secondary(node, wait):
 ###############################################################################
 # pvc node primary
 ###############################################################################
-@click.command(name='primary', short_help='Set a node in primary status.')
-@click.argument(
-    'node'
-)
+@click.command(name="primary", short_help="Set a node in primary status.")
+@click.argument("node")
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for transition to complete before returning.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for transition to complete before returning.",
 )
 @cluster_req
 def node_primary(node, wait):
@@ -467,12 +516,18 @@ def node_primary(node, wait):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo("Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(len(task_retdata)))
-        click.echo("      These jobs will continue executing, but status will not be visible until the current")
+        click.echo(
+            "Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(
+                len(task_retdata)
+            )
+        )
+        click.echo(
+            "      These jobs will continue executing, but status will not be visible until the current"
+        )
         click.echo("      node returns to primary state.")
         click.echo()
 
-    retcode, retmsg = pvc_node.node_coordinator_state(config, node, 'primary')
+    retcode, retmsg = pvc_node.node_coordinator_state(config, node, "primary")
     if not retcode:
         cleanup(retcode, retmsg)
     else:
@@ -483,7 +538,7 @@ def node_primary(node, wait):
             while True:
                 try:
                     _retcode, _retmsg = pvc_node.node_info(config, node)
-                    if _retmsg['coordinator_state'] == 'primary':
+                    if _retmsg["coordinator_state"] == "primary":
                         retmsg = "done."
                         break
                     else:
@@ -496,34 +551,38 @@ def node_primary(node, wait):
 ###############################################################################
 # pvc node flush
 ###############################################################################
-@click.command(name='flush', short_help='Take a node out of service.')
+@click.command(name="flush", short_help="Take a node out of service.")
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migrations to complete before returning.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migrations to complete before returning.",
 )
-@click.argument(
-    'node', default=myhostname
-)
+@click.argument("node", default=myhostname)
 @cluster_req
 def node_flush(node, wait):
     """
     Take NODE out of active service and migrate away all VMs. If unspecified, defaults to this host.
     """
 
-    retcode, retmsg = pvc_node.node_domain_state(config, node, 'flush', wait)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, "flush", wait)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc node ready/unflush
 ###############################################################################
-@click.command(name='ready', short_help='Restore node to service.')
-@click.argument(
-    'node', default=myhostname
-)
+@click.command(name="ready", short_help="Restore node to service.")
+@click.argument("node", default=myhostname)
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migrations to complete before returning.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migrations to complete before returning.",
 )
 @cluster_req
 def node_ready(node, wait):
@@ -531,41 +590,49 @@ def node_ready(node, wait):
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, "ready", wait)
     cleanup(retcode, retmsg)
 
 
-@click.command(name='unflush', short_help='Restore node to service.')
-@click.argument(
-    'node', default=myhostname
-)
+@click.command(name="unflush", short_help="Restore node to service.")
+@click.argument("node", default=myhostname)
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migrations to complete before returning.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migrations to complete before returning.",
 )
 def node_unflush(node, wait):
     """
     Restore NODE to active service and migrate back all VMs. If unspecified, defaults to this host.
     """
 
-    retcode, retmsg = pvc_node.node_domain_state(config, node, 'ready', wait)
+    retcode, retmsg = pvc_node.node_domain_state(config, node, "ready", wait)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc node log
 ###############################################################################
-@click.command(name='log', short_help='Show logs of a node.')
-@click.argument(
-    'node'
+@click.command(name="log", short_help="Show logs of a node.")
+@click.argument("node")
+@click.option(
+    "-l",
+    "--lines",
+    "lines",
+    default=None,
+    show_default=False,
+    help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
 )
 @click.option(
-    '-l', '--lines', 'lines', default=None, show_default=False,
-    help='Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]'
-)
-@click.option(
-    '-f', '--follow', 'follow', is_flag=True, default=False,
-    help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
+    "-f",
+    "--follow",
+    "follow",
+    is_flag=True,
+    default=False,
+    help="Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.",
 )
 @cluster_req
 def node_log(node, lines, follow):
@@ -585,20 +652,22 @@ def node_log(node, lines, follow):
     else:
         retcode, retmsg = pvc_node.view_node_log(config, node, lines)
         click.echo_via_pager(retmsg)
-        retmsg = ''
+        retmsg = ""
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc node info
 ###############################################################################
-@click.command(name='info', short_help='Show details of a node object.')
-@click.argument(
-    'node', default=myhostname
-)
+@click.command(name="info", short_help="Show details of a node object.")
+@click.argument("node", default=myhostname)
 @click.option(
-    '-l', '--long', 'long_output', is_flag=True, default=False,
-    help='Display more detailed information.'
+    "-l",
+    "--long",
+    "long_output",
+    is_flag=True,
+    default=False,
+    help="Display more detailed information.",
 )
 @cluster_req
 def node_info(node, long_output):
@@ -615,33 +684,52 @@ def node_info(node, long_output):
 ###############################################################################
 # pvc node list
 ###############################################################################
-@click.command(name='list', short_help='List all node objects.')
-@click.argument(
-    'limit', default=None, required=False
+@click.command(name="list", short_help="List all node objects.")
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-ds",
+    "--daemon-state",
+    "target_daemon_state",
+    default=None,
+    help="Limit list to nodes in the specified daemon state.",
 )
 @click.option(
-    '-ds', '--daemon-state', 'target_daemon_state', default=None,
-    help='Limit list to nodes in the specified daemon state.'
+    "-cs",
+    "--coordinator-state",
+    "target_coordinator_state",
+    default=None,
+    help="Limit list to nodes in the specified coordinator state.",
 )
 @click.option(
-    '-cs', '--coordinator-state', 'target_coordinator_state', default=None,
-    help='Limit list to nodes in the specified coordinator state.'
+    "-vs",
+    "--domain-state",
+    "target_domain_state",
+    default=None,
+    help="Limit list to nodes in the specified domain state.",
 )
 @click.option(
-    '-vs', '--domain-state', 'target_domain_state', default=None,
-    help='Limit list to nodes in the specified domain state.'
-)
-@click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw list of node names only.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw list of node names only.",
 )
 @cluster_req
-def node_list(limit, target_daemon_state, target_coordinator_state, target_domain_state, raw):
+def node_list(
+    limit, target_daemon_state, target_coordinator_state, target_domain_state, raw
+):
     """
     List all nodes; optionally only match names matching regex LIMIT.
     """
 
-    retcode, retdata = pvc_node.node_list(config, limit, target_daemon_state, target_coordinator_state, target_domain_state)
+    retcode, retdata = pvc_node.node_list(
+        config,
+        limit,
+        target_daemon_state,
+        target_coordinator_state,
+        target_domain_state,
+    )
     if retcode:
         retdata = pvc_node.format_list(retdata, raw)
     else:
@@ -653,7 +741,11 @@ def node_list(limit, target_daemon_state, target_coordinator_state, target_domai
 ###############################################################################
 # pvc vm
 ###############################################################################
-@click.group(name='vm', short_help='Manage a PVC virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="vm",
+    short_help="Manage a PVC virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_vm():
     """
     Manage the state of a virtual machine in the PVC cluster.
@@ -664,44 +756,77 @@ def cli_vm():
 ###############################################################################
 # pvc vm define
 ###############################################################################
-@click.command(name='define', short_help='Define a new virtual machine from a Libvirt XML file.')
-@click.option(
-    '-t', '--target', 'target_node',
-    help='Home node for this domain; autoselect if unspecified.'
+@click.command(
+    name="define", short_help="Define a new virtual machine from a Libvirt XML file."
 )
 @click.option(
-    '-l', '--limit', 'node_limit', default=None, show_default=False,
-    help='Comma-separated list of nodes to limit VM operation to; saved with VM.'
+    "-t",
+    "--target",
+    "target_node",
+    help="Home node for this domain; autoselect if unspecified.",
 )
 @click.option(
-    '-s', '--selector', 'node_selector', default='mem', show_default=True,
-    type=click.Choice(['mem', 'load', 'vcpus', 'vms', 'none']),
-    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
+    "-l",
+    "--limit",
+    "node_limit",
+    default=None,
+    show_default=False,
+    help="Comma-separated list of nodes to limit VM operation to; saved with VM.",
 )
 @click.option(
-    '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=False,
-    help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
+    "-s",
+    "--selector",
+    "node_selector",
+    default="mem",
+    show_default=True,
+    type=click.Choice(["mem", "load", "vcpus", "vms", "none"]),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
-    '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none', 'live', 'shutdown']),
-    help='The preferred migration method of the VM between nodes; saved with VM.'
+    "-a/-A",
+    "--autostart/--no-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=False,
+    help="Start VM automatically on next unflush/ready state of home node; unset by daemon once used.",
 )
 @click.option(
-    '-g', '--tag', 'user_tags',
-    default=[], multiple=True,
-    help='User tag for the VM; can be specified multiple times, once per tag.'
+    "-m",
+    "--method",
+    "migration_method",
+    default="none",
+    show_default=True,
+    type=click.Choice(["none", "live", "shutdown"]),
+    help="The preferred migration method of the VM between nodes; saved with VM.",
 )
 @click.option(
-    '-G', '--protected-tag', 'protected_tags',
-    default=[], multiple=True,
-    help='Protected user tag for the VM; can be specified multiple times, once per tag.'
+    "-g",
+    "--tag",
+    "user_tags",
+    default=[],
+    multiple=True,
+    help="User tag for the VM; can be specified multiple times, once per tag.",
 )
-@click.argument(
-    'vmconfig', type=click.File()
+@click.option(
+    "-G",
+    "--protected-tag",
+    "protected_tags",
+    default=[],
+    multiple=True,
+    help="Protected user tag for the VM; can be specified multiple times, once per tag.",
 )
+@click.argument("vmconfig", type=click.File())
 @cluster_req
-def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, migration_method, user_tags, protected_tags):
+def vm_define(
+    vmconfig,
+    target_node,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+    user_tags,
+    protected_tags,
+):
     """
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
     """
@@ -713,112 +838,187 @@ def vm_define(vmconfig, target_node, node_limit, node_selector, node_autostart, 
     # Verify our XML is sensible
     try:
         xml_data = etree.fromstring(vmconfig_data)
-        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception:
-        cleanup(False, 'Error: XML is malformed or invalid')
+        cleanup(False, "Error: XML is malformed or invalid")
 
-    retcode, retmsg = pvc_vm.vm_define(config, new_cfg, target_node, node_limit, node_selector, node_autostart, migration_method, user_tags, protected_tags)
+    retcode, retmsg = pvc_vm.vm_define(
+        config,
+        new_cfg,
+        target_node,
+        node_limit,
+        node_selector,
+        node_autostart,
+        migration_method,
+        user_tags,
+        protected_tags,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm meta
 ###############################################################################
-@click.command(name='meta', short_help='Modify PVC metadata of an existing VM.')
+@click.command(name="meta", short_help="Modify PVC metadata of an existing VM.")
 @click.option(
-    '-l', '--limit', 'node_limit', default=None, show_default=False,
-    help='Comma-separated list of nodes to limit VM operation to; set to an empty string to remove.'
-)
-@click.option(
-    '-s', '--selector', 'node_selector', default=None, show_default=False,
-    type=click.Choice(['mem', 'load', 'vcpus', 'vms', 'none']),
-    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
-)
-@click.option(
-    '-a/-A', '--autostart/--no-autostart', 'node_autostart', is_flag=True, default=None,
-    help='Start VM automatically on next unflush/ready state of home node; unset by daemon once used.'
+    "-l",
+    "--limit",
+    "node_limit",
+    default=None,
+    show_default=False,
+    help="Comma-separated list of nodes to limit VM operation to; set to an empty string to remove.",
 )
 @click.option(
-    '-m', '--method', 'migration_method', default='none', show_default=True,
-    type=click.Choice(['none', 'live', 'shutdown']),
-    help='The preferred migration method of the VM between nodes.'
+    "-s",
+    "--selector",
+    "node_selector",
+    default=None,
+    show_default=False,
+    type=click.Choice(["mem", "load", "vcpus", "vms", "none"]),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
-    '-p', '--profile', 'provisioner_profile', default=None, show_default=False,
-    help='PVC provisioner profile name for VM.'
+    "-a/-A",
+    "--autostart/--no-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=None,
+    help="Start VM automatically on next unflush/ready state of home node; unset by daemon once used.",
 )
-@click.argument(
-    'domain'
+@click.option(
+    "-m",
+    "--method",
+    "migration_method",
+    default="none",
+    show_default=True,
+    type=click.Choice(["none", "live", "shutdown"]),
+    help="The preferred migration method of the VM between nodes.",
 )
+@click.option(
+    "-p",
+    "--profile",
+    "provisioner_profile",
+    default=None,
+    show_default=False,
+    help="PVC provisioner profile name for VM.",
+)
+@click.argument("domain")
 @cluster_req
-def vm_meta(domain, node_limit, node_selector, node_autostart, migration_method, provisioner_profile):
+def vm_meta(
+    domain,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+    provisioner_profile,
+):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
     """
 
-    if node_limit is None and node_selector is None and node_autostart is None and migration_method is None and provisioner_profile is None:
-        cleanup(False, 'At least one metadata option must be specified to update.')
+    if (
+        node_limit is None
+        and node_selector is None
+        and node_autostart is None
+        and migration_method is None
+        and provisioner_profile is None
+    ):
+        cleanup(False, "At least one metadata option must be specified to update.")
 
-    retcode, retmsg = pvc_vm.vm_metadata(config, domain, node_limit, node_selector, node_autostart, migration_method, provisioner_profile)
+    retcode, retmsg = pvc_vm.vm_metadata(
+        config,
+        domain,
+        node_limit,
+        node_selector,
+        node_autostart,
+        migration_method,
+        provisioner_profile,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify an existing VM configuration.')
+@click.command(name="modify", short_help="Modify an existing VM configuration.")
 @click.option(
-    '-e', '--editor', 'editor', is_flag=True,
-    help='Use local editor to modify existing config.'
-)
-@click.option(
-    '-r', '--restart', 'restart', is_flag=True,
-    help='Immediately restart VM to apply new config.'
-)
-@click.option(
-    '-d', '--confirm-diff', 'confirm_diff_flag',
-    is_flag=True, default=False,
-    help='Confirm the diff.'
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing config.",
 )
 @click.option(
-    '-c', '--confirm-restart', 'confirm_restart_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart.'
+    "-r",
+    "--restart",
+    "restart",
+    is_flag=True,
+    help="Immediately restart VM to apply new config.",
 )
 @click.option(
-    '-y', '--yes', 'confirm_all_flag',
-    is_flag=True, default=False,
-    help='Confirm the diff and the restart.'
+    "-d",
+    "--confirm-diff",
+    "confirm_diff_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the diff.",
 )
-@click.argument(
-    'domain'
+@click.option(
+    "-c",
+    "--confirm-restart",
+    "confirm_restart_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart.",
 )
-@click.argument(
-    'cfgfile', type=click.File(), default=None, required=False
+@click.option(
+    "-y",
+    "--yes",
+    "confirm_all_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the diff and the restart.",
 )
-def vm_modify(domain, cfgfile, editor, restart, confirm_diff_flag, confirm_restart_flag, confirm_all_flag):
+@click.argument("domain")
+@click.argument("cfgfile", type=click.File(), default=None, required=False)
+def vm_modify(
+    domain,
+    cfgfile,
+    editor,
+    restart,
+    confirm_diff_flag,
+    confirm_restart_flag,
+    confirm_all_flag,
+):
     """
     Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
     """
 
     if editor is False and cfgfile is None:
-        cleanup(False, 'Either an XML config file or the "--editor" option must be specified.')
+        cleanup(
+            False,
+            'Either an XML config file or the "--editor" option must be specified.',
+        )
 
     retcode, vm_information = pvc_vm.vm_info(config, domain)
-    if not retcode or not vm_information.get('name', None):
+    if not retcode or not vm_information.get("name", None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    dom_name = vm_information.get('name')
+    dom_name = vm_information.get("name")
 
     # Grab the current config
-    current_vm_cfg_raw = vm_information.get('xml')
+    current_vm_cfg_raw = vm_information.get("xml")
     xml_data = etree.fromstring(current_vm_cfg_raw)
-    current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8').strip()
+    current_vm_cfgfile = (
+        etree.tostring(xml_data, pretty_print=True).decode("utf8").strip()
+    )
 
     if editor is True:
-        new_vm_cfgfile = click.edit(text=current_vm_cfgfile, require_save=True, extension='.xml')
+        new_vm_cfgfile = click.edit(
+            text=current_vm_cfgfile, require_save=True, extension=".xml"
+        )
         if new_vm_cfgfile is None:
-            click.echo('Aborting with no modifications.')
+            click.echo("Aborting with no modifications.")
             exit(0)
         else:
             new_vm_cfgfile = new_vm_cfgfile.strip()
@@ -829,36 +1029,58 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_diff_flag, confirm_resta
         new_vm_cfgfile = cfgfile.read()
         cfgfile.close()
 
-        click.echo('Replacing configuration of VM "{}" with file "{}".'.format(dom_name, cfgfile.name))
+        click.echo(
+            'Replacing configuration of VM "{}" with file "{}".'.format(
+                dom_name, cfgfile.name
+            )
+        )
 
     # Show a diff and confirm
-    click.echo('Pending modifications:')
-    click.echo('')
-    diff = list(difflib.unified_diff(current_vm_cfgfile.split('\n'), new_vm_cfgfile.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+    click.echo("Pending modifications:")
+    click.echo("")
+    diff = list(
+        difflib.unified_diff(
+            current_vm_cfgfile.split("\n"),
+            new_vm_cfgfile.split("\n"),
+            fromfile="current",
+            tofile="modified",
+            fromfiledate="",
+            tofiledate="",
+            n=3,
+            lineterm="",
+        )
+    )
     for line in diff:
-        if re.match(r'^\+', line) is not None:
+        if re.match(r"^\+", line) is not None:
             click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-        elif re.match(r'^\-', line) is not None:
+        elif re.match(r"^\-", line) is not None:
             click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-        elif re.match(r'^\^', line) is not None:
+        elif re.match(r"^\^", line) is not None:
             click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
         else:
             click.echo(line)
-    click.echo('')
+    click.echo("")
 
     # Verify our XML is sensible
     try:
         xml_data = etree.fromstring(new_vm_cfgfile)
-        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception as e:
-        cleanup(False, 'Error: XML is malformed or invalid: {}'.format(e))
+        cleanup(False, "Error: XML is malformed or invalid: {}".format(e))
 
-    if not confirm_diff_flag and not confirm_all_flag and not config['unsafe']:
-        click.confirm('Write modifications to cluster?', abort=True)
+    if not confirm_diff_flag and not confirm_all_flag and not config["unsafe"]:
+        click.confirm("Write modifications to cluster?", abort=True)
 
-    if restart and not confirm_restart_flag and not confirm_all_flag and not config['unsafe']:
+    if (
+        restart
+        and not confirm_restart_flag
+        and not confirm_all_flag
+        and not config["unsafe"]
+    ):
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart = False
 
@@ -871,26 +1093,29 @@ def vm_modify(domain, cfgfile, editor, restart, confirm_diff_flag, confirm_resta
 ###############################################################################
 # pvc vm rename
 ###############################################################################
-@click.command(name='rename', short_help='Rename a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'new_name'
-)
+@click.command(name="rename", short_help="Rename a virtual machine.")
+@click.argument("domain")
+@click.argument("new_name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the rename'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the rename",
 )
 @cluster_req
 def vm_rename(domain, new_name, confirm_flag):
     """
     Rename virtual machine DOMAIN, and all its connected disk volumes, to NEW_NAME. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Rename VM {} to {}'.format(domain, new_name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Rename VM {} to {}".format(domain, new_name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -901,23 +1126,26 @@ def vm_rename(domain, new_name, confirm_flag):
 ###############################################################################
 # pvc vm undefine
 ###############################################################################
-@click.command(name='undefine', short_help='Undefine a virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="undefine", short_help="Undefine a virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def vm_undefine(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Undefine VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Undefine VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -928,23 +1156,28 @@ def vm_undefine(domain, confirm_flag):
 ###############################################################################
 # pvc vm remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="remove", short_help="Remove a virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def vm_remove(domain, confirm_flag):
     """
     Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Undefine VM {} and remove all disks'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Undefine VM {} and remove all disks".format(domain),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -955,116 +1188,126 @@ def vm_remove(domain, confirm_flag):
 ###############################################################################
 # pvc vm start
 ###############################################################################
-@click.command(name='start', short_help='Start up a defined virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="start", short_help="Start up a defined virtual machine.")
+@click.argument("domain")
 @cluster_req
 def vm_start(domain):
     """
     Start virtual machine DOMAIN on its configured node. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'start')
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "start")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm restart
 ###############################################################################
-@click.command(name='restart', short_help='Restart a running virtual machine.')
-@click.argument(
-    'domain'
+@click.command(name="restart", short_help="Restart a running virtual machine.")
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for restart to complete before returning.",
 )
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for restart to complete before returning.'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart",
 )
 @cluster_req
 def vm_restart(domain, wait, confirm_flag):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'restart', wait=wait)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "restart", wait=wait)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm shutdown
 ###############################################################################
-@click.command(name='shutdown', short_help='Gracefully shut down a running virtual machine.')
-@click.argument(
-    'domain'
+@click.command(
+    name="shutdown", short_help="Gracefully shut down a running virtual machine."
+)
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for shutdown to complete before returning.",
 )
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for shutdown to complete before returning.'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the shutdown'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the shutdown",
 )
 @cluster_req
 def vm_shutdown(domain, wait, confirm_flag):
     """
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Shut down VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Shut down VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'shutdown', wait=wait)
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "shutdown", wait=wait)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm stop
 ###############################################################################
-@click.command(name='stop', short_help='Forcibly halt a running virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="stop", short_help="Forcibly halt a running virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the stop'
+    "-y", "--yes", "confirm_flag", is_flag=True, default=False, help="Confirm the stop"
 )
 @cluster_req
 def vm_stop(domain, confirm_flag):
     """
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Forcibly stop VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Forcibly stop VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'stop')
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "stop")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm disable
 ###############################################################################
-@click.command(name='disable', short_help='Mark a virtual machine as disabled.')
-@click.argument(
-    'domain'
-)
+@click.command(name="disable", short_help="Mark a virtual machine as disabled.")
+@click.argument("domain")
 @cluster_req
 def vm_disable(domain):
     """
@@ -1073,28 +1316,38 @@ def vm_disable(domain):
     Use this option for VM that are stopped intentionally or long-term and which should not impact cluster health if stopped. A VM can be started directly from disable state.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, 'disable')
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "disable")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm move
 ###############################################################################
-@click.command(name='move', short_help='Permanently move a virtual machine to another node.')
-@click.argument(
-    'domain'
+@click.command(
+    name="move", short_help="Permanently move a virtual machine to another node."
+)
+@click.argument("domain")
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Target node to migrate to; autodetect if unspecified.",
 )
 @click.option(
-    '-t', '--target', 'target_node', default=None,
-    help='Target node to migrate to; autodetect if unspecified.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
 )
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migration to complete before returning.'
-)
-@click.option(
-    '--force-live', 'force_live', is_flag=True, default=False,
-    help='Do not fall back to shutdown-based migration if live migration fails.'
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
 )
 @cluster_req
 def vm_move(domain, target_node, wait, force_live):
@@ -1102,32 +1355,54 @@ def vm_move(domain, target_node, wait, force_live):
     Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'move', force=False, wait=wait, force_live=force_live)
+    retcode, retmsg = pvc_vm.vm_node(
+        config,
+        domain,
+        target_node,
+        "move",
+        force=False,
+        wait=wait,
+        force_live=force_live,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm migrate
 ###############################################################################
-@click.command(name='migrate', short_help='Temporarily migrate a virtual machine to another node.')
-@click.argument(
-    'domain'
+@click.command(
+    name="migrate", short_help="Temporarily migrate a virtual machine to another node."
+)
+@click.argument("domain")
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Target node to migrate to; autodetect if unspecified.",
 )
 @click.option(
-    '-t', '--target', 'target_node', default=None,
-    help='Target node to migrate to; autodetect if unspecified.'
+    "-f",
+    "--force",
+    "force_migrate",
+    is_flag=True,
+    default=False,
+    help="Force migrate an already migrated VM; does not replace an existing previous node value.",
 )
 @click.option(
-    '-f', '--force', 'force_migrate', is_flag=True, default=False,
-    help='Force migrate an already migrated VM; does not replace an existing previous node value.'
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
 )
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migration to complete before returning.'
-)
-@click.option(
-    '--force-live', 'force_live', is_flag=True, default=False,
-    help='Do not fall back to shutdown-based migration if live migration fails.'
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
 )
 @cluster_req
 def vm_migrate(domain, target_node, force_migrate, wait, force_live):
@@ -1135,24 +1410,40 @@ def vm_migrate(domain, target_node, force_migrate, wait, force_live):
     Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, target_node, 'migrate', force=force_migrate, wait=wait, force_live=force_live)
+    retcode, retmsg = pvc_vm.vm_node(
+        config,
+        domain,
+        target_node,
+        "migrate",
+        force=force_migrate,
+        wait=wait,
+        force_live=force_live,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm unmigrate
 ###############################################################################
-@click.command(name='unmigrate', short_help='Restore a migrated virtual machine to its original node.')
-@click.argument(
-    'domain'
+@click.command(
+    name="unmigrate",
+    short_help="Restore a migrated virtual machine to its original node.",
+)
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
 )
 @click.option(
-    '-w', '--wait', 'wait', is_flag=True, default=False,
-    help='Wait for migration to complete before returning.'
-)
-@click.option(
-    '--force-live', 'force_live', is_flag=True, default=False,
-    help='Do not fall back to shutdown-based migration if live migration fails.'
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
 )
 @cluster_req
 def vm_unmigrate(domain, wait, force_live):
@@ -1160,17 +1451,19 @@ def vm_unmigrate(domain, wait, force_live):
     Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
     """
 
-    retcode, retmsg = pvc_vm.vm_node(config, domain, None, 'unmigrate', force=False, wait=wait, force_live=force_live)
+    retcode, retmsg = pvc_vm.vm_node(
+        config, domain, None, "unmigrate", force=False, wait=wait, force_live=force_live
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm flush-locks
 ###############################################################################
-@click.command(name='flush-locks', short_help='Flush stale RBD locks for a virtual machine.')
-@click.argument(
-    'domain'
+@click.command(
+    name="flush-locks", short_help="Flush stale RBD locks for a virtual machine."
 )
+@click.argument("domain")
 @cluster_req
 def vm_flush_locks(domain):
     """
@@ -1184,7 +1477,11 @@ def vm_flush_locks(domain):
 ###############################################################################
 # pvc vm tag
 ###############################################################################
-@click.group(name='tag', short_help='Manage tags of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="tag",
+    short_help="Manage tags of a virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def vm_tags():
     """
     Manage the tags of a virtual machine in the PVC cluster."
@@ -1195,13 +1492,15 @@ def vm_tags():
 ###############################################################################
 # pvc vm tag get
 ###############################################################################
-@click.command(name='get', short_help='Get the current tags of a virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="get", short_help="Get the current tags of a virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw value only without formatting.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
 )
 @cluster_req
 def vm_tags_get(domain, raw):
@@ -1212,28 +1511,29 @@ def vm_tags_get(domain, raw):
     retcode, retdata = pvc_vm.vm_tags_get(config, domain)
     if retcode:
         if not raw:
-            retdata = pvc_vm.format_vm_tags(config, domain, retdata['tags'])
+            retdata = pvc_vm.format_vm_tags(config, domain, retdata["tags"])
         else:
-            if len(retdata['tags']) > 0:
-                retdata = '\n'.join([tag['name'] for tag in retdata['tags']])
+            if len(retdata["tags"]) > 0:
+                retdata = "\n".join([tag["name"] for tag in retdata["tags"]])
             else:
-                retdata = 'No tags found.'
+                retdata = "No tags found."
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc vm tag add
 ###############################################################################
-@click.command(name='add', short_help='Add new tags to a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'tag'
-)
+@click.command(name="add", short_help="Add new tags to a virtual machine.")
+@click.argument("domain")
+@click.argument("tag")
 @click.option(
-    '-p', '--protected', 'protected', is_flag=True, required=False, default=False,
-    help="Set this tag as protected; protected tags cannot be removed."
+    "-p",
+    "--protected",
+    "protected",
+    is_flag=True,
+    required=False,
+    default=False,
+    help="Set this tag as protected; protected tags cannot be removed.",
 )
 @cluster_req
 def vm_tags_add(domain, tag, protected):
@@ -1241,34 +1541,34 @@ def vm_tags_add(domain, tag, protected):
     Add TAG to the virtual machine DOMAIN.
     """
 
-    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, 'add', tag, protected)
+    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, "add", tag, protected)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm tag remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove tags from a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'tag'
-)
+@click.command(name="remove", short_help="Remove tags from a virtual machine.")
+@click.argument("domain")
+@click.argument("tag")
 @cluster_req
 def vm_tags_remove(domain, tag):
     """
     Remove TAG from the virtual machine DOMAIN.
     """
 
-    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, 'remove', tag)
+    retcode, retmsg = pvc_vm.vm_tag_set(config, domain, "remove", tag)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm vcpu
 ###############################################################################
-@click.group(name='vcpu', short_help='Manage vCPU counts of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="vcpu",
+    short_help="Manage vCPU counts of a virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def vm_vcpu():
     """
     Manage the vCPU counts of a virtual machine in the PVC cluster."
@@ -1279,13 +1579,17 @@ def vm_vcpu():
 ###############################################################################
 # pvc vm vcpu get
 ###############################################################################
-@click.command(name='get', short_help='Get the current vCPU count of a virtual machine.')
-@click.argument(
-    'domain'
+@click.command(
+    name="get", short_help="Get the current vCPU count of a virtual machine."
 )
+@click.argument("domain")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw value only without formatting.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
 )
 @cluster_req
 def vm_vcpu_get(domain, raw):
@@ -1304,25 +1608,31 @@ def vm_vcpu_get(domain, raw):
 ###############################################################################
 # pvc vm vcpu set
 ###############################################################################
-@click.command(name='set', short_help='Set the vCPU count of a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'vcpus'
+@click.command(name="set", short_help="Set the vCPU count of a virtual machine.")
+@click.argument("domain")
+@click.argument("vcpus")
+@click.option(
+    "-t",
+    "--topology",
+    "topology",
+    default=None,
+    help="Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.",
 )
 @click.option(
-    '-t', '--topology', 'topology', default=None,
-    help='Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.'
+    "-r",
+    "--restart",
+    "restart",
+    is_flag=True,
+    default=False,
+    help="Immediately restart VM to apply new config.",
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart",
 )
 @cluster_req
 def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
@@ -1333,7 +1643,7 @@ def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
     """
     if topology is not None:
         try:
-            sockets, cores, threads = topology.split(',')
+            sockets, cores, threads = topology.split(",")
             if sockets * cores * threads != vcpus:
                 raise
         except Exception:
@@ -1342,9 +1652,11 @@ def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
     else:
         topology = (1, vcpus, 1)
 
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart = False
 
@@ -1357,7 +1669,11 @@ def vm_vcpu_set(domain, vcpus, topology, restart, confirm_flag):
 ###############################################################################
 # pvc vm memory
 ###############################################################################
-@click.group(name='memory', short_help='Manage provisioned memory of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="memory",
+    short_help="Manage provisioned memory of a virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def vm_memory():
     """
     Manage the provisioned memory of a virtual machine in the PVC cluster."
@@ -1368,13 +1684,17 @@ def vm_memory():
 ###############################################################################
 # pvc vm memory get
 ###############################################################################
-@click.command(name='get', short_help='Get the current provisioned memory of a virtual machine.')
-@click.argument(
-    'domain'
+@click.command(
+    name="get", short_help="Get the current provisioned memory of a virtual machine."
 )
+@click.argument("domain")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw value only without formatting.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
 )
 @cluster_req
 def vm_memory_get(domain, raw):
@@ -1391,30 +1711,37 @@ def vm_memory_get(domain, raw):
 ###############################################################################
 # pvc vm memory set
 ###############################################################################
-@click.command(name='set', short_help='Set the provisioned memory of a virtual machine.')
-@click.argument(
-    'domain'
+@click.command(
+    name="set", short_help="Set the provisioned memory of a virtual machine."
 )
-@click.argument(
-    'memory'
+@click.argument("domain")
+@click.argument("memory")
+@click.option(
+    "-r",
+    "--restart",
+    "restart",
+    is_flag=True,
+    default=False,
+    help="Immediately restart VM to apply new config.",
 )
 @click.option(
-    '-r', '--restart', 'restart', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config.'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart",
 )
 @cluster_req
 def vm_memory_set(domain, memory, restart, confirm_flag):
     """
     Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
     """
-    if restart and not confirm_flag and not config['unsafe']:
+    if restart and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart = False
 
@@ -1427,7 +1754,11 @@ def vm_memory_set(domain, memory, restart, confirm_flag):
 ###############################################################################
 # pvc vm network
 ###############################################################################
-@click.group(name='network', short_help='Manage attached networks of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="network",
+    short_help="Manage attached networks of a virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def vm_network():
     """
     Manage the attached networks of a virtual machine in the PVC cluster.
@@ -1440,13 +1771,15 @@ def vm_network():
 ###############################################################################
 # pvc vm network get
 ###############################################################################
-@click.command(name='get', short_help='Get the networks of a virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="get", short_help="Get the networks of a virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw values only without formatting.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw values only without formatting.",
 )
 @cluster_req
 def vm_network_get(domain, raw):
@@ -1461,52 +1794,84 @@ def vm_network_get(domain, raw):
         network_vnis = list()
         for network in retdata:
             network_vnis.append(network[0])
-        retmsg = ','.join(network_vnis)
+        retmsg = ",".join(network_vnis)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm network add
 ###############################################################################
-@click.command(name='add', short_help='Add network to a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'net'
+@click.command(name="add", short_help="Add network to a virtual machine.")
+@click.argument("domain")
+@click.argument("net")
+@click.option(
+    "-a",
+    "--macaddr",
+    "macaddr",
+    default=None,
+    help="Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.",
 )
 @click.option(
-    '-a', '--macaddr', 'macaddr', default=None,
-    help='Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.'
+    "-m",
+    "--model",
+    "model",
+    default="virtio",
+    show_default=True,
+    help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.',
 )
 @click.option(
-    '-m', '--model', 'model', default='virtio', show_default=True,
-    help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.'
+    "-s",
+    "--sriov",
+    "sriov_flag",
+    is_flag=True,
+    default=False,
+    help="Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.",
 )
 @click.option(
-    '-s', '--sriov', 'sriov_flag', is_flag=True, default=False,
-    help='Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.'
+    "-d",
+    "--sriov-mode",
+    "sriov_mode",
+    default="macvtap",
+    show_default=True,
+    type=click.Choice(["hostdev", "macvtap"]),
+    help="For SR-IOV NETs, the SR-IOV network device mode.",
 )
 @click.option(
-    '-d', '--sriov-mode', 'sriov_mode', default='macvtap', show_default=True,
-    type=click.Choice(['hostdev', 'macvtap']),
-    help='For SR-IOV NETs, the SR-IOV network device mode.'
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @click.option(
-    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+    "-r",
+    "--restart",
+    "restart_flag",
+    is_flag=True,
+    default=False,
+    help='Immediately restart VM to apply new config; implies "--no-live".',
 )
 @click.option(
-    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; implies "--no-live".'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the VM restart.'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the VM restart.",
 )
 @cluster_req
-def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_flag, restart_flag, confirm_flag):
+def vm_network_add(
+    domain,
+    net,
+    macaddr,
+    model,
+    sriov_flag,
+    sriov_mode,
+    live_flag,
+    restart_flag,
+    confirm_flag,
+):
     """
     Add the network NET to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
 
@@ -1522,49 +1887,77 @@ def vm_network_add(domain, net, macaddr, model, sriov_flag, sriov_mode, live_fla
     if restart_flag and live_flag:
         live_flag = False
 
-    if restart_flag and not confirm_flag and not config['unsafe']:
+    if restart_flag and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_networks_add(config, domain, net, macaddr, model, sriov_flag, sriov_mode, live_flag, restart_flag)
+    retcode, retmsg = pvc_vm.vm_networks_add(
+        config,
+        domain,
+        net,
+        macaddr,
+        model,
+        sriov_flag,
+        sriov_mode,
+        live_flag,
+        restart_flag,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm network remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove network from a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'net', required=False, default=None
+@click.command(name="remove", short_help="Remove network from a virtual machine.")
+@click.argument("domain")
+@click.argument("net", required=False, default=None)
+@click.option(
+    "-m",
+    "--mac-address",
+    "macaddr",
+    default=None,
+    help="Remove an interface with this MAC address; required if NET is unspecified.",
 )
 @click.option(
-    '-m', '--mac-address', 'macaddr', default=None,
-    help='Remove an interface with this MAC address; required if NET is unspecified.'
+    "-s",
+    "--sriov",
+    "sriov_flag",
+    is_flag=True,
+    default=False,
+    help="Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.",
 )
 @click.option(
-    '-s', '--sriov', 'sriov_flag', is_flag=True, default=False,
-    help='Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.'
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @click.option(
-    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-detach device to VM [default] or disable this behaviour.'
+    "-r",
+    "--restart",
+    "restart_flag",
+    is_flag=True,
+    default=False,
+    help='Immediately restart VM to apply new config; implies "--no-live".',
 )
 @click.option(
-    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; implies "--no-live".'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart.'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart.",
 )
 @cluster_req
-def vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag, confirm_flag):
+def vm_network_remove(
+    domain, net, macaddr, sriov_flag, live_flag, restart_flag, confirm_flag
+):
     """
     Remove the network NET from the virtual machine DOMAIN.
 
@@ -1577,20 +1970,28 @@ def vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag,
     if restart_flag and live_flag:
         live_flag = False
 
-    if restart_flag and not confirm_flag and not config['unsafe']:
+    if restart_flag and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_networks_remove(config, domain, net, macaddr, sriov_flag, live_flag, restart_flag)
+    retcode, retmsg = pvc_vm.vm_networks_remove(
+        config, domain, net, macaddr, sriov_flag, live_flag, restart_flag
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm volume
 ###############################################################################
-@click.group(name='volume', short_help='Manage attached volumes of a virtual machine.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="volume",
+    short_help="Manage attached volumes of a virtual machine.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def vm_volume():
     """
     Manage the attached volumes of a virtual machine in the PVC cluster.
@@ -1603,13 +2004,15 @@ def vm_volume():
 ###############################################################################
 # pvc vm volume get
 ###############################################################################
-@click.command(name='get', short_help='Get the volumes of a virtual machine.')
-@click.argument(
-    'domain'
-)
+@click.command(name="get", short_help="Get the volumes of a virtual machine.")
+@click.argument("domain")
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw values only without formatting.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw values only without formatting.",
 )
 @cluster_req
 def vm_volume_get(domain, raw):
@@ -1624,49 +2027,69 @@ def vm_volume_get(domain, raw):
         volume_paths = list()
         for volume in retdata:
             volume_paths.append("{}:{}".format(volume[2], volume[0]))
-        retmsg = ','.join(volume_paths)
+        retmsg = ",".join(volume_paths)
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm volume add
 ###############################################################################
-@click.command(name='add', short_help='Add volume to a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'volume'
+@click.command(name="add", short_help="Add volume to a virtual machine.")
+@click.argument("domain")
+@click.argument("volume")
+@click.option(
+    "-d",
+    "--disk-id",
+    "disk_id",
+    default=None,
+    help="The disk ID in sdX/vdX/hdX format; if not specified, the next available will be used.",
 )
 @click.option(
-    '-d', '--disk-id', 'disk_id', default=None,
-    help='The disk ID in sdX/vdX/hdX format; if not specified, the next available will be used.'
+    "-b",
+    "--bus",
+    "bus",
+    default="scsi",
+    show_default=True,
+    type=click.Choice(["scsi", "ide", "usb", "virtio"]),
+    help="The bus to attach the disk to; must be present in the VM.",
 )
 @click.option(
-    '-b', '--bus', 'bus', default='scsi', show_default=True,
-    type=click.Choice(['scsi', 'ide', 'usb', 'virtio']),
-    help='The bus to attach the disk to; must be present in the VM.'
+    "-t",
+    "--type",
+    "disk_type",
+    default="rbd",
+    show_default=True,
+    type=click.Choice(["rbd", "file"]),
+    help="The type of volume to add.",
 )
 @click.option(
-    '-t', '--type', 'disk_type', default='rbd', show_default=True,
-    type=click.Choice(['rbd', 'file']),
-    help='The type of volume to add.'
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @click.option(
-    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-attach device to VM [default] or disable this behaviour.'
+    "-r",
+    "--restart",
+    "restart_flag",
+    is_flag=True,
+    default=False,
+    help='Immediately restart VM to apply new config; implies "--no-live".',
 )
 @click.option(
-    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; implies "--no-live".'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart",
 )
 @cluster_req
-def vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_flag, confirm_flag):
+def vm_volume_add(
+    domain, volume, disk_id, bus, disk_type, live_flag, restart_flag, confirm_flag
+):
     """
     Add the volume VOLUME to the virtual machine DOMAIN.
 
@@ -1675,38 +2098,49 @@ def vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_fl
     if restart_flag and live_flag:
         live_flag = False
 
-    if restart_flag and not confirm_flag and not config['unsafe']:
+    if restart_flag and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_add(config, domain, volume, disk_id, bus, disk_type, live_flag, restart_flag)
+    retcode, retmsg = pvc_vm.vm_volumes_add(
+        config, domain, volume, disk_id, bus, disk_type, live_flag, restart_flag
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm volume remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove volume from a virtual machine.')
-@click.argument(
-    'domain'
-)
-@click.argument(
-    'volume'
+@click.command(name="remove", short_help="Remove volume from a virtual machine.")
+@click.argument("domain")
+@click.argument("volume")
+@click.option(
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @click.option(
-    '-l/-L', '--live/--no-live', 'live_flag', is_flag=True, default=True,
-    help='Immediately live-detach device to VM [default] or disable this behaviour.'
+    "-r",
+    "--restart",
+    "restart_flag",
+    is_flag=True,
+    default=False,
+    help='Immediately restart VM to apply new config; implies "--no-live".',
 )
 @click.option(
-    '-r', '--restart', 'restart_flag', is_flag=True, default=False,
-    help='Immediately restart VM to apply new config; implies "--no-live".'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restart'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart",
 )
 @cluster_req
 def vm_volume_remove(domain, volume, live_flag, restart_flag, confirm_flag):
@@ -1716,30 +2150,40 @@ def vm_volume_remove(domain, volume, live_flag, restart_flag, confirm_flag):
     if restart_flag and live_flag:
         live_flag = False
 
-    if restart_flag and not confirm_flag and not config['unsafe']:
+    if restart_flag and not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Restart VM {}'.format(domain), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
         except Exception:
             restart_flag = False
 
-    retcode, retmsg = pvc_vm.vm_volumes_remove(config, domain, volume, live_flag, restart_flag)
+    retcode, retmsg = pvc_vm.vm_volumes_remove(
+        config, domain, volume, live_flag, restart_flag
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm log
 ###############################################################################
-@click.command(name='log', short_help='Show console logs of a VM object.')
-@click.argument(
-    'domain'
+@click.command(name="log", short_help="Show console logs of a VM object.")
+@click.argument("domain")
+@click.option(
+    "-l",
+    "--lines",
+    "lines",
+    default=None,
+    show_default=False,
+    help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
 )
 @click.option(
-    '-l', '--lines', 'lines', default=None, show_default=False,
-    help='Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]'
-)
-@click.option(
-    '-f', '--follow', 'follow', is_flag=True, default=False,
-    help='Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.'
+    "-f",
+    "--follow",
+    "follow",
+    is_flag=True,
+    default=False,
+    help="Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.",
 )
 @cluster_req
 def vm_log(domain, lines, follow):
@@ -1759,20 +2203,22 @@ def vm_log(domain, lines, follow):
     else:
         retcode, retmsg = pvc_vm.view_console_log(config, domain, lines)
         click.echo_via_pager(retmsg)
-        retmsg = ''
+        retmsg = ""
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc vm info
 ###############################################################################
-@click.command(name='info', short_help='Show details of a VM object.')
-@click.argument(
-    'domain'
-)
+@click.command(name="info", short_help="Show details of a VM object.")
+@click.argument("domain")
 @click.option(
-    '-l', '--long', 'long_output', is_flag=True, default=False,
-    help='Display more detailed information.'
+    "-l",
+    "--long",
+    "long_output",
+    is_flag=True,
+    default=False,
+    help="Display more detailed information.",
 )
 @cluster_req
 def vm_info(domain, long_output):
@@ -1789,15 +2235,16 @@ def vm_info(domain, long_output):
 ###############################################################################
 # pvc vm dump
 ###############################################################################
-@click.command(name='dump', short_help='Dump a virtual machine XML to stdout.')
+@click.command(name="dump", short_help="Dump a virtual machine XML to stdout.")
 @click.option(
-    '-f', '--file', 'filename',
-    default=None, type=click.File(mode='w'),
-    help='Write VM XML to this file.'
+    "-f",
+    "--file",
+    "filename",
+    default=None,
+    type=click.File(mode="w"),
+    help="Write VM XML to this file.",
 )
-@click.argument(
-    'domain'
-)
+@click.argument("domain")
 @cluster_req
 def vm_dump(filename, domain):
     """
@@ -1805,12 +2252,12 @@ def vm_dump(filename, domain):
     """
 
     retcode, retdata = pvc_vm.vm_info(config, domain)
-    if not retcode or not retdata.get('name', None):
+    if not retcode or not retdata.get("name", None):
         cleanup(False, 'ERROR: Could not find VM "{}"!'.format(domain))
 
-    current_vm_cfg_raw = retdata.get('xml')
+    current_vm_cfg_raw = retdata.get("xml")
     xml_data = etree.fromstring(current_vm_cfg_raw)
-    current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+    current_vm_cfgfile = etree.tostring(xml_data, pretty_print=True).decode("utf8")
     xml = current_vm_cfgfile.strip()
 
     if filename is not None:
@@ -1823,29 +2270,44 @@ def vm_dump(filename, domain):
 ###############################################################################
 # pvc vm list
 ###############################################################################
-@click.command(name='list', short_help='List all VM objects.')
-@click.argument(
-    'limit', default=None, required=False
+@click.command(name="list", short_help="List all VM objects.")
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Limit list to VMs on the specified node.",
 )
 @click.option(
-    '-t', '--target', 'target_node', default=None,
-    help='Limit list to VMs on the specified node.'
+    "-s",
+    "--state",
+    "target_state",
+    default=None,
+    help="Limit list to VMs in the specified state.",
 )
 @click.option(
-    '-s', '--state', 'target_state', default=None,
-    help='Limit list to VMs in the specified state.'
+    "-g",
+    "--tag",
+    "target_tag",
+    default=None,
+    help="Limit list to VMs with the specified tag.",
 )
 @click.option(
-    '-g', '--tag', 'target_tag', default=None,
-    help='Limit list to VMs with the specified tag.'
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw list of VM names only.",
 )
 @click.option(
-    '-r', '--raw', 'raw', is_flag=True, default=False,
-    help='Display the raw list of VM names only.'
-)
-@click.option(
-    '-n', '--negate', 'negate', is_flag=True, default=False,
-    help='Negate the specified node, state, or tag limit(s).'
+    "-n",
+    "--negate",
+    "negate",
+    is_flag=True,
+    default=False,
+    help="Negate the specified node, state, or tag limit(s).",
 )
 @cluster_req
 def vm_list(target_node, target_state, target_tag, limit, raw, negate):
@@ -1855,7 +2317,9 @@ def vm_list(target_node, target_state, target_tag, limit, raw, negate):
     NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
     """
 
-    retcode, retdata = pvc_vm.vm_list(config, limit, target_node, target_state, target_tag, negate)
+    retcode, retdata = pvc_vm.vm_list(
+        config, limit, target_node, target_state, target_tag, negate
+    )
     if retcode:
         retdata = pvc_vm.format_list(config, retdata, raw)
     else:
@@ -1867,7 +2331,11 @@ def vm_list(target_node, target_state, target_tag, limit, raw, negate):
 ###############################################################################
 # pvc network
 ###############################################################################
-@click.group(name='network', short_help='Manage a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="network",
+    short_help="Manage a PVC virtual network.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_network():
     """
     Manage the state of a VXLAN network in the PVC cluster.
@@ -1878,74 +2346,90 @@ def cli_network():
 ###############################################################################
 # pvc network add
 ###############################################################################
-@click.command(name='add', short_help='Add a new virtual network.')
+@click.command(name="add", short_help="Add a new virtual network.")
 @click.option(
-    '-d', '--description', 'description',
+    "-d",
+    "--description",
+    "description",
     required=True,
-    help='Description of the network; must be unique and not contain whitespace.'
+    help="Description of the network; must be unique and not contain whitespace.",
 )
 @click.option(
-    '-p', '--type', 'nettype',
+    "-p",
+    "--type",
+    "nettype",
     required=True,
-    type=click.Choice(['managed', 'bridged']),
-    help='Network type; managed networks control IP addressing; bridged networks are simple vLAN bridges. All subsequent options are unused for bridged networks.'
+    type=click.Choice(["managed", "bridged"]),
+    help="Network type; managed networks control IP addressing; bridged networks are simple vLAN bridges. All subsequent options are unused for bridged networks.",
+)
+@click.option("-m", "--mtu", "mtu", default="", help="MTU of the network interfaces.")
+@click.option(
+    "-n", "--domain", "domain", default=None, help="Domain name of the network."
 )
 @click.option(
-    '-m', '--mtu', 'mtu',
-    default='',
-    help='MTU of the network interfaces.'
-)
-@click.option(
-    '-n', '--domain', 'domain',
-    default=None,
-    help='Domain name of the network.'
-)
-@click.option(
-    '--dns-server', 'name_servers',
+    "--dns-server",
+    "name_servers",
     multiple=True,
-    help='DNS nameserver for network; multiple entries may be specified.'
+    help="DNS nameserver for network; multiple entries may be specified.",
 )
 @click.option(
-    '-i', '--ipnet', 'ip_network',
+    "-i",
+    "--ipnet",
+    "ip_network",
     default=None,
-    help='CIDR-format IPv4 network address for subnet.'
+    help="CIDR-format IPv4 network address for subnet.",
 )
 @click.option(
-    '-i6', '--ipnet6', 'ip6_network',
+    "-i6",
+    "--ipnet6",
+    "ip6_network",
     default=None,
-    help='CIDR-format IPv6 network address for subnet; should be /64 or larger ending "::/YY".'
+    help='CIDR-format IPv6 network address for subnet; should be /64 or larger ending "::/YY".',
 )
 @click.option(
-    '-g', '--gateway', 'ip_gateway',
+    "-g",
+    "--gateway",
+    "ip_gateway",
     default=None,
-    help='Default IPv4 gateway address for subnet.'
+    help="Default IPv4 gateway address for subnet.",
 )
 @click.option(
-    '-g6', '--gateway6', 'ip6_gateway',
+    "-g6",
+    "--gateway6",
+    "ip6_gateway",
     default=None,
-    help='Default IPv6 gateway address for subnet.  [default: "X::1"]'
+    help='Default IPv6 gateway address for subnet.  [default: "X::1"]',
 )
 @click.option(
-    '--dhcp/--no-dhcp', 'dhcp_flag',
+    "--dhcp/--no-dhcp",
+    "dhcp_flag",
     is_flag=True,
     default=False,
-    help='Enable/disable IPv4 DHCP for clients on subnet.'
+    help="Enable/disable IPv4 DHCP for clients on subnet.",
 )
 @click.option(
-    '--dhcp-start', 'dhcp_start',
-    default=None,
-    help='IPv4 DHCP range start address.'
+    "--dhcp-start", "dhcp_start", default=None, help="IPv4 DHCP range start address."
 )
 @click.option(
-    '--dhcp-end', 'dhcp_end',
-    default=None,
-    help='IPv4 DHCP range end address.'
+    "--dhcp-end", "dhcp_end", default=None, help="IPv4 DHCP range end address."
 )
-@click.argument(
-    'vni'
-)
+@click.argument("vni")
 @cluster_req
-def net_add(vni, description, nettype, mtu, domain, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end, name_servers):
+def net_add(
+    vni,
+    description,
+    nettype,
+    mtu,
+    domain,
+    ip_network,
+    ip_gateway,
+    ip6_network,
+    ip6_gateway,
+    dhcp_flag,
+    dhcp_start,
+    dhcp_end,
+    name_servers,
+):
     """
     Add a new virtual network with VXLAN identifier VNI.
 
@@ -1964,75 +2448,101 @@ def net_add(vni, description, nettype, mtu, domain, ip_network, ip_gateway, ip6_
     IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
     """
 
-    retcode, retmsg = pvc_network.net_add(config, vni, description, nettype, mtu, domain, name_servers, ip_network, ip_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.net_add(
+        config,
+        vni,
+        description,
+        nettype,
+        mtu,
+        domain,
+        name_servers,
+        ip_network,
+        ip_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp_flag,
+        dhcp_start,
+        dhcp_end,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc network modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify an existing virtual network.')
+@click.command(name="modify", short_help="Modify an existing virtual network.")
 @click.option(
-    '-d', '--description', 'description',
+    "-d",
+    "--description",
+    "description",
     default=None,
-    help='Description of the network; must be unique and not contain whitespace.'
+    help="Description of the network; must be unique and not contain whitespace.",
+)
+@click.option("-m", "--mtu", "mtu", default=None, help="MTU of the network interfaces.")
+@click.option(
+    "-n", "--domain", "domain", default=None, help="Domain name of the network."
 )
 @click.option(
-    '-m', '--mtu', 'mtu',
-    default=None,
-    help='MTU of the network interfaces.'
-)
-@click.option(
-    '-n', '--domain', 'domain',
-    default=None,
-    help='Domain name of the network.'
-)
-@click.option(
-    '--dns-server', 'name_servers',
+    "--dns-server",
+    "name_servers",
     multiple=True,
-    help='DNS nameserver for network; multiple entries may be specified (will overwrite all previous entries).'
+    help="DNS nameserver for network; multiple entries may be specified (will overwrite all previous entries).",
 )
 @click.option(
-    '-i', '--ipnet', 'ip4_network',
+    "-i",
+    "--ipnet",
+    "ip4_network",
     default=None,
-    help='CIDR-format IPv4 network address for subnet; disable with "".'
+    help='CIDR-format IPv4 network address for subnet; disable with "".',
 )
 @click.option(
-    '-i6', '--ipnet6', 'ip6_network',
+    "-i6",
+    "--ipnet6",
+    "ip6_network",
     default=None,
-    help='CIDR-format IPv6 network address for subnet; disable with "".'
+    help='CIDR-format IPv6 network address for subnet; disable with "".',
 )
 @click.option(
-    '-g', '--gateway', 'ip4_gateway',
+    "-g",
+    "--gateway",
+    "ip4_gateway",
     default=None,
-    help='Default IPv4 gateway address for subnet; disable with "".'
+    help='Default IPv4 gateway address for subnet; disable with "".',
 )
 @click.option(
-    '-g6', '--gateway6', 'ip6_gateway',
+    "-g6",
+    "--gateway6",
+    "ip6_gateway",
     default=None,
-    help='Default IPv6 gateway address for subnet; disable with "".'
+    help='Default IPv6 gateway address for subnet; disable with "".',
 )
 @click.option(
-    '--dhcp/--no-dhcp', 'dhcp_flag',
+    "--dhcp/--no-dhcp",
+    "dhcp_flag",
     is_flag=True,
     default=None,
-    help='Enable/disable DHCPv4 for clients on subnet (DHCPv6 is always enabled if DHCPv6 network is set).'
+    help="Enable/disable DHCPv4 for clients on subnet (DHCPv6 is always enabled if DHCPv6 network is set).",
 )
 @click.option(
-    '--dhcp-start', 'dhcp_start',
-    default=None,
-    help='DHCPvr range start address.'
+    "--dhcp-start", "dhcp_start", default=None, help="DHCPvr range start address."
 )
-@click.option(
-    '--dhcp-end', 'dhcp_end',
-    default=None,
-    help='DHCPv4 range end address.'
-)
-@click.argument(
-    'vni'
-)
+@click.option("--dhcp-end", "dhcp_end", default=None, help="DHCPv4 range end address.")
+@click.argument("vni")
 @cluster_req
-def net_modify(vni, description, mtu, domain, name_servers, ip6_network, ip6_gateway, ip4_network, ip4_gateway, dhcp_flag, dhcp_start, dhcp_end):
+def net_modify(
+    vni,
+    description,
+    mtu,
+    domain,
+    name_servers,
+    ip6_network,
+    ip6_gateway,
+    ip4_network,
+    ip4_gateway,
+    dhcp_flag,
+    dhcp_start,
+    dhcp_end,
+):
     """
     Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
 
@@ -2043,21 +2553,36 @@ def net_modify(vni, description, mtu, domain, name_servers, ip6_network, ip6_gat
     pvc network modify 1001 --gateway 10.1.1.1 --dhcp
     """
 
-    retcode, retmsg = pvc_network.net_modify(config, vni, description, mtu, domain, name_servers, ip4_network, ip4_gateway, ip6_network, ip6_gateway, dhcp_flag, dhcp_start, dhcp_end)
+    retcode, retmsg = pvc_network.net_modify(
+        config,
+        vni,
+        description,
+        mtu,
+        domain,
+        name_servers,
+        ip4_network,
+        ip4_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp_flag,
+        dhcp_start,
+        dhcp_end,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc network remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a virtual network.')
-@click.argument(
-    'net'
-)
+@click.command(name="remove", short_help="Remove a virtual network.")
+@click.argument("net")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def net_remove(net, confirm_flag):
@@ -2067,9 +2592,11 @@ def net_remove(net, confirm_flag):
     WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
     that all client VMs have been removed from the network or undefined behaviour may occur.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove network {}'.format(net), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove network {}".format(net), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -2080,13 +2607,15 @@ def net_remove(net, confirm_flag):
 ###############################################################################
 # pvc network info
 ###############################################################################
-@click.command(name='info', short_help='Show details of a network.')
-@click.argument(
-    'vni'
-)
+@click.command(name="info", short_help="Show details of a network.")
+@click.argument("vni")
 @click.option(
-    '-l', '--long', 'long_output', is_flag=True, default=False,
-    help='Display more detailed information.'
+    "-l",
+    "--long",
+    "long_output",
+    is_flag=True,
+    default=False,
+    help="Display more detailed information.",
 )
 @cluster_req
 def net_info(vni, long_output):
@@ -2103,10 +2632,8 @@ def net_info(vni, long_output):
 ###############################################################################
 # pvc network list
 ###############################################################################
-@click.command(name='list', short_help='List all VM objects.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all VM objects.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def net_list(limit):
     """
@@ -2122,7 +2649,11 @@ def net_list(limit):
 ###############################################################################
 # pvc network dhcp
 ###############################################################################
-@click.group(name='dhcp', short_help='Manage IPv4 DHCP leases in a PVC virtual network.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="dhcp",
+    short_help="Manage IPv4 DHCP leases in a PVC virtual network.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def net_dhcp():
     """
     Manage host IPv4 DHCP leases of a VXLAN network in the PVC cluster.
@@ -2133,19 +2664,11 @@ def net_dhcp():
 ###############################################################################
 # pvc network dhcp add
 ###############################################################################
-@click.command(name='add', short_help='Add a DHCP static reservation.')
-@click.argument(
-    'net'
-)
-@click.argument(
-    'ipaddr'
-)
-@click.argument(
-    'hostname'
-)
-@click.argument(
-    'macaddr'
-)
+@click.command(name="add", short_help="Add a DHCP static reservation.")
+@click.argument("net")
+@click.argument("ipaddr")
+@click.argument("hostname")
+@click.argument("macaddr")
 @cluster_req
 def net_dhcp_add(net, ipaddr, macaddr, hostname):
     """
@@ -2159,26 +2682,29 @@ def net_dhcp_add(net, ipaddr, macaddr, hostname):
 ###############################################################################
 # pvc network dhcp remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove a DHCP static reservation.')
-@click.argument(
-    'net'
-)
-@click.argument(
-    'macaddr'
-)
+@click.command(name="remove", short_help="Remove a DHCP static reservation.")
+@click.argument("net")
+@click.argument("macaddr")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def net_dhcp_remove(net, macaddr, confirm_flag):
     """
     Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove DHCP lease for {} in network {}'.format(macaddr, net), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove DHCP lease for {} in network {}".format(macaddr, net),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -2189,16 +2715,16 @@ def net_dhcp_remove(net, macaddr, confirm_flag):
 ###############################################################################
 # pvc network dhcp list
 ###############################################################################
-@click.command(name='list', short_help='List active DHCP leases.')
-@click.argument(
-    'net'
-)
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List active DHCP leases.")
+@click.argument("net")
+@click.argument("limit", default=None, required=False)
 @click.option(
-    '-s', '--static', 'only_static', is_flag=True, default=False,
-    help='Show only static leases.'
+    "-s",
+    "--static",
+    "only_static",
+    is_flag=True,
+    default=False,
+    help="Show only static leases.",
 )
 @cluster_req
 def net_dhcp_list(net, limit, only_static):
@@ -2215,7 +2741,11 @@ def net_dhcp_list(net, limit, only_static):
 ###############################################################################
 # pvc network acl
 ###############################################################################
-@click.group(name='acl', short_help='Manage a PVC virtual network firewall ACL rule.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="acl",
+    short_help="Manage a PVC virtual network firewall ACL rule.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def net_acl():
     """
     Manage firewall ACLs of a VXLAN network in the PVC cluster.
@@ -2226,31 +2756,30 @@ def net_acl():
 ###############################################################################
 # pvc network acl add
 ###############################################################################
-@click.command(name='add', short_help='Add firewall ACL.')
+@click.command(name="add", short_help="Add firewall ACL.")
 @click.option(
-    '--in/--out', 'direction',
+    "--in/--out",
+    "direction",
     is_flag=True,
     default=True,  # inbound
-    help='Inbound or outbound ruleset.'
+    help="Inbound or outbound ruleset.",
 )
 @click.option(
-    '-d', '--description', 'description',
+    "-d",
+    "--description",
+    "description",
     required=True,
-    help='Description of the ACL; must be unique and not contain whitespace.'
+    help="Description of the ACL; must be unique and not contain whitespace.",
 )
+@click.option("-r", "--rule", "rule", required=True, help="NFT firewall rule.")
 @click.option(
-    '-r', '--rule', 'rule',
-    required=True,
-    help='NFT firewall rule.'
-)
-@click.option(
-    '-o', '--order', 'order',
+    "-o",
+    "--order",
+    "order",
     default=None,
-    help='Order of rule in the chain (see "list"); defaults to last.'
+    help='Order of rule in the chain (see "list"); defaults to last.',
 )
-@click.argument(
-    'net'
-)
+@click.argument("net")
 @cluster_req
 def net_acl_add(net, direction, description, rule, order):
     """
@@ -2267,37 +2796,44 @@ def net_acl_add(net, direction, description, rule, order):
     pvc network acl add 1001 --in --rule "tcp dport 22 ct state new accept" --description "ssh-in" --order 3
     """
     if direction:
-        direction = 'in'
+        direction = "in"
     else:
-        direction = 'out'
+        direction = "out"
 
-    retcode, retmsg = pvc_network.net_acl_add(config, net, direction, description, rule, order)
+    retcode, retmsg = pvc_network.net_acl_add(
+        config, net, direction, description, rule, order
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc network acl remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove firewall ACL.')
+@click.command(name="remove", short_help="Remove firewall ACL.")
+@click.argument("net")
 @click.argument(
-    'net'
-)
-@click.argument(
-    'rule',
+    "rule",
 )
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def net_acl_remove(net, rule, confirm_flag):
     """
     Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove ACL {} in network {}'.format(rule, net), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove ACL {} in network {}".format(rule, net),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -2308,20 +2844,17 @@ def net_acl_remove(net, rule, confirm_flag):
 ###############################################################################
 # pvc network acl list
 ###############################################################################
-@click.command(name='list', short_help='List firewall ACLs.')
+@click.command(name="list", short_help="List firewall ACLs.")
 @click.option(
-    '--in/--out', 'direction',
+    "--in/--out",
+    "direction",
     is_flag=True,
     required=False,
     default=None,
-    help='Inbound or outbound rule set only.'
+    help="Inbound or outbound rule set only.",
 )
-@click.argument(
-    'net'
-)
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.argument("net")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def net_acl_list(net, limit, direction):
     """
@@ -2329,9 +2862,9 @@ def net_acl_list(net, limit, direction):
     """
     if direction is not None:
         if direction:
-            direction = 'in'
+            direction = "in"
         else:
-            direction = 'out'
+            direction = "out"
 
     retcode, retdata = pvc_network.net_acl_list(config, net, limit, direction)
     if retcode:
@@ -2342,7 +2875,11 @@ def net_acl_list(net, limit, direction):
 ###############################################################################
 # pvc network sriov
 ###############################################################################
-@click.group(name='sriov', short_help='Manage SR-IOV network resources.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="sriov",
+    short_help="Manage SR-IOV network resources.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def net_sriov():
     """
     Manage SR-IOV network resources on nodes (PFs and VFs).
@@ -2353,7 +2890,9 @@ def net_sriov():
 ###############################################################################
 # pvc network sriov pf
 ###############################################################################
-@click.group(name='pf', short_help='Manage PF devices.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="pf", short_help="Manage PF devices.", context_settings=CONTEXT_SETTINGS
+)
 def net_sriov_pf():
     """
     Manage SR-IOV PF devices on nodes.
@@ -2364,10 +2903,8 @@ def net_sriov_pf():
 ###############################################################################
 # pvc network sriov pf list
 ###############################################################################
-@click.command(name='list', short_help='List PF devices.')
-@click.argument(
-    'node'
-)
+@click.command(name="list", short_help="List PF devices.")
+@click.argument("node")
 @cluster_req
 def net_sriov_pf_list(node):
     """
@@ -2382,7 +2919,9 @@ def net_sriov_pf_list(node):
 ###############################################################################
 # pvc network sriov vf
 ###############################################################################
-@click.group(name='vf', short_help='Manage VF devices.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="vf", short_help="Manage VF devices.", context_settings=CONTEXT_SETTINGS
+)
 def net_sriov_vf():
     """
     Manage SR-IOV VF devices on nodes.
@@ -2393,68 +2932,121 @@ def net_sriov_vf():
 ###############################################################################
 # pvc network sriov vf set
 ###############################################################################
-@click.command(name='set', short_help='Set VF device properties.')
+@click.command(name="set", short_help="Set VF device properties.")
 @click.option(
-    '--vlan-id', 'vlan_id', default=None, show_default=False,
-    help='The vLAN ID for vLAN tagging.'
-)
-@click.option(
-    '--qos-prio', 'vlan_qos', default=None, show_default=False,
-    help='The vLAN QOS priority.'
-)
-@click.option(
-    '--tx-min', 'tx_rate_min', default=None, show_default=False,
-    help='The minimum TX rate.'
+    "--vlan-id",
+    "vlan_id",
+    default=None,
+    show_default=False,
+    help="The vLAN ID for vLAN tagging.",
 )
 @click.option(
-    '--tx-max', 'tx_rate_max', default=None, show_default=False,
-    help='The maximum TX rate.'
+    "--qos-prio",
+    "vlan_qos",
+    default=None,
+    show_default=False,
+    help="The vLAN QOS priority.",
 )
 @click.option(
-    '--link-state', 'link_state', default=None, show_default=False,
-    type=click.Choice(['auto', 'enable', 'disable']),
-    help='The administrative link state.'
+    "--tx-min",
+    "tx_rate_min",
+    default=None,
+    show_default=False,
+    help="The minimum TX rate.",
 )
 @click.option(
-    '--spoof-check/--no-spoof-check', 'spoof_check', is_flag=True, default=None, show_default=False,
-    help='Enable or disable spoof checking.'
+    "--tx-max",
+    "tx_rate_max",
+    default=None,
+    show_default=False,
+    help="The maximum TX rate.",
 )
 @click.option(
-    '--trust/--no-trust', 'trust', is_flag=True, default=None, show_default=False,
-    help='Enable or disable VF user trust.'
+    "--link-state",
+    "link_state",
+    default=None,
+    show_default=False,
+    type=click.Choice(["auto", "enable", "disable"]),
+    help="The administrative link state.",
 )
 @click.option(
-    '--query-rss/--no-query-rss', 'query_rss', is_flag=True, default=None, show_default=False,
-    help='Enable or disable query RSS support.'
+    "--spoof-check/--no-spoof-check",
+    "spoof_check",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable spoof checking.",
 )
-@click.argument(
-    'node'
+@click.option(
+    "--trust/--no-trust",
+    "trust",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable VF user trust.",
 )
-@click.argument(
-    'vf'
+@click.option(
+    "--query-rss/--no-query-rss",
+    "query_rss",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable query RSS support.",
 )
+@click.argument("node")
+@click.argument("vf")
 @cluster_req
-def net_sriov_vf_set(node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+def net_sriov_vf_set(
+    node,
+    vf,
+    vlan_id,
+    vlan_qos,
+    tx_rate_min,
+    tx_rate_max,
+    link_state,
+    spoof_check,
+    trust,
+    query_rss,
+):
     """
     Set a property of SR-IOV VF on NODE.
     """
-    if vlan_id is None and vlan_qos is None and tx_rate_min is None and tx_rate_max is None and link_state is None and spoof_check is None and trust is None and query_rss is None:
-        cleanup(False, 'At least one configuration property must be specified to update.')
+    if (
+        vlan_id is None
+        and vlan_qos is None
+        and tx_rate_min is None
+        and tx_rate_max is None
+        and link_state is None
+        and spoof_check is None
+        and trust is None
+        and query_rss is None
+    ):
+        cleanup(
+            False, "At least one configuration property must be specified to update."
+        )
 
-    retcode, retmsg = pvc_network.net_sriov_vf_set(config, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+    retcode, retmsg = pvc_network.net_sriov_vf_set(
+        config,
+        node,
+        vf,
+        vlan_id,
+        vlan_qos,
+        tx_rate_min,
+        tx_rate_max,
+        link_state,
+        spoof_check,
+        trust,
+        query_rss,
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc network sriov vf list
 ###############################################################################
-@click.command(name='list', short_help='List VF devices.')
-@click.argument(
-    'node'
-)
-@click.argument(
-    'pf', default=None, required=False
-)
+@click.command(name="list", short_help="List VF devices.")
+@click.argument("node")
+@click.argument("pf", default=None, required=False)
 @cluster_req
 def net_sriov_vf_list(node, pf):
     """
@@ -2469,13 +3061,9 @@ def net_sriov_vf_list(node, pf):
 ###############################################################################
 # pvc network sriov vf info
 ###############################################################################
-@click.command(name='info', short_help='List VF devices.')
-@click.argument(
-    'node'
-)
-@click.argument(
-    'vf'
-)
+@click.command(name="info", short_help="List VF devices.")
+@click.argument("node")
+@click.argument("vf")
 @cluster_req
 def net_sriov_vf_info(node, vf):
     """
@@ -2495,7 +3083,11 @@ def net_sriov_vf_info(node, vf):
 #       (i.e. it references Ceph-specific concepts), this makes more
 #       sense in the long-term.
 ###############################################################################
-@click.group(name='storage', short_help='Manage the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="storage",
+    short_help="Manage the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_storage():
     """
     Manage the storage of the PVC cluster.
@@ -2506,7 +3098,7 @@ def cli_storage():
 ###############################################################################
 # pvc storage status
 ###############################################################################
-@click.command(name='status', short_help='Show storage cluster status.')
+@click.command(name="status", short_help="Show storage cluster status.")
 @cluster_req
 def ceph_status():
     """
@@ -2522,7 +3114,7 @@ def ceph_status():
 ###############################################################################
 # pvc storage util
 ###############################################################################
-@click.command(name='util', short_help='Show storage cluster utilization.')
+@click.command(name="util", short_help="Show storage cluster utilization.")
 @cluster_req
 def ceph_util():
     """
@@ -2538,7 +3130,7 @@ def ceph_util():
 ###############################################################################
 # pvc storage benchmark
 ###############################################################################
-@click.group(name='benchmark', short_help='Run or view cluster storage benchmarks.')
+@click.group(name="benchmark", short_help="Run or view cluster storage benchmarks.")
 @cluster_req
 def ceph_benchmark():
     """
@@ -2550,17 +3142,19 @@ def ceph_benchmark():
 ###############################################################################
 # pvc storage benchmark run
 ###############################################################################
-@click.command(name='run', short_help='Run a storage benchmark.')
-@click.argument(
-    'pool'
-)
+@click.command(name="run", short_help="Run a storage benchmark.")
+@click.argument("pool")
 @cluster_req
 def ceph_benchmark_run(pool):
     """
     Run a storage benchmark on POOL in the background.
     """
     try:
-        click.confirm('NOTE: Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue', prompt_suffix='? ', abort=True)
+        click.confirm(
+            "NOTE: Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue",
+            prompt_suffix="? ",
+            abort=True,
+        )
     except Exception:
         exit(0)
 
@@ -2571,14 +3165,16 @@ def ceph_benchmark_run(pool):
 ###############################################################################
 # pvc storage benchmark info
 ###############################################################################
-@click.command(name='info', short_help='Show detailed storage benchmark results.')
-@click.argument(
-    'job', required=True
-)
+@click.command(name="info", short_help="Show detailed storage benchmark results.")
+@click.argument("job", required=True)
 @click.option(
-    '-f', '--format', 'oformat', default='summary', show_default=True,
-    type=click.Choice(['summary', 'json', 'json-pretty']),
-    help='Output format of benchmark information.'
+    "-f",
+    "--format",
+    "oformat",
+    default="summary",
+    show_default=True,
+    type=click.Choice(["summary", "json", "json-pretty"]),
+    help="Output format of benchmark information.",
 )
 @cluster_req
 def ceph_benchmark_info(job, oformat):
@@ -2595,10 +3191,8 @@ def ceph_benchmark_info(job, oformat):
 ###############################################################################
 # pvc storage benchmark list
 ###############################################################################
-@click.command(name='list', short_help='List storage benchmark results.')
-@click.argument(
-    'job', default=None, required=False
-)
+@click.command(name="list", short_help="List storage benchmark results.")
+@click.argument("job", default=None, required=False)
 @cluster_req
 def ceph_benchmark_list(job):
     """
@@ -2614,7 +3208,11 @@ def ceph_benchmark_list(job):
 ###############################################################################
 # pvc storage osd
 ###############################################################################
-@click.group(name='osd', short_help='Manage OSDs in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="osd",
+    short_help="Manage OSDs in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def ceph_osd():
     """
     Manage the Ceph OSDs of the PVC cluster.
@@ -2625,17 +3223,16 @@ def ceph_osd():
 ###############################################################################
 # pvc storage osd create-db-vg
 ###############################################################################
-@click.command(name='create-db-vg', short_help='Create new OSD database volume group.')
-@click.argument(
-    'node'
-)
-@click.argument(
-    'device'
-)
+@click.command(name="create-db-vg", short_help="Create new OSD database volume group.")
+@click.argument("node")
+@click.argument("device")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the creation.'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the creation.",
 )
 @cluster_req
 def ceph_osd_create_db_vg(node, device, confirm_flag):
@@ -2644,9 +3241,15 @@ def ceph_osd_create_db_vg(node, device, confirm_flag):
 
     This volume group will be used for Ceph OSD database and WAL functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. Only one OSD database volume group on a single physical device is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node. Attempting to add additional database volume groups after the first will fail.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Destroy all data and create a new OSD database volume group on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Destroy all data and create a new OSD database volume group on {}:{}".format(
+                    node, device
+                ),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -2657,32 +3260,41 @@ def ceph_osd_create_db_vg(node, device, confirm_flag):
 ###############################################################################
 # pvc storage osd add
 ###############################################################################
-@click.command(name='add', short_help='Add new OSD.')
-@click.argument(
-    'node'
-)
-@click.argument(
-    'device'
+@click.command(name="add", short_help="Add new OSD.")
+@click.argument("node")
+@click.argument("device")
+@click.option(
+    "-w",
+    "--weight",
+    "weight",
+    default=1.0,
+    show_default=True,
+    help="Weight of the OSD within the CRUSH map.",
 )
 @click.option(
-    '-w', '--weight', 'weight',
-    default=1.0, show_default=True,
-    help='Weight of the OSD within the CRUSH map.'
+    "-d",
+    "--ext-db",
+    "ext_db_flag",
+    is_flag=True,
+    default=False,
+    help="Use an external database logical volume for this OSD.",
 )
 @click.option(
-    '-d', '--ext-db', 'ext_db_flag',
-    is_flag=True, default=False,
-    help='Use an external database logical volume for this OSD.'
+    "-r",
+    "--ext-db-ratio",
+    "ext_db_ratio",
+    default=0.05,
+    show_default=True,
+    type=float,
+    help="Decimal ratio of the external database logical volume to the OSD size.",
 )
 @click.option(
-    '-r', '--ext-db-ratio', 'ext_db_ratio',
-    default=0.05, show_default=True, type=float,
-    help='Decimal ratio of the external database logical volume to the OSD size.'
-)
-@click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the creation.'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the creation.",
 )
 @cluster_req
 def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
@@ -2695,27 +3307,34 @@ def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
 
     The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Destroy all data and create a new OSD on {}:{}'.format(node, device), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Destroy all data and create a new OSD on {}:{}".format(node, device),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_ceph.ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio)
+    retcode, retmsg = pvc_ceph.ceph_osd_add(
+        config, node, device, weight, ext_db_flag, ext_db_ratio
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage osd remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove OSD.')
-@click.argument(
-    'osdid'
-)
+@click.command(name="remove", short_help="Remove OSD.")
+@click.argument("osdid")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def ceph_osd_remove(osdid, confirm_flag):
@@ -2724,9 +3343,9 @@ def ceph_osd_remove(osdid, confirm_flag):
 
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance (verified with 'pvc storage status') before removing an OSD.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove OSD {}'.format(osdid), prompt_suffix='? ', abort=True)
+            click.confirm("Remove OSD {}".format(osdid), prompt_suffix="? ", abort=True)
         except Exception:
             exit(0)
 
@@ -2737,44 +3356,38 @@ def ceph_osd_remove(osdid, confirm_flag):
 ###############################################################################
 # pvc storage osd in
 ###############################################################################
-@click.command(name='in', short_help='Online OSD.')
-@click.argument(
-    'osdid'
-)
+@click.command(name="in", short_help="Online OSD.")
+@click.argument("osdid")
 @cluster_req
 def ceph_osd_in(osdid):
     """
     Set a Ceph OSD with ID OSDID online.
     """
 
-    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'in')
+    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, "in")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage osd out
 ###############################################################################
-@click.command(name='out', short_help='Offline OSD.')
-@click.argument(
-    'osdid'
-)
+@click.command(name="out", short_help="Offline OSD.")
+@click.argument("osdid")
 @cluster_req
 def ceph_osd_out(osdid):
     """
     Set a Ceph OSD with ID OSDID offline.
     """
 
-    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, 'out')
+    retcode, retmsg = pvc_ceph.ceph_osd_state(config, osdid, "out")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage osd set
 ###############################################################################
-@click.command(name='set', short_help='Set property.')
-@click.argument(
-    'osd_property'
-)
+@click.command(name="set", short_help="Set property.")
+@click.argument("osd_property")
 @cluster_req
 def ceph_osd_set(osd_property):
     """
@@ -2785,17 +3398,15 @@ def ceph_osd_set(osd_property):
       full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
-    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'set')
+    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, "set")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage osd unset
 ###############################################################################
-@click.command(name='unset', short_help='Unset property.')
-@click.argument(
-    'osd_property'
-)
+@click.command(name="unset", short_help="Unset property.")
+@click.argument("osd_property")
 @cluster_req
 def ceph_osd_unset(osd_property):
     """
@@ -2806,17 +3417,15 @@ def ceph_osd_unset(osd_property):
       full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
     """
 
-    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, 'unset')
+    retcode, retmsg = pvc_ceph.ceph_osd_option(config, osd_property, "unset")
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage osd list
 ###############################################################################
-@click.command(name='list', short_help='List cluster OSDs.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List cluster OSDs.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def ceph_osd_list(limit):
     """
@@ -2832,7 +3441,11 @@ def ceph_osd_list(limit):
 ###############################################################################
 # pvc storage pool
 ###############################################################################
-@click.group(name='pool', short_help='Manage RBD pools in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="pool",
+    short_help="Manage RBD pools in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def ceph_pool():
     """
     Manage the Ceph RBD pools of the PVC cluster.
@@ -2843,23 +3456,22 @@ def ceph_pool():
 ###############################################################################
 # pvc storage pool add
 ###############################################################################
-@click.command(name='add', short_help='Add new RBD pool.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'pgs'
-)
+@click.command(name="add", short_help="Add new RBD pool.")
+@click.argument("name")
+@click.argument("pgs")
 @click.option(
-    '--replcfg', 'replcfg',
-    default='copies=3,mincopies=2', show_default=True, required=False,
+    "--replcfg",
+    "replcfg",
+    default="copies=3,mincopies=2",
+    show_default=True,
+    required=False,
     help="""
     The replication configuration, specifying both a "copies" and "mincopies" value, separated by a
     comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas
     and should not exceed the total number of nodes; the "mincopies" value specifies the minimum
     number of available copies to allow writes. For additional details please see the Cluster
     Architecture documentation.
-    """
+    """,
 )
 @cluster_req
 def ceph_pool_add(name, pgs, replcfg):
@@ -2874,14 +3486,15 @@ def ceph_pool_add(name, pgs, replcfg):
 ###############################################################################
 # pvc storage pool remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove RBD pool.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove RBD pool.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def ceph_pool_remove(name, confirm_flag):
@@ -2890,9 +3503,11 @@ def ceph_pool_remove(name, confirm_flag):
 
     DANGER: This will completely remove the pool and all volumes contained in it from the cluster.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove RBD pool {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove RBD pool {}".format(name), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -2903,10 +3518,8 @@ def ceph_pool_remove(name, confirm_flag):
 ###############################################################################
 # pvc storage pool list
 ###############################################################################
-@click.command(name='list', short_help='List cluster RBD pools.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List cluster RBD pools.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def ceph_pool_list(limit):
     """
@@ -2922,7 +3535,11 @@ def ceph_pool_list(limit):
 ###############################################################################
 # pvc storage volume
 ###############################################################################
-@click.group(name='volume', short_help='Manage RBD volumes in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="volume",
+    short_help="Manage RBD volumes in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def ceph_volume():
     """
     Manage the Ceph RBD volumes of the PVC cluster.
@@ -2933,16 +3550,10 @@ def ceph_volume():
 ###############################################################################
 # pvc storage volume add
 ###############################################################################
-@click.command(name='add', short_help='Add new RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'size'
-)
+@click.command(name="add", short_help="Add new RBD volume.")
+@click.argument("pool")
+@click.argument("name")
+@click.argument("size")
 @cluster_req
 def ceph_volume_add(pool, name, size):
     """
@@ -2956,20 +3567,17 @@ def ceph_volume_add(pool, name, size):
 ###############################################################################
 # pvc storage volume upload
 ###############################################################################
-@click.command(name='upload', short_help='Upload a local image file to RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'image_file'
-)
+@click.command(name="upload", short_help="Upload a local image file to RBD volume.")
+@click.argument("pool")
+@click.argument("name")
+@click.argument("image_file")
 @click.option(
-    '-f', '--format', 'image_format',
-    default='raw', show_default=True,
-    help='The format of the source image.'
+    "-f",
+    "--format",
+    "image_format",
+    default="raw",
+    show_default=True,
+    help="The format of the source image.",
 )
 @cluster_req
 def ceph_volume_upload(pool, name, image_format, image_file):
@@ -2985,24 +3593,25 @@ def ceph_volume_upload(pool, name, image_format, image_file):
         click.echo("ERROR: File '{}' does not exist!".format(image_file))
         exit(1)
 
-    retcode, retmsg = pvc_ceph.ceph_volume_upload(config, pool, name, image_format, image_file)
+    retcode, retmsg = pvc_ceph.ceph_volume_upload(
+        config, pool, name, image_format, image_file
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage volume remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove RBD volume.")
+@click.argument("pool")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def ceph_volume_remove(pool, name, confirm_flag):
@@ -3011,9 +3620,11 @@ def ceph_volume_remove(pool, name, confirm_flag):
 
     DANGER: This will completely remove the volume and all data contained in it.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove volume {}/{}'.format(pool, name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove volume {}/{}".format(pool, name), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -3024,16 +3635,10 @@ def ceph_volume_remove(pool, name, confirm_flag):
 ###############################################################################
 # pvc storage volume resize
 ###############################################################################
-@click.command(name='resize', short_help='Resize RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'size'
-)
+@click.command(name="resize", short_help="Resize RBD volume.")
+@click.argument("pool")
+@click.argument("name")
+@click.argument("size")
 @cluster_req
 def ceph_volume_resize(pool, name, size):
     """
@@ -3046,16 +3651,10 @@ def ceph_volume_resize(pool, name, size):
 ###############################################################################
 # pvc storage volume rename
 ###############################################################################
-@click.command(name='rename', short_help='Rename RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'new_name'
-)
+@click.command(name="rename", short_help="Rename RBD volume.")
+@click.argument("pool")
+@click.argument("name")
+@click.argument("new_name")
 @cluster_req
 def ceph_volume_rename(pool, name, new_name):
     """
@@ -3068,16 +3667,10 @@ def ceph_volume_rename(pool, name, new_name):
 ###############################################################################
 # pvc storage volume clone
 ###############################################################################
-@click.command(name='clone', short_help='Clone RBD volume.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'new_name'
-)
+@click.command(name="clone", short_help="Clone RBD volume.")
+@click.argument("pool")
+@click.argument("name")
+@click.argument("new_name")
 @cluster_req
 def ceph_volume_clone(pool, name, new_name):
     """
@@ -3090,14 +3683,15 @@ def ceph_volume_clone(pool, name, new_name):
 ###############################################################################
 # pvc storage volume list
 ###############################################################################
-@click.command(name='list', short_help='List cluster RBD volumes.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List cluster RBD volumes.")
+@click.argument("limit", default=None, required=False)
 @click.option(
-    '-p', '--pool', 'pool',
-    default=None, show_default=True,
-    help='Show volumes from this pool only.'
+    "-p",
+    "--pool",
+    "pool",
+    default=None,
+    show_default=True,
+    help="Show volumes from this pool only.",
 )
 @cluster_req
 def ceph_volume_list(limit, pool):
@@ -3114,7 +3708,11 @@ def ceph_volume_list(limit, pool):
 ###############################################################################
 # pvc storage volume snapshot
 ###############################################################################
-@click.group(name='snapshot', short_help='Manage RBD volume snapshots in the PVC storage cluster.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="snapshot",
+    short_help="Manage RBD volume snapshots in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def ceph_volume_snapshot():
     """
     Manage the Ceph RBD volume snapshots of the PVC cluster.
@@ -3125,16 +3723,10 @@ def ceph_volume_snapshot():
 ###############################################################################
 # pvc storage volume snapshot add
 ###############################################################################
-@click.command(name='add', short_help='Add new RBD volume snapshot.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'volume'
-)
-@click.argument(
-    'name'
-)
+@click.command(name="add", short_help="Add new RBD volume snapshot.")
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
 @cluster_req
 def ceph_volume_snapshot_add(pool, volume, name):
     """
@@ -3148,45 +3740,36 @@ def ceph_volume_snapshot_add(pool, volume, name):
 ###############################################################################
 # pvc storage volume snapshot rename
 ###############################################################################
-@click.command(name='rename', short_help='Rename RBD volume snapshot.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'volume'
-)
-@click.argument(
-    'name'
-)
-@click.argument(
-    'new_name'
-)
+@click.command(name="rename", short_help="Rename RBD volume snapshot.")
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
+@click.argument("new_name")
 @cluster_req
 def ceph_volume_snapshot_rename(pool, volume, name, new_name):
     """
     Rename an existing Ceph RBD volume snapshot with name NAME to name NEW_NAME for volume VOLUME in pool POOL.
     """
-    retcode, retmsg = pvc_ceph.ceph_snapshot_modify(config, pool, volume, name, new_name=new_name)
+    retcode, retmsg = pvc_ceph.ceph_snapshot_modify(
+        config, pool, volume, name, new_name=new_name
+    )
     cleanup(retcode, retmsg)
 
 
 ###############################################################################
 # pvc storage volume snapshot remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove RBD volume snapshot.')
-@click.argument(
-    'pool'
-)
-@click.argument(
-    'volume'
-)
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove RBD volume snapshot.")
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
@@ -3195,9 +3778,13 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
 
     DANGER: This will completely remove the snapshot.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove snapshot {} for volume {}/{}'.format(name, pool, volume), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove snapshot {} for volume {}/{}".format(name, pool, volume),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -3208,19 +3795,23 @@ def ceph_volume_snapshot_remove(pool, volume, name, confirm_flag):
 ###############################################################################
 # pvc storage volume snapshot list
 ###############################################################################
-@click.command(name='list', short_help='List cluster RBD volume shapshots.')
-@click.argument(
-    'limit', default=None, required=False
+@click.command(name="list", short_help="List cluster RBD volume shapshots.")
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-p",
+    "--pool",
+    "pool",
+    default=None,
+    show_default=True,
+    help="Show snapshots from this pool only.",
 )
 @click.option(
-    '-p', '--pool', 'pool',
-    default=None, show_default=True,
-    help='Show snapshots from this pool only.'
-)
-@click.option(
-    '-o', '--volume', 'volume',
-    default=None, show_default=True,
-    help='Show snapshots from this volume only.'
+    "-o",
+    "--volume",
+    "volume",
+    default=None,
+    show_default=True,
+    help="Show snapshots from this volume only.",
 )
 @cluster_req
 def ceph_volume_snapshot_list(pool, volume, limit):
@@ -3237,7 +3828,11 @@ def ceph_volume_snapshot_list(pool, volume, limit):
 ###############################################################################
 # pvc provisioner
 ###############################################################################
-@click.group(name='provisioner', short_help='Manage PVC provisioner.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="provisioner",
+    short_help="Manage PVC provisioner.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_provisioner():
     """
     Manage the PVC provisioner.
@@ -3248,7 +3843,11 @@ def cli_provisioner():
 ###############################################################################
 # pvc provisioner template
 ###############################################################################
-@click.group(name='template', short_help='Manage PVC provisioner templates.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="template",
+    short_help="Manage PVC provisioner templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template():
     """
     Manage the PVC provisioner template system.
@@ -3259,10 +3858,8 @@ def provisioner_template():
 ###############################################################################
 # pvc provisioner template list
 ###############################################################################
-@click.command(name='list', short_help='List all templates.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all templates.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_template_list(limit):
     """
@@ -3277,7 +3874,11 @@ def provisioner_template_list(limit):
 ###############################################################################
 # pvc provisioner template system
 ###############################################################################
-@click.group(name='system', short_help='Manage PVC provisioner system templates.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="system",
+    short_help="Manage PVC provisioner system templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template_system():
     """
     Manage the PVC provisioner system templates.
@@ -3288,203 +3889,246 @@ def provisioner_template_system():
 ###############################################################################
 # pvc provisioner template system list
 ###############################################################################
-@click.command(name='list', short_help='List all system templates.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all system templates.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_template_system_list(limit):
     """
     List all system templates in the PVC cluster provisioner.
     """
-    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='system')
+    retcode, retdata = pvc_provisioner.template_list(
+        config, limit, template_type="system"
+    )
     if retcode:
-        retdata = pvc_provisioner.format_list_template(retdata, template_type='system')
+        retdata = pvc_provisioner.format_list_template(retdata, template_type="system")
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template system add
 ###############################################################################
-@click.command(name='add', short_help='Add new system template.')
-@click.argument(
-    'name'
+@click.command(name="add", short_help="Add new system template.")
+@click.argument("name")
+@click.option(
+    "-u", "--vcpus", "vcpus", required=True, type=int, help="The number of vCPUs."
 )
 @click.option(
-    '-u', '--vcpus', 'vcpus',
-    required=True, type=int,
-    help='The number of vCPUs.'
+    "-m", "--vram", "vram", required=True, type=int, help="The amount of vRAM (in MB)."
 )
 @click.option(
-    '-m', '--vram', 'vram',
-    required=True, type=int,
-    help='The amount of vRAM (in MB).'
+    "-s/-S",
+    "--serial/--no-serial",
+    "serial",
+    is_flag=True,
+    default=False,
+    help="Enable the virtual serial console.",
 )
 @click.option(
-    '-s/-S', '--serial/--no-serial', 'serial',
-    is_flag=True, default=False,
-    help='Enable the virtual serial console.'
+    "-n/-N",
+    "--vnc/--no-vnc",
+    "vnc",
+    is_flag=True,
+    default=False,
+    help="Enable/disable the VNC console.",
 )
 @click.option(
-    '-n/-N', '--vnc/--no-vnc', 'vnc',
-    is_flag=True, default=False,
-    help='Enable/disable the VNC console.'
-)
-@click.option(
-    '-b', '--vnc-bind', 'vnc_bind',
+    "-b",
+    "--vnc-bind",
+    "vnc_bind",
     default=None,
-    help='Bind VNC to this IP address instead of localhost.'
+    help="Bind VNC to this IP address instead of localhost.",
 )
 @click.option(
-    '--node-limit', 'node_limit',
+    "--node-limit",
+    "node_limit",
     default=None,
-    help='Limit VM operation to this CSV list of node(s).'
+    help="Limit VM operation to this CSV list of node(s).",
 )
 @click.option(
-    '--node-selector', 'node_selector',
-    type=click.Choice(['mem', 'vcpus', 'vms', 'load', 'none'], case_sensitive=False),
-    default='none',
-    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
+    "--node-selector",
+    "node_selector",
+    type=click.Choice(["mem", "vcpus", "vms", "load", "none"], case_sensitive=False),
+    default="none",
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
-    '--node-autostart', 'node_autostart',
-    is_flag=True, default=False,
-    help='Autostart VM with their parent Node on first/next boot.'
+    "--node-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=False,
+    help="Autostart VM with their parent Node on first/next boot.",
 )
 @click.option(
-    '--migration-method', 'migration_method',
-    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
+    "--migration-method",
+    "migration_method",
+    type=click.Choice(["none", "live", "shutdown"], case_sensitive=False),
     default=None,  # Use cluster default
-    help='The preferred migration method of the VM between nodes'
+    help="The preferred migration method of the VM between nodes",
 )
 @cluster_req
-def provisioner_template_system_add(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method):
+def provisioner_template_system_add(
+    name,
+    vcpus,
+    vram,
+    serial,
+    vnc,
+    vnc_bind,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+):
     """
     Add a new system template NAME to the PVC cluster provisioner.
     """
     params = dict()
-    params['name'] = name
-    params['vcpus'] = vcpus
-    params['vram'] = vram
-    params['serial'] = serial
-    params['vnc'] = vnc
+    params["name"] = name
+    params["vcpus"] = vcpus
+    params["vram"] = vram
+    params["serial"] = serial
+    params["vnc"] = vnc
     if vnc:
-        params['vnc_bind'] = vnc_bind
+        params["vnc_bind"] = vnc_bind
     if node_limit:
-        params['node_limit'] = node_limit
+        params["node_limit"] = node_limit
     if node_selector:
-        params['node_selector'] = node_selector
+        params["node_selector"] = node_selector
     if node_autostart:
-        params['node_autostart'] = node_autostart
+        params["node_autostart"] = node_autostart
     if migration_method:
-        params['migration_method'] = migration_method
+        params["migration_method"] = migration_method
 
-    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='system')
+    retcode, retdata = pvc_provisioner.template_add(
+        config, params, template_type="system"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template system modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify an existing system template.')
-@click.argument(
-    'name'
+@click.command(name="modify", short_help="Modify an existing system template.")
+@click.argument("name")
+@click.option("-u", "--vcpus", "vcpus", type=int, help="The number of vCPUs.")
+@click.option("-m", "--vram", "vram", type=int, help="The amount of vRAM (in MB).")
+@click.option(
+    "-s/-S",
+    "--serial/--no-serial",
+    "serial",
+    is_flag=True,
+    default=None,
+    help="Enable the virtual serial console.",
 )
 @click.option(
-    '-u', '--vcpus', 'vcpus',
-    type=int,
-    help='The number of vCPUs.'
+    "-n/-N",
+    "--vnc/--no-vnc",
+    "vnc",
+    is_flag=True,
+    default=None,
+    help="Enable/disable the VNC console.",
 )
 @click.option(
-    '-m', '--vram', 'vram',
-    type=int,
-    help='The amount of vRAM (in MB).'
+    "-b",
+    "--vnc-bind",
+    "vnc_bind",
+    help="Bind VNC to this IP address instead of localhost.",
 )
 @click.option(
-    '-s/-S', '--serial/--no-serial', 'serial',
-    is_flag=True, default=None,
-    help='Enable the virtual serial console.'
+    "--node-limit", "node_limit", help="Limit VM operation to this CSV list of node(s)."
 )
 @click.option(
-    '-n/-N', '--vnc/--no-vnc', 'vnc',
-    is_flag=True, default=None,
-    help='Enable/disable the VNC console.'
+    "--node-selector",
+    "node_selector",
+    type=click.Choice(["mem", "vcpus", "vms", "load", "none"], case_sensitive=False),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
-    '-b', '--vnc-bind', 'vnc_bind',
-    help='Bind VNC to this IP address instead of localhost.'
+    "--node-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=None,
+    help="Autostart VM with their parent Node on first/next boot.",
 )
 @click.option(
-    '--node-limit', 'node_limit',
-    help='Limit VM operation to this CSV list of node(s).'
-)
-@click.option(
-    '--node-selector', 'node_selector',
-    type=click.Choice(['mem', 'vcpus', 'vms', 'load', 'none'], case_sensitive=False),
-    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.'
-)
-@click.option(
-    '--node-autostart', 'node_autostart',
-    is_flag=True, default=None,
-    help='Autostart VM with their parent Node on first/next boot.'
-)
-@click.option(
-    '--migration-method', 'migration_method',
-    type=click.Choice(['none', 'live', 'shutdown'], case_sensitive=False),
+    "--migration-method",
+    "migration_method",
+    type=click.Choice(["none", "live", "shutdown"], case_sensitive=False),
     default=None,  # Use cluster default
-    help='The preferred migration method of the VM between nodes'
+    help="The preferred migration method of the VM between nodes",
 )
 @cluster_req
-def provisioner_template_system_modify(name, vcpus, vram, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method):
+def provisioner_template_system_modify(
+    name,
+    vcpus,
+    vram,
+    serial,
+    vnc,
+    vnc_bind,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+):
     """
     Add a new system template NAME to the PVC cluster provisioner.
     """
     params = dict()
-    params['vcpus'] = vcpus
-    params['vram'] = vram
-    params['serial'] = serial
-    params['vnc'] = vnc
-    params['vnc_bind'] = vnc_bind
-    params['node_limit'] = node_limit
-    params['node_selector'] = node_selector
-    params['node_autostart'] = node_autostart
-    params['migration_method'] = migration_method
+    params["vcpus"] = vcpus
+    params["vram"] = vram
+    params["serial"] = serial
+    params["vnc"] = vnc
+    params["vnc_bind"] = vnc_bind
+    params["node_limit"] = node_limit
+    params["node_selector"] = node_selector
+    params["node_autostart"] = node_autostart
+    params["migration_method"] = migration_method
 
-    retcode, retdata = pvc_provisioner.template_modify(config, params, name, template_type='system')
+    retcode, retdata = pvc_provisioner.template_modify(
+        config, params, name, template_type="system"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template system remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove system template.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove system template.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_template_system_remove(name, confirm_flag):
     """
     Remove system template NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove system template {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove system template {}".format(name), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
-    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='system')
+    retcode, retdata = pvc_provisioner.template_remove(
+        config, name, template_type="system"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template network
 ###############################################################################
-@click.group(name='network', short_help='Manage PVC provisioner network templates.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="network",
+    short_help="Manage PVC provisioner network templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template_network():
     """
     Manage the PVC provisioner network templates.
@@ -3495,32 +4139,32 @@ def provisioner_template_network():
 ###############################################################################
 # pvc provisioner template network list
 ###############################################################################
-@click.command(name='list', short_help='List all network templates.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all network templates.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_template_network_list(limit):
     """
     List all network templates in the PVC cluster provisioner.
     """
-    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='network')
+    retcode, retdata = pvc_provisioner.template_list(
+        config, limit, template_type="network"
+    )
     if retcode:
-        retdata = pvc_provisioner.format_list_template(retdata, template_type='network')
+        retdata = pvc_provisioner.format_list_template(retdata, template_type="network")
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template network add
 ###############################################################################
-@click.command(name='add', short_help='Add new network template.')
-@click.argument(
-    'name'
-)
+@click.command(name="add", short_help="Add new network template.")
+@click.argument("name")
 @click.option(
-    '-m', '--mac-template', 'mac_template',
+    "-m",
+    "--mac-template",
+    "mac_template",
     default=None,
-    help='Use this template for MAC addresses.'
+    help="Use this template for MAC addresses.",
 )
 @cluster_req
 def provisioner_template_network_add(name, mac_template):
@@ -3554,44 +4198,57 @@ def provisioner_template_network_add(name, mac_template):
     portions.
     """
     params = dict()
-    params['name'] = name
-    params['mac_template'] = mac_template
+    params["name"] = name
+    params["mac_template"] = mac_template
 
-    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='network')
+    retcode, retdata = pvc_provisioner.template_add(
+        config, params, template_type="network"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template network remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove network template.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove network template.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_template_network_remove(name, confirm_flag):
     """
     Remove network template MAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove network template {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove network template {}".format(name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
-    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='network')
+    retcode, retdata = pvc_provisioner.template_remove(
+        config, name, template_type="network"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template network vni
 ###############################################################################
-@click.group(name='vni', short_help='Manage PVC provisioner network template VNIs.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="vni",
+    short_help="Manage PVC provisioner network template VNIs.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template_network_vni():
     """
     Manage the network VNIs in PVC provisioner network templates.
@@ -3602,13 +4259,9 @@ def provisioner_template_network_vni():
 ###############################################################################
 # pvc provisioner template network vni add
 ###############################################################################
-@click.command(name='add', short_help='Add network VNI to network template.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'vni'
-)
+@click.command(name="add", short_help="Add network VNI to network template.")
+@click.argument("name")
+@click.argument("vni")
 @cluster_req
 def provisioner_template_network_vni_add(name, vni):
     """
@@ -3618,44 +4271,55 @@ def provisioner_template_network_vni_add(name, vni):
     """
     params = dict()
 
-    retcode, retdata = pvc_provisioner.template_element_add(config, name, vni, params, element_type='net', template_type='network')
+    retcode, retdata = pvc_provisioner.template_element_add(
+        config, name, vni, params, element_type="net", template_type="network"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template network vni remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove network VNI from network template.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'vni'
-)
+@click.command(name="remove", short_help="Remove network VNI from network template.")
+@click.argument("name")
+@click.argument("vni")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_template_network_vni_remove(name, vni, confirm_flag):
     """
     Remove network VNI from network template NAME.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove VNI {} from network template {}'.format(vni, name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove VNI {} from network template {}".format(vni, name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
-    retcode, retdata = pvc_provisioner.template_element_remove(config, name, vni, element_type='net', template_type='network')
+    retcode, retdata = pvc_provisioner.template_element_remove(
+        config, name, vni, element_type="net", template_type="network"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template storage
 ###############################################################################
-@click.group(name='storage', short_help='Manage PVC provisioner storage templates.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="storage",
+    short_help="Manage PVC provisioner storage templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template_storage():
     """
     Manage the PVC provisioner storage templates.
@@ -3666,71 +4330,82 @@ def provisioner_template_storage():
 ###############################################################################
 # pvc provisioner template storage list
 ###############################################################################
-@click.command(name='list', short_help='List all storage templates.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all storage templates.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_template_storage_list(limit):
     """
     List all storage templates in the PVC cluster provisioner.
     """
-    retcode, retdata = pvc_provisioner.template_list(config, limit, template_type='storage')
+    retcode, retdata = pvc_provisioner.template_list(
+        config, limit, template_type="storage"
+    )
     if retcode:
-        retdata = pvc_provisioner.format_list_template(retdata, template_type='storage')
+        retdata = pvc_provisioner.format_list_template(retdata, template_type="storage")
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template storage add
 ###############################################################################
-@click.command(name='add', short_help='Add new storage template.')
-@click.argument(
-    'name'
-)
+@click.command(name="add", short_help="Add new storage template.")
+@click.argument("name")
 @cluster_req
 def provisioner_template_storage_add(name):
     """
     Add a new storage template to the PVC cluster provisioner.
     """
     params = dict()
-    params['name'] = name
+    params["name"] = name
 
-    retcode, retdata = pvc_provisioner.template_add(config, params, template_type='storage')
+    retcode, retdata = pvc_provisioner.template_add(
+        config, params, template_type="storage"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template storage remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove storage template.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove storage template.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_template_storage_remove(name, confirm_flag):
     """
     Remove storage template NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove storage template {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove storage template {}".format(name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
-    retcode, retdata = pvc_provisioner.template_remove(config, name, template_type='storage')
+    retcode, retdata = pvc_provisioner.template_remove(
+        config, name, template_type="storage"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template storage disk
 ###############################################################################
-@click.group(name='disk', short_help='Manage PVC provisioner storage template disks.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="disk",
+    short_help="Manage PVC provisioner storage template disks.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_template_storage_disk():
     """
     Manage the disks in PVC provisioner storage templates.
@@ -3741,45 +4416,43 @@ def provisioner_template_storage_disk():
 ###############################################################################
 # pvc provisioner template storage disk add
 ###############################################################################
-@click.command(name='add', short_help='Add disk to storage template.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'disk'
+@click.command(name="add", short_help="Add disk to storage template.")
+@click.argument("name")
+@click.argument("disk")
+@click.option(
+    "-p", "--pool", "pool", required=True, help="The storage pool for the disk."
 )
 @click.option(
-    '-p', '--pool', 'pool',
-    required=True,
-    help='The storage pool for the disk.'
-)
-@click.option(
-    '-i', '--source-volume', 'source_volume',
+    "-i",
+    "--source-volume",
+    "source_volume",
     default=None,
-    help='The source volume to clone'
+    help="The source volume to clone",
 )
 @click.option(
-    '-s', '--size', 'size', type=int,
+    "-s", "--size", "size", type=int, default=None, help="The size of the disk (in GB)."
+)
+@click.option(
+    "-f", "--filesystem", "filesystem", default=None, help="The filesystem of the disk."
+)
+@click.option(
+    "--fsarg",
+    "fsargs",
     default=None,
-    help='The size of the disk (in GB).'
+    multiple=True,
+    help="Additional argument for filesystem creation, in arg=value format without leading dashes.",
 )
 @click.option(
-    '-f', '--filesystem', 'filesystem',
+    "-m",
+    "--mountpoint",
+    "mountpoint",
     default=None,
-    help='The filesystem of the disk.'
-)
-@click.option(
-    '--fsarg', 'fsargs',
-    default=None, multiple=True,
-    help='Additional argument for filesystem creation, in arg=value format without leading dashes.'
-)
-@click.option(
-    '-m', '--mountpoint', 'mountpoint',
-    default=None,
-    help='The target Linux mountpoint of the disk; requires a filesystem.'
+    help="The target Linux mountpoint of the disk; requires a filesystem.",
 )
 @cluster_req
-def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size, filesystem, fsargs, mountpoint):
+def provisioner_template_storage_disk_add(
+    name, disk, pool, source_volume, size, filesystem, fsargs, mountpoint
+):
     """
     Add a new DISK to storage template NAME.
 
@@ -3789,45 +4462,48 @@ def provisioner_template_storage_disk_add(name, disk, pool, source_volume, size,
     """
 
     if source_volume and (size or filesystem or mountpoint):
-        click.echo('The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.')
+        click.echo(
+            'The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.'
+        )
         exit(1)
 
     params = dict()
-    params['pool'] = pool
-    params['source_volume'] = source_volume
-    params['disk_size'] = size
+    params["pool"] = pool
+    params["source_volume"] = source_volume
+    params["disk_size"] = size
     if filesystem:
-        params['filesystem'] = filesystem
+        params["filesystem"] = filesystem
     if filesystem and fsargs:
         dash_fsargs = list()
         for arg in fsargs:
-            arg_len = len(arg.split('=')[0])
+            arg_len = len(arg.split("=")[0])
             if arg_len == 1:
-                dash_fsargs.append('-' + arg)
+                dash_fsargs.append("-" + arg)
             else:
-                dash_fsargs.append('--' + arg)
-        params['filesystem_arg'] = dash_fsargs
+                dash_fsargs.append("--" + arg)
+        params["filesystem_arg"] = dash_fsargs
     if filesystem and mountpoint:
-        params['mountpoint'] = mountpoint
+        params["mountpoint"] = mountpoint
 
-    retcode, retdata = pvc_provisioner.template_element_add(config, name, disk, params, element_type='disk', template_type='storage')
+    retcode, retdata = pvc_provisioner.template_element_add(
+        config, name, disk, params, element_type="disk", template_type="storage"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner template storage disk remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove disk from storage template.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'disk'
-)
+@click.command(name="remove", short_help="Remove disk from storage template.")
+@click.argument("name")
+@click.argument("disk")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
@@ -3836,20 +4512,30 @@ def provisioner_template_storage_disk_remove(name, disk, confirm_flag):
 
     DISK must be a Linux-style disk identifier such as "sda" or "vdb".
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove disk {} from storage template {}'.format(disk, name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove disk {} from storage template {}".format(disk, name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
-    retcode, retdata = pvc_provisioner.template_element_remove(config, name, disk, element_type='disk', template_type='storage')
+    retcode, retdata = pvc_provisioner.template_element_remove(
+        config, name, disk, element_type="disk", template_type="storage"
+    )
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc provisioner userdata
 ###############################################################################
-@click.group(name='userdata', short_help='Manage PVC provisioner userdata documents.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="userdata",
+    short_help="Manage PVC provisioner userdata documents.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_userdata():
     """
     Manage userdata documents in the PVC provisioner.
@@ -3860,14 +4546,15 @@ def provisioner_userdata():
 ###############################################################################
 # pvc provisioner userdata list
 ###############################################################################
-@click.command(name='list', short_help='List all userdata documents.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all userdata documents.")
+@click.argument("limit", default=None, required=False)
 @click.option(
-    '-f', '--full', 'full',
-    is_flag=True, default=False,
-    help='Show all lines of the document instead of first 4.'
+    "-f",
+    "--full",
+    "full",
+    is_flag=True,
+    default=False,
+    help="Show all lines of the document instead of first 4.",
 )
 @cluster_req
 def provisioner_userdata_list(limit, full):
@@ -3887,10 +4574,8 @@ def provisioner_userdata_list(limit, full):
 ###############################################################################
 # pvc provisioner userdata show
 ###############################################################################
-@click.command(name='show', short_help='Show contents of userdata documents.')
-@click.argument(
-    'name'
-)
+@click.command(name="show", short_help="Show contents of userdata documents.")
+@click.argument("name")
 @cluster_req
 def provisioner_userdata_show(name):
     """
@@ -3903,13 +4588,9 @@ def provisioner_userdata_show(name):
 ###############################################################################
 # pvc provisioner userdata add
 ###############################################################################
-@click.command(name='add', short_help='Define userdata document from file.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'filename', type=click.File()
-)
+@click.command(name="add", short_help="Define userdata document from file.")
+@click.argument("name")
+@click.argument("filename", type=click.File())
 @cluster_req
 def provisioner_userdata_add(name, filename):
     """
@@ -3926,8 +4607,8 @@ def provisioner_userdata_add(name, filename):
         cleanup(False, e)
 
     params = dict()
-    params['name'] = name
-    params['data'] = userdata.strip()
+    params["name"] = name
+    params["data"] = userdata.strip()
 
     retcode, retmsg = pvc_provisioner.userdata_add(config, params)
     cleanup(retcode, retmsg)
@@ -3936,17 +4617,16 @@ def provisioner_userdata_add(name, filename):
 ###############################################################################
 # pvc provisioner userdata modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify existing userdata document.')
+@click.command(name="modify", short_help="Modify existing userdata document.")
 @click.option(
-    '-e', '--editor', 'editor', is_flag=True,
-    help='Use local editor to modify existing document.'
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing document.",
 )
-@click.argument(
-    'name'
-)
-@click.argument(
-    'filename', type=click.File(), default=None, required=False
-)
+@click.argument("name")
+@click.argument("filename", type=click.File(), default=None, required=False)
 @cluster_req
 def provisioner_userdata_modify(name, filename, editor):
     """
@@ -3962,31 +4642,44 @@ def provisioner_userdata_modify(name, filename, editor):
         if not retcode:
             click.echo(retdata)
             exit(1)
-        current_userdata = retdata['userdata'].strip()
+        current_userdata = retdata["userdata"].strip()
 
-        new_userdata = click.edit(text=current_userdata, require_save=True, extension='.yaml')
+        new_userdata = click.edit(
+            text=current_userdata, require_save=True, extension=".yaml"
+        )
         if new_userdata is None:
-            click.echo('Aborting with no modifications.')
+            click.echo("Aborting with no modifications.")
             exit(0)
         else:
             new_userdata = new_userdata.strip()
 
         # Show a diff and confirm
-        click.echo('Pending modifications:')
-        click.echo('')
-        diff = list(difflib.unified_diff(current_userdata.split('\n'), new_userdata.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        click.echo("Pending modifications:")
+        click.echo("")
+        diff = list(
+            difflib.unified_diff(
+                current_userdata.split("\n"),
+                new_userdata.split("\n"),
+                fromfile="current",
+                tofile="modified",
+                fromfiledate="",
+                tofiledate="",
+                n=3,
+                lineterm="",
+            )
+        )
         for line in diff:
-            if re.match(r'^\+', line) is not None:
+            if re.match(r"^\+", line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match(r'^\-', line) is not None:
+            elif re.match(r"^\-", line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match(r'^\^', line) is not None:
+            elif re.match(r"^\^", line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
-        click.echo('')
+        click.echo("")
 
-        click.confirm('Write modifications to cluster?', abort=True)
+        click.confirm("Write modifications to cluster?", abort=True)
 
         userdata = new_userdata
 
@@ -4003,7 +4696,7 @@ def provisioner_userdata_modify(name, filename, editor):
         cleanup(False, e)
 
     params = dict()
-    params['data'] = userdata
+    params["data"] = userdata
 
     retcode, retmsg = pvc_provisioner.userdata_modify(config, name, params)
     cleanup(retcode, retmsg)
@@ -4012,23 +4705,28 @@ def provisioner_userdata_modify(name, filename, editor):
 ###############################################################################
 # pvc provisioner userdata remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove userdata document.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove userdata document.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_userdata_remove(name, confirm_flag):
     """
     Remove userdata document NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove userdata document {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove userdata document {}".format(name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -4039,7 +4737,11 @@ def provisioner_userdata_remove(name, confirm_flag):
 ###############################################################################
 # pvc provisioner script
 ###############################################################################
-@click.group(name='script', short_help='Manage PVC provisioner scripts.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="script",
+    short_help="Manage PVC provisioner scripts.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_script():
     """
     Manage scripts in the PVC provisioner.
@@ -4050,14 +4752,15 @@ def provisioner_script():
 ###############################################################################
 # pvc provisioner script list
 ###############################################################################
-@click.command(name='list', short_help='List all scripts.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all scripts.")
+@click.argument("limit", default=None, required=False)
 @click.option(
-    '-f', '--full', 'full',
-    is_flag=True, default=False,
-    help='Show all lines of the document instead of first 4.'
+    "-f",
+    "--full",
+    "full",
+    is_flag=True,
+    default=False,
+    help="Show all lines of the document instead of first 4.",
 )
 @cluster_req
 def provisioner_script_list(limit, full):
@@ -4077,10 +4780,8 @@ def provisioner_script_list(limit, full):
 ###############################################################################
 # pvc provisioner script show
 ###############################################################################
-@click.command(name='show', short_help='Show contents of script documents.')
-@click.argument(
-    'name'
-)
+@click.command(name="show", short_help="Show contents of script documents.")
+@click.argument("name")
 @cluster_req
 def provisioner_script_show(name):
     """
@@ -4093,13 +4794,9 @@ def provisioner_script_show(name):
 ###############################################################################
 # pvc provisioner script add
 ###############################################################################
-@click.command(name='add', short_help='Define script from file.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'filename', type=click.File()
-)
+@click.command(name="add", short_help="Define script from file.")
+@click.argument("name")
+@click.argument("filename", type=click.File())
 @cluster_req
 def provisioner_script_add(name, filename):
     """
@@ -4111,8 +4808,8 @@ def provisioner_script_add(name, filename):
     filename.close()
 
     params = dict()
-    params['name'] = name
-    params['data'] = script.strip()
+    params["name"] = name
+    params["data"] = script.strip()
 
     retcode, retmsg = pvc_provisioner.script_add(config, params)
     cleanup(retcode, retmsg)
@@ -4121,17 +4818,16 @@ def provisioner_script_add(name, filename):
 ###############################################################################
 # pvc provisioner script modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify existing script.')
+@click.command(name="modify", short_help="Modify existing script.")
 @click.option(
-    '-e', '--editor', 'editor', is_flag=True,
-    help='Use local editor to modify existing document.'
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing document.",
 )
-@click.argument(
-    'name'
-)
-@click.argument(
-    'filename', type=click.File(), default=None, required=False
-)
+@click.argument("name")
+@click.argument("filename", type=click.File(), default=None, required=False)
 @cluster_req
 def provisioner_script_modify(name, filename, editor):
     """
@@ -4147,31 +4843,42 @@ def provisioner_script_modify(name, filename, editor):
         if not retcode:
             click.echo(retdata)
             exit(1)
-        current_script = retdata['script'].strip()
+        current_script = retdata["script"].strip()
 
-        new_script = click.edit(text=current_script, require_save=True, extension='.py')
+        new_script = click.edit(text=current_script, require_save=True, extension=".py")
         if new_script is None:
-            click.echo('Aborting with no modifications.')
+            click.echo("Aborting with no modifications.")
             exit(0)
         else:
             new_script = new_script.strip()
 
         # Show a diff and confirm
-        click.echo('Pending modifications:')
-        click.echo('')
-        diff = list(difflib.unified_diff(current_script.split('\n'), new_script.split('\n'), fromfile='current', tofile='modified', fromfiledate='', tofiledate='', n=3, lineterm=''))
+        click.echo("Pending modifications:")
+        click.echo("")
+        diff = list(
+            difflib.unified_diff(
+                current_script.split("\n"),
+                new_script.split("\n"),
+                fromfile="current",
+                tofile="modified",
+                fromfiledate="",
+                tofiledate="",
+                n=3,
+                lineterm="",
+            )
+        )
         for line in diff:
-            if re.match(r'^\+', line) is not None:
+            if re.match(r"^\+", line) is not None:
                 click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
-            elif re.match(r'^\-', line) is not None:
+            elif re.match(r"^\-", line) is not None:
                 click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
-            elif re.match(r'^\^', line) is not None:
+            elif re.match(r"^\^", line) is not None:
                 click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
                 click.echo(line)
-        click.echo('')
+        click.echo("")
 
-        click.confirm('Write modifications to cluster?', abort=True)
+        click.confirm("Write modifications to cluster?", abort=True)
 
         script = new_script
 
@@ -4182,7 +4889,7 @@ def provisioner_script_modify(name, filename, editor):
         filename.close()
 
     params = dict()
-    params['data'] = script
+    params["data"] = script
 
     retcode, retmsg = pvc_provisioner.script_modify(config, name, params)
     cleanup(retcode, retmsg)
@@ -4191,23 +4898,28 @@ def provisioner_script_modify(name, filename, editor):
 ###############################################################################
 # pvc provisioner script remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove script.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove script.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_script_remove(name, confirm_flag):
     """
     Remove script NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove provisioning script {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove provisioning script {}".format(name),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -4218,7 +4930,11 @@ def provisioner_script_remove(name, confirm_flag):
 ###############################################################################
 # pvc provisioner ova
 ###############################################################################
-@click.group(name='ova', short_help='Manage PVC provisioner OVA images.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="ova",
+    short_help="Manage PVC provisioner OVA images.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_ova():
     """
     Manage ovas in the PVC provisioner.
@@ -4229,10 +4945,8 @@ def provisioner_ova():
 ###############################################################################
 # pvc provisioner ova list
 ###############################################################################
-@click.command(name='list', short_help='List all OVA images.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all OVA images.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_ova_list(limit):
     """
@@ -4247,17 +4961,11 @@ def provisioner_ova_list(limit):
 ###############################################################################
 # pvc provisioner ova upload
 ###############################################################################
-@click.command(name='upload', short_help='Upload OVA file.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'filename'
-)
+@click.command(name="upload", short_help="Upload OVA file.")
+@click.argument("name")
+@click.argument("filename")
 @click.option(
-    '-p', '--pool', 'pool',
-    required=True,
-    help='The storage pool for the OVA images.'
+    "-p", "--pool", "pool", required=True, help="The storage pool for the OVA images."
 )
 @cluster_req
 def provisioner_ova_upload(name, filename, pool):
@@ -4277,8 +4985,8 @@ def provisioner_ova_upload(name, filename, pool):
         exit(1)
 
     params = dict()
-    params['pool'] = pool
-    params['ova_size'] = os.path.getsize(filename)
+    params["pool"] = pool
+    params["ova_size"] = os.path.getsize(filename)
 
     retcode, retdata = pvc_provisioner.ova_upload(config, name, filename, params)
     cleanup(retcode, retdata)
@@ -4287,23 +4995,26 @@ def provisioner_ova_upload(name, filename, pool):
 ###############################################################################
 # pvc provisioner ova remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove OVA image.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove OVA image.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_ova_remove(name, confirm_flag):
     """
     Remove OVA image NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove OVA image {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove OVA image {}".format(name), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -4314,7 +5025,11 @@ def provisioner_ova_remove(name, confirm_flag):
 ###############################################################################
 # pvc provisioner profile
 ###############################################################################
-@click.group(name='profile', short_help='Manage PVC provisioner profiless.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="profile",
+    short_help="Manage PVC provisioner profiless.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def provisioner_profile():
     """
     Manage profiles in the PVC provisioner.
@@ -4325,10 +5040,8 @@ def provisioner_profile():
 ###############################################################################
 # pvc provisioner profile list
 ###############################################################################
-@click.command(name='list', short_help='List all profiles.')
-@click.argument(
-    'limit', default=None, required=False
-)
+@click.command(name="list", short_help="List all profiles.")
+@click.argument("limit", default=None, required=False)
 @cluster_req
 def provisioner_profile_list(limit):
     """
@@ -4343,60 +5056,73 @@ def provisioner_profile_list(limit):
 ###############################################################################
 # pvc provisioner profile add
 ###############################################################################
-@click.command(name='add', short_help='Add provisioner profile.')
-@click.argument(
-    'name'
+@click.command(name="add", short_help="Add provisioner profile.")
+@click.argument("name")
+@click.option(
+    "-p",
+    "--profile-type",
+    "profile_type",
+    default="provisioner",
+    show_default=True,
+    type=click.Choice(["provisioner", "ova"], case_sensitive=False),
+    help="The type of profile.",
 )
 @click.option(
-    '-p', '--profile-type', 'profile_type',
-    default='provisioner', show_default=True,
-    type=click.Choice(['provisioner', 'ova'], case_sensitive=False),
-    help='The type of profile.'
+    "-s",
+    "--system-template",
+    "system_template",
+    help="The system template for the profile.",
 )
 @click.option(
-    '-s', '--system-template', 'system_template',
-    help='The system template for the profile.'
+    "-n",
+    "--network-template",
+    "network_template",
+    help="The network template for the profile.",
 )
 @click.option(
-    '-n', '--network-template', 'network_template',
-    help='The network template for the profile.'
+    "-t",
+    "--storage-template",
+    "storage_template",
+    help="The storage template for the profile.",
 )
 @click.option(
-    '-t', '--storage-template', 'storage_template',
-    help='The storage template for the profile.'
+    "-u", "--userdata", "userdata", help="The userdata document for the profile."
 )
+@click.option("-x", "--script", "script", help="The script for the profile.")
+@click.option("-o", "--ova", "ova", help="The OVA image for the profile.")
 @click.option(
-    '-u', '--userdata', 'userdata',
-    help='The userdata document for the profile.'
-)
-@click.option(
-    '-x', '--script', 'script',
-    help='The script for the profile.'
-)
-@click.option(
-    '-o', '--ova', 'ova',
-    help='The OVA image for the profile.'
-)
-@click.option(
-    '-a', '--script-arg', 'script_args',
-    default=[], multiple=True,
-    help='Additional argument to the script install() function in key=value format.'
+    "-a",
+    "--script-arg",
+    "script_args",
+    default=[],
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
 )
 @cluster_req
-def provisioner_profile_add(name, profile_type, system_template, network_template, storage_template, userdata, script, ova, script_args):
+def provisioner_profile_add(
+    name,
+    profile_type,
+    system_template,
+    network_template,
+    storage_template,
+    userdata,
+    script,
+    ova,
+    script_args,
+):
     """
     Add a new provisioner profile NAME.
     """
     params = dict()
-    params['name'] = name
-    params['profile_type'] = profile_type
-    params['system_template'] = system_template
-    params['network_template'] = network_template
-    params['storage_template'] = storage_template
-    params['userdata'] = userdata
-    params['script'] = script
-    params['ova'] = ova
-    params['arg'] = script_args
+    params["name"] = name
+    params["profile_type"] = profile_type
+    params["system_template"] = system_template
+    params["network_template"] = network_template
+    params["storage_template"] = storage_template
+    params["userdata"] = userdata
+    params["script"] = script
+    params["ova"] = ova
+    params["arg"] = script_args
 
     retcode, retdata = pvc_provisioner.profile_add(config, params)
     cleanup(retcode, retdata)
@@ -4405,65 +5131,84 @@ def provisioner_profile_add(name, profile_type, system_template, network_templat
 ###############################################################################
 # pvc provisioner profile modify
 ###############################################################################
-@click.command(name='modify', short_help='Modify provisioner profile.')
-@click.argument(
-    'name'
-)
+@click.command(name="modify", short_help="Modify provisioner profile.")
+@click.argument("name")
 @click.option(
-    '-s', '--system-template', 'system_template',
+    "-s",
+    "--system-template",
+    "system_template",
     default=None,
-    help='The system template for the profile.'
+    help="The system template for the profile.",
 )
 @click.option(
-    '-n', '--network-template', 'network_template',
+    "-n",
+    "--network-template",
+    "network_template",
     default=None,
-    help='The network template for the profile.'
+    help="The network template for the profile.",
 )
 @click.option(
-    '-t', '--storage-template', 'storage_template',
+    "-t",
+    "--storage-template",
+    "storage_template",
     default=None,
-    help='The storage template for the profile.'
+    help="The storage template for the profile.",
 )
 @click.option(
-    '-u', '--userdata', 'userdata',
+    "-u",
+    "--userdata",
+    "userdata",
     default=None,
-    help='The userdata document for the profile.'
+    help="The userdata document for the profile.",
 )
 @click.option(
-    '-x', '--script', 'script',
+    "-x", "--script", "script", default=None, help="The script for the profile."
+)
+@click.option(
+    "-d",
+    "--delete-script-args",
+    "delete_script_args",
+    default=False,
+    is_flag=True,
+    help="Delete any existing script arguments.",
+)
+@click.option(
+    "-a",
+    "--script-arg",
+    "script_args",
     default=None,
-    help='The script for the profile.'
-)
-@click.option(
-    '-d', '--delete-script-args', 'delete_script_args',
-    default=False, is_flag=True,
-    help="Delete any existing script arguments."
-)
-@click.option(
-    '-a', '--script-arg', 'script_args',
-    default=None, multiple=True,
-    help='Additional argument to the script install() function in key=value format.'
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
 )
 @cluster_req
-def provisioner_profile_modify(name, system_template, network_template, storage_template, userdata, script, delete_script_args, script_args):
+def provisioner_profile_modify(
+    name,
+    system_template,
+    network_template,
+    storage_template,
+    userdata,
+    script,
+    delete_script_args,
+    script_args,
+):
     """
     Modify existing provisioner profile NAME.
     """
     params = dict()
     if system_template is not None:
-        params['system_template'] = system_template
+        params["system_template"] = system_template
     if network_template is not None:
-        params['network_template'] = network_template
+        params["network_template"] = network_template
     if storage_template is not None:
-        params['storage_template'] = storage_template
+        params["storage_template"] = storage_template
     if userdata is not None:
-        params['userdata'] = userdata
+        params["userdata"] = userdata
     if script is not None:
-        params['script'] = script
+        params["script"] = script
     if delete_script_args:
-        params['arg'] = []
+        params["arg"] = []
     if script_args is not None:
-        params['arg'] = script_args
+        params["arg"] = script_args
 
     retcode, retdata = pvc_provisioner.profile_modify(config, name, params)
     cleanup(retcode, retdata)
@@ -4472,23 +5217,26 @@ def provisioner_profile_modify(name, system_template, network_template, storage_
 ###############################################################################
 # pvc provisioner profile remove
 ###############################################################################
-@click.command(name='remove', short_help='Remove profile.')
-@click.argument(
-    'name'
-)
+@click.command(name="remove", short_help="Remove profile.")
+@click.argument("name")
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the removal'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
 )
 @cluster_req
 def provisioner_profile_remove(name, confirm_flag):
     """
     Remove profile NAME from the PVC cluster provisioner.
     """
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove profile {}'.format(name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove profile {}".format(name), prompt_suffix="? ", abort=True
+            )
         except Exception:
             exit(0)
 
@@ -4499,32 +5247,42 @@ def provisioner_profile_remove(name, confirm_flag):
 ###############################################################################
 # pvc provisioner create
 ###############################################################################
-@click.command(name='create', short_help='Create new VM.')
-@click.argument(
-    'name'
-)
-@click.argument(
-    'profile'
+@click.command(name="create", short_help="Create new VM.")
+@click.argument("name")
+@click.argument("profile")
+@click.option(
+    "-a",
+    "--script-arg",
+    "script_args",
+    default=[],
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
 )
 @click.option(
-    '-a', '--script-arg', 'script_args',
-    default=[], multiple=True,
-    help='Additional argument to the script install() function in key=value format.'
+    "-d/-D",
+    "--define/--no-define",
+    "define_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Define the VM automatically during provisioning.",
 )
 @click.option(
-    '-d/-D', '--define/--no-define', 'define_flag',
-    is_flag=True, default=True, show_default=True,
-    help='Define the VM automatically during provisioning.'
+    "-s/-S",
+    "--start/--no-start",
+    "start_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Start the VM automatically upon completion of provisioning.",
 )
 @click.option(
-    '-s/-S', '--start/--no-start', 'start_flag',
-    is_flag=True, default=True, show_default=True,
-    help='Start the VM automatically upon completion of provisioning.'
-)
-@click.option(
-    '-w', '--wait', 'wait_flag',
-    is_flag=True, default=False,
-    help='Wait for provisioning to complete, showing progress'
+    "-w",
+    "--wait",
+    "wait_flag",
+    is_flag=True,
+    default=False,
+    help="Wait for provisioning to complete, showing progress",
 )
 @cluster_req
 def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script_args):
@@ -4547,7 +5305,9 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
     if not define_flag:
         start_flag = False
 
-    retcode, retdata = pvc_provisioner.vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args)
+    retcode, retdata = pvc_provisioner.vm_create(
+        config, name, profile, wait_flag, define_flag, start_flag, script_args
+    )
 
     if retcode and wait_flag:
         task_id = retdata
@@ -4560,38 +5320,43 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
         while True:
             time.sleep(1)
             task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
-            if task_status.get('state') != 'PENDING':
+            if task_status.get("state") != "PENDING":
                 break
             click.echo(".", nl=False)
         click.echo(" done.")
         click.echo()
 
         # Start following the task state, updating progress as we go
-        total_task = task_status.get('total')
+        total_task = task_status.get("total")
         with click.progressbar(length=total_task, show_eta=False) as bar:
             last_task = 0
             maxlen = 0
             while True:
                 time.sleep(1)
-                if task_status.get('state') != 'RUNNING':
+                if task_status.get("state") != "RUNNING":
                     break
-                if task_status.get('current') > last_task:
-                    current_task = int(task_status.get('current'))
+                if task_status.get("current") > last_task:
+                    current_task = int(task_status.get("current"))
                     bar.update(current_task - last_task)
                     last_task = current_task
                     # The extensive spaces at the end cause this to overwrite longer previous messages
-                    curlen = len(str(task_status.get('status')))
+                    curlen = len(str(task_status.get("status")))
                     if curlen > maxlen:
                         maxlen = curlen
                     lendiff = maxlen - curlen
                     overwrite_whitespace = " " * lendiff
-                    click.echo("  " + task_status.get('status') + overwrite_whitespace, nl=False)
-                task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
-            if task_status.get('state') == 'SUCCESS':
+                    click.echo(
+                        "  " + task_status.get("status") + overwrite_whitespace,
+                        nl=False,
+                    )
+                task_status = pvc_provisioner.task_status(
+                    config, task_id, is_watching=True
+                )
+            if task_status.get("state") == "SUCCESS":
                 bar.update(total_task - last_task)
 
         click.echo()
-        retdata = task_status.get('state') + ": " + task_status.get('status')
+        retdata = task_status.get("state") + ": " + task_status.get("status")
 
     cleanup(retcode, retdata)
 
@@ -4599,10 +5364,8 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
 ###############################################################################
 # pvc provisioner status
 ###############################################################################
-@click.command(name='status', short_help='Show status of provisioner job.')
-@click.argument(
-    'job', required=False, default=None
-)
+@click.command(name="status", short_help="Show status of provisioner job.")
+@click.argument("job", required=False, default=None)
 @cluster_req
 def provisioner_status(job):
     """
@@ -4617,7 +5380,11 @@ def provisioner_status(job):
 ###############################################################################
 # pvc maintenance
 ###############################################################################
-@click.group(name='maintenance', short_help='Manage PVC cluster maintenance state.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="maintenance",
+    short_help="Manage PVC cluster maintenance state.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_maintenance():
     """
     Manage the maintenance mode of the PVC cluster.
@@ -4628,37 +5395,41 @@ def cli_maintenance():
 ###############################################################################
 # pvc maintenance on
 ###############################################################################
-@click.command(name='on', short_help='Enable cluster maintenance mode.')
+@click.command(name="on", short_help="Enable cluster maintenance mode.")
 @cluster_req
 def maintenance_on():
     """
     Enable maintenance mode on the PVC cluster.
     """
-    retcode, retdata = pvc_cluster.maintenance_mode(config, 'true')
+    retcode, retdata = pvc_cluster.maintenance_mode(config, "true")
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc maintenance off
 ###############################################################################
-@click.command(name='off', short_help='Disable cluster maintenance mode.')
+@click.command(name="off", short_help="Disable cluster maintenance mode.")
 @cluster_req
 def maintenance_off():
     """
     Disable maintenance mode on the PVC cluster.
     """
-    retcode, retdata = pvc_cluster.maintenance_mode(config, 'false')
+    retcode, retdata = pvc_cluster.maintenance_mode(config, "false")
     cleanup(retcode, retdata)
 
 
 ###############################################################################
 # pvc status
 ###############################################################################
-@click.command(name='status', short_help='Show current cluster status.')
+@click.command(name="status", short_help="Show current cluster status.")
 @click.option(
-    '-f', '--format', 'oformat', default='plain', show_default=True,
-    type=click.Choice(['plain', 'short', 'json', 'json-pretty']),
-    help='Output format of cluster status information.'
+    "-f",
+    "--format",
+    "oformat",
+    default="plain",
+    show_default=True,
+    type=click.Choice(["plain", "short", "json", "json-pretty"]),
+    help="Output format of cluster status information.",
 )
 @cluster_req
 def status_cluster(oformat):
@@ -4685,7 +5456,11 @@ def status_cluster(oformat):
 ###############################################################################
 # pvc task
 ###############################################################################
-@click.group(name='task', short_help='Perform PVC cluster tasks.', context_settings=CONTEXT_SETTINGS)
+@click.group(
+    name="task",
+    short_help="Perform PVC cluster tasks.",
+    context_settings=CONTEXT_SETTINGS,
+)
 def cli_task():
     """
     Perform administrative tasks against the PVC cluster.
@@ -4696,11 +5471,14 @@ def cli_task():
 ###############################################################################
 # pvc task backup
 ###############################################################################
-@click.command(name='backup', short_help='Create JSON backup of cluster.')
+@click.command(name="backup", short_help="Create JSON backup of cluster.")
 @click.option(
-    '-f', '--file', 'filename',
-    default=None, type=click.File(mode='w'),
-    help='Write backup data to this file.'
+    "-f",
+    "--file",
+    "filename",
+    default=None,
+    type=click.File(mode="w"),
+    help="Write backup data to this file.",
 )
 @cluster_req
 def task_backup(filename):
@@ -4722,16 +5500,23 @@ def task_backup(filename):
 ###############################################################################
 # pvc task restore
 ###############################################################################
-@click.command(name='restore', short_help='Restore JSON backup to cluster.')
+@click.command(name="restore", short_help="Restore JSON backup to cluster.")
 @click.option(
-    '-f', '--file', 'filename',
-    required=True, default=None, type=click.File(),
-    help='Read backup data from this file.'
+    "-f",
+    "--file",
+    "filename",
+    required=True,
+    default=None,
+    type=click.File(),
+    help="Read backup data from this file.",
 )
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the restore'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restore",
 )
 @cluster_req
 def task_restore(filename, confirm_flag):
@@ -4739,9 +5524,15 @@ def task_restore(filename, confirm_flag):
     Restore the JSON backup data from a file to the cluster.
     """
 
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Replace all existing cluster data from coordinators with backup file "{}"'.format(filename.name), prompt_suffix='? ', abort=True)
+            click.confirm(
+                'Replace all existing cluster data from coordinators with backup file "{}"'.format(
+                    filename.name
+                ),
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -4753,16 +5544,22 @@ def task_restore(filename, confirm_flag):
 ###############################################################################
 # pvc task init
 ###############################################################################
-@click.command(name='init', short_help='Initialize a new cluster.')
+@click.command(name="init", short_help="Initialize a new cluster.")
 @click.option(
-    '-o', '--overwrite', 'overwrite_flag',
-    is_flag=True, default=False,
-    help='Remove and overwrite any existing data'
+    "-o",
+    "--overwrite",
+    "overwrite_flag",
+    is_flag=True,
+    default=False,
+    help="Remove and overwrite any existing data",
 )
 @click.option(
-    '-y', '--yes', 'confirm_flag',
-    is_flag=True, default=False,
-    help='Confirm the initialization'
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the initialization",
 )
 @cluster_req
 def task_init(confirm_flag, overwrite_flag):
@@ -4776,9 +5573,13 @@ def task_init(confirm_flag, overwrite_flag):
     first and the API daemon started manually before running this command.
     """
 
-    if not confirm_flag and not config['unsafe']:
+    if not confirm_flag and not config["unsafe"]:
         try:
-            click.confirm('Remove all existing cluster data from coordinators and initialize a new cluster', prompt_suffix='? ', abort=True)
+            click.confirm(
+                "Remove all existing cluster data from coordinators and initialize a new cluster",
+                prompt_suffix="? ",
+                abort=True,
+            )
         except Exception:
             exit(0)
 
@@ -4794,24 +5595,42 @@ def task_init(confirm_flag, overwrite_flag):
 ###############################################################################
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option(
-    '-c', '--cluster', '_cluster', envvar='PVC_CLUSTER', default=None,
-    help='Cluster to connect to.'
+    "-c",
+    "--cluster",
+    "_cluster",
+    envvar="PVC_CLUSTER",
+    default=None,
+    help="Cluster to connect to.",
 )
 @click.option(
-    '-v', '--debug', '_debug', envvar='PVC_DEBUG', is_flag=True, default=False,
-    help='Additional debug details.'
+    "-v",
+    "--debug",
+    "_debug",
+    envvar="PVC_DEBUG",
+    is_flag=True,
+    default=False,
+    help="Additional debug details.",
 )
 @click.option(
-    '-q', '--quiet', '_quiet', envvar='PVC_QUIET', is_flag=True, default=False,
-    help='Suppress cluster connection information.'
+    "-q",
+    "--quiet",
+    "_quiet",
+    envvar="PVC_QUIET",
+    is_flag=True,
+    default=False,
+    help="Suppress cluster connection information.",
 )
 @click.option(
-    '-u', '--unsafe', '_unsafe', envvar='PVC_UNSAFE', is_flag=True, default=False,
-    help='Allow unsafe operations without confirmation/"--yes" argument.'
+    "-u",
+    "--unsafe",
+    "_unsafe",
+    envvar="PVC_UNSAFE",
+    is_flag=True,
+    default=False,
+    help='Allow unsafe operations without confirmation/"--yes" argument.',
 )
 @click.option(
-    '--version', is_flag=True, callback=print_version,
-    expose_value=False, is_eager=True
+    "--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True
 )
 def cli(_cluster, _debug, _quiet, _unsafe):
     """
@@ -4834,26 +5653,26 @@ def cli(_cluster, _debug, _quiet, _unsafe):
     global config
     store_data = get_store(store_path)
     config = get_config(store_data, _cluster)
-    if not config.get('badcfg', None):
-        config['debug'] = _debug
-        config['unsafe'] = _unsafe
+    if not config.get("badcfg", None):
+        config["debug"] = _debug
+        config["unsafe"] = _unsafe
 
         if not _quiet:
-            if config['api_scheme'] == 'https' and not config['verify_ssl']:
-                ssl_unverified_msg = ' (unverified)'
+            if config["api_scheme"] == "https" and not config["verify_ssl"]:
+                ssl_unverified_msg = " (unverified)"
             else:
-                ssl_unverified_msg = ''
+                ssl_unverified_msg = ""
             click.echo(
                 'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
-                    config['cluster'],
-                    config['api_host'],
-                    config['api_scheme'],
+                    config["cluster"],
+                    config["api_host"],
+                    config["api_scheme"],
                     ssl_unverified_msg,
-                    config['api_prefix']
+                    config["api_prefix"],
                 ),
-                err=True
+                err=True,
             )
-            click.echo('', err=True)
+            click.echo("", err=True)
 
 
 config = dict()
@@ -5061,5 +5880,5 @@ def main():
     return cli(obj={})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

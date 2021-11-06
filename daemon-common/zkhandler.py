@@ -39,6 +39,7 @@ class ZKConnection(object):
     The decorated function must accept the `zkhandler` argument as its first argument, and
     then use this to access the connection.
     """
+
     def __init__(self, config):
         self.config = config
 
@@ -50,7 +51,7 @@ class ZKConnection(object):
         def connection(*args, **kwargs):
             zkhandler = ZKHandler(self.config)
             zkhandler.connect()
-            schema_version = zkhandler.read('base.schema.version')
+            schema_version = zkhandler.read("base.schema.version")
             if schema_version is None:
                 schema_version = 0
             zkhandler.schema.load(schema_version, quiet=True)
@@ -72,11 +73,16 @@ class ZKConnectionException(Exception):
     """
     A exception when connecting to the cluster
     """
+
     def __init__(self, zkhandler, error=None):
         if error is not None:
-            self.message = "Failed to connect to Zookeeper at {}: {}".format(zkhandler.coordinators(), error)
+            self.message = "Failed to connect to Zookeeper at {}: {}".format(
+                zkhandler.coordinators(), error
+            )
         else:
-            self.message = "Failed to connect to Zookeeper at {}".format(zkhandler.coordinators())
+            self.message = "Failed to connect to Zookeeper at {}".format(
+                zkhandler.coordinators()
+            )
         zkhandler.disconnect()
 
     def __str__(self):
@@ -95,8 +101,8 @@ class ZKHandler(object):
 
         A ZKSchema instance will be created
         """
-        self.encoding = 'utf8'
-        self.coordinators = config['coordinators']
+        self.encoding = "utf8"
+        self.coordinators = config["coordinators"]
         self.logger = logger
         self.zk_conn = KazooClient(hosts=self.coordinators)
         self._schema = ZKSchema()
@@ -107,7 +113,7 @@ class ZKHandler(object):
     def coordinators(self):
         return str(self.coordinators)
 
-    def log(self, message, state=''):
+    def log(self, message, state=""):
         if self.logger is not None:
             self.logger.out(message, state)
         else:
@@ -130,9 +136,11 @@ class ZKHandler(object):
         This function does not do anything except for log the state, and Kazoo handles the rest.
         """
         if state == KazooState.CONNECTED:
-            self.log('Connection to Zookeeper resumed', state='o')
+            self.log("Connection to Zookeeper resumed", state="o")
         else:
-            self.log('Connection to Zookeeper lost with state {}'.format(state), state='w')
+            self.log(
+                "Connection to Zookeeper lost with state {}".format(state), state="w"
+            )
 
     def connect(self, persistent=False):
         """
@@ -141,7 +149,7 @@ class ZKHandler(object):
         try:
             self.zk_conn.start()
             if persistent:
-                self.log('Connection to Zookeeper started', state='o')
+                self.log("Connection to Zookeeper started", state="o")
                 self.zk_conn.add_listener(self.listener)
         except Exception as e:
             raise ZKConnectionException(self, e)
@@ -155,7 +163,7 @@ class ZKHandler(object):
         self.zk_conn.stop()
         self.zk_conn.close()
         if persistent:
-            self.log('Connection to Zookeeper terminated', state='o')
+            self.log("Connection to Zookeeper terminated", state="o")
 
     #
     # Schema helper actions
@@ -183,7 +191,9 @@ class ZKHandler(object):
             elif len(key) == 4:
                 # 4-length sub-level tuple
                 ipath, item, sub_ipath, sub_item = key
-                return self.schema.path(ipath, item=item) + self.schema.path(sub_ipath, item=sub_item)
+                return self.schema.path(ipath, item=item) + self.schema.path(
+                    sub_ipath, item=sub_item
+                )
             else:
                 # This is an invalid key
                 return None
@@ -193,7 +203,7 @@ class ZKHandler(object):
             item = None
 
             # This is a raw key path, used by backup/restore functionality
-            if re.match(r'^/', ipath):
+            if re.match(r"^/", ipath):
                 return ipath
         else:
             # This is an invalid key
@@ -238,14 +248,19 @@ class ZKHandler(object):
         Create or update one or more keys' data
         """
         if type(kvpairs) is not list:
-            self.log("ZKHandler error: Key-value sequence is not a list", state='e')
+            self.log("ZKHandler error: Key-value sequence is not a list", state="e")
             return False
 
         transaction = self.zk_conn.transaction()
 
-        for kvpair in (kvpairs):
+        for kvpair in kvpairs:
             if type(kvpair) is not tuple:
-                self.log("ZKHandler error: Key-value pair '{}' is not a tuple".format(kvpair), state='e')
+                self.log(
+                    "ZKHandler error: Key-value pair '{}' is not a tuple".format(
+                        kvpair
+                    ),
+                    state="e",
+                )
                 return False
 
             key = kvpair[0]
@@ -275,14 +290,21 @@ class ZKHandler(object):
                 try:
                     transaction.check(path, new_version)
                 except TypeError:
-                    self.log("ZKHandler error: Key '{}' does not match expected version".format(path), state='e')
+                    self.log(
+                        "ZKHandler error: Key '{}' does not match expected version".format(
+                            path
+                        ),
+                        state="e",
+                    )
                     return False
 
         try:
             transaction.commit()
             return True
         except Exception as e:
-            self.log("ZKHandler error: Failed to commit transaction: {}".format(e), state='e')
+            self.log(
+                "ZKHandler error: Failed to commit transaction: {}".format(e), state="e"
+            )
             return False
 
     def delete(self, keys, recursive=True):
@@ -298,7 +320,10 @@ class ZKHandler(object):
                     path = self.get_schema_path(key)
                     self.zk_conn.delete(path, recursive=recursive)
                 except Exception as e:
-                    self.log("ZKHandler error: Failed to delete key {}: {}".format(path, e), state='e')
+                    self.log(
+                        "ZKHandler error: Failed to delete key {}: {}".format(path, e),
+                        state="e",
+                    )
                     return False
 
         return True
@@ -322,7 +347,7 @@ class ZKHandler(object):
         Rename one or more keys to a new value
         """
         if type(kkpairs) is not list:
-            self.log("ZKHandler error: Key-key sequence is not a list", state='e')
+            self.log("ZKHandler error: Key-key sequence is not a list", state="e")
             return False
 
         transaction = self.zk_conn.transaction()
@@ -334,14 +359,21 @@ class ZKHandler(object):
             if self.children(source_path):
                 for child_path in self.children(source_path):
                     child_source_path = "{}/{}".format(source_path, child_path)
-                    child_destination_path = "{}/{}".format(destination_path, child_path)
-                    rename_element(transaction, child_source_path, child_destination_path)
+                    child_destination_path = "{}/{}".format(
+                        destination_path, child_path
+                    )
+                    rename_element(
+                        transaction, child_source_path, child_destination_path
+                    )
 
             transaction.delete(source_path)
 
-        for kkpair in (kkpairs):
+        for kkpair in kkpairs:
             if type(kkpair) is not tuple:
-                self.log("ZKHandler error: Key-key pair '{}' is not a tuple".format(kkpair), state='e')
+                self.log(
+                    "ZKHandler error: Key-key pair '{}' is not a tuple".format(kkpair),
+                    state="e",
+                )
                 return False
 
             source_key = kkpair[0]
@@ -357,11 +389,21 @@ class ZKHandler(object):
                 continue
 
             if not self.exists(source_key):
-                self.log("ZKHander error: Source key '{}' does not exist".format(source_path), state='e')
+                self.log(
+                    "ZKHander error: Source key '{}' does not exist".format(
+                        source_path
+                    ),
+                    state="e",
+                )
                 return False
 
             if self.exists(destination_key):
-                self.log("ZKHander error: Destination key '{}' already exists".format(destination_path), state='e')
+                self.log(
+                    "ZKHander error: Destination key '{}' already exists".format(
+                        destination_path
+                    ),
+                    state="e",
+                )
                 return False
 
             rename_element(transaction, source_path, destination_path)
@@ -370,7 +412,9 @@ class ZKHandler(object):
             transaction.commit()
             return True
         except Exception as e:
-            self.log("ZKHandler error: Failed to commit transaction: {}".format(e), state='e')
+            self.log(
+                "ZKHandler error: Failed to commit transaction: {}".format(e), state="e"
+            )
             return False
 
     #
@@ -391,11 +435,21 @@ class ZKHandler(object):
                 lock = self.zk_conn.ReadLock(path, lock_id)
                 break
             except NoNodeError:
-                self.log("ZKHandler warning: Failed to acquire read lock on nonexistent path {}".format(path), state='e')
+                self.log(
+                    "ZKHandler warning: Failed to acquire read lock on nonexistent path {}".format(
+                        path
+                    ),
+                    state="e",
+                )
                 return None
             except Exception as e:
                 if count > 5:
-                    self.log("ZKHandler warning: Failed to acquire read lock after 5 tries: {}".format(e), state='e')
+                    self.log(
+                        "ZKHandler warning: Failed to acquire read lock after 5 tries: {}".format(
+                            e
+                        ),
+                        state="e",
+                    )
                     break
                 else:
                     time.sleep(0.5)
@@ -419,11 +473,21 @@ class ZKHandler(object):
                 lock = self.zk_conn.WriteLock(path, lock_id)
                 break
             except NoNodeError:
-                self.log("ZKHandler warning: Failed to acquire write lock on nonexistent path {}".format(path), state='e')
+                self.log(
+                    "ZKHandler warning: Failed to acquire write lock on nonexistent path {}".format(
+                        path
+                    ),
+                    state="e",
+                )
                 return None
             except Exception as e:
                 if count > 5:
-                    self.log("ZKHandler warning: Failed to acquire write lock after 5 tries: {}".format(e), state='e')
+                    self.log(
+                        "ZKHandler warning: Failed to acquire write lock after 5 tries: {}".format(
+                            e
+                        ),
+                        state="e",
+                    )
                     break
                 else:
                     time.sleep(0.5)
@@ -447,11 +511,21 @@ class ZKHandler(object):
                 lock = self.zk_conn.Lock(path, lock_id)
                 break
             except NoNodeError:
-                self.log("ZKHandler warning: Failed to acquire exclusive lock on nonexistent path {}".format(path), state='e')
+                self.log(
+                    "ZKHandler warning: Failed to acquire exclusive lock on nonexistent path {}".format(
+                        path
+                    ),
+                    state="e",
+                )
                 return None
             except Exception as e:
                 if count > 5:
-                    self.log("ZKHandler warning: Failed to acquire exclusive lock after 5 tries: {}".format(e), state='e')
+                    self.log(
+                        "ZKHandler warning: Failed to acquire exclusive lock after 5 tries: {}".format(
+                            e
+                        ),
+                        state="e",
+                    )
                     break
                 else:
                     time.sleep(0.5)
@@ -469,193 +543,171 @@ class ZKSchema(object):
     _version = 6
 
     # Root for doing nested keys
-    _schema_root = ''
+    _schema_root = ""
 
     # Primary schema definition for the current version
     _schema = {
-        'version': f'{_version}',
-        'root': f'{_schema_root}',
+        "version": f"{_version}",
+        "root": f"{_schema_root}",
         # Base schema defining core keys; this is all that is initialized on cluster init()
-        'base': {
-            'root': f'{_schema_root}',
-            'schema': f'{_schema_root}/schema',
-            'schema.version': f'{_schema_root}/schema/version',
-            'config': f'{_schema_root}/config',
-            'config.maintenance': f'{_schema_root}/config/maintenance',
-            'config.primary_node': f'{_schema_root}/config/primary_node',
-            'config.primary_node.sync_lock': f'{_schema_root}/config/primary_node/sync_lock',
-            'config.upstream_ip': f'{_schema_root}/config/upstream_ip',
-            'config.migration_target_selector': f'{_schema_root}/config/migration_target_selector',
-            'cmd': f'{_schema_root}/cmd',
-            'cmd.node': f'{_schema_root}/cmd/nodes',
-            'cmd.domain': f'{_schema_root}/cmd/domains',
-            'cmd.ceph': f'{_schema_root}/cmd/ceph',
-            'logs': '/logs',
-            'node': f'{_schema_root}/nodes',
-            'domain': f'{_schema_root}/domains',
-            'network': f'{_schema_root}/networks',
-            'storage': f'{_schema_root}/ceph',
-            'storage.util': f'{_schema_root}/ceph/util',
-            'osd': f'{_schema_root}/ceph/osds',
-            'pool': f'{_schema_root}/ceph/pools',
-            'volume': f'{_schema_root}/ceph/volumes',
-            'snapshot': f'{_schema_root}/ceph/snapshots',
+        "base": {
+            "root": f"{_schema_root}",
+            "schema": f"{_schema_root}/schema",
+            "schema.version": f"{_schema_root}/schema/version",
+            "config": f"{_schema_root}/config",
+            "config.maintenance": f"{_schema_root}/config/maintenance",
+            "config.primary_node": f"{_schema_root}/config/primary_node",
+            "config.primary_node.sync_lock": f"{_schema_root}/config/primary_node/sync_lock",
+            "config.upstream_ip": f"{_schema_root}/config/upstream_ip",
+            "config.migration_target_selector": f"{_schema_root}/config/migration_target_selector",
+            "cmd": f"{_schema_root}/cmd",
+            "cmd.node": f"{_schema_root}/cmd/nodes",
+            "cmd.domain": f"{_schema_root}/cmd/domains",
+            "cmd.ceph": f"{_schema_root}/cmd/ceph",
+            "logs": "/logs",
+            "node": f"{_schema_root}/nodes",
+            "domain": f"{_schema_root}/domains",
+            "network": f"{_schema_root}/networks",
+            "storage": f"{_schema_root}/ceph",
+            "storage.util": f"{_schema_root}/ceph/util",
+            "osd": f"{_schema_root}/ceph/osds",
+            "pool": f"{_schema_root}/ceph/pools",
+            "volume": f"{_schema_root}/ceph/volumes",
+            "snapshot": f"{_schema_root}/ceph/snapshots",
         },
         # The schema of an individual logs entry (/logs/{node_name})
-        'logs': {
-            'node': '',  # The root key
-            'messages': '/messages',
+        "logs": {
+            "node": "",  # The root key
+            "messages": "/messages",
         },
         # The schema of an individual node entry (/nodes/{node_name})
-        'node': {
-            'name': '',  # The root key
-            'keepalive': '/keepalive',
-            'mode': '/daemonmode',
-            'data.active_schema': '/activeschema',
-            'data.latest_schema': '/latestschema',
-            'data.static': '/staticdata',
-            'data.pvc_version': '/pvcversion',
-            'running_domains': '/runningdomains',
-            'count.provisioned_domains': '/domainscount',
-            'count.networks': '/networkscount',
-            'state.daemon': '/daemonstate',
-            'state.router': '/routerstate',
-            'state.domain': '/domainstate',
-            'cpu.load': '/cpuload',
-            'vcpu.allocated': '/vcpualloc',
-            'memory.total': '/memtotal',
-            'memory.used': '/memused',
-            'memory.free': '/memfree',
-            'memory.allocated': '/memalloc',
-            'memory.provisioned': '/memprov',
-            'ipmi.hostname': '/ipmihostname',
-            'ipmi.username': '/ipmiusername',
-            'ipmi.password': '/ipmipassword',
-            'sriov': '/sriov',
-            'sriov.pf': '/sriov/pf',
-            'sriov.vf': '/sriov/vf',
+        "node": {
+            "name": "",  # The root key
+            "keepalive": "/keepalive",
+            "mode": "/daemonmode",
+            "data.active_schema": "/activeschema",
+            "data.latest_schema": "/latestschema",
+            "data.static": "/staticdata",
+            "data.pvc_version": "/pvcversion",
+            "running_domains": "/runningdomains",
+            "count.provisioned_domains": "/domainscount",
+            "count.networks": "/networkscount",
+            "state.daemon": "/daemonstate",
+            "state.router": "/routerstate",
+            "state.domain": "/domainstate",
+            "cpu.load": "/cpuload",
+            "vcpu.allocated": "/vcpualloc",
+            "memory.total": "/memtotal",
+            "memory.used": "/memused",
+            "memory.free": "/memfree",
+            "memory.allocated": "/memalloc",
+            "memory.provisioned": "/memprov",
+            "ipmi.hostname": "/ipmihostname",
+            "ipmi.username": "/ipmiusername",
+            "ipmi.password": "/ipmipassword",
+            "sriov": "/sriov",
+            "sriov.pf": "/sriov/pf",
+            "sriov.vf": "/sriov/vf",
         },
         # The schema of an individual SR-IOV PF entry (/nodes/{node_name}/sriov/pf/{pf})
-        'sriov_pf': {
-            'phy': '',  # The root key
-            'mtu': '/mtu',
-            'vfcount': '/vfcount'
-        },
+        "sriov_pf": {"phy": "", "mtu": "/mtu", "vfcount": "/vfcount"},  # The root key
         # The schema of an individual SR-IOV VF entry (/nodes/{node_name}/sriov/vf/{vf})
-        'sriov_vf': {
-            'phy': '',  # The root key
-            'pf': '/pf',
-            'mtu': '/mtu',
-            'mac': '/mac',
-            'phy_mac': '/phy_mac',
-            'config': '/config',
-            'config.vlan_id': '/config/vlan_id',
-            'config.vlan_qos': '/config/vlan_qos',
-            'config.tx_rate_min': '/config/tx_rate_min',
-            'config.tx_rate_max': '/config/tx_rate_max',
-            'config.spoof_check': '/config/spoof_check',
-            'config.link_state': '/config/link_state',
-            'config.trust': '/config/trust',
-            'config.query_rss': '/config/query_rss',
-            'pci': '/pci',
-            'pci.domain': '/pci/domain',
-            'pci.bus': '/pci/bus',
-            'pci.slot': '/pci/slot',
-            'pci.function': '/pci/function',
-            'used': '/used',
-            'used_by': '/used_by'
+        "sriov_vf": {
+            "phy": "",  # The root key
+            "pf": "/pf",
+            "mtu": "/mtu",
+            "mac": "/mac",
+            "phy_mac": "/phy_mac",
+            "config": "/config",
+            "config.vlan_id": "/config/vlan_id",
+            "config.vlan_qos": "/config/vlan_qos",
+            "config.tx_rate_min": "/config/tx_rate_min",
+            "config.tx_rate_max": "/config/tx_rate_max",
+            "config.spoof_check": "/config/spoof_check",
+            "config.link_state": "/config/link_state",
+            "config.trust": "/config/trust",
+            "config.query_rss": "/config/query_rss",
+            "pci": "/pci",
+            "pci.domain": "/pci/domain",
+            "pci.bus": "/pci/bus",
+            "pci.slot": "/pci/slot",
+            "pci.function": "/pci/function",
+            "used": "/used",
+            "used_by": "/used_by",
         },
         # The schema of an individual domain entry (/domains/{domain_uuid})
-        'domain': {
-            'name': '',  # The root key
-            'xml': '/xml',
-            'state': '/state',
-            'profile': '/profile',
-            'stats': '/stats',
-            'node': '/node',
-            'last_node': '/lastnode',
-            'failed_reason': '/failedreason',
-            'storage.volumes': '/rbdlist',
-            'console.log': '/consolelog',
-            'console.vnc': '/vnc',
-            'meta.autostart': '/node_autostart',
-            'meta.migrate_method': '/migration_method',
-            'meta.node_selector': '/node_selector',
-            'meta.node_limit': '/node_limit',
-            'meta.tags': '/tags',
-            'migrate.sync_lock': '/migrate_sync_lock'
+        "domain": {
+            "name": "",  # The root key
+            "xml": "/xml",
+            "state": "/state",
+            "profile": "/profile",
+            "stats": "/stats",
+            "node": "/node",
+            "last_node": "/lastnode",
+            "failed_reason": "/failedreason",
+            "storage.volumes": "/rbdlist",
+            "console.log": "/consolelog",
+            "console.vnc": "/vnc",
+            "meta.autostart": "/node_autostart",
+            "meta.migrate_method": "/migration_method",
+            "meta.node_selector": "/node_selector",
+            "meta.node_limit": "/node_limit",
+            "meta.tags": "/tags",
+            "migrate.sync_lock": "/migrate_sync_lock",
         },
         # The schema of an individual domain tag entry (/domains/{domain}/tags/{tag})
-        'tag': {
-            'name': '',  # The root key
-            'type': '/type',
-            'protected': '/protected'
-        },
+        "tag": {"name": "", "type": "/type", "protected": "/protected"},  # The root key
         # The schema of an individual network entry (/networks/{vni})
-        'network': {
-            'vni': '',  # The root key
-            'type': '/nettype',
-            'mtu': '/mtu',
-            'rule': '/firewall_rules',
-            'rule.in': '/firewall_rules/in',
-            'rule.out': '/firewall_rules/out',
-            'nameservers': '/name_servers',
-            'domain': '/domain',
-            'reservation': '/dhcp4_reservations',
-            'lease': '/dhcp4_leases',
-            'ip4.gateway': '/ip4_gateway',
-            'ip4.network': '/ip4_network',
-            'ip4.dhcp': '/dhcp4_flag',
-            'ip4.dhcp_start': '/dhcp4_start',
-            'ip4.dhcp_end': '/dhcp4_end',
-            'ip6.gateway': '/ip6_gateway',
-            'ip6.network': '/ip6_network',
-            'ip6.dhcp': '/dhcp6_flag'
+        "network": {
+            "vni": "",  # The root key
+            "type": "/nettype",
+            "mtu": "/mtu",
+            "rule": "/firewall_rules",
+            "rule.in": "/firewall_rules/in",
+            "rule.out": "/firewall_rules/out",
+            "nameservers": "/name_servers",
+            "domain": "/domain",
+            "reservation": "/dhcp4_reservations",
+            "lease": "/dhcp4_leases",
+            "ip4.gateway": "/ip4_gateway",
+            "ip4.network": "/ip4_network",
+            "ip4.dhcp": "/dhcp4_flag",
+            "ip4.dhcp_start": "/dhcp4_start",
+            "ip4.dhcp_end": "/dhcp4_end",
+            "ip6.gateway": "/ip6_gateway",
+            "ip6.network": "/ip6_network",
+            "ip6.dhcp": "/dhcp6_flag",
         },
         # The schema of an individual network DHCP(v4) reservation entry (/networks/{vni}/dhcp4_reservations/{mac})
-        'reservation': {
-            'mac': '',  # The root key
-            'ip': '/ipaddr',
-            'hostname': '/hostname'
+        "reservation": {
+            "mac": "",  # The root key
+            "ip": "/ipaddr",
+            "hostname": "/hostname",
         },
         # The schema of an individual network DHCP(v4) lease entry (/networks/{vni}/dhcp4_leases/{mac})
-        'lease': {
-            'mac': '',  # The root key
-            'ip': '/ipaddr',
-            'hostname': '/hostname',
-            'expiry': '/expiry',
-            'client_id': '/clientid'
+        "lease": {
+            "mac": "",  # The root key
+            "ip": "/ipaddr",
+            "hostname": "/hostname",
+            "expiry": "/expiry",
+            "client_id": "/clientid",
         },
         # The schema for an individual network ACL entry (/networks/{vni}/firewall_rules/(in|out)/{acl}
-        'rule': {
-            'description': '',  # The root key
-            'rule': '/rule',
-            'order': '/order'
-        },
+        "rule": {"description": "", "rule": "/rule", "order": "/order"},  # The root key
         # The schema of an individual OSD entry (/ceph/osds/{osd_id})
-        'osd': {
-            'id': '',  # The root key
-            'node': '/node',
-            'device': '/device',
-            'db_device': '/db_device',
-            'stats': '/stats'
+        "osd": {
+            "id": "",  # The root key
+            "node": "/node",
+            "device": "/device",
+            "db_device": "/db_device",
+            "stats": "/stats",
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})
-        'pool': {
-            'name': '',  # The root key
-            'pgs': '/pgs',
-            'stats': '/stats'
-        },
+        "pool": {"name": "", "pgs": "/pgs", "stats": "/stats"},  # The root key
         # The schema of an individual volume entry (/ceph/volumes/{pool_name}/{volume_name})
-        'volume': {
-            'name': '',  # The root key
-            'stats': '/stats'
-        },
+        "volume": {"name": "", "stats": "/stats"},  # The root key
         # The schema of an individual snapshot entry (/ceph/volumes/{pool_name}/{volume_name}/{snapshot_name})
-        'snapshot': {
-            'name': '',  # The root key
-            'stats': '/stats'
-        }
+        "snapshot": {"name": "", "stats": "/stats"},  # The root key
     }
 
     # Properties
@@ -687,7 +739,7 @@ class ZKSchema(object):
         pass
 
     def __repr__(self):
-        return f'ZKSchema({self.version})'
+        return f"ZKSchema({self.version})"
 
     def __lt__(self, other):
         if self.version < other.version:
@@ -722,46 +774,46 @@ class ZKSchema(object):
     # Load the schema of a given version from a file
     def load(self, version, quiet=False):
         if not quiet:
-            print(f'Loading schema version {version}')
+            print(f"Loading schema version {version}")
 
-        with open(f'daemon_lib/migrations/versions/{version}.json', 'r') as sfh:
+        with open(f"daemon_lib/migrations/versions/{version}.json", "r") as sfh:
             self.schema = json.load(sfh)
-            self.version = self.schema.get('version')
+            self.version = self.schema.get("version")
 
     # Get key paths
     def path(self, ipath, item=None):
-        itype, *ipath = ipath.split('.')
+        itype, *ipath = ipath.split(".")
 
         if item is None:
-            return self.schema.get(itype).get('.'.join(ipath))
+            return self.schema.get(itype).get(".".join(ipath))
         else:
-            base_path = self.schema.get('base').get(itype, None)
+            base_path = self.schema.get("base").get(itype, None)
             if base_path is None:
                 # This should only really happen for second-layer key types where the helper functions join them together
-                base_path = ''
+                base_path = ""
 
             if not ipath:
                 # This is a root path
-                return f'{base_path}/{item}'
+                return f"{base_path}/{item}"
 
-            sub_path = self.schema.get(itype).get('.'.join(ipath))
+            sub_path = self.schema.get(itype).get(".".join(ipath))
             if sub_path is None:
                 # We didn't find the path we're looking for, so we don't want to do anything
                 return None
 
-            return f'{base_path}/{item}{sub_path}'
+            return f"{base_path}/{item}{sub_path}"
 
     # Get keys of a schema location
     def keys(self, itype=None):
         if itype is None:
-            return list(self.schema.get('base').keys())
+            return list(self.schema.get("base").keys())
         else:
             return list(self.schema.get(itype).keys())
 
     # Get the active version of a cluster's schema
     def get_version(self, zkhandler):
         try:
-            current_version = zkhandler.read(self.path('base.schema.version'))
+            current_version = zkhandler.read(self.path("base.schema.version"))
         except NoNodeError:
             current_version = 0
         return current_version
@@ -771,37 +823,43 @@ class ZKSchema(object):
         result = True
 
         # Walk the entire tree checking our schema
-        for elem in ['base']:
+        for elem in ["base"]:
             for key in self.keys(elem):
-                kpath = f'{elem}.{key}'
+                kpath = f"{elem}.{key}"
                 if not zkhandler.zk_conn.exists(self.path(kpath)):
                     if logger is not None:
-                        logger.out(f'Key not found: {self.path(kpath)}', state='w')
+                        logger.out(f"Key not found: {self.path(kpath)}", state="w")
                     result = False
 
-        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ["node", "domain", "network", "osd", "pool"]:
             # First read all the subelements of the key class
-            for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for child in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # For each key in the schema for that particular elem
                 for ikey in self.keys(elem):
-                    kpath = f'{elem}.{ikey}'
+                    kpath = f"{elem}.{ikey}"
                     # Validate that the key exists for that child
                     if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                         if logger is not None:
-                            logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                            logger.out(
+                                f"Key not found: {self.path(kpath, child)}", state="w"
+                            )
                         result = False
 
                     # Continue for child keys under network (reservation, acl)
-                    if elem in ['network'] and ikey in ['reservation', 'rule.in', 'rule.out']:
-                        if ikey in ['rule.in', 'rule.out']:
-                            sikey = 'rule'
+                    if elem in ["network"] and ikey in [
+                        "reservation",
+                        "rule.in",
+                        "rule.out",
+                    ]:
+                        if ikey in ["rule.in", "rule.out"]:
+                            sikey = "rule"
                         else:
                             sikey = ikey
-                        npath = self.path(f'{elem}.{ikey}', child)
+                        npath = self.path(f"{elem}.{ikey}", child)
                         for nchild in zkhandler.zk_conn.get_children(npath):
-                            nkpath = f'{npath}/{nchild}'
+                            nkpath = f"{npath}/{nchild}"
                             for esikey in self.keys(sikey):
-                                nkipath = f'{nkpath}/{esikey}'
+                                nkipath = f"{nkpath}/{esikey}"
                                 if not zkhandler.zk_conn.exists(nkipath):
                                     result = False
 
@@ -810,36 +868,48 @@ class ZKSchema(object):
                     # and thus never need to be validated or applied.
 
         # These two have several children layers that must be parsed through
-        for elem in ['volume']:
+        for elem in ["volume"]:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # Finally read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
-                    child = f'{pchild}/{vchild}'
+                for vchild in zkhandler.zk_conn.get_children(
+                    self.path(f"base.{elem}") + f"/{pchild}"
+                ):
+                    child = f"{pchild}/{vchild}"
                     # For each key in the schema for that particular elem
                     for ikey in self.keys(elem):
-                        kpath = f'{elem}.{ikey}'
+                        kpath = f"{elem}.{ikey}"
                         # Validate that the key exists for that child
                         if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                             if logger is not None:
-                                logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                                logger.out(
+                                    f"Key not found: {self.path(kpath, child)}",
+                                    state="w",
+                                )
                             result = False
 
-        for elem in ['snapshot']:
+        for elem in ["snapshot"]:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # Next read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(
+                    self.path(f"base.{elem}") + f"/{pchild}"
+                ):
                     # Finally read all the subelements of the key class (volume layer)
-                    for schild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
-                        child = f'{pchild}/{vchild}/{schild}'
+                    for schild in zkhandler.zk_conn.get_children(
+                        self.path(f"base.{elem}") + f"/{pchild}/{vchild}"
+                    ):
+                        child = f"{pchild}/{vchild}/{schild}"
                         # For each key in the schema for that particular elem
                         for ikey in self.keys(elem):
-                            kpath = f'{elem}.{ikey}'
+                            kpath = f"{elem}.{ikey}"
                             # Validate that the key exists for that child
                             if not zkhandler.zk_conn.exists(self.path(kpath, child)):
                                 if logger is not None:
-                                    logger.out(f'Key not found: {self.path(kpath, child)}', state='w')
+                                    logger.out(
+                                        f"Key not found: {self.path(kpath, child)}",
+                                        state="w",
+                                    )
                                 result = False
 
         return result
@@ -847,88 +917,109 @@ class ZKSchema(object):
     # Apply the current schema to the cluster
     def apply(self, zkhandler):
         # Walk the entire tree checking our schema
-        for elem in ['base']:
+        for elem in ["base"]:
             for key in self.keys(elem):
-                kpath = f'{elem}.{key}'
+                kpath = f"{elem}.{key}"
                 if not zkhandler.zk_conn.exists(self.path(kpath)):
                     # Ensure that we create base.schema.version with the current valid version value
-                    if kpath == 'base.schema.version':
+                    if kpath == "base.schema.version":
                         data = str(self.version)
                     else:
-                        data = ''
-                    zkhandler.zk_conn.create(self.path(kpath), data.encode(zkhandler.encoding))
+                        data = ""
+                    zkhandler.zk_conn.create(
+                        self.path(kpath), data.encode(zkhandler.encoding)
+                    )
 
-        for elem in ['node', 'domain', 'network', 'osd', 'pool']:
+        for elem in ["node", "domain", "network", "osd", "pool"]:
             # First read all the subelements of the key class
-            for child in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for child in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # For each key in the schema for that particular elem
                 for ikey in self.keys(elem):
-                    kpath = f'{elem}.{ikey}'
+                    kpath = f"{elem}.{ikey}"
                     # Validate that the key exists for that child
                     if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                        zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
+                        zkhandler.zk_conn.create(
+                            self.path(kpath, child), "".encode(zkhandler.encoding)
+                        )
 
                     # Continue for child keys under network (reservation, acl)
-                    if elem in ['network'] and ikey in ['reservation', 'rule.in', 'rule.out']:
-                        if ikey in ['rule.in', 'rule.out']:
-                            sikey = 'rule'
+                    if elem in ["network"] and ikey in [
+                        "reservation",
+                        "rule.in",
+                        "rule.out",
+                    ]:
+                        if ikey in ["rule.in", "rule.out"]:
+                            sikey = "rule"
                         else:
                             sikey = ikey
-                        npath = self.path(f'{elem}.{ikey}', child)
+                        npath = self.path(f"{elem}.{ikey}", child)
                         for nchild in zkhandler.zk_conn.get_children(npath):
-                            nkpath = f'{npath}/{nchild}'
+                            nkpath = f"{npath}/{nchild}"
                             for esikey in self.keys(sikey):
-                                nkipath = f'{nkpath}/{esikey}'
+                                nkipath = f"{nkpath}/{esikey}"
                                 if not zkhandler.zk_conn.exists(nkipath):
-                                    zkhandler.zk_conn.create(nkipath, ''.encode(zkhandler.encoding))
+                                    zkhandler.zk_conn.create(
+                                        nkipath, "".encode(zkhandler.encoding)
+                                    )
 
                     # One might expect child keys under node (specifically, sriov.pf and sriov.vf) to be
                     # managed here as well, but those are created automatically every time pvcnoded starts
                     # and thus never need to be validated or applied.
 
         # These two have several children layers that must be parsed through
-        for elem in ['volume']:
+        for elem in ["volume"]:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # Finally read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
-                    child = f'{pchild}/{vchild}'
+                for vchild in zkhandler.zk_conn.get_children(
+                    self.path(f"base.{elem}") + f"/{pchild}"
+                ):
+                    child = f"{pchild}/{vchild}"
                     # For each key in the schema for that particular elem
                     for ikey in self.keys(elem):
-                        kpath = f'{elem}.{ikey}'
+                        kpath = f"{elem}.{ikey}"
                         # Validate that the key exists for that child
                         if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                            zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
+                            zkhandler.zk_conn.create(
+                                self.path(kpath, child), "".encode(zkhandler.encoding)
+                            )
 
-        for elem in ['snapshot']:
+        for elem in ["snapshot"]:
             # First read all the subelements of the key class (pool layer)
-            for pchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}')):
+            for pchild in zkhandler.zk_conn.get_children(self.path(f"base.{elem}")):
                 # Next read all the subelements of the key class (volume layer)
-                for vchild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}'):
+                for vchild in zkhandler.zk_conn.get_children(
+                    self.path(f"base.{elem}") + f"/{pchild}"
+                ):
                     # Finally read all the subelements of the key class (volume layer)
-                    for schild in zkhandler.zk_conn.get_children(self.path(f'base.{elem}') + f'/{pchild}/{vchild}'):
-                        child = f'{pchild}/{vchild}/{schild}'
+                    for schild in zkhandler.zk_conn.get_children(
+                        self.path(f"base.{elem}") + f"/{pchild}/{vchild}"
+                    ):
+                        child = f"{pchild}/{vchild}/{schild}"
                         # For each key in the schema for that particular elem
                         for ikey in self.keys(elem):
-                            kpath = f'{elem}.{ikey}'
+                            kpath = f"{elem}.{ikey}"
                             # Validate that the key exists for that child
                             if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                                zkhandler.zk_conn.create(self.path(kpath, child), ''.encode(zkhandler.encoding))
+                                zkhandler.zk_conn.create(
+                                    self.path(kpath, child),
+                                    "".encode(zkhandler.encoding),
+                                )
 
     # Migrate key diffs
     def run_migrate(self, zkhandler, changes):
-        diff_add = changes['add']
-        diff_remove = changes['remove']
-        diff_rename = changes['rename']
+        diff_add = changes["add"]
+        diff_remove = changes["remove"]
+        diff_rename = changes["rename"]
         add_tasks = list()
         for key in diff_add.keys():
-            add_tasks.append((diff_add[key], ''))
+            add_tasks.append((diff_add[key], ""))
         remove_tasks = list()
         for key in diff_remove.keys():
             remove_tasks.append(diff_remove[key])
         rename_tasks = list()
         for key in diff_rename.keys():
-            rename_tasks.append((diff_rename[key]['from'], diff_rename[key]['to']))
+            rename_tasks.append((diff_rename[key]["from"], diff_rename[key]["to"]))
 
         zkhandler.write(add_tasks)
         zkhandler.delete(remove_tasks)
@@ -978,26 +1069,40 @@ class ZKSchema(object):
         diff_rename = dict()
 
         # Parse through each core element
-        for elem in ['base', 'node', 'domain', 'network', 'osd', 'pool', 'volume', 'snapshot']:
+        for elem in [
+            "base",
+            "node",
+            "domain",
+            "network",
+            "osd",
+            "pool",
+            "volume",
+            "snapshot",
+        ]:
             set_a = set(schema_a.keys(elem))
             set_b = set(schema_b.keys(elem))
             diff_keys = set_a ^ set_b
 
             for item in diff_keys:
-                elem_item = f'{elem}.{item}'
+                elem_item = f"{elem}.{item}"
                 if item not in schema_a.keys(elem) and item in schema_b.keys(elem):
                     diff_add[elem_item] = schema_b.path(elem_item)
                 if item in schema_a.keys(elem) and item not in schema_b.keys(elem):
                     diff_remove[elem_item] = schema_a.path(elem_item)
 
             for item in set_b:
-                elem_item = f'{elem}.{item}'
-                if schema_a.path(elem_item) is not None and \
-                   schema_b.path(elem_item) is not None and \
-                   schema_a.path(elem_item) != schema_b.path(elem_item):
-                    diff_rename[elem_item] = {'from': schema_a.path(elem_item), 'to': schema_b.path(elem_item)}
+                elem_item = f"{elem}.{item}"
+                if (
+                    schema_a.path(elem_item) is not None
+                    and schema_b.path(elem_item) is not None
+                    and schema_a.path(elem_item) != schema_b.path(elem_item)
+                ):
+                    diff_rename[elem_item] = {
+                        "from": schema_a.path(elem_item),
+                        "to": schema_b.path(elem_item),
+                    }
 
-        return {'add': diff_add, 'remove': diff_remove, 'rename': diff_rename}
+        return {"add": diff_add, "remove": diff_remove, "rename": diff_rename}
 
     # Load in the schemal of the current cluster
     @classmethod
@@ -1010,16 +1115,16 @@ class ZKSchema(object):
     # Write the latest schema to a file
     @classmethod
     def write(cls):
-        schema_file = 'daemon_lib/migrations/versions/{}.json'.format(cls._version)
-        with open(schema_file, 'w') as sfh:
+        schema_file = "daemon_lib/migrations/versions/{}.json".format(cls._version)
+        with open(schema_file, "w") as sfh:
             json.dump(cls._schema, sfh)
 
     # Static methods for reading information from the files
     @staticmethod
     def find_all(start=0, end=None):
         versions = list()
-        for version in os.listdir('daemon_lib/migrations/versions'):
-            sequence_id = int(version.split('.')[0])
+        for version in os.listdir("daemon_lib/migrations/versions"):
+            sequence_id = int(version.split(".")[0])
             if end is None:
                 if sequence_id > start:
                     versions.append(sequence_id)
@@ -1034,8 +1139,8 @@ class ZKSchema(object):
     @staticmethod
     def find_latest():
         latest_version = 0
-        for version in os.listdir('daemon_lib/migrations/versions'):
-            sequence_id = int(version.split('.')[0])
+        for version in os.listdir("daemon_lib/migrations/versions"):
+            sequence_id = int(version.split(".")[0])
             if sequence_id > latest_version:
                 latest_version = sequence_id
         return latest_version

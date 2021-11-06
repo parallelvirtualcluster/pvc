@@ -47,9 +47,7 @@ def initialize_cluster(zkhandler, overwrite=False):
     """
     retflag, retmsg = pvc_cluster.cluster_initialize(zkhandler, overwrite)
 
-    retmsg = {
-        'message': retmsg
-    }
+    retmsg = {"message": retmsg}
     if retflag:
         retcode = 200
     else:
@@ -67,9 +65,7 @@ def backup_cluster(zkhandler):
         retdata = json.dumps(retdata)
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -79,13 +75,11 @@ def restore_cluster(zkhandler, cluster_data_raw):
     try:
         cluster_data = json.loads(cluster_data_raw)
     except Exception as e:
-        return {'message': 'ERROR: Failed to parse JSON data: {}'.format(e)}, 400
+        return {"message": "ERROR: Failed to parse JSON data: {}".format(e)}, 400
 
     retflag, retdata = pvc_cluster.cluster_restore(zkhandler, cluster_data)
 
-    retdata = {
-        'message': retdata
-    }
+    retdata = {"message": retdata}
     if retflag:
         retcode = 200
     else:
@@ -109,15 +103,13 @@ def cluster_status(zkhandler):
 
 
 @ZKConnection(config)
-def cluster_maintenance(zkhandler, maint_state='false'):
+def cluster_maintenance(zkhandler, maint_state="false"):
     """
     Set the cluster in or out of maintenance state
     """
     retflag, retdata = pvc_cluster.set_maintenance(zkhandler, maint_state)
 
-    retdata = {
-        'message': retdata
-    }
+    retdata = {"message": retdata}
     if retflag:
         retcode = 200
     else:
@@ -131,25 +123,35 @@ def cluster_maintenance(zkhandler, maint_state='false'):
 #
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def node_list(zkhandler, limit=None, daemon_state=None, coordinator_state=None, domain_state=None, is_fuzzy=True):
+def node_list(
+    zkhandler,
+    limit=None,
+    daemon_state=None,
+    coordinator_state=None,
+    domain_state=None,
+    is_fuzzy=True,
+):
     """
     Return a list of nodes with limit LIMIT.
     """
-    retflag, retdata = pvc_node.get_list(zkhandler, limit, daemon_state=daemon_state, coordinator_state=coordinator_state, domain_state=domain_state, is_fuzzy=is_fuzzy)
+    retflag, retdata = pvc_node.get_list(
+        zkhandler,
+        limit,
+        daemon_state=daemon_state,
+        coordinator_state=coordinator_state,
+        domain_state=domain_state,
+        is_fuzzy=is_fuzzy,
+    )
 
     if retflag:
         if retdata:
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Node not found.'
-            }
+            retdata = {"message": "Node not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -164,20 +166,13 @@ def node_daemon_state(zkhandler, node):
     if retflag:
         if retdata:
             retcode = 200
-            retdata = {
-                'name': node,
-                'daemon_state': retdata[0]['daemon_state']
-            }
+            retdata = {"name": node, "daemon_state": retdata[0]["daemon_state"]}
         else:
             retcode = 404
-            retdata = {
-                'message': 'Node not found.'
-            }
+            retdata = {"message": "Node not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -193,19 +188,15 @@ def node_coordinator_state(zkhandler, node):
         if retdata:
             retcode = 200
             retdata = {
-                'name': node,
-                'coordinator_state': retdata[0]['coordinator_state']
+                "name": node,
+                "coordinator_state": retdata[0]["coordinator_state"],
             }
         else:
             retcode = 404
-            retdata = {
-                'message': 'Node not found.'
-            }
+            retdata = {"message": "Node not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -220,15 +211,10 @@ def node_domain_state(zkhandler, node):
     if retflag:
         if retdata:
             retcode = 200
-            retdata = {
-                'name': node,
-                'domain_state': retdata[0]['domain_state']
-            }
+            retdata = {"name": node, "domain_state": retdata[0]["domain_state"]}
         else:
             retcode = 404
-            retdata = {
-                'message': 'Node not found.'
-            }
+            retdata = {"message": "Node not found."}
     else:
         retcode = 400
 
@@ -247,9 +233,7 @@ def node_secondary(zkhandler, node):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -265,9 +249,7 @@ def node_primary(zkhandler, node):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -283,9 +265,7 @@ def node_flush(zkhandler, node, wait):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -301,9 +281,7 @@ def node_ready(zkhandler, node, wait):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -322,15 +300,10 @@ def node_log(zkhandler, node, lines=None):
 
     if retflag:
         retcode = 200
-        retdata = {
-            'name': node,
-            'data': retdata
-        }
+        retdata = {"name": node, "data": retdata}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -354,25 +327,20 @@ def vm_state(zkhandler, vm):
     """
     Return the state of virtual machine VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False, negate=False)
+    retflag, retdata = pvc_vm.get_list(
+        zkhandler, None, None, None, vm, is_fuzzy=False, negate=False
+    )
 
     if retflag:
         if retdata:
             retcode = 200
-            retdata = {
-                'name': vm,
-                'state': retdata['state']
-            }
+            retdata = {"name": vm, "state": retdata["state"]}
         else:
             retcode = 404
-            retdata = {
-                'message': 'VM not found.'
-            }
+            retdata = {"message": "VM not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -383,26 +351,24 @@ def vm_node(zkhandler, vm):
     """
     Return the current node of virtual machine VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False, negate=False)
+    retflag, retdata = pvc_vm.get_list(
+        zkhandler, None, None, None, vm, is_fuzzy=False, negate=False
+    )
 
     if retflag:
         if retdata:
             retcode = 200
             retdata = {
-                'name': vm,
-                'node': retdata['node'],
-                'last_node': retdata['last_node']
+                "name": vm,
+                "node": retdata["node"],
+                "last_node": retdata["last_node"],
             }
         else:
             retcode = 404
-            retdata = {
-                'message': 'VM not found.'
-            }
+            retdata = {"message": "VM not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -422,72 +388,85 @@ def vm_console(zkhandler, vm, lines=None):
 
     if retflag:
         retcode = 200
-        retdata = {
-            'name': vm,
-            'data': retdata
-        }
+        retdata = {"name": vm, "data": retdata}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
 
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def vm_list(zkhandler, node=None, state=None, tag=None, limit=None, is_fuzzy=True, negate=False):
+def vm_list(
+    zkhandler, node=None, state=None, tag=None, limit=None, is_fuzzy=True, negate=False
+):
     """
     Return a list of VMs with limit LIMIT.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, node, state, tag, limit, is_fuzzy, negate)
+    retflag, retdata = pvc_vm.get_list(
+        zkhandler, node, state, tag, limit, is_fuzzy, negate
+    )
 
     if retflag:
         if retdata:
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'VM not found.'
-            }
+            retdata = {"message": "VM not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
 
 @ZKConnection(config)
-def vm_define(zkhandler, xml, node, limit, selector, autostart, migration_method, user_tags=[], protected_tags=[]):
+def vm_define(
+    zkhandler,
+    xml,
+    node,
+    limit,
+    selector,
+    autostart,
+    migration_method,
+    user_tags=[],
+    protected_tags=[],
+):
     """
     Define a VM from Libvirt XML in the PVC cluster.
     """
     # Verify our XML is sensible
     try:
         xml_data = etree.fromstring(xml)
-        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+        return {"message": "XML is malformed or incorrect: {}".format(e)}, 400
 
     tags = list()
     for tag in user_tags:
-        tags.append({'name': tag, 'type': 'user', 'protected': False})
+        tags.append({"name": tag, "type": "user", "protected": False})
     for tag in protected_tags:
-        tags.append({'name': tag, 'type': 'user', 'protected': True})
+        tags.append({"name": tag, "type": "user", "protected": True})
 
-    retflag, retdata = pvc_vm.define_vm(zkhandler, new_cfg, node, limit, selector, autostart, migration_method, profile=None, tags=tags)
+    retflag, retdata = pvc_vm.define_vm(
+        zkhandler,
+        new_cfg,
+        node,
+        limit,
+        selector,
+        autostart,
+        migration_method,
+        profile=None,
+        tags=tags,
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -499,19 +478,17 @@ def vm_attach_device(zkhandler, vm, device_spec_xml):
     try:
         _ = etree.fromstring(device_spec_xml)
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+        return {"message": "XML is malformed or incorrect: {}".format(e)}, 400
 
     retflag, retdata = pvc_vm.attach_vm_device(zkhandler, vm, device_spec_xml)
 
     if retflag:
         retcode = 200
-        output = {
-            'message': retdata.replace('\"', '\'')
-        }
+        output = {"message": retdata.replace('"', "'")}
     else:
         retcode = 400
         output = {
-            'message': 'WARNING: Failed to perform hot attach; device will be added on next VM start/restart.'
+            "message": "WARNING: Failed to perform hot attach; device will be added on next VM start/restart."
         }
 
     return output, retcode
@@ -525,19 +502,17 @@ def vm_detach_device(zkhandler, vm, device_spec_xml):
     try:
         _ = etree.fromstring(device_spec_xml)
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+        return {"message": "XML is malformed or incorrect: {}".format(e)}, 400
 
     retflag, retdata = pvc_vm.detach_vm_device(zkhandler, vm, device_spec_xml)
 
     if retflag:
         retcode = 200
-        output = {
-            'message': retdata.replace('\"', '\'')
-        }
+        output = {"message": retdata.replace('"', "'")}
     else:
         retcode = 400
         output = {
-            'message': 'WARNING: Failed to perform hot detach; device will be removed on next VM start/restart.'
+            "message": "WARNING: Failed to perform hot detach; device will be removed on next VM start/restart."
         }
 
     return output, retcode
@@ -553,22 +528,29 @@ def get_vm_meta(zkhandler, vm):
     if not dom_uuid:
         return {"message": "VM not found."}, 404
 
-    domain_node_limit, domain_node_selector, domain_node_autostart, domain_migrate_method = pvc_common.getDomainMetadata(zkhandler, dom_uuid)
+    (
+        domain_node_limit,
+        domain_node_selector,
+        domain_node_autostart,
+        domain_migrate_method,
+    ) = pvc_common.getDomainMetadata(zkhandler, dom_uuid)
 
     retcode = 200
     retdata = {
-        'name': vm,
-        'node_limit': domain_node_limit,
-        'node_selector': domain_node_selector,
-        'node_autostart': domain_node_autostart,
-        'migration_method': domain_migrate_method
+        "name": vm,
+        "node_limit": domain_node_limit,
+        "node_selector": domain_node_selector,
+        "node_autostart": domain_node_autostart,
+        "migration_method": domain_migrate_method,
     }
 
     return retdata, retcode
 
 
 @ZKConnection(config)
-def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method):
+def update_vm_meta(
+    zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method
+):
     """
     Update metadata of a VM.
     """
@@ -582,16 +564,16 @@ def update_vm_meta(zkhandler, vm, limit, selector, autostart, provisioner_profil
         except Exception:
             autostart = False
 
-    retflag, retdata = pvc_vm.modify_vm_metadata(zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method)
+    retflag, retdata = pvc_vm.modify_vm_metadata(
+        zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -607,10 +589,7 @@ def get_vm_tags(zkhandler, vm):
     tags = pvc_common.getDomainTags(zkhandler, dom_uuid)
 
     retcode = 200
-    retdata = {
-        'name': vm,
-        'tags': tags
-    }
+    retdata = {"name": vm, "tags": tags}
 
     return retdata, retcode
 
@@ -620,23 +599,23 @@ def update_vm_tag(zkhandler, vm, action, tag, protected=False):
     """
     Update a tag of a VM.
     """
-    if action not in ['add', 'remove']:
+    if action not in ["add", "remove"]:
         return {"message": "Tag action must be one of 'add', 'remove'."}, 400
 
     dom_uuid = pvc_vm.getDomainUUID(zkhandler, vm)
     if not dom_uuid:
         return {"message": "VM not found."}, 404
 
-    retflag, retdata = pvc_vm.modify_vm_tag(zkhandler, vm, action, tag, protected=protected)
+    retflag, retdata = pvc_vm.modify_vm_tag(
+        zkhandler, vm, action, tag, protected=protected
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -648,9 +627,9 @@ def vm_modify(zkhandler, name, restart, xml):
     # Verify our XML is sensible
     try:
         xml_data = etree.fromstring(xml)
-        new_cfg = etree.tostring(xml_data, pretty_print=True).decode('utf8')
+        new_cfg = etree.tostring(xml_data, pretty_print=True).decode("utf8")
     except Exception as e:
-        return {'message': 'XML is malformed or incorrect: {}'.format(e)}, 400
+        return {"message": "XML is malformed or incorrect: {}".format(e)}, 400
 
     retflag, retdata = pvc_vm.modify_vm(zkhandler, name, restart, new_cfg)
 
@@ -659,9 +638,7 @@ def vm_modify(zkhandler, name, restart, xml):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -671,14 +648,14 @@ def vm_rename(zkhandler, name, new_name):
     Rename a VM in the PVC cluster.
     """
     if new_name is None:
-        output = {
-            'message': 'A new VM name must be specified'
-        }
+        output = {"message": "A new VM name must be specified"}
         return 400, output
 
     if pvc_vm.searchClusterByName(zkhandler, new_name) is not None:
         output = {
-            'message': 'A VM named \'{}\' is already present in the cluster'.format(new_name)
+            "message": "A VM named '{}' is already present in the cluster".format(
+                new_name
+            )
         }
         return 400, output
 
@@ -689,9 +666,7 @@ def vm_rename(zkhandler, name, new_name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -707,9 +682,7 @@ def vm_undefine(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -725,9 +698,7 @@ def vm_remove(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -743,9 +714,7 @@ def vm_start(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -761,9 +730,7 @@ def vm_restart(zkhandler, name, wait):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -779,9 +746,7 @@ def vm_shutdown(zkhandler, name, wait):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -797,9 +762,7 @@ def vm_stop(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -815,9 +778,7 @@ def vm_disable(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -833,9 +794,7 @@ def vm_move(zkhandler, name, node, wait, force_live):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -844,16 +803,16 @@ def vm_migrate(zkhandler, name, node, flag_force, wait, force_live):
     """
     Temporarily migrate a VM to another node.
     """
-    retflag, retdata = pvc_vm.migrate_vm(zkhandler, name, node, flag_force, wait, force_live)
+    retflag, retdata = pvc_vm.migrate_vm(
+        zkhandler, name, node, flag_force, wait, force_live
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -869,9 +828,7 @@ def vm_unmigrate(zkhandler, name, wait, force_live):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -880,9 +837,11 @@ def vm_flush_locks(zkhandler, vm):
     """
     Flush locks of a (stopped) VM.
     """
-    retflag, retdata = pvc_vm.get_list(zkhandler, None, None, None, vm, is_fuzzy=False, negate=False)
+    retflag, retdata = pvc_vm.get_list(
+        zkhandler, None, None, None, vm, is_fuzzy=False, negate=False
+    )
 
-    if retdata[0].get('state') not in ['stop', 'disable']:
+    if retdata[0].get("state") not in ["stop", "disable"]:
         return {"message": "VM must be stopped to flush locks"}, 400
 
     retflag, retdata = pvc_vm.flush_locks(zkhandler, vm)
@@ -892,9 +851,7 @@ def vm_flush_locks(zkhandler, vm):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -914,64 +871,105 @@ def net_list(zkhandler, limit=None, is_fuzzy=True):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Network not found.'
-            }
+            retdata = {"message": "Network not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
 
 @ZKConnection(config)
-def net_add(zkhandler, vni, description, nettype, mtu, domain, name_servers,
-            ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-            dhcp4_flag, dhcp4_start, dhcp4_end):
+def net_add(
+    zkhandler,
+    vni,
+    description,
+    nettype,
+    mtu,
+    domain,
+    name_servers,
+    ip4_network,
+    ip4_gateway,
+    ip6_network,
+    ip6_gateway,
+    dhcp4_flag,
+    dhcp4_start,
+    dhcp4_end,
+):
     """
     Add a virtual client network to the PVC cluster.
     """
     if dhcp4_flag:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    retflag, retdata = pvc_network.add_network(zkhandler, vni, description, nettype, mtu, domain, name_servers,
-                                               ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                                               dhcp4_flag, dhcp4_start, dhcp4_end)
+    retflag, retdata = pvc_network.add_network(
+        zkhandler,
+        vni,
+        description,
+        nettype,
+        mtu,
+        domain,
+        name_servers,
+        ip4_network,
+        ip4_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp4_flag,
+        dhcp4_start,
+        dhcp4_end,
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
 @ZKConnection(config)
-def net_modify(zkhandler, vni, description, mtu, domain, name_servers,
-               ip4_network, ip4_gateway,
-               ip6_network, ip6_gateway,
-               dhcp4_flag, dhcp4_start, dhcp4_end):
+def net_modify(
+    zkhandler,
+    vni,
+    description,
+    mtu,
+    domain,
+    name_servers,
+    ip4_network,
+    ip4_gateway,
+    ip6_network,
+    ip6_gateway,
+    dhcp4_flag,
+    dhcp4_start,
+    dhcp4_end,
+):
     """
     Modify a virtual client network in the PVC cluster.
     """
     if dhcp4_flag is not None:
         dhcp4_flag = bool(strtobool(dhcp4_flag))
-    retflag, retdata = pvc_network.modify_network(zkhandler, vni, description, mtu, domain, name_servers,
-                                                  ip4_network, ip4_gateway, ip6_network, ip6_gateway,
-                                                  dhcp4_flag, dhcp4_start, dhcp4_end)
+    retflag, retdata = pvc_network.modify_network(
+        zkhandler,
+        vni,
+        description,
+        mtu,
+        domain,
+        name_servers,
+        ip4_network,
+        ip4_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp4_flag,
+        dhcp4_start,
+        dhcp4_end,
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -987,9 +985,7 @@ def net_remove(zkhandler, network):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1006,14 +1002,10 @@ def net_dhcp_list(zkhandler, network, limit=None, static=False):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Lease not found.'
-            }
+            retdata = {"message": "Lease not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1023,16 +1015,16 @@ def net_dhcp_add(zkhandler, network, ipaddress, macaddress, hostname):
     """
     Add a static DHCP lease to a virtual client network.
     """
-    retflag, retdata = pvc_network.add_dhcp_reservation(zkhandler, network, ipaddress, macaddress, hostname)
+    retflag, retdata = pvc_network.add_dhcp_reservation(
+        zkhandler, network, ipaddress, macaddress, hostname
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1041,16 +1033,16 @@ def net_dhcp_remove(zkhandler, network, macaddress):
     """
     Remove a static DHCP lease from a virtual client network.
     """
-    retflag, retdata = pvc_network.remove_dhcp_reservation(zkhandler, network, macaddress)
+    retflag, retdata = pvc_network.remove_dhcp_reservation(
+        zkhandler, network, macaddress
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1060,21 +1052,19 @@ def net_acl_list(zkhandler, network, limit=None, direction=None, is_fuzzy=True):
     """
     Return a list of network ACLs in network NETWORK with limit LIMIT.
     """
-    retflag, retdata = pvc_network.get_list_acl(zkhandler, network, limit, direction, is_fuzzy=True)
+    retflag, retdata = pvc_network.get_list_acl(
+        zkhandler, network, limit, direction, is_fuzzy=True
+    )
 
     if retflag:
         if retdata:
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'ACL not found.'
-            }
+            retdata = {"message": "ACL not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1084,16 +1074,16 @@ def net_acl_add(zkhandler, network, direction, description, rule, order):
     """
     Add an ACL to a virtual client network.
     """
-    retflag, retdata = pvc_network.add_acl(zkhandler, network, direction, description, rule, order)
+    retflag, retdata = pvc_network.add_acl(
+        zkhandler, network, direction, description, rule, order
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1109,9 +1099,7 @@ def net_acl_remove(zkhandler, network, description):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1131,14 +1119,10 @@ def sriov_pf_list(zkhandler, node):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'PF not found.'
-            }
+            retdata = {"message": "PF not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1161,33 +1145,51 @@ def sriov_vf_list(zkhandler, node, pf=None):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'VF not found.'
-            }
+            retdata = {"message": "VF not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
 
 @ZKConnection(config)
-def update_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss):
+def update_sriov_vf_config(
+    zkhandler,
+    node,
+    vf,
+    vlan_id,
+    vlan_qos,
+    tx_rate_min,
+    tx_rate_max,
+    link_state,
+    spoof_check,
+    trust,
+    query_rss,
+):
     """
     Update configuration of a VF on NODE.
     """
-    retflag, retdata = pvc_network.set_sriov_vf_config(zkhandler, node, vf, vlan_id, vlan_qos, tx_rate_min, tx_rate_max, link_state, spoof_check, trust, query_rss)
+    retflag, retdata = pvc_network.set_sriov_vf_config(
+        zkhandler,
+        node,
+        vf,
+        vlan_id,
+        vlan_qos,
+        tx_rate_min,
+        tx_rate_max,
+        link_state,
+        spoof_check,
+        trust,
+        query_rss,
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1237,14 +1239,10 @@ def ceph_osd_list(zkhandler, limit=None):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'OSD not found.'
-            }
+            retdata = {"message": "OSD not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1258,17 +1256,13 @@ def ceph_osd_state(zkhandler, osd):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'OSD not found.'
-            }
+            retdata = {"message": "OSD not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
-    in_state = retdata[0]['stats']['in']
-    up_state = retdata[0]['stats']['up']
+    in_state = retdata[0]["stats"]["in"]
+    up_state = retdata[0]["stats"]["up"]
 
     return {"id": osd, "in": in_state, "up": up_state}, retcode
 
@@ -1285,9 +1279,7 @@ def ceph_osd_db_vg_add(zkhandler, node, device):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1296,16 +1288,16 @@ def ceph_osd_add(zkhandler, node, device, weight, ext_db_flag=False, ext_db_rati
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.add_osd(zkhandler, node, device, weight, ext_db_flag, ext_db_ratio)
+    retflag, retdata = pvc_ceph.add_osd(
+        zkhandler, node, device, weight, ext_db_flag, ext_db_ratio
+    )
 
     if retflag:
         retcode = 200
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1321,9 +1313,7 @@ def ceph_osd_remove(zkhandler, osd_id):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1339,9 +1329,7 @@ def ceph_osd_in(zkhandler, osd_id):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1357,9 +1345,7 @@ def ceph_osd_out(zkhandler, osd_id):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1375,9 +1361,7 @@ def ceph_osd_set(zkhandler, option):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1393,9 +1377,7 @@ def ceph_osd_unset(zkhandler, option):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1412,14 +1394,10 @@ def ceph_pool_list(zkhandler, limit=None, is_fuzzy=True):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Pool not found.'
-            }
+            retdata = {"message": "Pool not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1436,9 +1414,7 @@ def ceph_pool_add(zkhandler, name, pgs, replcfg):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata
-    }
+    output = {"message": retdata}
     return output, retcode
 
 
@@ -1454,9 +1430,7 @@ def ceph_pool_remove(zkhandler, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1473,14 +1447,10 @@ def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Volume not found.'
-            }
+            retdata = {"message": "Volume not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1497,9 +1467,7 @@ def ceph_volume_add(zkhandler, pool, name, size):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1515,9 +1483,7 @@ def ceph_volume_clone(zkhandler, pool, name, source_volume):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1533,9 +1499,7 @@ def ceph_volume_resize(zkhandler, pool, name, size):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1551,9 +1515,7 @@ def ceph_volume_rename(zkhandler, pool, name, new_name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1569,9 +1531,7 @@ def ceph_volume_remove(zkhandler, pool, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1581,10 +1541,8 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
     Upload a raw file via HTTP post to a PVC Ceph volume
     """
     # Determine the image conversion options
-    if img_type not in ['raw', 'vmdk', 'qcow2', 'qed', 'vdi', 'vpc']:
-        output = {
-            "message": "Image type '{}' is not valid.".format(img_type)
-        }
+    if img_type not in ["raw", "vmdk", "qcow2", "qed", "vdi", "vpc"]:
+        output = {"message": "Image type '{}' is not valid.".format(img_type)}
         retcode = 400
         return output, retcode
 
@@ -1593,28 +1551,32 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
     # If there's no target, return failure
     if not retcode or len(retdata) < 1:
         output = {
-            "message": "Target volume '{}' does not exist in pool '{}'.".format(volume, pool)
+            "message": "Target volume '{}' does not exist in pool '{}'.".format(
+                volume, pool
+            )
         }
         retcode = 400
         return output, retcode
-    dev_size = retdata[0]['stats']['size']
+    dev_size = retdata[0]["stats"]["size"]
 
     def cleanup_maps_and_volumes():
         # Unmap the target blockdev
         retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, volume)
         # Unmap the temporary blockdev
-        retflag, retdata = pvc_ceph.unmap_volume(zkhandler, pool, "{}_tmp".format(volume))
+        retflag, retdata = pvc_ceph.unmap_volume(
+            zkhandler, pool, "{}_tmp".format(volume)
+        )
         # Remove the temporary blockdev
-        retflag, retdata = pvc_ceph.remove_volume(zkhandler, pool, "{}_tmp".format(volume))
+        retflag, retdata = pvc_ceph.remove_volume(
+            zkhandler, pool, "{}_tmp".format(volume)
+        )
 
     # Create a temporary block device to store non-raw images
-    if img_type == 'raw':
+    if img_type == "raw":
         # Map the target blockdev
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
@@ -1626,19 +1588,24 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
             # rather than the standard stream_factory which writes to a temporary file waiting
             # on a save() call. This will break if the API ever uploaded multiple files, but
             # this is an acceptable workaround.
-            def image_stream_factory(total_content_length, filename, content_type, content_length=None):
-                return open(dest_blockdev, 'wb')
+            def image_stream_factory(
+                total_content_length, filename, content_type, content_length=None
+            ):
+                return open(dest_blockdev, "wb")
+
             parse_form_data(flask.request.environ, stream_factory=image_stream_factory)
         except Exception:
             output = {
-                'message': "Failed to upload or write image file to temporary volume."
+                "message": "Failed to upload or write image file to temporary volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
 
         output = {
-            'message': "Wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
+            "message": "Wrote uploaded file to volume '{}' in pool '{}'.".format(
+                volume, pool
+            )
         }
         retcode = 200
         cleanup_maps_and_volumes()
@@ -1647,11 +1614,11 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
     # Write the image directly to the blockdev
     else:
         # Create a temporary blockdev
-        retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, "{}_tmp".format(volume), dev_size)
+        retflag, retdata = pvc_ceph.add_volume(
+            zkhandler, pool, "{}_tmp".format(volume), dev_size
+        )
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
@@ -1659,9 +1626,7 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
         # Map the temporary target blockdev
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, "{}_tmp".format(volume))
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
@@ -1670,9 +1635,7 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
         # Map the target blockdev
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
         if not retflag:
-            output = {
-                'message': retdata.replace('\"', '\'')
-            }
+            output = {"message": retdata.replace('"', "'")}
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
@@ -1684,12 +1647,15 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
             # rather than the standard stream_factory which writes to a temporary file waiting
             # on a save() call. This will break if the API ever uploaded multiple files, but
             # this is an acceptable workaround.
-            def image_stream_factory(total_content_length, filename, content_type, content_length=None):
-                return open(temp_blockdev, 'wb')
+            def image_stream_factory(
+                total_content_length, filename, content_type, content_length=None
+            ):
+                return open(temp_blockdev, "wb")
+
             parse_form_data(flask.request.environ, stream_factory=image_stream_factory)
         except Exception:
             output = {
-                'message': "Failed to upload or write image file to temporary volume."
+                "message": "Failed to upload or write image file to temporary volume."
             }
             retcode = 400
             cleanup_maps_and_volumes()
@@ -1697,18 +1663,24 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
 
         # Convert from the temporary to destination format on the blockdevs
         retcode, stdout, stderr = pvc_common.run_os_command(
-            'qemu-img convert -C -f {} -O raw {} {}'.format(img_type, temp_blockdev, dest_blockdev)
+            "qemu-img convert -C -f {} -O raw {} {}".format(
+                img_type, temp_blockdev, dest_blockdev
+            )
         )
         if retcode:
             output = {
-                'message': "Failed to convert image format from '{}' to 'raw': {}".format(img_type, stderr)
+                "message": "Failed to convert image format from '{}' to 'raw': {}".format(
+                    img_type, stderr
+                )
             }
             retcode = 400
             cleanup_maps_and_volumes()
             return output, retcode
 
         output = {
-            'message': "Converted and wrote uploaded file to volume '{}' in pool '{}'.".format(volume, pool)
+            "message": "Converted and wrote uploaded file to volume '{}' in pool '{}'.".format(
+                volume, pool
+            )
         }
         retcode = 200
         cleanup_maps_and_volumes()
@@ -1717,25 +1689,25 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
 
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def ceph_volume_snapshot_list(zkhandler, pool=None, volume=None, limit=None, is_fuzzy=True):
+def ceph_volume_snapshot_list(
+    zkhandler, pool=None, volume=None, limit=None, is_fuzzy=True
+):
     """
     Get the list of RBD volume snapshots in the Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.get_list_snapshot(zkhandler, pool, volume, limit, is_fuzzy)
+    retflag, retdata = pvc_ceph.get_list_snapshot(
+        zkhandler, pool, volume, limit, is_fuzzy
+    )
 
     if retflag:
         if retdata:
             retcode = 200
         else:
             retcode = 404
-            retdata = {
-                'message': 'Volume snapshot not found.'
-            }
+            retdata = {"message": "Volume snapshot not found."}
     else:
         retcode = 400
-        retdata = {
-            'message': retdata
-        }
+        retdata = {"message": retdata}
 
     return retdata, retcode
 
@@ -1752,9 +1724,7 @@ def ceph_volume_snapshot_add(zkhandler, pool, volume, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1770,9 +1740,7 @@ def ceph_volume_snapshot_rename(zkhandler, pool, volume, name, new_name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode
 
 
@@ -1788,7 +1756,5 @@ def ceph_volume_snapshot_remove(zkhandler, pool, volume, name):
     else:
         retcode = 400
 
-    output = {
-        'message': retdata.replace('\"', '\'')
-    }
+    output = {"message": retdata.replace('"', "'")}
     return output, retcode

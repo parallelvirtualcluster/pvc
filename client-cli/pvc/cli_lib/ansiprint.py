@@ -24,74 +24,74 @@ import datetime
 
 # ANSII colours for output
 def red():
-    return '\033[91m'
+    return "\033[91m"
 
 
 def blue():
-    return '\033[94m'
+    return "\033[94m"
 
 
 def cyan():
-    return '\033[96m'
+    return "\033[96m"
 
 
 def green():
-    return '\033[92m'
+    return "\033[92m"
 
 
 def yellow():
-    return '\033[93m'
+    return "\033[93m"
 
 
 def purple():
-    return '\033[95m'
+    return "\033[95m"
 
 
 def bold():
-    return '\033[1m'
+    return "\033[1m"
 
 
 def end():
-    return '\033[0m'
+    return "\033[0m"
 
 
 # Print function
 def echo(message, prefix, state):
     # Get the date
-    date = '{} - '.format(datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S.%f'))
+    date = "{} - ".format(datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"))
     endc = end()
 
     # Continuation
-    if state == 'c':
-        date = ''
-        colour = ''
-        prompt = '    '
+    if state == "c":
+        date = ""
+        colour = ""
+        prompt = "    "
     # OK
-    elif state == 'o':
+    elif state == "o":
         colour = green()
-        prompt = '>>> '
+        prompt = ">>> "
     # Error
-    elif state == 'e':
+    elif state == "e":
         colour = red()
-        prompt = '>>> '
+        prompt = ">>> "
     # Warning
-    elif state == 'w':
+    elif state == "w":
         colour = yellow()
-        prompt = '>>> '
+        prompt = ">>> "
     # Tick
-    elif state == 't':
+    elif state == "t":
         colour = purple()
-        prompt = '>>> '
+        prompt = ">>> "
     # Information
-    elif state == 'i':
+    elif state == "i":
         colour = blue()
-        prompt = '>>> '
+        prompt = ">>> "
     else:
         colour = bold()
-        prompt = '>>> '
+        prompt = ">>> "
 
     # Append space to prefix
-    if prefix != '':
-        prefix = prefix + ' '
+    if prefix != "":
+        prefix = prefix + " "
 
     print(colour + prompt + endc + date + prefix + message)

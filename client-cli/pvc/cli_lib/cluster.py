@@ -33,18 +33,15 @@ def initialize(config, overwrite=False):
     API arguments: overwrite, yes-i-really-mean-it
     API schema: {json_data_object}
     """
-    params = {
-        'yes-i-really-mean-it': 'yes',
-        'overwrite': overwrite
-    }
-    response = call_api(config, 'post', '/initialize', params=params)
+    params = {"yes-i-really-mean-it": "yes", "overwrite": overwrite}
+    response = call_api(config, "post", "/initialize", params=params)
 
     if response.status_code == 200:
         retstatus = True
     else:
         retstatus = False
 
-    return retstatus, response.json().get('message', '')
+    return retstatus, response.json().get("message", "")
 
 
 def backup(config):
@@ -55,12 +52,12 @@ def backup(config):
     API arguments:
     API schema: {json_data_object}
     """
-    response = call_api(config, 'get', '/backup')
+    response = call_api(config, "get", "/backup")
 
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json().get('message', '')
+        return False, response.json().get("message", "")
 
 
 def restore(config, cluster_data):
@@ -73,20 +70,16 @@ def restore(config, cluster_data):
     """
     cluster_data_json = json.dumps(cluster_data)
 
-    params = {
-        'yes-i-really-mean-it': 'yes'
-    }
-    data = {
-        'cluster_data': cluster_data_json
-    }
-    response = call_api(config, 'post', '/restore', params=params, data=data)
+    params = {"yes-i-really-mean-it": "yes"}
+    data = {"cluster_data": cluster_data_json}
+    response = call_api(config, "post", "/restore", params=params, data=data)
 
     if response.status_code == 200:
         retstatus = True
     else:
         retstatus = False
 
-    return retstatus, response.json().get('message', '')
+    return retstatus, response.json().get("message", "")
 
 
 def maintenance_mode(config, state):
@@ -97,17 +90,15 @@ def maintenance_mode(config, state):
     API arguments: {state}={state}
     API schema: {json_data_object}
     """
-    params = {
-        'state': state
-    }
-    response = call_api(config, 'post', '/status', params=params)
+    params = {"state": state}
+    response = call_api(config, "post", "/status", params=params)
 
     if response.status_code == 200:
         retstatus = True
     else:
         retstatus = False
 
-    return retstatus, response.json().get('message', '')
+    return retstatus, response.json().get("message", "")
 
 
 def get_info(config):
@@ -118,109 +109,216 @@ def get_info(config):
     API arguments:
     API schema: {json_data_object}
     """
-    response = call_api(config, 'get', '/status')
+    response = call_api(config, "get", "/status")
 
     if response.status_code == 200:
         return True, response.json()
     else:
-        return False, response.json().get('message', '')
+        return False, response.json().get("message", "")
 
 
 def format_info(cluster_information, oformat):
-    if oformat == 'json':
+    if oformat == "json":
         return json.dumps(cluster_information)
 
-    if oformat == 'json-pretty':
+    if oformat == "json-pretty":
         return json.dumps(cluster_information, indent=4)
 
     # Plain formatting, i.e. human-readable
-    if cluster_information['health'] == 'Optimal':
+    if cluster_information["health"] == "Optimal":
         health_colour = ansiprint.green()
-    elif cluster_information['health'] == 'Maintenance':
+    elif cluster_information["health"] == "Maintenance":
         health_colour = ansiprint.blue()
     else:
         health_colour = ansiprint.yellow()
 
-    if cluster_information['storage_health'] == 'Optimal':
+    if cluster_information["storage_health"] == "Optimal":
         storage_health_colour = ansiprint.green()
-    elif cluster_information['storage_health'] == 'Maintenance':
+    elif cluster_information["storage_health"] == "Maintenance":
         storage_health_colour = ansiprint.blue()
     else:
         storage_health_colour = ansiprint.yellow()
 
     ainformation = []
 
-    if oformat == 'short':
-        ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
-        ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
-        if cluster_information['health_msg']:
-            for line in cluster_information['health_msg']:
-                ainformation.append('                     > {}'.format(line))
-        ainformation.append('{}Storage health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), storage_health_colour, cluster_information['storage_health'], ansiprint.end()))
-        if cluster_information['storage_health_msg']:
-            for line in cluster_information['storage_health_msg']:
-                ainformation.append('                     > {}'.format(line))
+    if oformat == "short":
+        ainformation.append(
+            "{}PVC cluster status:{}".format(ansiprint.bold(), ansiprint.end())
+        )
+        ainformation.append(
+            "{}Cluster health:{}      {}{}{}".format(
+                ansiprint.purple(),
+                ansiprint.end(),
+                health_colour,
+                cluster_information["health"],
+                ansiprint.end(),
+            )
+        )
+        if cluster_information["health_msg"]:
+            for line in cluster_information["health_msg"]:
+                ainformation.append("                     > {}".format(line))
+        ainformation.append(
+            "{}Storage health:{}      {}{}{}".format(
+                ansiprint.purple(),
+                ansiprint.end(),
+                storage_health_colour,
+                cluster_information["storage_health"],
+                ansiprint.end(),
+            )
+        )
+        if cluster_information["storage_health_msg"]:
+            for line in cluster_information["storage_health_msg"]:
+                ainformation.append("                     > {}".format(line))
 
-        return '\n'.join(ainformation)
+        return "\n".join(ainformation)
 
-    ainformation.append('{}PVC cluster status:{}'.format(ansiprint.bold(), ansiprint.end()))
-    ainformation.append('')
-    ainformation.append('{}Cluster health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), health_colour, cluster_information['health'], ansiprint.end()))
-    if cluster_information['health_msg']:
-        for line in cluster_information['health_msg']:
-            ainformation.append('                     > {}'.format(line))
-    ainformation.append('{}Storage health:{}      {}{}{}'.format(ansiprint.purple(), ansiprint.end(), storage_health_colour, cluster_information['storage_health'], ansiprint.end()))
-    if cluster_information['storage_health_msg']:
-        for line in cluster_information['storage_health_msg']:
-            ainformation.append('                     > {}'.format(line))
+    ainformation.append(
+        "{}PVC cluster status:{}".format(ansiprint.bold(), ansiprint.end())
+    )
+    ainformation.append("")
+    ainformation.append(
+        "{}Cluster health:{}      {}{}{}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            health_colour,
+            cluster_information["health"],
+            ansiprint.end(),
+        )
+    )
+    if cluster_information["health_msg"]:
+        for line in cluster_information["health_msg"]:
+            ainformation.append("                     > {}".format(line))
+    ainformation.append(
+        "{}Storage health:{}      {}{}{}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            storage_health_colour,
+            cluster_information["storage_health"],
+            ansiprint.end(),
+        )
+    )
+    if cluster_information["storage_health_msg"]:
+        for line in cluster_information["storage_health_msg"]:
+            ainformation.append("                     > {}".format(line))
 
-    ainformation.append('')
-    ainformation.append('{}Primary node:{}        {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['primary_node']))
-    ainformation.append('{}Cluster upstream IP:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['upstream_ip']))
-    ainformation.append('')
-    ainformation.append('{}Total nodes:{}     {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes']['total']))
-    ainformation.append('{}Total VMs:{}       {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms']['total']))
-    ainformation.append('{}Total networks:{}  {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['networks']))
-    ainformation.append('{}Total OSDs:{}      {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds']['total']))
-    ainformation.append('{}Total pools:{}     {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['pools']))
-    ainformation.append('{}Total volumes:{}   {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['volumes']))
-    ainformation.append('{}Total snapshots:{} {}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['snapshots']))
+    ainformation.append("")
+    ainformation.append(
+        "{}Primary node:{}        {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["primary_node"]
+        )
+    )
+    ainformation.append(
+        "{}Cluster upstream IP:{} {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["upstream_ip"]
+        )
+    )
+    ainformation.append("")
+    ainformation.append(
+        "{}Total nodes:{}     {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["nodes"]["total"]
+        )
+    )
+    ainformation.append(
+        "{}Total VMs:{}       {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["vms"]["total"]
+        )
+    )
+    ainformation.append(
+        "{}Total networks:{}  {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["networks"]
+        )
+    )
+    ainformation.append(
+        "{}Total OSDs:{}      {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["osds"]["total"]
+        )
+    )
+    ainformation.append(
+        "{}Total pools:{}     {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["pools"]
+        )
+    )
+    ainformation.append(
+        "{}Total volumes:{}   {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["volumes"]
+        )
+    )
+    ainformation.append(
+        "{}Total snapshots:{} {}".format(
+            ansiprint.purple(), ansiprint.end(), cluster_information["snapshots"]
+        )
+    )
 
-    nodes_string = '{}Nodes:{} {}/{} {}ready,run{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['nodes'].get('run,ready', 0), cluster_information['nodes'].get('total', 0), ansiprint.green(), ansiprint.end())
-    for state, count in cluster_information['nodes'].items():
-        if state == 'total' or state == 'run,ready':
+    nodes_string = "{}Nodes:{} {}/{} {}ready,run{}".format(
+        ansiprint.purple(),
+        ansiprint.end(),
+        cluster_information["nodes"].get("run,ready", 0),
+        cluster_information["nodes"].get("total", 0),
+        ansiprint.green(),
+        ansiprint.end(),
+    )
+    for state, count in cluster_information["nodes"].items():
+        if state == "total" or state == "run,ready":
             continue
 
-        nodes_string += ' {}/{} {}{}{}'.format(count, cluster_information['nodes']['total'], ansiprint.yellow(), state, ansiprint.end())
+        nodes_string += " {}/{} {}{}{}".format(
+            count,
+            cluster_information["nodes"]["total"],
+            ansiprint.yellow(),
+            state,
+            ansiprint.end(),
+        )
 
-    ainformation.append('')
+    ainformation.append("")
     ainformation.append(nodes_string)
 
-    vms_string = '{}VMs:{} {}/{} {}start{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['vms'].get('start', 0), cluster_information['vms'].get('total', 0), ansiprint.green(), ansiprint.end())
-    for state, count in cluster_information['vms'].items():
-        if state == 'total' or state == 'start':
+    vms_string = "{}VMs:{} {}/{} {}start{}".format(
+        ansiprint.purple(),
+        ansiprint.end(),
+        cluster_information["vms"].get("start", 0),
+        cluster_information["vms"].get("total", 0),
+        ansiprint.green(),
+        ansiprint.end(),
+    )
+    for state, count in cluster_information["vms"].items():
+        if state == "total" or state == "start":
             continue
 
-        if state in ['disable', 'migrate', 'unmigrate', 'provision']:
+        if state in ["disable", "migrate", "unmigrate", "provision"]:
             colour = ansiprint.blue()
         else:
             colour = ansiprint.yellow()
 
-        vms_string += ' {}/{} {}{}{}'.format(count, cluster_information['vms']['total'], colour, state, ansiprint.end())
+        vms_string += " {}/{} {}{}{}".format(
+            count, cluster_information["vms"]["total"], colour, state, ansiprint.end()
+        )
 
-    ainformation.append('')
+    ainformation.append("")
     ainformation.append(vms_string)
 
-    if cluster_information['osds']['total'] > 0:
-        osds_string = '{}Ceph OSDs:{} {}/{} {}up,in{}'.format(ansiprint.purple(), ansiprint.end(), cluster_information['osds'].get('up,in', 0), cluster_information['osds'].get('total', 0), ansiprint.green(), ansiprint.end())
-        for state, count in cluster_information['osds'].items():
-            if state == 'total' or state == 'up,in':
+    if cluster_information["osds"]["total"] > 0:
+        osds_string = "{}Ceph OSDs:{} {}/{} {}up,in{}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            cluster_information["osds"].get("up,in", 0),
+            cluster_information["osds"].get("total", 0),
+            ansiprint.green(),
+            ansiprint.end(),
+        )
+        for state, count in cluster_information["osds"].items():
+            if state == "total" or state == "up,in":
                 continue
 
-            osds_string += ' {}/{} {}{}{}'.format(count, cluster_information['osds']['total'], ansiprint.yellow(), state, ansiprint.end())
+            osds_string += " {}/{} {}{}{}".format(
+                count,
+                cluster_information["osds"]["total"],
+                ansiprint.yellow(),
+                state,
+                ansiprint.end(),
+            )
 
-        ainformation.append('')
+        ainformation.append("")
         ainformation.append(osds_string)
 
-    ainformation.append('')
-    return '\n'.join(ainformation)
+    ainformation.append("")
+    return "\n".join(ainformation)

@@ -35,9 +35,9 @@ def install(**kwargs):
     # The provisioner has already mounted the disks on kwargs['temporary_directory'].
     # by this point, so we can get right to running the debootstrap after setting
     # some nicer variable names; you don't necessarily have to do this.
-    vm_name = kwargs['vm_name']
-    temporary_directory = kwargs['temporary_directory']
-    disks = kwargs['disks']
-    networks = kwargs['networks']
+    vm_name = kwargs["vm_name"]
+    temporary_directory = kwargs["temporary_directory"]
+    disks = kwargs["disks"]
+    networks = kwargs["networks"]
     # No operation - this script just returns
     pass

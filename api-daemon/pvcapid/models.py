@@ -23,7 +23,7 @@ from pvcapid.flaskapi import db
 
 
 class DBSystemTemplate(db.Model):
-    __tablename__ = 'system_template'
+    __tablename__ = "system_template"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -38,7 +38,20 @@ class DBSystemTemplate(db.Model):
     migration_method = db.Column(db.Text)
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
-    def __init__(self, name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova=None):
+    def __init__(
+        self,
+        name,
+        vcpu_count,
+        vram_mb,
+        serial,
+        vnc,
+        vnc_bind,
+        node_limit,
+        node_selector,
+        node_autostart,
+        migration_method,
+        ova=None,
+    ):
         self.name = name
         self.vcpu_count = vcpu_count
         self.vram_mb = vram_mb
@@ -52,11 +65,11 @@ class DBSystemTemplate(db.Model):
         self.ova = ova
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBNetworkTemplate(db.Model):
-    __tablename__ = 'network_template'
+    __tablename__ = "network_template"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -69,14 +82,16 @@ class DBNetworkTemplate(db.Model):
         self.ova = ova
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBNetworkElement(db.Model):
-    __tablename__ = 'network'
+    __tablename__ = "network"
 
     id = db.Column(db.Integer, primary_key=True)
-    network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"), nullable=False)
+    network_template = db.Column(
+        db.Integer, db.ForeignKey("network_template.id"), nullable=False
+    )
     vni = db.Column(db.Text, nullable=False)
 
     def __init__(self, network_template, vni):
@@ -84,11 +99,11 @@ class DBNetworkElement(db.Model):
         self.vni = vni
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBStorageTemplate(db.Model):
-    __tablename__ = 'storage_template'
+    __tablename__ = "storage_template"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -99,14 +114,16 @@ class DBStorageTemplate(db.Model):
         self.ova = ova
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBStorageElement(db.Model):
-    __tablename__ = 'storage'
+    __tablename__ = "storage"
 
     id = db.Column(db.Integer, primary_key=True)
-    storage_template = db.Column(db.Integer, db.ForeignKey("storage_template.id"), nullable=False)
+    storage_template = db.Column(
+        db.Integer, db.ForeignKey("storage_template.id"), nullable=False
+    )
     pool = db.Column(db.Text, nullable=False)
     disk_id = db.Column(db.Text, nullable=False)
     source_volume = db.Column(db.Text)
@@ -115,7 +132,17 @@ class DBStorageElement(db.Model):
     filesystem = db.Column(db.Text)
     filesystem_args = db.Column(db.Text)
 
-    def __init__(self, storage_template, pool, disk_id, source_volume, disk_size_gb, mountpoint, filesystem, filesystem_args):
+    def __init__(
+        self,
+        storage_template,
+        pool,
+        disk_id,
+        source_volume,
+        disk_size_gb,
+        mountpoint,
+        filesystem,
+        filesystem_args,
+    ):
         self.storage_template = storage_template
         self.pool = pool
         self.disk_id = disk_id
@@ -126,11 +153,11 @@ class DBStorageElement(db.Model):
         self.filesystem_args = filesystem_args
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBUserdata(db.Model):
-    __tablename__ = 'userdata'
+    __tablename__ = "userdata"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -141,11 +168,11 @@ class DBUserdata(db.Model):
         self.userdata = userdata
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBScript(db.Model):
-    __tablename__ = 'script'
+    __tablename__ = "script"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -156,11 +183,11 @@ class DBScript(db.Model):
         self.script = script
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBOva(db.Model):
-    __tablename__ = 'ova'
+    __tablename__ = "ova"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -171,11 +198,11 @@ class DBOva(db.Model):
         self.ovf = ovf
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBOvaVolume(db.Model):
-    __tablename__ = 'ova_volume'
+    __tablename__ = "ova_volume"
 
     id = db.Column(db.Integer, primary_key=True)
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=False)
@@ -194,11 +221,11 @@ class DBOvaVolume(db.Model):
         self.disk_size_gb = disk_size_gb
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBProfile(db.Model):
-    __tablename__ = 'profile'
+    __tablename__ = "profile"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
@@ -211,7 +238,18 @@ class DBProfile(db.Model):
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"))
     arguments = db.Column(db.Text)
 
-    def __init__(self, name, profile_type, system_template, network_template, storage_template, userdata, script, ova, arguments):
+    def __init__(
+        self,
+        name,
+        profile_type,
+        system_template,
+        network_template,
+        storage_template,
+        userdata,
+        script,
+        ova,
+        arguments,
+    ):
         self.name = name
         self.profile_type = profile_type
         self.system_template = system_template
@@ -223,15 +261,15 @@ class DBProfile(db.Model):
         self.arguments = arguments
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)
 
 
 class DBStorageBenchmarks(db.Model):
-    __tablename__ = 'storage_benchmarks'
+    __tablename__ = "storage_benchmarks"
 
     id = db.Column(db.Integer, primary_key=True)
     job = db.Column(db.Text, nullable=False)
-    test_format = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    test_format = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     result = db.Column(db.Text, nullable=False)
 
     def __init__(self, job, result, test_format):
@@ -240,4 +278,4 @@ class DBStorageBenchmarks(db.Model):
         self.test_format = test_format
 
     def __repr__(self):
-        return '<id {}>'.format(self.id)
+        return "<id {}>".format(self.id)

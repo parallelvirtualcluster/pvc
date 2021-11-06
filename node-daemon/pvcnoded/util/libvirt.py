@@ -23,14 +23,14 @@ import libvirt
 
 
 def validate_libvirtd(logger, config):
-    if config['enable_hypervisor']:
+    if config["enable_hypervisor"]:
         libvirt_check_name = f'qemu+tcp://{config["node_hostname"]}/system'
-        logger.out(f'Connecting to Libvirt daemon at {libvirt_check_name}', state='i')
+        logger.out(f"Connecting to Libvirt daemon at {libvirt_check_name}", state="i")
         try:
             lv_conn = libvirt.open(libvirt_check_name)
             lv_conn.close()
         except Exception as e:
-            logger.out(f'Failed to connect to Libvirt daemon: {e}', state='e')
+            logger.out(f"Failed to connect to Libvirt daemon: {e}", state="e")
             return False
 
     return True

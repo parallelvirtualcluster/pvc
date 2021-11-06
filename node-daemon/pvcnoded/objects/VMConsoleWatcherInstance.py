@@ -33,22 +33,26 @@ class VMConsoleWatcherInstance(object):
         self.domname = domname
         self.zkhandler = zkhandler
         self.config = config
-        self.logfile = '{}/{}.log'.format(config['console_log_directory'], self.domname)
-        self.console_log_lines = config['console_log_lines']
+        self.logfile = "{}/{}.log".format(config["console_log_directory"], self.domname)
+        self.console_log_lines = config["console_log_lines"]
         self.logger = logger
         self.this_node = this_node
 
         # Try to append (create) the logfile and set its permissions
-        open(self.logfile, 'a').close()
+        open(self.logfile, "a").close()
         os.chmod(self.logfile, 0o600)
 
         try:
             self.logdeque = deque(open(self.logfile), self.console_log_lines)
         except UnicodeDecodeError:
             # There is corruption in the log file; overwrite it
-            self.logger.out('Failed to decode console log file; clearing existing file', state='w', prefix='Domain {}'.format(self.domuuid))
-            with open(self.logfile, 'w') as lfh:
-                lfh.write('\n')
+            self.logger.out(
+                "Failed to decode console log file; clearing existing file",
+                state="w",
+                prefix="Domain {}".format(self.domuuid),
+            )
+            with open(self.logfile, "w") as lfh:
+                lfh.write("\n")
             self.logdeque = deque(open(self.logfile), self.console_log_lines)
 
         self.stamp = None
@@ -66,13 +70,19 @@ class VMConsoleWatcherInstance(object):
     def start(self):
         self.thread_stopper.clear()
         self.thread = Thread(target=self.run, args=(), kwargs={})
-        self.logger.out('Starting VM log parser', state='i', prefix='Domain {}'.format(self.domuuid))
+        self.logger.out(
+            "Starting VM log parser", state="i", prefix="Domain {}".format(self.domuuid)
+        )
         self.thread.start()
 
     # Stop execution thread
     def stop(self):
         if self.thread and self.thread.is_alive():
-            self.logger.out('Stopping VM log parser', state='i', prefix='Domain {}'.format(self.domuuid))
+            self.logger.out(
+                "Stopping VM log parser",
+                state="i",
+                prefix="Domain {}".format(self.domuuid),
+            )
             self.thread_stopper.set()
             # Do one final flush
             self.update()
@@ -91,11 +101,11 @@ class VMConsoleWatcherInstance(object):
             self.fetch_lines()
         # Update Zookeeper with the new loglines if they changed
         if self.loglines != self.last_loglines:
-            self.zkhandler.write([
-                (('domain.console.log', self.domuuid), self.loglines)
-            ])
+            self.zkhandler.write(
+                [(("domain.console.log", self.domuuid), self.loglines)]
+            )
             self.last_loglines = self.loglines
 
     def fetch_lines(self):
         self.logdeque = deque(open(self.logfile), self.console_log_lines)
-        self.loglines = ''.join(self.logdeque)
+        self.loglines = "".join(self.logdeque)

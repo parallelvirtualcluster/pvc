@@ -29,42 +29,42 @@ from urllib3 import disable_warnings
 
 def format_bytes(size_bytes):
     byte_unit_matrix = {
-        'B': 1,
-        'K': 1024,
-        'M': 1024 * 1024,
-        'G': 1024 * 1024 * 1024,
-        'T': 1024 * 1024 * 1024 * 1024,
-        'P': 1024 * 1024 * 1024 * 1024 * 1024
+        "B": 1,
+        "K": 1024,
+        "M": 1024 * 1024,
+        "G": 1024 * 1024 * 1024,
+        "T": 1024 * 1024 * 1024 * 1024,
+        "P": 1024 * 1024 * 1024 * 1024 * 1024,
     }
-    human_bytes = '0B'
+    human_bytes = "0B"
     for unit in sorted(byte_unit_matrix, key=byte_unit_matrix.get):
         formatted_bytes = int(math.ceil(size_bytes / byte_unit_matrix[unit]))
         if formatted_bytes < 10000:
-            human_bytes = '{}{}'.format(formatted_bytes, unit)
+            human_bytes = "{}{}".format(formatted_bytes, unit)
             break
     return human_bytes
 
 
 def format_metric(integer):
     integer_unit_matrix = {
-        '': 1,
-        'K': 1000,
-        'M': 1000 * 1000,
-        'B': 1000 * 1000 * 1000,
-        'T': 1000 * 1000 * 1000 * 1000,
-        'Q': 1000 * 1000 * 1000 * 1000 * 1000
+        "": 1,
+        "K": 1000,
+        "M": 1000 * 1000,
+        "B": 1000 * 1000 * 1000,
+        "T": 1000 * 1000 * 1000 * 1000,
+        "Q": 1000 * 1000 * 1000 * 1000 * 1000,
     }
-    human_integer = '0'
+    human_integer = "0"
     for unit in sorted(integer_unit_matrix, key=integer_unit_matrix.get):
         formatted_integer = int(math.ceil(integer / integer_unit_matrix[unit]))
         if formatted_integer < 10000:
-            human_integer = '{}{}'.format(formatted_integer, unit)
+            human_integer = "{}{}".format(formatted_integer, unit)
             break
     return human_integer
 
 
 class UploadProgressBar(object):
-    def __init__(self, filename, end_message='', end_nl=True):
+    def __init__(self, filename, end_message="", end_nl=True):
         file_size = os.path.getsize(filename)
         file_size_human = format_bytes(file_size)
         click.echo("Uploading file (total size {})...".format(file_size_human))
@@ -78,9 +78,9 @@ class UploadProgressBar(object):
         self.end_message = end_message
         self.end_nl = end_nl
         if not self.end_nl:
-            self.end_suffix = ' '
+            self.end_suffix = " "
         else:
-            self.end_suffix = ''
+            self.end_suffix = ""
 
         self.bar = click.progressbar(length=self.length, show_eta=True)
 
@@ -115,35 +115,34 @@ class ErrorResponse(requests.Response):
         return self.json_data
 
 
-def call_api(config, operation, request_uri, headers={}, params=None, data=None, files=None):
+def call_api(
+    config, operation, request_uri, headers={}, params=None, data=None, files=None
+):
     # Craft the URI
-    uri = '{}://{}{}{}'.format(
-        config['api_scheme'],
-        config['api_host'],
-        config['api_prefix'],
-        request_uri
+    uri = "{}://{}{}{}".format(
+        config["api_scheme"], config["api_host"], config["api_prefix"], request_uri
     )
 
     # Default timeout is 3 seconds
     timeout = 3
 
     # Craft the authentication header if required
-    if config['api_key']:
-        headers['X-Api-Key'] = config['api_key']
+    if config["api_key"]:
+        headers["X-Api-Key"] = config["api_key"]
 
     # Determine the request type and hit the API
     disable_warnings()
     try:
-        if operation == 'get':
+        if operation == "get":
             response = requests.get(
                 uri,
                 timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
-                verify=config['verify_ssl']
+                verify=config["verify_ssl"],
             )
-        if operation == 'post':
+        if operation == "post":
             response = requests.post(
                 uri,
                 timeout=timeout,
@@ -151,9 +150,9 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
                 params=params,
                 data=data,
                 files=files,
-                verify=config['verify_ssl']
+                verify=config["verify_ssl"],
             )
-        if operation == 'put':
+        if operation == "put":
             response = requests.put(
                 uri,
                 timeout=timeout,
@@ -161,35 +160,35 @@ def call_api(config, operation, request_uri, headers={}, params=None, data=None,
                 params=params,
                 data=data,
                 files=files,
-                verify=config['verify_ssl']
+                verify=config["verify_ssl"],
             )
-        if operation == 'patch':
+        if operation == "patch":
             response = requests.patch(
                 uri,
                 timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
-                verify=config['verify_ssl']
+                verify=config["verify_ssl"],
             )
-        if operation == 'delete':
+        if operation == "delete":
             response = requests.delete(
                 uri,
                 timeout=timeout,
                 headers=headers,
                 params=params,
                 data=data,
-                verify=config['verify_ssl']
+                verify=config["verify_ssl"],
             )
     except Exception as e:
-        message = 'Failed to connect to the API: {}'.format(e)
-        response = ErrorResponse({'message': message}, 500)
+        message = "Failed to connect to the API: {}".format(e)
+        response = ErrorResponse({"message": message}, 500)
 
     # Display debug output
-    if config['debug']:
-        click.echo('API endpoint: {}'.format(uri), err=True)
-        click.echo('Response code: {}'.format(response.status_code), err=True)
-        click.echo('Response headers: {}'.format(response.headers), err=True)
+    if config["debug"]:
+        click.echo("API endpoint: {}".format(uri), err=True)
+        click.echo("Response code: {}".format(response.status_code), err=True)
+        click.echo("Response headers: {}".format(response.headers), err=True)
         click.echo(err=True)
 
     # Return the response object

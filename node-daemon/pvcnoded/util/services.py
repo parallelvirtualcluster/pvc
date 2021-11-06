@@ -24,45 +24,49 @@ from time import sleep
 
 
 def start_zookeeper(logger, config):
-    if config['daemon_mode'] == 'coordinator':
-        logger.out('Starting Zookeeper daemon', state='i')
+    if config["daemon_mode"] == "coordinator":
+        logger.out("Starting Zookeeper daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command('systemctl start zookeeper.service')
+        common.run_os_command("systemctl start zookeeper.service")
 
 
 def start_libvirtd(logger, config):
-    if config['enable_hypervisor']:
-        logger.out('Starting Libvirt daemon', state='i')
+    if config["enable_hypervisor"]:
+        logger.out("Starting Libvirt daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command('systemctl start libvirtd.service')
+        common.run_os_command("systemctl start libvirtd.service")
 
 
 def start_patroni(logger, config):
-    if config['enable_networking'] and config['daemon_mode'] == 'coordinator':
-        logger.out('Starting Patroni daemon', state='i')
+    if config["enable_networking"] and config["daemon_mode"] == "coordinator":
+        logger.out("Starting Patroni daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command('systemctl start patroni.service')
+        common.run_os_command("systemctl start patroni.service")
 
 
 def start_frrouting(logger, config):
-    if config['enable_networking'] and config['daemon_mode'] == 'coordinator':
-        logger.out('Starting FRRouting daemon', state='i')
+    if config["enable_networking"] and config["daemon_mode"] == "coordinator":
+        logger.out("Starting FRRouting daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command('systemctl start frr.service')
+        common.run_os_command("systemctl start frr.service")
 
 
 def start_ceph_mon(logger, config):
-    if config['enable_storage'] and config['daemon_mode'] == 'coordinator':
-        logger.out('Starting Ceph Monitor daemon', state='i')
+    if config["enable_storage"] and config["daemon_mode"] == "coordinator":
+        logger.out("Starting Ceph Monitor daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command(f'systemctl start ceph-mon@{config["node_hostname"]}.service')
+        common.run_os_command(
+            f'systemctl start ceph-mon@{config["node_hostname"]}.service'
+        )
 
 
 def start_ceph_mgr(logger, config):
-    if config['enable_storage'] and config['daemon_mode'] == 'coordinator':
-        logger.out('Starting Ceph Manager daemon', state='i')
+    if config["enable_storage"] and config["daemon_mode"] == "coordinator":
+        logger.out("Starting Ceph Manager daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command(f'systemctl start ceph-mgr@{config["node_hostname"]}.service')
+        common.run_os_command(
+            f'systemctl start ceph-mgr@{config["node_hostname"]}.service'
+        )
 
 
 def start_system_services(logger, config):
@@ -73,5 +77,5 @@ def start_system_services(logger, config):
     start_ceph_mon(logger, config)
     start_ceph_mgr(logger, config)
 
-    logger.out('Waiting 3 seconds for daemons to start', state='s')
+    logger.out("Waiting 3 seconds for daemons to start", state="s")
     sleep(3)

@@ -40,8 +40,8 @@ from functools import wraps
 # Get performance statistics on a function or class
 class Profiler(object):
     def __init__(self, config):
-        self.is_debug = config['debug']
-        self.pvc_logdir = '/var/log/pvc'
+        self.is_debug = config["debug"]
+        self.pvc_logdir = "/var/log/pvc"
 
     def __call__(self, function):
         if not callable(function):
@@ -58,11 +58,15 @@ class Profiler(object):
             from datetime import datetime
 
             if not path.exists(self.pvc_logdir):
-                print('Profiler: Requested profiling of {} but no log dir present; printing instead.'.format(str(function.__name__)))
+                print(
+                    "Profiler: Requested profiling of {} but no log dir present; printing instead.".format(
+                        str(function.__name__)
+                    )
+                )
                 log_result = False
             else:
                 log_result = True
-                profiler_logdir = '{}/profiler'.format(self.pvc_logdir)
+                profiler_logdir = "{}/profiler".format(self.pvc_logdir)
                 if not path.exists(profiler_logdir):
                     makedirs(profiler_logdir)
 
@@ -76,12 +80,23 @@ class Profiler(object):
             stats.sort_stats(pstats.SortKey.TIME)
 
             if log_result:
-                stats.dump_stats(filename='{}/{}_{}.log'.format(profiler_logdir, str(function.__name__), str(datetime.now()).replace(' ', '_')))
+                stats.dump_stats(
+                    filename="{}/{}_{}.log".format(
+                        profiler_logdir,
+                        str(function.__name__),
+                        str(datetime.now()).replace(" ", "_"),
+                    )
+                )
             else:
-                print('Profiler stats for function {} at {}:'.format(str(function.__name__), str(datetime.now())))
+                print(
+                    "Profiler stats for function {} at {}:".format(
+                        str(function.__name__), str(datetime.now())
+                    )
+                )
                 stats.print_stats()
 
             return ret
+
         return profiler_wrapper
 
 
@@ -97,7 +112,7 @@ class OSDaemon(object):
         command = shlex_split(command_string)
         # Set stdout to be a logfile if set
         if logfile:
-            stdout = open(logfile, 'a')
+            stdout = open(logfile, "a")
         else:
             stdout = subprocess.PIPE
 
@@ -112,10 +127,10 @@ class OSDaemon(object):
     # Signal the process
     def signal(self, sent_signal):
         signal_map = {
-            'hup': signal.SIGHUP,
-            'int': signal.SIGINT,
-            'term': signal.SIGTERM,
-            'kill': signal.SIGKILL
+            "hup": signal.SIGHUP,
+            "int": signal.SIGINT,
+            "term": signal.SIGTERM,
+            "kill": signal.SIGKILL,
         }
         self.proc.send_signal(signal_map[sent_signal])
 
@@ -131,6 +146,7 @@ def run_os_daemon(command_string, environment=None, logfile=None):
 def run_os_command(command_string, background=False, environment=None, timeout=None):
     command = shlex_split(command_string)
     if background:
+
         def runcmd():
             try:
                 subprocess.run(
@@ -142,6 +158,7 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
                 )
             except subprocess.TimeoutExpired:
                 pass
+
         thread = Thread(target=runcmd, args=())
         thread.start()
         return 0, None, None
@@ -161,13 +178,13 @@ def run_os_command(command_string, background=False, environment=None, timeout=N
             retcode = 255
 
         try:
-            stdout = command_output.stdout.decode('ascii')
+            stdout = command_output.stdout.decode("ascii")
         except Exception:
-            stdout = ''
+            stdout = ""
         try:
-            stderr = command_output.stderr.decode('ascii')
+            stderr = command_output.stderr.decode("ascii")
         except Exception:
-            stderr = ''
+            stderr = ""
         return retcode, stdout, stderr
 
 
@@ -187,7 +204,7 @@ def validateUUID(dom_uuid):
 #
 def getDomainXML(zkhandler, dom_uuid):
     try:
-        xml = zkhandler.read(('domain.xml', dom_uuid))
+        xml = zkhandler.read(("domain.xml", dom_uuid))
     except Exception:
         return None
 
@@ -208,16 +225,20 @@ def getDomainMainDetails(parsed_xml):
         ddescription = "N/A"
     dname = str(parsed_xml.name)
     dmemory = str(parsed_xml.memory)
-    dmemory_unit = str(parsed_xml.memory.attrib.get('unit'))
-    if dmemory_unit == 'KiB':
+    dmemory_unit = str(parsed_xml.memory.attrib.get("unit"))
+    if dmemory_unit == "KiB":
         dmemory = int(int(dmemory) / 1024)
-    elif dmemory_unit == 'GiB':
+    elif dmemory_unit == "GiB":
         dmemory = int(int(dmemory) * 1024)
     dvcpu = str(parsed_xml.vcpu)
     try:
-        dvcputopo = '{}/{}/{}'.format(parsed_xml.cpu.topology.attrib.get('sockets'), parsed_xml.cpu.topology.attrib.get('cores'), parsed_xml.cpu.topology.attrib.get('threads'))
+        dvcputopo = "{}/{}/{}".format(
+            parsed_xml.cpu.topology.attrib.get("sockets"),
+            parsed_xml.cpu.topology.attrib.get("cores"),
+            parsed_xml.cpu.topology.attrib.get("threads"),
+        )
     except Exception:
-        dvcputopo = 'N/A'
+        dvcputopo = "N/A"
 
     return duuid, dname, ddescription, dmemory, dvcpu, dvcputopo
 
@@ -227,9 +248,9 @@ def getDomainMainDetails(parsed_xml):
 #
 def getDomainExtraDetails(parsed_xml):
     dtype = str(parsed_xml.os.type)
-    darch = str(parsed_xml.os.type.attrib['arch'])
-    dmachine = str(parsed_xml.os.type.attrib['machine'])
-    dconsole = str(parsed_xml.devices.console.attrib['type'])
+    darch = str(parsed_xml.os.type.attrib["arch"])
+    dmachine = str(parsed_xml.os.type.attrib["machine"])
+    dconsole = str(parsed_xml.devices.console.attrib["type"])
     demulator = str(parsed_xml.devices.emulator)
 
     return dtype, darch, dmachine, dconsole, demulator
@@ -255,37 +276,41 @@ def getDomainCPUFeatures(parsed_xml):
 def getDomainDisks(parsed_xml, stats_data):
     ddisks = []
     for device in parsed_xml.devices.getchildren():
-        if device.tag == 'disk':
+        if device.tag == "disk":
             disk_attrib = device.source.attrib
             disk_target = device.target.attrib
-            disk_type = device.attrib.get('type')
-            disk_stats_list = [x for x in stats_data.get('disk_stats', []) if x.get('name') == disk_attrib.get('name')]
+            disk_type = device.attrib.get("type")
+            disk_stats_list = [
+                x
+                for x in stats_data.get("disk_stats", [])
+                if x.get("name") == disk_attrib.get("name")
+            ]
             try:
                 disk_stats = disk_stats_list[0]
             except Exception:
                 disk_stats = {}
 
-            if disk_type == 'network':
+            if disk_type == "network":
                 disk_obj = {
-                    'type': disk_attrib.get('protocol'),
-                    'name': disk_attrib.get('name'),
-                    'dev': disk_target.get('dev'),
-                    'bus': disk_target.get('bus'),
-                    'rd_req': disk_stats.get('rd_req', 0),
-                    'rd_bytes': disk_stats.get('rd_bytes', 0),
-                    'wr_req': disk_stats.get('wr_req', 0),
-                    'wr_bytes': disk_stats.get('wr_bytes', 0)
+                    "type": disk_attrib.get("protocol"),
+                    "name": disk_attrib.get("name"),
+                    "dev": disk_target.get("dev"),
+                    "bus": disk_target.get("bus"),
+                    "rd_req": disk_stats.get("rd_req", 0),
+                    "rd_bytes": disk_stats.get("rd_bytes", 0),
+                    "wr_req": disk_stats.get("wr_req", 0),
+                    "wr_bytes": disk_stats.get("wr_bytes", 0),
                 }
-            elif disk_type == 'file':
+            elif disk_type == "file":
                 disk_obj = {
-                    'type': 'file',
-                    'name': disk_attrib.get('file'),
-                    'dev': disk_target.get('dev'),
-                    'bus': disk_target.get('bus'),
-                    'rd_req': disk_stats.get('rd_req', 0),
-                    'rd_bytes': disk_stats.get('rd_bytes', 0),
-                    'wr_req': disk_stats.get('wr_req', 0),
-                    'wr_bytes': disk_stats.get('wr_bytes', 0)
+                    "type": "file",
+                    "name": disk_attrib.get("file"),
+                    "dev": disk_target.get("dev"),
+                    "bus": disk_target.get("bus"),
+                    "rd_req": disk_stats.get("rd_req", 0),
+                    "rd_bytes": disk_stats.get("rd_bytes", 0),
+                    "wr_req": disk_stats.get("wr_req", 0),
+                    "wr_bytes": disk_stats.get("wr_bytes", 0),
                 }
             else:
                 disk_obj = {}
@@ -300,8 +325,8 @@ def getDomainDisks(parsed_xml, stats_data):
 def getDomainDiskList(zkhandler, dom_uuid):
     domain_information = getInformationFromXML(zkhandler, dom_uuid)
     disk_list = []
-    for disk in domain_information['disks']:
-        disk_list.append(disk['name'])
+    for disk in domain_information["disks"]:
+        disk_list.append(disk["name"])
 
     return disk_list
 
@@ -317,10 +342,14 @@ def getDomainTags(zkhandler, dom_uuid):
     """
     tags = list()
 
-    for tag in zkhandler.children(('domain.meta.tags', dom_uuid)):
-        tag_type = zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.type', tag))
-        protected = bool(strtobool(zkhandler.read(('domain.meta.tags', dom_uuid, 'tag.protected', tag))))
-        tags.append({'name': tag, 'type': tag_type, 'protected': protected})
+    for tag in zkhandler.children(("domain.meta.tags", dom_uuid)):
+        tag_type = zkhandler.read(("domain.meta.tags", dom_uuid, "tag.type", tag))
+        protected = bool(
+            strtobool(
+                zkhandler.read(("domain.meta.tags", dom_uuid, "tag.protected", tag))
+            )
+        )
+        tags.append({"name": tag, "type": tag_type, "protected": protected})
 
     return tags
 
@@ -334,20 +363,25 @@ def getDomainMetadata(zkhandler, dom_uuid):
 
     The UUID must be validated before calling this function!
     """
-    domain_node_limit = zkhandler.read(('domain.meta.node_limit', dom_uuid))
-    domain_node_selector = zkhandler.read(('domain.meta.node_selector', dom_uuid))
-    domain_node_autostart = zkhandler.read(('domain.meta.autostart', dom_uuid))
-    domain_migration_method = zkhandler.read(('domain.meta.migrate_method', dom_uuid))
+    domain_node_limit = zkhandler.read(("domain.meta.node_limit", dom_uuid))
+    domain_node_selector = zkhandler.read(("domain.meta.node_selector", dom_uuid))
+    domain_node_autostart = zkhandler.read(("domain.meta.autostart", dom_uuid))
+    domain_migration_method = zkhandler.read(("domain.meta.migrate_method", dom_uuid))
 
     if not domain_node_limit:
         domain_node_limit = None
     else:
-        domain_node_limit = domain_node_limit.split(',')
+        domain_node_limit = domain_node_limit.split(",")
 
     if not domain_node_autostart:
         domain_node_autostart = None
 
-    return domain_node_limit, domain_node_selector, domain_node_autostart, domain_migration_method
+    return (
+        domain_node_limit,
+        domain_node_selector,
+        domain_node_autostart,
+        domain_migration_method,
+    )
 
 
 #
@@ -358,25 +392,30 @@ def getInformationFromXML(zkhandler, uuid):
     Gather information about a VM from the Libvirt XML configuration in the Zookeper database
     and return a dict() containing it.
     """
-    domain_state = zkhandler.read(('domain.state', uuid))
-    domain_node = zkhandler.read(('domain.node', uuid))
-    domain_lastnode = zkhandler.read(('domain.last_node', uuid))
-    domain_failedreason = zkhandler.read(('domain.failed_reason', uuid))
+    domain_state = zkhandler.read(("domain.state", uuid))
+    domain_node = zkhandler.read(("domain.node", uuid))
+    domain_lastnode = zkhandler.read(("domain.last_node", uuid))
+    domain_failedreason = zkhandler.read(("domain.failed_reason", uuid))
 
-    domain_node_limit, domain_node_selector, domain_node_autostart, domain_migration_method = getDomainMetadata(zkhandler, uuid)
+    (
+        domain_node_limit,
+        domain_node_selector,
+        domain_node_autostart,
+        domain_migration_method,
+    ) = getDomainMetadata(zkhandler, uuid)
     domain_tags = getDomainTags(zkhandler, uuid)
-    domain_profile = zkhandler.read(('domain.profile', uuid))
+    domain_profile = zkhandler.read(("domain.profile", uuid))
 
-    domain_vnc = zkhandler.read(('domain.console.vnc', uuid))
+    domain_vnc = zkhandler.read(("domain.console.vnc", uuid))
     if domain_vnc:
-        domain_vnc_listen, domain_vnc_port = domain_vnc.split(':')
+        domain_vnc_listen, domain_vnc_port = domain_vnc.split(":")
     else:
-        domain_vnc_listen = 'None'
-        domain_vnc_port = 'None'
+        domain_vnc_listen = "None"
+        domain_vnc_port = "None"
 
     parsed_xml = getDomainXML(zkhandler, uuid)
 
-    stats_data = zkhandler.read(('domain.stats', uuid))
+    stats_data = zkhandler.read(("domain.stats", uuid))
     if stats_data is not None:
         try:
             stats_data = loads(stats_data)
@@ -385,54 +424,66 @@ def getInformationFromXML(zkhandler, uuid):
     else:
         stats_data = {}
 
-    domain_uuid, domain_name, domain_description, domain_memory, domain_vcpu, domain_vcputopo = getDomainMainDetails(parsed_xml)
+    (
+        domain_uuid,
+        domain_name,
+        domain_description,
+        domain_memory,
+        domain_vcpu,
+        domain_vcputopo,
+    ) = getDomainMainDetails(parsed_xml)
     domain_networks = getDomainNetworks(parsed_xml, stats_data)
 
-    domain_type, domain_arch, domain_machine, domain_console, domain_emulator = getDomainExtraDetails(parsed_xml)
+    (
+        domain_type,
+        domain_arch,
+        domain_machine,
+        domain_console,
+        domain_emulator,
+    ) = getDomainExtraDetails(parsed_xml)
 
     domain_features = getDomainCPUFeatures(parsed_xml)
     domain_disks = getDomainDisks(parsed_xml, stats_data)
     domain_controllers = getDomainControllers(parsed_xml)
 
     if domain_lastnode:
-        domain_migrated = 'from {}'.format(domain_lastnode)
+        domain_migrated = "from {}".format(domain_lastnode)
     else:
-        domain_migrated = 'no'
+        domain_migrated = "no"
 
     domain_information = {
-        'name': domain_name,
-        'uuid': domain_uuid,
-        'state': domain_state,
-        'node': domain_node,
-        'last_node': domain_lastnode,
-        'migrated': domain_migrated,
-        'failed_reason': domain_failedreason,
-        'node_limit': domain_node_limit,
-        'node_selector': domain_node_selector,
-        'node_autostart': bool(strtobool(domain_node_autostart)),
-        'migration_method': domain_migration_method,
-        'tags': domain_tags,
-        'description': domain_description,
-        'profile': domain_profile,
-        'memory': int(domain_memory),
-        'memory_stats': stats_data.get('mem_stats', {}),
-        'vcpu': int(domain_vcpu),
-        'vcpu_topology': domain_vcputopo,
-        'vcpu_stats': stats_data.get('cpu_stats', {}),
-        'networks': domain_networks,
-        'type': domain_type,
-        'arch': domain_arch,
-        'machine': domain_machine,
-        'console': domain_console,
-        'vnc': {
-            'listen': domain_vnc_listen,
-            'port': domain_vnc_port
-        },
-        'emulator': domain_emulator,
-        'features': domain_features,
-        'disks': domain_disks,
-        'controllers': domain_controllers,
-        'xml': lxml.etree.tostring(parsed_xml, encoding='ascii', method='xml').decode().replace('\"', '\'')
+        "name": domain_name,
+        "uuid": domain_uuid,
+        "state": domain_state,
+        "node": domain_node,
+        "last_node": domain_lastnode,
+        "migrated": domain_migrated,
+        "failed_reason": domain_failedreason,
+        "node_limit": domain_node_limit,
+        "node_selector": domain_node_selector,
+        "node_autostart": bool(strtobool(domain_node_autostart)),
+        "migration_method": domain_migration_method,
+        "tags": domain_tags,
+        "description": domain_description,
+        "profile": domain_profile,
+        "memory": int(domain_memory),
+        "memory_stats": stats_data.get("mem_stats", {}),
+        "vcpu": int(domain_vcpu),
+        "vcpu_topology": domain_vcputopo,
+        "vcpu_stats": stats_data.get("cpu_stats", {}),
+        "networks": domain_networks,
+        "type": domain_type,
+        "arch": domain_arch,
+        "machine": domain_machine,
+        "console": domain_console,
+        "vnc": {"listen": domain_vnc_listen, "port": domain_vnc_port},
+        "emulator": domain_emulator,
+        "features": domain_features,
+        "disks": domain_disks,
+        "controllers": domain_controllers,
+        "xml": lxml.etree.tostring(parsed_xml, encoding="ascii", method="xml")
+        .decode()
+        .replace('"', "'"),
     }
 
     return domain_information
@@ -444,14 +495,14 @@ def getInformationFromXML(zkhandler, uuid):
 def getDomainNetworks(parsed_xml, stats_data):
     dnets = []
     for device in parsed_xml.devices.getchildren():
-        if device.tag == 'interface':
+        if device.tag == "interface":
             try:
-                net_type = device.attrib.get('type')
+                net_type = device.attrib.get("type")
             except Exception:
                 net_type = None
 
             try:
-                net_mac = device.mac.attrib.get('address')
+                net_mac = device.mac.attrib.get("address")
             except Exception:
                 net_mac = None
 
@@ -461,48 +512,52 @@ def getDomainNetworks(parsed_xml, stats_data):
                 net_bridge = None
 
             try:
-                net_model = device.model.attrib.get('type')
+                net_model = device.model.attrib.get("type")
             except Exception:
                 net_model = None
 
             try:
-                net_stats_list = [x for x in stats_data.get('net_stats', []) if x.get('bridge') == net_bridge]
+                net_stats_list = [
+                    x
+                    for x in stats_data.get("net_stats", [])
+                    if x.get("bridge") == net_bridge
+                ]
                 net_stats = net_stats_list[0]
             except Exception:
                 net_stats = {}
 
-            net_rd_bytes = net_stats.get('rd_bytes', 0)
-            net_rd_packets = net_stats.get('rd_packets', 0)
-            net_rd_errors = net_stats.get('rd_errors', 0)
-            net_rd_drops = net_stats.get('rd_drops', 0)
-            net_wr_bytes = net_stats.get('wr_bytes', 0)
-            net_wr_packets = net_stats.get('wr_packets', 0)
-            net_wr_errors = net_stats.get('wr_errors', 0)
-            net_wr_drops = net_stats.get('wr_drops', 0)
+            net_rd_bytes = net_stats.get("rd_bytes", 0)
+            net_rd_packets = net_stats.get("rd_packets", 0)
+            net_rd_errors = net_stats.get("rd_errors", 0)
+            net_rd_drops = net_stats.get("rd_drops", 0)
+            net_wr_bytes = net_stats.get("wr_bytes", 0)
+            net_wr_packets = net_stats.get("wr_packets", 0)
+            net_wr_errors = net_stats.get("wr_errors", 0)
+            net_wr_drops = net_stats.get("wr_drops", 0)
 
-            if net_type == 'direct':
-                net_vni = 'macvtap:' + device.source.attrib.get('dev')
-                net_bridge = device.source.attrib.get('dev')
-            elif net_type == 'hostdev':
-                net_vni = 'hostdev:' + str(device.sriov_device)
+            if net_type == "direct":
+                net_vni = "macvtap:" + device.source.attrib.get("dev")
+                net_bridge = device.source.attrib.get("dev")
+            elif net_type == "hostdev":
+                net_vni = "hostdev:" + str(device.sriov_device)
                 net_bridge = str(device.sriov_device)
             else:
-                net_vni = re_match(r'[vm]*br([0-9a-z]+)', net_bridge).group(1)
+                net_vni = re_match(r"[vm]*br([0-9a-z]+)", net_bridge).group(1)
 
             net_obj = {
-                'type': net_type,
-                'vni': net_vni,
-                'mac': net_mac,
-                'source': net_bridge,
-                'model': net_model,
-                'rd_bytes': net_rd_bytes,
-                'rd_packets': net_rd_packets,
-                'rd_errors': net_rd_errors,
-                'rd_drops': net_rd_drops,
-                'wr_bytes': net_wr_bytes,
-                'wr_packets': net_wr_packets,
-                'wr_errors': net_wr_errors,
-                'wr_drops': net_wr_drops
+                "type": net_type,
+                "vni": net_vni,
+                "mac": net_mac,
+                "source": net_bridge,
+                "model": net_model,
+                "rd_bytes": net_rd_bytes,
+                "rd_packets": net_rd_packets,
+                "rd_errors": net_rd_errors,
+                "rd_drops": net_rd_drops,
+                "wr_bytes": net_wr_bytes,
+                "wr_packets": net_wr_packets,
+                "wr_errors": net_wr_errors,
+                "wr_drops": net_wr_drops,
             }
             dnets.append(net_obj)
 
@@ -515,13 +570,13 @@ def getDomainNetworks(parsed_xml, stats_data):
 def getDomainControllers(parsed_xml):
     dcontrollers = []
     for device in parsed_xml.devices.getchildren():
-        if device.tag == 'controller':
-            controller_type = device.attrib.get('type')
+        if device.tag == "controller":
+            controller_type = device.attrib.get("type")
             try:
-                controller_model = device.attrib.get('model')
+                controller_model = device.attrib.get("model")
             except KeyError:
-                controller_model = 'none'
-            controller_obj = {'type': controller_type, 'model': controller_model}
+                controller_model = "none"
+            controller_obj = {"type": controller_type, "model": controller_model}
             dcontrollers.append(controller_obj)
 
     return dcontrollers
@@ -531,7 +586,7 @@ def getDomainControllers(parsed_xml):
 # Verify node is valid in cluster
 #
 def verifyNode(zkhandler, node):
-    return zkhandler.exists(('node', node))
+    return zkhandler.exists(("node", node))
 
 
 #
@@ -541,11 +596,11 @@ def getPrimaryNode(zkhandler):
     failcount = 0
     while True:
         try:
-            primary_node = zkhandler.read('base.config.primary_node')
+            primary_node = zkhandler.read("base.config.primary_node")
         except Exception:
-            primary_node == 'none'
+            primary_node == "none"
 
-        if primary_node == 'none':
+        if primary_node == "none":
             raise
             time.sleep(1)
             failcount += 1
@@ -565,7 +620,7 @@ def getPrimaryNode(zkhandler):
 def findTargetNode(zkhandler, dom_uuid):
     # Determine VM node limits; set config value if read fails
     try:
-        node_limit = zkhandler.read(('domain.meta.node_limit', dom_uuid)).split(',')
+        node_limit = zkhandler.read(("domain.meta.node_limit", dom_uuid)).split(",")
         if not any(node_limit):
             node_limit = None
     except Exception:
@@ -573,22 +628,22 @@ def findTargetNode(zkhandler, dom_uuid):
 
     # Determine VM search field or use default; set config value if read fails
     try:
-        search_field = zkhandler.read(('domain.meta.node_selector', dom_uuid))
+        search_field = zkhandler.read(("domain.meta.node_selector", dom_uuid))
     except Exception:
         search_field = None
 
     # If our search field is invalid, use the default
-    if search_field is None or search_field == 'None':
-        search_field = zkhandler.read('base.config.migration_target_selector')
+    if search_field is None or search_field == "None":
+        search_field = zkhandler.read("base.config.migration_target_selector")
 
     # Execute the search
-    if search_field == 'mem':
+    if search_field == "mem":
         return findTargetNodeMem(zkhandler, node_limit, dom_uuid)
-    if search_field == 'load':
+    if search_field == "load":
         return findTargetNodeLoad(zkhandler, node_limit, dom_uuid)
-    if search_field == 'vcpus':
+    if search_field == "vcpus":
         return findTargetNodeVCPUs(zkhandler, node_limit, dom_uuid)
-    if search_field == 'vms':
+    if search_field == "vms":
         return findTargetNodeVMs(zkhandler, node_limit, dom_uuid)
 
     # Nothing was found
@@ -600,20 +655,20 @@ def findTargetNode(zkhandler, dom_uuid):
 #
 def getNodes(zkhandler, node_limit, dom_uuid):
     valid_node_list = []
-    full_node_list = zkhandler.children('base.node')
-    current_node = zkhandler.read(('domain.node', dom_uuid))
+    full_node_list = zkhandler.children("base.node")
+    current_node = zkhandler.read(("domain.node", dom_uuid))
 
     for node in full_node_list:
         if node_limit and node not in node_limit:
             continue
 
-        daemon_state = zkhandler.read(('node.state.daemon', node))
-        domain_state = zkhandler.read(('node.state.domain', node))
+        daemon_state = zkhandler.read(("node.state.daemon", node))
+        domain_state = zkhandler.read(("node.state.domain", node))
 
         if node == current_node:
             continue
 
-        if daemon_state != 'run' or domain_state != 'ready':
+        if daemon_state != "run" or domain_state != "ready":
             continue
 
         valid_node_list.append(node)
@@ -630,9 +685,9 @@ def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        memprov = int(zkhandler.read(('node.memory.provisioned', node)))
-        memused = int(zkhandler.read(('node.memory.used', node)))
-        memfree = int(zkhandler.read(('node.memory.free', node)))
+        memprov = int(zkhandler.read(("node.memory.provisioned", node)))
+        memused = int(zkhandler.read(("node.memory.used", node)))
+        memfree = int(zkhandler.read(("node.memory.free", node)))
         memtotal = memused + memfree
         provfree = memtotal - memprov
 
@@ -652,7 +707,7 @@ def findTargetNodeLoad(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        load = float(zkhandler.read(('node.cpu.load', node)))
+        load = float(zkhandler.read(("node.cpu.load", node)))
 
         if load < least_load:
             least_load = load
@@ -670,7 +725,7 @@ def findTargetNodeVCPUs(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        vcpus = int(zkhandler.read(('node.vcpu.allocated', node)))
+        vcpus = int(zkhandler.read(("node.vcpu.allocated", node)))
 
         if vcpus < least_vcpus:
             least_vcpus = vcpus
@@ -688,7 +743,7 @@ def findTargetNodeVMs(zkhandler, node_limit, dom_uuid):
 
     node_list = getNodes(zkhandler, node_limit, dom_uuid)
     for node in node_list:
-        vms = int(zkhandler.read(('node.count.provisioned_domains', node)))
+        vms = int(zkhandler.read(("node.count.provisioned_domains", node)))
 
         if vms < least_vms:
             least_vms = vms
@@ -710,25 +765,33 @@ def runRemoteCommand(node, command, become=False):
     class DnssecPolicy(paramiko.client.MissingHostKeyPolicy):
         def missing_host_key(self, client, hostname, key):
             sshfp_expect = hashlib.sha1(key.asbytes()).hexdigest()
-            ans = dns.resolver.query(hostname, 'SSHFP')
+            ans = dns.resolver.query(hostname, "SSHFP")
             if not ans.response.flags & dns.flags.DO:
-                raise AssertionError('Answer is not DNSSEC signed')
+                raise AssertionError("Answer is not DNSSEC signed")
             for answer in ans.response.answer:
                 for item in answer.items:
                     if sshfp_expect in item.to_text():
-                        client._log(paramiko.common.DEBUG, 'Found {} in SSHFP for host {}'.format(key.get_name(), hostname))
+                        client._log(
+                            paramiko.common.DEBUG,
+                            "Found {} in SSHFP for host {}".format(
+                                key.get_name(), hostname
+                            ),
+                        )
                         return
-            raise AssertionError('SSHFP not published in DNS')
+            raise AssertionError("SSHFP not published in DNS")
 
     if become:
-        command = 'sudo ' + command
+        command = "sudo " + command
 
     ssh_client = paramiko.client.SSHClient()
     ssh_client.load_system_host_keys()
     ssh_client.set_missing_host_key_policy(DnssecPolicy())
     ssh_client.connect(node)
     stdin, stdout, stderr = ssh_client.exec_command(command)
-    return stdout.read().decode('ascii').rstrip(), stderr.read().decode('ascii').rstrip()
+    return (
+        stdout.read().decode("ascii").rstrip(),
+        stderr.read().decode("ascii").rstrip(),
+    )
 
 
 #
@@ -736,29 +799,20 @@ def runRemoteCommand(node, command, become=False):
 #
 def reload_firewall_rules(rules_file, logger=None):
     if logger is not None:
-        logger.out('Reloading firewall configuration', state='o')
+        logger.out("Reloading firewall configuration", state="o")
 
-    retcode, stdout, stderr = run_os_command('/usr/sbin/nft -f {}'.format(rules_file))
+    retcode, stdout, stderr = run_os_command("/usr/sbin/nft -f {}".format(rules_file))
     if retcode != 0 and logger is not None:
-        logger.out('Failed to reload configuration: {}'.format(stderr), state='e')
+        logger.out("Failed to reload configuration: {}".format(stderr), state="e")
 
 
 #
 # Create an IP address
 #
 def createIPAddress(ipaddr, cidrnetmask, dev):
+    run_os_command("ip address add {}/{} dev {}".format(ipaddr, cidrnetmask, dev))
     run_os_command(
-        'ip address add {}/{} dev {}'.format(
-            ipaddr,
-            cidrnetmask,
-            dev
-        )
-    )
-    run_os_command(
-        'arping -P -U -W 0.02 -c 2 -i {dev} -S {ip} {ip}'.format(
-            dev=dev,
-            ip=ipaddr
-        )
+        "arping -P -U -W 0.02 -c 2 -i {dev} -S {ip} {ip}".format(dev=dev, ip=ipaddr)
     )
 
 
@@ -766,13 +820,7 @@ def createIPAddress(ipaddr, cidrnetmask, dev):
 # Remove an IP address
 #
 def removeIPAddress(ipaddr, cidrnetmask, dev):
-    run_os_command(
-        'ip address delete {}/{} dev {}'.format(
-            ipaddr,
-            cidrnetmask,
-            dev
-        )
-    )
+    run_os_command("ip address delete {}/{} dev {}".format(ipaddr, cidrnetmask, dev))
 
 
 #
@@ -792,6 +840,6 @@ def sortInterfaceNames(interface_names):
         http://nedbatchelder.com/blog/200712/human_sorting.html
         (See Toothy's implementation in the comments)
         """
-        return [atoi(c) for c in re_split(r'(\d+)', text)]
+        return [atoi(c) for c in re_split(r"(\d+)", text)]
 
     return sorted(interface_names, key=natural_keys)
