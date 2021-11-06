@@ -320,7 +320,6 @@ def format_vm_tags(config, name, tags):
         "{bold}{tags_name: <{tags_name_length}}  \
 {tags_type: <{tags_type_length}}  \
 {tags_protected: <{tags_protected_length}}{end_bold}".format(
-            name_length=name_length,
             tags_name_length=tags_name_length,
             tags_type_length=tags_type_length,
             tags_protected_length=tags_protected_length,
@@ -337,7 +336,6 @@ def format_vm_tags(config, name, tags):
             "{bold}{tags_name: <{tags_name_length}}  \
 {tags_type: <{tags_type_length}}  \
 {tags_protected: <{tags_protected_length}}{end_bold}".format(
-                name_length=name_length,
                 tags_type_length=tags_type_length,
                 tags_name_length=tags_name_length,
                 tags_protected_length=tags_protected_length,
@@ -1723,7 +1721,6 @@ def format_info(config, domain_information, long_output):
         ainformation.append(
             "{purple}Tags:{end}               N/A".format(
                 purple=ansiprint.purple(),
-                bold=ansiprint.bold(),
                 end=ansiprint.end(),
             )
         )

@@ -980,8 +980,6 @@ def format_list_template_system(template_data):
 {template_migration_method: <{template_migration_method_length}}{end_bold}".format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            template_state_colour="",
-            end_colour="",
             template_name_length=template_name_length,
             template_id_length=template_id_length,
             template_vcpu_length=template_vcpu_length,

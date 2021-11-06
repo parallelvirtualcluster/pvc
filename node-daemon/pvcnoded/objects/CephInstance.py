@@ -136,7 +136,7 @@ class CephOSDInstance(object):
             )
             retcode, stdout, stderr = common.run_os_command(
                 "ceph-volume lvm prepare --bluestore {devices}".format(
-                    osdid=osd_id, devices=dev_flags
+                    devices=dev_flags
                 )
             )
             if retcode:
@@ -150,7 +150,7 @@ class CephOSDInstance(object):
                 "Getting OSD FSID for ID {} on {}".format(osd_id, device), state="i"
             )
             retcode, stdout, stderr = common.run_os_command(
-                "ceph-volume lvm list {device}".format(osdid=osd_id, device=device)
+                "ceph-volume lvm list {device}".format(device=device)
             )
             for line in stdout.split("\n"):
                 if "osd fsid" in line:
@@ -165,7 +165,7 @@ class CephOSDInstance(object):
 
             # 4b. Activate the OSD
             logger.out(
-                "Activating new OSD disk with ID {}".format(osd_id, device), state="i"
+                "Activating new OSD disk with ID {}".format(osd_id), state="i"
             )
             retcode, stdout, stderr = common.run_os_command(
                 "ceph-volume lvm activate --bluestore {osdid} {osdfsid}".format(

@@ -1490,7 +1490,7 @@ def create_vm(
                 if retcode:
                     raise ProvisioningError(
                         "Failed to find binary for mkswap: {}".format(
-                            filesystem, stderr
+                            stderr
                         )
                     )
             else:

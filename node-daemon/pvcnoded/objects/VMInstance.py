@@ -1004,8 +1004,9 @@ class VMInstance(object):
                     ):
                         logger.out(
                             "RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting".format(
-                                lock["address"].split(":")[0], state="e"
-                            )
+                                lock["address"].split(":")[0]
+                            ),
+                            state="e"
                         )
                         zkhandler.write(
                             [

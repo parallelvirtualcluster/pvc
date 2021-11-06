@@ -204,9 +204,7 @@ class NodeInstance(object):
                     # Stop any existing flush jobs
                     if self.flush_thread is not None:
                         self.logger.out(
-                            "Waiting for previous migration to complete".format(
-                                self.name
-                            ),
+                            "Waiting for previous migration to complete",
                             state="i",
                         )
                         self.flush_stopper = True
@@ -758,7 +756,7 @@ class NodeInstance(object):
         for dom_uuid in fixed_domain_list:
             # Allow us to cancel the operation
             if self.flush_stopper:
-                self.logger.out("Aborting node flush".format(self.name), state="i")
+                self.logger.out("Aborting node flush", state="i")
                 self.flush_event.set()
                 self.flush_thread = None
                 self.flush_stopper = False
@@ -838,7 +836,7 @@ class NodeInstance(object):
         for dom_uuid in fixed_domain_list:
             # Allow us to cancel the operation
             if self.flush_stopper:
-                self.logger.out("Aborting node unflush".format(self.name), state="i")
+                self.logger.out("Aborting node unflush", state="i")
                 self.flush_event.set()
                 self.flush_thread = None
                 self.flush_stopper = False
