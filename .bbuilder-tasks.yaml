@@ -3,5 +3,5 @@ bbuilder:
   release:
     published:
       - git submodule update --init
-      - /bin/bash build-deb.sh
+      - /bin/bash build-stable-deb.sh
       - /usr/local/bin/deploy-package -C pvc
