@@ -377,19 +377,12 @@ def vm_state(config, vm, target_state, force=False, wait=False):
     API arguments: state={state}, wait={wait}
     API schema: {"message":"{data}"}
     """
-    if wait or target_state == "disable":
-        timeout = 300
-    else:
-        timeout = 3
-
     params = {
         "state": target_state,
         "force": str(force).lower(),
         "wait": str(wait).lower(),
     }
-    response = call_api(
-        config, "post", "/vm/{vm}/state".format(vm=vm), params=params, timeout=timeout
-    )
+    response = call_api(config, "post", "/vm/{vm}/state".format(vm=vm), params=params)
 
     if response.status_code == 200:
         retstatus = True
