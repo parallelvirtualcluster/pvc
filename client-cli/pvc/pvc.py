@@ -5647,6 +5647,7 @@ def task_init(confirm_flag, overwrite_flag):
 )
 @click.option(
     "--colour",
+    "--color",
     "_colour",
     envvar="PVC_COLOUR",
     is_flag=True,
