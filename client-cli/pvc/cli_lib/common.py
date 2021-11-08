@@ -125,7 +125,7 @@ def call_api(
     files=None,
 ):
     # Set the connect timeout to 3 seconds but extremely long (48 hour) data timeout
-    timeout = (3, 172800)
+    timeout = (3.05, 172800)
 
     # Craft the URI
     uri = "{}://{}{}{}".format(
