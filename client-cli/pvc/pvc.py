@@ -5668,9 +5668,9 @@ def cli(_cluster, _debug, _quiet, _unsafe, _colour):
 
       "PVC_QUIET": Suppress stderr connection output from client instead of using --quiet/-q
 
-      "PVC_UNSAFE": Suppress confirmation requirements instead of using --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
+      "PVC_UNSAFE": Always suppress confirmations instead of needing --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
 
-      "PVC_COLOUR": Forces colour on the output console even if Click determines it is not a console (e.g. with 'watch')
+      "PVC_COLOUR": Force colour on the output even if Click determines it is not a console (e.g. with 'watch')
 
     If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
     for an API configuration in "/etc/pvc/pvcapid.yaml". If this is also not found, abort.
