@@ -1,5 +1,18 @@
 ## PVC Changelog
 
+###### [v0.9.43](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.43)
+
+  * [Packaging] Fixes a bad test in postinst            
+  * [CLI] Adds support for removing VM interfaces by MAC address                                                         
+  * [CLI] Modifies the default restart + live behaviour to prefer the explicit restart                                   
+  * [CLI] Adds support for adding additional VM interfaces in the same network                                           
+  * [CLI] Various ordering and message fixes                                                                             
+  * [Node Daemon] Adds additional delays and retries to fencing actions                                                  
+  * [All] Adds Black formatting for Python code and various script/hook cleanups                                         
+  * [CLI/API] Adds automatic shutdown or stop when disabling a VM                                                        
+  * [CLI] Adds support for forcing colourized output                                                                     
+  * [Docs] Remove obsolete Ansible and Testing manuals  
+
 ###### [v0.9.42](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.42)
 
   * [Documentation] Reworks and updates various documentation sections
