@@ -15,7 +15,7 @@ cp -a debian/changelog client-cli/setup.py ${tmpdir}/
 cp -a node-daemon/pvcnoded/Daemon.py ${tmpdir}/node-Daemon.py
 cp -a api-daemon/pvcapid/Daemon.py ${tmpdir}/api-Daemon.py
 # Replace the "base" version with the git revision version
-sed -i "s/version = '${base_ver}'/version = '${new_ver}'/" node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py
+sed -i "s/version = \"${base_ver}\"/version = \"${new_ver}\"/" node-daemon/pvcnoded/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py
 sed -i "s/${base_ver}-0/${new_ver}/" debian/changelog 
 cat <<EOF > debian/changelog
 pvc (${new_ver}) unstable; urgency=medium
