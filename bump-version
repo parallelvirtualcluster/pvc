@@ -19,9 +19,9 @@ $EDITOR ${changelog_file}
 changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
 rm ${changelog_file}
 
-sed -i "s,version = '${current_version}',version = '${new_version}'," node-daemon/pvcnoded/Daemon.py
-sed -i "s,version = '${current_version}',version = '${new_version}'," api-daemon/pvcapid/Daemon.py
-sed -i "s,version='${current_version}',version='${new_version}'," client-cli/setup.py
+sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvcnoded/Daemon.py
+sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," api-daemon/pvcapid/Daemon.py
+sed -i "s,version=\"${current_version}\",version=\"${new_version}\"," client-cli/setup.py
 echo ${new_version} > .version
 
 changelog_tmpdir=$( mktemp -d )
@@ -52,7 +52,7 @@ git commit -v
 popd &>/dev/null
 
 echo
-echo "GitLab release message:"
+echo "Release message:"
 echo
 echo "# Parallel Virtual Cluster version ${new_version}"
 echo
