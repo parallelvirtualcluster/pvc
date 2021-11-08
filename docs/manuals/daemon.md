@@ -4,7 +4,7 @@ The PVC Node Daemon is the heart of the PVC system and runs on each node to mana
 
 The node daemon is build using Python 3.X and is packaged in the Debian package `pvc-daemon`.
 
-Configuration of the daemon is documented in [the manual](/manuals/daemon), however it is recommended to use the [Ansible configuration interface](/manuals/ansible) to configure the PVC system for you from scratch.
+Configuration of the daemon is documented in [the manual](/manuals/daemon), however it is recommended to use the [Ansible configuration system](https://github.com/parallelvirtualcluster/pvc-ansible) to configure the PVC cluster for you from scratch.
 
 ## Overall architecture
 
@@ -60,7 +60,7 @@ The PVC node daemon ins build with Python 3 and is run directly on nodes. For de
 
 The Daemon is configured using a YAML configuration file which is passed in to the API process by the environment variable `PVCD_CONFIG_FILE`. When running with the default package and SystemD unit, this file is located at `/etc/pvc/pvcnoded.yaml`.
 
-For most deployments, the management of the configuration file is handled entirely by the [PVC Ansible framework](/manuals/ansible) and should not be modified directly. Many options from the Ansible framework map directly into the configuration options in this file.
+For most deployments, the management of the configuration file is handled entirely by the [PVC Ansible framework](https://github.com/parallelvirtualcluster/pvc-ansible) and should not be modified directly. Many options from the Ansible framework map directly into the configuration options in this file.
 
 ### Conventions
 

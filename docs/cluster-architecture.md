@@ -210,7 +210,7 @@ The upstream network functions as the main upstream for the cluster nodes, provi
 
 The floating IP address in the cluster network can be used as a single point of communication with the active primary node, for instance to access the DNS aggregator instance or the management API. PVC provides only limited access control mechanisms to the API interface, so the upstream network should always be protected by a firewall; running PVC directly accessible on the Internet is strongly discouraged and may post a serious security risk, and all access should be restricted to the smallest possible set of remote systems.
 
-Nodes in this network are generally assigned static IP addresses which are configured at node install time and in the [Ansible deployment configuration](/manuals/ansible).
+Nodes in this network are generally assigned static IP addresses which are configured at node install time in the [Ansible deployment configuration](https://github.com/parallelvirtualcluster/pvc-ansible).
 
 The upstream router should be able to handle static routes to the PVC cluster, or form a BGP neighbour relationship with the coordinator nodes and/or floating IP address to learn routes to the managed client networks.
 
