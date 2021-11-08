@@ -42,11 +42,13 @@ import pvc.cli_lib.network as pvc_network
 import pvc.cli_lib.ceph as pvc_ceph
 import pvc.cli_lib.provisioner as pvc_provisioner
 
+
 myhostname = socket.gethostname().split(".")[0]
 zk_host = ""
 is_completion = True if os.environ.get("_PVC_COMPLETE", "") == "complete" else False
 
 default_store_data = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
+config = dict()
 
 
 #
@@ -58,7 +60,7 @@ def print_version(ctx, param, value):
     from pkg_resources import get_distribution
 
     version = get_distribution("pvc").version
-    click.echo(f"Parallel Virtual Cluster version {version}")
+    echo(f"Parallel Virtual Cluster version {version}")
     ctx.exit()
 
 
@@ -166,9 +168,18 @@ if not is_completion:
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=120)
 
 
+def echo(msg, nl=True, err=False):
+    if config.get("colour", False):
+        colour = True
+    else:
+        colour = None
+
+    click.echo(message=msg, color=colour, nl=nl, err=err)
+
+
 def cleanup(retcode, retmsg):
     if retmsg != "":
-        click.echo(retmsg)
+        echo(retmsg)
     if retcode is True:
         exit(0)
     else:
@@ -257,9 +268,7 @@ def cluster_add(description, address, port, ssl, name, api_key):
     }
     # Update the store
     update_store(store_path, existing_config)
-    click.echo(
-        'Added new cluster "{}" at host "{}" to local database'.format(name, address)
-    )
+    echo('Added new cluster "{}" at host "{}" to local database'.format(name, address))
 
 
 ###############################################################################
@@ -280,7 +289,7 @@ def cluster_remove(name):
         print('No cluster with name "{}" found'.format(name))
     # Update the store
     update_store(store_path, existing_config)
-    click.echo('Removed cluster "{}" from local database'.format(name))
+    echo('Removed cluster "{}" from local database'.format(name))
 
 
 ###############################################################################
@@ -354,9 +363,9 @@ def cluster_list(raw):
 
     if not raw:
         # Display the data nicely
-        click.echo("Available clusters:")
-        click.echo()
-        click.echo(
+        echo("Available clusters:")
+        echo()
+        echo(
             "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
                 bold=ansiprint.bold(),
                 end_bold=ansiprint.end(),
@@ -393,7 +402,7 @@ def cluster_list(raw):
                 api_key = "N/A"
 
         if not raw:
-            click.echo(
+            echo(
                 "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
                     bold="",
                     end_bold="",
@@ -412,7 +421,7 @@ def cluster_list(raw):
                 )
             )
         else:
-            click.echo(cluster)
+            echo(cluster)
 
 
 # Validate that the cluster is set for a given command
@@ -420,7 +429,7 @@ def cluster_req(function):
     @wraps(function)
     def validate_cluster(*args, **kwargs):
         if config.get("badcfg", None):
-            click.echo(
+            echo(
                 'No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.'
             )
             exit(1)
@@ -463,24 +472,24 @@ def node_secondary(node, wait):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo(
+        echo(
             "Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(
                 len(task_retdata)
             )
         )
-        click.echo(
+        echo(
             "      These jobs will continue executing, but status will not be visible until the current"
         )
-        click.echo("      node returns to primary state.")
-        click.echo()
+        echo("      node returns to primary state.")
+        echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, "secondary")
     if not retcode:
         cleanup(retcode, retmsg)
     else:
         if wait:
-            click.echo(retmsg)
-            click.echo("Waiting for state transition... ", nl=False)
+            echo(retmsg)
+            echo("Waiting for state transition... ", nl=False)
             # Every half-second, check if the API is reachable and the node is in secondary state
             while True:
                 try:
@@ -516,24 +525,24 @@ def node_primary(node, wait):
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
     if len(task_retdata) > 0:
-        click.echo(
+        echo(
             "Note: There are currently {} active or queued provisioner jobs on the current primary node.".format(
                 len(task_retdata)
             )
         )
-        click.echo(
+        echo(
             "      These jobs will continue executing, but status will not be visible until the current"
         )
-        click.echo("      node returns to primary state.")
-        click.echo()
+        echo("      node returns to primary state.")
+        echo()
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, "primary")
     if not retcode:
         cleanup(retcode, retmsg)
     else:
         if wait:
-            click.echo(retmsg)
-            click.echo("Waiting for state transition... ", nl=False)
+            echo(retmsg)
+            echo("Waiting for state transition... ", nl=False)
             # Every half-second, check if the API is reachable and the node is in secondary state
             while True:
                 try:
@@ -1018,7 +1027,7 @@ def vm_modify(
             text=current_vm_cfgfile, require_save=True, extension=".xml"
         )
         if new_vm_cfgfile is None:
-            click.echo("Aborting with no modifications.")
+            echo("Aborting with no modifications.")
             exit(0)
         else:
             new_vm_cfgfile = new_vm_cfgfile.strip()
@@ -1029,15 +1038,15 @@ def vm_modify(
         new_vm_cfgfile = cfgfile.read()
         cfgfile.close()
 
-        click.echo(
+        echo(
             'Replacing configuration of VM "{}" with file "{}".'.format(
                 dom_name, cfgfile.name
             )
         )
 
     # Show a diff and confirm
-    click.echo("Pending modifications:")
-    click.echo("")
+    echo("Pending modifications:")
+    echo("")
     diff = list(
         difflib.unified_diff(
             current_vm_cfgfile.split("\n"),
@@ -1052,14 +1061,14 @@ def vm_modify(
     )
     for line in diff:
         if re.match(r"^\+", line) is not None:
-            click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
         elif re.match(r"^\-", line) is not None:
-            click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            echo(colorama.Fore.RED + line + colorama.Fore.RESET)
         elif re.match(r"^\^", line) is not None:
-            click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
         else:
-            click.echo(line)
-    click.echo("")
+            echo(line)
+    echo("")
 
     # Verify our XML is sensible
     try:
@@ -3597,7 +3606,7 @@ def ceph_volume_upload(pool, name, image_format, image_file):
     """
 
     if not os.path.exists(image_file):
-        click.echo("ERROR: File '{}' does not exist!".format(image_file))
+        echo("ERROR: File '{}' does not exist!".format(image_file))
         exit(1)
 
     retcode, retmsg = pvc_ceph.ceph_volume_upload(
@@ -4469,7 +4478,7 @@ def provisioner_template_storage_disk_add(
     """
 
     if source_volume and (size or filesystem or mountpoint):
-        click.echo(
+        echo(
             'The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.'
         )
         exit(1)
@@ -4610,7 +4619,7 @@ def provisioner_userdata_add(name, filename):
     try:
         yaml.load(userdata, Loader=yaml.SafeLoader)
     except Exception as e:
-        click.echo("Error: Userdata document is malformed")
+        echo("Error: Userdata document is malformed")
         cleanup(False, e)
 
     params = dict()
@@ -4647,7 +4656,7 @@ def provisioner_userdata_modify(name, filename, editor):
         # Grab the current config
         retcode, retdata = pvc_provisioner.userdata_info(config, name)
         if not retcode:
-            click.echo(retdata)
+            echo(retdata)
             exit(1)
         current_userdata = retdata["userdata"].strip()
 
@@ -4655,14 +4664,14 @@ def provisioner_userdata_modify(name, filename, editor):
             text=current_userdata, require_save=True, extension=".yaml"
         )
         if new_userdata is None:
-            click.echo("Aborting with no modifications.")
+            echo("Aborting with no modifications.")
             exit(0)
         else:
             new_userdata = new_userdata.strip()
 
         # Show a diff and confirm
-        click.echo("Pending modifications:")
-        click.echo("")
+        echo("Pending modifications:")
+        echo("")
         diff = list(
             difflib.unified_diff(
                 current_userdata.split("\n"),
@@ -4677,14 +4686,14 @@ def provisioner_userdata_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
-                click.echo(line)
-        click.echo("")
+                echo(line)
+        echo("")
 
         click.confirm("Write modifications to cluster?", abort=True)
 
@@ -4699,7 +4708,7 @@ def provisioner_userdata_modify(name, filename, editor):
     try:
         yaml.load(userdata, Loader=yaml.SafeLoader)
     except Exception as e:
-        click.echo("Error: Userdata document is malformed")
+        echo("Error: Userdata document is malformed")
         cleanup(False, e)
 
     params = dict()
@@ -4848,20 +4857,20 @@ def provisioner_script_modify(name, filename, editor):
         # Grab the current config
         retcode, retdata = pvc_provisioner.script_info(config, name)
         if not retcode:
-            click.echo(retdata)
+            echo(retdata)
             exit(1)
         current_script = retdata["script"].strip()
 
         new_script = click.edit(text=current_script, require_save=True, extension=".py")
         if new_script is None:
-            click.echo("Aborting with no modifications.")
+            echo("Aborting with no modifications.")
             exit(0)
         else:
             new_script = new_script.strip()
 
         # Show a diff and confirm
-        click.echo("Pending modifications:")
-        click.echo("")
+        echo("Pending modifications:")
+        echo("")
         diff = list(
             difflib.unified_diff(
                 current_script.split("\n"),
@@ -4876,14 +4885,14 @@ def provisioner_script_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                click.echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                click.echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                click.echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
-                click.echo(line)
-        click.echo("")
+                echo(line)
+        echo("")
 
         click.confirm("Write modifications to cluster?", abort=True)
 
@@ -4988,7 +4997,7 @@ def provisioner_ova_upload(name, filename, pool):
     Storage templates, provisioning scripts, and arguments for OVA-type profiles will be ignored and should not be set.
     """
     if not os.path.exists(filename):
-        click.echo("ERROR: File '{}' does not exist!".format(filename))
+        echo("ERROR: File '{}' does not exist!".format(filename))
         exit(1)
 
     params = dict()
@@ -5319,19 +5328,19 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
     if retcode and wait_flag:
         task_id = retdata
 
-        click.echo("Task ID: {}".format(task_id))
-        click.echo()
+        echo("Task ID: {}".format(task_id))
+        echo()
 
         # Wait for the task to start
-        click.echo("Waiting for task to start...", nl=False)
+        echo("Waiting for task to start...", nl=False)
         while True:
             time.sleep(1)
             task_status = pvc_provisioner.task_status(config, task_id, is_watching=True)
             if task_status.get("state") != "PENDING":
                 break
-            click.echo(".", nl=False)
-        click.echo(" done.")
-        click.echo()
+            echo(".", nl=False)
+        echo(" done.")
+        echo()
 
         # Start following the task state, updating progress as we go
         total_task = task_status.get("total")
@@ -5352,7 +5361,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
                         maxlen = curlen
                     lendiff = maxlen - curlen
                     overwrite_whitespace = " " * lendiff
-                    click.echo(
+                    echo(
                         "  " + task_status.get("status") + overwrite_whitespace,
                         nl=False,
                     )
@@ -5362,7 +5371,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
             if task_status.get("state") == "SUCCESS":
                 bar.update(total_task - last_task)
 
-        click.echo()
+        echo()
         retdata = task_status.get("state") + ": " + task_status.get("status")
 
     cleanup(retcode, retdata)
@@ -5591,7 +5600,7 @@ def task_init(confirm_flag, overwrite_flag):
             exit(0)
 
     # Easter-egg
-    click.echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
+    echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
 
     retcode, retmsg = pvc_cluster.initialize(config, overwrite_flag)
     cleanup(retcode, retmsg)
@@ -5637,9 +5646,17 @@ def task_init(confirm_flag, overwrite_flag):
     help='Allow unsafe operations without confirmation/"--yes" argument.',
 )
 @click.option(
+    "--colour",
+    "_colour",
+    envvar="PVC_COLOUR",
+    is_flag=True,
+    default=False,
+    help="Force colourized output.",
+)
+@click.option(
     "--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True
 )
-def cli(_cluster, _debug, _quiet, _unsafe):
+def cli(_cluster, _debug, _quiet, _unsafe, _colour):
     """
     Parallel Virtual Cluster CLI management tool
 
@@ -5653,6 +5670,8 @@ def cli(_cluster, _debug, _quiet, _unsafe):
 
       "PVC_UNSAFE": Suppress confirmation requirements instead of using --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
 
+      "PVC_COLOUR": Forces colour on the output console even if Click determines it is not a console (e.g. with 'watch')
+
     If no PVC_CLUSTER/--cluster is specified, attempts first to load the "local" cluster, checking
     for an API configuration in "/etc/pvc/pvcapid.yaml". If this is also not found, abort.
     """
@@ -5663,13 +5682,14 @@ def cli(_cluster, _debug, _quiet, _unsafe):
     if not config.get("badcfg", None):
         config["debug"] = _debug
         config["unsafe"] = _unsafe
+        config["colour"] = _colour
 
         if not _quiet:
             if config["api_scheme"] == "https" and not config["verify_ssl"]:
                 ssl_unverified_msg = " (unverified)"
             else:
                 ssl_unverified_msg = ""
-            click.echo(
+            echo(
                 'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
                     config["cluster"],
                     config["api_host"],
@@ -5679,10 +5699,8 @@ def cli(_cluster, _debug, _quiet, _unsafe):
                 ),
                 err=True,
             )
-            click.echo("", err=True)
+            echo("", err=True)
 
-
-config = dict()
 
 #
 # Click command tree
