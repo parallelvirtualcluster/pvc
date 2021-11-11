@@ -1,5 +1,14 @@
 ## PVC Changelog
 
+###### [v0.9.44](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.44)
+
+  * [Node Daemon] Adds a Munin plugin for Ceph utilization
+  * [CLI] Fixes timeouts for long-running API commands
+
+###### [v0.9.44](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.44)
+
+  * [CLI] Fixes timeout issues with long-running API commands
+
 ###### [v0.9.43](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.43)
 
   * [Packaging] Fixes a bad test in postinst            

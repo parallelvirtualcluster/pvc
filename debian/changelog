@@ -1,3 +1,16 @@
+pvc (0.9.44-0) unstable; urgency=high
+
+  * [Node Daemon] Adds a Munin plugin for Ceph utilization
+  * [CLI] Fixes timeouts for long-running API commands
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 11 Nov 2021 16:20:38 -0500
+
+pvc (0.9.44-0) unstable; urgency=high
+
+  * [CLI] Fixes timeout issues with long-running API commands
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 11 Nov 2021 16:19:32 -0500
+
 pvc (0.9.43-0) unstable; urgency=high
 
   * [Packaging] Fixes a bad test in postinst            
