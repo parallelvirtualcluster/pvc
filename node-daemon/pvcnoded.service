@@ -2,7 +2,8 @@
 
 [Unit]
 Description = Parallel Virtual Cluster node daemon
-After = network-online.target
+After = network.target
+Wants = network-online.target
 PartOf = pvc.target
 
 [Service]
