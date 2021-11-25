@@ -1,3 +1,10 @@
+pvc (0.9.45-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes an ordering issue with pvcnoded.service
+  * [CLI Client] Fixes bad calls to echo() without argument
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 25 Nov 2021 09:34:20 -0500
+
 pvc (0.9.44-0) unstable; urgency=high
 
   * [Node Daemon] Adds a Munin plugin for Ceph utilization

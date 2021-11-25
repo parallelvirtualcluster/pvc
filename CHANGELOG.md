@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.45](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.45)
+
+  * [Node Daemon] Fixes an ordering issue with pvcnoded.service
+  * [CLI Client] Fixes bad calls to echo() without argument
+
 ###### [v0.9.44](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.44)
 
   * [Node Daemon] Adds a Munin plugin for Ceph utilization
