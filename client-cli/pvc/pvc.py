@@ -364,7 +364,7 @@ def cluster_list(raw):
     if not raw:
         # Display the data nicely
         echo("Available clusters:")
-        echo()
+        echo("")
         echo(
             "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
                 bold=ansiprint.bold(),
@@ -481,7 +481,7 @@ def node_secondary(node, wait):
             "      These jobs will continue executing, but status will not be visible until the current"
         )
         echo("      node returns to primary state.")
-        echo()
+        echo("")
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, "secondary")
     if not retcode:
@@ -534,7 +534,7 @@ def node_primary(node, wait):
             "      These jobs will continue executing, but status will not be visible until the current"
         )
         echo("      node returns to primary state.")
-        echo()
+        echo("")
 
     retcode, retmsg = pvc_node.node_coordinator_state(config, node, "primary")
     if not retcode:
@@ -5329,7 +5329,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
         task_id = retdata
 
         echo("Task ID: {}".format(task_id))
-        echo()
+        echo("")
 
         # Wait for the task to start
         echo("Waiting for task to start...", nl=False)
@@ -5340,7 +5340,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
                 break
             echo(".", nl=False)
         echo(" done.")
-        echo()
+        echo("")
 
         # Start following the task state, updating progress as we go
         total_task = task_status.get("total")
@@ -5371,7 +5371,7 @@ def provisioner_create(name, profile, wait_flag, define_flag, start_flag, script
             if task_status.get("state") == "SUCCESS":
                 bar.update(total_task - last_task)
 
-        echo()
+        echo("")
         retdata = task_status.get("state") + ": " + task_status.get("status")
 
     cleanup(retcode, retdata)
