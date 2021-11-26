@@ -21,7 +21,7 @@
 
 import math
 
-from json import dumps
+from json import dumps, loads
 from requests_toolbelt.multipart.encoder import (
     MultipartEncoder,
     MultipartEncoderMonitor,
@@ -1648,6 +1648,8 @@ def ceph_benchmark_list(config, job):
 
 
 def get_benchmark_list_results_legacy(benchmark_data):
+    if isinstance(benchmark_data, str):
+        benchmark_data = loads(benchmark_data)
     benchmark_bandwidth = dict()
     benchmark_iops = dict()
     for test in ["seq_read", "seq_write", "rand_read_4K", "rand_write_4K"]:
@@ -1732,7 +1734,7 @@ def format_list_benchmark(config, benchmark_information):
 
     for benchmark in benchmark_information:
         benchmark_job = benchmark["job"]
-        benchmark_format = benchmark["test_format"]  # noqa: F841
+        benchmark_format = benchmark.get("test_format", 0)  # noqa: F841
 
         _benchmark_job_length = len(benchmark_job)
         if _benchmark_job_length > benchmark_job_length:
@@ -1837,7 +1839,7 @@ def format_list_benchmark(config, benchmark_information):
 
     for benchmark in benchmark_information:
         benchmark_job = benchmark["job"]
-        benchmark_format = benchmark["test_format"]  # noqa: F841
+        benchmark_format = benchmark.get("test_format", 0)  # noqa: F841
 
         if benchmark["benchmark_result"] == "Running":
             seq_benchmark_bandwidth = "Running"
