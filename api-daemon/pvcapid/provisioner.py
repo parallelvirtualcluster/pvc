@@ -2086,7 +2086,7 @@ def create_vm(
     del zkhandler
 
     return {
-        "status": 'VM "{}" with profile "{}" has been provisioned and started successfully'.format(
+        "status": 'VM "{}" with profile "{}" has been provisioned successfully'.format(
             vm_name, vm_profile
         ),
         "current": 10,
