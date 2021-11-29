@@ -1442,11 +1442,17 @@ def create_vm(
                 )
             if not volume["pool"] in pools:
                 pools[volume["pool"]] = int(
-                    volume_data["stats"]["size"].replace("G", "")
+                    pvc_ceph.format_bytes_fromhuman(volume_data["stats"]["size"])
+                    / 1024
+                    / 1024
+                    / 1024
                 )
             else:
                 pools[volume["pool"]] += int(
-                    volume_data["stats"]["size"].replace("G", "")
+                    pvc_ceph.format_bytes_fromhuman(volume_data["stats"]["size"])
+                    / 1024
+                    / 1024
+                    / 1024
                 )
         else:
             if not volume["pool"] in pools:
