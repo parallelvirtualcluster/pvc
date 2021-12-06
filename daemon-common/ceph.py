@@ -375,7 +375,7 @@ def get_list_osd(zkhandler, limit, is_fuzzy=True):
     for osd in full_osd_list:
         if limit:
             try:
-                if re.match(limit, osd):
+                if re.fullmatch(limit, osd):
                     osd_list.append(getOSDInformation(zkhandler, osd))
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
@@ -496,16 +496,19 @@ def remove_pool(zkhandler, name):
 def get_list_pool(zkhandler, limit, is_fuzzy=True):
     full_pool_list = zkhandler.children("base.pool")
 
-    if limit:
-        if not is_fuzzy:
-            limit = "^" + limit + "$"
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
 
     get_pool_info = dict()
     for pool in full_pool_list:
         is_limit_match = False
         if limit:
             try:
-                if re.match(limit, pool):
+                if re.fullmatch(limit, pool):
                     is_limit_match = True
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
@@ -848,15 +851,12 @@ def get_list_volume(zkhandler, pool, limit, is_fuzzy=True):
 
     full_volume_list = getCephVolumes(zkhandler, pool)
 
-    if limit:
-        if not is_fuzzy:
-            limit = "^" + limit + "$"
-        else:
-            # Implicitly assume fuzzy limits
-            if not re.match(r"\^.*", limit):
-                limit = ".*" + limit
-            if not re.match(r".*\$", limit):
-                limit = limit + ".*"
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
 
     get_volume_info = dict()
     for volume in full_volume_list:
@@ -867,7 +867,7 @@ def get_list_volume(zkhandler, pool, limit, is_fuzzy=True):
         if limit:
             # Try to match the limit against the volume name
             try:
-                if re.match(limit, volume_name):
+                if re.fullmatch(limit, volume_name):
                     is_limit_match = True
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
@@ -1073,7 +1073,7 @@ def get_list_snapshot(zkhandler, pool, volume, limit, is_fuzzy=True):
         pool_name, volume_name = volume.split("/")
         if limit:
             try:
-                if re.match(limit, snapshot_name):
+                if re.fullmatch(limit, snapshot_name):
                     snapshot_list.append(
                         {
                             "pool": pool_name,

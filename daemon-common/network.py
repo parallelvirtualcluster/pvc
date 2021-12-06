@@ -665,16 +665,20 @@ def get_list(zkhandler, limit, is_fuzzy=True):
     net_list = []
     full_net_list = zkhandler.children("base.network")
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
+
     for net in full_net_list:
         description = zkhandler.read(("network", net))
         if limit:
             try:
-                if not is_fuzzy:
-                    limit = "^" + limit + "$"
-
-                if re.match(limit, net):
+                if re.fullmatch(limit, net):
                     net_list.append(getNetworkInformation(zkhandler, net))
-                if re.match(limit, description):
+                if re.fullmatch(limit, description):
                     net_list.append(getNetworkInformation(zkhandler, net))
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
@@ -700,25 +704,19 @@ def get_list_dhcp(zkhandler, network, limit, only_static=False, is_fuzzy=True):
         full_dhcp_list = getNetworkDHCPReservations(zkhandler, net_vni)
         full_dhcp_list += getNetworkDHCPLeases(zkhandler, net_vni)
 
-    if limit:
-        try:
-            if not is_fuzzy:
-                limit = "^" + limit + "$"
-
-            # Implcitly assume fuzzy limits
-            if not re.match(r"\^.*", limit):
-                limit = ".*" + limit
-            if not re.match(r".*\$", limit):
-                limit = limit + ".*"
-        except Exception as e:
-            return False, "Regex Error: {}".format(e)
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
 
     for lease in full_dhcp_list:
         valid_lease = False
         if limit:
-            if re.match(limit, lease):
+            if re.fullmatch(limit, lease):
                 valid_lease = True
-            if re.match(limit, lease):
+            if re.fullmatch(limit, lease):
                 valid_lease = True
         else:
             valid_lease = True
@@ -748,23 +746,17 @@ def get_list_acl(zkhandler, network, limit, direction, is_fuzzy=True):
     acl_list = []
     full_acl_list = getNetworkACLs(zkhandler, net_vni, direction)
 
-    if limit:
-        try:
-            if not is_fuzzy:
-                limit = "^" + limit + "$"
-
-            # Implcitly assume fuzzy limits
-            if not re.match(r"\^.*", limit):
-                limit = ".*" + limit
-            if not re.match(r".*\$", limit):
-                limit = limit + ".*"
-        except Exception as e:
-            return False, "Regex Error: {}".format(e)
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
 
     for acl in full_acl_list:
         valid_acl = False
         if limit:
-            if re.match(limit, acl["description"]):
+            if re.fullmatch(limit, acl["description"]):
                 valid_acl = True
         else:
             valid_acl = True

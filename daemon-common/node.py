@@ -237,13 +237,17 @@ def get_list(
     node_list = []
     full_node_list = zkhandler.children("base.node")
 
+    if is_fuzzy and limit:
+        # Implicitly assume fuzzy limits
+        if not re.match(r"\^.*", limit):
+            limit = ".*" + limit
+        if not re.match(r".*\$", limit):
+            limit = limit + ".*"
+
     for node in full_node_list:
         if limit:
             try:
-                if not is_fuzzy:
-                    limit = "^" + limit + "$"
-
-                if re.match(limit, node):
+                if re.fullmatch(limit, node):
                     node_list.append(getNodeInformation(zkhandler, node))
             except Exception as e:
                 return False, "Regex Error: {}".format(e)

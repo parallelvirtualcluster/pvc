@@ -1227,9 +1227,9 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
         if limit:
             # Try to match the limit against the UUID (if applicable) and name
             try:
-                if is_limit_uuid and re.match(limit, vm):
+                if is_limit_uuid and re.fullmatch(limit, vm):
                     is_limit_match = True
-                if re.match(limit, name):
+                if re.fullmatch(limit, name):
                     is_limit_match = True
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
