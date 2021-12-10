@@ -28,7 +28,10 @@ import time
 import colorama
 import yaml
 import json
+import syslog
 import lxml.etree as etree
+
+from sys import argv
 
 from distutils.util import strtobool
 
@@ -49,6 +52,22 @@ is_completion = True if os.environ.get("_PVC_COMPLETE", "") == "complete" else F
 
 default_store_data = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
 config = dict()
+
+
+#
+# Audit function
+#
+def audit():
+    args = argv
+    args[0] = "pvc"
+    syslog.openlog(facility=syslog.LOG_AUTH)
+    syslog.syslog(
+        'client audit: command "{}" by user "{}"'.format(
+            " ".join(args),
+            os.environ.get("USER", None),
+        )
+    )
+    syslog.closelog()
 
 
 #
@@ -5701,6 +5720,8 @@ def cli(_cluster, _debug, _quiet, _unsafe, _colour):
                 err=True,
             )
             echo("", err=True)
+
+    audit()
 
 
 #
