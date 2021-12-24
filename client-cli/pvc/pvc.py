@@ -3178,20 +3178,29 @@ def ceph_benchmark():
 # pvc storage benchmark run
 ###############################################################################
 @click.command(name="run", short_help="Run a storage benchmark.")
+@click.option(
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the run",
+)
 @click.argument("pool")
 @cluster_req
-def ceph_benchmark_run(pool):
+def ceph_benchmark_run(confirm_flag, pool):
     """
     Run a storage benchmark on POOL in the background.
     """
-    try:
-        click.confirm(
-            "NOTE: Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue",
-            prompt_suffix="? ",
-            abort=True,
-        )
-    except Exception:
-        exit(0)
+    if not confirm_flag and not config["unsafe"]:
+        try:
+            click.confirm(
+                "NOTE: Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue",
+                prompt_suffix="? ",
+                abort=True,
+            )
+        except Exception:
+            exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_benchmark_run(config, pool)
     cleanup(retcode, retmsg)
