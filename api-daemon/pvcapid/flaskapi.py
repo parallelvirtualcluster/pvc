@@ -3849,7 +3849,7 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
             {
                 "name": "device",
                 "required": True,
-                "helptext": "A valid device must be specified.",
+                "helptext": "A valid device or detect string must be specified.",
             },
         ]
     )
@@ -3871,7 +3871,7 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
             name: device
             type: string
             required: true
-            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) to create the OSD DB volume group on
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") to create the OSD DB volume group on
         responses:
           200:
             description: OK
@@ -4003,7 +4003,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
             {
                 "name": "device",
                 "required": True,
-                "helptext": "A valid device must be specified.",
+                "helptext": "A valid device or detect string must be specified.",
             },
             {
                 "name": "weight",
@@ -4040,7 +4040,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
             name: device
             type: string
             required: true
-            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) to create the OSD on
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") to create the OSD on
           - in: query
             name: weight
             type: number

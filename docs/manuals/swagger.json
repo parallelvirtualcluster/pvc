@@ -5034,7 +5034,7 @@
                         "type": "string"
                     },
                     {
-                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) to create the OSD on",
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) or detect string (\"detect:NAME:SIZE:ID\") to create the OSD on",
                         "in": "query",
                         "name": "device",
                         "required": true,
@@ -5194,7 +5194,7 @@
                         "type": "string"
                     },
                     {
-                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) to create the OSD DB volume group on",
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) or detect string (\"detect:NAME:SIZE:ID\") to create the OSD DB volume group on",
                         "in": "query",
                         "name": "device",
                         "required": true,
