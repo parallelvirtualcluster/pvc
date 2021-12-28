@@ -25,7 +25,7 @@ import yaml
 from distutils.util import strtobool as dustrtobool
 
 # Daemon version
-version = "0.9.45"
+version = "0.9.46"
 
 # API version
 API_VERSION = 1.0

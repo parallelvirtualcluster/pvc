@@ -1,5 +1,17 @@
 ## PVC Changelog
 
+###### [v0.9.46](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.46)
+
+  * [API] Fixes bugs with legacy benchmark display
+  * [API] Fixes a bug around cloned image sizes
+  * [API] Removes extraneous message text in provisioner create command
+  * [API] Corrects bugs around fuzzy matching
+  * [CLI] Adds auditing for PVC CLI to local syslog
+  * [CLI] Adds --yes bypass for benchmark command
+  * [Node Daemon/API/CLI] Adds support for "detect" strings when specifying OSD or OSDDB devices
+  * [Node Daemon] Fixes a bug when removing OSDs
+  * [Node Daemon] Fixes a single-node cluster shutdown deadlock
+
 ###### [v0.9.45](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.45)
 
   * [Node Daemon] Fixes an ordering issue with pvcnoded.service

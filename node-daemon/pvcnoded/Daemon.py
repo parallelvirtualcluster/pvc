@@ -48,7 +48,7 @@ import re
 import json
 
 # Daemon version
-version = "0.9.45"
+version = "0.9.46"
 
 
 ##########################################################
