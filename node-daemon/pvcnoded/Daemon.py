@@ -233,11 +233,14 @@ def entrypoint():
 
         # Force into secondary coordinator state if needed
         try:
-            if this_node.router_state == "primary":
+            if this_node.router_state == "primary" and len(d_node) > 1:
                 zkhandler.write([("base.config.primary_node", "none")])
                 logger.out("Waiting for primary migration", state="s")
-                while this_node.router_state != "secondary":
+                timeout = 240
+                count = 0
+                while this_node.router_state != "secondary" and count < timeout:
                     sleep(0.5)
+                    count += 1
         except Exception:
             pass
 
