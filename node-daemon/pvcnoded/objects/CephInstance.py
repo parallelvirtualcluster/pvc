@@ -313,7 +313,7 @@ class CephOSDInstance(object):
     def remove_osd(zkhandler, logger, osd_id, osd_obj):
         logger.out("Removing OSD disk {}".format(osd_id), state="i")
         try:
-            # 1. Verify the OSD is present
+            # Verify the OSD is present
             retcode, stdout, stderr = common.run_os_command("ceph osd ls")
             osd_list = stdout.split("\n")
             if osd_id not in osd_list:
@@ -322,7 +322,17 @@ class CephOSDInstance(object):
                 )
                 return True
 
-            # 1. Set the OSD out so it will flush
+            # 1. Set the OSD down and out so it will flush
+            logger.out("Setting down OSD disk with ID {}".format(osd_id), state="i")
+            retcode, stdout, stderr = common.run_os_command(
+                "ceph osd down {}".format(osd_id)
+            )
+            if retcode:
+                print("ceph osd down")
+                print(stdout)
+                print(stderr)
+                raise Exception
+
             logger.out("Setting out OSD disk with ID {}".format(osd_id), state="i")
             retcode, stdout, stderr = common.run_os_command(
                 "ceph osd out {}".format(osd_id)
