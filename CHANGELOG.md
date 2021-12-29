@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.47](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.47)
+
+  * [Node Daemon/API/CLI] Adds Ceph pool device class/tier support
+  * [API] Fixes a bug returning values if a Ceph pool has not yet reported stats
+  * [API/CLI] Adds PGs count to the pool list output
+  * [API/CLI] Adds Ceph pool PGs count adjustment support
+
 ###### [v0.9.46](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.46)
 
   * [API] Fixes bugs with legacy benchmark display
