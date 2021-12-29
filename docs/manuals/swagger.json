@@ -5414,6 +5414,42 @@
                 "tags": [
                     "storage / ceph"
                 ]
+            },
+            "put": {
+                "description": "",
+                "parameters": [
+                    {
+                        "description": "The new number of placement groups (PGs) for the pool",
+                        "in": "query",
+                        "name": "pgs",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Adjust Ceph pool {pool}'s placement group count",
+                "tags": [
+                    "storage / ceph"
+                ]
             }
         },
         "/api/v1/storage/ceph/snapshot": {

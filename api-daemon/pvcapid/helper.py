@@ -1434,6 +1434,22 @@ def ceph_pool_remove(zkhandler, name):
     return output, retcode
 
 
+@ZKConnection(config)
+def ceph_pool_set_pgs(zkhandler, name, pgs):
+    """
+    Set the PGs of a ceph RBD pool.
+    """
+    retflag, retdata = pvc_ceph.set_pgs_pool(zkhandler, name, pgs)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
 @pvc_common.Profiler(config)
 @ZKConnection(config)
 def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):

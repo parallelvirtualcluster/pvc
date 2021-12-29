@@ -708,7 +708,7 @@ def ceph_pool_info(config, pool):
 
 def ceph_pool_list(config, limit):
     """
-    Get list information about Ceph OSDs (limited by {limit})
+    Get list information about Ceph pools (limited by {limit})
 
     API endpoint: GET /api/v1/storage/ceph/pool
     API arguments: limit={limit}
@@ -728,7 +728,7 @@ def ceph_pool_list(config, limit):
 
 def ceph_pool_add(config, pool, pgs, replcfg, tier):
     """
-    Add new Ceph OSD
+    Add new Ceph pool
 
     API endpoint: POST /api/v1/storage/ceph/pool
     API arguments: pool={pool}, pgs={pgs}, replcfg={replcfg}, tier={tier}
@@ -747,7 +747,7 @@ def ceph_pool_add(config, pool, pgs, replcfg, tier):
 
 def ceph_pool_remove(config, pool):
     """
-    Remove Ceph OSD
+    Remove Ceph pool
 
     API endpoint: DELETE /api/v1/storage/ceph/pool/{pool}
     API arguments:
@@ -756,6 +756,27 @@ def ceph_pool_remove(config, pool):
     params = {"yes-i-really-mean-it": "yes"}
     response = call_api(
         config, "delete", "/storage/ceph/pool/{pool}".format(pool=pool), params=params
+    )
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get("message", "")
+
+
+def ceph_pool_set_pgs(config, pool, pgs):
+    """
+    Set the PGs of a Ceph pool
+
+    API endpoint: PUT /api/v1/storage/ceph/pool/{pool}
+    API arguments: {"pgs": "{pgs}"}
+    API schema: {"message":"{data}"}
+    """
+    params = {"pgs": pgs}
+    response = call_api(
+        config, "put", "/storage/ceph/pool/{pool}".format(pool=pool), params=params
     )
 
     if response.status_code == 200:

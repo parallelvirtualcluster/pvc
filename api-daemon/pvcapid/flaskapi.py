@@ -4462,6 +4462,50 @@ class API_Storage_Ceph_Pool_Element(Resource):
     @RequestParser(
         [
             {
+                "name": "pgs",
+                "required": True,
+                "helptext": "A placement group count must be specified.",
+            },
+        ]
+    )
+    @Authenticator
+    def put(self, pool, reqargs):
+        """
+        Adjust Ceph pool {pool}'s placement group count
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: pgs
+            type: integer
+            required: true
+            description: The new number of placement groups (PGs) for the pool
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_pool_set_pgs(
+            pool,
+            reqargs.get("pgs", 0),
+        )
+
+    @RequestParser(
+        [
+            {
                 "name": "yes-i-really-mean-it",
                 "required": True,
                 "helptext": "Please confirm that 'yes-i-really-mean-it'.",

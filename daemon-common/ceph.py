@@ -513,6 +513,47 @@ def remove_pool(zkhandler, name):
     return True, 'Removed RBD pool "{}" and all volumes.'.format(name)
 
 
+def set_pgs_pool(zkhandler, name, pgs):
+    if not verifyPool(zkhandler, name):
+        return False, f'ERROR: No pool with name "{name}" is present in the cluster.'
+
+    # Validate new PGs count
+    pgs = int(pgs)
+    if (pgs == 0) or (pgs & (pgs - 1) != 0):
+        return (
+            False,
+            f'ERROR: Invalid PGs number "{pgs}": must be a non-zero power of 2.',
+        )
+
+    # Set the new pgs number
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph osd pool set {name} pg_num {pgs}"
+    )
+    if retcode:
+        return False, f"ERROR: Failed to set pg_num on pool {name} to {pgs}: {stderr}"
+
+    # Set the new pgps number if increasing
+    current_pgs = int(zkhandler.read(("pool.pgs", name)))
+    if current_pgs >= pgs:
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph osd pool set {name} pgp_num {pgs}"
+        )
+        if retcode:
+            return (
+                False,
+                f"ERROR: Failed to set pg_num on pool {name} to {pgs}: {stderr}",
+            )
+
+    # Update Zookeeper count
+    zkhandler.write(
+        [
+            (("pool.pgs", name), pgs),
+        ]
+    )
+
+    return True, f'Set PGs count to {pgs} for RBD pool "{name}".'
+
+
 def get_list_pool(zkhandler, limit, is_fuzzy=True):
     full_pool_list = zkhandler.children("base.pool")
 

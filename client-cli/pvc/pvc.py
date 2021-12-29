@@ -3532,6 +3532,8 @@ def ceph_pool():
 def ceph_pool_add(name, pgs, tier, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
+
+    The placement group count must be a non-zero power of 2.
     """
 
     retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg, tier)
@@ -3567,6 +3569,26 @@ def ceph_pool_remove(name, confirm_flag):
             exit(0)
 
     retcode, retmsg = pvc_ceph.ceph_pool_remove(config, name)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc storage pool set-pgs
+###############################################################################
+@click.command(name="set-pgs", short_help="Set PGs of an RBD pool.")
+@click.argument("name")
+@click.argument("pgs")
+@cluster_req
+def ceph_pool_set_pgs(name, pgs):
+    """
+    Set the placement groups (PGs) count for the pool NAME to PGS.
+
+    The placement group count must be a non-zero power of 2.
+
+    Placement group counts may be increased or decreased as required though frequent alteration is not recommended.
+    """
+
+    retcode, retmsg = pvc_ceph.ceph_pool_set_pgs(config, name, pgs)
     cleanup(retcode, retmsg)
 
 
@@ -5844,6 +5866,7 @@ ceph_osd.add_command(ceph_osd_list)
 
 ceph_pool.add_command(ceph_pool_add)
 ceph_pool.add_command(ceph_pool_remove)
+ceph_pool.add_command(ceph_pool_set_pgs)
 ceph_pool.add_command(ceph_pool_list)
 
 ceph_volume.add_command(ceph_volume_add)
