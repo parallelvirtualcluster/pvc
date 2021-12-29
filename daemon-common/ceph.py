@@ -396,11 +396,13 @@ def getPoolInformation(zkhandler, pool):
     tier = zkhandler.read(("pool.tier", pool))
     if tier is None:
         tier = "default"
+    pgs = zkhandler.read(("pool.pgs", pool))
 
     pool_information = {
         "name": pool,
         "volume_count": volume_count,
         "tier": tier,
+        "pgs": pgs,
         "stats": pool_stats,
     }
     return pool_information

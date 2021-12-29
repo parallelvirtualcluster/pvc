@@ -664,6 +664,10 @@
                     "description": "The name of the pool",
                     "type": "string"
                 },
+                "pgs": {
+                    "description": "The number of PGs (placement groups) for the pool",
+                    "type": "integer"
+                },
                 "stats": {
                     "properties": {
                         "free_bytes": {

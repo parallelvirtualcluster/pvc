@@ -4229,6 +4229,9 @@ class API_Storage_Ceph_Pool_Root(Resource):
                 tier:
                   type: string
                   description: The device class/tier of the pool
+                pgs:
+                  type: integer
+                  description: The number of PGs (placement groups) for the pool
                 stats:
                   type: object
                   properties:

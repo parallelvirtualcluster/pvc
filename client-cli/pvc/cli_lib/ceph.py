@@ -776,6 +776,7 @@ def format_list_pool(pool_list):
     pool_name_length = 5
     pool_id_length = 3
     pool_tier_length = 5
+    pool_pgs_length = 4
     pool_used_length = 5
     pool_usedpct_length = 6
     pool_free_length = 5
@@ -817,6 +818,11 @@ def format_list_pool(pool_list):
         _pool_tier_length = len(str(pool_information["tier"])) + 1
         if _pool_tier_length > pool_tier_length:
             pool_tier_length = _pool_tier_length
+
+        # Set the pgs and length
+        _pool_pgs_length = len(str(pool_information["pgs"])) + 1
+        if _pool_pgs_length > pool_pgs_length:
+            pool_pgs_length = _pool_pgs_length
 
         # Set the used and length
         _pool_used_length = len(str(pool_information["stats"]["used_bytes"])) + 1
@@ -886,10 +892,11 @@ def format_list_pool(pool_list):
             pool_header_length=pool_id_length
             + pool_name_length
             + pool_tier_length
+            + pool_pgs_length
             + pool_used_length
             + pool_usedpct_length
             + pool_free_length
-            + 5,
+            + 6,
             objects_header_length=pool_num_objects_length
             + pool_num_clones_length
             + pool_num_copies_length
@@ -905,10 +912,12 @@ def format_list_pool(pool_list):
                         6,
                         pool_id_length
                         + pool_name_length
+                        + pool_tier_length
+                        + pool_pgs_length
                         + pool_used_length
                         + pool_usedpct_length
                         + pool_free_length
-                        + 3,
+                        + 5,
                     )
                 ]
             ),
@@ -942,6 +951,7 @@ def format_list_pool(pool_list):
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
 {pool_tier: <{pool_tier_length}} \
+{pool_pgs: <{pool_pgs_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
@@ -959,6 +969,7 @@ def format_list_pool(pool_list):
             pool_id_length=pool_id_length,
             pool_name_length=pool_name_length,
             pool_tier_length=pool_tier_length,
+            pool_pgs_length=pool_pgs_length,
             pool_used_length=pool_used_length,
             pool_usedpct_length=pool_usedpct_length,
             pool_free_length=pool_free_length,
@@ -973,6 +984,7 @@ def format_list_pool(pool_list):
             pool_id="ID",
             pool_name="Name",
             pool_tier="Tier",
+            pool_pgs="PGs",
             pool_used="Used",
             pool_usedpct="Used%",
             pool_free="Free",
@@ -994,6 +1006,7 @@ def format_list_pool(pool_list):
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
 {pool_tier: <{pool_tier_length}} \
+{pool_pgs: <{pool_pgs_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
@@ -1011,6 +1024,7 @@ def format_list_pool(pool_list):
                 pool_id_length=pool_id_length,
                 pool_name_length=pool_name_length,
                 pool_tier_length=pool_tier_length,
+                pool_pgs_length=pool_pgs_length,
                 pool_used_length=pool_used_length,
                 pool_usedpct_length=pool_usedpct_length,
                 pool_free_length=pool_free_length,
@@ -1025,6 +1039,7 @@ def format_list_pool(pool_list):
                 pool_id=pool_information["stats"]["id"],
                 pool_name=pool_information["name"],
                 pool_tier=pool_information["tier"],
+                pool_pgs=pool_information["pgs"],
                 pool_used=pool_information["stats"]["used_bytes"],
                 pool_usedpct=pool_information["stats"]["used_percent"],
                 pool_free=pool_information["stats"]["free_bytes"],
