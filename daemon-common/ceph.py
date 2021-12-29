@@ -544,7 +544,7 @@ def get_list_pool(zkhandler, limit, is_fuzzy=True):
         for future in futures:
             pool_data_list.append(future.result())
 
-    return True, sorted(pool_data_list, key=lambda x: int(x["stats"]["id"]))
+    return True, sorted(pool_data_list, key=lambda x: int(x["stats"].get("id", 0)))
 
 
 #
