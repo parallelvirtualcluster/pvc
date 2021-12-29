@@ -3508,26 +3508,33 @@ def ceph_pool():
 @click.argument("name")
 @click.argument("pgs")
 @click.option(
+    "-t",
+    "--tier",
+    "tier",
+    default="default",
+    show_default=True,
+    type=click.Choice(["default", "hdd", "ssd", "nvme"]),
+    help="""
+    The device tier to limit the pool to. Default is all OSD tiers, and specific tiers can be specified instead. At least one full set of OSDs for a given tier must be present for the tier to be specified, or the pool creation will fail.
+    """,
+)
+@click.option(
     "--replcfg",
     "replcfg",
     default="copies=3,mincopies=2",
     show_default=True,
     required=False,
     help="""
-    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a
-    comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas
-    and should not exceed the total number of nodes; the "mincopies" value specifies the minimum
-    number of available copies to allow writes. For additional details please see the Cluster
-    Architecture documentation.
+    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
     """,
 )
 @cluster_req
-def ceph_pool_add(name, pgs, replcfg):
+def ceph_pool_add(name, pgs, tier, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
     """
 
-    retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg)
+    retcode, retmsg = pvc_ceph.ceph_pool_add(config, name, pgs, replcfg, tier)
     cleanup(retcode, retmsg)
 
 

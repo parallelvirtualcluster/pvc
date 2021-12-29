@@ -540,7 +540,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 6
+    _version = 7
 
     # Root for doing nested keys
     _schema_root = ""
@@ -703,7 +703,12 @@ class ZKSchema(object):
             "stats": "/stats",
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})
-        "pool": {"name": "", "pgs": "/pgs", "stats": "/stats"},  # The root key
+        "pool": {
+            "name": "",
+            "pgs": "/pgs",
+            "tier": "/tier",
+            "stats": "/stats",
+        },  # The root key
         # The schema of an individual volume entry (/ceph/volumes/{pool_name}/{volume_name})
         "volume": {"name": "", "stats": "/stats"},  # The root key
         # The schema of an individual snapshot entry (/ceph/volumes/{pool_name}/{volume_name}/{snapshot_name})
@@ -938,8 +943,13 @@ class ZKSchema(object):
                     kpath = f"{elem}.{ikey}"
                     # Validate that the key exists for that child
                     if not zkhandler.zk_conn.exists(self.path(kpath, child)):
+                        if elem == "pool" and ikey == "tier":
+                            default_data = "default"
+                        else:
+                            default_data = ""
                         zkhandler.zk_conn.create(
-                            self.path(kpath, child), "".encode(zkhandler.encoding)
+                            self.path(kpath, child),
+                            default_data.encode(zkhandler.encoding),
                         )
 
                     # Continue for child keys under network (reservation, acl)

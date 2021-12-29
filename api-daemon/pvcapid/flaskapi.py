@@ -4226,6 +4226,9 @@ class API_Storage_Ceph_Pool_Root(Resource):
                 volume_count:
                   type: integer
                   description: The number of volumes in the pool
+                tier:
+                  type: string
+                  description: The device class/tier of the pool
                 stats:
                   type: object
                   properties:
@@ -4307,6 +4310,12 @@ class API_Storage_Ceph_Pool_Root(Resource):
                 "required": True,
                 "helptext": "A valid replication configuration must be specified.",
             },
+            {
+                "name": "tier",
+                "required": False,
+                "choices": ("hdd", "ssd", "nvme", "default"),
+                "helptext": "A valid tier must be specified",
+            },
         ]
     )
     @Authenticator
@@ -4332,6 +4341,10 @@ class API_Storage_Ceph_Pool_Root(Resource):
             type: string
             required: true
             description: The replication configuration (e.g. "copies=3,mincopies=2") for the pool
+          - in: query
+            name: tier
+            required: false
+            description: The device tier for the pool (hdd, ssd, nvme, or default)
         responses:
           200:
             description: OK
@@ -4348,6 +4361,7 @@ class API_Storage_Ceph_Pool_Root(Resource):
             reqargs.get("pool", None),
             reqargs.get("pgs", None),
             reqargs.get("replcfg", None),
+            reqargs.get("tier", None),
         )
 
 
@@ -4388,6 +4402,12 @@ class API_Storage_Ceph_Pool_Element(Resource):
                 "required": True,
                 "helptext": "A valid replication configuration must be specified.",
             },
+            {
+                "name": "tier",
+                "required": False,
+                "choices": ("hdd", "ssd", "nvme", "default"),
+                "helptext": "A valid tier must be specified",
+            },
         ]
     )
     @Authenticator
@@ -4408,6 +4428,10 @@ class API_Storage_Ceph_Pool_Element(Resource):
             type: string
             required: true
             description: The replication configuration (e.g. "copies=3,mincopies=2") for the pool
+          - in: query
+            name: tier
+            required: false
+            description: The device tier for the pool (hdd, ssd, nvme, or default)
         responses:
           200:
             description: OK
@@ -4426,7 +4450,10 @@ class API_Storage_Ceph_Pool_Element(Resource):
               id: Message
         """
         return api_helper.ceph_pool_add(
-            pool, reqargs.get("pgs", None), reqargs.get("replcfg", None)
+            pool,
+            reqargs.get("pgs", None),
+            reqargs.get("replcfg", None),
+            reqargs.get("tier", None),
         )
 
     @RequestParser(

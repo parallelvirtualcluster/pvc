@@ -393,12 +393,20 @@ def getPoolInformation(zkhandler, pool):
     pool_stats_raw = zkhandler.read(("pool.stats", pool))
     pool_stats = dict(json.loads(pool_stats_raw))
     volume_count = len(getCephVolumes(zkhandler, pool))
+    tier = zkhandler.read(("pool.tier", pool))
+    if tier is None:
+        tier = "default"
 
-    pool_information = {"name": pool, "volume_count": volume_count, "stats": pool_stats}
+    pool_information = {
+        "name": pool,
+        "volume_count": volume_count,
+        "tier": tier,
+        "stats": pool_stats,
+    }
     return pool_information
 
 
-def add_pool(zkhandler, name, pgs, replcfg):
+def add_pool(zkhandler, name, pgs, replcfg, tier=None):
     # Prepare the copies/mincopies variables
     try:
         copies, mincopies = replcfg.split(",")
@@ -408,60 +416,70 @@ def add_pool(zkhandler, name, pgs, replcfg):
         copies = None
         mincopies = None
     if not copies or not mincopies:
-        return False, 'ERROR: Replication configuration "{}" is not valid.'.format(
-            replcfg
-        )
+        return False, f'ERROR: Replication configuration "{replcfg}" is not valid.'
 
-    # 1. Create the pool
+    # Prepare the tiers if applicable
+    if tier is not None and tier in ["hdd", "ssd", "nvme"]:
+        crush_rule = f"{tier}_tier"
+        # Create a CRUSH rule for the relevant tier
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph osd crush rule create-replicated {crush_rule} default host {tier}"
+        )
+        if retcode:
+            return (
+                False,
+                f"ERROR: Failed to create CRUSH rule {tier} for pool {name}: {stderr}",
+            )
+    else:
+        tier = "default"
+        crush_rule = "replicated"
+
+    # Create the pool
     retcode, stdout, stderr = common.run_os_command(
-        "ceph osd pool create {} {} replicated".format(name, pgs)
+        f"ceph osd pool create {name} {pgs} {pgs} {crush_rule}"
     )
     if retcode:
-        return False, 'ERROR: Failed to create pool "{}" with {} PGs: {}'.format(
-            name, pgs, stderr
-        )
+        return False, f'ERROR: Failed to create pool "{name}" with {pgs} PGs: {stderr}'
 
-    # 2. Set the size and minsize
+    # Set the size and minsize
     retcode, stdout, stderr = common.run_os_command(
-        "ceph osd pool set {} size {}".format(name, copies)
+        f"ceph osd pool set {name} size {copies}"
     )
     if retcode:
-        return False, 'ERROR: Failed to set pool "{}" size of {}: {}'.format(
-            name, copies, stderr
-        )
+        return False, f'ERROR: Failed to set pool "{name}" size of {copies}: {stderr}'
 
     retcode, stdout, stderr = common.run_os_command(
-        "ceph osd pool set {} min_size {}".format(name, mincopies)
-    )
-    if retcode:
-        return False, 'ERROR: Failed to set pool "{}" minimum size of {}: {}'.format(
-            name, mincopies, stderr
-        )
-
-    # 3. Enable RBD application
-    retcode, stdout, stderr = common.run_os_command(
-        "ceph osd pool application enable {} rbd".format(name)
+        f"ceph osd pool set {name} min_size {mincopies}"
     )
     if retcode:
         return (
             False,
-            'ERROR: Failed to enable RBD application on pool "{}" : {}'.format(
-                name, stderr
-            ),
+            f'ERROR: Failed to set pool "{name}" minimum size of {mincopies}: {stderr}',
         )
 
-    # 4. Add the new pool to Zookeeper
+    # Enable RBD application
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph osd pool application enable {name} rbd"
+    )
+    if retcode:
+        return (
+            False,
+            f'ERROR: Failed to enable RBD application on pool "{name}" : {stderr}',
+        )
+
+    # Add the new pool to Zookeeper
     zkhandler.write(
         [
             (("pool", name), ""),
             (("pool.pgs", name), pgs),
+            (("pool.tier", name), tier),
             (("pool.stats", name), "{}"),
             (("volume", name), ""),
             (("snapshot", name), ""),
         ]
     )
 
-    return True, 'Created RBD pool "{}" with {} PGs'.format(name, pgs)
+    return True, f'Created RBD pool "{name}" with {pgs} PGs'
 
 
 def remove_pool(zkhandler, name):

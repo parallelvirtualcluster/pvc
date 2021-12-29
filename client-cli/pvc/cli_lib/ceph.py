@@ -726,15 +726,15 @@ def ceph_pool_list(config, limit):
         return False, response.json().get("message", "")
 
 
-def ceph_pool_add(config, pool, pgs, replcfg):
+def ceph_pool_add(config, pool, pgs, replcfg, tier):
     """
     Add new Ceph OSD
 
     API endpoint: POST /api/v1/storage/ceph/pool
-    API arguments: pool={pool}, pgs={pgs}, replcfg={replcfg}
+    API arguments: pool={pool}, pgs={pgs}, replcfg={replcfg}, tier={tier}
     API schema: {"message":"{data}"}
     """
-    params = {"pool": pool, "pgs": pgs, "replcfg": replcfg}
+    params = {"pool": pool, "pgs": pgs, "replcfg": replcfg, "tier": tier}
     response = call_api(config, "post", "/storage/ceph/pool", params=params)
 
     if response.status_code == 200:
@@ -775,6 +775,7 @@ def format_list_pool(pool_list):
 
     pool_name_length = 5
     pool_id_length = 3
+    pool_tier_length = 5
     pool_used_length = 5
     pool_usedpct_length = 6
     pool_free_length = 5
@@ -811,6 +812,11 @@ def format_list_pool(pool_list):
         _pool_id_length = len(str(pool_information["stats"]["id"])) + 1
         if _pool_id_length > pool_id_length:
             pool_id_length = _pool_id_length
+
+        # Set the tier and length
+        _pool_tier_length = len(str(pool_information["tier"])) + 1
+        if _pool_tier_length > pool_tier_length:
+            pool_tier_length = _pool_tier_length
 
         # Set the used and length
         _pool_used_length = len(str(pool_information["stats"]["used_bytes"])) + 1
@@ -879,10 +885,11 @@ def format_list_pool(pool_list):
             end_bold=ansiprint.end(),
             pool_header_length=pool_id_length
             + pool_name_length
+            + pool_tier_length
             + pool_used_length
             + pool_usedpct_length
             + pool_free_length
-            + 4,
+            + 5,
             objects_header_length=pool_num_objects_length
             + pool_num_clones_length
             + pool_num_copies_length
@@ -934,6 +941,7 @@ def format_list_pool(pool_list):
         "{bold}\
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
+{pool_tier: <{pool_tier_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
@@ -950,6 +958,7 @@ def format_list_pool(pool_list):
             end_bold=ansiprint.end(),
             pool_id_length=pool_id_length,
             pool_name_length=pool_name_length,
+            pool_tier_length=pool_tier_length,
             pool_used_length=pool_used_length,
             pool_usedpct_length=pool_usedpct_length,
             pool_free_length=pool_free_length,
@@ -963,6 +972,7 @@ def format_list_pool(pool_list):
             pool_read_data_length=pool_read_data_length,
             pool_id="ID",
             pool_name="Name",
+            pool_tier="Tier",
             pool_used="Used",
             pool_usedpct="Used%",
             pool_free="Free",
@@ -983,6 +993,7 @@ def format_list_pool(pool_list):
             "{bold}\
 {pool_id: <{pool_id_length}} \
 {pool_name: <{pool_name_length}} \
+{pool_tier: <{pool_tier_length}} \
 {pool_used: <{pool_used_length}} \
 {pool_usedpct: <{pool_usedpct_length}} \
 {pool_free: <{pool_free_length}} \
@@ -999,6 +1010,7 @@ def format_list_pool(pool_list):
                 end_bold="",
                 pool_id_length=pool_id_length,
                 pool_name_length=pool_name_length,
+                pool_tier_length=pool_tier_length,
                 pool_used_length=pool_used_length,
                 pool_usedpct_length=pool_usedpct_length,
                 pool_free_length=pool_free_length,
@@ -1012,6 +1024,7 @@ def format_list_pool(pool_list):
                 pool_read_data_length=pool_read_data_length,
                 pool_id=pool_information["stats"]["id"],
                 pool_name=pool_information["name"],
+                pool_tier=pool_information["tier"],
                 pool_used=pool_information["stats"]["used_bytes"],
                 pool_usedpct=pool_information["stats"]["used_percent"],
                 pool_free=pool_information["stats"]["free_bytes"],

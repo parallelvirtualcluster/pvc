@@ -1403,11 +1403,11 @@ def ceph_pool_list(zkhandler, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def ceph_pool_add(zkhandler, name, pgs, replcfg):
+def ceph_pool_add(zkhandler, name, pgs, replcfg, tier=None):
     """
     Add a Ceph RBD pool to the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.add_pool(zkhandler, name, pgs, replcfg)
+    retflag, retdata = pvc_ceph.add_pool(zkhandler, name, pgs, replcfg, tier)
 
     if retflag:
         retcode = 200

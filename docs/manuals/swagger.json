@@ -729,6 +729,10 @@
                     },
                     "type": "object"
                 },
+                "tier": {
+                    "description": "The device class/tier of the pool",
+                    "type": "string"
+                },
                 "volume_count": {
                     "description": "The number of volumes in the pool",
                     "type": "integer"
@@ -5272,6 +5276,12 @@
                         "name": "replcfg",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "description": "The device tier for the pool (hdd, ssd, nvme, or default)",
+                        "in": "query",
+                        "name": "tier",
+                        "required": false
                     }
                 ],
                 "responses": {
@@ -5368,6 +5378,12 @@
                         "name": "replcfg",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "description": "The device tier for the pool (hdd, ssd, nvme, or default)",
+                        "in": "query",
+                        "name": "tier",
+                        "required": false
                     }
                 ],
                 "responses": {
