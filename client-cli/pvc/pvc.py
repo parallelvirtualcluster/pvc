@@ -5741,6 +5741,11 @@ def cli(_cluster, _debug, _quiet, _unsafe, _colour):
     global config
     store_data = get_store(store_path)
     config = get_config(store_data, _cluster)
+
+    # There is only one cluster and no local cluster, so even if nothing was passed, use it
+    if len(store_data) == 1 and _cluster is None and config.get("badcfg", None):
+        config = get_config(store_data, list(store_data.keys())[0])
+
     if not config.get("badcfg", None):
         config["debug"] = _debug
         config["unsafe"] = _unsafe
