@@ -297,7 +297,10 @@ class CephOSDInstance(object):
                     (("osd.node", osd_id), node),
                     (("osd.device", osd_id), device),
                     (("osd.db_device", osd_id), db_device),
-                    (("osd.stats", osd_id), "{}"),
+                    (
+                        ("osd.stats", osd_id),
+                        f'{"uuid": "|", "up": 0, "in": 0, "primary_affinity": "|", "utilization": "|", "var": "|", "pgs": "|", "kb": "|", "weight": "|", "reweight": "|", "node": "{node}", "used": "|", "avail": "|", "wr_ops": "|", "wr_data": "|", "rd_ops": "|", "rd_data": "|", state="|" }',
+                    ),
                 ]
             )
 
