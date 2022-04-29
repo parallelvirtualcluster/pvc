@@ -3377,6 +3377,14 @@ def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
 @click.command(name="remove", short_help="Remove OSD.")
 @click.argument("osdid")
 @click.option(
+    "-f",
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force removal even if steps fail",
+)
+@click.option(
     "-y",
     "--yes",
     "confirm_flag",
@@ -3385,11 +3393,13 @@ def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
     help="Confirm the removal",
 )
 @cluster_req
-def ceph_osd_remove(osdid, confirm_flag):
+def ceph_osd_remove(osdid, force_flag, confirm_flag):
     """
     Remove a Ceph OSD with ID OSDID.
 
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance (verified with 'pvc storage status') before removing an OSD.
+
+    NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
     """
     if not confirm_flag and not config["unsafe"]:
         try:
@@ -3397,7 +3407,7 @@ def ceph_osd_remove(osdid, confirm_flag):
         except Exception:
             exit(0)
 
-    retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid)
+    retcode, retmsg = pvc_ceph.ceph_osd_remove(config, osdid, force_flag)
     cleanup(retcode, retmsg)
 
 

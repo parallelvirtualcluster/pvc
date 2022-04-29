@@ -255,7 +255,7 @@ def ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio):
     return retstatus, response.json().get("message", "")
 
 
-def ceph_osd_remove(config, osdid):
+def ceph_osd_remove(config, osdid, force_flag):
     """
     Remove Ceph OSD
 
@@ -263,7 +263,7 @@ def ceph_osd_remove(config, osdid):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    params = {"yes-i-really-mean-it": "yes"}
+    params = {"force": force_flag, "yes-i-really-mean-it": "yes"}
     response = call_api(
         config, "delete", "/storage/ceph/osd/{osdid}".format(osdid=osdid), params=params
     )

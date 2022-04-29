@@ -4100,10 +4100,15 @@ class API_Storage_Ceph_OSD_Element(Resource):
     @RequestParser(
         [
             {
+                "name": "force",
+                "required": False,
+                "helptext": "Force removal even if steps fail.",
+            },
+            {
                 "name": "yes-i-really-mean-it",
                 "required": True,
                 "helptext": "Please confirm that 'yes-i-really-mean-it'.",
-            }
+            },
         ]
     )
     @Authenticator
@@ -4116,6 +4121,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
         tags:
           - storage / ceph
         parameters:
+          - in: query
+            name: force
+            type: boolean
+            required: flase
+            description: Force removal even if some step(s) fail
           - in: query
             name: yes-i-really-mean-it
             type: string
@@ -4138,7 +4148,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
               type: object
               id: Message
         """
-        return api_helper.ceph_osd_remove(osdid)
+        return api_helper.ceph_osd_remove(osdid, reqargs.get("force", False))
 
 
 api.add_resource(API_Storage_Ceph_OSD_Element, "/storage/ceph/osd/<osdid>")

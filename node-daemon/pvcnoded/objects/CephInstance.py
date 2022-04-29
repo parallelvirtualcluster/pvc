@@ -310,7 +310,7 @@ class CephOSDInstance(object):
             return False
 
     @staticmethod
-    def remove_osd(zkhandler, logger, osd_id, osd_obj):
+    def remove_osd(zkhandler, logger, osd_id, osd_obj, force_flag):
         logger.out("Removing OSD disk {}".format(osd_id), state="i")
         try:
             # Verify the OSD is present
@@ -320,7 +320,10 @@ class CephOSDInstance(object):
                 logger.out(
                     "Could not find OSD {} in the cluster".format(osd_id), state="e"
                 )
-                return True
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    return True
 
             # 1. Set the OSD down and out so it will flush
             logger.out("Setting down OSD disk with ID {}".format(osd_id), state="i")
@@ -331,7 +334,10 @@ class CephOSDInstance(object):
                 print("ceph osd down")
                 print(stdout)
                 print(stderr)
-                raise Exception
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             logger.out("Setting out OSD disk with ID {}".format(osd_id), state="i")
             retcode, stdout, stderr = common.run_os_command(
@@ -341,7 +347,10 @@ class CephOSDInstance(object):
                 print("ceph osd out")
                 print(stdout)
                 print(stderr)
-                raise Exception
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             # 2. Wait for the OSD to flush
             logger.out("Flushing OSD disk with ID {}".format(osd_id), state="i")
@@ -359,7 +368,11 @@ class CephOSDInstance(object):
                     if num_pgs > 0:
                         time.sleep(5)
                     else:
-                        raise Exception
+                        if force_flag:
+                            logger.out("Ignoring error due to force flag", state="i")
+                        else:
+                            raise Exception
+
                 except Exception:
                     break
 
@@ -372,7 +385,10 @@ class CephOSDInstance(object):
                 print("systemctl stop")
                 print(stdout)
                 print(stderr)
-                raise Exception
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             # FIXME: There has to be a better way to do this /shrug
             while True:
@@ -408,7 +424,10 @@ class CephOSDInstance(object):
                 print("ceph-volume lvm zap")
                 print(stdout)
                 print(stderr)
-                raise Exception
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             # 6. Purge the OSD from Ceph
             logger.out("Purging OSD disk with ID {}".format(osd_id), state="i")
@@ -419,7 +438,10 @@ class CephOSDInstance(object):
                 print("ceph osd purge")
                 print(stdout)
                 print(stderr)
-                raise Exception
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             # 7. Remove the DB device
             if zkhandler.exists(("osd.db_device", osd_id)):
@@ -734,7 +756,8 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
 
     # Removing an OSD
     elif command == "osd_remove":
-        osd_id = args
+        osd_id = args[0]
+        force_flag = bool(strtobool(args[1]))
 
         # Verify osd_id is in the list
         if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
@@ -743,7 +766,7 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
             with zk_lock:
                 # Remove the OSD
                 result = CephOSDInstance.remove_osd(
-                    zkhandler, logger, osd_id, d_osd[osd_id]
+                    zkhandler, logger, osd_id, d_osd[osd_id], force_flag
                 )
                 # Command succeeded
                 if result:

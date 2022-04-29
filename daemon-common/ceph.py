@@ -286,14 +286,14 @@ def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.0
     return success, message
 
 
-def remove_osd(zkhandler, osd_id):
+def remove_osd(zkhandler, osd_id, force_flag):
     if not verifyOSD(zkhandler, osd_id):
         return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(
             osd_id
         )
 
     # Tell the cluster to remove an OSD
-    remove_osd_string = "osd_remove {}".format(osd_id)
+    remove_osd_string = "osd_remove {} {}".format(osd_id, str(force_flag))
     zkhandler.write([("base.cmd.ceph", remove_osd_string)])
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)

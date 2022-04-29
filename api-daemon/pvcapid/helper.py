@@ -1302,11 +1302,11 @@ def ceph_osd_add(zkhandler, node, device, weight, ext_db_flag=False, ext_db_rati
 
 
 @ZKConnection(config)
-def ceph_osd_remove(zkhandler, osd_id):
+def ceph_osd_remove(zkhandler, osd_id, force_flag):
     """
     Remove a Ceph OSD from the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.remove_osd(zkhandler, osd_id)
+    retflag, retdata = pvc_ceph.remove_osd(zkhandler, osd_id, force_flag)
 
     if retflag:
         retcode = 200
