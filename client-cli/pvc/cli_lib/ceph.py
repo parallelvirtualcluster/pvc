@@ -367,10 +367,20 @@ def format_list_osd(osd_list):
 
     for osd_information in osd_list:
         try:
-            # If this happens, the node hasn't checked in fully yet, so just ignore it
+            # If this happens, the node hasn't checked in fully yet, so use some dummy data
             if osd_information["stats"]["node"] == "|":
-                continue
+                for key in osd_information["stats"].keys():
+                    if osd_information["stats"][key] == "|":
+                        osd_information["stats"][key] = "N/A"
+                    elif osd_information["stats"][key] is None:
+                        osd_information["stats"][key] = "N/A"
+                for key in osd_information.keys():
+                    if osd_information[key] is None:
+                        osd_information[key] = "N/A"
         except KeyError:
+            print(
+                f"Details for OSD {osd_information['id']} missing required keys, skipping."
+            )
             continue
 
         # Deal with the size to human readable
