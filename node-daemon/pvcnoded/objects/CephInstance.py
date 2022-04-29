@@ -404,30 +404,47 @@ class CephOSDInstance(object):
                     break
 
             # 4. Determine the block devices
-            retcode, stdout, stderr = common.run_os_command(
-                "readlink /var/lib/ceph/osd/ceph-{}/block".format(osd_id)
-            )
-            vg_name = stdout.split("/")[-2]  # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
-            retcode, stdout, stderr = common.run_os_command(
-                "vgs --separator , --noheadings -o pv_name {}".format(vg_name)
-            )
-            pv_block = stdout.strip()
+            device_zk = zkhandler.read(("osd.device", osd_id))
+            try:
+                retcode, stdout, stderr = common.run_os_command(
+                    "readlink /var/lib/ceph/osd/ceph-{}/block".format(osd_id)
+                )
+                vg_name = stdout.split("/")[
+                    -2
+                ]  # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
+                retcode, stdout, stderr = common.run_os_command(
+                    "vgs --separator , --noheadings -o pv_name {}".format(vg_name)
+                )
+                pv_block = stdout.strip()
+            except Exception as e:
+                print(e)
+                pv_block = device_zk
 
-            # 5. Zap the volumes
+            # 5a. Verify that the blockdev actually has a ceph volume that matches the ID, otherwise don't zap it
             logger.out(
-                "Zapping OSD disk with ID {} on {}".format(osd_id, pv_block), state="i"
+                f"Check OSD disk {pv_block} for OSD signature with ID osd.{osd_id}",
+                state="i",
             )
             retcode, stdout, stderr = common.run_os_command(
-                "ceph-volume lvm zap --destroy {}".format(pv_block)
+                f"ceph-volume lvm list {pv_block}"
             )
-            if retcode:
-                print("ceph-volume lvm zap")
-                print(stdout)
-                print(stderr)
-                if force_flag:
-                    logger.out("Ignoring error due to force flag", state="i")
-                else:
-                    raise Exception
+            if f"====== osd.{osd_id} =======" in stdout:
+                # 5b. Zap the volumes
+                logger.out(
+                    "Zapping OSD disk with ID {} on {}".format(osd_id, pv_block),
+                    state="i",
+                )
+                retcode, stdout, stderr = common.run_os_command(
+                    "ceph-volume lvm zap --destroy {}".format(pv_block)
+                )
+                if retcode:
+                    print("ceph-volume lvm zap")
+                    print(stdout)
+                    print(stderr)
+                    if force_flag:
+                        logger.out("Ignoring error due to force flag", state="i")
+                    else:
+                        raise Exception
 
             # 6. Purge the OSD from Ceph
             logger.out("Purging OSD disk with ID {}".format(osd_id), state="i")
@@ -756,8 +773,8 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
 
     # Removing an OSD
     elif command == "osd_remove":
-        osd_id = args[0]
-        force_flag = bool(strtobool(args[1]))
+        osd_id, force = args.split(",")
+        force_flag = bool(strtobool(force))
 
         # Verify osd_id is in the list
         if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:

@@ -181,6 +181,7 @@ def getClusterOSDList(zkhandler):
 
 def getOSDInformation(zkhandler, osd_id):
     # Get the devices
+    osd_node = zkhandler.read(("osd.node", osd_id))
     osd_device = zkhandler.read(("osd.device", osd_id))
     osd_db_device = zkhandler.read(("osd.db_device", osd_id))
     # Parse the stats data
@@ -189,6 +190,7 @@ def getOSDInformation(zkhandler, osd_id):
 
     osd_information = {
         "id": osd_id,
+        "node": osd_node,
         "device": osd_device,
         "db_device": osd_db_device,
         "stats": osd_stats,
@@ -293,7 +295,7 @@ def remove_osd(zkhandler, osd_id, force_flag):
         )
 
     # Tell the cluster to remove an OSD
-    remove_osd_string = "osd_remove {} {}".format(osd_id, str(force_flag))
+    remove_osd_string = "osd_remove {},{}".format(osd_id, str(force_flag))
     zkhandler.write([("base.cmd.ceph", remove_osd_string)])
     # Wait 1/2 second for the cluster to get the message and start working
     time.sleep(0.5)

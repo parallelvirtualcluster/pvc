@@ -406,7 +406,7 @@ def format_list_osd(osd_list):
             osd_id_length = _osd_id_length
 
         # Set the OSD node length
-        _osd_node_length = len(osd_information["stats"]["node"]) + 1
+        _osd_node_length = len(osd_information["node"]) + 1
         if _osd_node_length > osd_node_length:
             osd_node_length = _osd_node_length
 
@@ -602,13 +602,6 @@ def format_list_osd(osd_list):
     )
 
     for osd_information in sorted(osd_list, key=lambda x: int(x["id"])):
-        try:
-            # If this happens, the node hasn't checked in fully yet, so just ignore it
-            if osd_information["stats"]["node"] == "|":
-                continue
-        except KeyError:
-            continue
-
         osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour = getOutputColoursOSD(
             osd_information
         )
@@ -663,7 +656,7 @@ def format_list_osd(osd_list):
                 osd_rdops_length=osd_rdops_length,
                 osd_rddata_length=osd_rddata_length,
                 osd_id=osd_information["id"],
-                osd_node=osd_information["stats"]["node"],
+                osd_node=osd_information["node"],
                 osd_device=osd_information["device"],
                 osd_db_device=osd_db_device,
                 osd_up_colour=osd_up_colour,
