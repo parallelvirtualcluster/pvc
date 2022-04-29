@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v0.9.48](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.48)
+
+  * [CLI] Fixes situation where only a single cluster is available
+  * [CLI/API/Daemon] Allows forcing of OSD removal ignoring errors
+  * [CLI] Fixes bug where down OSDs are not displayed
+
 ###### [v0.9.47](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.47)
 
   * [Node Daemon/API/CLI] Adds Ceph pool device class/tier support
