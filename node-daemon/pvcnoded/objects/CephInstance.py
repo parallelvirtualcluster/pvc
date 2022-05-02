@@ -542,47 +542,48 @@ class CephOSDInstance(object):
                     break
 
             # 4. Determine the block devices
-            device_zk = zkhandler.read(("osd.device", osd_id))
-            try:
-                retcode, stdout, stderr = common.run_os_command(
-                    "readlink /var/lib/ceph/osd/ceph-{}/block".format(osd_id)
-                )
-                vg_name = stdout.split("/")[
-                    -2
-                ]  # e.g. /dev/ceph-<uuid>/osd-block-<uuid>
-                retcode, stdout, stderr = common.run_os_command(
-                    "vgs --separator , --noheadings -o pv_name {}".format(vg_name)
-                )
-                pv_block = stdout.strip()
-            except Exception as e:
-                print(e)
-                pv_block = device_zk
+            osd_vg = zkhandler.read(("osd.vg", osd_id))
+            osd_lv = zkhandler.read(("osd.lv", osd_id))
+            osd_lvm = f"/dev/{osd_vg}/{osd_lv}"
+            osd_device = None
 
-            # 5a. Verify that the blockdev actually has a ceph volume that matches the ID, otherwise don't zap it
             logger.out(
-                f"Check OSD disk {pv_block} for OSD signature with ID osd.{osd_id}",
+                f"Getting disk info for OSD {osd_id} LV {osd_lvm}",
                 state="i",
             )
             retcode, stdout, stderr = common.run_os_command(
-                f"ceph-volume lvm list {pv_block}"
+                f"ceph-volume lvm list {osd_lvm}"
             )
-            if f"====== osd.{osd_id} =======" in stdout:
-                # 5b. Zap the volumes
-                logger.out(
-                    "Zapping OSD disk with ID {} on {}".format(osd_id, pv_block),
-                    state="i",
-                )
-                retcode, stdout, stderr = common.run_os_command(
-                    "ceph-volume lvm zap --destroy {}".format(pv_block)
-                )
-                if retcode:
-                    print("ceph-volume lvm zap")
-                    print(stdout)
-                    print(stderr)
-                    if force_flag:
-                        logger.out("Ignoring error due to force flag", state="i")
-                    else:
-                        raise Exception
+            for line in stdout.split("\n"):
+                if "devices" in line:
+                    osd_device = line.split()[-1]
+
+            if not osd_device:
+                print("ceph-volume lvm list")
+                print("Could not find OSD information in data:")
+                print(stdout)
+                print(stderr)
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
+
+            # 5. Zap the volumes
+            logger.out(
+                "Zapping OSD {} disk on {}".format(osd_id, osd_device),
+                state="i",
+            )
+            retcode, stdout, stderr = common.run_os_command(
+                "ceph-volume lvm zap --destroy {}".format(osd_device)
+            )
+            if retcode:
+                print("ceph-volume lvm zap")
+                print(stdout)
+                print(stderr)
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
 
             # 6. Purge the OSD from Ceph
             logger.out("Purging OSD disk with ID {}".format(osd_id), state="i")
