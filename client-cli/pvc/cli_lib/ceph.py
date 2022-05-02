@@ -370,13 +370,22 @@ def format_list_osd(osd_list):
             # If this happens, the node hasn't checked in fully yet, so use some dummy data
             if osd_information["stats"]["node"] == "|":
                 for key in osd_information["stats"].keys():
-                    if osd_information["stats"][key] == "|":
-                        osd_information["stats"][key] = "N/A"
-                    elif osd_information["stats"][key] is None:
+                    if (
+                        osd_information["stats"][key] == "|"
+                        or osd_information["stats"][key] is None
+                    ):
                         osd_information["stats"][key] = "N/A"
                 for key in osd_information.keys():
                     if osd_information[key] is None:
                         osd_information[key] = "N/A"
+            else:
+                for key in osd_information["stats"].keys():
+                    if key in ["utilization", "var"] and isinstance(
+                        osd_information["stats"][key], float
+                    ):
+                        osd_information["stats"][key] = round(
+                            osd_information["stats"][key], 2
+                        )
         except KeyError:
             print(
                 f"Details for OSD {osd_information['id']} missing required keys, skipping."
@@ -449,13 +458,11 @@ def format_list_osd(osd_list):
         if _osd_free_length > osd_free_length:
             osd_free_length = _osd_free_length
 
-        osd_util = round(osd_information["stats"]["utilization"], 2)
-        _osd_util_length = len(str(osd_util)) + 1
+        _osd_util_length = len(str(osd_information["stats"]["utilization"])) + 1
         if _osd_util_length > osd_util_length:
             osd_util_length = _osd_util_length
 
-        osd_var = round(osd_information["stats"]["var"], 2)
-        _osd_var_length = len(str(osd_var)) + 1
+        _osd_var_length = len(str(osd_information["stats"]["var"])) + 1
         if _osd_var_length > osd_var_length:
             osd_var_length = _osd_var_length
 
@@ -605,8 +612,6 @@ def format_list_osd(osd_list):
         osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour = getOutputColoursOSD(
             osd_information
         )
-        osd_util = round(osd_information["stats"]["utilization"], 2)
-        osd_var = round(osd_information["stats"]["var"], 2)
 
         osd_db_device = osd_information["db_device"]
         if not osd_db_device:
@@ -669,8 +674,8 @@ def format_list_osd(osd_list):
                 osd_reweight=osd_information["stats"]["reweight"],
                 osd_used=osd_information["stats"]["used"],
                 osd_free=osd_information["stats"]["avail"],
-                osd_util=osd_util,
-                osd_var=osd_var,
+                osd_util=osd_information["stats"]["utilization"],
+                osd_var=osd_information["stats"]["var"],
                 osd_wrops=osd_information["stats"]["wr_ops"],
                 osd_wrdata=osd_information["stats"]["wr_data"],
                 osd_rdops=osd_information["stats"]["rd_ops"],
