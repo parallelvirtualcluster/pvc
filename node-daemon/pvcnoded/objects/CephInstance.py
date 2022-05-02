@@ -99,12 +99,15 @@ def get_detect_device(detect_string):
 
 
 class CephOSDInstance(object):
-    def __init__(self, zkhandler, this_node, osd_id):
+    def __init__(self, zkhandler, logger, this_node, osd_id):
         self.zkhandler = zkhandler
+        self.logger = logger
         self.this_node = this_node
         self.osd_id = osd_id
         self.node = None
-        self.size = None
+        self.device = None
+        self.vg = None
+        self.lv = None
         self.stats = dict()
 
         @self.zkhandler.zk_conn.DataWatch(
@@ -140,6 +143,117 @@ class CephOSDInstance(object):
 
             if data and data != self.stats:
                 self.stats = json.loads(data)
+
+        @self.zkhandler.zk_conn.DataWatch(
+            self.zkhandler.schema.path("osd.device", self.osd_id)
+        )
+        def watch_osd_device(data, stat, event=""):
+            if event and event.type == "DELETED":
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode("ascii")
+            except AttributeError:
+                data = ""
+
+            if data and data != self.device:
+                self.device = data
+
+        # Exception conditional for migration from schema v7 to schema v8
+        try:
+
+            @self.zkhandler.zk_conn.DataWatch(
+                self.zkhandler.schema.path("osd.vg", self.osd_id)
+            )
+            def watch_osd_vg(data, stat, event=""):
+                if event and event.type == "DELETED":
+                    # The key has been deleted after existing before; terminate this watcher
+                    # because this class instance is about to be reaped in Daemon.py
+                    return False
+
+                try:
+                    data = data.decode("ascii")
+                except AttributeError:
+                    data = ""
+
+                if data and data != self.vg:
+                    self.vg = data
+
+            @self.zkhandler.zk_conn.DataWatch(
+                self.zkhandler.schema.path("osd.lv", self.osd_id)
+            )
+            def watch_osd_lv(data, stat, event=""):
+                if event and event.type == "DELETED":
+                    # The key has been deleted after existing before; terminate this watcher
+                    # because this class instance is about to be reaped in Daemon.py
+                    return False
+
+                try:
+                    data = data.decode("ascii")
+                except AttributeError:
+                    data = ""
+
+                if data and data != self.lv:
+                    self.lv = data
+
+            if self.node == self.this_node.name:
+                self.update_information()
+        except TypeError:
+            return
+
+    def update_information(self):
+        if self.vg is not None and self.lv is not None:
+            find_device = f"/dev/{self.vg}/{self.lv}"
+        else:
+            find_device = self.device
+
+        self.logger.out(
+            f"Updating stored disk information for OSD {self.osd_id}",
+            state="i",
+        )
+
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm list {find_device}"
+        )
+        for line in stdout.split("\n"):
+            if "block device" in line:
+                osd_blockdev = line.split()[-1]
+            if "osd fsid" in line:
+                osd_fsid = line.split()[-1]
+            if "cluster fsid" in line:
+                osd_clusterfsid = line.split()[-1]
+            if "devices" in line:
+                osd_device = line.split()[-1]
+
+        if not osd_fsid:
+            self.logger.out(
+                f"Failed to find updated OSD information via ceph-volume for {find_device}",
+                state="e",
+            )
+            return
+
+        # Split OSD blockdev into VG and LV components
+        # osd_blockdev = /dev/ceph-<uuid>/osd-block-<uuid>
+        _, _, osd_vg, osd_lv = osd_blockdev.split("/")
+
+        # Except for potentially the "osd.device", this should never change, but this ensures
+        # that the data is added at lease once on initialization for existing OSDs.
+        self.zkhandler.write(
+            [
+                (("osd.device", self.osd_id), osd_device),
+                (("osd.fsid", self.osd_id), ""),
+                (("osd.ofsid", self.osd_id), osd_fsid),
+                (("osd.cfsid", self.osd_id), osd_clusterfsid),
+                (("osd.lvm", self.osd_id), ""),
+                (("osd.vg", self.osd_id), osd_vg),
+                (("osd.lv", self.osd_id), osd_lv),
+            ]
+        )
+        self.device = osd_device
+        self.vg = osd_vg
+        self.lv = osd_lv
 
     @staticmethod
     def add_osd(
@@ -230,23 +344,38 @@ class CephOSDInstance(object):
                 print(stderr)
                 raise Exception
 
-            # 4a. Get OSD FSID
+            # 4a. Get OSD information
             logger.out(
-                "Getting OSD FSID for ID {} on {}".format(osd_id, device), state="i"
+                "Getting OSD information for ID {} on {}".format(osd_id, device),
+                state="i",
             )
             retcode, stdout, stderr = common.run_os_command(
                 "ceph-volume lvm list {device}".format(device=device)
             )
             for line in stdout.split("\n"):
+                if "block device" in line:
+                    osd_blockdev = line.split()[-1]
                 if "osd fsid" in line:
                     osd_fsid = line.split()[-1]
+                if "cluster fsid" in line:
+                    osd_clusterfsid = line.split()[-1]
+                if "devices" in line:
+                    osd_device = line.split()[-1]
 
             if not osd_fsid:
                 print("ceph-volume lvm list")
-                print("Could not find OSD fsid in data:")
+                print("Could not find OSD information in data:")
                 print(stdout)
                 print(stderr)
                 raise Exception
+
+            # Split OSD blockdev into VG and LV components
+            # osd_blockdev = /dev/ceph-<uuid>/osd-block-<uuid>
+            _, _, osd_vg, osd_lv = osd_blockdev.split("/")
+
+            # Reset whatever we were given to Ceph's /dev/xdX naming
+            if device != osd_device:
+                device = osd_device
 
             # 4b. Activate the OSD
             logger.out("Activating new OSD disk with ID {}".format(osd_id), state="i")
@@ -297,6 +426,12 @@ class CephOSDInstance(object):
                     (("osd.node", osd_id), node),
                     (("osd.device", osd_id), device),
                     (("osd.db_device", osd_id), db_device),
+                    (("osd.fsid", osd_id), ""),
+                    (("osd.ofsid", osd_id), osd_fsid),
+                    (("osd.cfsid", osd_id), osd_clusterfsid),
+                    (("osd.lvm", osd_id), ""),
+                    (("osd.vg", osd_id), osd_vg),
+                    (("osd.lv", osd_id), osd_lv),
                     (
                         ("osd.stats", osd_id),
                         f'{"uuid": "|", "up": 0, "in": 0, "primary_affinity": "|", "utilization": "|", "var": "|", "pgs": "|", "kb": "|", "weight": "|", "reweight": "|", "node": "{node}", "used": "|", "avail": "|", "wr_ops": "|", "wr_data": "|", "rd_ops": "|", "rd_data": "|", state="|" }',
@@ -647,8 +782,9 @@ class CephOSDInstance(object):
 
 
 class CephPoolInstance(object):
-    def __init__(self, zkhandler, this_node, name):
+    def __init__(self, zkhandler, logger, this_node, name):
         self.zkhandler = zkhandler
+        self.logger = logger
         self.this_node = this_node
         self.name = name
         self.pgs = ""
@@ -690,8 +826,9 @@ class CephPoolInstance(object):
 
 
 class CephVolumeInstance(object):
-    def __init__(self, zkhandler, this_node, pool, name):
+    def __init__(self, zkhandler, logger, this_node, pool, name):
         self.zkhandler = zkhandler
+        self.logger = logger
         self.this_node = this_node
         self.pool = pool
         self.name = name

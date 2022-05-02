@@ -540,7 +540,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 7
+    _version = 8
 
     # Root for doing nested keys
     _schema_root = ""
@@ -700,6 +700,12 @@ class ZKSchema(object):
             "node": "/node",
             "device": "/device",
             "db_device": "/db_device",
+            "fsid": "/fsid",
+            "ofsid": "/fsid/osd",
+            "cfsid": "/fsid/cluster",
+            "lvm": "/lvm",
+            "vg": "/lvm/vg",
+            "lv": "/lvm/lv",
             "stats": "/stats",
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})

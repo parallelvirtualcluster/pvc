@@ -943,7 +943,9 @@ def entrypoint():
 
             # Add any missing OSDs to the list
             for osd in [osd for osd in new_osd_list if osd not in osd_list]:
-                d_osd[osd] = CephInstance.CephOSDInstance(zkhandler, this_node, osd)
+                d_osd[osd] = CephInstance.CephOSDInstance(
+                    zkhandler, logger, this_node, osd
+                )
 
             # Remove any deleted OSDs from the list
             for osd in [osd for osd in osd_list if osd not in new_osd_list]:
@@ -963,7 +965,9 @@ def entrypoint():
 
             # Add any missing pools to the list
             for pool in [pool for pool in new_pool_list if pool not in pool_list]:
-                d_pool[pool] = CephInstance.CephPoolInstance(zkhandler, this_node, pool)
+                d_pool[pool] = CephInstance.CephPoolInstance(
+                    zkhandler, logger, this_node, pool
+                )
                 # Prepare the volume components for this pool
                 volume_list[pool] = list()
                 d_volume[pool] = dict()
@@ -993,7 +997,7 @@ def entrypoint():
                         if volume not in volume_list[pool]
                     ]:
                         d_volume[pool][volume] = CephInstance.CephVolumeInstance(
-                            zkhandler, this_node, pool, volume
+                            zkhandler, logger, this_node, pool, volume
                         )
 
                     # Remove any deleted volumes from the list
