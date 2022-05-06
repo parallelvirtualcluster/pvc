@@ -224,7 +224,7 @@ def node_domain_state(zkhandler, node):
 @ZKConnection(config)
 def node_secondary(zkhandler, node):
     """
-    Take NODE out of primary router mode.
+    Take NODE out of primary coordinator mode.
     """
     retflag, retdata = pvc_node.secondary_node(zkhandler, node)
 
@@ -240,7 +240,7 @@ def node_secondary(zkhandler, node):
 @ZKConnection(config)
 def node_primary(zkhandler, node):
     """
-    Set NODE to primary router mode.
+    Set NODE to primary coordinator mode.
     """
     retflag, retdata = pvc_node.primary_node(zkhandler, node)
 

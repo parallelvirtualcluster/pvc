@@ -91,7 +91,7 @@ def secondary_node(zkhandler, node):
     if daemon_mode == "hypervisor":
         return (
             False,
-            'ERROR: Cannot change router mode on non-coordinator node "{}"'.format(
+            'ERROR: Cannot change coordinator mode on non-coordinator node "{}"'.format(
                 node
             ),
         )
@@ -104,9 +104,9 @@ def secondary_node(zkhandler, node):
     # Get current state
     current_state = zkhandler.read(("node.state.router", node))
     if current_state == "secondary":
-        return True, 'Node "{}" is already in secondary router mode.'.format(node)
+        return True, 'Node "{}" is already in secondary coordinator mode.'.format(node)
 
-    retmsg = "Setting node {} in secondary router mode.".format(node)
+    retmsg = "Setting node {} in secondary coordinator mode.".format(node)
     zkhandler.write([("base.config.primary_node", "none")])
 
     return True, retmsg
@@ -124,7 +124,7 @@ def primary_node(zkhandler, node):
     if daemon_mode == "hypervisor":
         return (
             False,
-            'ERROR: Cannot change router mode on non-coordinator node "{}"'.format(
+            'ERROR: Cannot change coordinator mode on non-coordinator node "{}"'.format(
                 node
             ),
         )
@@ -137,9 +137,9 @@ def primary_node(zkhandler, node):
     # Get current state
     current_state = zkhandler.read(("node.state.router", node))
     if current_state == "primary":
-        return True, 'Node "{}" is already in primary router mode.'.format(node)
+        return True, 'Node "{}" is already in primary coordinator mode.'.format(node)
 
-    retmsg = "Setting node {} in primary router mode.".format(node)
+    retmsg = "Setting node {} in primary coordinator mode.".format(node)
     zkhandler.write([("base.config.primary_node", node)])
 
     return True, retmsg

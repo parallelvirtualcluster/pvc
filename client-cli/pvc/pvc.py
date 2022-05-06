@@ -486,7 +486,7 @@ def cli_node():
 @cluster_req
 def node_secondary(node, wait):
     """
-    Take NODE out of primary router mode.
+    Take NODE out of primary coordinator mode.
     """
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
@@ -539,7 +539,7 @@ def node_secondary(node, wait):
 @cluster_req
 def node_primary(node, wait):
     """
-    Put NODE into primary router mode.
+    Put NODE into primary coordinator mode.
     """
 
     task_retcode, task_retdata = pvc_provisioner.task_status(config, None)
