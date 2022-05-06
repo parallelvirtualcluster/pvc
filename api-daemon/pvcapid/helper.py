@@ -1302,6 +1302,38 @@ def ceph_osd_add(zkhandler, node, device, weight, ext_db_flag=False, ext_db_rati
 
 
 @ZKConnection(config)
+def ceph_osd_replace(zkhandler, osd_id, device, weight):
+    """
+    Replace a Ceph OSD in the PVC Ceph storage cluster.
+    """
+    retflag, retdata = pvc_ceph.replace_osd(zkhandler, osd_id, device, weight)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
+def ceph_osd_refresh(zkhandler, osd_id, device):
+    """
+    Refresh (reimport) a Ceph OSD in the PVC Ceph storage cluster.
+    """
+    retflag, retdata = pvc_ceph.refresh_osd(zkhandler, osd_id, device)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def ceph_osd_remove(zkhandler, osd_id, force_flag):
     """
     Remove a Ceph OSD from the PVC Ceph storage cluster.

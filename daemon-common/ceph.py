@@ -236,7 +236,7 @@ def add_osd_db_vg(zkhandler, node, device):
     return success, message
 
 
-# OSD addition and removal uses the /cmd/ceph pipe
+# OSD actions use the /cmd/ceph pipe
 # These actions must occur on the specific node they reference
 def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.05):
     # Verify the target node exists
@@ -275,6 +275,103 @@ def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.0
                 message = (
                     "ERROR: Failed to create new OSD; check node logs for details."
                 )
+                success = False
+        except Exception:
+            message = "ERROR: Command ignored by node."
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    with zkhandler.writelock("base.cmd.ceph"):
+        time.sleep(0.5)
+        zkhandler.write([("base.cmd.ceph", "")])
+
+    return success, message
+
+
+def replace_osd(zkhandler, osd_id, new_device, weight):
+    # Get current OSD information
+    osd_information = getOSDInformation(zkhandler, osd_id)
+    node = osd_information["node"]
+    old_device = osd_information["device"]
+    ext_db_flag = True if osd_information["db_device"] else False
+
+    # Verify target block device isn't in use
+    block_osd = verifyOSDBlock(zkhandler, node, new_device)
+    if block_osd and block_osd != osd_id:
+        return (
+            False,
+            'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(
+                new_device, node, block_osd
+            ),
+        )
+
+    # Tell the cluster to create a new OSD for the host
+    replace_osd_string = "osd_replace {},{},{},{},{},{}".format(
+        node, osd_id, old_device, new_device, weight, ext_db_flag
+    )
+    zkhandler.write([("base.cmd.ceph", replace_osd_string)])
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    with zkhandler.readlock("base.cmd.ceph"):
+        try:
+            result = zkhandler.read("base.cmd.ceph").split()[0]
+            if result == "success-osd_replace":
+                message = 'Replaced OSD {} with block device "{}" on node "{}".'.format(
+                    osd_id, new_device, node
+                )
+                success = True
+            else:
+                message = "ERROR: Failed to replace OSD; check node logs for details."
+                success = False
+        except Exception:
+            message = "ERROR: Command ignored by node."
+            success = False
+
+    # Acquire a write lock to ensure things go smoothly
+    with zkhandler.writelock("base.cmd.ceph"):
+        time.sleep(0.5)
+        zkhandler.write([("base.cmd.ceph", "")])
+
+    return success, message
+
+
+def refresh_osd(zkhandler, osd_id, device):
+    # Get current OSD information
+    osd_information = getOSDInformation(zkhandler, osd_id)
+    node = osd_information["node"]
+    ext_db_flag = True if osd_information["db_device"] else False
+
+    # Verify target block device isn't in use
+    block_osd = verifyOSDBlock(zkhandler, node, device)
+    if not block_osd or block_osd != osd_id:
+        return (
+            False,
+            'ERROR: Block device "{}" on node "{}" is not used by OSD "{}"; use replace instead'.format(
+                device, node, osd_id
+            ),
+        )
+
+    # Tell the cluster to create a new OSD for the host
+    refresh_osd_string = "osd_refresh {},{},{},{}".format(
+        node, osd_id, device, ext_db_flag
+    )
+    zkhandler.write([("base.cmd.ceph", refresh_osd_string)])
+    # Wait 1/2 second for the cluster to get the message and start working
+    time.sleep(0.5)
+    # Acquire a read lock, so we get the return exclusively
+    with zkhandler.readlock("base.cmd.ceph"):
+        try:
+            result = zkhandler.read("base.cmd.ceph").split()[0]
+            if result == "success-osd_refresh":
+                message = (
+                    'Refreshed OSD {} with block device "{}" on node "{}".'.format(
+                        osd_id, device, node
+                    )
+                )
+                success = True
+            else:
+                message = "ERROR: Failed to refresh OSD; check node logs for details."
                 success = False
         except Exception:
             message = "ERROR: Command ignored by node."

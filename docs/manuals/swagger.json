@@ -5095,6 +5095,13 @@
                 "description": "Note: This task may take up to 30s to complete and return<br/>Warning: This operation may have unintended consequences for the storage cluster; ensure the cluster can support removing the OSD before proceeding",
                 "parameters": [
                     {
+                        "description": "Force removal even if some step(s) fail",
+                        "in": "query",
+                        "name": "force",
+                        "required": "flase",
+                        "type": "boolean"
+                    },
+                    {
                         "description": "A confirmation string to ensure that the API consumer really means it",
                         "in": "query",
                         "name": "yes-i-really-mean-it",
@@ -5138,6 +5145,73 @@
                     }
                 },
                 "summary": "Return information about Ceph OSD {osdid}",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "post": {
+                "description": "Note: This task may take up to 30s to complete and return",
+                "parameters": [
+                    {
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) or detect string (\"detect:NAME:SIZE:ID\") to replace the OSD onto",
+                        "in": "query",
+                        "name": "device",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "description": "The Ceph CRUSH weight for the replaced OSD",
+                        "in": "query",
+                        "name": "weight",
+                        "required": true,
+                        "type": "number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Replace a Ceph OSD in the cluster",
+                "tags": [
+                    "storage / ceph"
+                ]
+            },
+            "put": {
+                "description": "Note: This task may take up to 30s to complete and return",
+                "parameters": [
+                    {
+                        "description": "The block device (e.g. \"/dev/sdb\", \"/dev/disk/by-path/...\", etc.) or detect string (\"detect:NAME:SIZE:ID\") that the OSD should be using",
+                        "in": "query",
+                        "name": "device",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                },
+                "summary": "Refresh (reimport) a Ceph OSD in the cluster",
                 "tags": [
                     "storage / ceph"
                 ]

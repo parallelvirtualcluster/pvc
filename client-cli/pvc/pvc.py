@@ -3372,6 +3372,74 @@ def ceph_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, confirm_flag):
 
 
 ###############################################################################
+# pvc storage osd replace
+###############################################################################
+@click.command(name="replace", short_help="Replace OSD block device.")
+@click.argument("osdid")
+@click.argument("device")
+@click.option(
+    "-w",
+    "--weight",
+    "weight",
+    default=1.0,
+    show_default=True,
+    help="New weight of the OSD within the CRUSH map.",
+)
+@click.option(
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the removal",
+)
+@cluster_req
+def ceph_osd_replace(osdid, device, weight, confirm_flag):
+    """
+    Replace the block device of an existing OSD with ID OSDID with DEVICE. Use this command to replace a failed or smaller OSD block device with a new one.
+
+    DEVICE must be a valid raw block device (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+
+    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For details, see 'pvc storage osd add --help'. Note that the current weight must be explicitly specified if it differs from the default.
+
+    Existing IDs, external DB devices, etc. of the OSD will be preserved; data will be lost and rebuilt from the remaining healthy OSDs.
+    """
+    if not confirm_flag and not config["unsafe"]:
+        try:
+            click.confirm(
+                "Replace OSD {} with block device {}".format(osdid, device),
+                prompt_suffix="? ",
+                abort=True,
+            )
+        except Exception:
+            exit(0)
+
+    retcode, retmsg = pvc_ceph.ceph_osd_replace(config, osdid, device, weight)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
+# pvc storage osd refresh
+###############################################################################
+@click.command(name="refresh", short_help="Refresh (reimport) OSD device.")
+@click.argument("osdid")
+@click.argument("device")
+@cluster_req
+def ceph_osd_refresh(osdid, device):
+    """
+    Refresh (reimport) the block DEVICE of an existing OSD with ID OSDID. Use this command to reimport a working OSD into a rebuilt/replaced node.
+
+    DEVICE must be a valid raw block device (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+
+    Existing data, IDs, weights, etc. of the OSD will be preserved.
+
+    NOTE: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD instead.
+    """
+    retcode, retmsg = pvc_ceph.ceph_osd_refresh(config, osdid, device)
+    cleanup(retcode, retmsg)
+
+
+###############################################################################
 # pvc storage osd remove
 ###############################################################################
 @click.command(name="remove", short_help="Remove OSD.")
@@ -5872,6 +5940,8 @@ ceph_benchmark.add_command(ceph_benchmark_list)
 
 ceph_osd.add_command(ceph_osd_create_db_vg)
 ceph_osd.add_command(ceph_osd_add)
+ceph_osd.add_command(ceph_osd_replace)
+ceph_osd.add_command(ceph_osd_refresh)
 ceph_osd.add_command(ceph_osd_remove)
 ceph_osd.add_command(ceph_osd_in)
 ceph_osd.add_command(ceph_osd_out)

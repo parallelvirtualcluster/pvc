@@ -255,6 +255,46 @@ def ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio):
     return retstatus, response.json().get("message", "")
 
 
+def ceph_osd_replace(config, osdid, device, weight):
+    """
+    Replace an existing Ceph OSD with a new device
+
+    API endpoint: POST /api/v1/storage/ceph/osd/{osdid}
+    API arguments: device={device}, weight={weight}
+    API schema: {"message":"{data}"}
+    """
+    params = {"device": device, "weight": weight, "yes-i-really-mean-it": "yes"}
+    response = call_api(config, "post", f"/storage/ceph/osd/{osdid}", params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get("message", "")
+
+
+def ceph_osd_refresh(config, osdid, device):
+    """
+    Refresh (reimport) an existing Ceph OSD with device {device}
+
+    API endpoint: PUT /api/v1/storage/ceph/osd/{osdid}
+    API arguments: device={device}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "device": device,
+    }
+    response = call_api(config, "put", f"/storage/ceph/osd/{osdid}", params=params)
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get("message", "")
+
+
 def ceph_osd_remove(config, osdid, force_flag):
     """
     Remove Ceph OSD

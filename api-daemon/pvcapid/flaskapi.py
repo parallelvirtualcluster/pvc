@@ -4100,6 +4100,102 @@ class API_Storage_Ceph_OSD_Element(Resource):
     @RequestParser(
         [
             {
+                "name": "device",
+                "required": True,
+                "helptext": "A valid device or detect string must be specified.",
+            },
+            {
+                "name": "weight",
+                "required": True,
+                "helptext": "An OSD weight must be specified.",
+            },
+            {
+                "name": "yes-i-really-mean-it",
+                "required": True,
+                "helptext": "Please confirm that 'yes-i-really-mean-it'.",
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, osdid, reqargs):
+        """
+        Replace a Ceph OSD in the cluster
+        Note: This task may take up to 30s to complete and return
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: device
+            type: string
+            required: true
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") to replace the OSD onto
+          - in: query
+            name: weight
+            type: number
+            required: true
+            description: The Ceph CRUSH weight for the replaced OSD
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_osd_replace(
+            osdid,
+            reqargs.get("device", None),
+            reqargs.get("weight", None),
+        )
+
+    @RequestParser(
+        [
+            {
+                "name": "device",
+                "required": True,
+                "helptext": "A valid device or detect string must be specified.",
+            },
+        ]
+    )
+    @Authenticator
+    def put(self, osdid, reqargs):
+        """
+        Refresh (reimport) a Ceph OSD in the cluster
+        Note: This task may take up to 30s to complete and return
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: device
+            type: string
+            required: true
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") that the OSD should be using
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_osd_refresh(
+            osdid,
+            reqargs.get("device", None),
+        )
+
+    @RequestParser(
+        [
+            {
                 "name": "force",
                 "required": False,
                 "helptext": "Force removal even if steps fail.",
