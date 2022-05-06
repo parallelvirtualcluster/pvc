@@ -1,3 +1,13 @@
+pvc (0.9.49-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes bugs with OSD stat population on creation
+  * [Node Daemon/API] Adds additional information to Zookeeper about OSDs
+  * [Node Daemon] Refactors OSD removal for improved safety
+  * [Node Daemon/API/CLI] Adds explicit support for replacing and refreshing (reimporting) OSDs
+  * [API/CLI] Fixes a language inconsistency about "router mode"
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 06 May 2022 15:49:39 -0400
+
 pvc (0.9.48-0) unstable; urgency=high
 
   * [CLI] Fixes situation where only a single cluster is available

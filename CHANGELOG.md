@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.49](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.49)
+
+  * [Node Daemon] Fixes bugs with OSD stat population on creation
+  * [Node Daemon/API] Adds additional information to Zookeeper about OSDs
+  * [Node Daemon] Refactors OSD removal for improved safety
+  * [Node Daemon/API/CLI] Adds explicit support for replacing and refreshing (reimporting) OSDs
+  * [API/CLI] Fixes a language inconsistency about "router mode"
+
 ###### [v0.9.48](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.48)
 
   * [CLI] Fixes situation where only a single cluster is available
