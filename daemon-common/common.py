@@ -639,6 +639,8 @@ def findTargetNode(zkhandler, dom_uuid):
     # Execute the search
     if search_field == "mem":
         return findTargetNodeMem(zkhandler, node_limit, dom_uuid)
+    if search_field == "memfree":
+        return findTargetNodeMemFree(zkhandler, node_limit, dom_uuid)
     if search_field == "load":
         return findTargetNodeLoad(zkhandler, node_limit, dom_uuid)
     if search_field == "vcpus":
@@ -677,7 +679,7 @@ def getNodes(zkhandler, node_limit, dom_uuid):
 
 
 #
-# via free memory (relative to allocated memory)
+# via allocated memory
 #
 def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
     most_provfree = 0
@@ -693,6 +695,24 @@ def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
 
         if provfree > most_provfree:
             most_provfree = provfree
+            target_node = node
+
+    return target_node
+
+
+#
+# via free memory
+#
+def findTargetNodeMemFree(zkhandler, node_limit, dom_uuid):
+    most_memfree = 0
+    target_node = None
+
+    node_list = getNodes(zkhandler, node_limit, dom_uuid)
+    for node in node_list:
+        memfree = int(zkhandler.read(("node.memory.free", node)))
+
+        if memfree > most_memfree:
+            most_memfree = memfree
             target_node = node
 
     return target_node

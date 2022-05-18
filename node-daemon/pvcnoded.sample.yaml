@@ -122,7 +122,7 @@ pvc:
         pass: Passw0rd
     # migration: Migration option configuration
     migration:
-      # target_selector: Criteria to select the ideal migration target, options: mem, load, vcpus, vms
+      # target_selector: Criteria to select the ideal migration target, options: mem, memfree, load, vcpus, vms
       target_selector: mem
     # configuration: Local system configurations
     configuration:
