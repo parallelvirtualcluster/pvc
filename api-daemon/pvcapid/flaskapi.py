@@ -1002,7 +1002,7 @@ class API_VM_Root(Resource):
                     type: string
                 node_selector:
                   type: string
-                  description: The selector used to determine candidate nodes during migration
+                  description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
                 node_autostart:
                   type: boolean
                   description: Whether to autostart the VM when its node returns to ready domain state
@@ -1297,7 +1297,7 @@ class API_VM_Root(Resource):
             name: selector
             type: string
             required: false
-            description: The selector used to determine candidate nodes during migration
+            description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
             default: none
             enum:
               - mem
@@ -1446,7 +1446,7 @@ class API_VM_Element(Resource):
             name: selector
             type: string
             required: false
-            description: The selector used to determine candidate nodes during migration
+            description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
             default: none
             enum:
               - mem
@@ -1629,7 +1629,7 @@ class API_VM_Metadata(Resource):
                     type: string
                 node_selector:
                   type: string
-                  description: The selector used to determine candidate nodes during migration
+                  description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
                 node_autostart:
                   type: string
                   description: Whether to autostart the VM when its node returns to ready domain state
@@ -1678,7 +1678,7 @@ class API_VM_Metadata(Resource):
             name: selector
             type: string
             required: false
-            description: The selector used to determine candidate nodes during migration
+            description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
             enum:
               - mem
               - memfree

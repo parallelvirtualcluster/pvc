@@ -803,7 +803,7 @@ def cli_vm():
 )
 @click.option(
     "-s",
-    "--selector",
+    "--node-selector",
     "node_selector",
     default="none",
     show_default=True,
@@ -857,6 +857,18 @@ def vm_define(
 ):
     """
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
+
+    The target node selector ("--node-selector"/"-s") can be "none" to use the cluster default, or one of the following values:
+      * "mem": choose the node with the least provisioned VM memory
+      * "memfree": choose the node with the most (real) free memory
+      * "vcpus": choose the node with the least allocated VM vCPUs
+      * "load": choose the node with the lowest current load average
+      * "vms": choose the node with the least number of provisioned VMs
+
+    For most clusters, "mem" should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
+      * "mem" looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
+      * "memfree" looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected. This might be preferable to "mem" on clusters with very high memory utilization versus total capacity or if many VMs are stopped/disabled.
+      * "load" looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
     """
 
     # Open the XML file
@@ -898,7 +910,7 @@ def vm_define(
 )
 @click.option(
     "-s",
-    "--selector",
+    "--node-selector",
     "node_selector",
     default=None,
     show_default=False,
@@ -942,6 +954,8 @@ def vm_meta(
 ):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
+
+    For details on the "--node-selector"/"-s" values, please see help for the command "pvc vm define".
     """
 
     if (
@@ -4137,6 +4151,8 @@ def provisioner_template_system_add(
 ):
     """
     Add a new system template NAME to the PVC cluster provisioner.
+
+    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
     """
     params = dict()
     params["name"] = name
@@ -4230,6 +4246,8 @@ def provisioner_template_system_modify(
 ):
     """
     Add a new system template NAME to the PVC cluster provisioner.
+
+    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
     """
     params = dict()
     params["vcpus"] = vcpus

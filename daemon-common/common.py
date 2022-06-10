@@ -679,7 +679,7 @@ def getNodes(zkhandler, node_limit, dom_uuid):
 
 
 #
-# via allocated memory
+# via provisioned memory
 #
 def findTargetNodeMem(zkhandler, node_limit, dom_uuid):
     most_provfree = 0

@@ -192,7 +192,7 @@
                     "type": "array"
                 },
                 "node_selector": {
-                    "description": "The selector used to determine candidate nodes during migration",
+                    "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                     "type": "string"
                 }
             },
@@ -1414,7 +1414,7 @@
                     "type": "array"
                 },
                 "node_selector": {
-                    "description": "The selector used to determine candidate nodes during migration",
+                    "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                     "type": "string"
                 },
                 "profile": {
@@ -6174,7 +6174,7 @@
                     },
                     {
                         "default": "none",
-                        "description": "The selector used to determine candidate nodes during migration",
+                        "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
                             "memfree",
@@ -6333,7 +6333,7 @@
                     },
                     {
                         "default": "none",
-                        "description": "The selector used to determine candidate nodes during migration",
+                        "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
                             "memfree",
@@ -6594,7 +6594,7 @@
                         "type": "string"
                     },
                     {
-                        "description": "The selector used to determine candidate nodes during migration",
+                        "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
                             "memfree",
