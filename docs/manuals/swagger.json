@@ -6173,13 +6173,15 @@
                         "type": "string"
                     },
                     {
-                        "default": "mem",
+                        "default": "none",
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
+                            "memfree",
                             "vcpus",
                             "load",
-                            "vms"
+                            "vms",
+                            "none (cluster default)"
                         ],
                         "in": "query",
                         "name": "selector",
@@ -6330,10 +6332,11 @@
                         "type": "string"
                     },
                     {
-                        "default": "mem",
+                        "default": "none",
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
+                            "memfree",
                             "vcpus",
                             "load",
                             "vms",
@@ -6594,9 +6597,11 @@
                         "description": "The selector used to determine candidate nodes during migration",
                         "enum": [
                             "mem",
+                            "memfree",
                             "vcpus",
                             "load",
-                            "vms"
+                            "vms",
+                            "none (cluster default)"
                         ],
                         "in": "query",
                         "name": "selector",

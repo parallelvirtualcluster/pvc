@@ -805,9 +805,9 @@ def cli_vm():
     "-s",
     "--selector",
     "node_selector",
-    default="mem",
+    default="none",
     show_default=True,
-    type=click.Choice(["mem", "load", "vcpus", "vms", "none"]),
+    type=click.Choice(["mem", "memfree", "load", "vcpus", "vms", "none"]),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
@@ -902,7 +902,7 @@ def vm_define(
     "node_selector",
     default=None,
     show_default=False,
-    type=click.Choice(["mem", "load", "vcpus", "vms", "none"]),
+    type=click.Choice(["mem", "memfree", "load", "vcpus", "vms", "none"]),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
@@ -4102,7 +4102,9 @@ def provisioner_template_system_list(limit):
 @click.option(
     "--node-selector",
     "node_selector",
-    type=click.Choice(["mem", "vcpus", "vms", "load", "none"], case_sensitive=False),
+    type=click.Choice(
+        ["mem", "memfree", "vcpus", "vms", "load", "none"], case_sensitive=False
+    ),
     default="none",
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
@@ -4194,7 +4196,9 @@ def provisioner_template_system_add(
 @click.option(
     "--node-selector",
     "node_selector",
-    type=click.Choice(["mem", "vcpus", "vms", "load", "none"], case_sensitive=False),
+    type=click.Choice(
+        ["mem", "memfree", "vcpus", "vms", "load", "none"], case_sensitive=False
+    ),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(

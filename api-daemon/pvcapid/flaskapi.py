@@ -1252,7 +1252,7 @@ class API_VM_Root(Resource):
             {"name": "node"},
             {
                 "name": "selector",
-                "choices": ("mem", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1298,12 +1298,14 @@ class API_VM_Root(Resource):
             type: string
             required: false
             description: The selector used to determine candidate nodes during migration
-            default: mem
+            default: none
             enum:
               - mem
+              - memfree
               - vcpus
               - load
               - vms
+              - none (cluster default)
           - in: query
             name: autostart
             type: boolean
@@ -1397,7 +1399,7 @@ class API_VM_Element(Resource):
             {"name": "node"},
             {
                 "name": "selector",
-                "choices": ("mem", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1445,9 +1447,10 @@ class API_VM_Element(Resource):
             type: string
             required: false
             description: The selector used to determine candidate nodes during migration
-            default: mem
+            default: none
             enum:
               - mem
+              - memfree
               - vcpus
               - load
               - vms
@@ -1646,7 +1649,7 @@ class API_VM_Metadata(Resource):
             {"name": "limit"},
             {
                 "name": "selector",
-                "choices": ("mem", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1678,9 +1681,11 @@ class API_VM_Metadata(Resource):
             description: The selector used to determine candidate nodes during migration
             enum:
               - mem
+              - memfree
               - vcpus
               - load
               - vms
+              - none (cluster default)
           - in: query
             name: autostart
             type: boolean
