@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.50](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.50)
+
+  * Adds free memory node selector
+  * Fixes bug sending space-containing detect disk strings
+
 ###### [v0.9.49](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.49)
 
   * [Node Daemon] Fixes bugs with OSD stat population on creation

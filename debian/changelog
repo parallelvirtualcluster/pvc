@@ -1,3 +1,10 @@
+pvc (0.9.50-0) unstable; urgency=high
+
+  * Adds free memory node selector
+  * Fixes bug sending space-containing detect disk strings
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 06 Jul 2022 16:01:14 -0400
+
 pvc (0.9.49-0) unstable; urgency=high
 
   * [Node Daemon] Fixes bugs with OSD stat population on creation
