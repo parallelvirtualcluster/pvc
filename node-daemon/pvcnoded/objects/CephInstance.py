@@ -1239,8 +1239,9 @@ class CephSnapshotInstance(object):
 # Primary command function
 # This command pipe is only used for OSD adds and removes
 def ceph_command(zkhandler, logger, this_node, data, d_osd):
-    # Get the command and args
-    command, args = data.split()
+    # Get the command and args; the * + join ensures arguments with spaces (e.g. detect strings) are recombined right
+    command, *args = data.split()
+    args = " ".join(args)
 
     # Adding a new OSD
     if command == "osd_add":
