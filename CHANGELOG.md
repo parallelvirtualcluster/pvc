@@ -2,8 +2,8 @@
 
 ###### [v0.9.50](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.50)
 
-  * Adds free memory node selector
-  * Fixes bug sending space-containing detect disk strings
+  * [Node Daemon/API/CLI] Adds free memory node selector
+  * [Node Daemon] Fixes bug sending space-containing detect disk strings
 
 ###### [v0.9.49](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.49)
 
