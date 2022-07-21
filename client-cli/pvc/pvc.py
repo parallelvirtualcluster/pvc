@@ -1357,15 +1357,31 @@ def vm_stop(domain, confirm_flag):
     default=False,
     help="Forcibly stop the VM instead of waiting for shutdown.",
 )
+@click.option(
+    "-y",
+    "--yes",
+    "confirm_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the disable",
+)
 @cluster_req
-def vm_disable(domain, force):
+def vm_disable(domain, force_flag, confirm_flag):
     """
     Shut down virtual machine DOMAIN and mark it as disabled. DOMAIN may be a UUID or name.
 
     Disabled VMs will not be counted towards a degraded cluster health status, unlike stopped VMs. Use this option for a VM that will remain off for an extended period.
     """
 
-    retcode, retmsg = pvc_vm.vm_state(config, domain, "disable", force=force)
+    if not confirm_flag and not config["unsafe"]:
+        try:
+            click.confirm(
+                "Disable VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
+        except Exception:
+            exit(0)
+
+    retcode, retmsg = pvc_vm.vm_state(config, domain, "disable", force=force_flag)
     cleanup(retcode, retmsg)
 
 
