@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v0.9.51](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.51)
+
+  * [CLI Client] Fixes a faulty literal_eval when viewing task status
+  * [CLI Client] Adds a confirmation flag to the vm disable command
+  * [Node Daemon] Removes the pvc-flush service
+
 ###### [v0.9.50](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.50)
 
   * [Node Daemon/API/CLI] Adds free memory node selector
