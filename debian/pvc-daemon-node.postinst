@@ -7,11 +7,6 @@ systemctl daemon-reload
 systemctl enable /lib/systemd/system/pvcnoded.service
 systemctl enable /lib/systemd/system/pvc.target
 
-# Inform administrator of the autoflush daemon if it is not enabled
-if ! systemctl is-active --quiet pvc-flush.service; then
-    echo "NOTE: The PVC autoflush daemon (pvc-flush.service) is not enabled by default; enable it to perform automatic flush/unflush actions on host shutdown/startup."
-fi
-
 # Inform administrator of the service restart/startup not occurring automatically
 if systemctl is-active --quiet pvcnoded.service; then
     echo "NOTE: The PVC node daemon (pvcnoded.service) has not been restarted; this is up to the administrator."
