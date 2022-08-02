@@ -1023,6 +1023,7 @@ def vm_meta(
 )
 @click.argument("domain")
 @click.argument("cfgfile", type=click.File(), default=None, required=False)
+@cluster_req
 def vm_modify(
     domain,
     cfgfile,
