@@ -1193,6 +1193,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
             return False, 'VM state "{}" is not valid.'.format(state)
 
     full_vm_list = zkhandler.children("base.domain")
+    full_vm_list.sort()
 
     # Set our limit to a sensible regex
     if limit:
