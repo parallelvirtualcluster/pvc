@@ -236,6 +236,7 @@ def get_list(
 ):
     node_list = []
     full_node_list = zkhandler.children("base.node")
+    full_node_list.sort()
 
     if is_fuzzy and limit:
         # Implicitly assume fuzzy limits
