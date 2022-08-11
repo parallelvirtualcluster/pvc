@@ -307,8 +307,14 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
                         "var": osd["var"],
                         "pgs": osd["pgs"],
                         "kb": osd["kb"],
+                        "kb_used": osd["kb_used"],
+                        "kb_used_data": osd["kb_used_data"],
+                        "kb_used_omap": osd["kb_used_omap"],
+                        "kb_used_meta": osd["kb_used_meta"],
+                        "kb_avail": osd["kb_avail"],
                         "weight": osd["crush_weight"],
                         "reweight": osd["reweight"],
+                        "class": osd["device_class"],
                     }
                 }
             )
