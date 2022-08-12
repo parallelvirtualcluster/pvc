@@ -1292,4 +1292,4 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
             except Exception:
                 pass
 
-    return True, vm_data_list
+    return True, sorted(vm_data_list, key=lambda d: d["name"])
