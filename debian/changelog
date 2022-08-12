@@ -1,3 +1,9 @@
+pvc (0.9.53-0) unstable; urgency=high
+
+  * [API] Fixes sort order of VM list (for real this time)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 12 Aug 2022 17:47:11 -0400
+
 pvc (0.9.52-0) unstable; urgency=high
 
   * [CLI] Fixes a bug with vm modify not requiring a cluster

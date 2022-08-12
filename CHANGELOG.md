@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.53](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.53)
+
+  * [API] Fixes sort order of VM list (for real this time)
+
 ###### [v0.9.52](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.52)
 
   * [CLI] Fixes a bug with vm modify not requiring a cluster
