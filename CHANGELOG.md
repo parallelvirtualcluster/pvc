@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.52](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.52)
+
+  * [CLI] Fixes a bug with vm modify not requiring a cluster
+  * [Docs] Adds a reference to the bootstrap daemon
+  * [API] Adds sorting to node and VM lists for consistency
+  * [Node Daemon/API] Adds kb_ stats values for OSD stats
+
 ###### [v0.9.51](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.51)
 
   * [CLI Client] Fixes a faulty literal_eval when viewing task status

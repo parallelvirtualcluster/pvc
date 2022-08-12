@@ -1,3 +1,12 @@
+pvc (0.9.52-0) unstable; urgency=high
+
+  * [CLI] Fixes a bug with vm modify not requiring a cluster
+  * [Docs] Adds a reference to the bootstrap daemon
+  * [API] Adds sorting to node and VM lists for consistency
+  * [Node Daemon/API] Adds kb_ stats values for OSD stats
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 12 Aug 2022 11:09:25 -0400
+
 pvc (0.9.51-0) unstable; urgency=high
 
   * [CLI Client] Fixes a faulty literal_eval when viewing task status
