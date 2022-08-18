@@ -1353,7 +1353,7 @@ def vm_stop(domain, confirm_flag):
 @click.argument("domain")
 @click.option(
     "--force",
-    "force",
+    "force_flag",
     is_flag=True,
     default=False,
     help="Forcibly stop the VM instead of waiting for shutdown.",
