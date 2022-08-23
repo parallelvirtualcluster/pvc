@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.54](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.54)
+
+[CLI Client] Fixes a bad variable reference from the previous change
+[API Daemon] Enables TLSv1 with an SSLContext object for maximum compatibility
+
 ###### [v0.9.53](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.53)
 
   * [API] Fixes sort order of VM list (for real this time)

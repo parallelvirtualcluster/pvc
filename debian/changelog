@@ -1,3 +1,10 @@
+pvc (0.9.54-0) unstable; urgency=high
+
+[CLI Client] Fixes a bad variable reference from the previous change
+[API Daemon] Enables TLSv1 with an SSLContext object for maximum compatibility
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 23 Aug 2022 11:01:05 -0400
+
 pvc (0.9.53-0) unstable; urgency=high
 
   * [API] Fixes sort order of VM list (for real this time)
