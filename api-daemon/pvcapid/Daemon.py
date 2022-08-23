@@ -22,6 +22,8 @@
 import os
 import yaml
 
+from ssl import SSLContext, TLSVersion
+
 from distutils.util import strtobool as dustrtobool
 
 # Daemon version
@@ -123,7 +125,10 @@ def entrypoint():
     import pvcapid.flaskapi as pvc_api  # noqa: E402
 
     if config["ssl_enabled"]:
-        context = (config["ssl_cert_file"], config["ssl_key_file"])
+        context = SSLContext()
+        context.minimum_version = TLSVersion.TLSv1
+        context.get_ca_certs()
+        context.load_cert_chain(config["ssl_cert_file"], keyfile=config["ssl_key_file"])
     else:
         context = None
 
