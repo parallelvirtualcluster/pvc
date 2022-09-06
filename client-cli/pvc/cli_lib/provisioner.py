@@ -26,6 +26,7 @@ from requests_toolbelt.multipart.encoder import (
 
 import pvc.cli_lib.ansiprint as ansiprint
 from pvc.cli_lib.common import UploadProgressBar, call_api
+from ast import literal_eval
 
 
 #
@@ -792,10 +793,16 @@ def task_status(config, task_id=None, is_watching=False):
                         task["type"] = task_type
                     task["worker"] = task_host
                     task["id"] = task_job.get("id")
-                    task_args = task_job.get("args")
+                    try:
+                        task_args = literal_eval(task_job.get("args"))
+                    except Exception:
+                        task_args = task_job.get("args")
                     task["vm_name"] = task_args[0]
                     task["vm_profile"] = task_args[1]
-                    task_kwargs = task_job.get("kwargs")
+                    try:
+                        task_kwargs = literal_eval(task_job.get("kwargs"))
+                    except Exception:
+                        task_kwargs = task_job.get("kwargs")
                     task["vm_define"] = str(bool(task_kwargs["define_vm"]))
                     task["vm_start"] = str(bool(task_kwargs["start_vm"]))
                     task_data.append(task)
