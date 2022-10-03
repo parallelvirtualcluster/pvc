@@ -661,15 +661,19 @@ def node_keepalive(logger, config, zkhandler, this_node):
                     zkhandler.read("base.config.migration_target_selector")
                     != config["migration_target_selector"]
                 ):
-                    raise
+                    zkhandler.write(
+                        [
+                            (
+                                "base.config.migration_target_selector",
+                                config["migration_target_selector"],
+                            )
+                        ]
+                    )
             except Exception:
-                zkhandler.write(
-                    [
-                        (
-                            "base.config.migration_target_selector",
-                            config["migration_target_selector"],
-                        )
-                    ]
+                logger.out(
+                    "Failed to set migration target selector in Zookeeper",
+                    state="e",
+                    prefix="main-thread",
                 )
 
     # Set the upstream IP in Zookeeper for clients to read
@@ -680,10 +684,14 @@ def node_keepalive(logger, config, zkhandler, this_node):
                     zkhandler.read("base.config.upstream_ip")
                     != config["upstream_floating_ip"]
                 ):
-                    raise
+                    zkhandler.write(
+                        [("base.config.upstream_ip", config["upstream_floating_ip"])]
+                    )
             except Exception:
-                zkhandler.write(
-                    [("base.config.upstream_ip", config["upstream_floating_ip"])]
+                logger.out(
+                    "Failed to set upstream floating IP in Zookeeper",
+                    state="e",
+                    prefix="main-thread",
                 )
 
     # Get past state and update if needed
