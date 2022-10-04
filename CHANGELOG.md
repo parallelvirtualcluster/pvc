@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.55](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.55)
+
+  * Fixes a problem with the literal eval handler in the provisioner (again)
+  * Fixes a potential log deadlock in Zookeeper-lost situations when doing keepalives
+
 ###### [v0.9.54](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.54)
 
 [CLI Client] Fixes a bad variable reference from the previous change
