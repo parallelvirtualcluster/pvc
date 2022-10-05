@@ -255,6 +255,9 @@ class VMBuilderScript(VMBuilder):
         block devices and map them to the host.
         """
 
+        # Run any imports first
+        from pvcapid.vmbuilder import open_zk
+
         # First loop: Create the disks, either by cloning (pvc_ceph.clone_volume), or by
         # new creation (pvc_ceph.add_volume).
         for volume in self.vm_data["volumes"]:
