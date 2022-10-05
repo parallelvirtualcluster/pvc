@@ -307,7 +307,7 @@ class VMBuilderScript(VMBuilder):
                     dst_volume_name,
                 )
                 print(message)
-                if not retcode:
+                if not success:
                     raise ProvisioningError(f"Failed to map volume '{dst_volume}'.")
 
         # Third loop: Create filesystems on the volumes
