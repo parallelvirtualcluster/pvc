@@ -29,6 +29,7 @@ from pvcapid.Daemon import config, strtobool, API_VERSION
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
+import pvcapid.vmbuilder as api_vmbuilder
 import pvcapid.benchmark as api_benchmark
 import pvcapid.ova as api_ova
 
@@ -144,7 +145,7 @@ def Authenticator(function):
 def create_vm(
     self, vm_name, profile_name, define_vm=True, start_vm=True, script_run_args=[]
 ):
-    return api_provisioner.create_vm(
+    return api_vmbuilder.create_vm(
         self,
         vm_name,
         profile_name,
