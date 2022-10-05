@@ -116,6 +116,9 @@
 #    }
 
 
+from pvcapi.vmbuilder import VMBuilder
+
+
 class VMBuilderScript(VMBuilder):
     def setup(self):
         """
@@ -183,7 +186,7 @@ class VMBuilderScript(VMBuilder):
         # Add the network devices
         network_id = 0
         for network in self.vm_data["networks"]:
-            vm_id_hex = "{:x}".format(int(vm_id % 16))
+            vm_id_hex = "{:x}".format(int(self.vm_id % 16))
             net_id_hex = "{:x}".format(int(network_id % 16))
 
             if self.vm_data.get("mac_template") is not None:

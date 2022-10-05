@@ -116,11 +116,17 @@
 #    }
 
 
+from pvcapid.vmbuilder import VMBuilder
+
+
 class VMBuilderScript(VMBuilder):
     def setup(self):
         """
         setup(): Perform special setup steps or validation before proceeding
         """
+
+        # Run any imports first
+        import daemon_lib.common as pvc_common
 
         # Ensure we have debootstrap intalled on the provisioner system
         retcode, stdout, stderr = pvc_common.run_os_command(f"which debootstrap")
@@ -184,7 +190,7 @@ class VMBuilderScript(VMBuilder):
         # Add the network devices
         network_id = 0
         for network in self.vm_data["networks"]:
-            vm_id_hex = "{:x}".format(int(vm_id % 16))
+            vm_id_hex = "{:x}".format(int(self.vm_id % 16))
             net_id_hex = "{:x}".format(int(network_id % 16))
 
             if self.vm_data.get("mac_template") is not None:
@@ -376,6 +382,9 @@ class VMBuilderScript(VMBuilder):
         arguments for demonstration.
         """
 
+        # Run any imports first
+        from pvcapid.vmbuilder import chroot
+
         # The directory we mounted things on earlier during prepare()
         temporary_directory = "/tmp/target"
 
@@ -541,7 +550,7 @@ GRUB_DISABLE_LINUX_UUID=false
             fh.write(data)
 
         # Chroot, do some in-root tasks, then exit the chroot
-        with chroot_target(temporary_directory):
+        with chroot(temporary_directory):
             # Install and update GRUB
             os.system(
                 "grub-install --force /dev/rbd/{}/{}_{}".format(
