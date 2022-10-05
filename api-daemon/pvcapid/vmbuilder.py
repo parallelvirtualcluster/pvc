@@ -137,11 +137,11 @@ def chroot(destination):
         os.fchdir(fake_root)
         yield
     except Exception:
-        pass
+        raise
     finally:
         os.fchdir(real_root)
         os.chroot(".")
-        os.fchdir(fake_root)
+        os.fchdir(real_root)
         os.close(fake_root)
         os.close(real_root)
         del fake_root
@@ -554,6 +554,46 @@ def create_vm(
 
     print("Chroot environment prepared successfully")
 
+    def general_cleanup():
+        print("Running upper cleanup steps")
+
+        try:
+            # Unmount bind-mounted devfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                f"umount {temp_dir}/dev"
+            )
+            # Unmount bind-mounted runfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                f"umount {temp_dir}/run"
+            )
+            # Unmount bind-mounted sysfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                f"umount {temp_dir}/sys"
+            )
+            # Unmount bind-mounted tmpfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                f"umount {temp_dir}/tmp"
+            )
+            # Unmount bind-mounted rootfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}")
+        except Exception as e:
+            # We don't care about fails during cleanup, log and continue
+            print(f"Suberror during general cleanup unmounts: {e}")
+
+        try:
+            # Remove the temp_dir
+            os.rmdir(temp_dir)
+        except Exception as e:
+            # We don't care about fails during cleanup, log and continue
+            print(f"Suberror during general cleanup directory removal: {e}")
+
+        try:
+            # Remote temporary script (don't fail if not removed)
+            os.remove(script_file)
+        except Exception as e:
+            # We don't care about fails during cleanup, log and continue
+            print(f"Suberror during general cleanup script removal: {e}")
+
     # Phase 4 - script: setup()
     #  * Run pre-setup steps
     self.update_state(
@@ -568,8 +608,12 @@ def create_vm(
 
     print("Running script setup() step")
 
-    with chroot(temp_dir):
-        vm_builder.setup()
+    try:
+        with chroot(temp_dir):
+            vm_builder.setup()
+    except Exception as e:
+        general_cleanup()
+        raise ProvisioningError(f"Error in setup(): {e}")
 
     # Phase 5 - script: create()
     #  * Prepare the libvirt XML defintion for the VM
@@ -586,9 +630,14 @@ def create_vm(
     if define_vm:
         print("Running script create() step")
 
-        with chroot(temp_dir):
-            vm_schema = vm_builder.create()
-            print("Generated VM schema:\n{}\n".format(vm_schema))
+        try:
+            with chroot(temp_dir):
+                vm_schema = vm_builder.create()
+        except Exception as e:
+            general_cleanup()
+            raise ProvisioningError(f"Error in create(): {e}")
+
+        print("Generated VM schema:\n{}\n".format(vm_schema))
 
         print("Defining VM on cluster")
         node_limit = vm_data["system_details"]["node_limit"]
@@ -627,8 +676,12 @@ def create_vm(
 
     print("Running script prepare() step")
 
-    with chroot(temp_dir):
-        vm_builder.prepare()
+    try:
+        with chroot(temp_dir):
+            vm_builder.prepare()
+    except Exception as e:
+        general_cleanup()
+        raise ProvisioningError(f"Error in prepare(): {e}")
 
     # Phase 7 - script: install()
     #  * Run installation with arguments
@@ -644,8 +697,12 @@ def create_vm(
 
     print("Running script install() step")
 
-    with chroot(temp_dir):
-        vm_builder.install()
+    try:
+        with chroot(temp_dir):
+            vm_builder.install()
+    except Exception as e:
+        general_cleanup()
+        raise ProvisioningError(f"Error in install(): {e}")
 
     # Phase 8 - script: cleanup()
     #  * Run cleanup steps
@@ -661,8 +718,12 @@ def create_vm(
 
     print("Running script cleanup() step")
 
-    with chroot(temp_dir):
-        vm_builder.cleanup()
+    try:
+        with chroot(temp_dir):
+            vm_builder.cleanup()
+    except Exception as e:
+        general_cleanup()
+        raise ProvisioningError(f"Error in cleanup(): {e}")
 
     # Phase 9 - general cleanup
     #  * Clean up the chroot from earlier
@@ -671,45 +732,12 @@ def create_vm(
         meta={
             "current": 9,
             "total": 10,
-            "status": "Running upper cleanup steps",
+            "status": "Running general cleanup steps",
         },
     )
     time.sleep(1)
 
-    print("Running upper cleanup steps")
-
-    # Remote temporary script (don't fail if not removed)
-    if not os.remove(script_file):
-        print(f"Failed to delete temporary script file '{script_file}'.")
-
-    # Unmount bind-mounted devfs on the chroot
-    retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}/dev")
-    if retcode:
-        raise ProvisioningError(f"Failed to unmount devfs from chroot: {stderr}")
-
-    # Unmount bind-mounted runfs on the chroot
-    retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}/run")
-    if retcode:
-        raise ProvisioningError(f"Failed to unmount runfs from chroot: {stderr}")
-
-    # Unmount bind-mounted sysfs on the chroot
-    retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}/sys")
-    if retcode:
-        raise ProvisioningError(f"Failed to unmount sysfs from chroot: {stderr}")
-
-    # Unmount bind-mounted tmpfs on the chroot
-    retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}/tmp")
-    if retcode:
-        raise ProvisioningError(f"Failed to unmount tmpfs from chroot: {stderr}")
-
-    # Unmount bind-mounted rootfs on the chroot
-    retcode, stdout, stderr = pvc_common.run_os_command(f"umount {temp_dir}")
-    if retcode:
-        raise ProvisioningError(f"Failed to unmount rootfs from chroot: {stderr}")
-
-    # Remove the temp_dir
-    if not os.rmdir(temp_dir):
-        print(f"Failed to delete temporary chroot directory '{temp_dir}'.")
+    general_cleanup()
 
     # Phase 10 - startup
     #  * Start the VM in the PVC cluster
