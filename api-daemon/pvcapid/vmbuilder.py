@@ -613,7 +613,7 @@ def create_vm(
             vm_builder.setup()
     except Exception as e:
         general_cleanup()
-        raise ProvisioningError(f"Error in setup(): {e}")
+        raise ProvisioningError(f"Error in script setup() step: {e}")
 
     # Phase 5 - script: create()
     #  * Prepare the libvirt XML defintion for the VM
@@ -635,7 +635,7 @@ def create_vm(
                 vm_schema = vm_builder.create()
         except Exception as e:
             general_cleanup()
-            raise ProvisioningError(f"Error in create(): {e}")
+            raise ProvisioningError(f"Error in script create() step: {e}")
 
         print("Generated VM schema:\n{}\n".format(vm_schema))
 
@@ -681,7 +681,7 @@ def create_vm(
             vm_builder.prepare()
     except Exception as e:
         general_cleanup()
-        raise ProvisioningError(f"Error in prepare(): {e}")
+        raise ProvisioningError(f"Error in script prepare() step: {e}")
 
     # Phase 7 - script: install()
     #  * Run installation with arguments
@@ -702,7 +702,7 @@ def create_vm(
             vm_builder.install()
     except Exception as e:
         general_cleanup()
-        raise ProvisioningError(f"Error in install(): {e}")
+        raise ProvisioningError(f"Error in script install() step: {e}")
 
     # Phase 8 - script: cleanup()
     #  * Run cleanup steps
@@ -723,7 +723,7 @@ def create_vm(
             vm_builder.cleanup()
     except Exception as e:
         general_cleanup()
-        raise ProvisioningError(f"Error in cleanup(): {e}")
+        raise ProvisioningError(f"Error in script cleanup() step: {e}")
 
     # Phase 9 - general cleanup
     #  * Clean up the chroot from earlier
