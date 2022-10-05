@@ -261,6 +261,9 @@ class VMBuilderScript(VMBuilder):
 
         # Run any imports first
         from pvcapid.vmbuilder import open_zk
+        from pvcapid.Daemon import config
+        import daemon_lib.common as pvc_common
+        import daemon_lib.ceph as pvc_ceph
 
         # First loop: Create the disks, either by cloning (pvc_ceph.clone_volume), or by
         # new creation (pvc_ceph.add_volume).
@@ -579,6 +582,10 @@ GRUB_DISABLE_LINUX_UUID=false
         It is important to now reverse *all* steps taken in those functions that might
         need cleanup before teardown of the overlay chroot environment.
         """
+
+        # Run any imports first
+        import daemon_lib.common as pvc_common
+        import daemon_lib.ceph as pvc_ceph
 
         temp_dir = "/tmp/target"
 
