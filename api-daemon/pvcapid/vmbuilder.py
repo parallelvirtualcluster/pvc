@@ -159,9 +159,13 @@ def open_db(config):
             password=config["database_password"],
         )
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        yield cur
     except Exception:
         raise ClusterError("Failed to connect to Postgres")
+
+    try:
+        yield cur
+    except Exception:
+        raise
     finally:
         conn.commit()
         cur.close()
@@ -174,9 +178,13 @@ def open_zk(config):
     try:
         zkhandler = ZKHandler(config)
         zkhandler.connect()
-        yield zkhandler
     except Exception:
         raise ClusterError("Failed to connect to Zookeeper")
+
+    try:
+        yield zkhandler
+    except Exception:
+        raise
     finally:
         zkhandler.disconnect()
         del zkhandler
