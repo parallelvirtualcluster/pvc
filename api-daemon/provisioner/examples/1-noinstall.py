@@ -211,7 +211,7 @@ class VMBuilderScript(VMBuilder):
 
             schema += libvirt_schema.devices_net_interface.format(
                 eth_macaddr=eth_macaddr,
-                eth_bridge=eth_bridge,
+                eth_bridge=network["eth_bridge"],
             )
 
             network_id += 1
