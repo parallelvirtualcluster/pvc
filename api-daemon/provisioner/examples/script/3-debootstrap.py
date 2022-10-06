@@ -578,7 +578,7 @@ iface ens2 inet dhcp
             data = f"""# DHCP client configuration
 # Written by the PVC provisioner
 option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
-interface "ens2" {
+interface "ens2" {{
         send fqdn.fqdn = "{vm_name}";
         send host-name = "{vm_name}";
         request subnet-mask, broadcast-address, time-offset, routers,
@@ -586,7 +586,7 @@ interface "ens2" {
                 dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,
                 netbios-name-servers, netbios-scope, interface-mtu,
                 rfc3442-classless-static-routes, ntp-servers;
-}
+}}
 """
             fh.write(data)
 
