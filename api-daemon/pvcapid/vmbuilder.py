@@ -688,6 +688,8 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.prepare()
     except Exception as e:
+        with chroot(temp_dir):
+            vm_builder.cleanup()
         general_cleanup()
         raise ProvisioningError(f"Error in script prepare() step: {e}")
 
@@ -709,6 +711,8 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.install()
     except Exception as e:
+        with chroot(temp_dir):
+            vm_builder.cleanup()
         general_cleanup()
         raise ProvisioningError(f"Error in script install() step: {e}")
 
@@ -764,3 +768,9 @@ def create_vm(
         with open_zk(config) as zkhandler:
             success, message = pvc_vm.start_vm(zkhandler, vm_name)
         print(message)
+
+        end_message = f'VM "{vm_name}" with profile "{vm_profile}" has been provisioned and started successfully'
+    else:
+        end_message = f'VM "{vm_name}" with profile "{vm_profile}" has been provisioned successfully'
+
+    return {"status": end_message, "current": 10, "total": 10}
