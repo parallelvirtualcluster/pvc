@@ -227,11 +227,6 @@ def create_vm(
         else:
             vm_data["script_arguments"] = []
 
-        if profile_data.get("profile_type") == "ova":
-            is_ova_install = True
-        else:
-            is_ova_install = False
-
         # Get the system details
         query = "SELECT * FROM system_template WHERE id = %s"
         args = (profile_data["system_template"],)
@@ -446,32 +441,29 @@ def create_vm(
 
         print("There is enough space on cluster to store VM volumes")
 
-    if not is_ova_install:
-        # Verify that every specified filesystem is valid
-        used_filesystems = list()
-        for volume in vm_data["volumes"]:
-            if volume["source_volume"] is not None:
-                continue
-            if volume["filesystem"] and volume["filesystem"] not in used_filesystems:
-                used_filesystems.append(volume["filesystem"])
+    # Verify that every specified filesystem is valid
+    used_filesystems = list()
+    for volume in vm_data["volumes"]:
+        if volume["source_volume"] is not None:
+            continue
+        if volume["filesystem"] and volume["filesystem"] not in used_filesystems:
+            used_filesystems.append(volume["filesystem"])
 
-        for filesystem in used_filesystems:
-            if filesystem == "swap":
-                retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
-                if retcode:
-                    raise ProvisioningError(
-                        "Failed to find binary for mkswap: {}".format(stderr)
-                    )
-            else:
-                retcode, stdout, stderr = pvc_common.run_os_command(
-                    "which mkfs.{}".format(filesystem)
+    for filesystem in used_filesystems:
+        if filesystem == "swap":
+            retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
+            if retcode:
+                raise ProvisioningError(
+                    "Failed to find binary for mkswap: {}".format(stderr)
                 )
-                if retcode:
-                    raise ProvisioningError(
-                        "Failed to find binary for mkfs.{}: {}".format(
-                            filesystem, stderr
-                        )
-                    )
+        else:
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                "which mkfs.{}".format(filesystem)
+            )
+            if retcode:
+                raise ProvisioningError(
+                    "Failed to find binary for mkfs.{}: {}".format(filesystem, stderr)
+                )
 
         print("All selected filesystems are valid")
 
