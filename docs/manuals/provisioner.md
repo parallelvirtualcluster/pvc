@@ -14,6 +14,7 @@ Details of the Provisioner API interface can be found in [the API manual](/manua
   * [Deploying VMs from provisioner scripts](#deploying-vms-from-provisioner-scripts)
   * [Deploying VMs from OVA images](#deploying-vms-from-ova-images)
     + [Uploading an OVA](#uploading-an-ova)
+    + [The OVA Provisioning Script](#the-ova-provisioning-script)
     + [OVA limitations](#ova-limitations)
 
 ## Overview
@@ -172,64 +173,147 @@ basic-ssh   11  Content-Type: text/cloud-config; charset="us-ascii"
 
 ## Provisioning Scripts
 
-The PVC provisioner provides a scripting framework in order to automate VM installation. This is generally the most useful with UNIX-like systems which can be installed over the network via shell scripts. For instance, the script might install a Debian VM using `debootstrap` or a Red Hat VM using `rpmstrap`. The PVC Ansible system will automatically install `debootstrap` on coordinator nodes, to allow out-of-the-box deployment of Debian-based VMs with `debootstrap` and the example script shipped with PVC (see below); any other deployment tool must be installed separately onto all PVC coordinator nodes, or installed by the script itself (e.g. using `os.system('apt-get install ...')`, `requests` to download a script, etc.).
+The PVC provisioner provides a scripting framework in order to automate VM installation. This is generally the most useful with UNIX-like systems which can be installed over the network via shell scripts. For instance, the script might install a Debian VM using `debootstrap` or a Red Hat VM using `rpmstrap`. The PVC Ansible system will automatically install `debootstrap` on coordinator nodes, to allow out-of-the-box deployment of Debian-based VMs with `debootstrap` and the example script shipped with PVC (see below); any other deployment tool must be installed separately onto all PVC coordinator nodes, or fetched by the script itself (with caveats as noted below).
 
-Provisioner scripts are written in Python 3 and are called in a standardized way during the provisioning sequence. A single function called `install` is called during the provisioning sequence to perform arbitrary tasks. At execution time, the script is passed several default keyword arguments detailed below, and can also be passed arbitrary arguments defined either in the provisioner profile, or on the `provisioner create` CLI.
+Several example scripts are provided in the `/usr/share/pvc/provisioner/examples/scripts` directory of all PVC hypervisors, and these are imported by the provisioner system by default on install to help get you started. You are of course free to modify or extend these as you wish, or write your own based on them to suit your needs.
 
-A full example script to perform a `debootstrap` Debian installation can be found under `/usr/share/pvc/provisioner/examples` on any PVC coordinator node.
+Provisioner scripts are written in Python 3 and are implemented as a class, `VMBuilderScript`, which extends the built-in `VMBuilder` class, for example:
 
-The default script "empty" can be used to skip scripted installation for a profile. Additionally, profiles with no disk mountpoints (and specifically, no root `/` mountpoint) will skip scripted installation.
+```python
+#!/usr/bin/env python3
+# I am an example provisioner script
 
-**WARNING**: It is important to remember that these provisioning scripts will run with the same privileges as the provisioner API daemon (usually root) on the system running the daemon. THIS MAY POSE A SECURITY RISK. However, the intent is that administrators of the cluster are the only ones allowed to specify these scripts, and that they check them thoroughly when adding them to the system, as well as limit access to the provisioning API to trusted sources. If neither of these conditions are possible, for instance if arbitrary users must specify custom scripts without administrator oversight, then the PVC provisioner script system may not be ideal.
+from pvcapid.vmbuilder import VMBuilder
 
-**NOTE**: It is often required to perform a `chroot` to perform some aspects of the install process. The PVC script fully supports this, though it is relatively complicated. The example script details how to achieve this.
-
-#### The `install` function
-
-The `install` function is the main entrypoint for a provisioning script, and is the only part of the script that is explicitly called. The provisioner calls this function after setting up the temporary install directory and mounting the volumes. Thus, this script can then perform any sort of tasks required in the VM to install it, and then finishes, after which the main provisioner resumes control to unmount the volumes and finish the VM creation.
-
-It is good practice in these scripts to "fail through", since terminating the script abruptly would affect the entire provisioning flow and thus may leave the half-provisioned VM in an undefined state. Care should be taken to `try`/`catch` possible errors, and attempt to finish the script execution (or `return`) even if some aspect fails.
-
-This function is passed a number of keyword arguments that it can then use during installation. These include those specified by the administrator in the profile, on the CLI at deploy time, as well as a number of default arguments:
-
-##### `vm_name`
-
-The `vm_name` keyword argument contains the name of the new VM from PVC's perspective.
-
-##### `vm_id`
-
-The `vm_id` keyword argument contains the VM identifier (the last numeral of the VM name, or `0` for a VM that does not end in a numeral).
-
-##### `temporary_directory`
-
-The `temporary_directory` keyword argument contains the path to the temporary directory on which the new VM's disks are mounted. The function *must* perform any installation steps to/under this directory.
-
-##### `disks`
-
-The `disks` keyword argument contains a Python list of the configured disks, as dictionaries of values as specified in the Disk template. The function may use these values as appropriate, for instance to specify an `/etc/fstab`.
-
-##### `networks`
-
-The `networks` keyword argument contains a Python list of the configured networks, as dictionaries of values as specified in the Network template. The function may use these values as appropriate, for instance to write an `/etc/network/interfaces` file.
-
-#### Examples
-
-```
-$ pvc provisioner script list
-Using cluster "local" - Host: "10.0.0.1:7370"  Scheme: "http"  Prefix: "/api/v1"
-
-Name         ID  Script
-empty        1
-debootstrap  2   #!/usr/bin/env python3
-
-                 def install(**kwargs):
-                     vm_name = kwargs['vm_name']
-                 [...]
+class VMBuilderScript(VMBuilder):
+    def setup(self):
+        ...
 ```
 
-* The first example is the default, always-present `empty` document, which is used if the VM does not specify a valid root mountpoint, or can be configured explicitly for profiles that do not require scripts, instead of leaving that section of the profile as `None`.
+Each `VMBuilderScript` class instance should provide the 5 functions defined by the VMBuilder class (or they will be noops). All 5 functions should take no arguments except `self`; data is passed to them from the parent `VMBuilder` class as outlined below. Each function provides a specific part of the installation process to automate each step with maximum flexibility:
 
-* The second, truncated, example is the start of a normal Python install script. The full example is provided in the folder mentioned above on all PVC coordinator nodes.
+* `setup()`: Performs any special initial setup (e.g. fetching scripts or configs from the Internet) and validation of the environment (e.g. checking if particular binaries are available) before proceeding with the install.
+
+* `create()`: Creates the VM libvirt XML definition based on the information provided by the VM profile and arguments. This is the only function that returns data (namely, the string representation of the XML config).
+
+* `prepare()`: Creates and prepares any RBD storage volumes, filesystems, and mountpoints for the next step.
+
+* `install()`: Performs any install steps required; note that the lines between `prepare()` and `install()` are fuzzy; the main point is that these are delineated in the sequence as discrete steps.
+
+* `cleanup()`: Performs any "inner" cleanup of things done in the `prepare()` or `install()` steps (e.g. unmounting and unmapping RBD volumes, removing temporary files, etc.); also called on any *failure* of those steps.
+
+Each step is described in more detail in the various examples, and those should be consulted to get a full understanding of how the steps work.
+
+Note that no `__init__` should be provided by a script: doing so could result in failing scripts and should not be required.
+
+As mentioned above, the `VMBuilderScript` instance includes several instance variables inherited from the parent `VMBuilder` definition. These consist of:
+
+* `self.vm_name`: The name of the VM as provided to `pvc provisioner create`.
+
+* `self.vm_id`: The numeral at the end of the `vm_name` (e.g. 2 for `web2`), or `0` if no numeral is present. Mostly useful when combined with network MAC address templates or preseeding clustered hosts.
+
+* `self.vm_uuid`: An automatically, randomly-generated universal unique ID for the VM to use in its Libvirt XML definition (or elsewhere, if required).
+
+* `self.vm_profile`: The name of the PVC provisioner profile used to create the VM. Mostly useful for VM descriptions.
+
+* `self.vm_data`: A full dictionary representation of the data provided by the PVC provisioner about the VM. Includes many useful details for crafting the VM configuration and setting up disks and networks. An example, in JSON format:
+
+   ```
+   {
+     "ceph_monitor_list": [
+       "hv1.pvcstorage.tld",
+       "hv2.pvcstorage.tld",
+       "hv3.pvcstorage.tld"
+     ],
+     "ceph_monitor_port": "6789",
+     "ceph_monitor_secret": "96721723-8650-4a72-b8f6-a93cd1a20f0c",
+     "mac_template": null,
+     "networks": [
+       {
+         "eth_bridge": "vmbr1001",
+         "id": 72,
+         "network_template": 69,
+         "vni": "1001"
+       },
+       {
+         "eth_bridge": "vmbr101",
+         "id": 73,
+         "network_template": 69,
+         "vni": "101"
+       }
+     ],
+     "script": [contents of this file]
+     "script_arguments": {
+       "deb_mirror": "http://ftp.debian.org/debian",
+       "deb_release": "bullseye"
+     },
+     "system_architecture": "x86_64",
+     "system_details": {
+       "id": 78,
+       "migration_method": "live",
+       "name": "small",
+       "node_autostart": false,
+       "node_limit": null,
+       "node_selector": null,
+       "ova": null,
+       "serial": true,
+       "vcpu_count": 2,
+       "vnc": false,
+       "vnc_bind": null,
+       "vram_mb": 2048
+     },
+     "volumes": [
+       {
+         "disk_id": "sda",
+         "disk_size_gb": 4,
+         "filesystem": "ext4",
+         "filesystem_args": "-L=root",
+         "id": 9,
+         "mountpoint": "/",
+         "pool": "vms",
+         "source_volume": null,
+         "storage_template": 67
+       },
+       {
+         "disk_id": "sdb",
+         "disk_size_gb": 4,
+         "filesystem": "ext4",
+         "filesystem_args": "-L=var",
+         "id": 10,
+         "mountpoint": "/var",
+         "pool": "vms",
+         "source_volume": null,
+         "storage_template": 67
+       },
+       {
+         "disk_id": "sdc",
+         "disk_size_gb": 4,
+         "filesystem": "ext4",
+         "filesystem_args": "-L=log",
+         "id": 11,
+         "mountpoint": "/var/log",
+         "pool": "vms",
+         "source_volume": null,
+         "storage_template": 67
+       }
+     ]
+   }
+   ```
+
+Since the `VMBuilderScript` runs within its own context but within the PVC Provisioner/API system, it is possible to use many helper libraries from the PVC system itself, including both the built-in daemon libraries (used by the API itself) and several explicit provisioning script helpers. The following are commonly-used (in the examples) imports that can be leveraged:
+
+* `pvcapid.vmbuilder.VMBuilder`: Required, provides the parent class for the `VMBuilderScript` class.
+* `pvcapid.vmbuilder.ProvisioningError`: An exception that should be used within the `VMBuilderScript` to raise exceptions (though you can of course raise any other exception you wish or define your own).
+* `pvcapid.vmbuilder.open_zk`: A context manager that can be used to open a Zookeeper connection, providing a `zkhandler` that can be passed to other PVC daemon library functions below.
+* `pvcapid.vmbuilder.chroot`: A context manager that can be used to easily `chroot` into a given directory.
+* `pvcapid.Daemon.config`: A configuration variable that *must* be passed to `open_zk` if it is used.
+* `pvcapid.libvirt_schema`: A library providing a number of helpful Libvirt XML snippits that can be used to aid in building a working VM config for PVC. See the examples for a full usecase.
+* `daemon_lib.common`: Part of the PVC daemon libraries, provides several common functions, including, most usefully, `run_os_command` which provides a wrapped, convenient method to call arbitrary shell/OS commands while returning a POSIX returncode, stdout, and stderr (a tuple of the 3 in that order).
+* `daemon_lib.ceph`: Part of the PVC daemon libraries, provides several commands for managing Ceph RBD volumes, including, but not limited to, `clone_volume`, `add_volume`, `map_volume`, and `unmap_volume`. See the `debootstrap` example for a detailed usage example.
+
+For safety reasons, the script runs in a modified chroot environment on the hypervisor. It will have full access to the entire / (root partition) of the hypervisor, but read-only. In addition it has read-write access to /dev, /sys, /run, and a fresh /tmp to write to; use /tmp/target (as convention) as the destination for any mounting of volumes and installation. Thus it is not possible to do things like `apt-get install`ing additional programs within a script; any such requirements must be set up before running the script (e.g. via `pvc-ansible`).
+
+**WARNING**: Of course, despite this "safety" mechanism, it is VERY IMPORTANT to be cognizant that this script runs AS ROOT ON THE HYPERVISOR SYSTEM with FULL ACCESS to the cluster. You should NEVER allow arbitrary, untrusted users the ability to add or modify provisioning scripts. It is trivially easy to write scripts which will do destructive things - for example writing to arbitrary /dev objects, running arbitrary root-level commands, or importing PVC library functions to delete VMs, RBD volumes, or pools. Thus, ensure you vett and understand every script on the system, audit them regularly for both intentional and accidental malicious activity, and of course (to reiterate), do not allow untrusted script creation!
 
 ## Profiles
 
@@ -265,8 +349,8 @@ This will create a worker job on the current primary node, and status can be que
 Using cluster "local" - Host: "10.0.0.1:7370"  Scheme: "http"  Prefix: "/api/v1"
 
 Job state: RUNNING
-Stage: 7/10
-Status: Mapping, formatting, and mounting storage volumes locally
+Stage: 4/10
+Status: Running script setup() step
 ```
 
 A list of all running and queued jobs can be obtained by requesting the provisioner status without an ID.
@@ -331,6 +415,10 @@ Once the OVA is uploaded to the cluster with the `pvc provisioner ova upload` co
 * In `pvc provisioner ova list`, one can see all uploaded OVA images as well as details on their disk configurations.
 
 * In `pvc profile list`, a new profile will be visible which matches the OVA `NAME` from the upload. This profile will have a "Source" of `OVA <NAME>`, and a system template of the same name. This system template will contain the basic configuration of the VM. You may notice that the other templates and data are set to `N/A`. For full details on this, see the next section.
+
+## The OVA Provisioner Script
+
+OVA installs leverage a special provisioner script to handle the VM creation, identical to any other provisioner profile type. This (example) script is installed by default and used by OVAs by default, though the script that an individual OVA profile uses can be modified as required.
 
 ## OVA limitations
 
