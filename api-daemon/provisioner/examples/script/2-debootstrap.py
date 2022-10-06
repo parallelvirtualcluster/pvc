@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 1-noinstall.py - PVC Provisioner example script for noop install
+# 2-debootstrap.py - PVC Provisioner example script for debootstrap install
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
@@ -20,21 +20,24 @@
 ###############################################################################
 
 # This script provides an example of a PVC provisioner script. It will create a
-# standard VM config but do no preparation/installation/cleanup (noop).
+# standard VM config and install a Debian-like OS using debootstrap.
 
 # This script can thus be used as an example or reference implementation of a
 # PVC provisioner script and expanded upon as required.
+# *** READ THIS SCRIPT THOROUGHLY BEFORE USING TO UNDERSTAND HOW IT WORKS. ***
 
-# The script must implement the class "VMBuilderScript" which extens "VMBuilder",
+# A script must implement the class "VMBuilderScript" which extends "VMBuilder",
 # providing the 5 functions indicated. Detailed explanation of the role of each
-# function is provided.
+# function is provided in context of the example; see the other examples for
+# more potential uses.
 
-# Within the VMBuilderScript class, several common variables are exposed:
+# Within the VMBuilderScript class, several common variables are exposed through
+# the parent VMBuilder class:
 #  self.vm_name: The name of the VM from PVC's perspective
 #  self.vm_id: The VM ID (numerical component of the vm_name) from PVC's perspective
 #  self.vm_uuid: An automatically-generated UUID for the VM
 #  self.vm_profile: The PVC provisioner profile name used for the VM
-#  self.vm-data: A dictionary of VM data collected by the provisioner; an example:
+#  self.vm_data: A dictionary of VM data collected by the provisioner; as an example:
 #    {
 #      "ceph_monitor_list": [
 #        "hv1.pvcstorage.tld",
@@ -114,36 +117,67 @@
 #        }
 #      ]
 #    }
+#
+# Any other information you may require must be obtained manually.
+
+# WARNING:
+#
+# For safety reasons, the script runs in a modified chroot. It will have full access to
+# the entire / (root partition) of the hypervisor, but read-only. In addition it has
+# access to /dev, /sys, /run, and a fresh /tmp to write to; use /tmp/target (as
+# convention) as the destination for any mounting of volumes and installation.
+# Of course, in addition to this safety, it is VERY IMPORTANT to be aware that this
+# script runs AS ROOT ON THE HYPERVISOR SYSTEM. You should never allow arbitrary,
+# untrusted users the ability to add provisioning scripts even with this safeguard,
+# since they could still do destructive things to /dev and the like!
 
 
-from pvcapi.vmbuilder import VMBuilder, ProvisioningError
+# This import is always required here, as VMBuilder is used by the VMBuilderScript class
+# and ProvisioningError is the primary exception that should be raised within the class.
+from pvcapid.vmbuilder import VMBuilder, ProvisioningError
 
 
+# The VMBuilderScript class must be named as such, and extend VMBuilder.
 class VMBuilderScript(VMBuilder):
     def setup(self):
         """
         setup(): Perform special setup steps or validation before proceeding
 
-        Since we do no install in this example, it does nothing.
+        This example uses the PVC built-in command runner to verify that debootstrap is
+        installed and throws and error if not.
+
+        Note that, due to the aforementioned chroot, you *cannot* install or otherwise
+        modify the hypervisor system here: any tooling, etc. must be pre-installed.
         """
 
-        pass
+        # Run any imports first; as shown here, you can import anything from the PVC
+        # namespace, as well as (of course) the main Python namespaces
+        import daemon_lib.common as pvc_common
+
+        # Ensure we have debootstrap intalled on the provisioner system
+        retcode, stdout, stderr = pvc_common.run_os_command(f"which debootstrap")
+        if retcode:
+            # Raise a ProvisioningError for any exception; the provisioner will handle
+            # this gracefully and properly, avoiding dangling mounts, RBD maps, etc.
+            raise ProvisioningError("Failed to find critical dependency: debootstrap")
 
     def create(self):
         """
         create(): Create the VM libvirt schema definition
 
-        This step *must* return a fully-formed Libvirt XML document as a string.
+        This step *must* return a fully-formed Libvirt XML document as a string or the
+        provisioning task will fail.
 
         This example leverages the built-in libvirt_schema objects provided by PVC; these
         can be used as-is, or replaced with your own schema(s) on a per-script basis.
         """
 
         # Run any imports first
+        import pvcapid.libvirt_schema as libvirt_schema
         import datetime
         import random
-        import pvcapid.libvirt_schema as libvirt_schema
 
+        # Create the empty schema document that we will append to and return at the end
         schema = ""
 
         # Prepare a description based on the VM profile
@@ -252,7 +286,12 @@ class VMBuilderScript(VMBuilder):
         prepare(): Prepare any disks/volumes for the install() step
 
         This function should use the various exposed PVC commands as indicated to create
-        block devices and map them to the host.
+        RBD block devices and map them to the host as required.
+
+        open_zk is exposed from pvcapid.vmbuilder to provide a context manager for opening
+        connections to the PVC Zookeeper cluster; ensure you also import (and pass it)
+        the config object from pvcapid.Daemon as well. This context manager then allows
+        the use of various common daemon library functions, without going through the API.
         """
 
         # Run any imports first
@@ -263,7 +302,7 @@ class VMBuilderScript(VMBuilder):
         import daemon_lib.ceph as pvc_ceph
 
         # First loop: Create the disks, either by cloning (pvc_ceph.clone_volume), or by
-        # new creation (pvc_ceph.add_volume).
+        # new creation (pvc_ceph.add_volume), depending on the source_volume entry
         for volume in self.vm_data["volumes"]:
             if volume.get("source_volume") is not None:
                 with open_zk(config) as zkhandler:
@@ -347,6 +386,7 @@ class VMBuilderScript(VMBuilder):
 
         # Create a temporary directory to use during install
         temp_dir = "/tmp/target"
+
         if not os.path.isdir(temp_dir):
             os.mkdir(temp_dir)
 
@@ -381,24 +421,226 @@ class VMBuilderScript(VMBuilder):
         """
         install(): Perform the installation
 
-        Since this is a noop example, this step does nothing, aside from getting some
-        arguments for demonstration.
+        This example, unlike noop, performs a full debootstrap install and base config
+        of a Debian-like system, including installing GRUB for fully-virtualized boot
+        (required by PVC) and cloud-init for later configuration with the PVC userdata
+        functionality, leveraging a PVC managed network on the first NIC for DHCP.
+
+        Several arguments are also supported; these can be set either in the provisioner
+        profile itself, or on the command line at runtime.
+
+        To show the options, this function does not use the previous PVC-exposed
+        run_os_command function, but instead just uses os.system. The downside here is
+        a lack of response and error handling, but the upside is simpler-to-read code.
+        Use whichever you feel is appropriate for your situation.
         """
 
-        arguments = self.vm_data["script_arguments"]
-        if arguments.get("vm_fqdn"):
-            vm_fqdn = arguments.get("vm_fqdn")
-        else:
-            vm_fqdn = self.vm_name
+        # Run any imports first
+        import os
+        from pvcapid.vmbuilder import chroot
 
-        pass
+        # The directory we mounted things on earlier during prepare(); this could very well
+        # be exposed as a module-level variable if you so choose
+        temporary_directory = "/tmp/target"
+
+        # Use these convenient aliases for later (avoiding lots of "self.vm_data" everywhere)
+        vm_name = self.vm_name
+        volumes = self.vm_data["volumes"]
+        networks = self.vm_data["networks"]
+
+        # Parse these arguments out of self.vm_data["script_arguments"]
+        if self.vm_data["script_arguments"].get("deb_release") is not None:
+            deb_release = self.vm_data["script_arguments"].get("deb_release")
+        else:
+            deb_release = "stable"
+
+        if self.vm_data["script_arguments"].get("deb_mirror") is not None:
+            deb_mirror = self.vm_data["script_arguments"].get("deb_mirror")
+        else:
+            deb_mirror = "http://ftp.debian.org/debian"
+
+        if self.vm_data["script_arguments"].get("deb_packages") is not None:
+            deb_packages = (
+                self.vm_data["script_arguments"].get("deb_packages").split(",")
+            )
+        else:
+            deb_packages = [
+                "linux-image-amd64",
+                "grub-pc",
+                "cloud-init",
+                "python3-cffi-backend",
+                "wget",
+            ]
+
+        # We need to know our root disk for later GRUB-ing
+        root_disk = None
+        for volume in volumes:
+            if volume["mountpoint"] == "/":
+                root_volume = volume
+        if not root_volume:
+            raise ProvisioningError("Failed to find root volume in volumes list")
+
+        # Perform a deboostrap installation
+        os.system(
+            "debootstrap --include={pkgs} {suite} {target} {mirror}".format(
+                suite=deb_release,
+                target=temporary_directory,
+                mirror=deb_mirror,
+                pkgs=",".join(deb_packages),
+            )
+        )
+
+        # Bind mount the devfs so we can grub-install later
+        os.system("mount --bind /dev {}/dev".format(temporary_directory))
+
+        # Create an fstab entry for each volume
+        fstab_file = "{}/etc/fstab".format(temporary_directory)
+        # The volume ID starts at zero and increments by one for each volume in the fixed-order
+        # volume list. This lets us work around the insanity of Libvirt IDs not matching guest IDs,
+        # while still letting us have some semblance of control here without enforcing things
+        # like labels. It increments in the for loop below at the end of each iteration, and is
+        # used to craft a /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-X device ID
+        # which will always match the correct order from Libvirt (unlike sdX/vdX names).
+        volume_id = 0
+        for volume in volumes:
+            # We assume SSD-based/-like storage (because Ceph behaves this way), and dislike atimes
+            options = "defaults,discard,noatime,nodiratime"
+
+            # The root, var, and log volumes have specific values
+            if volume["mountpoint"] == "/":
+                # This will be used later by GRUB's cmdline
+                root_volume["scsi_id"] = volume_id
+                dump = 0
+                cpass = 1
+            elif volume["mountpoint"] == "/var" or volume["mountpoint"] == "/var/log":
+                dump = 0
+                cpass = 2
+            else:
+                dump = 0
+                cpass = 0
+
+            # Append the fstab line
+            with open(fstab_file, "a") as fh:
+                # Using these /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK entries guarantees
+                # proper ordering; /dev/sdX (or similar) names are NOT guaranteed to be
+                # in any order nor are they guaranteed to match the volume's sdX/vdX name
+                # when inside the VM due to Linux's quirks.
+                data = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{volume} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
+                    volume=volume_id,
+                    mountpoint=volume["mountpoint"],
+                    filesystem=volume["filesystem"],
+                    options=options,
+                    dump=dump,
+                    cpass=cpass,
+                )
+                fh.write(data)
+
+            # Increment the volume_id
+            volume_id += 1
+
+        # Write the hostname; you could also take an FQDN argument for this as an example
+        hostname_file = "{}/etc/hostname".format(temporary_directory)
+        with open(hostname_file, "w") as fh:
+            fh.write("{}".format(vm_name))
+
+        # Fix the cloud-init.target since it's broken by default in Debian 11
+        cloudinit_target_file = "{}/etc/systemd/system/cloud-init.target".format(
+            temporary_directory
+        )
+        with open(cloudinit_target_file, "w") as fh:
+            # We lose our indent on these raw blocks to preserve the apperance of the files
+            # inside the VM itself
+            data = """[Install]
+WantedBy=multi-user.target
+[Unit]
+Description=Cloud-init target
+After=multi-user.target
+"""
+            fh.write(data)
+
+        # Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
+        # will always be on PCI bus ID 2, hence the name "ens2".
+        # Write a DHCP stanza for ens2
+        ens2_network_file = "{}/etc/network/interfaces.d/ens2".format(
+            temporary_directory
+        )
+        with open(ens2_network_file, "w") as fh:
+            data = """auto ens2
+iface ens2 inet dhcp
+"""
+            fh.write(data)
+
+        # Write the DHCP config for ens2
+        dhclient_file = "{}/etc/dhcp/dhclient.conf".format(temporary_directory)
+        with open(dhclient_file, "w") as fh:
+            # We can use fstrings too, since PVC will always have Python 3.6+, though
+            # using format() might be preferable for clarity in some situations
+            data = f"""# DHCP client configuration
+# Written by the PVC provisioner
+option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
+interface "ens2" {
+        send fqdn.fqdn = "{vm_name}";
+        send host-name = "{vm_name}";
+        request subnet-mask, broadcast-address, time-offset, routers,
+                domain-name, domain-name-servers, domain-search, host-name,
+                dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,
+                netbios-name-servers, netbios-scope, interface-mtu,
+                rfc3442-classless-static-routes, ntp-servers;
+}
+"""
+            fh.write(data)
+
+        # Write the GRUB configuration
+        grubcfg_file = "{}/etc/default/grub".format(temporary_directory)
+        with open(grubcfg_file, "w") as fh:
+            data = """# Written by the PVC provisioner
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=1
+GRUB_DISTRIBUTOR="PVC Virtual Machine"
+GRUB_CMDLINE_LINUX_DEFAULT="root=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{root_volume} console=tty0 console=ttyS0,115200n8"
+GRUB_CMDLINE_LINUX=""
+GRUB_TERMINAL=console
+GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+GRUB_DISABLE_LINUX_UUID=false
+""".format(
+                root_volume=root_volume["scsi_id"]
+            )
+            fh.write(data)
+
+        # Do some tasks inside the chroot using the provided context manager
+        with chroot(temporary_directory):
+            # Install and update GRUB
+            os.system(
+                "grub-install --force /dev/rbd/{}/{}_{}".format(
+                    root_volume["pool"], vm_name, root_volume["disk_id"]
+                )
+            )
+            os.system("update-grub")
+
+            # Set a really dumb root password so the VM can be debugged
+            # EITHER CHANGE THIS YOURSELF, here or in Userdata, or run something after install
+            # to change the root password: don't leave it like this on an Internet-facing machine!
+            os.system("echo root:test123 | chpasswd")
+
+            # Enable cloud-init target on (first) boot
+            # Your user-data should handle this and disable it once done, or things get messy.
+            # That cloud-init won't run without this hack seems like a bug... but even the official
+            # Debian cloud images are affected, so who knows.
+            os.system("systemctl enable cloud-init.target")
+
+        # Unmount the bound devfs
+        os.system("umount {}/dev".format(temporary_directory))
 
     def cleanup(self):
         """
         cleanup(): Perform any cleanup required due to prepare()/install()
 
         It is important to now reverse *all* steps taken in those functions that might
-        need cleanup before teardown of the overlay chroot environment.
+        need cleanup before teardown of the upper chroot environment.
+
+        This function is also called if there is ANY exception raised in the prepare()
+        or install() steps. While this doesn't mean you shouldn't or can't raise exceptions
+        here, be warned that doing so might cause loops. Do this only if you really need to.
         """
 
         # Run any imports first
@@ -407,8 +649,10 @@ class VMBuilderScript(VMBuilder):
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 
+        # Set the tempdir we used in the prepare() and install() steps
         temp_dir = "/tmp/target"
 
+        # Use this construct for reversing the list, as the normal reverse() messes with the list
         for volume in list(reversed(self.vm_data["volumes"])):
             dst_volume_name = f"{self.vm_name}_{volume['disk_id']}"
             dst_volume = f"{volume['pool']}/{dst_volume_name}"
@@ -435,7 +679,7 @@ class VMBuilderScript(VMBuilder):
                         volume["pool"],
                         dst_volume_name,
                     )
-                    if not success:
-                        raise ProvisioningError(
-                            f"Failed to unmap '{mapped_dst_volume}': {stderr}"
-                        )
+                if not success:
+                    raise ProvisioningError(
+                        f"Failed to unmap '{mapped_dst_volume}': {stderr}"
+                    )
