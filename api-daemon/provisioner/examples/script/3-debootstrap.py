@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 2-debootstrap.py - PVC Provisioner example script for debootstrap install
+# 3-debootstrap.py - PVC Provisioner example script for debootstrap install
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
