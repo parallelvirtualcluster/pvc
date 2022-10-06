@@ -5265,7 +5265,8 @@ def provisioner_profile_list(limit):
     "-s",
     "--system-template",
     "system_template",
-    help="The system template for the profile.",
+    required=True,
+    help="The system template for the profile (required).",
 )
 @click.option(
     "-n",
@@ -5280,10 +5281,24 @@ def provisioner_profile_list(limit):
     help="The storage template for the profile.",
 )
 @click.option(
-    "-u", "--userdata", "userdata", help="The userdata document for the profile."
+    "-u",
+    "--userdata",
+    "userdata",
+    help="The userdata document for the profile.",
 )
-@click.option("-x", "--script", "script", help="The script for the profile.")
-@click.option("-o", "--ova", "ova", help="The OVA image for the profile.")
+@click.option(
+    "-x",
+    "--script",
+    "script",
+    required=True,
+    help="The script for the profile (required).",
+)
+@click.option(
+    "-o",
+    "--ova",
+    "ova",
+    help="The OVA image for the profile; set automatically with 'provisioner ova upload'.",
+)
 @click.option(
     "-a",
     "--script-arg",

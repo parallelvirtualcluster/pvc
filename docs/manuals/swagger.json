@@ -3025,14 +3025,14 @@
                         "description": "Script name",
                         "in": "query",
                         "name": "script",
-                        "required": false,
+                        "required": true,
                         "type": "string"
                     },
                     {
                         "description": "System template name",
                         "in": "query",
                         "name": "system_template",
-                        "required": false,
+                        "required": true,
                         "type": "string"
                     },
                     {
@@ -3165,21 +3165,21 @@
                         "description": "Network template name",
                         "in": "query",
                         "name": "network_template",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "Storage template name",
                         "in": "query",
                         "name": "storage_template",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {
                         "description": "Userdata template name",
                         "in": "query",
                         "name": "userdata",
-                        "required": true,
+                        "required": false,
                         "type": "string"
                     },
                     {

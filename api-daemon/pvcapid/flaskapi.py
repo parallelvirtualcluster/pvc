@@ -7352,11 +7352,19 @@ class API_Provisioner_Profile_Root(Resource):
                 "required": True,
                 "helptext": "A profile type must be specified.",
             },
-            {"name": "system_template"},
+            {
+                "name": "system_template",
+                "required": True,
+                "helptext": "A system_template must be specified.",
+            },
             {"name": "network_template"},
             {"name": "storage_template"},
             {"name": "userdata"},
-            {"name": "script"},
+            {
+                "name": "script",
+                "required": True,
+                "helptext": "A script must be specified.",
+            },
             {"name": "ova"},
             {"name": "arg", "action": "append"},
         ]
@@ -7385,12 +7393,12 @@ class API_Provisioner_Profile_Root(Resource):
           - in: query
             name: script
             type: string
-            required: false
+            required: true
             description: Script name
           - in: query
             name: system_template
             type: string
-            required: false
+            required: true
             description: System template name
           - in: query
             name: network_template
@@ -7473,11 +7481,19 @@ class API_Provisioner_Profile_Element(Resource):
                 "required": True,
                 "helptext": "A profile type must be specified.",
             },
-            {"name": "system_template"},
+            {
+                "name": "system_template",
+                "required": True,
+                "helptext": "A system_template must be specified.",
+            },
             {"name": "network_template"},
             {"name": "storage_template"},
             {"name": "userdata"},
-            {"name": "script"},
+            {
+                "name": "script",
+                "required": True,
+                "helptext": "A script must be specified.",
+            },
             {"name": "ova"},
             {"name": "arg", "action": "append"},
         ]
@@ -7511,17 +7527,17 @@ class API_Provisioner_Profile_Element(Resource):
           - in: query
             name: network_template
             type: string
-            required: true
+            required: false
             description: Network template name
           - in: query
             name: storage_template
             type: string
-            required: true
+            required: false
             description: Storage template name
           - in: query
             name: userdata
             type: string
-            required: true
+            required: false
             description: Userdata template name
           - in: query
             name: ova

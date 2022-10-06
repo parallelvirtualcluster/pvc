@@ -277,6 +277,8 @@ def create_vm(
             vm_data["script"] = db_row.get("script")
         else:
             vm_data["script"] = None
+
+        if profile_data.get("profile_type") == "ova":
             query = "SELECT * FROM ova WHERE id = %s"
             args = (profile_data["ova"],)
             db_cur.execute(query, args)
@@ -285,6 +287,7 @@ def create_vm(
             query = "SELECT * FROM ova_volume WHERE ova = %s"
             args = (profile_data["ova"],)
             db_cur.execute(query, args)
+            # Replace the existing volumes list with our OVA volume list
             vm_data["volumes"] = db_cur.fetchall()
 
     retcode, stdout, stderr = pvc_common.run_os_command("uname -m")

@@ -230,11 +230,13 @@ class DBProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False, unique=True)
     profile_type = db.Column(db.Text, nullable=False)
-    system_template = db.Column(db.Integer, db.ForeignKey("system_template.id"))
+    system_template = db.Column(
+        db.Integer, db.ForeignKey("system_template.id"), nullable=False
+    )
     network_template = db.Column(db.Integer, db.ForeignKey("network_template.id"))
     storage_template = db.Column(db.Integer, db.ForeignKey("storage_template.id"))
     userdata = db.Column(db.Integer, db.ForeignKey("userdata.id"))
-    script = db.Column(db.Integer, db.ForeignKey("script.id"))
+    script = db.Column(db.Integer, db.ForeignKey("script.id"), nullable=False)
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"))
     arguments = db.Column(db.Text)
 
