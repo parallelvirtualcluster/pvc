@@ -116,7 +116,7 @@
 #    }
 
 
-from pvcapid.vmbuilder import VMBuilder
+from pvcapid.vmbuilder import VMBuilder, ProvisioningError
 
 
 class VMBuilderScript(VMBuilder):
@@ -260,6 +260,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
+        import os
         from pvcapid.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
@@ -350,7 +351,8 @@ class VMBuilderScript(VMBuilder):
 
         # Create a temporary directory to use during install
         temp_dir = "/tmp/target"
-        if not os.exists(temp_dir):
+
+        if not os.path.isdir(temp_dir):
             os.mkdir(temp_dir)
 
         # Fourth loop: Mount the volumes to a set of temporary directories
@@ -368,7 +370,7 @@ class VMBuilderScript(VMBuilder):
 
             mount_path = f"{temp_dir}/{volume['mountpoint']}"
 
-            if not os.exists(mount_path):
+            if not os.path.isdir(mount_path):
                 os.mkdir(mount_path)
 
             # Mount filesystem
@@ -389,6 +391,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
+        import os
         from pvcapid.vmbuilder import chroot
 
         # The directory we mounted things on earlier during prepare()
@@ -396,7 +399,7 @@ class VMBuilderScript(VMBuilder):
 
         # Use these convenient aliases for later (avoiding lots of "self.vm_data" everywhere)
         vm_name = self.vm_name
-        disks = self.vm_data["disks"]
+        volumes = self.vm_data["volumes"]
         networks = self.vm_data["networks"]
 
         # Parse these arguments out of self.vm_data["script_arguments"]
@@ -425,11 +428,11 @@ class VMBuilderScript(VMBuilder):
 
         # We need to know our root disk
         root_disk = None
-        for disk in disks:
-            if disk["mountpoint"] == "/":
-                root_disk = disk
-        if not root_disk:
-            raise ProvisioningError("Failed to find root disk in disks list")
+        for volume in volumes:
+            if volume["mountpoint"] == "/":
+                root_volume = volume
+        if not root_volume:
+            raise ProvisioningError("Failed to find root volume in volumes list")
 
         # Perform a deboostrap installation
         os.system(
@@ -444,25 +447,25 @@ class VMBuilderScript(VMBuilder):
         # Bind mount the devfs
         os.system("mount --bind /dev {}/dev".format(temporary_directory))
 
-        # Create an fstab entry for each disk
+        # Create an fstab entry for each volume
         fstab_file = "{}/etc/fstab".format(temporary_directory)
-        # The disk ID starts at zero and increments by one for each disk in the fixed-order
-        # disk list. This lets us work around the insanity of Libvirt IDs not matching guest IDs,
+        # The volume ID starts at zero and increments by one for each volume in the fixed-order
+        # volume list. This lets us work around the insanity of Libvirt IDs not matching guest IDs,
         # while still letting us have some semblance of control here without enforcing things
         # like labels. It increments in the for loop below at the end of each iteration, and is
         # used to craft a /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-X device ID
         # which will always match the correct order from Libvirt (unlike sdX/vdX names).
-        disk_id = 0
-        for disk in disks:
+        volume_id = 0
+        for volume in volumes:
             # We assume SSD-based/-like storage, and dislike atimes
             options = "defaults,discard,noatime,nodiratime"
 
             # The root, var, and log volumes have specific values
-            if disk["mountpoint"] == "/":
-                root_disk["scsi_id"] = disk_id
+            if volume["mountpoint"] == "/":
+                root_volume["scsi_id"] = volume_id
                 dump = 0
                 cpass = 1
-            elif disk["mountpoint"] == "/var" or disk["mountpoint"] == "/var/log":
+            elif volume["mountpoint"] == "/var" or volume["mountpoint"] == "/var/log":
                 dump = 0
                 cpass = 2
             else:
@@ -471,18 +474,18 @@ class VMBuilderScript(VMBuilder):
 
             # Append the fstab line
             with open(fstab_file, "a") as fh:
-                data = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{disk} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
-                    disk=disk_id,
-                    mountpoint=disk["mountpoint"],
-                    filesystem=disk["filesystem"],
+                data = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{volume} {mountpoint} {filesystem} {options} {dump} {cpass}\n".format(
+                    volume=volume_id,
+                    mountpoint=volume["mountpoint"],
+                    filesystem=volume["filesystem"],
                     options=options,
                     dump=dump,
                     cpass=cpass,
                 )
                 fh.write(data)
 
-            # Increment the disk_id
-            disk_id += 1
+            # Increment the volume_id
+            volume_id += 1
 
         # Write the hostname
         hostname_file = "{}/etc/hostname".format(temporary_directory)
@@ -545,13 +548,13 @@ interface "ens2" {
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=1
 GRUB_DISTRIBUTOR="PVC Virtual Machine"
-GRUB_CMDLINE_LINUX_DEFAULT="root=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{root_disk} console=tty0 console=ttyS0,115200n8"
+GRUB_CMDLINE_LINUX_DEFAULT="root=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi0-0-0-{root_volume} console=tty0 console=ttyS0,115200n8"
 GRUB_CMDLINE_LINUX=""
 GRUB_TERMINAL=console
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_DISABLE_LINUX_UUID=false
 """.format(
-                root_disk=root_disk["scsi_id"]
+                root_volume=root_volume["scsi_id"]
             )
             fh.write(data)
 
@@ -560,7 +563,7 @@ GRUB_DISABLE_LINUX_UUID=false
             # Install and update GRUB
             os.system(
                 "grub-install --force /dev/rbd/{}/{}_{}".format(
-                    root_disk["pool"], vm_name, root_disk["disk_id"]
+                    root_volume["pool"], vm_name, root_volume["disk_id"]
                 )
             )
             os.system("update-grub")
@@ -584,6 +587,8 @@ GRUB_DISABLE_LINUX_UUID=false
         """
 
         # Run any imports first
+        from pvcapid.vmbuilder import open_zk
+        from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 

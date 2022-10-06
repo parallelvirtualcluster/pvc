@@ -116,7 +116,7 @@
 #    }
 
 
-from pvcapi.vmbuilder import VMBuilder
+from pvcapi.vmbuilder import VMBuilder, ProvisioningError
 
 
 class VMBuilderScript(VMBuilder):
@@ -256,6 +256,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
+        import os
         from pvcapid.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
@@ -346,7 +347,7 @@ class VMBuilderScript(VMBuilder):
 
         # Create a temporary directory to use during install
         temp_dir = "/tmp/target"
-        if not os.exists(temp_dir):
+        if not os.path.isdir(temp_dir):
             os.mkdir(temp_dir)
 
         # Fourth loop: Mount the volumes to a set of temporary directories
@@ -364,7 +365,7 @@ class VMBuilderScript(VMBuilder):
 
             mount_path = f"{temp_dir}/{volume['mountpoint']}"
 
-            if not os.exists(mount_path):
+            if not os.path.isdir(mount_path):
                 os.mkdir(mount_path)
 
             # Mount filesystem
@@ -401,6 +402,8 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
+        from pvcapid.vmbuilder import open_zk
+        from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 
