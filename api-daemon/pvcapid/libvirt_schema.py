@@ -33,7 +33,7 @@ libvirt_header = """<domain type='kvm'>
   <description>{vm_description}</description>
   <memory unit='MiB'>{vm_memory}</memory>
   <vcpu>{vm_vcpus}</vcpu>
-  <cpu>
+  <cpu mode='host-model'>
     <topology sockets='1' cores='{vm_vcpus}' threads='1'/>
   </cpu>
   <os>
