@@ -480,14 +480,12 @@ class VMBuilderScript(VMBuilder):
         if not root_volume:
             raise ProvisioningError("Failed to find root volume in volumes list")
 
-        # Perform a deboostrap installation
+        # Perform a debootstrap installation
+        print(
+            f"Installing system with debootstrap: debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
+        )
         os.system(
-            "debootstrap --include={pkgs} {suite} {target} {mirror}".format(
-                suite=deb_release,
-                target=temporary_directory,
-                mirror=deb_mirror,
-                pkgs=",".join(deb_packages),
-            )
+            "debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
         )
 
         # Bind mount the devfs so we can grub-install later
