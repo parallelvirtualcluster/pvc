@@ -4,7 +4,7 @@
 <a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
 <a href="https://github.com/psf/black"><img alt="Code style: Black" src="https://img.shields.io/badge/code%20style-black-000000.svg"/></a>
 <a href="https://github.com/parallelvirtualcluster/pvc/releases"><img alt="Release" src="https://img.shields.io/github/release-pre/parallelvirtualcluster/pvc"/></a>
-<a href="https://parallelvirtualcluster.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
+<a href="https://docs.parallelvirtualcluster.org/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/parallelvirtualcluster/badge/?version=latest"/></a>
 </p>
 
 ## What is PVC?
@@ -38,12 +38,12 @@ The core node and API daemons, as well as the CLI API client, are written in Pyt
 
 ## Getting Started
 
-To get started with PVC, please see the [About](https://parallelvirtualcluster.readthedocs.io/en/latest/about/) page for general information about the project, and the [Getting Started](https://parallelvirtualcluster.readthedocs.io/en/latest/getting-started/) page for details on configuring your first cluster.
+To get started with PVC, please see the [About](https://docs.parallelvirtualcluster.org/en/latest/about/) page for general information about the project, and the [Getting Started](https://docs.parallelvirtualcluster.org/en/latest/getting-started/) page for details on configuring your first cluster.
 
 
 ## Changelog
 
-View the changelog in [CHANGELOG.md](https://github.com/parallelvirtualcluster/pvc/blob/master/CHANGELOG.md).
+View the changelog in [CHANGELOG.md](CHANGELOG.md).
 
 
 ## Screenshots
