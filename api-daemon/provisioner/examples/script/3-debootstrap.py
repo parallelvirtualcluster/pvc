@@ -485,7 +485,7 @@ class VMBuilderScript(VMBuilder):
             f"Installing system with debootstrap: debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
         )
         os.system(
-            "debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
+            f"debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
         )
 
         # Bind mount the devfs so we can grub-install later
