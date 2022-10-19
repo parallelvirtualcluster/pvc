@@ -333,8 +333,16 @@ class VMBuilderScript(VMBuilder):
                 if not success:
                     raise ProvisioningError(f"Failed to map volume '{src_volume}'.")
 
-        # Fourth loop: Convert the source (usually VMDK) volume to the raw destination volume
-        print("Converting source disk volumes to raw destination volumes")
+    def install(self):
+        """
+        install(): Perform the installation
+
+        Convert the mapped source volumes to the mapped destination volumes
+        """
+
+        # Run any imports first
+        import daemon_lib.common as pvc_common
+
         for volume in self.vm_data["volumes"]:
             src_volume_name = volume["volume_name"]
             src_volume = f"{volume['pool']}/{src_volume_name}"
@@ -353,15 +361,6 @@ class VMBuilderScript(VMBuilder):
                 raise ProvisioningError(
                     f"Failed to convert {volume['volume_format']} volume '{src_volume}' to raw volume '{dst_volume}' with qemu-img: {stderr}"
                 )
-
-    def install(self):
-        """
-        install(): Perform the installation
-
-        Noop for OVA deploys as no further tasks are performed.
-        """
-
-        pass
 
     def cleanup(self):
         """
