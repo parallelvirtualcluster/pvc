@@ -418,7 +418,7 @@ Once the OVA is uploaded to the cluster with the `pvc provisioner ova upload` co
 
 ## The OVA Provisioner Script
 
-OVA installs leverage a special provisioner script to handle the VM creation, identical to any other provisioner profile type. This (example) script is installed by default and used by OVAs by default, though the script that an individual OVA profile uses can be modified as required.
+OVA installs leverage a special provisioner script to handle the VM creation, identical to any other provisioner profile type. This (example) script, or a replacement, must be installed prior to uploading an OVA, and handles the actual VM configuration creation and cloning of the OVA volumes.
 
 ## OVA limitations
 
