@@ -282,7 +282,9 @@ class VMBuilderScript(VMBuilder):
         import daemon_lib.ceph as pvc_ceph
 
         # First loop: Create the destination disks
+        print("Creating destination disk volumes")
         for volume in self.vm_data["volumes"]:
+            print(f"Processing volume {volume['volume_name']}")
             with open_zk(config) as zkhandler:
                 success, message = pvc_ceph.add_volume(
                     zkhandler,
@@ -297,7 +299,9 @@ class VMBuilderScript(VMBuilder):
                     )
 
         # Second loop: Map the destination disks
+        print("Mapping destination disk volumes")
         for volume in self.vm_data["volumes"]:
+            print(f"Processing volume {volume['volume_name']}")
             dst_volume_name = f"{self.vm_name}_{volume['disk_id']}"
             dst_volume = f"{volume['pool']}/{dst_volume_name}"
 
@@ -312,7 +316,9 @@ class VMBuilderScript(VMBuilder):
                     raise ProvisioningError(f"Failed to map volume '{dst_volume}'.")
 
         # Third loop: Map the source disks
+        print("Mapping source disk volumes")
         for volume in self.vm_data["volumes"]:
+            print(f"Processing volume {volume['volume_name']}")
             src_volume_name = volume["volume_name"]
             src_volume = f"{volume['pool']}/{src_volume_name}"
 
@@ -327,6 +333,7 @@ class VMBuilderScript(VMBuilder):
                     raise ProvisioningError(f"Failed to map volume '{src_volume}'.")
 
         # Fourth loop: Convert the source (usually VMDK) volume to the raw destination volume
+        print("Converting source disk volumes to raw destination volumes")
         for volume in self.vm_data["volumes"]:
             src_volume_name = volume["volume_name"]
             src_volume = f"{volume['pool']}/{src_volume_name}"
@@ -335,6 +342,9 @@ class VMBuilderScript(VMBuilder):
             dst_volume = f"{volume['pool']}/{dst_volume_name}"
             dst_devpath = f"/dev/rbd/{dst_volume}"
 
+            print(
+                f"Converting {volume['volume_format']} {src_volume} at {src_devpath} to {dst_volume} at {dst_devpath}"
+            )
             retcode, stdout, stderr = pvc_common.run_os_command(
                 f"qemu-img convert -C -f {volume['volume_format']} -O raw {src_devpath} {dst_devpath}"
             )
