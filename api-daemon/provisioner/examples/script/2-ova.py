@@ -280,6 +280,7 @@ class VMBuilderScript(VMBuilder):
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
+        import os
 
         # First loop: Create the destination disks
         print("Creating destination disk volumes")
@@ -370,6 +371,10 @@ class VMBuilderScript(VMBuilder):
         or install() steps. While this doesn't mean you shouldn't or can't raise exceptions
         here, be warned that doing so might cause loops. Do this only if you really need to.
         """
+
+        # Run any imports first
+        from pvcapid.vmbuilder import open_zk
+        from pvcapid.Daemon import config
 
         for volume in list(reversed(self.vm_data["volumes"])):
             src_volume_name = volume["volume_name"]
