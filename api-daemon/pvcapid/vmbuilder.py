@@ -447,9 +447,12 @@ def create_vm(
     # Verify that every specified filesystem is valid
     used_filesystems = list()
     for volume in vm_data["volumes"]:
-        if volume["source_volume"] is not None:
+        if volume.get("source_volume") is not None:
             continue
-        if volume["filesystem"] and volume["filesystem"] not in used_filesystems:
+        if (
+            volume.get("filesystem") is not None
+            and volume["filesystem"] not in used_filesystems
+        ):
             used_filesystems.append(volume["filesystem"])
 
     for filesystem in used_filesystems:
