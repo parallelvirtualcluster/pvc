@@ -368,7 +368,7 @@ af1d0682-53e8-4141-982f-f672e2f23261  active   celery@pvchv1      test1  std-lar
 The `--wait` option can be given to the create command. This will cause the command to block and providing a visual progress indicator while the provisioning occurs.
 
 ```
-$ pvc provisioner create test2 std-large
+$ pvc provisioner create --wait test2 std-large
 Using cluster "local" - Host: "10.0.0.1:7370"  Scheme: "http"  Prefix: "/api/v1"
 
 Task ID: 94abb7fe-41f5-42be-b984-de92854f4b3f
