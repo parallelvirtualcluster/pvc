@@ -374,6 +374,7 @@ class VMBuilderScript(VMBuilder):
         # Run any imports first
         from pvcapid.vmbuilder import open_zk
         from pvcapid.Daemon import config
+        import daemon_lib.ceph as pvc_ceph
 
         for volume in list(reversed(self.vm_data["volumes"])):
             src_volume_name = volume["volume_name"]
