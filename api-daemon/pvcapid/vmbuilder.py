@@ -558,6 +558,15 @@ def create_vm(
             f"Failed to mount sysfs onto {temp_dir}/sys for chroot: {stderr}"
         )
 
+    # Bind mount /proc to the chroot location /proc
+    retcode, stdout, stderr = pvc_common.run_os_command(
+        f"mount --bind --options rw /proc {temp_dir}/proc"
+    )
+    if retcode:
+        raise ProvisioningError(
+            f"Failed to mount procfs onto {temp_dir}/proc for chroot: {stderr}"
+        )
+
     print("Chroot environment prepared successfully")
 
     def general_cleanup():
@@ -575,6 +584,10 @@ def create_vm(
             # Unmount bind-mounted sysfs on the chroot
             retcode, stdout, stderr = pvc_common.run_os_command(
                 f"umount {temp_dir}/sys"
+            )
+            # Unmount bind-mounted procfs on the chroot
+            retcode, stdout, stderr = pvc_common.run_os_command(
+                f"umount {temp_dir}/proc"
             )
             # Unmount bind-mounted tmpfs on the chroot
             retcode, stdout, stderr = pvc_common.run_os_command(
