@@ -168,14 +168,16 @@ def delete_ova(zkhandler, name):
 
 @ZKConnection(config)
 def upload_ova(zkhandler, pool, name, ova_size):
-    # Check that we have a default_ova provisioning script
-    _, retcode = provisioner.list_script("default_ova", is_fuzzy=False)
+    # Check that we have an ova or default_ova provisioning script
+    _, retcode = provisioner.list_script("ova", is_fuzzy=False)
     if retcode != 200:
-        output = {
-            "message": "Did not find a 'default_ova' provisioning script. Please add one with that name, either the example from '/usr/share/pvc/provisioner/examples/script/2-ova.py' or a custom one, before uploading OVAs."
-        }
-        retcode = 400
-        return output, retcode
+        _, retcode = provisioner.list_script("default_ova", is_fuzzy=False)
+        if retcode != 200:
+            output = {
+                "message": "Did not find a 'default_ova' provisioning script. Please add one with that name, either the example from '/usr/share/pvc/provisioner/examples/script/2-ova.py' or a custom one, before uploading OVAs."
+            }
+            retcode = 400
+            return output, retcode
 
     ova_archive = None
 
