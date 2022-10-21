@@ -456,7 +456,9 @@ def create_vm(
             used_filesystems.append(volume["filesystem"])
 
     for filesystem in used_filesystems:
-        if filesystem == "swap":
+        if filesystem is None or filesystem == "None":
+            continue
+        elif filesystem == "swap":
             retcode, stdout, stderr = pvc_common.run_os_command("which mkswap")
             if retcode:
                 raise ProvisioningError(
