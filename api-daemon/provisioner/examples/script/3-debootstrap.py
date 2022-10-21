@@ -556,6 +556,71 @@ After=multi-user.target
 """
             fh.write(data)
 
+        # Write the cloud-init configuration
+        ci_cfg_file = "{}/etc/cloud/cloud.cfg".format(temporary_directory)
+        with open(ci_cfg_file, "w") as fh:
+            fh.write(
+                """
+                disable_root: true
+                
+                preserve_hostname: true
+                
+                datasource:
+                  Ec2:
+                    metadata_urls: ["http://169.254.169.254:80"]
+                    max_wait: 30
+                    timeout: 30
+                    apply_full_imds_network_config: true
+                
+                cloud_init_modules:
+                 - migrator
+                 - bootcmd
+                 - write-files
+                 - resizefs
+                 - set_hostname
+                 - update_hostname
+                 - update_etc_hosts
+                 - ca-certs
+                 - ssh
+                
+                cloud_config_modules:
+                 - mounts
+                 - ssh-import-id
+                 - locale
+                 - set-passwords
+                 - grub-dpkg
+                 - apt-pipelining
+                 - apt-configure
+                 - package-update-upgrade-install
+                 - timezone
+                 - disable-ec2-metadata
+                 - runcmd
+                
+                cloud_final_modules:
+                 - rightscale_userdata
+                 - scripts-per-once
+                 - scripts-per-boot
+                 - scripts-per-instance
+                 - scripts-user
+                 - ssh-authkey-fingerprints
+                 - keys-to-console
+                 - phone-home
+                 - final-message
+                 - power-state-change
+                
+                system_info:
+                   distro: debian
+                   paths:
+                      cloud_dir: /var/lib/cloud/
+                      templates_dir: /etc/cloud/templates/
+                      upstart_dir: /etc/init/
+                   package_mirrors:
+                     - arches: [default]
+                       failsafe:
+                         primary: {deb_mirror}
+                """
+            ).format(deb_mirror=deb_mirror)
+
         # Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
         # will always be on PCI bus ID 2, hence the name "ens2".
         # Write a DHCP stanza for ens2
