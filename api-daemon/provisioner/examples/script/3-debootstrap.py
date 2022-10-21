@@ -691,9 +691,6 @@ GRUB_DISABLE_LINUX_UUID=false
             # Debian cloud images are affected, so who knows.
             os.system("systemctl enable cloud-init.target")
 
-        # Unmount the bound devfs
-        os.system("umount {}/dev".format(temporary_directory))
-
     def cleanup(self):
         """
         cleanup(): Perform any cleanup required due to prepare()/install()
@@ -714,6 +711,9 @@ GRUB_DISABLE_LINUX_UUID=false
 
         # Set the tempdir we used in the prepare() and install() steps
         temp_dir = "/tmp/target"
+
+        # Unmount the bound devfs
+        os.system("umount {}/dev".format(temporary_directory))
 
         # Use this construct for reversing the list, as the normal reverse() messes with the list
         for volume in list(reversed(self.vm_data["volumes"])):
