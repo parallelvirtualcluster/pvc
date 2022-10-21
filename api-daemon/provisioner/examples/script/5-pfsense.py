@@ -35,12 +35,11 @@
 #            hostname with no domain set.
 #
 # The resulting pfSense instance will use the default "root"/"pfsense" credentials and
-# will support both serial and VNC interfaces; note that if both are added, login will only
-# work over the VNC interface due to limitations of the pfSense configuration. SLAAC IPv6
-# will be used for the WAN in addition to the specified IPv4 configuration methods. A set
-# of default-permit rules on the WAN interface are included to allow management on the WAN
-# side, and these should be modified or removed once the system is configured. Finally, the
-# Web Configurator is set to use HTTP only.
+# will support both serial and VNC interfaces; boot messages will only show on serial.
+# SLAAC will be used for IPv6 on WAN in addition to the specified IPv4 configuration.
+# A set of default-permit rules on the WAN interface are included to allow management on the
+# WAN side, and these should be modified or removed once the system is configured.
+# Finally, the Web Configurator is set to use HTTP only.
 #
 # Other than the above specified values, the new pfSense instance will be completely
 # unconfigured and must then be adjusted as needed via the Web Configurator ASAP to ensure
@@ -455,7 +454,7 @@ class VMBuilderScript(VMBuilder):
                         "<wait1>",
                         "echo 'comconsole_speed=\"115200\"' >> /mnt/boot/loader.conf<enter>",
                         "<wait1>",
-                        "sed -i.bak '/^ttyu/s/off/onifconsole/' /mnt/etc/ttys<enter>",
+                        "sed -i.bak '/^ttyu/s/off/on/' /mnt/etc/ttys<enter>",
                         "<wait1>",
                         # Grab template configuration from provisioner
                         # We have to do DHCP first, then do the telnet fetch inside a chroot
@@ -487,7 +486,9 @@ class VMBuilderScript(VMBuilder):
         # Set the hostname and domain if vm_fqdn is set
         if self.vm_data["script_arguments"].get("vm_fqdn") is not None:
             pfsense_hostname = self.vm_data["script_arguments"]["vm_fqdn"].split(".")[0]
-            pfsense_domain = self.vm_data["script_arguments"]["vm_fqdn"].split(".")[1:]
+            pfsense_domain = ".".join(
+                self.vm_data["script_arguments"]["vm_fqdn"].split(".")[1:]
+            )
         else:
             pfsense_hostname = self.vm_name
             pfsense_domain = ""
