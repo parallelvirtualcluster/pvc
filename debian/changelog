@@ -1,3 +1,13 @@
+pvc (0.9.56-0) unstable; urgency=high
+
+  * [API/Provisioner] Fundamentally revamps the provisioner script framework to provide more extensibility (BREAKING CHANGE)
+  * [API/Provisioner] Adds example provisioner scripts for noop, ova, debootstrap, rinse, and pfsense (BREAKING CHANGE)
+  * [API/Provisioner] Enforces the use of the ova provisioner script during new OVA uploads; existing uploads will not work (BREAKING CHANGE)
+  * [Documentation] Updates the documentation around provisioner scripts and OVAs to reflect the above changes
+  * [Node] Adds a new pvcautoready.service oneshot unit to replicate the on-boot-ready functionality of old pvc-flush.service unit
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 27 Oct 2022 14:19:18 -0400
+
 pvc (0.9.55-0) unstable; urgency=high
 
   * Fixes a problem with the literal eval handler in the provisioner (again)

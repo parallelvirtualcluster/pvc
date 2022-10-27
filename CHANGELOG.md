@@ -1,5 +1,16 @@
 ## PVC Changelog
 
+###### [v0.9.56](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.56)
+
+  **Breaking Change**: Existing provisioner scripts are no longer valid; new example scripts are provided.
+  **Breaking Change**: OVA profiles now require an `ova` or `default_ova` provisioner script (use example) to function.
+
+  * [API/Provisioner] Fundamentally revamps the provisioner script framework to provide more extensibility
+  * [API/Provisioner] Adds example provisioner scripts for noop, ova, debootstrap, rinse, and pfsense
+  * [API/Provisioner] Enforces the use of the ova provisioner script during new OVA uploads; existing uploads will not work
+  * [Documentation] Updates the documentation around provisioner scripts and OVAs to reflect the above changes
+  * [Node] Adds a new pvcautoready.service oneshot unit to replicate the on-boot-ready functionality of old pvc-flush.service unit
+
 ###### [v0.9.55](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.55)
 
   * Fixes a problem with the literal eval handler in the provisioner (again)
