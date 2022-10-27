@@ -5,6 +5,7 @@ systemctl daemon-reload
 
 # Enable the service and target
 systemctl enable /lib/systemd/system/pvcnoded.service
+systemctl enable /lib/systemd/system/pvcautoready.service
 systemctl enable /lib/systemd/system/pvc.target
 
 # Inform administrator of the service restart/startup not occurring automatically

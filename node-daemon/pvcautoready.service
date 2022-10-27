@@ -1,0 +1,19 @@
+# Parallel Virtual Cluster autoready oneshot
+
+[Unit]
+Description = Parallel Virtual Cluster autoready oneshot
+After = pvcnoded.service pvcapid.service zookeeper.service libvirtd.service ssh.service ceph.target network-online.target
+Wants = pvcnoded.service pvcapid.service
+PartOf = pvc.target
+ConditionPathExists=/etc/pvc/autoready
+
+[Service]
+Type = oneshot
+RemainAfterExit = false
+WorkingDirectory = /usr/share/pvc
+TimeoutSec = 31min
+ExecStartPre = /bin/sleep 60
+ExecStart = /usr/bin/pvc -c local node ready --wait
+
+[Install]
+WantedBy = pvc.target
