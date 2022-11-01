@@ -2404,7 +2404,7 @@ def vm_list(target_node, target_state, target_tag, limit, raw, negate):
 )
 def cli_network():
     """
-    Manage the state of a VXLAN network in the PVC cluster.
+    Manage the state of a network in the PVC cluster.
     """
     pass
 
