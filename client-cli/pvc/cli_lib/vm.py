@@ -679,6 +679,10 @@ def vm_networks_add(
     from random import randint
     import pvc.cli_lib.network as pvc_network
 
+    network_exists, _ = pvc_network.net_info(config, network)
+    if not network_exists:
+        return False, "Network {} not found on the cluster.".format(network)
+
     status, domain_information = vm_info(config, vm)
     if not status:
         return status, domain_information
@@ -2016,7 +2020,8 @@ def format_list(config, vm_list, raw):
         tag_list = getNiceTagName(domain_information)
         if len(tag_list) < 1:
             tag_list = ["N/A"]
-        vm_net_colour = ""
+
+        net_invalid_list = []
         for net_vni in net_list:
             if (
                 net_vni not in ["cluster", "storage", "upstream"]
@@ -2024,13 +2029,33 @@ def format_list(config, vm_list, raw):
                 and not re.match(r"^hostdev:.*", net_vni)
             ):
                 if int(net_vni) not in [net["vni"] for net in cluster_net_list]:
-                    vm_net_colour = ansiprint.red()
+                    net_invalid_list.append(True)
+                else:
+                    net_invalid_list.append(False)
+            else:
+                net_invalid_list.append(False)
+
+        net_string_list = []
+        for net_idx, net_vni in enumerate(net_list):
+            if net_invalid_list[net_idx]:
+                net_string_list.append(
+                    "{}{}{}".format(
+                        ansiprint.red(),
+                        net_vni,
+                        ansiprint.end(),
+                    )
+                )
+                # Fix the length due to the extra fake characters
+                vm_nets_length -= len(net_vni)
+                vm_nets_length += len(net_string_list[net_idx])
+            else:
+                net_string_list.append(net_vni)
 
         vm_list_output.append(
             "{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_tags: <{vm_tags_length}} \
-{vm_net_colour}{vm_networks: <{vm_nets_length}}{end_colour} \
+{vm_networks: <{vm_nets_length}} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
 {vm_migrated: <{vm_migrated_length}}{end_bold}".format(
@@ -2049,8 +2074,7 @@ def format_list(config, vm_list, raw):
                 vm_name=domain_information["name"],
                 vm_state=domain_information["state"],
                 vm_tags=",".join(tag_list),
-                vm_net_colour=vm_net_colour,
-                vm_networks=",".join(net_list),
+                vm_networks=",".join(net_string_list),
                 vm_memory=domain_information["memory"],
                 vm_vcpu=domain_information["vcpu"],
                 vm_node=domain_information["node"],
