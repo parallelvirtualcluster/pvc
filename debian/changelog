@@ -1,3 +1,12 @@
+pvc (0.9.57-0) unstable; urgency=high
+
+  * [CLI] Removes an invalid reference to VXLAN
+  * [CLI] Improves the handling of invalid networks in VM lists and on attach
+  * [API] Modularizes the benchmarking library so it can be used externally too
+  * [Daemon Library] Adds a module tag file so it can be used externally too
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 06 Nov 2022 01:39:50 -0400
+
 pvc (0.9.56-0) unstable; urgency=high
 
   * [API/Provisioner] Fundamentally revamps the provisioner script framework to provide more extensibility (BREAKING CHANGE)

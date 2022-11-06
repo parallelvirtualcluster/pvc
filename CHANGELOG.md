@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.57](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.57)
+
+  * [CLI] Removes an invalid reference to VXLAN
+  * [CLI] Improves the handling of invalid networks in VM lists and on attach
+  * [API] Modularizes the benchmarking library so it can be used externally too
+  * [Daemon Library] Adds a module tag file so it can be used externally too
+
 ###### [v0.9.56](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.56)
 
   **Breaking Change**: Existing provisioner scripts are no longer valid; new example scripts are provided.
