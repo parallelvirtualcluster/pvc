@@ -1,3 +1,9 @@
+pvc (0.9.58-0) unstable; urgency=high
+
+  * [API] Fixes a bug where migration selector could have case-sensitive operational faults
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 07 Nov 2022 12:27:48 -0500
+
 pvc (0.9.57-0) unstable; urgency=high
 
   * [CLI] Removes an invalid reference to VXLAN

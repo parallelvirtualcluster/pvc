@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.58](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.58)
+
+  * [API] Fixes a bug where migration selector could have case-sensitive operational faults
+
 ###### [v0.9.57](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.57)
 
   * [CLI] Removes an invalid reference to VXLAN
