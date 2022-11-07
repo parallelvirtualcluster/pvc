@@ -308,9 +308,9 @@ def define_vm(
             (("domain.console.log", dom_uuid), ""),
             (("domain.console.vnc", dom_uuid), ""),
             (("domain.meta.autostart", dom_uuid), node_autostart),
-            (("domain.meta.migrate_method", dom_uuid), migration_method),
+            (("domain.meta.migrate_method", dom_uuid), str(migration_method).lower()),
             (("domain.meta.node_limit", dom_uuid), formatted_node_limit),
-            (("domain.meta.node_selector", dom_uuid), node_selector),
+            (("domain.meta.node_selector", dom_uuid), str(node_selector).lower()),
             (("domain.meta.tags", dom_uuid), ""),
             (("domain.migrate.sync_lock", dom_uuid), ""),
         ]
@@ -447,7 +447,9 @@ def modify_vm_metadata(
         update_list.append((("domain.meta.node_limit", dom_uuid), node_limit))
 
     if node_selector is not None:
-        update_list.append((("domain.meta.node_selector", dom_uuid), node_selector))
+        update_list.append(
+            (("domain.meta.node_selector", dom_uuid), str(node_selector).lower())
+        )
 
     if node_autostart is not None:
         update_list.append((("domain.meta.autostart", dom_uuid), node_autostart))
@@ -456,7 +458,9 @@ def modify_vm_metadata(
         update_list.append((("domain.profile", dom_uuid), provisioner_profile))
 
     if migration_method is not None:
-        update_list.append((("domain.meta.migrate_method", dom_uuid), migration_method))
+        update_list.append(
+            (("domain.meta.migrate_method", dom_uuid), str(migration_method).lower())
+        )
 
     if len(update_list) < 1:
         return False, "ERROR: No updates to apply."

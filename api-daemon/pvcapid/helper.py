@@ -538,10 +538,10 @@ def get_vm_meta(zkhandler, vm):
     retcode = 200
     retdata = {
         "name": vm,
-        "node_limit": domain_node_limit,
-        "node_selector": domain_node_selector,
+        "node_limit": domain_node_limit.lower(),
+        "node_selector": domain_node_selector.lower(),
         "node_autostart": domain_node_autostart,
-        "migration_method": domain_migrate_method,
+        "migration_method": domain_migrate_method.lower(),
     }
 
     return retdata, retcode

@@ -633,7 +633,7 @@ def findTargetNode(zkhandler, dom_uuid):
         search_field = None
 
     # If our search field is invalid, use the default
-    if search_field is None or search_field == "None":
+    if search_field is None or search_field in ["None", "none"]:
         search_field = zkhandler.read("base.config.migration_target_selector")
 
     # Execute the search
