@@ -1253,7 +1253,7 @@ class API_VM_Root(Resource):
             {"name": "node"},
             {
                 "name": "selector",
-                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memprov", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1302,7 +1302,7 @@ class API_VM_Root(Resource):
             default: none
             enum:
               - mem
-              - memfree
+              - memprov
               - vcpus
               - load
               - vms
@@ -1400,7 +1400,7 @@ class API_VM_Element(Resource):
             {"name": "node"},
             {
                 "name": "selector",
-                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memprov", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1451,7 +1451,7 @@ class API_VM_Element(Resource):
             default: none
             enum:
               - mem
-              - memfree
+              - memprov
               - vcpus
               - load
               - vms
@@ -1650,7 +1650,7 @@ class API_VM_Metadata(Resource):
             {"name": "limit"},
             {
                 "name": "selector",
-                "choices": ("mem", "memfree", "vcpus", "load", "vms", "none"),
+                "choices": ("mem", "memprov", "vcpus", "load", "vms", "none"),
                 "helptext": "A valid selector must be specified",
             },
             {"name": "autostart"},
@@ -1682,7 +1682,7 @@ class API_VM_Metadata(Resource):
             description: The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference
             enum:
               - mem
-              - memfree
+              - memprov
               - vcpus
               - load
               - vms

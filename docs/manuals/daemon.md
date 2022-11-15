@@ -356,15 +356,15 @@ The password for the PVC node daemon to log in to the IPMI interface.
 The default selector algorithm to use when migrating VMs away from a node; individual VMs can override this default.
 
 Valid `target_selector` values are:
-  * `mem`: choose the node with the least provisioned VM memory
-  * `memfree`: choose the node with the most (real) free memory
+  * `mem`: choose the node with the most (real) free memory
+  * `memprov`: choose the node with the least provisioned VM memory
   * `vcpus`: choose the node with the least allocated VM vCPUs
   * `load`: choose the node with the lowest current load average
   * `vms`: choose the node with the least number of provisioned VMs
 
 For most clusters, `mem` should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
-  * `mem` looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
-  * `memfree` looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected. This might be preferable to `mem` on clusters with very high memory utilization versus total capacity or if many VMs are stopped/disabled.
+  * `mem` looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected.
+  * `memprov` looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
   * `load` looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
 
 #### `system` → `configuration` → `directories` → `dynamic_directory`

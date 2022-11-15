@@ -807,7 +807,7 @@ def cli_vm():
     "node_selector",
     default="none",
     show_default=True,
-    type=click.Choice(["mem", "memfree", "load", "vcpus", "vms", "none"]),
+    type=click.Choice(["mem", "memprov", "load", "vcpus", "vms", "none"]),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
@@ -859,15 +859,15 @@ def vm_define(
     Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
 
     The target node selector ("--node-selector"/"-s") can be "none" to use the cluster default, or one of the following values:
-      * "mem": choose the node with the least provisioned VM memory
-      * "memfree": choose the node with the most (real) free memory
+      * "mem": choose the node with the most (real) free memory
+      * "memprov": choose the node with the least provisioned VM memory
       * "vcpus": choose the node with the least allocated VM vCPUs
       * "load": choose the node with the lowest current load average
       * "vms": choose the node with the least number of provisioned VMs
 
     For most clusters, "mem" should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
-      * "mem" looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
-      * "memfree" looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected. This might be preferable to "mem" on clusters with very high memory utilization versus total capacity or if many VMs are stopped/disabled.
+      * "mem" looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected.
+      * "memprov" looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
       * "load" looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
     """
 
@@ -914,7 +914,7 @@ def vm_define(
     "node_selector",
     default=None,
     show_default=False,
-    type=click.Choice(["mem", "memfree", "load", "vcpus", "vms", "none"]),
+    type=click.Choice(["mem", "memprov", "load", "vcpus", "vms", "none"]),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
 @click.option(
@@ -4134,7 +4134,7 @@ def provisioner_template_system_list(limit):
     "--node-selector",
     "node_selector",
     type=click.Choice(
-        ["mem", "memfree", "vcpus", "vms", "load", "none"], case_sensitive=False
+        ["mem", "memprov", "vcpus", "vms", "load", "none"], case_sensitive=False
     ),
     default="none",
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
@@ -4230,7 +4230,7 @@ def provisioner_template_system_add(
     "--node-selector",
     "node_selector",
     type=click.Choice(
-        ["mem", "memfree", "vcpus", "vms", "load", "none"], case_sensitive=False
+        ["mem", "memprov", "vcpus", "vms", "load", "none"], case_sensitive=False
     ),
     help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
 )
