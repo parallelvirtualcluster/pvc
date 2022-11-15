@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.59](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.59)
+
+  * [API] Flips the mem(prov) and mem(free) selectors making mem(free) the default for "mem" and "memprov" explicit
+
 ###### [v0.9.58](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.58)
 
   * [API] Fixes a bug where migration selector could have case-sensitive operational faults

@@ -1,3 +1,9 @@
+pvc (0.9.59-0) unstable; urgency=high
+
+  * [API] Flips the mem(prov) and mem(free) selectors making mem(free) the default for "mem" and "memprov" explicit
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 15 Nov 2022 15:50:15 -0500
+
 pvc (0.9.58-0) unstable; urgency=high
 
   * [API] Fixes a bug where migration selector could have case-sensitive operational faults
