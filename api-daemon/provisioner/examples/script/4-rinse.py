@@ -571,21 +571,6 @@ class VMBuilderScript(VMBuilder):
         with open(hostname_file, "w") as fh:
             fh.write("{}".format(vm_name))
 
-        # Fix the cloud-init.target since it's broken by default
-        cloudinit_target_file = "{}/etc/systemd/system/cloud-init.target".format(
-            temporary_directory
-        )
-        with open(cloudinit_target_file, "w") as fh:
-            # We lose our indent on these raw blocks to preserve the apperance of the files
-            # inside the VM itself
-            data = """[Install]
-WantedBy=multi-user.target
-[Unit]
-Description=Cloud-init target
-After=multi-user.target
-"""
-            fh.write(data)
-
         # Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
         # will always be on PCI bus ID 2, hence the name "ens2".
         # Write a DHCP stanza for ens2
@@ -695,6 +680,7 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
         """
 
         # Run any imports first
+        import os
         from pvcapid.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
@@ -729,14 +715,14 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
                         f"Failed to unmount '{mapped_dst_volume}' on '{mount_path}': {stderr}"
                     )
 
-                # Unmap volume
-                with open_zk(config) as zkhandler:
-                    success, message = pvc_ceph.unmap_volume(
-                        zkhandler,
-                        volume["pool"],
-                        dst_volume_name,
-                    )
-                if not success:
-                    raise ProvisioningError(
-                        f"Failed to unmap '{mapped_dst_volume}': {stderr}"
-                    )
+            # Unmap volume
+            with open_zk(config) as zkhandler:
+                success, message = pvc_ceph.unmap_volume(
+                    zkhandler,
+                    volume["pool"],
+                    dst_volume_name,
+                )
+            if not success:
+                raise ProvisioningError(
+                    f"Failed to unmap '{mapped_dst_volume}': {stderr}"
+                )
