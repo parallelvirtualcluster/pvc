@@ -398,7 +398,7 @@ class VMBuilderScript(VMBuilder):
             if volume.get("source_volume") is not None:
                 continue
 
-            if volume.get("filesystem") is None:
+            if volume.get("filesystem") is None or volume.get("filesystem") == "swap":
                 continue
 
             mapped_dst_volume = f"/dev/rbd/{dst_volume}"
