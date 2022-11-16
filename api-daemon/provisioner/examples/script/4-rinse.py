@@ -682,11 +682,6 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
             # Set the timezone to UTC
             os.system("ln -sf ../usr/share/zoneinfo/UTC /etc/localtime")
 
-        # Unmount the bound devfs and sysfs
-        os.system("umount {}/dev".format(temporary_directory))
-        os.system("umount {}/sys".format(temporary_directory))
-        os.system("umount {}/proc".format(temporary_directory))
-
     def cleanup(self):
         """
         cleanup(): Perform any cleanup required due to prepare()/install()
@@ -707,6 +702,11 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
 
         # Set the tempdir we used in the prepare() and install() steps
         temp_dir = "/tmp/target"
+
+        # Unmount the bound devfs and sysfs
+        os.system(f"umount {temp_dir}/dev")
+        os.system(f"umount {temp_dir}/sys")
+        os.system(f"umount {temp_dir}/proc")
 
         # Use this construct for reversing the list, as the normal reverse() messes with the list
         for volume in list(reversed(self.vm_data["volumes"])):
