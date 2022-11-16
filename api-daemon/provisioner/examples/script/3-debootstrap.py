@@ -725,6 +725,7 @@ GRUB_DISABLE_LINUX_UUID=false
             if (
                 volume.get("source_volume") is None
                 and volume.get("filesystem") is not None
+                and volume.get("filesystem") != "swap"
             ):
                 # Unmount filesystem
                 retcode, stdout, stderr = pvc_common.run_os_command(
