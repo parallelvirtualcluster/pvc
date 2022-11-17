@@ -20,7 +20,7 @@
 ###############################################################################
 
 # This script provides an example of a PVC provisioner script. It will create a
-# standard VM config and install a RHEL-like OS using rinse.
+# standard VM config and install a RHEL 8+ or similar OS using rinse.
 
 # This script can thus be used as an example or reference implementation of a
 # PVC provisioner script and expanded upon as required.
