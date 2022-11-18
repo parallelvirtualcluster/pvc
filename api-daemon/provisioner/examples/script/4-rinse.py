@@ -487,7 +487,7 @@ class VMBuilderScript(VMBuilder):
             post_packages = ["cloud-init"]
 
         # We need to know our root disk for later GRUB-ing
-        root_disk = None
+        root_volume = None
         for volume in volumes:
             if volume["mountpoint"] == "/":
                 root_volume = volume
