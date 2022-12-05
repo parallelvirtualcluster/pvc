@@ -100,7 +100,7 @@ devices_scsi_controller = """    <controller type='scsi' index='0' model='virtio
 #  * vm_name
 #  * disk_id
 devices_disk_header = """    <disk type='network' device='disk'>
-      <driver name='qemu' discard='unmap'/>
+      <driver name='qemu' discard='unmap' cache='none'/>
       <target dev='{disk_id}' bus='scsi'/>
       <auth username='libvirt'>
         <secret type='ceph' uuid='{ceph_storage_secret}'/>
