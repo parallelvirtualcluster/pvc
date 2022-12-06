@@ -1,3 +1,10 @@
+pvc (0.9.60-0) unstable; urgency=high
+
+  * [Provisioner] Cleans up several remaining bugs in the example scripts; they should all be valid now
+  * [Provisioner] Adjust default libvirt schema to disable RBD caching for a 2x+ performance boost
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 06 Dec 2022 15:42:55 -0500
+
 pvc (0.9.59-0) unstable; urgency=high
 
   * [API] Flips the mem(prov) and mem(free) selectors making mem(free) the default for "mem" and "memprov" explicit

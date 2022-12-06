@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.60](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.60)
+
+  * [Provisioner] Cleans up several remaining bugs in the example scripts; they should all be valid now
+  * [Provisioner] Adjust default libvirt schema to disable RBD caching for a 2x+ performance boost
+
 ###### [v0.9.59](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.59)
 
   * [API] Flips the mem(prov) and mem(free) selectors making mem(free) the default for "mem" and "memprov" explicit
