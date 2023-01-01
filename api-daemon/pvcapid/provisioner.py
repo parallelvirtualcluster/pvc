@@ -580,7 +580,7 @@ def delete_template_network_element(name, vni):
     networks, code = list_template_network_vnis(name)
     found_vni = False
     for network in networks:
-        if network["vni"] == int(vni):
+        if network["vni"] == vni:
             found_vni = True
     if not found_vni:
         retmsg = {
