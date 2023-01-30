@@ -644,7 +644,7 @@ def rename_vm(zkhandler, domain, new_domain):
 
     # Verify that the VM is in a stopped state; renaming is not supported otherwise
     state = zkhandler.read(("domain.state", dom_uuid))
-    if state != "stop":
+    if state not in ["stop", "disable"]:
         return (
             False,
             'ERROR: VM "{}" is not in stopped state; VMs cannot be renamed while running.'.format(
