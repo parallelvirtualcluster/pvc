@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.61](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.61)
+
+  * [provisioner] Fixes a bug in network comparison
+  * [api] Fixes a bug being unable to rename disabled VMs
+
 ###### [v0.9.60](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.60)
 
   * [Provisioner] Cleans up several remaining bugs in the example scripts; they should all be valid now
