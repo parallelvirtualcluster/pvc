@@ -129,6 +129,9 @@ class MonitoringPlugin(object):
             self.plugin_name,
         )
 
+    def __str__(self):
+        return self.plugin_name
+
     #
     # Helper functions; exposed to child MonitoringPluginScript instances
     #
@@ -309,15 +312,15 @@ class MonitoringInstance(object):
         time_delta = time_end - time_start
         runtime = "{:0.02f}".format(time_delta.total_seconds())
         result.set_runtime(runtime)
-        self.logger.out(
-            result.message, state="t", prefix=f"{plugin.plugin_name} ({runtime}s)"
-        )
         result.to_zookeeper()
         return result
 
     def run_plugins(self):
         total_health = 100
-        self.logger.out("Running monitoring plugins:", state="t")
+        self.logger.out(
+            f"Running monitoring plugins: {', '.join([x.plugin_name for x in self.all_plugins])}",
+            state="t",
+        )
         plugin_results = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=99) as executor:
             to_future_plugin_results = {
@@ -327,7 +330,12 @@ class MonitoringInstance(object):
             for future in concurrent.futures.as_completed(to_future_plugin_results):
                 plugin_results.append(future.result())
 
-        for result in plugin_results:
+        for result in sorted(plugin_results, key=lambda x: x.plugin_name):
+            self.logger.out(
+                result.message,
+                state="t",
+                prefix=f"{result.plugin_name} ({result.runtime}s)",
+            )
             if result is not None:
                 total_health -= result.health_delta
 
