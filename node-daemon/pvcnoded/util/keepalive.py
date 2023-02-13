@@ -97,29 +97,6 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
         logger.out("Failed to open connection to Ceph cluster: {}".format(e), state="e")
         return
 
-    if debug:
-        logger.out("Getting health stats from monitor", state="d", prefix="ceph-thread")
-
-    # Get Ceph cluster health for local status output
-    command = {"prefix": "health", "format": "json"}
-    try:
-        health_status = json.loads(
-            ceph_conn.mon_command(json.dumps(command), b"", timeout=1)[1]
-        )
-        ceph_health = health_status["status"]
-    except Exception as e:
-        logger.out("Failed to obtain Ceph health data: {}".format(e), state="e")
-        ceph_health = "HEALTH_UNKN"
-
-    if ceph_health in ["HEALTH_OK"]:
-        ceph_health_colour = logger.fmt_green
-    elif ceph_health in ["HEALTH_UNKN"]:
-        ceph_health_colour = logger.fmt_cyan
-    elif ceph_health in ["HEALTH_WARN"]:
-        ceph_health_colour = logger.fmt_yellow
-    else:
-        ceph_health_colour = logger.fmt_red
-
     # Primary-only functions
     if this_node.router_state == "primary":
         if debug:
@@ -408,8 +385,6 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
 
     ceph_conn.shutdown()
 
-    queue.put(ceph_health_colour)
-    queue.put(ceph_health)
     queue.put(osds_this_node)
 
     if debug:
@@ -777,16 +752,14 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
 
     if config["enable_storage"]:
         try:
-            ceph_health_colour = ceph_thread_queue.get(
-                timeout=config["keepalive_interval"]
+            osds_this_node = ceph_thread_queue.get(
+                timeout=(config["keepalive_interval"] - 1)
             )
-            ceph_health = ceph_thread_queue.get(timeout=config["keepalive_interval"])
-            osds_this_node = ceph_thread_queue.get(timeout=config["keepalive_interval"])
         except Exception:
             logger.out("Ceph stats queue get exceeded timeout, continuing", state="w")
-            ceph_health_colour = logger.fmt_cyan
-            ceph_health = "UNKNOWN"
             osds_this_node = "?"
+    else:
+        osds_this_node = "0"
 
     # Set our information in zookeeper
     keepalive_time = int(time.time())
@@ -839,8 +812,8 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
         if config["log_keepalive_cluster_details"]:
             logger.out(
                 "{bold}Maintenance:{nofmt} {maint}  "
-                "{bold}Active VMs:{nofmt} {domcount}  "
-                "{bold}Networks:{nofmt} {netcount}  "
+                "{bold}Node VMs:{nofmt} {domcount}  "
+                "{bold}Node OSDs:{nofmt} {osdcount}  "
                 "{bold}Load:{nofmt} {load}  "
                 "{bold}Memory [MiB]: VMs:{nofmt} {allocmem}  "
                 "{bold}Used:{nofmt} {usedmem}  "
@@ -849,27 +822,11 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
                     nofmt=logger.fmt_end,
                     maint=this_node.maintenance,
                     domcount=this_node.domains_count,
-                    netcount=len(zkhandler.children("base.network")),
+                    osdcount=osds_this_node,
                     load=this_node.cpuload,
                     freemem=this_node.memfree,
                     usedmem=this_node.memused,
                     allocmem=this_node.memalloc,
-                ),
-                state="t",
-            )
-        if config["enable_storage"] and config["log_keepalive_storage_details"]:
-            logger.out(
-                "{bold}Ceph cluster status:{nofmt} {health_colour}{health}{nofmt}  "
-                "{bold}Total OSDs:{nofmt} {total_osds}  "
-                "{bold}Node OSDs:{nofmt} {node_osds}  "
-                "{bold}Pools:{nofmt} {total_pools}  ".format(
-                    bold=logger.fmt_bold,
-                    health_colour=ceph_health_colour,
-                    nofmt=logger.fmt_end,
-                    health=ceph_health,
-                    total_osds=len(zkhandler.children("base.osd")),
-                    node_osds=osds_this_node,
-                    total_pools=len(zkhandler.children("base.pool")),
                 ),
                 state="t",
             )
