@@ -610,6 +610,7 @@ class ZKSchema(object):
             "sriov.vf": "/sriov/vf",
             "monitoring.plugins": "/monitoring_plugins",
             "monitoring.data": "/monitoring_data",
+            "monitoring.health": "/monitoring_health",
         },
         # The schema of an individual monitoring plugin data entry (/nodes/{node_name}/monitoring_data/{plugin})
         "monitoring_plugin": {

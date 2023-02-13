@@ -25,6 +25,7 @@ import importlib.util
 
 from os import walk
 from datetime import datetime
+from json import dumps
 
 
 class PluginResult(object):
@@ -37,7 +38,7 @@ class PluginResult(object):
         self.current_time = int(time.time())
         self.health_delta = 0
         self.message = None
-        self.data = None
+        self.data = {}
         self.runtime = "0.00"
 
     def set_health_delta(self, new_delta):
@@ -98,7 +99,7 @@ class PluginResult(object):
                         "monitoring_plugin.data",
                         self.plugin_name,
                     ),
-                    self.data,
+                    dumps(self.data),
                 ),
                 (
                     (
@@ -259,7 +260,7 @@ class MonitoringInstance(object):
                                 "monitoring_plugin.data",
                                 plugin.plugin_name,
                             ),
-                            None,
+                            dumps({}),
                         ),
                         (
                             (
@@ -286,7 +287,7 @@ class MonitoringInstance(object):
             [
                 (
                     ("node.monitoring.plugins", self.this_node.name),
-                    self.all_plugin_names,
+                    " ".join(self.all_plugin_names),
                 ),
             ]
         )
@@ -346,6 +347,14 @@ class MonitoringInstance(object):
         else:
             health_colour = self.logger.fmt_red
 
+        self.zkhandler.write(
+            [
+                (
+                    ("node.monitoring.health", self.this_node.name),
+                    total_health,
+                ),
+            ]
+        )
         self.logger.out(
             f"System health: {health_colour}{total_health}/100{self.logger.fmt_end}",
             state="t",

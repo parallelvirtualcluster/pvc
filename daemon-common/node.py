@@ -21,6 +21,7 @@
 
 import time
 import re
+import json
 
 import daemon_lib.common as common
 
@@ -49,6 +50,35 @@ def getNodeInformation(zkhandler, node_name):
         zkhandler.read(("node.count.provisioned_domains", node_name))
     )
     node_running_domains = zkhandler.read(("node.running_domains", node_name)).split()
+    node_health = int(zkhandler.read(("node.monitoring.health", node_name)))
+    node_health_plugins = zkhandler.read(("node.monitoring.plugins", node_name)).split()
+    node_health_details = list()
+    for plugin in node_health_plugins:
+        plugin_last_run = zkhandler.read(
+            ("node.monitoring.data", node_name, "monitoring_plugin.last_run", plugin)
+        )
+        plugin_health_delta = zkhandler.read(
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.health_delta",
+                plugin,
+            )
+        )
+        plugin_message = zkhandler.read(
+            ("node.monitoring.data", node_name, "monitoring_plugin.message", plugin)
+        )
+        plugin_data = zkhandler.read(
+            ("node.monitoring.data", node_name, "monitoring_plugin.data", plugin)
+        )
+        plugin_output = {
+            "name": plugin,
+            "last_run": int(plugin_last_run),
+            "health_delta": int(plugin_health_delta),
+            "message": plugin_message,
+            "data": json.loads(plugin_data),
+        }
+        node_health_details.append(plugin_output)
 
     # Construct a data structure to represent the data
     node_information = {
@@ -61,10 +91,16 @@ def getNodeInformation(zkhandler, node_name):
         "kernel": node_kernel,
         "os": node_os,
         "arch": node_arch,
+        "health": node_health,
+        "health_plugins": node_health_plugins,
+        "health_details": node_health_details,
         "load": node_load,
         "domains_count": node_domains_count,
         "running_domains": node_running_domains,
-        "vcpu": {"total": node_cpu_count, "allocated": node_vcpu_allocated},
+        "vcpu": {
+            "total": node_cpu_count,
+            "allocated": node_vcpu_allocated,
+        },
         "memory": {
             "total": node_mem_total,
             "allocated": node_mem_allocated,

@@ -66,7 +66,6 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Run any imports first
         from re import match
-        from json import dumps
         import daemon_lib.common as pvc_common
 
         # Get Debian version
@@ -143,7 +142,7 @@ class MonitoringPluginScript(MonitoringPlugin):
             "inconsistent_packages": list_inconsistent,
             "upgradable_packages": list_upgradable,
         }
-        self.plugin_result.set_data(dumps(detailed_data))
+        self.plugin_result.set_data(detailed_data)
 
         # Return our local PluginResult object
         return self.plugin_result
