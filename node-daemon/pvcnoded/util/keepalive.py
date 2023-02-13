@@ -51,7 +51,7 @@ libvirt_vm_states = {
 }
 
 
-def start_keepalive_timer(logger, config, zkhandler, this_node):
+def start_keepalive_timer(logger, config, zkhandler, this_node, monitoring_instance):
     keepalive_interval = config["keepalive_interval"]
     logger.out(
         f"Starting keepalive timer ({keepalive_interval} second interval)", state="s"
@@ -59,7 +59,7 @@ def start_keepalive_timer(logger, config, zkhandler, this_node):
     keepalive_timer = BackgroundScheduler()
     keepalive_timer.add_job(
         node_keepalive,
-        args=(logger, config, zkhandler, this_node),
+        args=(logger, config, zkhandler, this_node, monitoring_instance),
         trigger="interval",
         seconds=keepalive_interval,
     )
@@ -648,7 +648,7 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
 
 
 # Keepalive update function
-def node_keepalive(logger, config, zkhandler, this_node):
+def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
     debug = config["debug"]
     if debug:
         logger.out("Keepalive starting", state="d", prefix="main-thread")
@@ -917,6 +917,8 @@ def node_keepalive(logger, config, zkhandler, this_node):
                             zkhandler.write(
                                 [(("node.state.daemon", node_name), "dead")]
                             )
+
+    monitoring_instance.run_plugins()
 
     if debug:
         logger.out("Keepalive finished", state="d", prefix="main-thread")

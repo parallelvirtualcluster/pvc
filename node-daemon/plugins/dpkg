@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+
+# dpkg.py - PVC Monitoring example plugin for dpkg status
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+# This script provides an example of a PVC monitoring plugin script. It will create
+# a simple plugin to check the system dpkg status is as expected, with no invalid
+# packages or obsolete configuration files, and will return a 1 health delta for each
+# flaw in invalid packages, upgradable packages, and obsolete config files.
+
+# This script can thus be used as an example or reference implementation of a
+# PVC monitoring pluginscript and expanded upon as required.
+
+# A monitoring plugin script must implement the class "MonitoringPluginScript" which
+# extends "MonitoringPlugin", providing the 3 functions indicated. Detailed explanation
+# of the role of each function is provided in context of the example; see the other
+# examples for more potential uses.
+
+# WARNING:
+#
+# This script will run in the context of the node daemon keepalives as root.
+# DO NOT install untrusted, unvetted plugins under any circumstances.
+
+
+# This import is always required here, as MonitoringPlugin is used by the
+# MonitoringPluginScript class
+from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+
+
+# A monitoring plugin script must always expose its nice name, which must be identical to
+# the file name
+PLUGIN_NAME = "dpkg"
+
+
+# The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
+class MonitoringPluginScript(MonitoringPlugin):
+    def setup(self):
+        """
+        setup(): Perform special setup steps during node daemon startup
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass
+
+    def run(self):
+        """
+        run(): Perform the check actions and return a PluginResult object
+        """
+
+        # Run any imports first
+        from re import match
+        from json import dumps
+        import daemon_lib.common as pvc_common
+
+        # Get Debian version
+        with open('/etc/debian_version', 'r') as fh:
+            debian_version = fh.read().strip()
+
+        # Get a list of dpkg packages for analysis
+        retcode, stdout, stderr = pvc_common.run_os_command("/usr/bin/dpkg --list")
+
+        # Get a list of installed packages and states
+        packages = list()
+        for dpkg_line in stdout.split('\n'):
+            if match('^[a-z][a-z] ', dpkg_line):
+                line_split = dpkg_line.split()
+                package_state = line_split[0]
+                package_name = line_split[1]
+                packages.append((package_name, package_state))
+
+        count_ok = 0
+        count_inconsistent = 0
+        list_inconsistent = list()
+
+        for package in packages:
+            if package[1] == "ii":
+                count_ok += 1
+            else:
+                count_inconsistent += 1
+                list_inconsistent.append(package[0])
+
+        # Get upgradable packages
+        retcode, stdout, stderr = pvc_common.run_os_command("/usr/bin/apt list --upgradable")
+
+        list_upgradable = list()
+        for apt_line in stdout.split('\n'):
+            if match('^[a-z][a-z] ', apt_line):
+                line_split = apt_line.split('/')
+                package_name = line_split[0]
+                list_upgradable.append(package_name)
+
+        count_upgradable = len(list_upgradable)
+
+        # Get obsolete config files (dpkg-* or ucf-* under /etc)
+        retcode, stdout, stderr = pvc_common.run_os_command("/usr/bin/find /etc -type f -a \( -name '*.dpkg-*' -o -name '*.ucf-*' \)")
+
+        obsolete_conffiles = list()
+        for conffile_line in stdout.split('\n'):
+            if conffile_line:
+                obsolete_conffiles.append(conffile_line)
+
+        count_obsolete_conffiles = len(obsolete_conffiles)
+
+        # Set health_delta based on the results
+        health_delta = 0
+        if count_inconsistent > 0:
+            health_delta += 1
+        if count_upgradable > 0:
+            health_delta += 1
+        if count_obsolete_conffiles > 0:
+            health_delta += 1
+
+        # Set the health delta in our local PluginResult object
+        self.plugin_result.set_health_delta(health_delta)
+
+        # Craft the message
+        message = f"Debian {debian_version}; Obsolete conffiles: {count_obsolete_conffiles}; Packages valid: {count_ok}, inconsistent: {count_inconsistent}, upgradable: {count_upgradable}"
+
+        # Set the message in our local PluginResult object
+        self.plugin_result.set_message(message)
+
+        # Set the detailed data in our local PluginResult object
+        detailed_data = {
+            "debian_version": debian_version,
+            "obsolete_conffiles": obsolete_conffiles,
+            "inconsistent_packages": list_inconsistent,
+            "upgradable_packages": list_upgradable,
+        }
+        self.plugin_result.set_data(dumps(detailed_data))
+
+        # Return our local PluginResult object
+        return self.plugin_result
+
+    def cleanup(self):
+        """
+        cleanup(): Perform special cleanup steps during node daemon termination
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+
+# load.py - PVC Monitoring example plugin for load
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+# This script provides an example of a PVC monitoring plugin script. It will create
+# a simple plugin to check the system load against the total number of CPU cores,
+# and return a 10 health delta (100 -> 90) if the load average is > 1/2 that number.
+
+# This script can thus be used as an example or reference implementation of a
+# PVC monitoring pluginscript and expanded upon as required.
+
+# A monitoring plugin script must implement the class "MonitoringPluginScript" which
+# extends "MonitoringPlugin", providing the 3 functions indicated. Detailed explanation
+# of the role of each function is provided in context of the example; see the other
+# examples for more potential uses.
+
+# WARNING:
+#
+# This script will run in the context of the node daemon keepalives as root.
+# DO NOT install untrusted, unvetted plugins under any circumstances.
+
+
+# This import is always required here, as MonitoringPlugin is used by the
+# MonitoringPluginScript class
+from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+
+
+# A monitoring plugin script must always expose its nice name, which must be identical to
+# the file name
+PLUGIN_NAME = "load"
+
+
+# The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
+class MonitoringPluginScript(MonitoringPlugin):
+    def setup(self):
+        """
+        setup(): Perform special setup steps during node daemon startup
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass
+
+    def run(self):
+        """
+        run(): Perform the check actions and return a PluginResult object
+        """
+
+        # Run any imports first
+        from os import getloadavg
+        from psutil import cpu_count
+
+        # Get the current 1-minute system load average
+        load_average = getloadavg()[0]
+
+        # Get the number of CPU cores
+        cpu_cores = cpu_count()
+
+        # Check that the load average is greater or equal to the cpu count
+        if load_average > float(cpu_cores):
+            # Set the health delta to 10 (subtract 10 from the total of 100)
+            health_delta = 10
+            # Craft a message that can be used by the clients
+            message = f"Current load is {load_average} out of {cpu_cores} CPU cores"
+
+        else:
+            # Set the health delta to 0 (no change)
+            health_delta = 0
+            # Craft a message that can be used by the clients
+            message = f"Current load is {load_average} out of {cpu_cores} CPU cores"
+
+        # Set the health delta in our local PluginResult object
+        self.plugin_result.set_health_delta(health_delta)
+
+        # Set the message in our local PluginResult object
+        self.plugin_result.set_message(message)
+
+        # Return our local PluginResult object
+        return self.plugin_result
+
+    def cleanup(self):
+        """
+        cleanup(): Perform special cleanup steps during node daemon termination
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass

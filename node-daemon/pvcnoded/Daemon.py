@@ -27,6 +27,7 @@ import pvcnoded.util.services
 import pvcnoded.util.libvirt
 import pvcnoded.util.zookeeper
 
+import pvcnoded.objects.MonitoringInstance as MonitoringInstance
 import pvcnoded.objects.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.objects.MetadataAPIInstance as MetadataAPIInstance
 import pvcnoded.objects.VMInstance as VMInstance
@@ -58,6 +59,7 @@ version = "0.9.61"
 
 def entrypoint():
     keepalive_timer = None
+    monitoring_instance = None
 
     # Get our configuration
     config = pvcnoded.util.config.get_configuration()
@@ -204,7 +206,7 @@ def entrypoint():
 
     # Define a cleanup function
     def cleanup(failure=False):
-        nonlocal logger, zkhandler, keepalive_timer, d_domain
+        nonlocal logger, zkhandler, keepalive_timer, d_domain, monitoring_instance
 
         logger.out("Terminating pvcnoded and cleaning up", state="s")
 
@@ -250,6 +252,13 @@ def entrypoint():
 
             logger.out("Performing final keepalive update", state="s")
             pvcnoded.util.keepalive.node_keepalive(logger, config, zkhandler, this_node)
+        except Exception:
+            pass
+
+        # Clean up any monitoring plugins that have cleanup
+        try:
+            logger.out("Performing monitoring plugin cleanup", state="s")
+            monitoring_instance.run_cleanups()
         except Exception:
             pass
 
@@ -1015,9 +1024,14 @@ def entrypoint():
                         state="i",
                     )
 
+    # Set up the node monitoring instance
+    monitoring_instance = MonitoringInstance.MonitoringInstance(
+        zkhandler, config, logger, this_node
+    )
+
     # Start keepalived thread
     keepalive_timer = pvcnoded.util.keepalive.start_keepalive_timer(
-        logger, config, zkhandler, this_node
+        logger, config, zkhandler, this_node, monitoring_instance
     )
 
     # Tick loop; does nothing since everything is async

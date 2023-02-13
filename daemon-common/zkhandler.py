@@ -540,7 +540,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 8
+    _version = 9
 
     # Root for doing nested keys
     _schema_root = ""
@@ -608,6 +608,17 @@ class ZKSchema(object):
             "sriov": "/sriov",
             "sriov.pf": "/sriov/pf",
             "sriov.vf": "/sriov/vf",
+            "monitoring.plugins": "/monitoring_plugins",
+            "monitoring.data": "/monitoring_data",
+        },
+        # The schema of an individual monitoring plugin data entry (/nodes/{node_name}/monitoring_data/{plugin})
+        "monitoring_plugin": {
+            "name": "",  # The root key
+            "last_run": "/last_run",
+            "health_delta": "/health_delta",
+            "message": "/message",
+            "data": "/data",
+            "runtime": "/runtime",
         },
         # The schema of an individual SR-IOV PF entry (/nodes/{node_name}/sriov/pf/{pf})
         "sriov_pf": {"phy": "", "mtu": "/mtu", "vfcount": "/vfcount"},  # The root key
@@ -874,9 +885,10 @@ class ZKSchema(object):
                                 if not zkhandler.zk_conn.exists(nkipath):
                                     result = False
 
-                    # One might expect child keys under node (specifically, sriov.pf and sriov.vf) to be
-                    # managed here as well, but those are created automatically every time pvcnoded starts
-                    # and thus never need to be validated or applied.
+                    # One might expect child keys under node (specifically, sriov.pf, sriov.vf,
+                    # monitoring.data) to be managed here as well, but those are created
+                    # automatically every time pvcnoded started and thus never need to be validated
+                    # or applied.
 
         # These two have several children layers that must be parsed through
         for elem in ["volume"]:

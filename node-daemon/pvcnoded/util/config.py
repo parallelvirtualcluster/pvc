@@ -180,6 +180,9 @@ def get_configuration():
         raise MalformedConfigurationError(e)
 
     config_directories = {
+        "plugin_directory": o_directories.get(
+            "plugin_directory", "/usr/share/pvc/plugins"
+        ),
         "dynamic_directory": o_directories.get("dynamic_directory", None),
         "log_directory": o_directories.get("log_directory", None),
         "console_log_directory": o_directories.get("console_log_directory", None),
