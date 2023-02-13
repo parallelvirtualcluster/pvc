@@ -372,3 +372,12 @@ class MonitoringInstance(object):
             for future in concurrent.futures.as_completed(to_future_plugin_results):
                 # This doesn't do anything, just lets us wait for them all to complete
                 pass
+        # Set the node health to None as no previous checks are now valid
+        self.zkhandler.write(
+            [
+                (
+                    ("node.monitoring.health", self.this_node.name),
+                    None,
+                ),
+            ]
+        )
