@@ -50,7 +50,10 @@ def getNodeInformation(zkhandler, node_name):
         zkhandler.read(("node.count.provisioned_domains", node_name))
     )
     node_running_domains = zkhandler.read(("node.running_domains", node_name)).split()
-    node_health = int(zkhandler.read(("node.monitoring.health", node_name)))
+    try:
+        node_health = int(zkhandler.read(("node.monitoring.health", node_name)))
+    except ValueError:
+        node_health = "N/A"
     node_health_plugins = zkhandler.read(("node.monitoring.plugins", node_name)).split()
     node_health_details = list()
     for plugin in node_health_plugins:

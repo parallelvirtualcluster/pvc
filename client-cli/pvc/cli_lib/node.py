@@ -215,13 +215,16 @@ def node_list(
 # Output display functions
 #
 def getOutputColours(node_information):
-    node_health = node_information.get("health", 999)
-    if node_health <= 50:
-        health_colour = ansiprint.red()
-    elif node_health <= 90:
-        health_colour = ansiprint.yellow()
-    elif node_health <= 100:
-        health_colour = ansiprint.green()
+    node_health = node_information.get("health", "N/A")
+    if isinstance(node_health, int):
+        if node_health <= 50:
+            health_colour = ansiprint.red()
+        elif node_health <= 90:
+            health_colour = ansiprint.yellow()
+        elif node_health <= 100:
+            health_colour = ansiprint.green()
+        else:
+            health_colour = ansiprint.blue()
     else:
         health_colour = ansiprint.blue()
 
@@ -304,7 +307,7 @@ def format_info(node_information, long_output):
     else:
         node_health_text = node_health
     ainformation.append(
-        "{}Health Value:{}          {}{}{}".format(
+        "{}Health:{}                {}{}{}".format(
             ansiprint.purple(),
             ansiprint.end(),
             health_colour,
@@ -312,6 +315,28 @@ def format_info(node_information, long_output):
             ansiprint.end(),
         )
     )
+
+    node_health_details = node_information.get("health_details", [])
+    if long_output:
+        node_health_messages = "\n                       ".join(
+            [f"{plugin['name']}: {plugin['message']}" for plugin in node_health_details]
+        )
+    else:
+        node_health_messages = "\n                       ".join(
+            [
+                f"{plugin['name']}: {plugin['message']}"
+                for plugin in node_health_details
+                if int(plugin.get("health_delta", 0)) > 0
+            ]
+        )
+
+    if len(node_health_messages) > 0:
+        ainformation.append(
+            "{}Health Plugin Details:{} {}".format(
+                ansiprint.purple(), ansiprint.end(), node_health_messages
+            )
+        )
+    ainformation.append("")
 
     ainformation.append(
         "{}Daemon State:{}          {}{}{}".format(
@@ -340,11 +365,6 @@ def format_info(node_information, long_output):
             ansiprint.end(),
         )
     )
-    ainformation.append(
-        "{}Active VM Count:{}       {}".format(
-            ansiprint.purple(), ansiprint.end(), node_information["domains_count"]
-        )
-    )
     if long_output:
         ainformation.append("")
         ainformation.append(
@@ -363,6 +383,11 @@ def format_info(node_information, long_output):
             )
         )
     ainformation.append("")
+    ainformation.append(
+        "{}Active VM Count:{}       {}".format(
+            ansiprint.purple(), ansiprint.end(), node_information["domains_count"]
+        )
+    )
     ainformation.append(
         "{}Host CPUs:{}             {}".format(
             ansiprint.purple(), ansiprint.end(), node_information["vcpu"]["total"]
