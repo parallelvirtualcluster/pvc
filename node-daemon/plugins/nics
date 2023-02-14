@@ -69,7 +69,7 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Run any imports first
         import daemon_lib.common as common
-        from re import match, search
+        from re import match, search, findall
 
         messages = list()
         health_delta = 0
@@ -150,7 +150,7 @@ class MonitoringPluginScript(MonitoringPlugin):
                             in_modes = False
                             break
                         if in_modes:
-                            speed = int(line.split()[-1].replace('baseT', '').split('/')[0])
+                            speed = int(findall(r'\d+', line.split()[-1])[0])
                             supported_link_speeds.add(speed)
             else:
                 # Get ethtool supported speeds for interface
