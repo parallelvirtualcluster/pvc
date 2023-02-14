@@ -326,10 +326,11 @@ class MonitoringInstance(object):
 
     def run_plugins(self):
         total_health = 100
-        self.logger.out(
-            f"Running monitoring plugins: {', '.join([x.plugin_name for x in self.all_plugins])}",
-            state="t",
-        )
+        if self.config["log_keepalive_plugin_details"]:
+            self.logger.out(
+                f"Running monitoring plugins: {', '.join([x.plugin_name for x in self.all_plugins])}",
+                state="t",
+            )
         plugin_results = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=99) as executor:
             to_future_plugin_results = {
@@ -340,11 +341,12 @@ class MonitoringInstance(object):
                 plugin_results.append(future.result())
 
         for result in sorted(plugin_results, key=lambda x: x.plugin_name):
-            self.logger.out(
-                result.message,
-                state="t",
-                prefix=f"{result.plugin_name} ({result.runtime}s)",
-            )
+            if self.config["log_keepalive_plugin_details"]:
+                self.logger.out(
+                    result.message,
+                    state="t",
+                    prefix=f"{result.plugin_name} ({result.runtime}s)",
+                )
             if result is not None:
                 total_health -= result.health_delta
 

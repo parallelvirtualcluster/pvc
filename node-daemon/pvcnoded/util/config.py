@@ -228,8 +228,8 @@ def get_configuration():
         "log_keepalive_cluster_details": o_logging.get(
             "log_keepalive_cluster_details", False
         ),
-        "log_keepalive_storage_details": o_logging.get(
-            "log_keepalive_storage_details", False
+        "log_keepalive_plugin_details": o_logging.get(
+            "log_keepalive_plugin_details", False
         ),
         "console_log_lines": o_logging.get("console_log_lines", False),
         "node_log_lines": o_logging.get("node_log_lines", False),
