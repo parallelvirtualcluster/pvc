@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+# edac.py - PVC Monitoring example plugin for EDAC
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+# This script provides an example of a PVC monitoring plugin script. It will create
+# a simple plugin to check the system's EDAC registers and report any failures.
+
+# This script can thus be used as an example or reference implementation of a
+# PVC monitoring pluginscript and expanded upon as required.
+
+# A monitoring plugin script must implement the class "MonitoringPluginScript" which
+# extends "MonitoringPlugin", providing the 3 functions indicated. Detailed explanation
+# of the role of each function is provided in context of the example; see the other
+# examples for more potential uses.
+
+# WARNING:
+#
+# This script will run in the context of the node daemon keepalives as root.
+# DO NOT install untrusted, unvetted plugins under any circumstances.
+
+
+# This import is always required here, as MonitoringPlugin is used by the
+# MonitoringPluginScript class
+from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+
+
+# A monitoring plugin script must always expose its nice name, which must be identical to
+# the file name
+PLUGIN_NAME = "edac"
+
+
+# The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
+class MonitoringPluginScript(MonitoringPlugin):
+    def setup(self):
+        """
+        setup(): Perform special setup steps during node daemon startup
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass
+
+    def run(self):
+        """
+        run(): Perform the check actions and return a PluginResult object
+        """
+
+        # Run any imports first
+        import daemon_lib.common as common
+        from re import match, search
+
+        # Get edac-util output
+        retcode, stdout, stderr = common.run_os_command('/usr/bin/edac-util')
+
+        # If there's no errors, we're OK
+        if match(r'^edac-util: No errors to report.', stdout):
+            health_delta = 0
+            message = "EDAC reports no errors"
+        else:
+            health_delta = 0
+            message = "EDAC reports errors: "
+            errors = list()
+            for line in stdout.split('\n'):
+                if match(r'^mc[0-9]: csrow', line):
+                    if 'Corrected' not in line:
+                        health_delta = 10
+                    errors.append(' '.join(line.split()[2:]))
+            message += ', '.join(errors)
+
+        # Set the health delta in our local PluginResult object
+        self.plugin_result.set_health_delta(health_delta)
+
+        # Set the message in our local PluginResult object
+        self.plugin_result.set_message(message)
+
+        # Return our local PluginResult object
+        return self.plugin_result
+
+    def cleanup(self):
+        """
+        cleanup(): Perform special cleanup steps during node daemon termination
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass
