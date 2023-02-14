@@ -52,9 +52,15 @@ def getNodeInformation(zkhandler, node_name):
     node_running_domains = zkhandler.read(("node.running_domains", node_name)).split()
     try:
         node_health = int(zkhandler.read(("node.monitoring.health", node_name)))
-    except ValueError:
+    except Exception:
         node_health = "N/A"
-    node_health_plugins = zkhandler.read(("node.monitoring.plugins", node_name)).split()
+    try:
+        node_health_plugins = zkhandler.read(
+            ("node.monitoring.plugins", node_name)
+        ).split()
+    except Exception:
+        node_health_plugins = list()
+
     node_health_details = list()
     for plugin in node_health_plugins:
         plugin_last_run = zkhandler.read(

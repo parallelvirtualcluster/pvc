@@ -190,6 +190,8 @@ class MonitoringInstance(object):
         self.all_plugins = list()
         self.all_plugin_names = list()
 
+        successful_plugins = 0
+
         # Load each plugin file into the all_plugins list
         for plugin_file in sorted(plugin_files):
             try:
@@ -211,8 +213,6 @@ class MonitoringInstance(object):
                     self.this_node,
                     plugin_script.PLUGIN_NAME,
                 )
-                self.all_plugins.append(plugin)
-                self.all_plugin_names.append(plugin.plugin_name)
 
                 # Create plugin key
                 self.zkhandler.write(
@@ -273,6 +273,11 @@ class MonitoringInstance(object):
                         ),
                     ]
                 )
+
+                self.all_plugins.append(plugin)
+                self.all_plugin_names.append(plugin.plugin_name)
+                successful_plugins += 1
+
                 self.logger.out(
                     f"Successfully loaded monitoring plugin '{plugin.plugin_name}'",
                     state="o",
@@ -291,6 +296,9 @@ class MonitoringInstance(object):
                 ),
             ]
         )
+
+        if successful_plugins < 1:
+            return
 
         # Clean up any old plugin data for which a plugin file no longer exists
         for plugin_key in self.zkhandler.children(
