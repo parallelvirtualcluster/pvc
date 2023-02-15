@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-import re
+from json import loads
 
 import daemon_lib.common as common
 import daemon_lib.vm as pvc_vm
@@ -44,13 +44,99 @@ def set_maintenance(zkhandler, maint_state):
         return True, "Successfully set cluster in normal mode"
 
 
+def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
+    health_delta_map = {
+        'node_stopped': 50,
+        'node_flushed': 10,
+        'vm_stopped': 10,
+        'osd_out': 50,
+        'osd_down': 10,
+        'memory_overprovisioned': 50,
+        'ceph_err': 50,
+        'ceph_warn': 10,
+    }
+
+    # Generate total cluster health numbers
+    cluster_health = 100
+    messages = list()
+
+    for index, node in enumerate(node_list):
+        # Apply node health values to total health number
+        cluster_health -= 100 - node['health']
+        for entry in node['health_details']:
+            if entry['health_delta'] > 0:
+                messages.append(f"{node['name']}: plugin {entry['plugin_name']}: {entry['message']}")
+
+        # Handle unhealthy node states
+        if node['daemon_state'] not in ['run']:
+            cluster_health -= health_delta_map['node_stopped']
+            messages.append(f"cluster: {node['name']} in {node['daemon_state']} daemon state")
+        elif node['domain_state'] not in ['ready']:
+            cluster_health -= health_delta_map['node_flushed']
+            messages.append(f"cluster: {node['name']} in {node['domain_state']} domain state")
+
+    for index, vm in enumerate(vm_list):
+        # Handle unhealthy VM states
+        if vm['state'] not in ["start", "disable", "migrate", "unmigrate", "provision"]:
+            cluster_health -= health_delta_map['vm_stopped']
+            messages.append(f"cluster: {vm['name']} in {vm['state']} state")
+
+    for index, ceph_osd in enumerate(ceph_osd_list):
+        in_texts = {1: "in", 0: "out"}
+        up_texts = {1: "up", 0: "down"}
+
+        # Handle unhealthy OSD states
+        if in_texts[ceph_osd["stats"]["in"]] not in ["in"]:
+            cluster_health -= health_delta_map['osd_out']
+            messages.append(f"cluster: OSD {ceph_osd['id']} in {in_texts[ceph_osd['stats']['in']]} state")
+        elif up_texts[ceph_osd["stats"]["up"]] not in ['up']:
+            cluster_health -= health_delta_map['osd_down']
+            messages.append(f"cluster: OSD {ceph_osd['id']} in {up_texts[ceph_osd['stats']['up']]} state")
+
+    # Check for (n-1) overprovisioning
+    #   Assume X nodes. If the total VM memory allocation (counting only running VMss) is greater than
+    #   the total memory of the (n-1) smallest nodes, trigger this warning.
+    n_minus_1_total = 0
+    alloc_total = 0
+    node_largest_index = None
+    node_largest_count = 0
+    for index, node in enumerate(node_list):
+        node_mem_total = node["memory"]["total"]
+        node_mem_alloc = node["memory"]["allocated"]
+        alloc_total += node_mem_alloc
+        # Determine if this node is the largest seen so far
+        if node_mem_total > node_largest_count:
+            node_largest_index = index
+            node_largest_count = node_mem_total
+    n_minus_1_node_list = list()
+    for index, node in enumerate(node_list):
+        if index == node_largest_index:
+            continue
+        n_minus_1_node_list.append(node)
+    for index, node in enumerate(n_minus_1_node_list):
+        n_minus_1_total += node["memory"]["total"]
+    if alloc_total > n_minus_1_total:
+        cluster_health -= health_delta_map['memory_overprovisioned']
+        messages.append(f"cluster: Total VM memory is overprovisioned ({alloc_total} > {n_minus_1_total} n-1)")
+
+    # Check Ceph cluster health
+    ceph_health = loads(zkhandler.read("base.storage.health"))
+    ceph_health_status = ceph_health["status"]
+    ceph_health_entries = ceph_health["checks"].keys()
+
+    if ceph_health_status == 'HEALTH_ERR':
+        cluster_health -= health_delta_map['ceph_err']
+        messages.append(f"cluster: Ceph cluster in ERROR state: {', '.join(ceph_health_entries)}")
+    elif ceph_health_status == 'HEALTH_WARN':
+        cluster_health -= health_delta_map['ceph_warn']
+        messages.append(f"cluster: Ceph cluster in WARNING state: {', '.join(ceph_health_entries)}")
+
+    return cluster_health, messages
+
+
 def getClusterInformation(zkhandler):
     # Get cluster maintenance state
-    maint_state = zkhandler.read("base.config.maintenance")
-
-    # List of messages to display to the clients
-    cluster_health_msg = []
-    storage_health_msg = []
+    maintenance_state = zkhandler.read("base.config.maintenance")
 
     # Get node information object list
     retcode, node_list = pvc_node.get_list(zkhandler, None)
@@ -77,135 +163,6 @@ def getClusterInformation(zkhandler):
     ceph_pool_count = len(ceph_pool_list)
     ceph_volume_count = len(ceph_volume_list)
     ceph_snapshot_count = len(ceph_snapshot_list)
-
-    # Determinations for general cluster health
-    cluster_healthy_status = True
-    # Check for (n-1) overprovisioning
-    #   Assume X nodes. If the total VM memory allocation (counting only running VMss) is greater than
-    #   the total memory of the (n-1) smallest nodes, trigger this warning.
-    n_minus_1_total = 0
-    alloc_total = 0
-
-    node_largest_index = None
-    node_largest_count = 0
-    for index, node in enumerate(node_list):
-        node_mem_total = node["memory"]["total"]
-        node_mem_alloc = node["memory"]["allocated"]
-        alloc_total += node_mem_alloc
-
-        # Determine if this node is the largest seen so far
-        if node_mem_total > node_largest_count:
-            node_largest_index = index
-            node_largest_count = node_mem_total
-    n_minus_1_node_list = list()
-    for index, node in enumerate(node_list):
-        if index == node_largest_index:
-            continue
-        n_minus_1_node_list.append(node)
-    for index, node in enumerate(n_minus_1_node_list):
-        n_minus_1_total += node["memory"]["total"]
-    if alloc_total > n_minus_1_total:
-        cluster_healthy_status = False
-        cluster_health_msg.append(
-            "Total VM memory ({}) is overprovisioned (max {}) for (n-1) failure scenarios".format(
-                alloc_total, n_minus_1_total
-            )
-        )
-
-    # Determinations for node health
-    node_healthy_status = list(range(0, node_count))
-    node_report_status = list(range(0, node_count))
-    for index, node in enumerate(node_list):
-        daemon_state = node["daemon_state"]
-        domain_state = node["domain_state"]
-        if daemon_state != "run" and domain_state != "ready":
-            node_healthy_status[index] = False
-            cluster_health_msg.append(
-                "Node '{}' in {},{} state".format(
-                    node["name"], daemon_state, domain_state
-                )
-            )
-        else:
-            node_healthy_status[index] = True
-        node_report_status[index] = daemon_state + "," + domain_state
-
-    # Determinations for VM health
-    vm_healthy_status = list(range(0, vm_count))
-    vm_report_status = list(range(0, vm_count))
-    for index, vm in enumerate(vm_list):
-        vm_state = vm["state"]
-        if vm_state not in ["start", "disable", "migrate", "unmigrate", "provision"]:
-            vm_healthy_status[index] = False
-            cluster_health_msg.append(
-                "VM '{}' in {} state".format(vm["name"], vm_state)
-            )
-        else:
-            vm_healthy_status[index] = True
-        vm_report_status[index] = vm_state
-
-    # Determinations for OSD health
-    ceph_osd_healthy_status = list(range(0, ceph_osd_count))
-    ceph_osd_report_status = list(range(0, ceph_osd_count))
-    for index, ceph_osd in enumerate(ceph_osd_list):
-        try:
-            ceph_osd_up = ceph_osd["stats"]["up"]
-        except KeyError:
-            ceph_osd_up = 0
-
-        try:
-            ceph_osd_in = ceph_osd["stats"]["in"]
-        except KeyError:
-            ceph_osd_in = 0
-
-        up_texts = {1: "up", 0: "down"}
-        in_texts = {1: "in", 0: "out"}
-
-        if not ceph_osd_up or not ceph_osd_in:
-            ceph_osd_healthy_status[index] = False
-            cluster_health_msg.append(
-                "OSD {} in {},{} state".format(
-                    ceph_osd["id"], up_texts[ceph_osd_up], in_texts[ceph_osd_in]
-                )
-            )
-        else:
-            ceph_osd_healthy_status[index] = True
-        ceph_osd_report_status[index] = (
-            up_texts[ceph_osd_up] + "," + in_texts[ceph_osd_in]
-        )
-
-    # Find out the overall cluster health; if any element of a healthy_status is false, it's unhealthy
-    if maint_state == "true":
-        cluster_health = "Maintenance"
-    elif (
-        cluster_healthy_status is False
-        or False in node_healthy_status
-        or False in vm_healthy_status
-        or False in ceph_osd_healthy_status
-    ):
-        cluster_health = "Degraded"
-    else:
-        cluster_health = "Optimal"
-
-    # Find out our storage health from Ceph
-    ceph_status = zkhandler.read("base.storage").split("\n")
-    ceph_health = ceph_status[2].split()[-1]
-
-    # Parse the status output to get the health indicators
-    line_record = False
-    for index, line in enumerate(ceph_status):
-        if re.search("services:", line):
-            line_record = False
-        if line_record and len(line.strip()) > 0:
-            storage_health_msg.append(line.strip())
-        if re.search("health:", line):
-            line_record = True
-
-    if maint_state == "true":
-        storage_health = "Maintenance"
-    elif ceph_health != "HEALTH_OK":
-        storage_health = "Degraded"
-    else:
-        storage_health = "Optimal"
 
     # State lists
     node_state_combinations = [
@@ -237,13 +194,19 @@ def getClusterInformation(zkhandler):
         "unmigrate",
         "provision",
     ]
-    ceph_osd_state_combinations = ["up,in", "up,out", "down,in", "down,out"]
+    ceph_osd_state_combinations = [
+        "up,in",
+        "up,out",
+        "down,in",
+        "down,out",
+    ]
 
     # Format the Node states
     formatted_node_states = {"total": node_count}
     for state in node_state_combinations:
         state_count = 0
-        for node_state in node_report_status:
+        for node in node_list:
+            node_state = f"{node['daemon_state']},{node['domain_state']}"
             if node_state == state:
                 state_count += 1
         if state_count > 0:
@@ -253,28 +216,33 @@ def getClusterInformation(zkhandler):
     formatted_vm_states = {"total": vm_count}
     for state in vm_state_combinations:
         state_count = 0
-        for vm_state in vm_report_status:
-            if vm_state == state:
+        for vm in vm_list:
+            if vm["state"] == state:
                 state_count += 1
         if state_count > 0:
             formatted_vm_states[state] = state_count
 
     # Format the OSD states
+    up_texts = {1: "up", 0: "down"}
+    in_texts = {1: "in", 0: "out"}
     formatted_osd_states = {"total": ceph_osd_count}
     for state in ceph_osd_state_combinations:
         state_count = 0
-        for ceph_osd_state in ceph_osd_report_status:
+        for ceph_osd in ceph_osd_list:
+            ceph_osd_state = f"{up_texts[ceph_osd['stats']['up']]},{in_texts[ceph_osd['stats']['in']]}"
             if ceph_osd_state == state:
                 state_count += 1
         if state_count > 0:
             formatted_osd_states[state] = state_count
 
+    # Get cluster health data
+    cluster_health, cluster_health_messages = getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list)
+
     # Format the status data
     cluster_information = {
         "health": cluster_health,
-        "health_msg": cluster_health_msg,
-        "storage_health": storage_health,
-        "storage_health_msg": storage_health_msg,
+        "health_messages": cluster_health_messages,
+        "maintenance": maintenance_state,
         "primary_node": common.getPrimaryNode(zkhandler),
         "upstream_ip": zkhandler.read("base.config.upstream_ip"),
         "nodes": formatted_node_states,

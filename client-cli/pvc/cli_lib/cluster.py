@@ -125,81 +125,41 @@ def format_info(cluster_information, oformat):
         return json.dumps(cluster_information, indent=4)
 
     # Plain formatting, i.e. human-readable
-    if cluster_information["health"] == "Optimal":
-        health_colour = ansiprint.green()
-    elif cluster_information["health"] == "Maintenance":
+    if cluster_information["maintenance"] == "True":
         health_colour = ansiprint.blue()
-    else:
+    elif cluster_information["health"] > 90:
+        health_colour = ansiprint.green()
+    elif cluster_information["health"] > 50:
         health_colour = ansiprint.yellow()
-
-    if cluster_information["storage_health"] == "Optimal":
-        storage_health_colour = ansiprint.green()
-    elif cluster_information["storage_health"] == "Maintenance":
-        storage_health_colour = ansiprint.blue()
     else:
-        storage_health_colour = ansiprint.yellow()
+        health_colour = ansiprint.red()
 
     ainformation = []
-
-    if oformat == "short":
-        ainformation.append(
-            "{}PVC cluster status:{}".format(ansiprint.bold(), ansiprint.end())
-        )
-        ainformation.append(
-            "{}Cluster health:{}      {}{}{}".format(
-                ansiprint.purple(),
-                ansiprint.end(),
-                health_colour,
-                cluster_information["health"],
-                ansiprint.end(),
-            )
-        )
-        if cluster_information["health_msg"]:
-            for line in cluster_information["health_msg"]:
-                ainformation.append("                     > {}".format(line))
-        ainformation.append(
-            "{}Storage health:{}      {}{}{}".format(
-                ansiprint.purple(),
-                ansiprint.end(),
-                storage_health_colour,
-                cluster_information["storage_health"],
-                ansiprint.end(),
-            )
-        )
-        if cluster_information["storage_health_msg"]:
-            for line in cluster_information["storage_health_msg"]:
-                ainformation.append("                     > {}".format(line))
-
-        return "\n".join(ainformation)
 
     ainformation.append(
         "{}PVC cluster status:{}".format(ansiprint.bold(), ansiprint.end())
     )
     ainformation.append("")
+
+    health_text = f"{cluster_information['health']}%"
+    if cluster_information["maintenance"] == "True":
+        health_text += " (maintenance on)"
+
     ainformation.append(
         "{}Cluster health:{}      {}{}{}".format(
             ansiprint.purple(),
             ansiprint.end(),
             health_colour,
-            cluster_information["health"],
+            health_text,
             ansiprint.end(),
         )
     )
-    if cluster_information["health_msg"]:
-        for line in cluster_information["health_msg"]:
+    if cluster_information["health_messages"]:
+        for line in cluster_information["health_messages"]:
             ainformation.append("                     > {}".format(line))
-    ainformation.append(
-        "{}Storage health:{}      {}{}{}".format(
-            ansiprint.purple(),
-            ansiprint.end(),
-            storage_health_colour,
-            cluster_information["storage_health"],
-            ansiprint.end(),
-        )
-    )
-    if cluster_information["storage_health_msg"]:
-        for line in cluster_information["storage_health_msg"]:
-            ainformation.append("                     > {}".format(line))
+
+    if oformat == "short":
+        return "\n".join(ainformation)
 
     ainformation.append("")
     ainformation.append(
