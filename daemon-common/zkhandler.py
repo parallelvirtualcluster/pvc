@@ -569,6 +569,7 @@ class ZKSchema(object):
             "domain": f"{_schema_root}/domains",
             "network": f"{_schema_root}/networks",
             "storage": f"{_schema_root}/ceph",
+            "storage.health": f"{_schema_root}/ceph/health",
             "storage.util": f"{_schema_root}/ceph/util",
             "osd": f"{_schema_root}/ceph/osds",
             "pool": f"{_schema_root}/ceph/pools",

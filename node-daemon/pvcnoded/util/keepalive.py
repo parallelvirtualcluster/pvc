@@ -99,9 +99,10 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
 
     # Primary-only functions
     if this_node.router_state == "primary":
+        # Get Ceph status information (pretty)
         if debug:
             logger.out(
-                "Set ceph health information in zookeeper (primary only)",
+                "Set Ceph status information in zookeeper (primary only)",
                 state="d",
                 prefix="ceph-thread",
             )
@@ -115,9 +116,27 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
         except Exception as e:
             logger.out("Failed to set Ceph status data: {}".format(e), state="e")
 
+        # Get Ceph health information (JSON)
         if debug:
             logger.out(
-                "Set ceph rados df information in zookeeper (primary only)",
+                "Set Ceph health information in zookeeper (primary only)",
+                state="d",
+                prefix="ceph-thread",
+            )
+
+        command = {"prefix": "health", "format": "json"}
+        ceph_health = ceph_conn.mon_command(json.dumps(command), b"", timeout=1)[
+            1
+        ].decode("ascii")
+        try:
+            zkhandler.write([("base.storage.health", str(ceph_health))])
+        except Exception as e:
+            logger.out("Failed to set Ceph health data: {}".format(e), state="e")
+
+        # Get Ceph df information (pretty)
+        if debug:
+            logger.out(
+                "Set Ceph rados df information in zookeeper (primary only)",
                 state="d",
                 prefix="ceph-thread",
             )
