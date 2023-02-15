@@ -366,7 +366,7 @@ class MonitoringInstance(object):
             ]
         )
         self.logger.out(
-            f"Node health: {health_colour}{total_health}/100{self.logger.fmt_end}",
+            f"Node health: {health_colour}{total_health}%{self.logger.fmt_end}",
             state="t",
         )
 
