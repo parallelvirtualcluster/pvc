@@ -28,6 +28,14 @@ from datetime import datetime
 from json import dumps
 
 
+class PluginError(Exception):
+    """
+    An exception that results from a plugin failing setup
+    """
+
+    pass
+
+
 class PluginResult(object):
     def __init__(self, zkhandler, config, logger, this_node, plugin_name):
         self.zkhandler = zkhandler
@@ -157,7 +165,11 @@ class MonitoringPlugin(object):
     def setup(self):
         """
         setup(): Perform setup of the plugin; run once during daemon startup
-        OPTIONAL
+
+        This step is optional and should be used sparingly.
+
+        If you wish for the plugin to not load in certain conditions, do any checks here
+        and return a non-None failure message to indicate the error.
         """
         pass
 
@@ -213,6 +225,10 @@ class MonitoringInstance(object):
                     self.this_node,
                     plugin_script.PLUGIN_NAME,
                 )
+
+                failed_setup = plugin.setup()
+                if failed_setup is not None:
+                    raise PluginError(f"{failed_setup}")
 
                 # Create plugin key
                 self.zkhandler.write(
