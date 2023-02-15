@@ -158,6 +158,25 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
     return cluster_health, messages
 
 
+def getNodeHealth(zkhandler, node_list):
+    node_health = dict()
+    for index, node in enumerate(node_list):
+        node_health_messages = list()
+        node_health_value = node["health"]
+        for entry in node["health_details"]:
+            if entry["health_delta"] > 0:
+                node_health_messages.append(f"'{entry['name']}': {entry['message']}")
+
+        node_health_entry = {
+            "health": node_health_value,
+            "messages": node_health_messages,
+        }
+
+        node_health[node["name"]] = node_health_entry
+
+    return node_health
+
+
 def getClusterInformation(zkhandler):
     # Get cluster maintenance state
     maintenance_state = zkhandler.read("base.config.maintenance")
@@ -268,6 +287,7 @@ def getClusterInformation(zkhandler):
     cluster_information = {
         "health": cluster_health,
         "health_messages": cluster_health_messages,
+        "node_health": getNodeHealth(zkhandler, node_list),
         "maintenance": maintenance_state,
         "primary_node": common.getPrimaryNode(zkhandler),
         "upstream_ip": zkhandler.read("base.config.upstream_ip"),
