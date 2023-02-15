@@ -366,6 +366,9 @@ class MonitoringInstance(object):
             if result is not None:
                 total_health -= result.health_delta
 
+        if total_health < 0:
+            total_health = 0
+
         if total_health > 90:
             health_colour = self.logger.fmt_green
         elif total_health > 50:

@@ -155,6 +155,9 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
     elif ceph_health_status == "HEALTH_WARN":
         cluster_health -= health_delta_map["ceph_warn"]
 
+    if cluster_health < 0:
+        cluster_health = 0
+
     return cluster_health, messages
 
 
