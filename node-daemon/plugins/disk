@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+
+# disk.py - PVC Monitoring example plugin for disk (system + OSD)
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+# This script provides an example of a PVC monitoring plugin script. It will create
+# a simple plugin to check the system and OSD disks for errors and faults and return
+# a health delta corresponding to severity.
+
+# This script can thus be used as an example or reference implementation of a
+# PVC monitoring pluginscript and expanded upon as required.
+
+# A monitoring plugin script must implement the class "MonitoringPluginScript" which
+# extends "MonitoringPlugin", providing the 3 functions indicated. Detailed explanation
+# of the role of each function is provided in context of the example; see the other
+# examples for more potential uses.
+
+# WARNING:
+#
+# This script will run in the context of the node daemon keepalives as root.
+# DO NOT install untrusted, unvetted plugins under any circumstances.
+
+
+# This import is always required here, as MonitoringPlugin is used by the
+# MonitoringPluginScript class
+from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+
+
+# A monitoring plugin script must always expose its nice name, which must be identical to
+# the file name
+PLUGIN_NAME = "disk"
+
+
+# The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
+class MonitoringPluginScript(MonitoringPlugin):
+    def setup(self):
+        """
+        setup(): Perform special setup steps during node daemon startup
+
+        This step is optional and should be used sparingly.
+
+        If you wish for the plugin to not load in certain conditions, do any checks here
+        and return a non-None failure message to indicate the error.
+        """
+
+        from daemon_lib.common import run_os_command
+        from json import loads
+
+        _, _all_disks, _ = run_os_command("lsblk --json --paths --include 8,259")
+        try:
+            all_disks = loads(_all_disks)
+        except Exception as e:
+            return f"Error loading lsblk JSON: {e}"
+
+        disk_details = list()
+
+        def get_smartinfo(disk, extra_opt=""):
+            _, _smart_info, _ = run_os_command(f"smartctl --info --json {extra_opt} {disk}")
+            try:
+                smart_info = loads(_smart_info)
+            except Exception as e:
+                return None
+
+            return smart_info
+
+        for disk in [disk["name"] for disk in all_disks['blockdevices']]:
+            extra_opt = ""
+            smart_info = get_smartinfo(disk)
+            if smart_info is None or smart_info["smartctl"]["exit_status"] > 1:
+                continue
+            elif smart_info["smartctl"]["exit_status"] == 1:
+                if "requires option" in smart_info["smartctl"]["messages"][0]["string"]:
+                    extra_opt = smart_info["smartctl"]["messages"][0]["string"].split("'")[1].replace('N','0')
+                    smart_info = get_smartinfo(disk, extra_opt)
+                    if smart_info is None or smart_info["smartctl"]["exit_status"] > 0:
+                        continue
+                else:
+                    continue
+
+            disk_type = smart_info["device"]["type"]
+
+            disk_details.append((disk, extra_opt, disk_type))
+
+        self.disk_details = disk_details
+
+
+    def run(self):
+        """
+        run(): Perform the check actions and return a PluginResult object
+        """
+
+        # Re-run setup each time to ensure the disk details are current
+        self.setup()
+
+        # Run any imports first
+        from daemon_lib.common import run_os_command
+        from json import loads
+
+        health_delta = 0
+        messages = list()
+
+        for _disk in self.disk_details:
+            disk = _disk[0]
+            extra_opt = _disk[1]
+            disk_type = _disk[2]
+
+            _, _smart_info, _ = run_os_command(f"smartctl --all --json {extra_opt} {disk}")
+            try:
+                smart_info = loads(_smart_info)
+            except Exception as e:
+                health_delta += 10
+                messages.append(f"{disk} failed to load SMART data")
+                continue
+
+            if disk_type == 'nvme':
+                for attribute in smart_info['nvme_smart_health_information_log'].items():
+                    if attribute[0] == "critical_warning" and attribute[1] > 0:
+                        health_delta += 10
+                        messages.append(f"{disk} critical warning value {attribute[1]}")
+                    if attribute[0] == "media_errors" and attribute[1] > 0:
+                        health_delta += 10
+                        messages.append(f"{disk} media errors value {attribute[1]}")
+                    if attribute[0] == "percentage_used" and attribute[1] > 90:
+                        health_delta += 10
+                        messages.append(f"{disk} percentage used value {attribute[1]}%")
+            else:
+                for attribute in smart_info['ata_smart_attributes']['table']:
+                    if attribute["when_failed"]:
+                        health_delta += 10
+                        messages.append(f"{disk} attribute {attribute['name']} value {attribute['raw']['value']}")
+
+        if len(messages) < 1:
+            messages.append(f"All {len(self.disk_details)} checked disks report OK: {', '.join([disk[0] for disk in self.disk_details])}")
+
+        # Set the health delta in our local PluginResult object
+        self.plugin_result.set_health_delta(health_delta)
+
+        # Set the message in our local PluginResult object
+        self.plugin_result.set_message(', '.join(messages))
+
+        # Return our local PluginResult object
+        return self.plugin_result
+
+    def cleanup(self):
+        """
+        cleanup(): Perform special cleanup steps during node daemon termination
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass

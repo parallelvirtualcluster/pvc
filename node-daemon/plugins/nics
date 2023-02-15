@@ -58,6 +58,9 @@ class MonitoringPluginScript(MonitoringPlugin):
         setup(): Perform special setup steps during node daemon startup
 
         This step is optional and should be used sparingly.
+
+        If you wish for the plugin to not load in certain conditions, do any checks here
+        and return a non-None failure message to indicate the error.
         """
 
         pass
