@@ -133,7 +133,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         self.plugin_result.set_health_delta(health_delta)
 
         # Craft the message
-        message = f"Debian {debian_version}; Obsolete conffiles: {count_obsolete_conffiles}; Packages valid: {count_ok}, inconsistent: {count_inconsistent}, upgradable: {count_upgradable}"
+        message = f"Debian {debian_version}; Obsolete conffiles: {count_obsolete_conffiles}; Packages inconsistent: {count_inconsistent}, upgradable: {count_upgradable}"
 
         # Set the message in our local PluginResult object
         self.plugin_result.set_message(message)
