@@ -146,7 +146,7 @@ def format_info(cluster_information, oformat):
         health_text += " (maintenance on)"
 
     ainformation.append(
-        "{}Cluster health:{}      {}{}{}".format(
+        "{}Cluster health:{}  {}{}{}".format(
             ansiprint.purple(),
             ansiprint.end(),
             health_colour,
@@ -155,8 +155,23 @@ def format_info(cluster_information, oformat):
         )
     )
     if cluster_information["health_messages"]:
-        for line in cluster_information["health_messages"]:
-            ainformation.append("                     > {}".format(line))
+        health_messages = "\n                 > ".join(
+            sorted(cluster_information["health_messages"])
+        )
+        ainformation.append(
+            "{}Health messages:{} > {}".format(
+                ansiprint.purple(),
+                ansiprint.end(),
+                health_messages,
+            )
+        )
+    else:
+        ainformation.append(
+            "{}Health messages:{} N/A".format(
+                ansiprint.purple(),
+                ansiprint.end(),
+            )
+        )
 
     if oformat == "short":
         return "\n".join(ainformation)

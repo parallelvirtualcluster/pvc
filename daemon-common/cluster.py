@@ -62,30 +62,35 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
 
     for index, node in enumerate(node_list):
         # Apply node health values to total health number
-        cluster_health -= 100 - node["health"]
+        try:
+            node_health_int = int(node["health"])
+        except Exception:
+            node_health_int = 100
+        cluster_health -= 100 - node_health_int
+
         for entry in node["health_details"]:
             if entry["health_delta"] > 0:
                 messages.append(
-                    f"{node['name']}: plugin {entry['plugin_name']}: {entry['message']}"
+                    f"{node['name']}: plugin '{entry['name']}': {entry['message']}"
                 )
 
         # Handle unhealthy node states
         if node["daemon_state"] not in ["run"]:
             cluster_health -= health_delta_map["node_stopped"]
             messages.append(
-                f"cluster: {node['name']} in {node['daemon_state']} daemon state"
+                f"cluster: Node {node['name']} in {node['daemon_state'].upper()} daemon state"
             )
         elif node["domain_state"] not in ["ready"]:
             cluster_health -= health_delta_map["node_flushed"]
             messages.append(
-                f"cluster: {node['name']} in {node['domain_state']} domain state"
+                f"cluster: Node {node['name']} in {node['domain_state'].upper()} domain state"
             )
 
     for index, vm in enumerate(vm_list):
         # Handle unhealthy VM states
         if vm["state"] not in ["start", "disable", "migrate", "unmigrate", "provision"]:
             cluster_health -= health_delta_map["vm_stopped"]
-            messages.append(f"cluster: {vm['name']} in {vm['state']} state")
+            messages.append(f"cluster: VM {vm['name']} in {vm['state'].upper()} state")
 
     for index, ceph_osd in enumerate(ceph_osd_list):
         in_texts = {1: "in", 0: "out"}
@@ -95,12 +100,12 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
         if in_texts[ceph_osd["stats"]["in"]] not in ["in"]:
             cluster_health -= health_delta_map["osd_out"]
             messages.append(
-                f"cluster: OSD {ceph_osd['id']} in {in_texts[ceph_osd['stats']['in']]} state"
+                f"cluster: Ceph OSD {ceph_osd['id']} in {in_texts[ceph_osd['stats']['in']].upper()} state"
             )
         elif up_texts[ceph_osd["stats"]["up"]] not in ["up"]:
             cluster_health -= health_delta_map["osd_down"]
             messages.append(
-                f"cluster: OSD {ceph_osd['id']} in {up_texts[ceph_osd['stats']['up']]} state"
+                f"cluster: Ceph OSD {ceph_osd['id']} in {up_texts[ceph_osd['stats']['up']].upper()} state"
             )
 
     # Check for (n-1) overprovisioning
@@ -128,7 +133,7 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
     if alloc_total > n_minus_1_total:
         cluster_health -= health_delta_map["memory_overprovisioned"]
         messages.append(
-            f"cluster: Total VM memory is overprovisioned ({alloc_total} > {n_minus_1_total} n-1)"
+            f"cluster: Total memory is OVERPROVISIONED ({alloc_total} > {n_minus_1_total} @ N-1)"
         )
 
     # Check Ceph cluster health
@@ -136,16 +141,19 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
     ceph_health_status = ceph_health["status"]
     ceph_health_entries = ceph_health["checks"].keys()
 
+    ceph_health_status_map = {
+        "HEALTH_ERR": "ERROR",
+        "HEALTH_WARN": "WARNING",
+    }
+    for entry in ceph_health_entries:
+        messages.append(
+            f"cluster: Ceph {ceph_health_status_map[ceph_health['checks'][entry]['severity']]} {entry}: {ceph_health['checks'][entry]['summary']['message']}"
+        )
+
     if ceph_health_status == "HEALTH_ERR":
         cluster_health -= health_delta_map["ceph_err"]
-        messages.append(
-            f"cluster: Ceph cluster in ERROR state: {', '.join(ceph_health_entries)}"
-        )
     elif ceph_health_status == "HEALTH_WARN":
         cluster_health -= health_delta_map["ceph_warn"]
-        messages.append(
-            f"cluster: Ceph cluster in WARNING state: {', '.join(ceph_health_entries)}"
-        )
 
     return cluster_health, messages
 
