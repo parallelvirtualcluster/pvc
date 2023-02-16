@@ -7,23 +7,6 @@
 
 pvc - Plugin to monitor a PVC cluster.
 
-=head1 CONFIGURATION
-
-Note that due to how Munin thresholds work, these values must always be slightly less than 1 or 2 respectively,
-or the alerts will never be triggered.
-
-Defaults (no config required):
-
-[pvc]
-env.warning 1.99
-env.critical 1.99
-
-Make degraded cluster WARN only (max value is 2, so 3 effectively disables):
-
-[pvc]
-env.pvc_cluster_warning 1.99
-env.pvc_cluster_critical 3
-
 =head1 AUTHOR
 
 Joshua Boniface <joshua@boniface.me>
@@ -45,24 +28,14 @@ GPLv3
 
 . "$MUNIN_LIBDIR/plugins/plugin.sh"
 
-warning=1.99
-critical=1.99
+warning=1
+critical=2
 
 export PVC_CLIENT_DIR="/run/shm/munin-pvc"
 PVC_CMD="/usr/bin/pvc --quiet --cluster local status --format json-pretty"
 JQ_CMD="/usr/bin/jq"
 
 output_usage() {
-    echo "This plugin outputs numerical values based on the health of the PVC cluster."
-    echo
-    echo "There are separate outputs for both the PVC cluster itself as well as the Ceph storage cluster."
-    echo "In normal operation, i.e. when both clusters are in 'Optimal' state, the plugin returns 0 for"
-    echo "each cluster. When the cluster is placed into 'Maintenance' mode,the plugin returns 1 for each"
-    echo "cluster, and goes into WARN state (limit 0.99); this can be adjusted by overriding the WARNING"
-    echo "threshold of the plugin to something other than 0.99 - note that due to Munin's alerting design,"
-    echo "the warning value must always be very slightly below the whole number. When either cluster"
-    echo "element becomes 'Degraded', the plugin returns 2 for the relevant cluster, which is treated as a"
-    echo "critical. Like the WARNING threshold, this can be overridden, and with the same caveat about limit."
     exit 0
 }
 
@@ -84,72 +57,73 @@ output_autoconf() {
 }
 
 output_config() {
-    echo 'graph_title PVC Clusters'
-    echo 'graph_args --base 1000'
+    echo 'graph_title PVC CHealth'
+    echo 'graph_args --base 100'
     echo 'graph_vlabel Count'
     echo 'graph_category pvc'
     echo 'graph_period second'
-    echo 'graph_info This graph shows the nodes in the PVC cluster.'
+    echo 'graph_info These graphs show the health of the PVC cluster and specific node.'
 
-    echo 'pvc_cluster.label Cluster Degradation'
+    echo 'pvc_cluster.label Cluster Health'
     echo 'pvc_cluster.type GAUGE'
-    echo 'pvc_cluster.max 2'
-    echo 'pvc_cluster.info Whether the PVC cluster is in a degraded state.'
-    print_warning pvc_cluster
-    print_critical pvc_cluster
+    echo 'pvc_cluster.max 100'
+    echo 'pvc_cluster.info Health of the PVC cluster in %.'
 
-    echo 'pvc_storage.label Storage Degradation'
-    echo 'pvc_storage.type GAUGE'
-    echo 'pvc_storage.max 2'
-    echo 'pvc_storage.info Whether the storage cluster is in a degraded state.'
-    print_warning pvc_storage
-    print_critical pvc_storage
+    echo 'pvc_cluster_alert.label Cluster Health State'
+    echo 'pvc_cluster_alert.type GAUGE'
+    echo 'pvc_cluster_alert.max 2',
+    echo 'pvc_cluster_alert.info Alerting state of the PVC cluster health'
+    print_warning pvc_cluster_alert
+    print_critical pvc_cluster_alert
+
+    echo 'pvc_node.label Node Health'
+    echo 'pvc_node.type GAUGE'
+    echo 'pvc_node.max 100'
+    echo 'pvc_node.info Health of the PVC node in %.'
+
+    echo 'pvc_node_alert.label Node Health State'
+    echo 'pvc_node_alert.type GAUGE'
+    echo 'pvc_node_alert.max 2',
+    echo 'pvc_node_alert.info Alerting state of the PVC node health'
+    print_warning pvc_node_alert
+    print_critical pvc_node_alert
 
     exit 0
 }
 
 output_values() {
     PVC_OUTPUT="$( $PVC_CMD )"
+    HOST="$( hostname --short )"
 
-    cluster_health="$( $JQ_CMD '.health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
-    cluster_failed_reason="$( $JQ_CMD -r '.health_msg | @csv' <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
-    case $cluster_health in
-        "Optimal")
-            cluster_value="0"
-            ;;
-        "Maintenance")
-            cluster_value="1"
-            ;;
-        "Degraded")
-            cluster_value="2"
-    esac
+    in_maintenance="$( $JQ_CMD ".maintenance" <<<"${PVC_OUTPUT}" | tr -d '"' )"
 
-    storage_health="$( $JQ_CMD '.storage_health' <<<"${PVC_OUTPUT}" | tr -d '"' )"
-    storage_failed_reason="$( $JQ_CMD -r '.storage_health_msg | @csv' <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
-    case $storage_health in
-        "Optimal")
-            storage_value="0"
-            ;;
-        "Maintenance")
-            storage_value="1"
-            ;;
-        "Degraded")
-            storage_value="2"
-    esac
+    cluster_health="$( $JQ_CMD ".cluster_health.health" <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    cluster_health_messages="$( $JQ_CMD -r ".cluster_health.messages | @csv" <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
+    echo "pvc_cluster.value ${cluster_health}"
+    echo "pvc_cluster.extinfo ${cluster_health_messages}"
 
+    if [[ ${cluster_health} -le 50 && ${is_maintenance} == "false" ]]; then
+        cluster_health_alert=2
+    elif [[ ${cluster_health} -le 90 && ${is_maintenance} == "false" ]]; then
+        cluster_health_alert=1
+    else
+        cluster_health_alert=0
+    fi
+    echo "pvc_cluster_alert.value ${cluster_health_alert}"
 
-    echo "pvc_cluster.value $cluster_value"
-    if [[ $cluster_value -eq 1 ]]; then
-        echo "pvc_cluster.extinfo Cluster in maintenance mode"
-    elif [[ $cluster_value -eq 2 ]]; then
-        echo "pvc_cluster.extinfo ${cluster_failed_reason}"
-    fi 
-    echo "pvc_storage.value $storage_value"
-    if [[ $storage_value -eq 1 ]]; then
-        echo "pvc_storage.extinfo Cluster in maintenance mode"
-    elif [[ $storage_value -eq 2 ]]; then
-        echo "pvc_storage.extinfo ${storage_failed_reason}"
-    fi 
+    node_health="$( $JQ_CMD ".node_health.${HOST}.health" <<<"${PVC_OUTPUT}" | tr -d '"' )"
+    node_health_messages="$( $JQ_CMD -r ".node_health.${HOST}.messages | @csv" <<<"${PVC_OUTPUT}" | tr -d '"' | sed 's/,/, /g' )"
+    echo "pvc_node.value ${node_health}"
+    echo "pvc_node.extinfo ${node_health_messages}"
+
+    if [[ ${node_health} -le 50 && ${is_maintenance} == "false" ]]; then
+        node_health_alert=2
+    elif [[ ${node_health} -le 90 && ${is_maintenance} == "false" ]]; then
+        node_health_alert=1
+    else
+        node_health_alert=0
+    fi
+    echo "pvc_node_alert.value ${node_health_alert}"
 }
 
 case $# in
