@@ -697,15 +697,29 @@ def node_log(node, lines, follow):
     default=False,
     help="Display more detailed information.",
 )
+@click.option(
+    "-f",
+    "--format",
+    "oformat",
+    default="plain",
+    show_default=True,
+    type=click.Choice(["plain", "json", "json-pretty"]),
+    help="Output format of node status information.",
+)
 @cluster_req
-def node_info(node, long_output):
+def node_info(node, long_output, oformat):
     """
     Show information about node NODE. If unspecified, defaults to this host.
     """
 
     retcode, retdata = pvc_node.node_info(config, node)
     if retcode:
-        retdata = pvc_node.format_info(retdata, long_output)
+        if oformat == "json":
+            retdata = json.dumps(retdata)
+        elif oformat == "json-pretty":
+            retdata = json.dumps(retdata, indent=4)
+        else:
+            retdata = pvc_node.format_info(retdata, long_output)
     cleanup(retcode, retdata)
 
 
