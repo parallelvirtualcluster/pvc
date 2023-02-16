@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# PVC cluster status check for Check_MK (agent-side)
+
+echo "<<<pvc>>>"
+pvc --quiet status --format json
