@@ -88,7 +88,7 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
 
     for index, vm in enumerate(vm_list):
         # Handle unhealthy VM states
-        if vm["state"] not in ["start", "disable", "migrate", "unmigrate", "provision"]:
+        if vm["state"] in ["stop", "fail"]:
             cluster_health_value -= health_delta_map["vm_stopped"]
             cluster_health_messages.append(
                 f"cluster: VM {vm['name']} in {vm['state'].upper()} state"
