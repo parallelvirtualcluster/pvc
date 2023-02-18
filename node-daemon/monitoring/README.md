@@ -6,11 +6,11 @@ This directory contains several monitoring resources that can be used with vario
 
 The included Munin plugins can be activated by linking to them from `/etc/munin/plugins/`. Two plugins are provided:
 
-* `pvc`: Checks the PVC cluster and node health, providing two graphs, one for each.
+* `pvc`: Checks the PVC cluster and node health, as well as their status (OK/Warning/Critical, based on maintenance status), providing 4 graphs.
 
 * `ceph_utilization`: Checks the Ceph cluster statistics, providing multiple graphs. Note that this plugin is independent of PVC itself, and makes local calls to various Ceph commands itself.
 
-The `pvc` plugin provides no configuration; the status is hardcoded such that <=90% health is warning, <=50% health is critical, and maintenance state forces OK.
+The `pvc` plugin provides no configuration; the status is hardcoded such that <=90% health is warning, <=50% health is critical, and maintenance state forces OK. The alerting is provided by two separate graphs from the health graph so that actual health state is logged regardless of alerting.
 
 The `ceph_utilization` plugin provides no configuration; only the cluster utilization graph alerts such that >80% used is warning and >90% used is critical. Ceph itself begins warning above 80% as well.
 
