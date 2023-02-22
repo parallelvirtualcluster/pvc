@@ -52,9 +52,11 @@ The daemon startup sequence is documented below. The main daemon entry-point is 
 
 0. The node activates its keepalived timer and begins sending keepalive updates to the cluster. The daemon state transitions from `init` to `run` and the system has started fully.
 
-# PVC Node Daemon manual
+## Node health plugins
 
-The PVC node daemon ins build with Python 3 and is run directly on nodes. For details of the startup sequence and general layout, see the [architecture document](/architecture/daemon).
+The PVC node daemon includes a node health plugin system. These plugins are run during keepalives to check various aspects of node health and adjust the overall node and cluster health accordingly. For example, a plugin might check that all configured network interfaces are online and operating at their correct speed, or that all operating system packages are up-to-date.
+
+For the full details of the health and node health plugin system, see the [node health plugin manual](/manuals/health-plugins).
 
 ## Configuration
 
