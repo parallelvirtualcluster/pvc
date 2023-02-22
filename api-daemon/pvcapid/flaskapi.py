@@ -448,14 +448,40 @@ class API_Status(Resource):
               type: object
               id: ClusterStatus
               properties:
-                health:
+                cluster_health:
+                  type: object
+                  properties:
+                    health:
+                      type: integer
+                      description: The overall health (%) of the cluster
+                      example: 100
+                    messages:
+                      type: array
+                      description: A list of health event strings
+                      items:
+                        type: string
+                        example: "hv1: plugin 'nics': bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps"
+                node_health:
+                  type: object
+                  properties:
+                    hvX:
+                      type: object
+                      description: A node entry for per-node health details, one per node in the cluster
+                      properties:
+                        health:
+                          type: integer
+                          description: The health (%) of the node
+                          example: 100
+                        messages:
+                          type: array
+                          description: A list of health event strings
+                          items:
+                            type: string
+                            example: "'nics': bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps"
+                maintenance:
                   type: string
-                  description: The overall cluster health
-                  example: Optimal
-                storage_health:
-                  type: string
-                  description: The overall storage cluster health
-                  example: Optimal
+                  description: Whether the cluster is in maintenance mode or not (string boolean)
+                  example: true
                 primary_node:
                   type: string
                   description: The current primary coordinator node
@@ -605,6 +631,32 @@ class API_Node_Root(Resource):
                 arch:
                   type: string
                   description: The architecture of the CPU
+                health:
+                  type: integer
+                  description: The overall health (%) of the node
+                  example: 100
+                health_details:
+                  type: array
+                  description: A list of health plugin results
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the health plugin
+                        example: nics
+                      last_run:
+                        type: integer
+                        description: The UNIX timestamp (s) of the last plugin run
+                        example: 1676786078
+                      health_delta:
+                        type: integer
+                        description: The health delta (negatively applied to the health percentage) of the plugin's current state
+                        example: 10
+                      message:
+                        type: string
+                        description: The output message of the plugin
+                        example: "bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps"
                 load:
                   type: number
                   format: float
