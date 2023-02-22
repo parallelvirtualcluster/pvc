@@ -134,7 +134,7 @@ def get_config(store_data, cluster=None):
     config = dict()
     config["debug"] = False
     config["cluster"] = cluster
-    config["desctription"] = description
+    config["description"] = description
     config["api_host"] = "{}:{}".format(host, port)
     config["api_scheme"] = scheme
     config["api_key"] = api_key
@@ -382,8 +382,6 @@ def cluster_list(raw):
 
     if not raw:
         # Display the data nicely
-        echo("Available clusters:")
-        echo("")
         echo(
             "{bold}{name: <{name_length}} {description: <{description_length}} {address: <{address_length}} {port: <{port_length}} {scheme: <{scheme_length}} {api_key: <{api_key_length}}{end_bold}".format(
                 bold=ansiprint.bold(),
@@ -443,6 +441,202 @@ def cluster_list(raw):
             echo(cluster)
 
 
+###############################################################################
+# pvc cluster detail
+###############################################################################
+@click.command(name="detail", short_help="Show details of all available clusters.")
+def cluster_detail():
+    """
+    Show quick details of all PVC clusters configured in this CLI instance.
+    """
+
+    # Get the existing data
+    clusters = get_store(store_path)
+
+    cluster_details_list = list()
+
+    echo("Gathering information from clusters... ", nl=False)
+
+    for cluster in clusters:
+        _store_data = get_store(store_path)
+        cluster_config = get_config(_store_data, cluster=cluster)
+        retcode, retdata = pvc_cluster.get_info(cluster_config)
+        if retcode == 0:
+            retdata = None
+        cluster_details = {"config": cluster_config, "data": retdata}
+        cluster_details_list.append(cluster_details)
+
+    echo("done.")
+    echo("")
+
+    # Find the lengths of each column
+    name_length = 5
+    description_length = 12
+    health_length = 7
+    primary_node_length = 8
+    pvc_version_length = 8
+    nodes_length = 6
+    vms_length = 4
+    networks_length = 9
+    osds_length = 5
+    pools_length = 6
+    volumes_length = 8
+    snapshots_length = 10
+
+    for cluster_details in cluster_details_list:
+        _name_length = len(cluster_details["config"]["cluster"]) + 1
+        if _name_length > name_length:
+            name_length = _name_length
+
+        _description_length = len(cluster_details["config"]["description"]) + 1
+        if _description_length > description_length:
+            description_length = _description_length
+
+        if cluster_details["data"] is None:
+            continue
+
+        _health_length = (
+            len(str(cluster_details["data"]["cluster_health"]["health"]) + "%") + 1
+        )
+        if _health_length > health_length:
+            health_length = _health_length
+
+        _primary_node_length = len(cluster_details["data"]["primary_node"]) + 1
+        if _primary_node_length > primary_node_length:
+            primary_node_length = _primary_node_length
+
+        _pvc_version_length = len(cluster_details["data"]["pvc_version"]) + 1
+        if _pvc_version_length > pvc_version_length:
+            pvc_version_length = _pvc_version_length
+
+        _nodes_length = len(str(cluster_details["data"]["nodes"]["total"])) + 1
+        if _nodes_length > nodes_length:
+            nodes_length = _nodes_length
+
+        _vms_length = len(str(cluster_details["data"]["vms"]["total"])) + 1
+        if _vms_length > vms_length:
+            vms_length = _vms_length
+
+        _networks_length = len(str(cluster_details["data"]["networks"])) + 1
+        if _networks_length > networks_length:
+            networks_length = _networks_length
+
+        _osds_length = len(str(cluster_details["data"]["osds"]["total"])) + 1
+        if _osds_length > osds_length:
+            osds_length = _osds_length
+
+        _pools_length = len(str(cluster_details["data"]["pools"])) + 1
+        if _pools_length > pools_length:
+            pools_length = _pools_length
+
+        _volumes_length = len(str(cluster_details["data"]["volumes"])) + 1
+        if _volumes_length > volumes_length:
+            volumes_length = _volumes_length
+
+        _snapshots_length = len(str(cluster_details["data"]["snapshots"])) + 1
+        if _snapshots_length > snapshots_length:
+            snapshots_length = _snapshots_length
+
+    # Display the data nicely
+    echo(
+        "{bold}{name: <{name_length}} {description: <{description_length}} {health: <{health_length}} {primary_node: <{primary_node_length}} {pvc_version: <{pvc_version_length}} {nodes: <{nodes_length}} {vms: <{vms_length}} {networks: <{networks_length}} {osds: <{osds_length}} {pools: <{pools_length}} {volumes: <{volumes_length}} {snapshots: <{snapshots_length}}{end_bold}".format(
+            bold=ansiprint.bold(),
+            end_bold=ansiprint.end(),
+            name="Name",
+            name_length=name_length,
+            description="Description",
+            description_length=description_length,
+            health="Health",
+            health_length=health_length,
+            primary_node="Primary",
+            primary_node_length=primary_node_length,
+            pvc_version="Version",
+            pvc_version_length=pvc_version_length,
+            nodes="Nodes",
+            nodes_length=nodes_length,
+            vms="VMs",
+            vms_length=vms_length,
+            networks="Networks",
+            networks_length=networks_length,
+            osds="OSDs",
+            osds_length=osds_length,
+            pools="Pools",
+            pools_length=pools_length,
+            volumes="Volumes",
+            volumes_length=volumes_length,
+            snapshots="Snapshots",
+            snapshots_length=snapshots_length,
+        )
+    )
+
+    for cluster_details in cluster_details_list:
+        if cluster_details["data"] is None:
+            health_colour = ansiprint.blue()
+            name = cluster_details["config"]["cluster"]
+            description = cluster_details["config"]["description"]
+            health = "N/A"
+            primary_node = "N/A"
+            pvc_version = "N/A"
+            nodes = "N/A"
+            vms = "N/A"
+            networks = "N/A"
+            osds = "N/A"
+            pools = "N/A"
+            volumes = "N/A"
+            snapshots = "N/A"
+        else:
+            if cluster_details["data"]["cluster_health"]["health"] > 90:
+                health_colour = ansiprint.green()
+            elif cluster_details["data"]["cluster_health"]["health"] > 50:
+                health_colour = ansiprint.yellow()
+            else:
+                health_colour = ansiprint.red()
+
+            name = cluster_details["config"]["cluster"]
+            description = cluster_details["config"]["description"]
+            health = str(cluster_details["data"]["cluster_health"]["health"]) + "%"
+            primary_node = cluster_details["data"]["primary_node"]
+            pvc_version = cluster_details["data"]["pvc_version"]
+            nodes = str(cluster_details["data"]["nodes"]["total"])
+            vms = str(cluster_details["data"]["vms"]["total"])
+            networks = str(cluster_details["data"]["networks"])
+            osds = str(cluster_details["data"]["osds"]["total"])
+            pools = str(cluster_details["data"]["pools"])
+            volumes = str(cluster_details["data"]["volumes"])
+            snapshots = str(cluster_details["data"]["snapshots"])
+
+        echo(
+            "{name: <{name_length}} {description: <{description_length}} {health_colour}{health: <{health_length}}{end_colour} {primary_node: <{primary_node_length}} {pvc_version: <{pvc_version_length}} {nodes: <{nodes_length}} {vms: <{vms_length}} {networks: <{networks_length}} {osds: <{osds_length}} {pools: <{pools_length}} {volumes: <{volumes_length}} {snapshots: <{snapshots_length}}".format(
+                health_colour=health_colour,
+                end_colour=ansiprint.end(),
+                name=name,
+                name_length=name_length,
+                description=description,
+                description_length=description_length,
+                health=health,
+                health_length=health_length,
+                primary_node=primary_node,
+                primary_node_length=primary_node_length,
+                pvc_version=pvc_version,
+                pvc_version_length=pvc_version_length,
+                nodes=nodes,
+                nodes_length=nodes_length,
+                vms=vms,
+                vms_length=vms_length,
+                networks=networks,
+                networks_length=networks_length,
+                osds=osds,
+                osds_length=osds_length,
+                pools=pools,
+                pools_length=pools_length,
+                volumes=volumes,
+                volumes_length=volumes_length,
+                snapshots=snapshots,
+                snapshots_length=snapshots_length,
+            )
+        )
+
+
 # Validate that the cluster is set for a given command
 def cluster_req(function):
     @wraps(function)
@@ -452,6 +646,24 @@ def cluster_req(function):
                 'No cluster specified and no local pvcapid.yaml configuration found. Use "pvc cluster" to add a cluster API to connect to.'
             )
             exit(1)
+
+        if not config["quiet"]:
+            if config["api_scheme"] == "https" and not config["verify_ssl"]:
+                ssl_unverified_msg = " (unverified)"
+            else:
+                ssl_unverified_msg = ""
+            echo(
+                'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
+                    config["cluster"],
+                    config["api_host"],
+                    config["api_scheme"],
+                    ssl_unverified_msg,
+                    config["api_prefix"],
+                ),
+                err=True,
+            )
+            echo("", err=True)
+
         return function(*args, **kwargs)
 
     return validate_cluster
@@ -697,15 +909,29 @@ def node_log(node, lines, follow):
     default=False,
     help="Display more detailed information.",
 )
+@click.option(
+    "-f",
+    "--format",
+    "oformat",
+    default="plain",
+    show_default=True,
+    type=click.Choice(["plain", "json", "json-pretty"]),
+    help="Output format of node status information.",
+)
 @cluster_req
-def node_info(node, long_output):
+def node_info(node, long_output, oformat):
     """
     Show information about node NODE. If unspecified, defaults to this host.
     """
 
     retcode, retdata = pvc_node.node_info(config, node)
     if retcode:
-        retdata = pvc_node.format_info(retdata, long_output)
+        if oformat == "json":
+            retdata = json.dumps(retdata)
+        elif oformat == "json-pretty":
+            retdata = json.dumps(retdata, indent=4)
+        else:
+            retdata = pvc_node.format_info(retdata, long_output)
     cleanup(retcode, retdata)
 
 
@@ -5882,23 +6108,7 @@ def cli(_cluster, _debug, _quiet, _unsafe, _colour):
         config["debug"] = _debug
         config["unsafe"] = _unsafe
         config["colour"] = _colour
-
-        if not _quiet:
-            if config["api_scheme"] == "https" and not config["verify_ssl"]:
-                ssl_unverified_msg = " (unverified)"
-            else:
-                ssl_unverified_msg = ""
-            echo(
-                'Using cluster "{}" - Host: "{}"  Scheme: "{}{}"  Prefix: "{}"'.format(
-                    config["cluster"],
-                    config["api_host"],
-                    config["api_scheme"],
-                    ssl_unverified_msg,
-                    config["api_prefix"],
-                ),
-                err=True,
-            )
-            echo("", err=True)
+        config["quiet"] = _quiet
 
     audit()
 
@@ -5909,6 +6119,7 @@ def cli(_cluster, _debug, _quiet, _unsafe, _colour):
 cli_cluster.add_command(cluster_add)
 cli_cluster.add_command(cluster_remove)
 cli_cluster.add_command(cluster_list)
+cli_cluster.add_command(cluster_detail)
 
 cli_node.add_command(node_secondary)
 cli_node.add_command(node_primary)

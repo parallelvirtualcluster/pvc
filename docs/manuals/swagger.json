@@ -15,14 +15,56 @@
         },
         "ClusterStatus": {
             "properties": {
-                "health": {
-                    "description": "The overall cluster health",
-                    "example": "Optimal",
+                "cluster_health": {
+                    "properties": {
+                        "health": {
+                            "description": "The overall health (%) of the cluster",
+                            "example": 100,
+                            "type": "integer"
+                        },
+                        "messages": {
+                            "description": "A list of health event strings",
+                            "items": {
+                                "example": "hv1: plugin 'nics': bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps",
+                                "type": "string"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "type": "object"
+                },
+                "maintenance": {
+                    "description": "Whether the cluster is in maintenance mode or not (string boolean)",
+                    "example": true,
                     "type": "string"
                 },
                 "networks": {
                     "description": "The total number of networks in the cluster",
                     "type": "integer"
+                },
+                "node_health": {
+                    "properties": {
+                        "hvX": {
+                            "description": "A node entry for per-node health details, one per node in the cluster",
+                            "properties": {
+                                "health": {
+                                    "description": "The health (%) of the node",
+                                    "example": 100,
+                                    "type": "integer"
+                                },
+                                "messages": {
+                                    "description": "A list of health event strings",
+                                    "items": {
+                                        "example": "'nics': bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps",
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
                 },
                 "nodes": {
                     "properties": {
@@ -61,14 +103,14 @@
                     "example": "pvchv1",
                     "type": "string"
                 },
+                "pvc_version": {
+                    "description": "The PVC version of the current primary coordinator node",
+                    "example": "0.9.61",
+                    "type": "string"
+                },
                 "snapshots": {
                     "description": "The total number of snapshots in the storage cluster",
                     "type": "integer"
-                },
-                "storage_health": {
-                    "description": "The overall storage cluster health",
-                    "example": "Optimal",
-                    "type": "string"
                 },
                 "upstream_ip": {
                     "description": "The cluster upstream IP address in CIDR format",
@@ -455,6 +497,48 @@
                 "domains_count": {
                     "description": "The number of running domains (VMs)",
                     "type": "integer"
+                },
+                "health": {
+                    "description": "The overall health (%) of the node",
+                    "example": 100,
+                    "type": "integer"
+                },
+                "health_details": {
+                    "description": "A list of health plugin results",
+                    "items": {
+                        "properties": {
+                            "health_delta": {
+                                "description": "The health delta (negatively applied to the health percentage) of the plugin's current state",
+                                "example": 10,
+                                "type": "integer"
+                            },
+                            "last_run": {
+                                "description": "The UNIX timestamp (s) of the last plugin run",
+                                "example": 1676786078,
+                                "type": "integer"
+                            },
+                            "message": {
+                                "description": "The output message of the plugin",
+                                "example": "bond0 DEGRADED with 1 active slaves, bond0 OK at 10000 Mbps",
+                                "type": "string"
+                            },
+                            "name": {
+                                "description": "The name of the health plugin",
+                                "example": "nics",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "health_plugins": {
+                    "description": "A list of health plugin names currently loaded on the node",
+                    "items": {
+                        "example": "nics",
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "kernel": {
                     "desription": "The running kernel version from uname",
@@ -6177,7 +6261,7 @@
                         "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
-                            "memfree",
+                            "memprov",
                             "vcpus",
                             "load",
                             "vms",
@@ -6336,7 +6420,7 @@
                         "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
-                            "memfree",
+                            "memprov",
                             "vcpus",
                             "load",
                             "vms",
@@ -6597,7 +6681,7 @@
                         "description": "The selector used to determine candidate nodes during migration; see 'target_selector' in the node daemon configuration reference",
                         "enum": [
                             "mem",
-                            "memfree",
+                            "memprov",
                             "vcpus",
                             "load",
                             "vms",

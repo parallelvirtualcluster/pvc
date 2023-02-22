@@ -2,23 +2,34 @@
 
 This directory contains several monitoring resources that can be used with various monitoring systems to track and alert on a PVC cluster system.
 
-### Munin
+## Munin
 
-The included munin plugin can be activated by linking to it from `/etc/munin/plugins/pvc`. By default, this plugin triggers a CRITICAL state when either the PVC or Storage cluster becomes Degraded, and is otherwise OK. The overall health is graphed numerically (Optimal is 0, Maintenance is 1, Degraded is 2) so that the cluster health can be tracked over time.
+The included Munin plugins can be activated by linking to them from `/etc/munin/plugins/`. Two plugins are provided:
 
-When using this plugin, it might be useful to adjust the thresholds with a plugin configuration. For instance, one could adjust the Degraded value from CRITICAL to WARNING by adjusting the critical threshold to a value higher than 1.99 (e.g. 3, 10, etc.) so that only the WARNING threshold will be hit. Alternatively one could instead make Maintenance mode trigger a WARNING by lowering the threshold to 0.99.
+* `pvc`: Checks the PVC cluster and node health, as well as their status (OK/Warning/Critical, based on maintenance status), providing 4 graphs.
 
-Example plugin configuration:
+* `ceph_utilization`: Checks the Ceph cluster statistics, providing multiple graphs. Note that this plugin is independent of PVC itself, and makes local calls to various Ceph commands itself.
 
-```
-[pvc]
-# Make cluster warn on maintenance
-env.pvc_cluster_warning 0.99
-# Disable critical threshold (>2)
-env.pvc_cluster_critical 3
-# Make storage warn on maintenance, crit on degraded (latter is default)
-env.pvc_storage_warning 0.99
-env.pvc_storage_critical 1.99
-```
+The `pvc` plugin provides no configuration; the status is hardcoded such that <=90% health is warning, <=50% health is critical, and maintenance state forces OK. The alerting is provided by two separate graphs from the health graph so that actual health state is logged regardless of alerting.
 
-### Check_MK
+The `ceph_utilization` plugin provides no configuration; only the cluster utilization graph alerts such that >80% used is warning and >90% used is critical. Ceph itself begins warning above 80% as well.
+
+## CheckMK
+
+The included CheckMK plugin is divided into two parts: the agent plugin, and the monitoring server plugin. This monitoring server plugin requires CheckMK version 2.0 or higher. The two parts can be installed as follows:
+
+* `pvc`: Place this file in the `/usr/lib/check_mk_agent/plugins/` directory on each node.
+
+* `pvc.py`: Place this file in the `~/local/lib/python3/cmk/base/plugins/agent_based/` directory on the CheckMK monitoring host for each monitoring site.
+
+The plugin provides no configuration: the status is hardcoded such that <=90% health is warning, <=50% health is critical, and maintenance state forces OK.
+
+With both the agent and server plugins installed, you can then run `cmk -II <node>` (or use WATO) to inventory each node, which should produce two new checks:
+
+* `PVC Cluster`: Provides the cluster-wide health. Note that this will be identical for all nodes in the cluster (i.e. if the cluster health drops, all nodes in the cluster will alert this check).
+
+* `PVC Node <shortname>`: Provides the per-node health.
+
+The "Summary" text, shown in the check lists, will be simplistic, only showing the current health percentage.
+
+The "Details" text, found in the specific check details, will show the full list of problem(s) the check finds, as shown by `pvc status` itself.

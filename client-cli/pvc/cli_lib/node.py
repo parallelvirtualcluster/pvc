@@ -215,6 +215,19 @@ def node_list(
 # Output display functions
 #
 def getOutputColours(node_information):
+    node_health = node_information.get("health", "N/A")
+    if isinstance(node_health, int):
+        if node_health <= 50:
+            health_colour = ansiprint.red()
+        elif node_health <= 90:
+            health_colour = ansiprint.yellow()
+        elif node_health <= 100:
+            health_colour = ansiprint.green()
+        else:
+            health_colour = ansiprint.blue()
+    else:
+        health_colour = ansiprint.blue()
+
     if node_information["daemon_state"] == "run":
         daemon_state_colour = ansiprint.green()
     elif node_information["daemon_state"] == "stop":
@@ -251,6 +264,7 @@ def getOutputColours(node_information):
         mem_provisioned_colour = ""
 
     return (
+        health_colour,
         daemon_state_colour,
         coordinator_state_colour,
         domain_state_colour,
@@ -261,6 +275,7 @@ def getOutputColours(node_information):
 
 def format_info(node_information, long_output):
     (
+        health_colour,
         daemon_state_colour,
         coordinator_state_colour,
         domain_state_colour,
@@ -273,14 +288,56 @@ def format_info(node_information, long_output):
     # Basic information
     ainformation.append(
         "{}Name:{}                  {}".format(
-            ansiprint.purple(), ansiprint.end(), node_information["name"]
+            ansiprint.purple(),
+            ansiprint.end(),
+            node_information["name"],
         )
     )
     ainformation.append(
         "{}PVC Version:{}           {}".format(
-            ansiprint.purple(), ansiprint.end(), node_information["pvc_version"]
+            ansiprint.purple(),
+            ansiprint.end(),
+            node_information["pvc_version"],
         )
     )
+
+    node_health = node_information.get("health", "N/A")
+    if isinstance(node_health, int):
+        node_health_text = f"{node_health}%"
+    else:
+        node_health_text = node_health
+    ainformation.append(
+        "{}Health:{}                {}{}{}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            health_colour,
+            node_health_text,
+            ansiprint.end(),
+        )
+    )
+
+    node_health_details = node_information.get("health_details", [])
+    if long_output:
+        node_health_messages = "\n                       ".join(
+            [f"{plugin['name']}: {plugin['message']}" for plugin in node_health_details]
+        )
+    else:
+        node_health_messages = "\n                       ".join(
+            [
+                f"{plugin['name']}: {plugin['message']}"
+                for plugin in node_health_details
+                if int(plugin.get("health_delta", 0)) > 0
+            ]
+        )
+
+    if len(node_health_messages) > 0:
+        ainformation.append(
+            "{}Health Plugin Details:{} {}".format(
+                ansiprint.purple(), ansiprint.end(), node_health_messages
+            )
+        )
+    ainformation.append("")
+
     ainformation.append(
         "{}Daemon State:{}          {}{}{}".format(
             ansiprint.purple(),
@@ -308,11 +365,6 @@ def format_info(node_information, long_output):
             ansiprint.end(),
         )
     )
-    ainformation.append(
-        "{}Active VM Count:{}       {}".format(
-            ansiprint.purple(), ansiprint.end(), node_information["domains_count"]
-        )
-    )
     if long_output:
         ainformation.append("")
         ainformation.append(
@@ -331,6 +383,11 @@ def format_info(node_information, long_output):
             )
         )
     ainformation.append("")
+    ainformation.append(
+        "{}Active VM Count:{}       {}".format(
+            ansiprint.purple(), ansiprint.end(), node_information["domains_count"]
+        )
+    )
     ainformation.append(
         "{}Host CPUs:{}             {}".format(
             ansiprint.purple(), ansiprint.end(), node_information["vcpu"]["total"]
@@ -397,6 +454,7 @@ def format_list(node_list, raw):
     # Determine optimal column widths
     node_name_length = 5
     pvc_version_length = 8
+    health_length = 7
     daemon_state_length = 7
     coordinator_state_length = 12
     domain_state_length = 7
@@ -417,6 +475,15 @@ def format_list(node_list, raw):
         _pvc_version_length = len(node_information.get("pvc_version", "N/A")) + 1
         if _pvc_version_length > pvc_version_length:
             pvc_version_length = _pvc_version_length
+        # node_health column
+        node_health = node_information.get("health", "N/A")
+        if isinstance(node_health, int):
+            node_health_text = f"{node_health}%"
+        else:
+            node_health_text = node_health
+        _health_length = len(node_health_text) + 1
+        if _health_length > health_length:
+            health_length = _health_length
         # daemon_state column
         _daemon_state_length = len(node_information["daemon_state"]) + 1
         if _daemon_state_length > daemon_state_length:
@@ -466,7 +533,10 @@ def format_list(node_list, raw):
     # Format the string (header)
     node_list_output.append(
         "{bold}{node_header: <{node_header_length}} {state_header: <{state_header_length}} {resource_header: <{resource_header_length}} {memory_header: <{memory_header_length}}{end_bold}".format(
-            node_header_length=node_name_length + pvc_version_length + 1,
+            node_header_length=node_name_length
+            + pvc_version_length
+            + health_length
+            + 2,
             state_header_length=daemon_state_length
             + coordinator_state_length
             + domain_state_length
@@ -484,7 +554,14 @@ def format_list(node_list, raw):
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             node_header="Nodes "
-            + "".join(["-" for _ in range(6, node_name_length + pvc_version_length)]),
+            + "".join(
+                [
+                    "-"
+                    for _ in range(
+                        6, node_name_length + pvc_version_length + health_length + 1
+                    )
+                ]
+            ),
             state_header="States "
             + "".join(
                 [
@@ -526,12 +603,13 @@ def format_list(node_list, raw):
     )
 
     node_list_output.append(
-        "{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} \
+        "{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} {node_health: <{health_length}} \
 {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
 {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
 {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {node_mem_allocated: <{mem_alloc_length}} {node_mem_provisioned: <{mem_prov_length}}{end_bold}".format(
             node_name_length=node_name_length,
             pvc_version_length=pvc_version_length,
+            health_length=health_length,
             daemon_state_length=daemon_state_length,
             coordinator_state_length=coordinator_state_length,
             domain_state_length=domain_state_length,
@@ -551,6 +629,7 @@ def format_list(node_list, raw):
             end_colour="",
             node_name="Name",
             node_pvc_version="Version",
+            node_health="Health",
             node_daemon_state="Daemon",
             node_coordinator_state="Coordinator",
             node_domain_state="Domain",
@@ -568,19 +647,28 @@ def format_list(node_list, raw):
     # Format the string (elements)
     for node_information in sorted(node_list, key=lambda n: n["name"]):
         (
+            health_colour,
             daemon_state_colour,
             coordinator_state_colour,
             domain_state_colour,
             mem_allocated_colour,
             mem_provisioned_colour,
         ) = getOutputColours(node_information)
+
+        node_health = node_information.get("health", "N/A")
+        if isinstance(node_health, int):
+            node_health_text = f"{node_health}%"
+        else:
+            node_health_text = node_health
+
         node_list_output.append(
-            "{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} \
+            "{bold}{node_name: <{node_name_length}} {node_pvc_version: <{pvc_version_length}} {health_colour}{node_health: <{health_length}}{end_colour} \
 {daemon_state_colour}{node_daemon_state: <{daemon_state_length}}{end_colour} {coordinator_state_colour}{node_coordinator_state: <{coordinator_state_length}}{end_colour} {domain_state_colour}{node_domain_state: <{domain_state_length}}{end_colour} \
 {node_domains_count: <{domains_count_length}} {node_cpu_count: <{cpu_count_length}} {node_load: <{load_length}} \
 {node_mem_total: <{mem_total_length}} {node_mem_used: <{mem_used_length}} {node_mem_free: <{mem_free_length}} {mem_allocated_colour}{node_mem_allocated: <{mem_alloc_length}}{end_colour} {mem_provisioned_colour}{node_mem_provisioned: <{mem_prov_length}}{end_colour}{end_bold}".format(
                 node_name_length=node_name_length,
                 pvc_version_length=pvc_version_length,
+                health_length=health_length,
                 daemon_state_length=daemon_state_length,
                 coordinator_state_length=coordinator_state_length,
                 domain_state_length=domain_state_length,
@@ -594,6 +682,7 @@ def format_list(node_list, raw):
                 mem_prov_length=mem_prov_length,
                 bold="",
                 end_bold="",
+                health_colour=health_colour,
                 daemon_state_colour=daemon_state_colour,
                 coordinator_state_colour=coordinator_state_colour,
                 domain_state_colour=domain_state_colour,
@@ -602,6 +691,7 @@ def format_list(node_list, raw):
                 end_colour=ansiprint.end(),
                 node_name=node_information["name"],
                 node_pvc_version=node_information.get("pvc_version", "N/A"),
+                node_health=node_health_text,
                 node_daemon_state=node_information["daemon_state"],
                 node_coordinator_state=node_information["coordinator_state"],
                 node_domain_state=node_information["domain_state"],

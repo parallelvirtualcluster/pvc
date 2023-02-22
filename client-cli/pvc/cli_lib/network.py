@@ -961,7 +961,9 @@ def format_list_dhcp(dhcp_lease_list):
         )
     )
 
-    for dhcp_lease_information in sorted(dhcp_lease_list, key=lambda l: l["hostname"]):
+    for dhcp_lease_information in sorted(
+        dhcp_lease_list, key=lambda lease: lease["hostname"]
+    ):
         dhcp_lease_list_output.append(
             "{bold}\
 {lease_hostname: <{lease_hostname_length}} \
@@ -1059,7 +1061,7 @@ def format_list_acl(acl_list):
     )
 
     for acl_information in sorted(
-        acl_list, key=lambda l: l["direction"] + str(l["order"])
+        acl_list, key=lambda acl: acl["direction"] + str(acl["order"])
     ):
         acl_list_output.append(
             "{bold}\

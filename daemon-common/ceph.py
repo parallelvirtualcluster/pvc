@@ -158,6 +158,19 @@ def get_status(zkhandler):
     return True, status_data
 
 
+def get_health(zkhandler):
+    primary_node = zkhandler.read("base.config.primary_node")
+    ceph_health = zkhandler.read("base.storage.health").rstrip()
+
+    # Create a data structure for the information
+    status_data = {
+        "type": "health",
+        "primary_node": primary_node,
+        "ceph_data": ceph_health,
+    }
+    return True, status_data
+
+
 def get_util(zkhandler):
     primary_node = zkhandler.read("base.config.primary_node")
     ceph_df = zkhandler.read("base.storage.util").rstrip()

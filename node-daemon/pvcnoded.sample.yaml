@@ -128,6 +128,8 @@ pvc:
     configuration:
       # directories: PVC system directories
       directories:
+        # plugin_directory: Directory containing node monitoring plugins
+        plugin_directory: "/usr/share/pvc/plugins"
         # dynamic_directory: Temporary in-memory directory for active configurations
         dynamic_directory: "/run/pvc"
         # log_directory: Logging directory
@@ -150,8 +152,8 @@ pvc:
         log_keepalives: True
         # log_keepalive_cluster_details: Enable or disable node status logging during keepalive
         log_keepalive_cluster_details: True
-        # log_keepalive_storage_details: Enable or disable node storage logging during keepalive
-        log_keepalive_storage_details: True
+        # log_keepalive_plugin_details: Enable or disable node health plugin logging during keepalive
+        log_keepalive_plugin_details: True
         # console_log_lines: Number of console log lines to store in Zookeeper per VM
         console_log_lines: 1000
         # node_log_lines: Number of node log lines to store in Zookeeper per node

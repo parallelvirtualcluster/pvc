@@ -71,6 +71,8 @@ Nodes are networked together via a set of statically-configured, simple layer-2 
 
 Further information about the general cluster architecture, including important considerations for node specifications/sizing and network configuration, [can be found at the cluster architecture page](/cluster-architecture). It is imperative that potential PVC administrators read this document thoroughly to understand the specific requirements of PVC and avoid potential missteps in obtaining and deploying their cluster.
 
+More information about the node daemon can be found at the [Node Daemon manual page](/manuals/daemon) and details about the health system and health plugins for nodes can be found at the [health plugin manual page](/manuals/health-plugins).
+
 ## Clients
 
 ### API Client
