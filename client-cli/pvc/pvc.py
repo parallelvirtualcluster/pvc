@@ -585,7 +585,9 @@ def cluster_detail():
             volumes = "N/A"
             snapshots = "N/A"
         else:
-            if cluster_details["data"]["cluster_health"]["health"] > 90:
+            if cluster_details["data"]["maintenance"] == "true":
+                health_colour = ansiprint.blue()
+            elif cluster_details["data"]["cluster_health"]["health"] > 90:
                 health_colour = ansiprint.green()
             elif cluster_details["data"]["cluster_health"]["health"] > 50:
                 health_colour = ansiprint.yellow()
