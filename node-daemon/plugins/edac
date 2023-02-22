@@ -83,7 +83,7 @@ class MonitoringPluginScript(MonitoringPlugin):
             for line in stdout.split('\n'):
                 if match(r'^mc[0-9]: csrow', line):
                     if 'Uncorrected' in line:
-                        health_delta = 10
+                        health_delta = 50
                     errors.append(' '.join(line.split()[2:]))
             message += ', '.join(errors)
 
