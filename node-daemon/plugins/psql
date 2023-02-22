@@ -78,7 +78,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Check the Metadata database (primary)
         try:
             conn_metadata = connect(
-                host='127.0.0.1',
+                host=self.this_node.name,
                 port=self.config["metadata_postgresql_port"],
                 dbname=self.config["metadata_postgresql_dbname"],
                 user=self.config["metadata_postgresql_user"],
@@ -101,7 +101,7 @@ class MonitoringPluginScript(MonitoringPlugin):
             # Check the PowerDNS database (secondary)
             try:
                 conn_pdns = connect(
-                    host='127.0.0.1',
+                    host=self.this_node.name,
                     port=self.config["pdns_postgresql_port"],
                     dbname=self.config["pdns_postgresql_dbname"],
                     user=self.config["pdns_postgresql_user"],
