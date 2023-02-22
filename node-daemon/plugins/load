@@ -20,8 +20,7 @@
 ###############################################################################
 
 # This script provides an example of a PVC monitoring plugin script. It will create
-# a simple plugin to check the system load against the total number of CPU cores,
-# and return a 10 health delta (100 -> 90) if the load average is > 1/2 that number.
+# a simple plugin to check the system load against the total number of CPU cores.
 
 # This script can thus be used as an example or reference implementation of a
 # PVC monitoring pluginscript and expanded upon as required.
