@@ -79,7 +79,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Check that the load average is greater or equal to the cpu count
         if load_average > float(cpu_cores):
             # Set the health delta to 10 (subtract 10 from the total of 100)
-            health_delta = 10
+            health_delta = 50
             # Craft a message that can be used by the clients
             message = f"Current load is {load_average} out of {cpu_cores} CPU cores"
 
