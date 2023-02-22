@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.62](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.62)
+
+  * [all] Adds an enhanced health checking, monitoring, and reporting system for nodes and clusters
+  * [cli] Adds a cluster detail command
+
 ###### [v0.9.61](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.61)
 
   * [provisioner] Fixes a bug in network comparison

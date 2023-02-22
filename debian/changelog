@@ -1,3 +1,10 @@
+pvc (0.9.62-0) unstable; urgency=high
+
+  * [all] Adds an enhanced health checking, monitoring, and reporting system for nodes and clusters
+  * [cli] Adds a cluster detail command
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 22 Feb 2023 18:13:45 -0500
+
 pvc (0.9.61-0) unstable; urgency=high
 
   * [provisioner] Fixes a bug in network comparison
