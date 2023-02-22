@@ -46,10 +46,6 @@ from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
 # the file name
 PLUGIN_NAME = "nics"
 
-# Set a minimum link speed variable used below
-# For PVC at least 10 Gbps is required for proper operation of a cluster
-MINIMUM_LINKSPEED = 10000
-
 
 # The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
 class MonitoringPluginScript(MonitoringPlugin):
@@ -172,7 +168,7 @@ class MonitoringPluginScript(MonitoringPlugin):
 
             max_supported_link_speed = sorted(list(supported_link_speeds))[-1]
 
-            # Ensure interface is running at MINIMUM_LINKSPEED
+            # Ensure interface is running at its maximum speed
             with open(f"/sys/class/net/{dev}/speed") as devfh:
                 dev_speed = int(devfh.read())
             if dev_speed < max_supported_link_speed:
