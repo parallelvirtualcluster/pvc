@@ -132,6 +132,7 @@ pvc:
       target_selector: mem
     configuration:
       directories:
+        plugin_directory: "/usr/share/pvc/plugins"
         dynamic_directory: "/run/pvc"
         log_directory: "/var/log/pvc"
         console_log_directory: "/var/log/libvirt"
@@ -142,7 +143,7 @@ pvc:
         log_dates: True
         log_keepalives: True
         log_keepalive_cluster_details: True
-        log_keepalive_storage_details: True
+        log_keepalive_plugin_details: True
         console_log_lines: 1000
       networking:
         bridge_device: ens4
@@ -367,6 +368,12 @@ For most clusters, `mem` should be sufficient, but others may be used based on t
   * `memprov` looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
   * `load` looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
 
+#### `system` → `configuration` → `directories` → `plugin_directory`
+
+* *optional*
+
+The directory to load node health plugins from. Defaults to `/usr/share/pvc/plugins` if unset as per default packaging; should only be overridden by advanced users.
+
 #### `system` → `configuration` → `directories` → `dynamic_directory`
 
 * *required*
@@ -421,11 +428,11 @@ Whether to log keepalive messages or not.
 
 Whether to log node status information during keepalives or not.
 
-#### `system` → `configuration` → `logging` → `log_keepalive_storage_details`
+#### `system` → `configuration` → `logging` → `log_keepalive_plugin_details`
 
 * *required*
 
-Whether to log storage cluster status information during keepalives or not.
+Whether to log node health plugin status information during keepalives or not.
 
 #### `system` → `configuration` → `logging` → `console_log_lines`
 
