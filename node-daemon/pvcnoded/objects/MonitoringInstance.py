@@ -45,7 +45,7 @@ class PluginResult(object):
         self.plugin_name = plugin_name
         self.current_time = int(time.time())
         self.health_delta = 0
-        self.message = None
+        self.message = "N/A"
         self.data = {}
         self.runtime = "0.00"
 
