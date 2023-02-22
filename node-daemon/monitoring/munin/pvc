@@ -30,8 +30,8 @@ GPLv3
 
 is_multigraph
 
-warning=1
-critical=2
+warning=0.99
+critical=1.99
 
 export PVC_CLIENT_DIR="/run/shm/munin-pvc"
 PVC_CMD="/usr/bin/pvc --quiet --cluster local status --format json-pretty"
