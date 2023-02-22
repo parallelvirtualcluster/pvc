@@ -58,6 +58,14 @@ This plugin checks for Debian package updates, invalid package states (i.e. not 
 
 This plugin checks the EDAC utility for messages about errors, primarily in the ECC memory subsystem. It will raise a health delta of 50 if any `Uncorrected` EDAC errors are detected, possibly indicating failing memory.
 
+#### `ipmi`
+
+This plugin checks whether the daemon can reach its own IPMI address and connect. If it cannot, it raises a health delta of 10.
+
+#### `lbvt`
+
+This plugin checks whether the daemon can connect to the local Libvirt daemon instance. If it cannot, it raises a health delta of 50.
+
 #### `load`
 
 This plugin checks the current 1-minute system load (as reported during keepalives) against the number of total CPU threads available on the node. If the load average is greater, i.e. the node is overloaded, it raises a health delta of 50.
@@ -68,11 +76,19 @@ This plugin checks that all NICs underlying PVC networks and bridges are operati
 
 * For each device defined (`bridge_dev`, `upstream_dev`, `cluster_dev`, and `storage_dev`), it determines the type of device. If it is a vLAN, it obtains the underlying device; otherwise, it uses the specified device. It then adds this device to a list of core NICs. Ideally, this list will contain either bonding interfaces or actual ethernet NICs.
 
-* For each core NIC, it checks its type. If it is a `bond` device, it checks the bonding state to ensure that at least 2 slave interfaces are up and operating. If there are not, it raises a health delta of 10. It then performs the following step for each slave NIC.
+* For each core NIC, it checks its type. If it is a `bond` device, it checks the bonding state to ensure that at least 2 slave interfaces are up and operating. If there are not, it raises a health delta of 10.
 
-* For each core NIC or bond slave device, it checks its maximum possible speed as reported by `ethtool` as well as the current active speed. If the NIC is operating at less than its maximum possible speed, it raises a health delta of 10.
+* For each core NIC, it checks its maximum possible speed as reported by `ethtool` as well as the current active speed. If the NIC is operating at less than its maximum possible speed, it raises a health delta of 10.
 
 Note that this check may pose problems in some deployment scenarios (e.g. running 25GbE NICs at 10GbE by design). Currently the plugin logic cannot handle this and manual modifications may be required. This is left to the administrator if applicable.
+
+#### `psql`
+
+This plugin checks whether the daemon can connect to the local PostgreSQL/Patroni daemon instance. If it cannot, it raises a health delta of 50.
+
+#### `zkpr`
+
+This plugin checks whether the daemon can connect to the local Zookeeper daemon instance. If it cannot, it raises a health delta of 50.
 
 ### Custom Health Plugins
 
@@ -92,7 +108,7 @@ from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
 ```
 
 
-* A `PLUGIN_NAME` variable which defines the name of the plugin. This must match the filename.
+* A `PLUGIN_NAME` variable which defines the name of the plugin. This must match the filename. Generally, a plugin name will be 4 characters, but this is purely a convention and not a requirement.
 
 ```
 # A monitoring plugin script must always expose its nice name, which must be identical to the file name
