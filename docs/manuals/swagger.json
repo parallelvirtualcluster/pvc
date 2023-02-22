@@ -527,6 +527,14 @@
                     },
                     "type": "array"
                 },
+                "health_plugins": {
+                    "description": "A list of health plugin names currently loaded on the node",
+                    "items": {
+                        "example": "nics",
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
                 "kernel": {
                     "desription": "The running kernel version from uname",
                     "type": "string"

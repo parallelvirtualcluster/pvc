@@ -635,6 +635,12 @@ class API_Node_Root(Resource):
                   type: integer
                   description: The overall health (%) of the node
                   example: 100
+                health_plugins:
+                  type: array
+                  description: A list of health plugin names currently loaded on the node
+                  items:
+                    type: string
+                    example: "nics"
                 health_details:
                   type: array
                   description: A list of health plugin results
