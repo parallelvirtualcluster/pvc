@@ -103,6 +103,11 @@
                     "example": "pvchv1",
                     "type": "string"
                 },
+                "pvc_version": {
+                    "description": "The PVC version of the current primary coordinator node",
+                    "example": "0.9.61",
+                    "type": "string"
+                },
                 "snapshots": {
                     "description": "The total number of snapshots in the storage cluster",
                     "type": "integer"

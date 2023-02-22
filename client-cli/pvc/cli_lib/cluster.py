@@ -183,6 +183,13 @@ def format_info(cluster_information, oformat):
         )
     )
     ainformation.append(
+        "{}PVC Version:{}         {}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            cluster_information.get("pvc_version", "N/A"),
+        )
+    )
+    ainformation.append(
         "{}Cluster upstream IP:{} {}".format(
             ansiprint.purple(), ansiprint.end(), cluster_information["upstream_ip"]
         )

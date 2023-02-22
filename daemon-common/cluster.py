@@ -194,6 +194,15 @@ def getClusterInformation(zkhandler):
     # Get node information object list
     retcode, node_list = pvc_node.get_list(zkhandler, None)
 
+    # Get primary node
+    primary_node = common.getPrimaryNode(zkhandler)
+
+    # Get PVC version of primary node
+    pvc_version = "0.0.0"
+    for node in node_list:
+        if node["name"] == primary_node:
+            pvc_version = node["pvc_version"]
+
     # Get vm information object list
     retcode, vm_list = pvc_vm.get_list(zkhandler, None, None, None, None)
 
@@ -295,7 +304,8 @@ def getClusterInformation(zkhandler):
         ),
         "node_health": getNodeHealth(zkhandler, node_list),
         "maintenance": maintenance_state,
-        "primary_node": common.getPrimaryNode(zkhandler),
+        "primary_node": primary_node,
+        "pvc_version": pvc_version,
         "upstream_ip": zkhandler.read("base.config.upstream_ip"),
         "nodes": formatted_node_states,
         "vms": formatted_vm_states,

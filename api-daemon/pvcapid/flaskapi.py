@@ -486,6 +486,10 @@ class API_Status(Resource):
                   type: string
                   description: The current primary coordinator node
                   example: pvchv1
+                pvc_version:
+                  type: string
+                  description: The PVC version of the current primary coordinator node
+                  example: 0.9.61
                 upstream_ip:
                   type: string
                   description: The cluster upstream IP address in CIDR format
