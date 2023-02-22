@@ -183,7 +183,7 @@ def format_info(cluster_information, oformat):
         )
     )
     ainformation.append(
-        "{}PVC Version:{}         {}".format(
+        "{}PVC version:{}         {}".format(
             ansiprint.purple(),
             ansiprint.end(),
             cluster_information.get("pvc_version", "N/A"),
