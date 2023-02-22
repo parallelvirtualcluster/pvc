@@ -359,7 +359,7 @@ class MonitoringInstance(object):
         for result in sorted(plugin_results, key=lambda x: x.plugin_name):
             if self.config["log_keepalive_plugin_details"]:
                 self.logger.out(
-                    result.message,
+                    result.message + f" [-{result.health_delta}]",
                     state="t",
                     prefix=f"{result.plugin_name} ({result.runtime}s)",
                 )
