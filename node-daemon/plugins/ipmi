@@ -73,7 +73,8 @@ class MonitoringPluginScript(MonitoringPlugin):
         ipmi_username = self.config["ipmi_username"]
         ipmi_password = self.config["ipmi_password"]
         retcode, _, _ = run_os_command(
-            f"/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_username} -P {ipmi_password} chassis power status"
+            f"/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_username} -P {ipmi_password} chassis power status",
+            timeout=1
         )
 
         if retcode > 0:
