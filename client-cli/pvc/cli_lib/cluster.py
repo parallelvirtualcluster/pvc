@@ -125,7 +125,10 @@ def format_info(cluster_information, oformat):
         return json.dumps(cluster_information, indent=4)
 
     # Plain formatting, i.e. human-readable
-    if cluster_information.get("maintenance") == "true":
+    if (
+        cluster_information.get("maintenance") == "true"
+        or cluster_information.get("cluster_health", {}).get("health", "N/A") == "N/A"
+    ):
         health_colour = ansiprint.blue()
     elif cluster_information.get("cluster_health", {}).get("health", 100) > 90:
         health_colour = ansiprint.green()
