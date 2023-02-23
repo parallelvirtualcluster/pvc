@@ -496,7 +496,15 @@ def cluster_detail():
             continue
 
         _health_length = (
-            len(str(cluster_details["data"]["cluster_health"]["health"]) + "%") + 1
+            len(
+                str(
+                    cluster_details["data"]
+                    .get("cluster_health", {})
+                    .get("health", "N/A")
+                )
+                + "%"
+            )
+            + 1
         )
         if _health_length > health_length:
             health_length = _health_length
@@ -505,7 +513,7 @@ def cluster_detail():
         if _primary_node_length > primary_node_length:
             primary_node_length = _primary_node_length
 
-        _pvc_version_length = len(cluster_details["data"]["pvc_version"]) + 1
+        _pvc_version_length = len(cluster_details["data"].get("pvc_version", "N/A")) + 1
         if _pvc_version_length > pvc_version_length:
             pvc_version_length = _pvc_version_length
 
@@ -585,20 +593,36 @@ def cluster_detail():
             volumes = "N/A"
             snapshots = "N/A"
         else:
-            if cluster_details["data"]["maintenance"] == "true":
+            if (
+                cluster_details["data"].get("maintenance") == "true"
+                or cluster_details["data"]
+                .get("cluster_health", {})
+                .get("health", "N/A")
+                == "N/A"
+            ):
                 health_colour = ansiprint.blue()
-            elif cluster_details["data"]["cluster_health"]["health"] > 90:
+            elif (
+                cluster_details["data"].get("cluster_health", {}).get("health", 100)
+                > 90
+            ):
                 health_colour = ansiprint.green()
-            elif cluster_details["data"]["cluster_health"]["health"] > 50:
+            elif (
+                cluster_details["data"].get("cluster_health", {}).get("health", 100)
+                > 50
+            ):
                 health_colour = ansiprint.yellow()
             else:
                 health_colour = ansiprint.red()
 
             name = cluster_details["config"]["cluster"]
             description = cluster_details["config"]["description"]
-            health = str(cluster_details["data"]["cluster_health"]["health"]) + "%"
+            health = str(
+                cluster_details["data"].get("cluster_health", {}).get("health", "N/A")
+            )
+            if health != "N/A":
+                health += "%"
             primary_node = cluster_details["data"]["primary_node"]
-            pvc_version = cluster_details["data"]["pvc_version"]
+            pvc_version = cluster_details["data"].get("pvc_version", "N/A")
             nodes = str(cluster_details["data"]["nodes"]["total"])
             vms = str(cluster_details["data"]["vms"]["total"])
             networks = str(cluster_details["data"]["networks"])
