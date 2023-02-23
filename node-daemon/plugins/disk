@@ -129,7 +129,7 @@ class MonitoringPluginScript(MonitoringPlugin):
                 continue
 
             if disk_type == 'nvme':
-                for attribute in smart_info['nvme_smart_health_information_log'].items():
+                for attribute in smart_info.get('nvme_smart_health_information_log', {}).items():
                     if attribute[0] == "critical_warning" and attribute[1] > 0:
                         health_delta += 10
                         messages.append(f"{disk} critical warning value {attribute[1]}")
@@ -140,7 +140,7 @@ class MonitoringPluginScript(MonitoringPlugin):
                         health_delta += 10
                         messages.append(f"{disk} percentage used value {attribute[1]}%")
             else:
-                for attribute in smart_info['ata_smart_attributes']['table']:
+                for attribute in smart_info.get('ata_smart_attributes', {}).get('table', []):
                     if attribute["when_failed"]:
                         health_delta += 10
                         messages.append(f"{disk} attribute {attribute['name']} value {attribute['raw']['value']}")
