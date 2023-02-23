@@ -513,7 +513,9 @@ def cluster_detail():
         if _primary_node_length > primary_node_length:
             primary_node_length = _primary_node_length
 
-        _pvc_version_length = len(cluster_details["data"].get("pvc_version", "N/A")) + 1
+        _pvc_version_length = (
+            len(cluster_details["data"].get("pvc_version", "< 0.9.62")) + 1
+        )
         if _pvc_version_length > pvc_version_length:
             pvc_version_length = _pvc_version_length
 
