@@ -79,7 +79,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         try:
             zk_conn = KazooClient(hosts=[f"{self.this_node.name}:2181"], timeout=1, read_only=True)
             zk_conn.start(timeout=1)
-            data = zk_conn.get('/primary_node')
+            data = zk_conn.get('/schema/version')
         except Exception as e:
             health_delta = 50
             message = f"Failed to connect to Zookeeper: {e}"
