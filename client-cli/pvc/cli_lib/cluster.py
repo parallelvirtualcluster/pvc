@@ -141,7 +141,11 @@ def format_info(cluster_information, oformat):
     )
     ainformation.append("")
 
-    health_text = f"{cluster_information['cluster_health']['health']}%"
+    health_text = (
+        f"{cluster_information.get('cluster_health', {}).get('health', 'N/A')}"
+    )
+    if health_text != "N/A":
+        health_text += "%"
     if cluster_information.get("maintenance") == "true":
         health_text += " (maintenance on)"
 
