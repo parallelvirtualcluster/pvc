@@ -624,7 +624,7 @@ def cluster_detail():
             if health != "N/A":
                 health += "%"
             primary_node = cluster_details["data"]["primary_node"]
-            pvc_version = cluster_details["data"].get("pvc_version", "N/A")
+            pvc_version = cluster_details["data"].get("pvc_version", "< 0.9.62")
             nodes = str(cluster_details["data"]["nodes"]["total"])
             vms = str(cluster_details["data"]["vms"]["total"])
             networks = str(cluster_details["data"]["networks"])
