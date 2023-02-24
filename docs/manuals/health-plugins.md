@@ -153,6 +153,22 @@ An instance of the `PluginResult` object is helpfully created by the caller and 
 
 Finally, the `PluginResult` instance stored as `self.plugin_result` must be returned by the run function to the caller upon completion so that it can be added to the node state.
 
+### Logging
+
+The MonitoringPlugin class provides a helper logging method (usable as `self.log()`) to assist a plugin author in logging messages to the node daemon console log. This function takes one primary argument, a string message, and an optional `state` keyword argument for alternate states.
+
+The default state is `d` for debug, e.g. `state="d"`. The possible states for log messages are:
+
+* `"d"`: Debug, only printed when the administrator has debug logging enabled. Useful for detailed analysis of the plugin run state.
+* `"i"`: Informational, printed at all times but with no intrinsic severity. Use these very sparingly if at all.
+* `"t"`: Tick, matches the output of the keepalive itself. Use these very sparingly if at all.
+* `"w"`: Warning, prints a warning message. Use these for non-fatal error conditions within the plugin.
+* `"e"`: Error, prints an error message. Use these for fatal error conditions within the plugin.
+
+None of the example plugins make use of the logging interface, but it is available for custom plugins should it be required.
+
+The final output message of each plugin is automatically logged to the node daemon console log with `"t"` state at the completion of all plugins, if the `log_keepalive_plugin_details` configuration option is true. Otherwise, no final output is displayed. This setting does not affect messages printed from within a plugin.
+
 ### Example Health Plugin
 
 This is a terse example of the `load` plugin, which is an extremely simple example that shows all the above requirements clearly. Comments are omitted here for simplicity, but these can be seen in the actual plugin file (at `/usr/share/pvc/plugins/load` on any node).
