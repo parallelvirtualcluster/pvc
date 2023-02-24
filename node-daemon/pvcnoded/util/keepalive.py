@@ -644,8 +644,27 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
 # Keepalive update function
 def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
     debug = config["debug"]
-    if debug:
-        logger.out("Keepalive starting", state="d", prefix="main-thread")
+
+    # Display node information to the terminal
+    if config["log_keepalives"]:
+        if this_node.router_state == "primary":
+            cst_colour = logger.fmt_green
+        elif this_node.router_state == "secondary":
+            cst_colour = logger.fmt_blue
+        else:
+            cst_colour = logger.fmt_cyan
+        logger.out(
+            "{}{} keepalive @ {}{} [{}{}{}]".format(
+                logger.fmt_purple,
+                config["node_hostname"],
+                datetime.now(),
+                logger.fmt_end,
+                logger.fmt_bold + cst_colour,
+                this_node.router_state,
+                logger.fmt_end,
+            ),
+            state="t",
+        )
 
     # Set the migration selector in Zookeeper for clients to read
     if config["enable_hypervisor"]:
@@ -808,44 +827,51 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
     except Exception:
         logger.out("Failed to set keepalive data", state="e")
 
-    # Display node information to the terminal
+    # Run this here since monitoring plugins output directly
+    monitoring_instance.run_plugins()
+    # Allow the health value to update in the Node instance
+    time.sleep(0.1)
+
     if config["log_keepalives"]:
-        if this_node.router_state == "primary":
-            cst_colour = logger.fmt_green
-        elif this_node.router_state == "secondary":
-            cst_colour = logger.fmt_blue
+        if this_node.maintenance is True:
+            maintenance_colour = logger.fmt_blue
         else:
-            cst_colour = logger.fmt_cyan
-        logger.out(
-            "{}{} keepalive @ {}{} [{}{}{}]".format(
-                logger.fmt_purple,
-                config["node_hostname"],
-                datetime.now(),
-                logger.fmt_end,
-                logger.fmt_bold + cst_colour,
-                this_node.router_state,
-                logger.fmt_end,
-            ),
-            state="t",
-        )
+            maintenance_colour = logger.fmt_green
+
+        if isinstance(this_node.health, int):
+            if this_node.health > 90:
+                health_colour = logger.fmt_green
+            elif this_node.health > 50:
+                health_colour = logger.fmt_yellow
+            else:
+                health_colour = logger.fmt_red
+            health_text = str(this_node.health) + "%"
+
+        else:
+            health_colour = logger.fmt_blue
+            health_text = "N/A"
+
         if config["log_keepalive_cluster_details"]:
             logger.out(
-                "{bold}Maintenance:{nofmt} {maint}  "
-                "{bold}Node VMs:{nofmt} {domcount}  "
-                "{bold}Node OSDs:{nofmt} {osdcount}  "
+                "{bold}Maintenance:{nofmt} {maintenance_colour}{maintenance}{nofmt}  "
+                "{bold}Health:{nofmt} {health_colour}{health}{nofmt}  "
+                "{bold}VMs:{nofmt} {domcount}  "
+                "{bold}OSDs:{nofmt} {osdcount}  "
                 "{bold}Load:{nofmt} {load}  "
-                "{bold}Memory [MiB]: VMs:{nofmt} {allocmem}  "
+                "{bold}Memory [MiB]: "
                 "{bold}Used:{nofmt} {usedmem}  "
                 "{bold}Free:{nofmt} {freemem}".format(
                     bold=logger.fmt_bold,
+                    maintenance_colour=maintenance_colour,
+                    health_colour=health_colour,
                     nofmt=logger.fmt_end,
-                    maint=this_node.maintenance,
+                    maintenance=this_node.maintenance,
+                    health=health_text,
                     domcount=this_node.domains_count,
                     osdcount=osds_this_node,
                     load=this_node.cpuload,
                     freemem=this_node.memfree,
                     usedmem=this_node.memused,
-                    allocmem=this_node.memalloc,
                 ),
                 state="t",
             )
@@ -893,8 +919,3 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
                             zkhandler.write(
                                 [(("node.state.daemon", node_name), "dead")]
                             )
-
-    monitoring_instance.run_plugins()
-
-    if debug:
-        logger.out("Keepalive finished", state="d", prefix="main-thread")

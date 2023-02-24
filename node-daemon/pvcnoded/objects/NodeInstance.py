@@ -67,6 +67,7 @@ class NodeInstance(object):
         self.network_list = []
         self.domain_list = []
         # Node resources
+        self.health = 100
         self.domains_count = 0
         self.memused = 0
         self.memfree = 0
@@ -223,6 +224,28 @@ class NodeInstance(object):
                             target=self.unflush, args=(), kwargs={}
                         )
                         self.flush_thread.start()
+
+        @self.zkhandler.zk_conn.DataWatch(
+            self.zkhandler.schema.path("node.monitoring.health", self.name)
+        )
+        def watch_node_health(data, stat, event=""):
+            if event and event.type == "DELETED":
+                # The key has been deleted after existing before; terminate this watcher
+                # because this class instance is about to be reaped in Daemon.py
+                return False
+
+            try:
+                data = data.decode("ascii")
+            except AttributeError:
+                data = 100
+
+            try:
+                data = int(data)
+            except ValueError:
+                pass
+
+            if data != self.health:
+                self.health = data
 
         @self.zkhandler.zk_conn.DataWatch(
             self.zkhandler.schema.path("node.memory.free", self.name)

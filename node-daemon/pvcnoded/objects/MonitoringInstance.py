@@ -365,7 +365,10 @@ class MonitoringInstance(object):
                 plugin_results.append(future.result())
 
         for result in sorted(plugin_results, key=lambda x: x.plugin_name):
-            if self.config["log_keepalive_plugin_details"]:
+            if (
+                self.config["log_keepalives"]
+                and self.config["log_keepalive_plugin_details"]
+            ):
                 self.logger.out(
                     result.message + f" [-{result.health_delta}]",
                     state="t",
@@ -376,13 +379,6 @@ class MonitoringInstance(object):
         if total_health < 0:
             total_health = 0
 
-        if total_health > 90:
-            health_colour = self.logger.fmt_green
-        elif total_health > 50:
-            health_colour = self.logger.fmt_yellow
-        else:
-            health_colour = self.logger.fmt_red
-
         self.zkhandler.write(
             [
                 (
@@ -390,10 +386,6 @@ class MonitoringInstance(object):
                     total_health,
                 ),
             ]
-        )
-        self.logger.out(
-            f"Node health: {health_colour}{total_health}%{self.logger.fmt_end}",
-            state="t",
         )
 
     def run_cleanup(self, plugin):
