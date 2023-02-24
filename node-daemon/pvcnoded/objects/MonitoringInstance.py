@@ -332,7 +332,15 @@ class MonitoringInstance(object):
 
     def run_plugin(self, plugin):
         time_start = datetime.now()
-        result = plugin.run()
+        try:
+            result = plugin.run()
+        except Exception as e:
+            self.logger.out(
+                f"Monitoring plugin {plugin.plugin_name} failed: {type(e).__name__}: {e}",
+                state="e",
+            )
+            # Whatever it had, we try to return
+            return plugin.plugin_result
         time_end = datetime.now()
         time_delta = time_end - time_start
         runtime = "{:0.02f}".format(time_delta.total_seconds())
@@ -363,8 +371,7 @@ class MonitoringInstance(object):
                     state="t",
                     prefix=f"{result.plugin_name} ({result.runtime}s)",
                 )
-            if result is not None:
-                total_health -= result.health_delta
+            total_health -= result.health_delta
 
         if total_health < 0:
             total_health = 0
