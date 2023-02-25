@@ -141,7 +141,7 @@ This function mirrors the setup function, and is run once during the node daemon
 
 This function is run each time the plugin is called during a keepalive. It performs the main work of the plugin before returning the end result in a specific format.
 
-Note that this function runs once for each keepalive, which by default is every 5 seconds. It is thus important to keep the runtime as short as possible and avoid doing complex calculations, file I/O, etc. during the plugin run. Do as much as possible in the setup function to keep the run function as quick as possible.
+Note that this function runs once for each keepalive, which by default is every 5 seconds. It is thus important to keep the runtime as short as possible and avoid doing complex calculations, file I/O, etc. during the plugin run. Do as much as possible in the setup function to keep the run function as quick as possible. A good safe maximum time for any plugin (e.g. if implementing an internal timeout) is 2 seconds.
 
 What happens during the run function is of course completely up to the plugin, but it must return a standardized set of details upon completing the run.
 
