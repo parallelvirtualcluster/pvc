@@ -225,27 +225,32 @@ class NodeInstance(object):
                         )
                         self.flush_thread.start()
 
-        @self.zkhandler.zk_conn.DataWatch(
-            self.zkhandler.schema.path("node.monitoring.health", self.name)
-        )
-        def watch_node_health(data, stat, event=""):
-            if event and event.type == "DELETED":
-                # The key has been deleted after existing before; terminate this watcher
-                # because this class instance is about to be reaped in Daemon.py
-                return False
+        try:
 
-            try:
-                data = data.decode("ascii")
-            except AttributeError:
-                data = 100
+            @self.zkhandler.zk_conn.DataWatch(
+                self.zkhandler.schema.path("node.monitoring.health", self.name)
+            )
+            def watch_node_health(data, stat, event=""):
+                if event and event.type == "DELETED":
+                    # The key has been deleted after existing before; terminate this watcher
+                    # because this class instance is about to be reaped in Daemon.py
+                    return False
 
-            try:
-                data = int(data)
-            except ValueError:
-                pass
+                try:
+                    data = data.decode("ascii")
+                except AttributeError:
+                    data = 100
 
-            if data != self.health:
-                self.health = data
+                try:
+                    data = int(data)
+                except ValueError:
+                    pass
+
+                if data != self.health:
+                    self.health = data
+
+        except Exception:
+            pass
 
         @self.zkhandler.zk_conn.DataWatch(
             self.zkhandler.schema.path("node.memory.free", self.name)
