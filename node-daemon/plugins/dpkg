@@ -110,8 +110,8 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         count_upgradable = len(list_upgradable)
 
-        # Get obsolete config files (dpkg-* or ucf-* under /etc)
-        retcode, stdout, stderr = pvc_common.run_os_command("/usr/bin/find /etc -type f -a \( -name '*.dpkg-*' -o -name '*.ucf-*' \)")
+        # Get obsolete config files (dpkg-*, ucf-*, or update-* under /etc)
+        retcode, stdout, stderr = pvc_common.run_os_command("/usr/bin/find /etc -type f -a \( -name '*.dpkg-*' -o -name '*.ucf-*' -o -name '*.update-*' \)")
 
         obsolete_conffiles = list()
         for conffile_line in stdout.split('\n'):
