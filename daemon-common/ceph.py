@@ -73,6 +73,11 @@ byte_unit_matrix = {
     "G": 1024 * 1024 * 1024,
     "T": 1024 * 1024 * 1024 * 1024,
     "P": 1024 * 1024 * 1024 * 1024 * 1024,
+    "E": 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    "Z": 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    "Y": 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    "R": 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    "Q": 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
 }
 
 # Matrix of human-to-metric values
@@ -83,6 +88,11 @@ ops_unit_matrix = {
     "G": 1000 * 1000 * 1000,
     "T": 1000 * 1000 * 1000 * 1000,
     "P": 1000 * 1000 * 1000 * 1000 * 1000,
+    "E": 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    "Z": 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    "Y": 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    "R": 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    "Q": 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
 }
 
 
@@ -103,14 +113,18 @@ def format_bytes_tohuman(databytes):
 
 
 def format_bytes_fromhuman(datahuman):
-    # Trim off human-readable character
-    dataunit = str(datahuman)[-1]
-    datasize = int(str(datahuman)[:-1])
-    if not re.match(r"[A-Z]", dataunit):
+    if not re.search(r"[A-Za-z]+", datahuman):
         dataunit = "B"
         datasize = int(datahuman)
-    databytes = datasize * byte_unit_matrix[dataunit]
-    return databytes
+    else:
+        dataunit = str(re.match(r"[0-9]+([A-Za-z])[iBb]*", datahuman).group(1))
+        datasize = int(re.match(r"([0-9]+)[A-Za-z]+", datahuman).group(1))
+
+    if byte_unit_matrix.get(dataunit):
+        databytes = datasize * byte_unit_matrix[dataunit]
+        return databytes
+    else:
+        return None
 
 
 # Format ops sizes to/from human-readable units
@@ -731,22 +745,26 @@ def getVolumeInformation(zkhandler, pool, volume):
 
 
 def add_volume(zkhandler, pool, name, size):
-    # Add 'B' if the volume is in bytes
-    if re.match(r"^[0-9]+$", size):
-        size = "{}B".format(size)
-
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zkhandler, pool)
     size_bytes = format_bytes_fromhuman(size)
+    if size_bytes is None:
+        return (
+            False,
+            f"ERROR: Requested volume size '{size}' does not have a valid SI unit",
+        )
+
     if size_bytes >= int(pool_information["stats"]["free_bytes"]):
         return (
             False,
-            "ERROR: Requested volume size is greater than the available free space in the pool",
+            f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the available free space in the pool ('{format_bytes_tohuman(pool_information['stats']['free_bytes'])}')",
         )
 
     # 2. Create the volume
     retcode, stdout, stderr = common.run_os_command(
-        "rbd create --size {} {}/{}".format(size, pool, name)
+        "rbd create --size {} {}/{}".format(
+            format_bytes_tohuman(size_bytes), pool, name
+        )
     )
     if retcode:
         return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
@@ -766,7 +784,9 @@ def add_volume(zkhandler, pool, name, size):
         ]
     )
 
-    return True, 'Created RBD volume "{}/{}" ({}).'.format(pool, name, size)
+    return True, 'Created RBD volume "{}" of size "{}" in pool "{}".'.format(
+        name, format_bytes_tohuman(size_bytes), pool
+    )
 
 
 def clone_volume(zkhandler, pool, name_src, name_new):
@@ -813,28 +833,32 @@ def resize_volume(zkhandler, pool, name, size):
             name, pool
         )
 
-    # Add 'B' if the volume is in bytes
-    if re.match(r"^[0-9]+$", size):
-        size = "{}B".format(size)
-
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zkhandler, pool)
     size_bytes = format_bytes_fromhuman(size)
+    if size_bytes is None:
+        return (
+            False,
+            f"ERROR: Requested volume size '{size}' does not have a valid SI unit",
+        )
+
     if size_bytes >= int(pool_information["stats"]["free_bytes"]):
         return (
             False,
-            "ERROR: Requested volume size is greater than the available free space in the pool",
+            f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the available free space in the pool ('{format_bytes_tohuman(pool_information['stats']['free_bytes'])}')",
         )
 
     # 2. Resize the volume
     retcode, stdout, stderr = common.run_os_command(
-        "rbd resize --size {} {}/{}".format(size, pool, name)
+        "rbd resize --size {} {}/{}".format(
+            format_bytes_tohuman(size_bytes), pool, name
+        )
     )
     if retcode:
         return (
             False,
             'ERROR: Failed to resize RBD volume "{}" to size "{}" in pool "{}": {}'.format(
-                name, size, pool, stderr
+                name, format_bytes_tohuman(size_bytes), pool, stderr
             ),
         )
 
@@ -860,7 +884,7 @@ def resize_volume(zkhandler, pool, name, size):
             if target_vm_conn:
                 target_vm_conn.blockResize(
                     volume_id,
-                    format_bytes_fromhuman(size),
+                    size_bytes,
                     libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES,
                 )
             target_lv_conn.close()
@@ -883,7 +907,7 @@ def resize_volume(zkhandler, pool, name, size):
     )
 
     return True, 'Resized RBD volume "{}" to size "{}" in pool "{}".'.format(
-        name, size, pool
+        name, format_bytes_tohuman(size_bytes), pool
     )
 
 
