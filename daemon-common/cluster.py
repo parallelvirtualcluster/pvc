@@ -51,6 +51,8 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
         "vm_stopped": 10,
         "osd_out": 50,
         "osd_down": 10,
+        "osd_full": 50,
+        "osd_nearfull": 10,
         "memory_overprovisioned": 50,
         "ceph_err": 50,
         "ceph_warn": 10,
@@ -108,6 +110,18 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
             cluster_health_value -= health_delta_map["osd_down"]
             cluster_health_messages.append(
                 f"cluster: Ceph OSD {ceph_osd['id']} in {up_texts[ceph_osd['stats']['up']].upper()} state"
+            )
+
+        # Handle full or nearfull OSDs (>85%)
+        if ceph_osd["stats"]["utilization"] >= 90:
+            cluster_health_value -= health_delta_map["osd_full"]
+            cluster_health_messages.append(
+                f"cluster: Ceph OSD {ceph_osd['id']} is FULL ({ceph_osd['stats']['utilization']:.1f}% > 90%)"
+            )
+        elif ceph_osd["stats"]["utilization"] >= 85:
+            cluster_health_value -= health_delta_map["osd_nearfull"]
+            cluster_health_messages.append(
+                f"cluster: Ceph OSD {ceph_osd['id']} is NEARFULL ({ceph_osd['stats']['utilization']:.1f}% > 85%)"
             )
 
     # Check for (n-1) overprovisioning
