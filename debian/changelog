@@ -1,3 +1,13 @@
+pvc (0.9.63-0) unstable; urgency=high
+
+  * Mentions Ganeti in the docs
+  * Increases API timeout back to 2s
+  * Adds .update-* configs to dpkg plugin
+  * Adds full/nearfull OSD warnings
+  * Improves size value handling for volumes
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 28 Apr 2023 14:47:04 -0400
+
 pvc (0.9.62-0) unstable; urgency=high
 
   * [all] Adds an enhanced health checking, monitoring, and reporting system for nodes and clusters

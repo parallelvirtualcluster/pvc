@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.63](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.63)
+
+  * Mentions Ganeti in the docs
+  * Increases API timeout back to 2s
+  * Adds .update-* configs to dpkg plugin
+  * Adds full/nearfull OSD warnings
+  * Improves size value handling for volumes
+
 ###### [v0.9.62](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.62)
 
   * [all] Adds an enhanced health checking, monitoring, and reporting system for nodes and clusters
