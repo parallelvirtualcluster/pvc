@@ -25,7 +25,7 @@ As part of these trends, Infrastructure-as-a-Service (IaaS) has become a critica
 
 However, the current state of the free and open source virtualization ecosystem is lacking.
 
-At the lower- to middle-end, projects like ProxMox provide an easy way to administer small virtualization clusters, but these projects tend to lack advanced redundancy facilities that are built-in by default. Ganeti, a former Google tool, was long-dead when PVC was initially conceived, but has recently been given new life by the FLOSS community, and was the inspiration for much of PVC's functionality. Harvester is also a new player in the space, created by Rancher Labs, but its use of custom solutions for everything, especially the storage backend, gives us some pause.
+At the lower- to middle-end, projects like ProxMox provide an easy way to administer small virtualization clusters, but these projects tend to lack advanced redundancy facilities that are built-in by default. Ganeti, a former Google tool, was long-dead when PVC was initially conceived, but has recently been given new life by the FLOSS community, and was the inspiration for much of PVC's functionality. Harvester is also a newer player in the space, created by Rancher Labs after PVC was established, but its use of custom solutions for everything, especially the storage backend, gives us some pause.
 
 At the high-end, very large projects like OpenStack and CloudStack provide very advanced functionality, but these project are sprawling and complicated for Administrators to use, and are very focused on large enterprise deployments, not suitable for smaller clusters and teams.
 
