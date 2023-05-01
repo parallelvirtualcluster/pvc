@@ -25,13 +25,11 @@ As part of these trends, Infrastructure-as-a-Service (IaaS) has become a critica
 
 However, the current state of the free and open source virtualization ecosystem is lacking.
 
-At the lower end, projects like ProxMox provide an easy way to administer small virtualization clusters, but these projects tend to lack advanced redundancy facilities that are built-in by default. While there are some new contenders in this space, such as Harvester, the options are limited and their feature-sets and tool stacks can be cumbersome or unproven.
+At the lower- to middle-end, projects like ProxMox provide an easy way to administer small virtualization clusters, but these projects tend to lack advanced redundancy facilities that are built-in by default. Ganeti, a former Google tool, was long-dead when PVC was initially conceived, but has recently been given new life by the FLOSS community, and was the inspiration for much of PVC's functionality. Harvester is also a new player in the space, created by Rancher Labs, but its use of custom solutions for everything, especially the storage backend, gives us some pause.
 
-At the higher end, very large projects like OpenStack and CloudStack provide very advanced functionality, but these project are sprawling and complicated for Administrators to use, and are very focused on large enterprise deployments, not suitable for smaller clusters and teams.
+At the high-end, very large projects like OpenStack and CloudStack provide very advanced functionality, but these project are sprawling and complicated for Administrators to use, and are very focused on large enterprise deployments, not suitable for smaller clusters and teams.
 
 Finally, proprietary solutions dominate this space. VMWare and Nutanix are the two largest names, with these products providing functionality for both small and large clusters, but proprietary software limits both flexibility and freedom, and the costs associated with these solutions is immense.
-
-There are also two other tools in the HCI space worth mentioning. Ganeti, a former Google tool, was long-dead when PVC was initially conceived, but has recently been given new life by the FLOSS community, and was the inspiration for much of PVC's functionality. Harvester is also a new player in the space, created by Rancher Labs, but its use of custom solutions for everything, especially the storage backend, gives us some pause.
 
 PVC aims to bridge the gaps between these categories. Like the larger FLOSS and proprietary projects, PVC can scale up to very large cluster sizes, while remaining usable even for small clusters as well. Like the smaller FLOSS and proprietary projects, PVC aims to be very simple to use, with a fully programmable API, allowing administrators to get on with more important things. Like the other FLOSS solutions, PVC is free, both as in beer and as in speech, allowing the administrator to inspect, modify, and tailor it to their needs. And finally, PVC is built from the ground-up to support host-level redundancy at every layer, rather than this being an expensive, optional, or tacked on feature, using standard, well-tested and well-supported components.
 
