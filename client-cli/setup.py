@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="pvc",
     version="0.9.63",
-    packages=["pvc", "pvc.cli_lib"],
+    packages=["pvc", "pvc.lib"],
     install_requires=[
         "Click",
         "PyYAML",

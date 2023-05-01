@@ -37,13 +37,13 @@ from distutils.util import strtobool
 
 from functools import wraps
 
-import pvc.cli_lib.ansiprint as ansiprint
-import pvc.cli_lib.cluster as pvc_cluster
-import pvc.cli_lib.node as pvc_node
-import pvc.cli_lib.vm as pvc_vm
-import pvc.cli_lib.network as pvc_network
-import pvc.cli_lib.ceph as pvc_ceph
-import pvc.cli_lib.provisioner as pvc_provisioner
+import pvc.lib.ansiprint as ansiprint
+import pvc.lib.cluster as pvc_cluster
+import pvc.lib.node as pvc_node
+import pvc.lib.vm as pvc_vm
+import pvc.lib.network as pvc_network
+import pvc.lib.ceph as pvc_ceph
+import pvc.lib.provisioner as pvc_provisioner
 
 
 myhostname = socket.gethostname().split(".")[0]
