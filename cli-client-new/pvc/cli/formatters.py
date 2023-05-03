@@ -35,6 +35,203 @@ ansii = {
 }
 
 
+def cli_cluster_status_format_pretty(data):
+    """
+    Pretty format the full output of cli_cluster_status
+    """
+
+    # Normalize data to local variables
+    health = data.get("cluster_health", {}).get("health", -1)
+    messages = data.get("cluster_health", {}).get("messages", None)
+    maintenance = data.get("maintenance", "N/A")
+    primary_node = data.get("primary_node", "N/A")
+    pvc_version = data.get("pvc_version", "N/A")
+    upstream_ip = data.get("upstream_ip", "N/A")
+    total_nodes = data.get("nodes", {}).get("total", 0)
+    total_vms = data.get("vms", {}).get("total", 0)
+    total_networks = data.get("networks", 0)
+    total_osds = data.get("osds", {}).get("total", 0)
+    total_pools = data.get("pools", 0)
+    total_volumes = data.get("volumes", 0)
+    total_snapshots = data.get("snapshots", 0)
+
+    if maintenance == "true" or health == -1:
+        health_colour = ansii["blue"]
+    elif health > 90:
+        health_colour = ansii["green"]
+    elif health > 50:
+        health_colour = ansii["yellow"]
+    else:
+        health_colour = ansii["red"]
+
+    output = list()
+
+    output.append(f"{ansii['bold']}PVC cluster status:{ansii['end']}")
+    output.append("")
+
+    if health != "-1":
+        health = f"{health}%"
+    else:
+        health = "N/A"
+
+    if maintenance == "true":
+        health = f"{health} (maintenance on)"
+
+    output.append(
+        f"{ansii['purple']}Cluster health:{ansii['end']}   {health_colour}{health}{ansii['end']}"
+    )
+
+    if messages is not None and len(messages) > 0:
+        messages = "\n                  ".join(sorted(messages))
+        output.append(f"{ansii['purple']}Health messages:{ansii['end']}  {messages}")
+
+    output.append("")
+
+    output.append(f"{ansii['purple']}Primary node:{ansii['end']}     {primary_node}")
+    output.append(f"{ansii['purple']}PVC version:{ansii['end']}      {pvc_version}")
+    output.append(f"{ansii['purple']}Upstream IP:{ansii['end']}      {upstream_ip}")
+    output.append("")
+
+    node_states = ["run,ready"]
+    node_states.extend(
+        [
+            state
+            for state in data.get("nodes", {}).keys()
+            if state not in ["total", "run,ready"]
+        ]
+    )
+
+    nodes_strings = list()
+    for state in node_states:
+        if state in ["run,ready"]:
+            state_colour = ansii["green"]
+        elif state in ["run,flush", "run,unflush", "run,flushed"]:
+            state_colour = ansii["blue"]
+        elif "dead" in state or "stop" in state:
+            state_colour = ansii["red"]
+        else:
+            state_colour = ansii["yellow"]
+
+        nodes_strings.append(
+            f"{data.get('nodes', {}).get(state)}/{total_nodes} {state_colour}{state}{ansii['end']}"
+        )
+
+    nodes_string = ", ".join(nodes_strings)
+
+    output.append(f"{ansii['purple']}Nodes:{ansii['end']}            {nodes_string}")
+
+    vm_states = ["start", "disable"]
+    vm_states.extend(
+        [
+            state
+            for state in data.get("vms", {}).keys()
+            if state not in ["total", "start", "disable"]
+        ]
+    )
+
+    vms_strings = list()
+    for state in vm_states:
+        if state in ["start"]:
+            state_colour = ansii["green"]
+        elif state in ["migrate", "disable"]:
+            state_colour = ansii["blue"]
+        elif state in ["stop", "fail"]:
+            state_colour = ansii["red"]
+        else:
+            state_colour = ansii["yellow"]
+
+        vms_strings.append(
+            f"{data.get('vms', {}).get(state)}/{total_vms} {state_colour}{state}{ansii['end']}"
+        )
+
+    vms_string = ", ".join(vms_strings)
+
+    output.append(f"{ansii['purple']}VMs:{ansii['end']}              {vms_string}")
+
+    osd_states = ["up,in"]
+    osd_states.extend(
+        [
+            state
+            for state in data.get("osds", {}).keys()
+            if state not in ["total", "up,in"]
+        ]
+    )
+
+    osds_strings = list()
+    for state in osd_states:
+        if state in ["up,in"]:
+            state_colour = ansii["green"]
+        elif state in ["down,out"]:
+            state_colour = ansii["red"]
+        else:
+            state_colour = ansii["yellow"]
+
+        osds_strings.append(
+            f"{data.get('osds', {}).get(state)}/{total_osds} {state_colour}{state}{ansii['end']}"
+        )
+
+    osds_string = " ".join(osds_strings)
+
+    output.append(f"{ansii['purple']}OSDs:{ansii['end']}             {osds_string}")
+
+    output.append(f"{ansii['purple']}Pools:{ansii['end']}            {total_pools}")
+
+    output.append(f"{ansii['purple']}Volumes:{ansii['end']}          {total_volumes}")
+
+    output.append(f"{ansii['purple']}Snapshots:{ansii['end']}        {total_snapshots}")
+
+    output.append(f"{ansii['purple']}Networks:{ansii['end']}         {total_networks}")
+
+    output.append("")
+
+    return "\n".join(output)
+
+
+def cli_cluster_status_format_short(data):
+    """
+    Pretty format the health-only output of cli_cluster_status
+    """
+
+    # Normalize data to local variables
+    health = data.get("cluster_health", {}).get("health", -1)
+    messages = data.get("cluster_health", {}).get("messages", None)
+    maintenance = data.get("maintenance", "N/A")
+
+    if maintenance == "true" or health == -1:
+        health_colour = ansii["blue"]
+    elif health > 90:
+        health_colour = ansii["green"]
+    elif health > 50:
+        health_colour = ansii["yellow"]
+    else:
+        health_colour = ansii["red"]
+
+    output = list()
+
+    output.append(f"{ansii['bold']}PVC cluster status:{ansii['end']}")
+    output.append("")
+
+    if health != "-1":
+        health = f"{health}%"
+    else:
+        health = "N/A"
+
+    if maintenance == "true":
+        health = f"{health} (maintenance on)"
+
+    output.append(
+        f"{ansii['purple']}Cluster health:{ansii['end']}   {health_colour}{health}{ansii['end']}"
+    )
+
+    if messages is not None and len(messages) > 0:
+        messages = "\n                  ".join(sorted(messages))
+        output.append(f"{ansii['purple']}Health messages:{ansii['end']}  {messages}")
+
+    output.append("")
+
+    return "\n".join(output)
+
+
 def cli_connection_list_format_pretty(data):
     """
     Pretty format the output of cli_connection_list

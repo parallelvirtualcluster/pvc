@@ -20,7 +20,9 @@
 ###############################################################################
 
 from functools import wraps
+from json import dump as jdump
 from json import dumps as jdumps
+from json import loads as jloads
 from os import environ, makedirs, path
 from pkg_resources import get_distribution
 
@@ -126,7 +128,12 @@ def connection_req(function):
 
     @wraps(function)
     def validate_connection(*args, **kwargs):
-        if CLI_CONFIG.get("badcfg", None):
+        if CLI_CONFIG.get("badcfg", None) and CLI_CONFIG.get("connection"):
+            echo(
+                f"""Invalid connection "{CLI_CONFIG.get('connection')}" specified; set a valid connection and try again."""
+            )
+            exit(1)
+        elif CLI_CONFIG.get("badcfg", None):
             echo(
                 'No connection specified and no local API configuration found. Use "pvc connection" to add a connection.'
             )
@@ -142,11 +149,11 @@ def connection_req(function):
 
             echo(
                 f'''Using connection "{CLI_CONFIG.get('connection')}" - Host: "{CLI_CONFIG.get('api_host')}"  Scheme: "{CLI_CONFIG.get('api_scheme')}{ssl_verify_msg}"  Prefix: "{CLI_CONFIG.get('api_prefix')}"''',
-                stderr=True,
+                err=True,
             )
             echo(
                 "",
-                stderr=True,
+                err=True,
             )
 
         return function(*args, **kwargs)
@@ -309,11 +316,205 @@ def testing(vm, restart_flag, format_function):
 
 
 ###############################################################################
+# pvc cluster
+###############################################################################
+@click.group(
+    name="cluster",
+    short_help="Manage PVC cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_cluster():
+    """
+    Manage and view status of a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# pvc cluster status
+###############################################################################
+@click.command(
+    name="status",
+    short_help="Show cluster status.",
+)
+@format_opt(
+    {
+        "pretty": cli_cluster_status_format_pretty,
+        "short": cli_cluster_status_format_short,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+@connection_req
+def cli_cluster_status(format_function):
+    """
+    Show information and health about a PVC cluster.
+
+    \b
+    Format options:
+        "pretty": Output all details in a nice colourful format.
+        "short" Output only details about cluster health in a nice colourful format.
+        "json": Output in unformatted JSON.
+        "json-pretty": Output in formatted JSON.
+    """
+
+    retcode, retdata = pvc.lib.cluster.get_info(CLI_CONFIG)
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
+# pvc cluster init
+###############################################################################
+@click.command(
+    name="init",
+    short_help="Initialize a new cluster.",
+)
+@click.option(
+    "-o",
+    "--overwrite",
+    "overwrite_flag",
+    is_flag=True,
+    default=False,
+    help="Remove and overwrite any existing data (DANGEROUS)",
+)
+@confirm_opt
+@connection_req
+def cli_cluster_init(overwrite_flag):
+    """
+    Perform initialization of a new PVC cluster.
+
+    If the "-o"/"--overwrite" option is specified, all existing data in the cluster will be deleted
+    before new, empty data is written. THIS IS DANGEROUS. YOU WILL LOSE ALL DATA ON THE CLUSTER. Do
+    not "--overwrite" to an existing cluster unless you are absolutely sure what you are doing.
+
+    It is not advisable to initialize a running cluster as this can cause undefined behaviour.
+    Instead, stop all node daemons first and start the API daemon manually before running this
+    command.
+    """
+
+    echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
+
+    retcode, retmsg = pvc.lib.cluster.initialize(CLI_CONFIG, overwrite_flag)
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# pvc cluster backup
+###############################################################################
+@click.command(
+    name="backup",
+    short_help="Create JSON backup of cluster.",
+)
+@click.option(
+    "-f",
+    "--file",
+    "filename",
+    default=None,
+    type=click.File(mode="w"),
+    help="Write backup data to this file.",
+)
+@connection_req
+def cli_cluster_backup(filename):
+    """
+    Create a JSON-format backup of the cluster Zookeeper state database.
+    """
+
+    retcode, retdata = pvc.lib.cluster.backup(CLI_CONFIG)
+    json_data = jloads(retdata)
+    if retcode and filename is not None:
+        jdump(json_data, filename)
+        finish(retcode, f'''Backup written to file "{filename.name}"''')
+    else:
+        finish(retcode, json_data)
+
+
+###############################################################################
+# pvc cluster restore
+###############################################################################
+@click.command(
+    name="restore",
+    short_help="Restore JSON backup to cluster.",
+)
+@click.option(
+    "-f",
+    "--filename",
+    "filename",
+    required=True,
+    default=None,
+    type=click.File(),
+    help="Read backup data from this file.",
+)
+@confirm_opt
+@connection_req
+def cli_cluster_restore(filename):
+    """
+    Restore a JSON-format backup to the cluster Zookeeper state database.
+
+    All existing data in the cluster will be deleted before the restored data is written. THIS IS
+    DANGEROUS. YOU WILL LOSE ALL (CURRENT) DATA ON THE CLUSTER. Do not restore to an existing
+    cluster unless you are absolutely sure what you are doing.
+
+    It is not advisable to restore to a running cluster as this can cause undefined behaviour.
+    Instead, stop all node daemons first and start the API daemon manually before running this
+    command.
+    """
+
+
+###############################################################################
+# pvc cluster maintenance
+###############################################################################
+@click.group(
+    name="maintenance",
+    short_help="Manage PVC cluster maintenance state.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_cluster_maintenance():
+    """
+    Manage the maintenance mode of a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# pvc cluster maintenance on
+###############################################################################
+@click.command(
+    name="on",
+    short_help="Enable cluster maintenance mode.",
+)
+@connection_req
+def cli_cluster_maintenance_on():
+    """
+    Enable maintenance mode on a PVC cluster.
+    """
+
+    retcode, retdata = pvc.lib.cluster.maintenance_mode(CLI_CONFIG, "true")
+    finish(retcode, retdata)
+
+
+###############################################################################
+# pvc cluster maintenance off
+###############################################################################
+@click.command(
+    name="off",
+    short_help="Disable cluster maintenance mode.",
+)
+@connection_req
+def cli_cluster_maintenance_off():
+    """
+    Disable maintenance mode on a PVC cluster.
+    """
+
+    retcode, retdata = pvc.lib.cluster.maintenance_mode(CLI_CONFIG, "false")
+    finish(retcode, retdata)
+
+
+###############################################################################
 # pvc connection
 ###############################################################################
 @click.group(
     name="connection",
-    short_help="Manage PVC cluster connections.",
+    short_help="Manage PVC API connections.",
     context_settings=CONTEXT_SETTINGS,
 )
 def cli_connection():
@@ -459,7 +660,7 @@ def cli_connection_list(show_keys_flag, format_function):
 
     \b
     Format options:
-        "pretty": Output a nice tabular list of all details.
+        "pretty": Output all details in a a nice tabular list format.
         "raw": Output connection names one per line.
         "json": Output in unformatted JSON.
         "json-pretty": Output in formatted JSON.
@@ -582,11 +783,15 @@ def cli(_connection, _debug, _quiet, _unsafe, _colour):
 
     global CLI_CONFIG
     store_data = get_store(store_path)
-    CLI_CONFIG = get_config(store_data, _connection)
 
-    # There is only one connection and no local connection, so even if nothing was passed, use it
-    if len(store_data) == 1 and _connection is None and CLI_CONFIG.get("badcfg", None):
+    # If no connection is specified, use the first connection in the store
+    if _connection is None:
         CLI_CONFIG = get_config(store_data, list(store_data.keys())[0])
+    # If the connection isn't in the store, mark it bad but pass the value
+    elif _connection not in store_data.keys():
+        CLI_CONFIG = {"badcfg": True, "connection": _connection}
+    else:
+        CLI_CONFIG = get_config(store_data, _connection)
 
     if not CLI_CONFIG.get("badcfg", None):
         CLI_CONFIG["debug"] = _debug
@@ -601,6 +806,14 @@ def cli(_connection, _debug, _quiet, _unsafe, _colour):
 # Click command tree
 ###############################################################################
 
+cli_cluster.add_command(cli_cluster_status)
+cli_cluster.add_command(cli_cluster_init)
+cli_cluster.add_command(cli_cluster_backup)
+cli_cluster.add_command(cli_cluster_restore)
+cli_cluster_maintenance.add_command(cli_cluster_maintenance_on)
+cli_cluster_maintenance.add_command(cli_cluster_maintenance_off)
+cli_cluster.add_command(cli_cluster_maintenance)
+cli.add_command(cli_cluster)
 cli_connection.add_command(cli_connection_add)
 cli_connection.add_command(cli_connection_remove)
 cli_connection.add_command(cli_connection_list)

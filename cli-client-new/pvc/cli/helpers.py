@@ -80,7 +80,7 @@ def read_config_from_yaml(cfgfile):
     return cfgfile, host, port, scheme, api_key
 
 
-def get_config(store_data, cluster=None):
+def get_config(store_data, connection=None):
     """
     Load CLI configuration from store data
     """
@@ -88,38 +88,41 @@ def get_config(store_data, cluster=None):
     if store_data is None:
         return {"badcfg": True}
 
-    cluster_details = store_data.get(cluster, None)
+    connection_details = store_data.get(connection, None)
 
-    if not cluster_details:
-        cluster = "local"
-        cluster_details = DEFAULT_STORE_DATA
+    if not connection_details:
+        connection = "local"
+        connection_details = DEFAULT_STORE_DATA
 
-    if cluster_details.get("cfgfile", None) is not None:
-        if path.isfile(cluster_details.get("cfgfile", None)):
+    if connection_details.get("cfgfile", None) is not None:
+        if path.isfile(connection_details.get("cfgfile", None)):
             description, host, port, scheme, api_key = read_config_from_yaml(
-                cluster_details.get("cfgfile", None)
+                connection_details.get("cfgfile", None)
             )
             if None in [description, host, port, scheme]:
                 return {"badcfg": True}
         else:
             return {"badcfg": True}
+        # Rewrite a wildcard listener to use localhost instead
+        if host == "0.0.0.0":
+            host = "127.0.0.1"
     else:
         # This is a static configuration, get the details directly
-        description = cluster_details["description"]
-        host = cluster_details["host"]
-        port = cluster_details["port"]
-        scheme = cluster_details["scheme"]
-        api_key = cluster_details["api_key"]
+        description = connection_details["description"]
+        host = connection_details["host"]
+        port = connection_details["port"]
+        scheme = connection_details["scheme"]
+        api_key = connection_details["api_key"]
 
     config = dict()
     config["debug"] = False
-    config["cluster"] = cluster
+    config["connection"] = connection
     config["description"] = description
     config["api_host"] = f"{host}:{port}"
     config["api_scheme"] = scheme
     config["api_key"] = api_key
     config["api_prefix"] = DEFAULT_API_PREFIX
-    if cluster == "local":
+    if connection == "local":
         config["verify_ssl"] = False
     else:
         config["verify_ssl"] = bool(
