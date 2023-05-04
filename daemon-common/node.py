@@ -127,16 +127,14 @@ def getNodeInformation(zkhandler, node_name):
 def secondary_node(zkhandler, node):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     # Ensure node is a coordinator
     daemon_mode = zkhandler.read(("node.mode", node))
     if daemon_mode == "hypervisor":
         return (
             False,
-            'ERROR: Cannot change coordinator mode on non-coordinator node "{}"'.format(
+            "ERROR: Cannot change coordinator state on non-coordinator node {}".format(
                 node
             ),
         )
@@ -144,14 +142,14 @@ def secondary_node(zkhandler, node):
     # Ensure node is in run daemonstate
     daemon_state = zkhandler.read(("node.state.daemon", node))
     if daemon_state != "run":
-        return False, 'ERROR: Node "{}" is not active'.format(node)
+        return False, "ERROR: Node {} is not active".format(node)
 
     # Get current state
     current_state = zkhandler.read(("node.state.router", node))
     if current_state == "secondary":
-        return True, 'Node "{}" is already in secondary coordinator mode.'.format(node)
+        return True, "Node {} is already in secondary coordinator state.".format(node)
 
-    retmsg = "Setting node {} in secondary coordinator mode.".format(node)
+    retmsg = "Setting node {} in secondary coordinator state.".format(node)
     zkhandler.write([("base.config.primary_node", "none")])
 
     return True, retmsg
@@ -160,16 +158,14 @@ def secondary_node(zkhandler, node):
 def primary_node(zkhandler, node):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     # Ensure node is a coordinator
     daemon_mode = zkhandler.read(("node.mode", node))
     if daemon_mode == "hypervisor":
         return (
             False,
-            'ERROR: Cannot change coordinator mode on non-coordinator node "{}"'.format(
+            "ERROR: Cannot change coordinator state on non-coordinator node {}".format(
                 node
             ),
         )
@@ -177,14 +173,14 @@ def primary_node(zkhandler, node):
     # Ensure node is in run daemonstate
     daemon_state = zkhandler.read(("node.state.daemon", node))
     if daemon_state != "run":
-        return False, 'ERROR: Node "{}" is not active'.format(node)
+        return False, "ERROR: Node {} is not active".format(node)
 
     # Get current state
     current_state = zkhandler.read(("node.state.router", node))
     if current_state == "primary":
-        return True, 'Node "{}" is already in primary coordinator mode.'.format(node)
+        return True, "Node {} is already in primary coordinator state.".format(node)
 
-    retmsg = "Setting node {} in primary coordinator mode.".format(node)
+    retmsg = "Setting node {} in primary coordinator state.".format(node)
     zkhandler.write([("base.config.primary_node", node)])
 
     return True, retmsg
@@ -193,14 +189,12 @@ def primary_node(zkhandler, node):
 def flush_node(zkhandler, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     if zkhandler.read(("node.state.domain", node)) == "flushed":
-        return True, "Hypervisor {} is already flushed.".format(node)
+        return True, "Node {} is already flushed.".format(node)
 
-    retmsg = "Flushing hypervisor {} of running VMs.".format(node)
+    retmsg = "Removing node {} from active service.".format(node)
 
     # Add the new domain to Zookeeper
     zkhandler.write([(("node.state.domain", node), "flush")])
@@ -208,7 +202,7 @@ def flush_node(zkhandler, node, wait=False):
     if wait:
         while zkhandler.read(("node.state.domain", node)) == "flush":
             time.sleep(1)
-        retmsg = "Flushed hypervisor {} of running VMs.".format(node)
+        retmsg = "Removed node {} from active service.".format(node)
 
     return True, retmsg
 
@@ -216,14 +210,12 @@ def flush_node(zkhandler, node, wait=False):
 def ready_node(zkhandler, node, wait=False):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     if zkhandler.read(("node.state.domain", node)) == "ready":
-        return True, "Hypervisor {} is already ready.".format(node)
+        return True, "Node {} is already ready.".format(node)
 
-    retmsg = "Restoring hypervisor {} to active service.".format(node)
+    retmsg = "Restoring node {} to active service.".format(node)
 
     # Add the new domain to Zookeeper
     zkhandler.write([(("node.state.domain", node), "unflush")])
@@ -231,7 +223,7 @@ def ready_node(zkhandler, node, wait=False):
     if wait:
         while zkhandler.read(("node.state.domain", node)) == "unflush":
             time.sleep(1)
-        retmsg = "Restored hypervisor {} to active service.".format(node)
+        retmsg = "Restored node {} to active service.".format(node)
 
     return True, retmsg
 
@@ -239,9 +231,7 @@ def ready_node(zkhandler, node, wait=False):
 def get_node_log(zkhandler, node, lines=2000):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     # Get the data from ZK
     node_log = zkhandler.read(("logs.messages", node))
@@ -259,14 +249,12 @@ def get_node_log(zkhandler, node, lines=2000):
 def get_info(zkhandler, node):
     # Verify node is valid
     if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
+        return False, "ERROR: No node named {} is present in the cluster.".format(node)
 
     # Get information about node in a pretty format
     node_information = getNodeInformation(zkhandler, node)
     if not node_information:
-        return False, 'ERROR: Could not get information about node "{}".'.format(node)
+        return False, "ERROR: Could not get information about node {}.".format(node)
 
     return True, node_information
 
