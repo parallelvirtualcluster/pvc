@@ -19,7 +19,8 @@
 #
 ###############################################################################
 
-# import colorama
+from pvc.lib.node import format_info as node_format_info
+from pvc.lib.node import format_list as node_format_list
 
 
 # Define colour values for use in formatters
@@ -422,3 +423,27 @@ def cli_connection_detail_format_pretty(data):
         )
 
     return "\n".join(output)
+
+
+def cli_node_info_format_pretty(data):
+    """
+    Pretty format the basic output of cli_node_info
+    """
+
+    return node_format_info(data, long_output=False)
+
+
+def cli_node_info_format_long(data):
+    """
+    Pretty format the full output of cli_node_info
+    """
+
+    return node_format_info(data, long_output=True)
+
+
+def cli_node_list_format_pretty(data):
+    """
+    Pretty format the output of cli_node_list
+    """
+
+    return node_format_list(data)

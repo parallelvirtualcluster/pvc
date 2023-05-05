@@ -52,7 +52,7 @@ def node_coordinator_state(config, node, action):
     return retstatus, response.json().get("message", "")
 
 
-def node_domain_state(config, node, action, wait):
+def node_domain_state(config, node, action):
     """
     Set node domain state state (flush/ready)
 
@@ -60,7 +60,7 @@ def node_domain_state(config, node, action, wait):
     API arguments: action={action}, wait={wait}
     API schema: {"message": "{data}"}
     """
-    params = {"state": action, "wait": str(wait).lower()}
+    params = {"state": action}
     response = call_api(
         config, "post", "/node/{node}/domain-state".format(node=node), params=params
     )
@@ -442,13 +442,7 @@ def format_info(node_information, long_output):
     return "\n".join(ainformation)
 
 
-def format_list(node_list, raw):
-    if raw:
-        ainformation = list()
-        for node in sorted(item["name"] for item in node_list):
-            ainformation.append(node)
-        return "\n".join(ainformation)
-
+def format_list(node_list):
     node_list_output = []
 
     # Determine optimal column widths

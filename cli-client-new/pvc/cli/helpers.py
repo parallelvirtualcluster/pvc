@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-from click import echo
+from click import echo as click_echo
 from distutils.util import strtobool
 from json import load as jload
 from json import dump as jdump
@@ -35,6 +35,24 @@ DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
 DEFAULT_STORE_FILENAME = "pvc.json"
 DEFAULT_API_PREFIX = "/api/v1"
 DEFAULT_NODE_HOSTNAME = gethostname().split(".")[0]
+
+
+def echo(config, message, newline=True, stderr=False):
+    """
+    Output a message with click.echo respecting our configuration
+    """
+
+    if config.get("colour", False):
+        colour = True
+    else:
+        colour = None
+
+    if config.get("silent", False):
+        pass
+    elif config.get("quiet", False) and stderr:
+        pass
+    else:
+        click_echo(message=message, color=colour, nl=newline, err=stderr)
 
 
 def audit():
@@ -71,7 +89,6 @@ def read_config_from_yaml(cfgfile):
             else None
         )
     except KeyError:
-        echo("Invalid API YAML found, ignoring.")
         host = None
         port = None
         scheme = None

@@ -27,8 +27,13 @@ from os import environ, makedirs, path
 from pkg_resources import get_distribution
 
 from pvc.cli.helpers import *
+from pvc.cli.waiters import *
 from pvc.cli.parsers import *
 from pvc.cli.formatters import *
+
+import pvc.lib.cluster
+import pvc.lib.node
+import pvc.lib.provisioner
 
 import click
 
@@ -68,19 +73,6 @@ if not IS_COMPLETION:
 ###############################################################################
 
 
-def echo(message, newline=True, err=False):
-    """
-    Output a message with click.echo respecting our configuration
-    """
-
-    if CLI_CONFIG.get("colour", False):
-        colour = True
-    else:
-        colour = None
-
-    click.echo(message=message, color=colour, nl=newline, err=err)
-
-
 def finish(success=True, data=None, formatter=None):
     """
     Output data to the terminal and exit based on code (T/F or integer code)
@@ -88,9 +80,9 @@ def finish(success=True, data=None, formatter=None):
 
     if data is not None:
         if formatter is not None:
-            echo(formatter(data))
+            echo(CLI_CONFIG, formatter(data))
         else:
-            echo(data)
+            echo(CLI_CONFIG, data)
 
     # Allow passing
     if isinstance(success, int):
@@ -111,7 +103,7 @@ def version(ctx, param, value):
         return
 
     version = get_distribution("pvc").version
-    echo(f"Parallel Virtual Cluster CLI client version {version}")
+    echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {version}")
     ctx.exit()
 
 
@@ -130,31 +122,32 @@ def connection_req(function):
     def validate_connection(*args, **kwargs):
         if CLI_CONFIG.get("badcfg", None) and CLI_CONFIG.get("connection"):
             echo(
-                f"""Invalid connection "{CLI_CONFIG.get('connection')}" specified; set a valid connection and try again."""
+                CLI_CONFIG,
+                f"""Invalid connection "{CLI_CONFIG.get('connection')}" specified; set a valid connection and try again.""",
             )
             exit(1)
         elif CLI_CONFIG.get("badcfg", None):
             echo(
-                'No connection specified and no local API configuration found. Use "pvc connection" to add a connection.'
+                CLI_CONFIG,
+                'No connection specified and no local API configuration found. Use "pvc connection" to add a connection.',
             )
             exit(1)
 
-        if not CLI_CONFIG.get("quiet", False):
-            if CLI_CONFIG.get("api_scheme") == "https" and not CLI_CONFIG.get(
-                "verify_ssl"
-            ):
-                ssl_verify_msg = " (unverified)"
-            else:
-                ssl_verify_msg = ""
+        if CLI_CONFIG.get("api_scheme") == "https" and not CLI_CONFIG.get("verify_ssl"):
+            ssl_verify_msg = " (unverified)"
+        else:
+            ssl_verify_msg = ""
 
-            echo(
-                f'''Using connection "{CLI_CONFIG.get('connection')}" - Host: "{CLI_CONFIG.get('api_host')}"  Scheme: "{CLI_CONFIG.get('api_scheme')}{ssl_verify_msg}"  Prefix: "{CLI_CONFIG.get('api_prefix')}"''',
-                err=True,
-            )
-            echo(
-                "",
-                err=True,
-            )
+        echo(
+            CLI_CONFIG,
+            f'''Using connection "{CLI_CONFIG.get('connection')}" - Host: "{CLI_CONFIG.get('api_host')}"  Scheme: "{CLI_CONFIG.get('api_scheme')}{ssl_verify_msg}"  Prefix: "{CLI_CONFIG.get('api_prefix')}"''',
+            stderr=True,
+        )
+        echo(
+            CLI_CONFIG,
+            "",
+            stderr=True,
+        )
 
         return function(*args, **kwargs)
 
@@ -195,7 +188,7 @@ def restart_opt(function):
                     f"Restart VM {kwargs.get('vm')}", prompt_suffix="? ", abort=True
                 )
             except Exception:
-                echo("Changes will be applied on next VM start/restart.")
+                echo(CLI_CONFIG, "Changes will be applied on next VM start/restart.")
                 kwargs["restart_flag"] = False
 
         return function(*args, **kwargs)
@@ -251,12 +244,13 @@ def format_opt(formats, default_format="pretty"):
     """
     Click Option Decorator with argument:
     Wraps a Click command that can output in multiple formats; {formats} defines a dictionary of
-    formatting functions for the command with keys as valid format types
+    formatting functions for the command with keys as valid format types.
     e.g. { "json": lambda d: json.dumps(d), "pretty": format_function_pretty, ... }
+    Injects a "format_function" argument into the function for this purpose.
     """
 
     if default_format not in formats.keys():
-        echo(f"Fatal code error: {default_format} not in {formats.keys()}")
+        echo(CLI_CONFIG, f"Fatal code error: {default_format} not in {formats.keys()}")
         exit(255)
 
     def format_decorator(function):
@@ -302,9 +296,9 @@ def format_opt(formats, default_format="pretty"):
 )
 # Always in format {arguments}, {options}, {flags}, {format_function}
 def testing(vm, restart_flag, format_function):
-    echo(vm)
-    echo(restart_flag)
-    echo(format_function)
+    echo(CLI_CONFIG, vm)
+    echo(CLI_CONFIG, restart_flag)
+    echo(CLI_CONFIG, format_function)
 
     data = {
         "athing": "value",
@@ -320,12 +314,12 @@ def testing(vm, restart_flag, format_function):
 ###############################################################################
 @click.group(
     name="cluster",
-    short_help="Manage PVC cluster.",
+    short_help="Manage PVC clusters.",
     context_settings=CONTEXT_SETTINGS,
 )
 def cli_cluster():
     """
-    Manage and view status of a PVC cluster.
+    Manage and view the status of a PVC cluster.
     """
     pass
 
@@ -346,7 +340,9 @@ def cli_cluster():
     }
 )
 @connection_req
-def cli_cluster_status(format_function):
+def cli_cluster_status(
+    format_function,
+):
     """
     Show information and health about a PVC cluster.
 
@@ -379,7 +375,9 @@ def cli_cluster_status(format_function):
 )
 @confirm_opt
 @connection_req
-def cli_cluster_init(overwrite_flag):
+def cli_cluster_init(
+    overwrite_flag,
+):
     """
     Perform initialization of a new PVC cluster.
 
@@ -392,7 +390,7 @@ def cli_cluster_init(overwrite_flag):
     command.
     """
 
-    echo("Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
+    echo(CLI_CONFIG, "Some music while we're Layin' Pipe? https://youtu.be/sw8S_Kv89IU")
 
     retcode, retmsg = pvc.lib.cluster.initialize(CLI_CONFIG, overwrite_flag)
     finish(retcode, retmsg)
@@ -414,7 +412,9 @@ def cli_cluster_init(overwrite_flag):
     help="Write backup data to this file.",
 )
 @connection_req
-def cli_cluster_backup(filename):
+def cli_cluster_backup(
+    filename,
+):
     """
     Create a JSON-format backup of the cluster Zookeeper state database.
     """
@@ -446,7 +446,9 @@ def cli_cluster_backup(filename):
 )
 @confirm_opt
 @connection_req
-def cli_cluster_restore(filename):
+def cli_cluster_restore(
+    filename,
+):
     """
     Restore a JSON-format backup to the cluster Zookeeper state database.
 
@@ -507,6 +509,408 @@ def cli_cluster_maintenance_off():
 
     retcode, retdata = pvc.lib.cluster.maintenance_mode(CLI_CONFIG, "false")
     finish(retcode, retdata)
+
+
+###############################################################################
+# pvc node
+###############################################################################
+@click.group(
+    name="node",
+    short_help="Manage PVC nodes.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_node():
+    """
+    Manage and view the status of nodes in a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# pvc node primary
+###############################################################################
+@click.command(
+    name="primary",
+    short_help="Set node as primary coordinator.",
+)
+@click.argument("node")
+@click.option(
+    "-w",
+    "--wait",
+    "wait_flag",
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help="Block waiting for state transition",
+)
+@connection_req
+def cli_node_primary(
+    node,
+    wait_flag,
+):
+    """
+    Set NODE in primary coordinator state, making it the primary coordinator for the cluster.
+    """
+
+    # Handle active provisioner task warnings
+    _, tasks_retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, None)
+    if len(tasks_retdata) > 0:
+        echo(
+            CLI_CONFIG,
+            f"""\
+NOTE: There are currently {len(tasks_retdata)} active or queued provisioner tasks.
+      These jobs will continue executing, but their status visibility will be lost until
+      the current primary node returns to primary state.
+        """,
+        )
+
+    retcode, retdata = pvc.lib.node.node_coordinator_state(CLI_CONFIG, node, "primary")
+    if not retcode or "already" in retdata:
+        finish(retcode, retdata)
+
+    if wait_flag:
+        echo(CLI_CONFIG, retdata)
+        cli_node_waiter(CLI_CONFIG, node, "coordinator_state", "takeover")
+        retdata = f"Set node {node} in primary coordinator state."
+
+    finish(retcode, retdata)
+
+
+###############################################################################
+# pvc node secondary
+###############################################################################
+@click.command(
+    name="secondary",
+    short_help="Set node as secondary coordinator.",
+)
+@click.argument("node")
+@click.option(
+    "-w",
+    "--wait",
+    "wait_flag",
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help="Block waiting for state transition",
+)
+@connection_req
+def cli_node_secondary(
+    node,
+    wait_flag,
+):
+    """
+    Set NODE in secondary coordinator state, making another active node the primary node for the cluster.
+    """
+
+    # Handle active provisioner task warnings
+    _, tasks_retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, None)
+    if len(tasks_retdata) > 0:
+        echo(
+            CLI_CONFIG,
+            f"""\
+NOTE: There are currently {len(tasks_retdata)} active or queued provisioner tasks.
+      These jobs will continue executing, but their status visibility will be lost until
+      the current primary node returns to primary state.
+        """,
+        )
+
+    retcode, retdata = pvc.lib.node.node_coordinator_state(
+        CLI_CONFIG, node, "secondary"
+    )
+    if not retcode or "already" in retdata:
+        finish(retcode, retdata)
+
+    if wait_flag:
+        echo(CLI_CONFIG, retdata)
+        cli_node_waiter(CLI_CONFIG, node, "coordinator_state", "relinquish")
+        retdata = f"Set node {node} in secondary coordinator state."
+
+    finish(retcode, retdata)
+
+
+###############################################################################
+# pvc node flush
+###############################################################################
+@click.command(
+    name="flush",
+    short_help="Take node out of service.",
+)
+@click.argument("node")
+@click.option(
+    "-w",
+    "--wait",
+    "wait_flag",
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help="Block waiting for state transition",
+)
+@connection_req
+def cli_node_flush(
+    node,
+    wait_flag,
+):
+    """
+    Take NODE out of service, migrating all VMs on it to other nodes.
+    """
+
+    retcode, retdata = pvc.lib.node.node_domain_state(CLI_CONFIG, node, "flush")
+    if not retcode or "already" in retdata:
+        finish(retcode, retdata)
+
+    if wait_flag:
+        echo(CLI_CONFIG, retdata)
+        cli_node_waiter(CLI_CONFIG, node, "domain_state", "flush")
+        retdata = f"Removed node {node} from active service."
+
+    finish(retcode, retdata)
+
+
+###############################################################################
+# pvc node ready
+###############################################################################
+@click.command(
+    name="ready",
+    short_help="Restore node to service.",
+)
+@click.argument("node")
+@click.option(
+    "-w",
+    "--wait",
+    "wait_flag",
+    default=False,
+    show_default=True,
+    is_flag=True,
+    help="Block waiting for state transition",
+)
+@connection_req
+def cli_node_ready(
+    node,
+    wait_flag,
+):
+    """
+    Restore NODE to service, returning all previous VMs to it from other nodes.
+    """
+
+    retcode, retdata = pvc.lib.node.node_domain_state(CLI_CONFIG, node, "ready")
+    if not retcode or "already" in retdata:
+        finish(retcode, retdata)
+
+    if wait_flag:
+        echo(CLI_CONFIG, retdata)
+        cli_node_waiter(CLI_CONFIG, node, "domain_state", "unflush")
+        retdata = f"Restored node {node} to active service."
+
+    finish(retcode, retdata)
+
+
+###############################################################################
+# pvc node log
+###############################################################################
+@click.command(
+    name="log",
+    short_help="View node daemon logs.",
+)
+@click.argument("node")
+@click.option(
+    "-l",
+    "--lines",
+    "lines",
+    default=None,
+    show_default=False,
+    help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
+)
+@click.option(
+    "-f",
+    "--follow",
+    "follow_flag",
+    is_flag=True,
+    default=False,
+    help="Follow the live changes of the log buffer.",
+)
+@connection_req
+def cli_node_log(
+    node,
+    lines,
+    follow_flag,
+):
+    """
+    Show daemon logs of NODE, either in the local $PAGER tool or following the current output.
+
+    If "-f"/"--follow" is used, log output may be delayed by up to 1-2 seconds relative to the
+    live system due to API refresh delays. Logs will display in batches with each API refresh.
+
+    With "--follow", the default "--lines" value is 10, otherwise it is 1000 unless "--lines" is
+    specified with another value.
+
+    The maximum number of lines is limited only by the systemd journal of the node, though values
+    above ~5000 may cause performance problems.
+    """
+
+    # Set the default lines value based on the follow option
+    if lines is None:
+        if follow_flag:
+            lines = 10
+        else:
+            lines = 1000
+
+    if follow_flag:
+        # This command blocks following the logs until cancelled
+        retcode, retmsg = pvc.lib.node.follow_node_log(CLI_CONFIG, node, lines)
+        retmsg = ""
+    else:
+        retcode, retmsg = pvc.lib.node.view_node_log(CLI_CONFIG, node, lines)
+        click.echo_via_pager(retmsg)
+        retmsg = ""
+
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# pvc node info
+###############################################################################
+@click.command(
+    name="info",
+    short_help="Show details of node.",
+)
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
+@format_opt(
+    {
+        "pretty": cli_node_info_format_pretty,
+        "long": cli_node_info_format_long,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+@connection_req
+def cli_node_info(
+    node,
+    format_function,
+):
+    """
+    Show information about NODE. If a node is not specified, defaults to this host.
+
+    \b
+    Format options:
+        "pretty": Output basic details in a nice colourful format.
+        "long" Output full details including all health plugins in a nice colourful format.
+        "json": Output in unformatted JSON.
+        "json-pretty": Output in formatted JSON.
+    """
+
+    retcode, retdata = pvc.lib.node.node_info(CLI_CONFIG, node)
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
+# pvc node list
+###############################################################################
+@click.command(
+    name="list",
+    short_help="List all nodes.",
+)
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-ds",
+    "--daemon-state",
+    "daemon_state_filter",
+    default=None,
+    help="Limit list to nodes in the specified daemon state.",
+)
+@click.option(
+    "-ds",
+    "--coordinator-state",
+    "coordinator_state_filter",
+    default=None,
+    help="Limit list to nodes in the specified coordinator state.",
+)
+@click.option(
+    "-ds",
+    "--domain-state",
+    "domain_state_filter",
+    default=None,
+    help="Limit list to nodes in the specified domain state.",
+)
+@format_opt(
+    {
+        "pretty": cli_node_list_format_pretty,
+        "raw": lambda d: "\n".join([c["name"] for c in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+@connection_req
+def cli_node_list(
+    limit,
+    daemon_state_filter,
+    coordinator_state_filter,
+    domain_state_filter,
+    format_function,
+):
+    """
+    List all nodes, optionally only nodes matching regex LIMIT.
+
+    \b
+    Format options:
+        "pretty": Output all details in a nice tabular list format.
+        "raw": Output node names one per line.
+        "json": Output in unformatted JSON.
+        "json-pretty": Output in formatted JSON.
+    """
+
+    retcode, retdata = pvc.lib.node.node_list(
+        CLI_CONFIG,
+        limit,
+        daemon_state_filter,
+        coordinator_state_filter,
+        domain_state_filter,
+    )
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
+
+
+###############################################################################
+# pvc
+###############################################################################
 
 
 ###############################################################################
@@ -572,7 +976,14 @@ def cli_connection():
     default=False,
     help="Whether or not to use SSL for the API connection.  [default: False]",
 )
-def cli_connection_add(name, description, address, port, api_key, ssl_flag):
+def cli_connection_add(
+    name,
+    description,
+    address,
+    port,
+    api_key,
+    ssl_flag,
+):
     """
     Add the PVC connection NAME to the database of the local CLI client.
 
@@ -611,7 +1022,9 @@ def cli_connection_add(name, description, address, port, api_key, ssl_flag):
     short_help="Remove connections from the client database.",
 )
 @click.argument("name")
-def cli_connection_remove(name):
+def cli_connection_remove(
+    name,
+):
     """
     Remove the PVC connection NAME from the database of the local CLI client.
     """
@@ -654,13 +1067,16 @@ def cli_connection_remove(name):
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-def cli_connection_list(show_keys_flag, format_function):
+def cli_connection_list(
+    show_keys_flag,
+    format_function,
+):
     """
     List all PVC connections in the database of the local CLI client.
 
     \b
     Format options:
-        "pretty": Output all details in a a nice tabular list format.
+        "pretty": Output all details in a nice tabular list format.
         "raw": Output connection names one per line.
         "json": Output in unformatted JSON.
         "json-pretty": Output in formatted JSON.
@@ -685,7 +1101,9 @@ def cli_connection_list(show_keys_flag, format_function):
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-def cli_connection_detail(format_function):
+def cli_connection_detail(
+    format_function,
+):
     """
     List the status and information of all PVC cluster in the database of the local CLI client.
 
@@ -696,11 +1114,16 @@ def cli_connection_detail(format_function):
         "json-pretty": Output in formatted JSON.
     """
 
-    echo("Gathering information from all clusters... ", newline=False, err=True)
+    echo(
+        CLI_CONFIG,
+        "Gathering information from all clusters... ",
+        newline=False,
+        stderr=True,
+    )
     connections_config = get_store(store_path)
     connections_data = cli_connection_detail_parser(connections_config)
-    echo("done.", err=True)
-    echo("", err=True)
+    echo(CLI_CONFIG, "done.", stderr=True)
+    echo(CLI_CONFIG, "", stderr=True)
     finish(True, connections_data, format_function)
 
 
@@ -732,7 +1155,16 @@ def cli_connection_detail(format_function):
     envvar="PVC_QUIET",
     is_flag=True,
     default=False,
-    help="Suppress connection connection information.",
+    help="Suppress information sent to stderr.",
+)
+@click.option(
+    "-s",
+    "--silent",
+    "_silent",
+    envvar="PVC_SILENT",
+    is_flag=True,
+    default=False,
+    help="Suppress information sent to stdout and stderr.",
 )
 @click.option(
     "-u",
@@ -760,7 +1192,14 @@ def cli_connection_detail(format_function):
     is_eager=True,
     help="Show CLI version and exit.",
 )
-def cli(_connection, _debug, _quiet, _unsafe, _colour):
+def cli(
+    _connection,
+    _debug,
+    _quiet,
+    _silent,
+    _unsafe,
+    _colour,
+):
     """
     Parallel Virtual Cluster CLI management tool
 
@@ -770,7 +1209,9 @@ def cli(_connection, _debug, _quiet, _unsafe, _colour):
 
       "PVC_DEBUG": Enable additional debugging details instead of using --debug/-v
 
-      "PVC_QUIET": Suppress stderr connection output from client instead of using --quiet/-q
+      "PVC_QUIET": Suppress stderr output from client instead of using --quiet/-q
+
+      "PVC_SILENT": Suppress stdout and stderr output from client instead of using --silent/-s
 
       "PVC_UNSAFE": Always suppress confirmations instead of needing --unsafe/-u or --yes/-y; USE WITH EXTREME CARE
 
@@ -798,6 +1239,7 @@ def cli(_connection, _debug, _quiet, _unsafe, _colour):
         CLI_CONFIG["unsafe"] = _unsafe
         CLI_CONFIG["colour"] = _colour
         CLI_CONFIG["quiet"] = _quiet
+        CLI_CONFIG["silent"] = _silent
 
     audit()
 
@@ -806,6 +1248,14 @@ def cli(_connection, _debug, _quiet, _unsafe, _colour):
 # Click command tree
 ###############################################################################
 
+cli_node.add_command(cli_node_primary)
+cli_node.add_command(cli_node_secondary)
+cli_node.add_command(cli_node_flush)
+cli_node.add_command(cli_node_ready)
+cli_node.add_command(cli_node_log)
+cli_node.add_command(cli_node_info)
+cli_node.add_command(cli_node_list)
+cli.add_command(cli_node)
 cli_cluster.add_command(cli_cluster_status)
 cli_cluster.add_command(cli_cluster_init)
 cli_cluster.add_command(cli_cluster_backup)
