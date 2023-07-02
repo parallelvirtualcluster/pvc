@@ -41,14 +41,8 @@ def cli_connection_list_parser(connections_config, show_keys_flag):
                     details.get("cfgfile")
                 )
             else:
-                description, address, port, scheme, api_key = (
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                )
-            if not show_keys_flag:
+                continue
+            if not show_keys_flag and api_key is not None:
                 api_key = sub(r"[a-z0-9]", "x", api_key)
             connections_data.append(
                 {
@@ -83,14 +77,16 @@ def cli_connection_detail_parser(connections_config):
     """
     connections_data = list()
     for connection, details in connections_config.items():
-        cluster_config = get_config(connections_config, cluster=connection)
+        cluster_config = get_config(connections_config, connection=connection)
+        if cluster_config.get("badcfg", False):
+            continue
         # Connect to each API and gather cluster status
         retcode, retdata = pvc.lib.cluster.get_info(cluster_config)
         if retcode == 0:
             # Create dummy data of N/A for all fields
             connections_data.append(
                 {
-                    "name": cluster_config["cluster"],
+                    "name": cluster_config["connection"],
                     "description": cluster_config["description"],
                     "health": "N/A",
                     "maintenance": "N/A",
@@ -109,7 +105,7 @@ def cli_connection_detail_parser(connections_config):
             # Normalize data into nice formattable version
             connections_data.append(
                 {
-                    "name": cluster_config["cluster"],
+                    "name": cluster_config["connection"],
                     "description": cluster_config["description"],
                     "health": retdata.get("cluster_health", {}).get("health", "N/A"),
                     "maintenance": retdata.get("maintenance", "N/A"),
