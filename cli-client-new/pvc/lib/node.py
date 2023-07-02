@@ -443,6 +443,9 @@ def format_info(node_information, long_output):
 
 
 def format_list(node_list):
+    if node_list == "Node not found.":
+        return node_list
+
     node_list_output = []
 
     # Determine optimal column widths

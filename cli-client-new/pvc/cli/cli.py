@@ -25,6 +25,7 @@ from json import dumps as jdumps
 from json import loads as jloads
 from os import environ, makedirs, path
 from pkg_resources import get_distribution
+from lxml.etree import fromstring, tostring
 
 from pvc.cli.helpers import *
 from pvc.cli.waiters import *
@@ -33,6 +34,7 @@ from pvc.cli.formatters import *
 
 import pvc.lib.cluster
 import pvc.lib.node
+import pvc.lib.vm
 import pvc.lib.provisioner
 
 import click
@@ -185,8 +187,11 @@ def restart_opt(function):
         if confirm_action:
             try:
                 click.confirm(
-                    f"Restart VM {kwargs.get('vm')}", prompt_suffix="? ", abort=True
+                    f"Restart VM {kwargs.get('domain')} to apply changes",
+                    prompt_suffix="? ",
+                    abort=True,
                 )
+                kwargs["restart_flag"] = True
             except Exception:
                 echo(CLI_CONFIG, "Changes will be applied on next VM start/restart.")
                 kwargs["restart_flag"] = False
@@ -223,6 +228,15 @@ def confirm_opt(message):
                 else:
                     confirm_action = False
             else:
+                confirm_action = False
+
+            # Handle cases where the confirmation is only for a restart_flag
+            # We do not want to confirm if we're not doing the restart
+            if (
+                "restart_flag" in kwargs
+                and confirm_action
+                and not kwargs["restart_flag"]
+            ):
                 confirm_action = False
 
             if confirm_action:
@@ -336,6 +350,7 @@ def cli_cluster():
     name="status",
     short_help="Show cluster status.",
 )
+@connection_req
 @format_opt(
     {
         "pretty": cli_cluster_status_format_pretty,
@@ -344,7 +359,6 @@ def cli_cluster():
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-@connection_req
 def cli_cluster_status(
     format_function,
 ):
@@ -370,6 +384,7 @@ def cli_cluster_status(
     name="init",
     short_help="Initialize a new cluster.",
 )
+@connection_req
 @click.option(
     "-o",
     "--overwrite",
@@ -379,7 +394,6 @@ def cli_cluster_status(
     help="Remove and overwrite any existing data (DANGEROUS)",
 )
 @confirm_opt
-@connection_req
 def cli_cluster_init(
     overwrite_flag,
 ):
@@ -408,6 +422,7 @@ def cli_cluster_init(
     name="backup",
     short_help="Create JSON backup of cluster.",
 )
+@connection_req
 @click.option(
     "-f",
     "--file",
@@ -416,7 +431,6 @@ def cli_cluster_init(
     type=click.File(mode="w"),
     help="Write backup data to this file.",
 )
-@connection_req
 def cli_cluster_backup(
     filename,
 ):
@@ -440,6 +454,7 @@ def cli_cluster_backup(
     name="restore",
     short_help="Restore JSON backup to cluster.",
 )
+@connection_req
 @click.option(
     "-f",
     "--filename",
@@ -450,7 +465,6 @@ def cli_cluster_backup(
     help="Read backup data from this file.",
 )
 @confirm_opt
-@connection_req
 def cli_cluster_restore(
     filename,
 ):
@@ -538,6 +552,7 @@ def cli_node():
     name="primary",
     short_help="Set node as primary coordinator.",
 )
+@connection_req
 @click.argument("node")
 @click.option(
     "-w",
@@ -548,7 +563,6 @@ def cli_node():
     is_flag=True,
     help="Block waiting for state transition",
 )
-@connection_req
 def cli_node_primary(
     node,
     wait_flag,
@@ -588,6 +602,7 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     name="secondary",
     short_help="Set node as secondary coordinator.",
 )
+@connection_req
 @click.argument("node")
 @click.option(
     "-w",
@@ -598,7 +613,6 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     is_flag=True,
     help="Block waiting for state transition",
 )
-@connection_req
 def cli_node_secondary(
     node,
     wait_flag,
@@ -640,6 +654,7 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     name="flush",
     short_help="Take node out of service.",
 )
+@connection_req
 @click.argument("node")
 @click.option(
     "-w",
@@ -650,7 +665,6 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     is_flag=True,
     help="Block waiting for state transition",
 )
-@connection_req
 def cli_node_flush(
     node,
     wait_flag,
@@ -678,6 +692,7 @@ def cli_node_flush(
     name="ready",
     short_help="Restore node to service.",
 )
+@connection_req
 @click.argument("node")
 @click.option(
     "-w",
@@ -688,7 +703,6 @@ def cli_node_flush(
     is_flag=True,
     help="Block waiting for state transition",
 )
-@connection_req
 def cli_node_ready(
     node,
     wait_flag,
@@ -716,6 +730,7 @@ def cli_node_ready(
     name="log",
     short_help="View node daemon logs.",
 )
+@connection_req
 @click.argument("node")
 @click.option(
     "-l",
@@ -733,7 +748,6 @@ def cli_node_ready(
     default=False,
     help="Follow the live changes of the log buffer.",
 )
-@connection_req
 def cli_node_log(
     node,
     lines,
@@ -778,6 +792,7 @@ def cli_node_log(
     name="info",
     short_help="Show details of node.",
 )
+@connection_req
 @click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @format_opt(
     {
@@ -787,7 +802,6 @@ def cli_node_log(
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-@connection_req
 def cli_node_info(
     node,
     format_function,
@@ -814,6 +828,7 @@ def cli_node_info(
     name="list",
     short_help="List all nodes.",
 )
+@connection_req
 @click.argument("limit", default=None, required=False)
 @click.option(
     "-ds",
@@ -844,7 +859,6 @@ def cli_node_info(
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-@connection_req
 def cli_node_list(
     limit,
     daemon_state_filter,
@@ -891,76 +905,670 @@ def cli_vm():
 ###############################################################################
 # > pvc vm define
 ###############################################################################
+@click.command(
+    name="define", short_help="Define a new virtual machine from a Libvirt XML file."
+)
+@connection_req
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    help="Home node for this domain; autoselect if unspecified.",
+)
+@click.option(
+    "-l",
+    "--limit",
+    "node_limit",
+    default=None,
+    show_default=False,
+    help="Comma-separated list of nodes to limit VM operation to; saved with VM.",
+)
+@click.option(
+    "-s",
+    "--node-selector",
+    "node_selector",
+    default="none",
+    show_default=True,
+    type=click.Choice(["mem", "memprov", "load", "vcpus", "vms", "none"]),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
+)
+@click.option(
+    "-a/-A",
+    "--autostart/--no-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=False,
+    help="Start VM automatically on next unflush/ready state of home node; unset by daemon once used.",
+)
+@click.option(
+    "-m",
+    "--method",
+    "migration_method",
+    default="none",
+    show_default=True,
+    type=click.Choice(["none", "live", "shutdown"]),
+    help="The preferred migration method of the VM between nodes; saved with VM.",
+)
+@click.option(
+    "-g",
+    "--tag",
+    "user_tags",
+    default=[],
+    multiple=True,
+    help="User tag for the VM; can be specified multiple times, once per tag.",
+)
+@click.option(
+    "-G",
+    "--protected-tag",
+    "protected_tags",
+    default=[],
+    multiple=True,
+    help="Protected user tag for the VM; can be specified multiple times, once per tag.",
+)
+@click.argument("vmconfig", type=click.File())
+def cli_vm_define(
+    vmconfig,
+    target_node,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+    user_tags,
+    protected_tags,
+):
+    """
+    Define a new virtual machine from Libvirt XML configuration file VMCONFIG.
+
+    The target node selector ("--node-selector"/"-s") can be "none" to use the cluster default, or one of the following values:
+      * "mem": choose the node with the most (real) free memory
+      * "memprov": choose the node with the least provisioned VM memory
+      * "vcpus": choose the node with the least allocated VM vCPUs
+      * "load": choose the node with the lowest current load average
+      * "vms": choose the node with the least number of provisioned VMs
+
+    For most clusters, "mem" should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
+      * "mem" looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected.
+      * "memprov" looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
+      * "load" looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
+    """
+
+    # Open the XML file
+    vmconfig_data = vmconfig.read()
+    vmconfig.close()
+
+    # Verify our XML is sensible
+    try:
+        xml_data = fromstring(vmconfig_data)
+        new_cfg = tostring(xml_data, pretty_print=True).decode("utf8")
+    except Exception:
+        finish(False, "Error: XML is malformed or invalid")
+
+    retcode, retmsg = pvc.lib.vm.vm_define(
+        CLI_CONFIG,
+        new_cfg,
+        target_node,
+        node_limit,
+        node_selector,
+        node_autostart,
+        migration_method,
+        user_tags,
+        protected_tags,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm meta
 ###############################################################################
+@click.command(name="meta", short_help="Modify PVC metadata of an existing VM.")
+@connection_req
+@click.option(
+    "-l",
+    "--limit",
+    "node_limit",
+    default=None,
+    show_default=False,
+    help="Comma-separated list of nodes to limit VM operation to; set to an empty string to remove.",
+)
+@click.option(
+    "-s",
+    "--node-selector",
+    "node_selector",
+    default=None,
+    show_default=False,
+    type=click.Choice(["mem", "memprov", "load", "vcpus", "vms", "none"]),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
+)
+@click.option(
+    "-a/-A",
+    "--autostart/--no-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=None,
+    help="Start VM automatically on next unflush/ready state of home node; unset by daemon once used.",
+)
+@click.option(
+    "-m",
+    "--method",
+    "migration_method",
+    default="none",
+    show_default=True,
+    type=click.Choice(["none", "live", "shutdown"]),
+    help="The preferred migration method of the VM between nodes.",
+)
+@click.option(
+    "-p",
+    "--profile",
+    "provisioner_profile",
+    default=None,
+    show_default=False,
+    help="PVC provisioner profile name for VM.",
+)
+@click.argument("domain")
+def cli_vm_meta(
+    domain,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+    provisioner_profile,
+):
+    """
+    Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
+
+    For details on the "--node-selector"/"-s" values, please see help for the command "pvc vm define".
+    """
+
+    if (
+        node_limit is None
+        and node_selector is None
+        and node_autostart is None
+        and migration_method is None
+        and provisioner_profile is None
+    ):
+        finish(False, "At least one metadata option must be specified to update.")
+
+    retcode, retmsg = pvc.lib.vm.vm_metadata(
+        CLI_CONFIG,
+        domain,
+        node_limit,
+        node_selector,
+        node_autostart,
+        migration_method,
+        provisioner_profile,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify an existing VM configuration.")
+@connection_req
+@click.option(
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing config.",
+)
+@click.option(
+    "-r",
+    "--restart",
+    "restart",
+    is_flag=True,
+    help="Immediately restart VM to apply new config.",
+)
+@click.option(
+    "-d",
+    "--confirm-diff",
+    "confirm_diff_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the diff.",
+)
+@click.option(
+    "-c",
+    "--confirm-restart",
+    "confirm_restart_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the restart.",
+)
+@click.option(
+    "-y",
+    "--yes",
+    "confirm_all_flag",
+    is_flag=True,
+    default=False,
+    help="Confirm the diff and the restart.",
+)
+@click.argument("domain")
+@click.argument("cfgfile", type=click.File(), default=None, required=False)
+def cli_vm_modify(
+    domain,
+    cfgfile,
+    editor,
+    restart,
+    confirm_diff_flag,
+    confirm_restart_flag,
+    confirm_all_flag,
+):
+    """
+    Modify existing virtual machine DOMAIN, either in-editor or with replacement CONFIG. DOMAIN may be a UUID or name.
+    """
+
+    if editor is False and cfgfile is None:
+        finish(
+            False,
+            'Either an XML config file or the "--editor" option must be specified.',
+        )
+
+    retcode, vm_information = pvc.lib.vm.vm_info(CLI_CONFIG, domain)
+    if not retcode or not vm_information.get("name", None):
+        finish(False, 'ERROR: Could not find VM "{}"!'.format(domain))
+
+    dom_name = vm_information.get("name")
+
+    # Grab the current config
+    current_vm_cfg_raw = vm_information.get("xml")
+    xml_data = etree.fromstring(current_vm_cfg_raw)
+    current_vm_cfgfile = (
+        etree.tostring(xml_data, pretty_print=True).decode("utf8").strip()
+    )
+
+    if editor is True:
+        new_vm_cfgfile = click.edit(
+            text=current_vm_cfgfile, require_save=True, extension=".xml"
+        )
+        if new_vm_cfgfile is None:
+            echo("Aborting with no modifications.")
+            exit(0)
+        else:
+            new_vm_cfgfile = new_vm_cfgfile.strip()
+
+    # We're operating in replace mode
+    else:
+        # Open the XML file
+        new_vm_cfgfile = cfgfile.read()
+        cfgfile.close()
+
+        echo(
+            'Replacing configuration of VM "{}" with file "{}".'.format(
+                dom_name, cfgfile.name
+            )
+        )
+
+    # Show a diff and confirm
+    echo("Pending modifications:")
+    echo("")
+    diff = list(
+        difflib.unified_diff(
+            current_vm_cfgfile.split("\n"),
+            new_vm_cfgfile.split("\n"),
+            fromfile="current",
+            tofile="modified",
+            fromfiledate="",
+            tofiledate="",
+            n=3,
+            lineterm="",
+        )
+    )
+    for line in diff:
+        if re.match(r"^\+", line) is not None:
+            echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+        elif re.match(r"^\-", line) is not None:
+            echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+        elif re.match(r"^\^", line) is not None:
+            echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+        else:
+            echo(line)
+    echo("")
+
+    # Verify our XML is sensible
+    try:
+        xml_data = fromstring(new_vm_cfgfile)
+        new_cfg = tostring(xml_data, pretty_print=True).decode("utf8")
+    except Exception as e:
+        finish(False, "Error: XML is malformed or invalid: {}".format(e))
+
+    if not confirm_diff_flag and not confirm_all_flag and not CLI_CONFIG["unsafe"]:
+        click.confirm("Write modifications to cluster?", abort=True)
+
+    if (
+        restart
+        and not confirm_restart_flag
+        and not confirm_all_flag
+        and not CLI_CONFIG["unsafe"]
+    ):
+        try:
+            click.confirm(
+                "Restart VM {}".format(domain), prompt_suffix="? ", abort=True
+            )
+        except Exception:
+            restart = False
+
+    retcode, retmsg = pvc.lib.vm.vm_modify(CLI_CONFIG, domain, new_cfg, restart)
+    if retcode and not restart:
+        retmsg = retmsg + " Changes will be applied on next VM start/restart."
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm rename
 ###############################################################################
+@click.command(name="rename", short_help="Rename a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("new_name")
+@confirm_opt
+def cli_vm_rename(domain, new_name):
+    """
+    Rename virtual machine DOMAIN, and all its connected disk volumes, to NEW_NAME. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_rename(CLI_CONFIG, domain, new_name)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm undefine
 ###############################################################################
+@click.command(name="undefine", short_help="Undefine a virtual machine.")
+@connection_req
+@click.argument("domain")
+@confirm_opt
+def cli_vm_undefine(domain):
+    """
+    Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_remove(CLI_CONFIG, domain, delete_disks=False)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove a virtual machine.")
+@connection_req
+@click.argument("domain")
+@confirm_opt
+def cli_vm_remove(domain):
+    """
+    Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_remove(CLI_CONFIG, domain, delete_disks=True)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm start
 ###############################################################################
+@click.command(name="start", short_help="Start up a defined virtual machine.")
+@connection_req
+@click.argument("domain")
+def cli_vm_start(domain):
+    """
+    Start virtual machine DOMAIN on its configured node. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "start")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm restart
 ###############################################################################
+@click.command(name="restart", short_help="Restart a running virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for restart to complete before returning.",
+)
+@confirm_opt
+def cli_vm_restart(domain, wait):
+    """
+    Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "restart", wait=wait)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm shutdown
 ###############################################################################
+@click.command(
+    name="shutdown", short_help="Gracefully shut down a running virtual machine."
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for shutdown to complete before returning.",
+)
+@confirm_opt
+def cli_vm_shutdown(domain, wait):
+    """
+    Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "shutdown", wait=wait)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm stop
 ###############################################################################
+@click.command(name="stop", short_help="Forcibly halt a running virtual machine.")
+@connection_req
+@click.argument("domain")
+@confirm_opt
+def cli_vm_stop(domain):
+    """
+    Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_state(CLI_CONFIG, domain, "stop")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm disable
 ###############################################################################
+@click.command(name="disable", short_help="Mark a virtual machine as disabled.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Forcibly stop the VM instead of waiting for shutdown.",
+)
+@confirm_opt
+def cli_vm_disable(domain, force_flag):
+    """
+    Shut down virtual machine DOMAIN and mark it as disabled. DOMAIN may be a UUID or name.
+
+    Disabled VMs will not be counted towards a degraded cluster health status, unlike stopped VMs. Use this option for a VM that will remain off for an extended period.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_state(
+        CLI_CONFIG, domain, "disable", force=force_flag
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm move
 ###############################################################################
+@click.command(
+    name="move", short_help="Permanently move a virtual machine to another node."
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Target node to migrate to; autodetect if unspecified.",
+)
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
+)
+@click.option(
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
+)
+def cli_vm_move(domain, target_node, wait, force_live):
+    """
+    Permanently move virtual machine DOMAIN, via live migration if running and possible, to another node. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_node(
+        CLI_CONFIG,
+        domain,
+        target_node,
+        "move",
+        force=False,
+        wait=wait,
+        force_live=force_live,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm migrate
 ###############################################################################
+@click.command(
+    name="migrate", short_help="Temporarily migrate a virtual machine to another node."
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Target node to migrate to; autodetect if unspecified.",
+)
+@click.option(
+    "-f",
+    "--force",
+    "force_migrate",
+    is_flag=True,
+    default=False,
+    help="Force migrate an already migrated VM; does not replace an existing previous node value.",
+)
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
+)
+@click.option(
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
+)
+def cli_vm_migrate(domain, target_node, force_migrate, wait, force_live):
+    """
+    Temporarily migrate running virtual machine DOMAIN, via live migration if possible, to another node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_node(
+        CLI_CONFIG,
+        domain,
+        target_node,
+        "migrate",
+        force=force_migrate,
+        wait=wait,
+        force_live=force_live,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm unmigrate
 ###############################################################################
+@click.command(
+    name="unmigrate",
+    short_help="Restore a migrated virtual machine to its original node.",
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-w",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    help="Wait for migration to complete before returning.",
+)
+@click.option(
+    "--force-live",
+    "force_live",
+    is_flag=True,
+    default=False,
+    help="Do not fall back to shutdown-based migration if live migration fails.",
+)
+def cli_vm_unmigrate(domain, wait, force_live):
+    """
+    Restore previously migrated virtual machine DOMAIN, via live migration if possible, to its original node. DOMAIN may be a UUID or name. If DOMAIN is not running, it will be started on the target node.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_node(
+        CLI_CONFIG,
+        domain,
+        None,
+        "unmigrate",
+        force=False,
+        wait=wait,
+        force_live=force_live,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm flush-locks
 ###############################################################################
+@click.command(
+    name="flush-locks", short_help="Flush stale RBD locks for a virtual machine."
+)
+@connection_req
+@click.argument("domain")
+def cli_vm_flush_locks(domain):
+    """
+    Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in a stopped state before flushing locks.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -979,18 +1587,75 @@ def cli_vm_tag():
 
 
 ###############################################################################
-# > pvc vm tag get
+# > pvc vm tag get TODO:formatter
 ###############################################################################
+@click.command(name="get", short_help="Get the current tags of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
+)
+def cli_vm_tag_get(domain, raw):
+    """
+    Get the current tags of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_tags_get(CLI_CONFIG, domain)
+    if retcode:
+        if not raw:
+            retdata = pvc.lib.vm.format_vm_tags(CLI_CONFIG, domain, retdata["tags"])
+        else:
+            if len(retdata["tags"]) > 0:
+                retdata = "\n".join([tag["name"] for tag in retdata["tags"]])
+            else:
+                retdata = "No tags found."
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc vm tag add
 ###############################################################################
+@click.command(name="add", short_help="Add new tags to a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("tag")
+@click.option(
+    "-p",
+    "--protected",
+    "protected",
+    is_flag=True,
+    required=False,
+    default=False,
+    help="Set this tag as protected; protected tags cannot be removed.",
+)
+def cli_vm_tag_add(domain, tag, protected):
+    """
+    Add TAG to the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_tag_set(CLI_CONFIG, domain, "add", tag, protected)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm tag remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove tags from a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("tag")
+def cli_vm_tag_remove(domain, tag):
+    """
+    Remove TAG from the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_tag_set(CLI_CONFIG, domain, "remove", tag)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -1009,13 +1674,71 @@ def cli_vm_vcpu():
 
 
 ###############################################################################
-# > pvc vm vcpu get
+# > pvc vm vcpu get TODO:formatter
 ###############################################################################
+@click.command(
+    name="get", short_help="Get the current vCPU count of a virtual machine."
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
+)
+def cli_vm_vcpu_get(domain, raw):
+    """
+    Get the current vCPU count of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_vcpus_get(CLI_CONFIG, domain)
+    if not raw:
+        retmsg = pvc.lib.vm.format_vm_vcpus(CLI_CONFIG, domain, retmsg)
+    else:
+        retmsg = retmsg[0]  # Get only the first part of the tuple (vm_vcpus)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc vm vcpu set
+# > pvc vm vcpu set TODO:fix return message to show what happened
 ###############################################################################
+@click.command(name="set", short_help="Set the vCPU count of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("vcpus")
+@click.option(
+    "-t",
+    "--topology",
+    "topology",
+    default=None,
+    help="Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.",
+)
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_vcpu_set(domain, vcpus, topology, restart_flag):
+    """
+    Set the vCPU count of the virtual machine DOMAIN to VCPUS.
+
+    By default, the topology of the vCPus is 1 socket, VCPUS cores per socket, 1 thread per core.
+    """
+    if topology is not None:
+        try:
+            sockets, cores, threads = topology.split(",")
+            if sockets * cores * threads != vcpus:
+                raise
+        except Exception:
+            cleanup(False, "The specified topology is not valid.")
+        topology = (sockets, cores, threads)
+    else:
+        topology = (1, vcpus, 1)
+
+    retcode, retmsg = pvc.lib.vm.vm_vcpus_set(
+        CLI_CONFIG, domain, vcpus, topology, restart_flag
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -1034,13 +1757,50 @@ def cli_vm_memory():
 
 
 ###############################################################################
-# > pvc vm memory get
+# > pvc vm memory get TODO:formatter
 ###############################################################################
+@click.command(
+    name="get", short_help="Get the current provisioned memory of a virtual machine."
+)
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw value only without formatting.",
+)
+def cli_vm_memory_get(domain, raw):
+    """
+    Get the current provisioned memory of the virtual machine DOMAIN.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_memory_get(CLI_CONFIG, domain)
+    if not raw:
+        retmsg = pvc.lib.vm.format_vm_memory(CLI_CONFIG, domain, retmsg)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc vm memory set
+# > pvc vm memory set TODO:fix return message to show what happened
 ###############################################################################
+@click.command(
+    name="set", short_help="Set the provisioned memory of a virtual machine."
+)
+@connection_req
+@click.argument("domain")
+@click.argument("memory")
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_memory_set(domain, memory, restart_flag):
+    """
+    Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_memory_set(CLI_CONFIG, domain, memory, restart_flag)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -1059,18 +1819,172 @@ def cli_vm_network():
 
 
 ###############################################################################
-# > pvc vm network get
+# > pvc vm network get TODO:formatter
 ###############################################################################
+@click.command(name="get", short_help="Get the networks of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw values only without formatting.",
+)
+def cli_vm_network_get(domain, raw):
+    """
+    Get the networks of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_networks_get(CLI_CONFIG, domain)
+    if not raw:
+        retmsg = pvc.lib.vm.format_vm_networks(CLI_CONFIG, domain, retdata)
+    else:
+        network_vnis = list()
+        for network in retdata:
+            network_vnis.append(network[0])
+        retmsg = ",".join(network_vnis)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm network add
 ###############################################################################
+@click.command(name="add", short_help="Add network to a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("net")
+@click.option(
+    "-a",
+    "--macaddr",
+    "macaddr",
+    default=None,
+    help="Use this MAC address instead of random generation; must be a valid MAC address in colon-delimited format.",
+)
+@click.option(
+    "-m",
+    "--model",
+    "model",
+    default="virtio",
+    show_default=True,
+    help='The model for the interface; must be a valid libvirt model. Not used for "netdev" SR-IOV NETs.',
+)
+@click.option(
+    "-s",
+    "--sriov",
+    "sriov_flag",
+    is_flag=True,
+    default=False,
+    help="Identify that NET is an SR-IOV device name and not a VNI. Required for adding SR-IOV NETs.",
+)
+@click.option(
+    "-d",
+    "--sriov-mode",
+    "sriov_mode",
+    default="macvtap",
+    show_default=True,
+    type=click.Choice(["hostdev", "macvtap"]),
+    help="For SR-IOV NETs, the SR-IOV network device mode.",
+)
+@click.option(
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-attach device to VM [default] or disable this behaviour.",
+)
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_network_add(
+    domain,
+    net,
+    macaddr,
+    model,
+    sriov_flag,
+    sriov_mode,
+    live_flag,
+    restart_flag,
+):
+    """
+    Add the network NET to the virtual machine DOMAIN. Networks are always addded to the end of the current list of networks in the virtual machine.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
+
+    NOTE: Adding a SR-IOV network device in the "hostdev" mode has the following caveats:
+
+      1. The VM will not be able to be live migrated; it must be shut down to migrate between nodes. The VM metadata will be updated to force this.
+
+      2. If an identical SR-IOV VF device is not present on the target node, post-migration startup will fail. It may be prudent to use a node limit here.
+
+    """
+    if restart_flag and live_flag:
+        live_flag = False
+
+    retcode, retmsg = pvc.lib.vm.vm_networks_add(
+        CLI_CONFIG,
+        domain,
+        net,
+        macaddr,
+        model,
+        sriov_flag,
+        sriov_mode,
+        live_flag,
+        restart_flag,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm network remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove network from a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("net", required=False, default=None)
+@click.option(
+    "-m",
+    "--mac-address",
+    "macaddr",
+    default=None,
+    help="Remove an interface with this MAC address; required if NET is unspecified.",
+)
+@click.option(
+    "-s",
+    "--sriov",
+    "sriov_flag",
+    is_flag=True,
+    default=False,
+    help="Identify that NET is an SR-IOV device name and not a VNI. Required for removing SR-IOV NETs.",
+)
+@click.option(
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-detach device to VM [default] or disable this behaviour.",
+)
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag):
+    """
+    Remove the network NET from the virtual machine DOMAIN.
+
+    NET may be a PVC network VNI, which is added as a bridged device, or a SR-IOV VF device connected in the given mode.
+
+    NET is optional if the '-m'/'--mac-address' option is specified. If it is, then the specific device with that MAC address is removed instead.
+
+    If multiple interfaces are present on the VM in network NET, and '-m'/'--mac-address' is not specified, then all interfaces in that network will be removed.
+    """
+    if restart_flag and live_flag:
+        live_flag = False
+
+    retcode, retmsg = pvc.lib.vm.vm_networks_remove(
+        CLI_CONFIG, domain, net, macaddr, sriov_flag, live_flag, restart_flag
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
@@ -1089,38 +2003,284 @@ def cli_vm_volume():
 
 
 ###############################################################################
-# > pvc vm volume get
+# > pvc vm volume get TODO:formatter
 ###############################################################################
+@click.command(name="get", short_help="Get the volumes of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw values only without formatting.",
+)
+def cli_vm_volume_get(domain, raw):
+    """
+    Get the volumes of the virtual machine DOMAIN.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_volumes_get(CLI_CONFIG, domain)
+    if not raw:
+        retmsg = pvc.lib.vm.format_vm_volumes(CLI_CONFIG, domain, retdata)
+    else:
+        volume_paths = list()
+        for volume in retdata:
+            volume_paths.append("{}:{}".format(volume[2], volume[0]))
+        retmsg = ",".join(volume_paths)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm volume add
 ###############################################################################
+@click.command(name="add", short_help="Add volume to a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("volume")
+@click.option(
+    "-d",
+    "--disk-id",
+    "disk_id",
+    default=None,
+    help="The disk ID in sdX/vdX/hdX format; if not specified, the next available will be used.",
+)
+@click.option(
+    "-b",
+    "--bus",
+    "bus",
+    default="scsi",
+    show_default=True,
+    type=click.Choice(["scsi", "ide", "usb", "virtio"]),
+    help="The bus to attach the disk to; must be present in the VM.",
+)
+@click.option(
+    "-t",
+    "--type",
+    "disk_type",
+    default="rbd",
+    show_default=True,
+    type=click.Choice(["rbd", "file"]),
+    help="The type of volume to add.",
+)
+@click.option(
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-attach device to VM [default] or disable this behaviour.",
+)
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_flag):
+    """
+    Add the volume VOLUME to the virtual machine DOMAIN.
+
+    VOLUME may be either an absolute file path (for type 'file') or an RBD volume in the form "pool/volume" (for type 'rbd'). RBD volumes are verified against the cluster before adding and must exist.
+    """
+    if restart_flag and live_flag:
+        live_flag = False
+
+    retcode, retmsg = pvc.lib.vm.vm_volumes_add(
+        CLI_CONFIG, domain, volume, disk_id, bus, disk_type, live_flag, restart_flag
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm volume remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove volume from a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("volume")
+@click.option(
+    "-l/-L",
+    "--live/--no-live",
+    "live_flag",
+    is_flag=True,
+    default=True,
+    help="Immediately live-detach device to VM [default] or disable this behaviour.",
+)
+@restart_opt
+@confirm_opt("Confirm VM restart?")
+def cli_vm_volume_remove(domain, volume, live_flag, restart_flag):
+    """
+    Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
+    """
+    if restart_flag and live_flag:
+        live_flag = False
+
+    retcode, retmsg = pvc.lib.vm.vm_volumes_remove(
+        CLI_CONFIG, domain, volume, live_flag, restart_flag
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm log
 ###############################################################################
+@click.command(name="log", short_help="Show console logs of a VM object.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-l",
+    "--lines",
+    "lines",
+    default=None,
+    show_default=False,
+    help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
+)
+@click.option(
+    "-f",
+    "--follow",
+    "follow",
+    is_flag=True,
+    default=False,
+    help="Follow the log buffer; output may be delayed by a few seconds relative to the live system. The --lines value defaults to 10 for the initial output.",
+)
+def cli_vm_log(domain, lines, follow):
+    """
+    Show console logs of virtual machine DOMAIN on its current node in a pager or continuously. DOMAIN may be a UUID or name. Note that migrating a VM to a different node will cause the log buffer to be overwritten by entries from the new node.
+    """
+
+    # Set the default here so we can handle it
+    if lines is None:
+        if follow:
+            lines = 10
+        else:
+            lines = 1000
+
+    if follow:
+        retcode, retmsg = pvc.lib.vm.follow_console_log(CLI_CONFIG, domain, lines)
+    else:
+        retcode, retmsg = pvc.lib.vm.view_console_log(CLI_CONFIG, domain, lines)
+        click.echo_via_pager(retmsg)
+        retmsg = ""
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc vm dump
 ###############################################################################
+@click.command(name="dump", short_help="Dump a virtual machine XML to stdout.")
+@connection_req
+@click.option(
+    "-f",
+    "--file",
+    "filename",
+    default=None,
+    type=click.File(mode="w"),
+    help="Write VM XML to this file.",
+)
+@click.argument("domain")
+def cli_vm_dump(filename, domain):
+    """
+    Dump the Libvirt XML definition of virtual machine DOMAIN to stdout. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_info(CLI_CONFIG, domain)
+    if not retcode or not retdata.get("name", None):
+        finish(False, 'ERROR: Could not find VM "{}"!'.format(domain))
+
+    current_vm_cfg_raw = retdata.get("xml")
+    xml_data = fromstring(current_vm_cfg_raw)
+    current_vm_cfgfile = tostring(xml_data, pretty_print=True).decode("utf8")
+    xml = current_vm_cfgfile.strip()
+
+    if filename is not None:
+        filename.write(xml)
+        finish(retcode, 'VM XML written to "{}".'.format(filename.name))
+    else:
+        finish(retcode, xml)
 
 
 ###############################################################################
-# > pvc vm info
+# > pvc vm info TODO:formatter
 ###############################################################################
+@click.command(name="info", short_help="Show details of a VM object.")
+@connection_req
+@click.argument("domain")
+@click.option(
+    "-l",
+    "--long",
+    "long_output",
+    is_flag=True,
+    default=False,
+    help="Display more detailed information.",
+)
+def cli_vm_info(domain, long_output):
+    """
+    Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_info(CLI_CONFIG, domain)
+    if retcode:
+        retdata = pvc.lib.vm.format_info(CLI_CONFIG, retdata, long_output)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc vm list
+# > pvc vm list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all VM objects.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-t",
+    "--target",
+    "target_node",
+    default=None,
+    help="Limit list to VMs on the specified node.",
+)
+@click.option(
+    "-s",
+    "--state",
+    "target_state",
+    default=None,
+    help="Limit list to VMs in the specified state.",
+)
+@click.option(
+    "-g",
+    "--tag",
+    "target_tag",
+    default=None,
+    help="Limit list to VMs with the specified tag.",
+)
+@click.option(
+    "-r",
+    "--raw",
+    "raw",
+    is_flag=True,
+    default=False,
+    help="Display the raw list of VM names only.",
+)
+@click.option(
+    "-n",
+    "--negate",
+    "negate",
+    is_flag=True,
+    default=False,
+    help="Negate the specified node, state, or tag limit(s).",
+)
+def cli_vm_list(target_node, target_state, target_tag, limit, raw, negate):
+    """
+    List all virtual machines; optionally only match names or full UUIDs matching regex LIMIT.
+
+    NOTE: Red-coloured network lists indicate one or more configured networks are missing/invalid.
+    """
+
+    retcode, retdata = pvc.lib.vm.vm_list(
+        CLI_CONFIG, limit, target_node, target_state, target_tag, negate
+    )
+    if retcode:
+        retdata = pvc.lib.vm.format_list(CLI_CONFIG, retdata, raw)
+    else:
+        if raw:
+            retdata = ""
+    finish(retcode, retdata)
 
 
 ###############################################################################
@@ -2146,6 +3306,43 @@ cli_node.add_command(cli_node_log)
 cli_node.add_command(cli_node_info)
 cli_node.add_command(cli_node_list)
 cli.add_command(cli_node)
+cli_vm.add_command(cli_vm_define)
+cli_vm.add_command(cli_vm_meta)
+cli_vm.add_command(cli_vm_modify)
+cli_vm.add_command(cli_vm_rename)
+cli_vm.add_command(cli_vm_undefine)
+cli_vm.add_command(cli_vm_remove)
+cli_vm.add_command(cli_vm_start)
+cli_vm.add_command(cli_vm_restart)
+cli_vm.add_command(cli_vm_shutdown)
+cli_vm.add_command(cli_vm_stop)
+cli_vm.add_command(cli_vm_disable)
+cli_vm.add_command(cli_vm_move)
+cli_vm.add_command(cli_vm_migrate)
+cli_vm.add_command(cli_vm_unmigrate)
+cli_vm.add_command(cli_vm_flush_locks)
+cli_vm_tag.add_command(cli_vm_tag_get)
+cli_vm_tag.add_command(cli_vm_tag_add)
+cli_vm_tag.add_command(cli_vm_tag_remove)
+cli_vm.add_command(cli_vm_tag)
+cli_vm_vcpu.add_command(cli_vm_vcpu_get)
+cli_vm_vcpu.add_command(cli_vm_vcpu_set)
+cli_vm.add_command(cli_vm_vcpu)
+cli_vm_memory.add_command(cli_vm_memory_get)
+cli_vm_memory.add_command(cli_vm_memory_set)
+cli_vm.add_command(cli_vm_memory)
+cli_vm_network.add_command(cli_vm_network_get)
+cli_vm_network.add_command(cli_vm_network_add)
+cli_vm_network.add_command(cli_vm_network_remove)
+cli_vm.add_command(cli_vm_network)
+cli_vm_volume.add_command(cli_vm_volume_get)
+cli_vm_volume.add_command(cli_vm_volume_add)
+cli_vm_volume.add_command(cli_vm_volume_remove)
+cli_vm.add_command(cli_vm_volume)
+cli_vm.add_command(cli_vm_log)
+cli_vm.add_command(cli_vm_dump)
+cli_vm.add_command(cli_vm_info)
+cli_vm.add_command(cli_vm_list)
 cli.add_command(cli_vm)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
