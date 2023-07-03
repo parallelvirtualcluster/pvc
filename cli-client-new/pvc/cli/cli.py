@@ -35,6 +35,7 @@ from pvc.cli.formatters import *
 import pvc.lib.cluster
 import pvc.lib.node
 import pvc.lib.vm
+import pvc.lib.network
 import pvc.lib.provisioner
 
 import click
@@ -2301,101 +2302,691 @@ def cli_network():
 ###############################################################################
 # > pvc network add
 ###############################################################################
+@click.command(name="add", short_help="Add a new virtual network.")
+@connection_req
+@click.option(
+    "-d",
+    "--description",
+    "description",
+    required=True,
+    help="Description of the network; must be unique and not contain whitespace.",
+)
+@click.option(
+    "-p",
+    "--type",
+    "nettype",
+    required=True,
+    type=click.Choice(["managed", "bridged"]),
+    help="Network type; managed networks control IP addressing; bridged networks are simple vLAN bridges. All subsequent options are unused for bridged networks.",
+)
+@click.option("-m", "--mtu", "mtu", default="", help="MTU of the network interfaces.")
+@click.option(
+    "-n", "--domain", "domain", default=None, help="Domain name of the network."
+)
+@click.option(
+    "--dns-server",
+    "name_servers",
+    multiple=True,
+    help="DNS nameserver for network; multiple entries may be specified.",
+)
+@click.option(
+    "-i",
+    "--ipnet",
+    "ip_network",
+    default=None,
+    help="CIDR-format IPv4 network address for subnet.",
+)
+@click.option(
+    "-i6",
+    "--ipnet6",
+    "ip6_network",
+    default=None,
+    help='CIDR-format IPv6 network address for subnet; should be /64 or larger ending "::/YY".',
+)
+@click.option(
+    "-g",
+    "--gateway",
+    "ip_gateway",
+    default=None,
+    help="Default IPv4 gateway address for subnet.",
+)
+@click.option(
+    "-g6",
+    "--gateway6",
+    "ip6_gateway",
+    default=None,
+    help='Default IPv6 gateway address for subnet.  [default: "X::1"]',
+)
+@click.option(
+    "--dhcp/--no-dhcp",
+    "dhcp_flag",
+    is_flag=True,
+    default=False,
+    help="Enable/disable IPv4 DHCP for clients on subnet.",
+)
+@click.option(
+    "--dhcp-start", "dhcp_start", default=None, help="IPv4 DHCP range start address."
+)
+@click.option(
+    "--dhcp-end", "dhcp_end", default=None, help="IPv4 DHCP range end address."
+)
+@click.argument("vni")
+def cli_network_add(
+    vni,
+    description,
+    nettype,
+    mtu,
+    domain,
+    ip_network,
+    ip_gateway,
+    ip6_network,
+    ip6_gateway,
+    dhcp_flag,
+    dhcp_start,
+    dhcp_end,
+    name_servers,
+):
+    """
+    Add a new virtual network with VXLAN identifier VNI.
+
+    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. If unset, defaults to the underlying device MTU which will be set explcitly when the network is added to the nodes.
+
+    Examples:
+
+    pvc network add 101 --description my-bridged-net --type bridged
+
+      > Creates vLAN 101 and a simple bridge on the VNI dev interface.
+
+    pvc network add 1001 --description my-managed-net --type managed --domain test.local --ipnet 10.1.1.0/24 --gateway 10.1.1.1
+
+      > Creates a VXLAN with ID 1001 on the VNI dev interface, with IPv4 managed networking.
+
+    IPv6 is fully supported with --ipnet6 and --gateway6 in addition to or instead of IPv4. PVC will configure DHCPv6 in a semi-managed configuration for the network if set.
+    """
+
+    retcode, retmsg = pvc.lib.network.net_add(
+        CLI_CONFIG,
+        vni,
+        description,
+        nettype,
+        mtu,
+        domain,
+        name_servers,
+        ip_network,
+        ip_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp_flag,
+        dhcp_start,
+        dhcp_end,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc network modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify an existing virtual network.")
+@connection_req
+@click.option(
+    "-d",
+    "--description",
+    "description",
+    default=None,
+    help="Description of the network; must be unique and not contain whitespace.",
+)
+@click.option("-m", "--mtu", "mtu", default=None, help="MTU of the network interfaces.")
+@click.option(
+    "-n", "--domain", "domain", default=None, help="Domain name of the network."
+)
+@click.option(
+    "--dns-server",
+    "name_servers",
+    multiple=True,
+    help="DNS nameserver for network; multiple entries may be specified (will overwrite all previous entries).",
+)
+@click.option(
+    "-i",
+    "--ipnet",
+    "ip4_network",
+    default=None,
+    help='CIDR-format IPv4 network address for subnet; disable with "".',
+)
+@click.option(
+    "-i6",
+    "--ipnet6",
+    "ip6_network",
+    default=None,
+    help='CIDR-format IPv6 network address for subnet; disable with "".',
+)
+@click.option(
+    "-g",
+    "--gateway",
+    "ip4_gateway",
+    default=None,
+    help='Default IPv4 gateway address for subnet; disable with "".',
+)
+@click.option(
+    "-g6",
+    "--gateway6",
+    "ip6_gateway",
+    default=None,
+    help='Default IPv6 gateway address for subnet; disable with "".',
+)
+@click.option(
+    "--dhcp/--no-dhcp",
+    "dhcp_flag",
+    is_flag=True,
+    default=None,
+    help="Enable/disable DHCPv4 for clients on subnet (DHCPv6 is always enabled if DHCPv6 network is set).",
+)
+@click.option(
+    "--dhcp-start", "dhcp_start", default=None, help="DHCPvr range start address."
+)
+@click.option("--dhcp-end", "dhcp_end", default=None, help="DHCPv4 range end address.")
+@click.argument("vni")
+def cli_network_modify(
+    vni,
+    description,
+    mtu,
+    domain,
+    name_servers,
+    ip6_network,
+    ip6_gateway,
+    ip4_network,
+    ip4_gateway,
+    dhcp_flag,
+    dhcp_start,
+    dhcp_end,
+):
+    """
+    Modify details of virtual network VNI. All fields optional; only specified fields will be updated.
+
+    NOTE: The MTU must be equal to, or less than, the underlying device MTU (either the node 'bridge_mtu' for bridged networks, or the node 'cluster_mtu' minus 50 for managed networks). Is only required if the device MTU should be lower than the underlying physical device MTU for compatibility. To reset an explicit MTU to the default underlying device MTU, specify '--mtu' with a quoted empty string argument.
+
+    Example:
+
+    pvc network modify 1001 --gateway 10.1.1.1 --dhcp
+    """
+
+    retcode, retmsg = pvc.lib.network.net_modify(
+        CLI_CONFIG,
+        vni,
+        description,
+        mtu,
+        domain,
+        name_servers,
+        ip4_network,
+        ip4_gateway,
+        ip6_network,
+        ip6_gateway,
+        dhcp_flag,
+        dhcp_start,
+        dhcp_end,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc network remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove a virtual network.")
+@connection_req
+@click.argument("net")
+@confirm_opt
+def cli_network_remove(net):
+    """
+    Remove an existing virtual network NET; NET must be a VNI.
+
+    WARNING: PVC does not verify whether clients are still present in this network. Before removing, ensure
+    that all client VMs have been removed from the network or undefined behaviour may occur.
+    """
+
+    retcode, retmsg = pvc.lib.network.net_remove(CLI_CONFIG, net)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc network info
+# > pvc network info TODO:formatter
 ###############################################################################
+@click.command(name="info", short_help="Show details of a network.")
+@connection_req
+@click.argument("vni")
+@click.option(
+    "-l",
+    "--long",
+    "long_output",
+    is_flag=True,
+    default=False,
+    help="Display more detailed information.",
+)
+def cli_network_info(vni, long_output):
+    """
+    Show information about virtual network VNI.
+    """
+
+    retcode, retdata = pvc.lib.network.net_info(CLI_CONFIG, vni)
+    if retcode:
+        retdata = pvc.lib.network.format_info(CLI_CONFIG, retdata, long_output)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc network list
+# > pvc network list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all VM objects.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_network_list(limit):
+    """
+    List all virtual networks; optionally only match VNIs or Descriptions matching regex LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.network.net_list(CLI_CONFIG, limit)
+    if retcode:
+        retdata = pvc.lib.network.format_list(CLI_CONFIG, retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc network dhcp
 ###############################################################################
+@click.group(
+    name="dhcp",
+    short_help="Manage IPv4 DHCP leases in a PVC virtual network.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_network_dhcp():
+    """
+    Manage host IPv4 DHCP leases of a VXLAN network.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc network dhcp add
 ###############################################################################
+@click.command(name="add", short_help="Add a DHCP static reservation.")
+@connection_req
+@click.argument("net")
+@click.argument("ipaddr")
+@click.argument("hostname")
+@click.argument("macaddr")
+def cli_network_dhcp_add(net, ipaddr, macaddr, hostname):
+    """
+    Add a new DHCP static reservation of IP address IPADDR with hostname HOSTNAME for MAC address MACADDR to virtual network NET; NET must be a VNI.
+    """
+
+    retcode, retmsg = pvc.lib.network.net_dhcp_add(
+        CLI_CONFIG, net, ipaddr, macaddr, hostname
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc network dhcp remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove a DHCP static reservation.")
+@connection_req
+@click.argument("net")
+@click.argument("macaddr")
+@confirm_opt
+def cli_network_dhcp_remove(net, macaddr):
+    """
+    Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
+    """
+
+    retcode, retmsg = pvc.lib.network.net_dhcp_remove(CLI_CONFIG, net, macaddr)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc network dhcp list
+# > pvc network dhcp list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List active DHCP leases.")
+@connection_req
+@click.argument("net")
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-s",
+    "--static",
+    "only_static",
+    is_flag=True,
+    default=False,
+    help="Show only static leases.",
+)
+def cli_network_dhcp_list(net, limit, only_static):
+    """
+    List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET must be a VNI.
+    """
+
+    retcode, retdata = pvc.lib.network.net_dhcp_list(
+        CLI_CONFIG, net, limit, only_static
+    )
+    if retcode:
+        retdata = pvc.lib.network.format_list_dhcp(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc network acl
 ###############################################################################
+@click.group(
+    name="acl",
+    short_help="Manage a PVC virtual network firewall ACL rule.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_network_acl():
+    """
+    Manage firewall ACLs of a VXLAN network.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc network acl add
 ###############################################################################
+@click.command(name="add", short_help="Add firewall ACL.")
+@connection_req
+@click.option(
+    "--in/--out",
+    "direction",
+    is_flag=True,
+    default=True,  # inbound
+    help="Inbound or outbound ruleset.",
+)
+@click.option(
+    "-d",
+    "--description",
+    "description",
+    required=True,
+    help="Description of the ACL; must be unique and not contain whitespace.",
+)
+@click.option("-r", "--rule", "rule", required=True, help="NFT firewall rule.")
+@click.option(
+    "-o",
+    "--order",
+    "order",
+    default=None,
+    help='Order of rule in the chain (see "list"); defaults to last.',
+)
+@click.argument("net")
+def cli_network_acl_add(net, direction, description, rule, order):
+    """
+    Add a new NFT firewall rule to network NET; the rule is a literal NFT rule belonging to the forward table for the client network; NET must be a VNI.
+
+    NOTE: All client networks are default-allow in both directions; deny rules MUST be added here at the end of the sequence for a default-deny setup.
+
+    NOTE: Ordering places the rule at the specified ID, not before it; the old rule of that ID and all subsequent rules will be moved down.
+
+    NOTE: Descriptions are used as names, and must be unique within a network (both directions).
+
+    Example:
+
+    pvc network acl add 1001 --in --rule "tcp dport 22 ct state new accept" --description "ssh-in" --order 3
+    """
+    if direction:
+        direction = "in"
+    else:
+        direction = "out"
+
+    retcode, retmsg = pvc.lib.network.net_acl_add(
+        CLI_CONFIG, net, direction, description, rule, order
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc network acl remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove firewall ACL.")
+@connection_req
+@click.argument("net")
+@click.argument(
+    "rule",
+)
+@confirm_opt
+def cli_network_acl_remove(net, rule):
+    """
+    Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
+    """
+
+    retcode, retmsg = pvc.lib.network.net_acl_remove(CLI_CONFIG, net, rule)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc network acl list
+# > pvc network acl list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List firewall ACLs.")
+@connection_req
+@click.option(
+    "--in/--out",
+    "direction",
+    is_flag=True,
+    required=False,
+    default=None,
+    help="Inbound or outbound rule set only.",
+)
+@click.argument("net")
+@click.argument("limit", default=None, required=False)
+def cli_network_acl_list(net, limit, direction):
+    """
+    List all NFT firewall rules in network NET; optionally only match elements matching description regex LIMIT; NET can be either a VNI or description.
+    """
+    if direction is not None:
+        if direction:
+            direction = "in"
+        else:
+            direction = "out"
+
+    retcode, retdata = pvc.lib.network.net_acl_list(CLI_CONFIG, net, limit, direction)
+    if retcode:
+        retdata = pvc.lib.network.format_list_acl(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc network sriov
 ###############################################################################
+@click.group(
+    name="sriov",
+    short_help="Manage SR-IOV network resources.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_network_sriov():
+    """
+    Manage SR-IOV network resources on nodes (PFs and VFs).
+    """
+    pass
 
 
 ###############################################################################
 # > pvc network sriov pf
 ###############################################################################
+@click.group(
+    name="pf", short_help="Manage PF devices.", context_settings=CONTEXT_SETTINGS
+)
+def cli_network_sriov_pf():
+    """
+    Manage SR-IOV PF devices on nodes.
+    """
+    pass
 
 
 ###############################################################################
-# > pvc network sriov pf list
+# > pvc network sriov pf list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List PF devices.")
+@connection_req
+@click.argument("node")
+def cli_network_sriov_pf_list(node):
+    """
+    List all SR-IOV PFs on NODE.
+    """
+    retcode, retdata = pvc.lib.network.net_sriov_pf_list(CLI_CONFIG, node)
+    if retcode:
+        retdata = pvc.lib.network.format_list_sriov_pf(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc network sriov vf
 ###############################################################################
+@click.group(
+    name="vf", short_help="Manage VF devices.", context_settings=CONTEXT_SETTINGS
+)
+def cli_network_sriov_vf():
+    """
+    Manage SR-IOV VF devices on nodes.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc network sriov vf set
 ###############################################################################
+@click.command(name="set", short_help="Set VF device properties.")
+@connection_req
+@click.option(
+    "--vlan-id",
+    "vlan_id",
+    default=None,
+    show_default=False,
+    help="The vLAN ID for vLAN tagging.",
+)
+@click.option(
+    "--qos-prio",
+    "vlan_qos",
+    default=None,
+    show_default=False,
+    help="The vLAN QOS priority.",
+)
+@click.option(
+    "--tx-min",
+    "tx_rate_min",
+    default=None,
+    show_default=False,
+    help="The minimum TX rate.",
+)
+@click.option(
+    "--tx-max",
+    "tx_rate_max",
+    default=None,
+    show_default=False,
+    help="The maximum TX rate.",
+)
+@click.option(
+    "--link-state",
+    "link_state",
+    default=None,
+    show_default=False,
+    type=click.Choice(["auto", "enable", "disable"]),
+    help="The administrative link state.",
+)
+@click.option(
+    "--spoof-check/--no-spoof-check",
+    "spoof_check",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable spoof checking.",
+)
+@click.option(
+    "--trust/--no-trust",
+    "trust",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable VF user trust.",
+)
+@click.option(
+    "--query-rss/--no-query-rss",
+    "query_rss",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Enable or disable query RSS support.",
+)
+@click.argument("node")
+@click.argument("vf")
+def net_sriov_vf_set(
+    node,
+    vf,
+    vlan_id,
+    vlan_qos,
+    tx_rate_min,
+    tx_rate_max,
+    link_state,
+    spoof_check,
+    trust,
+    query_rss,
+):
+    """
+    Set a property of SR-IOV VF on NODE.
+    """
+    if (
+        vlan_id is None
+        and vlan_qos is None
+        and tx_rate_min is None
+        and tx_rate_max is None
+        and link_state is None
+        and spoof_check is None
+        and trust is None
+        and query_rss is None
+    ):
+        finish(
+            False, "At least one configuration property must be specified to update."
+        )
+
+    retcode, retmsg = pvc.lib.network.net_sriov_vf_set(
+        CLI_CONFIG,
+        node,
+        vf,
+        vlan_id,
+        vlan_qos,
+        tx_rate_min,
+        tx_rate_max,
+        link_state,
+        spoof_check,
+        trust,
+        query_rss,
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc network sriov vf info
+# > pvc network sriov vf info TODO:formatter
 ###############################################################################
+@click.command(name="info", short_help="Show details of VF devices.")
+@connection_req
+@click.argument("node")
+@click.argument("vf")
+def cli_network_sriov_vf_info(node, vf):
+    """
+    Show details of the SR-IOV VF on NODE.
+    """
+    retcode, retdata = pvc.lib.network.net_sriov_vf_info(CLI_CONFIG, node, vf)
+    if retcode:
+        retdata = pvc.lib.network.format_info_sriov_vf(CLI_CONFIG, retdata, node)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc network sriov vf list
+# > pvc network sriov vf list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List VF devices.")
+@connection_req
+@click.argument("node")
+@click.argument("pf", default=None, required=False)
+def cli_network_sriov_vf_list(node, pf):
+    """
+    List all SR-IOV VFs on NODE, optionally limited to device PF.
+    """
+    retcode, retdata = pvc.lib.network.net_sriov_vf_list(CLI_CONFIG, node, pf)
+    if retcode:
+        retdata = pvc.lib.network.format_list_sriov_vf(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
@@ -3344,6 +3935,25 @@ cli_vm.add_command(cli_vm_dump)
 cli_vm.add_command(cli_vm_info)
 cli_vm.add_command(cli_vm_list)
 cli.add_command(cli_vm)
+cli_network.add_command(cli_network_add)
+cli_network.add_command(cli_network_modify)
+cli_network.add_command(cli_network_remove)
+cli_network.add_command(cli_network_info)
+cli_network.add_command(cli_network_list)
+cli_network_dhcp.add_command(cli_network_dhcp_add)
+cli_network_dhcp.add_command(cli_network_dhcp_remove)
+cli_network_dhcp.add_command(cli_network_dhcp_list)
+cli_network.add_command(cli_network_dhcp)
+cli_network_acl.add_command(cli_network_acl_add)
+cli_network_acl.add_command(cli_network_acl_remove)
+cli_network_acl.add_command(cli_network_acl_list)
+cli_network.add_command(cli_network_acl)
+cli_network_sriov_pf.add_command(cli_network_sriov_pf_list)
+cli_network_sriov.add_command(cli_network_sriov_pf)
+cli_network_sriov_vf.add_command(cli_network_sriov_vf_info)
+cli_network_sriov_vf.add_command(cli_network_sriov_vf_list)
+cli_network_sriov.add_command(cli_network_sriov_vf)
+cli_network.add_command(cli_network_sriov)
 cli.add_command(cli_network)
 cli.add_command(cli_storage)
 cli.add_command(cli_provisioner)
