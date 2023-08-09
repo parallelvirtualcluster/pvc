@@ -3805,226 +3805,1429 @@ def cli_provisioner():
 ###############################################################################
 # > pvc provisioner template
 ###############################################################################
+@click.group(
+    name="template",
+    short_help="Manage PVC provisioner templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template():
+    """
+    Manage the PVC provisioner template system.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template system
 ###############################################################################
+@click.group(
+    name="system",
+    short_help="Manage PVC provisioner system templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template_system():
+    """
+    Manage the PVC provisioner system templates.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template system add
 ###############################################################################
+@click.command(name="add", short_help="Add new system template.")
+@connection_req
+@click.argument("name")
+@click.option(
+    "-u", "--vcpus", "vcpus", required=True, type=int, help="The number of vCPUs."
+)
+@click.option(
+    "-m", "--vram", "vram", required=True, type=int, help="The amount of vRAM (in MB)."
+)
+@click.option(
+    "-s/-S",
+    "--serial/--no-serial",
+    "serial",
+    is_flag=True,
+    default=False,
+    help="Enable the virtual serial console.",
+)
+@click.option(
+    "-n/-N",
+    "--vnc/--no-vnc",
+    "vnc",
+    is_flag=True,
+    default=False,
+    help="Enable/disable the VNC console.",
+)
+@click.option(
+    "-b",
+    "--vnc-bind",
+    "vnc_bind",
+    default=None,
+    help="Bind VNC to this IP address instead of localhost.",
+)
+@click.option(
+    "--node-limit",
+    "node_limit",
+    default=None,
+    help="Limit VM operation to this CSV list of node(s).",
+)
+@click.option(
+    "--node-selector",
+    "node_selector",
+    type=click.Choice(
+        ["mem", "memprov", "vcpus", "vms", "load", "none"], case_sensitive=False
+    ),
+    default="none",
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
+)
+@click.option(
+    "--node-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=False,
+    help="Autostart VM with their parent Node on first/next boot.",
+)
+@click.option(
+    "--migration-method",
+    "migration_method",
+    type=click.Choice(["none", "live", "shutdown"], case_sensitive=False),
+    default=None,  # Use cluster default
+    help="The preferred migration method of the VM between nodes",
+)
+def cli_provisioner_template_system_add(
+    name,
+    vcpus,
+    vram,
+    serial,
+    vnc,
+    vnc_bind,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+):
+    """
+    Add a new system template NAME to the PVC cluster provisioner.
+
+    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
+    """
+    params = dict()
+    params["name"] = name
+    params["vcpus"] = vcpus
+    params["vram"] = vram
+    params["serial"] = serial
+    params["vnc"] = vnc
+    if vnc:
+        params["vnc_bind"] = vnc_bind
+    if node_limit:
+        params["node_limit"] = node_limit
+    if node_selector:
+        params["node_selector"] = node_selector
+    if node_autostart:
+        params["node_autostart"] = node_autostart
+    if migration_method:
+        params["migration_method"] = migration_method
+
+    retcode, retdata = pvc.lib.provisioner.template_add(
+        CLI_CONFIG, params, template_type="system"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template system modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify an existing system template.")
+@connection_req
+@click.argument("name")
+@click.option("-u", "--vcpus", "vcpus", type=int, help="The number of vCPUs.")
+@click.option("-m", "--vram", "vram", type=int, help="The amount of vRAM (in MB).")
+@click.option(
+    "-s/-S",
+    "--serial/--no-serial",
+    "serial",
+    is_flag=True,
+    default=None,
+    help="Enable the virtual serial console.",
+)
+@click.option(
+    "-n/-N",
+    "--vnc/--no-vnc",
+    "vnc",
+    is_flag=True,
+    default=None,
+    help="Enable/disable the VNC console.",
+)
+@click.option(
+    "-b",
+    "--vnc-bind",
+    "vnc_bind",
+    help="Bind VNC to this IP address instead of localhost.",
+)
+@click.option(
+    "--node-limit", "node_limit", help="Limit VM operation to this CSV list of node(s)."
+)
+@click.option(
+    "--node-selector",
+    "node_selector",
+    type=click.Choice(
+        ["mem", "memprov", "vcpus", "vms", "load", "none"], case_sensitive=False
+    ),
+    help='Method to determine optimal target node during autoselect; "none" will use the default for the cluster.',
+)
+@click.option(
+    "--node-autostart",
+    "node_autostart",
+    is_flag=True,
+    default=None,
+    help="Autostart VM with their parent Node on first/next boot.",
+)
+@click.option(
+    "--migration-method",
+    "migration_method",
+    type=click.Choice(["none", "live", "shutdown"], case_sensitive=False),
+    default=None,  # Use cluster default
+    help="The preferred migration method of the VM between nodes",
+)
+def cli_provisioner_template_system_modify(
+    name,
+    vcpus,
+    vram,
+    serial,
+    vnc,
+    vnc_bind,
+    node_limit,
+    node_selector,
+    node_autostart,
+    migration_method,
+):
+    """
+    Add a new system template NAME to the PVC cluster provisioner.
+
+    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
+    """
+    params = dict()
+    params["vcpus"] = vcpus
+    params["vram"] = vram
+    params["serial"] = serial
+    params["vnc"] = vnc
+    params["vnc_bind"] = vnc_bind
+    params["node_limit"] = node_limit
+    params["node_selector"] = node_selector
+    params["node_autostart"] = node_autostart
+    params["migration_method"] = migration_method
+
+    retcode, retdata = pvc.lib.provisioner.template_modify(
+        CLI_CONFIG, params, name, template_type="system"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template system remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove system template.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove system template {name}")
+def cli_provisioner_template_system_remove(name):
+    """
+    Remove system template NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.template_remove(
+        CLI_CONFIG, name, template_type="system"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner template system list
+# > pvc provisioner template system list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all system templates.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_provisioner_template_system_list(limit):
+    """
+    List all system templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc.lib.provisioner.template_list(
+        CLI_CONFIG, limit, template_type="system"
+    )
+    if retcode:
+        retdata = pvc.lib.provisioner.format_list_template(
+            retdata, template_type="system"
+        )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template network
 ###############################################################################
+@click.group(
+    name="network",
+    short_help="Manage PVC provisioner network templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template_network():
+    """
+    Manage the PVC provisioner network templates.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template network add
 ###############################################################################
+@click.command(name="add", short_help="Add new network template.")
+@connection_req
+@click.argument("name")
+@click.option(
+    "-m",
+    "--mac-template",
+    "mac_template",
+    default=None,
+    help="Use this template for MAC addresses.",
+)
+def cli_provisioner_template_network_add(name, mac_template):
+    """
+    Add a new network template to the PVC cluster provisioner.
+
+    MAC address templates are used to provide predictable MAC addresses for provisioned VMs.
+    The normal format of a MAC template is:
+
+      {prefix}:XX:XX:{vmid}{netid}
+
+    The {prefix} variable is replaced by the provisioner with a standard prefix ("52:54:01"),
+    which is different from the randomly-generated MAC prefix ("52:54:00") to avoid accidental
+    overlap of MAC addresses.
+
+    The {vmid} variable is replaced by a single hexidecimal digit representing the VM's ID,
+    the numerical suffix portion of its name; VMs without a suffix numeral have ID 0. VMs with
+    IDs greater than 15 (hexidecimal "f") will wrap back to 0.
+
+    The {netid} variable is replaced by the sequential identifier, starting at 0, of the
+    network VNI of the interface; for example, the first interface is 0, the second is 1, etc.
+
+    The four X digits are use-configurable. Use these digits to uniquely define the MAC
+    address.
+
+    Example: pvc provisioner template network add --mac-template "{prefix}:2f:1f:{vmid}{netid}" test-template
+
+    The location of the two per-VM variables can be adjusted at the administrator's discretion,
+    or removed if not required (e.g. a single-network template, or template for a single VM).
+    In such situations, be careful to avoid accidental overlap with other templates' variable
+    portions.
+    """
+    params = dict()
+    params["name"] = name
+    params["mac_template"] = mac_template
+
+    retcode, retdata = pvc.lib.provisioner.template_add(
+        CLI_CONFIG, params, template_type="network"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template network modify
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
 # > pvc provisioner template network remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove network template.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove network template {name}")
+def cli_provisioner_template_network_remove(name):
+    """
+    Remove network template MAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.template_remove(
+        CLI_CONFIG, name, template_type="network"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner template network list
+# > pvc provisioner template network list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all network templates.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_provisioner_template_network_list(limit):
+    """
+    List all network templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc.lib.provisioner.template_list(
+        CLI_CONFIG, limit, template_type="network"
+    )
+    if retcode:
+        retdata = pvc.lib.provisioner.format_list_template(
+            retdata, template_type="network"
+        )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template network vni
 ###############################################################################
+@click.group(
+    name="vni",
+    short_help="Manage PVC provisioner network template VNIs.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template_network_vni():
+    """
+    Manage the network VNIs in PVC provisioner network templates.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template network vni add
 ###############################################################################
+@click.command(name="add", short_help="Add network VNI to network template.")
+@connection_req
+@click.argument("name")
+@click.argument("vni")
+def cli_provisioner_template_network_vni_add(name, vni):
+    """
+    Add a new network VNI to network template NAME.
+
+    Networks will be added to VMs in the order they are added and displayed within the template.
+    """
+    params = dict()
+
+    retcode, retdata = pvc.lib.provisioner.template_element_add(
+        CLI_CONFIG, name, vni, params, element_type="net", template_type="network"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template network vni remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove network VNI from network template.")
+@connection_req
+@click.argument("name")
+@click.argument("vni")
+@confirm_opt("Remove VNI {vni} from network template {name}")
+def cli_provisioner_template_network_vni_remove(name, vni):
+    """
+    Remove network VNI from network template NAME.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.template_element_remove(
+        CLI_CONFIG, name, vni, element_type="net", template_type="network"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template storage
 ###############################################################################
+@click.group(
+    name="storage",
+    short_help="Manage PVC provisioner storage templates.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template_storage():
+    """
+    Manage the PVC provisioner storage templates.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template storage add
 ###############################################################################
+@click.command(name="add", short_help="Add new storage template.")
+@connection_req
+@click.argument("name")
+def cli_provisioner_template_storage_add(name):
+    """
+    Add a new storage template to the PVC cluster provisioner.
+    """
+    params = dict()
+    params["name"] = name
+
+    retcode, retdata = pvc.lib.provisioner.template_add(
+        CLI_CONFIG, params, template_type="storage"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template storage modify
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
 # > pvc provisioner template storage remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove storage template.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove storage template {name}")
+def cli_provisioner_template_storage_remove(name):
+    """
+    Remove storage template NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.template_remove(
+        CLI_CONFIG, name, template_type="storage"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner template storage list
+# > pvc provisioner template storage list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all storage templates.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_provisioner_template_storage_list(limit):
+    """
+    List all storage templates in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc.lib.provisioner.template_list(
+        CLI_CONFIG, limit, template_type="storage"
+    )
+    if retcode:
+        retdata = pvc.lib.provisioner.format_list_template(
+            retdata, template_type="storage"
+        )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template storage disk
 ###############################################################################
+@click.group(
+    name="disk",
+    short_help="Manage PVC provisioner storage template disks.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_template_storage_disk():
+    """
+    Manage the disks in PVC provisioner storage templates.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner template storage disk add
 ###############################################################################
+@click.command(name="add", short_help="Add disk to storage template.")
+@connection_req
+@click.argument("name")
+@click.argument("disk")
+@click.option(
+    "-p", "--pool", "pool", required=True, help="The storage pool for the disk."
+)
+@click.option(
+    "-i",
+    "--source-volume",
+    "source_volume",
+    default=None,
+    help="The source volume to clone",
+)
+@click.option(
+    "-s", "--size", "size", type=int, default=None, help="The size of the disk (in GB)."
+)
+@click.option(
+    "-f", "--filesystem", "filesystem", default=None, help="The filesystem of the disk."
+)
+@click.option(
+    "--fsarg",
+    "fsargs",
+    default=None,
+    multiple=True,
+    help="Additional argument for filesystem creation, in arg=value format without leading dashes.",
+)
+@click.option(
+    "-m",
+    "--mountpoint",
+    "mountpoint",
+    default=None,
+    help="The target Linux mountpoint of the disk; requires a filesystem.",
+)
+def cli_provisioner_template_storage_disk_add(
+    name, disk, pool, source_volume, size, filesystem, fsargs, mountpoint
+):
+    """
+    Add a new DISK to storage template NAME.
+
+    DISK must be a Linux-style sdX/vdX disk identifier, such as "sda" or "vdb". All disks in a template must use the same identifier format.
+
+    Disks will be added to VMs in sdX/vdX order. For disks with mountpoints, ensure this order is sensible.
+    """
+
+    if source_volume and (size or filesystem or mountpoint):
+        echo(
+            'The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.'
+        )
+        exit(1)
+
+    params = dict()
+    params["pool"] = pool
+    params["source_volume"] = source_volume
+    params["disk_size"] = size
+    if filesystem:
+        params["filesystem"] = filesystem
+    if filesystem and fsargs:
+        dash_fsargs = list()
+        for arg in fsargs:
+            arg_len = len(arg.split("=")[0])
+            if arg_len == 1:
+                dash_fsargs.append("-" + arg)
+            else:
+                dash_fsargs.append("--" + arg)
+        params["filesystem_arg"] = dash_fsargs
+    if filesystem and mountpoint:
+        params["mountpoint"] = mountpoint
+
+    retcode, retdata = pvc.lib.provisioner.template_element_add(
+        CLI_CONFIG, name, disk, params, element_type="disk", template_type="storage"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner template storage disk remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove disk from storage template.")
+@connection_req
+@click.argument("name")
+@click.argument("disk")
+@confirm_opt("Remove disk {disk} from storage template {name}")
+def cli_provisioner_template_storage_disk_remove(name, disk):
+    """
+    Remove DISK from storage template NAME.
+
+    DISK must be a Linux-style disk identifier such as "sda" or "vdb".
+    """
+
+    retcode, retdata = pvc.lib.provisioner.template_element_remove(
+        CLI_CONFIG, name, disk, element_type="disk", template_type="storage"
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner userdata
 ###############################################################################
+@click.group(
+    name="userdata",
+    short_help="Manage PVC provisioner userdata documents.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_userdata():
+    """
+    Manage userdata documents in the PVC provisioner.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner userdata add
 ###############################################################################
+@click.command(name="add", short_help="Define userdata document from file.")
+@connection_req
+@click.argument("name")
+@click.argument("filename", type=click.File())
+def cli_provisioner_userdata_add(name, filename):
+    """
+    Add a new userdata document NAME from file FILENAME.
+    """
+
+    # Open the YAML file
+    userdata = filename.read()
+    filename.close()
+    try:
+        yaml.load(userdata, Loader=yaml.SafeLoader)
+    except Exception as e:
+        echo("Error: Userdata document is malformed")
+        cleanup(False, e)
+
+    params = dict()
+    params["name"] = name
+    params["data"] = userdata.strip()
+
+    retcode, retmsg = pvc.lib.provisioner.userdata_add(CLI_CONFIG, params)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc provisioner userdata modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify existing userdata document.")
+@connection_req
+@click.option(
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing document.",
+)
+@click.argument("name")
+@click.argument("filename", type=click.File(), default=None, required=False)
+def cli_provisioner_userdata_modify(name, filename, editor):
+    """
+    Modify existing userdata document NAME, either in-editor or with replacement FILE.
+    """
+
+    if editor is False and filename is None:
+        finish(False, 'Either a file or the "--editor" option must be specified.')
+
+    if editor is True:
+        # Grab the current config
+        retcode, retdata = pvc.lib.provisioner.userdata_info(CLI_CONFIG, name)
+        if not retcode:
+            echo(retdata)
+            exit(1)
+        current_userdata = retdata["userdata"].strip()
+
+        new_userdata = click.edit(
+            text=current_userdata, require_save=True, extension=".yaml"
+        )
+        if new_userdata is None:
+            echo("Aborting with no modifications.")
+            exit(0)
+        else:
+            new_userdata = new_userdata.strip()
+
+        # Show a diff and confirm
+        echo("Pending modifications:")
+        echo("")
+        diff = list(
+            difflib.unified_diff(
+                current_userdata.split("\n"),
+                new_userdata.split("\n"),
+                fromfile="current",
+                tofile="modified",
+                fromfiledate="",
+                tofiledate="",
+                n=3,
+                lineterm="",
+            )
+        )
+        for line in diff:
+            if re.match(r"^\+", line) is not None:
+                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            elif re.match(r"^\-", line) is not None:
+                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            elif re.match(r"^\^", line) is not None:
+                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            else:
+                echo(line)
+        echo("")
+
+        click.confirm("Write modifications to cluster?", abort=True)
+
+        userdata = new_userdata
+
+    # We're operating in replace mode
+    else:
+        # Open the new file
+        userdata = filename.read().strip()
+        filename.close()
+
+    try:
+        yaml.load(userdata, Loader=yaml.SafeLoader)
+    except Exception as e:
+        echo("Error: Userdata document is malformed")
+        cleanup(False, e)
+
+    params = dict()
+    params["data"] = userdata
+
+    retcode, retmsg = pvc.lib.provisioner.userdata_modify(CLI_CONFIG, name, params)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc provisioner userdata remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove userdata document.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove userdata document {name}")
+def cli_provisioner_userdata_remove(name):
+    """
+    Remove userdata document NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.userdata_remove(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner userdata dump (was show)
+# > pvc provisioner userdata show
 ###############################################################################
+@click.command(name="show", short_help="Show contents of userdata documents.")
+@connection_req
+@click.argument("name")
+def cli_provisioner_userdata_show(name):
+    """
+    Show the full contents of userdata document NAME.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.userdata_show(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner userdata list
+# > pvc provisioner userdata list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all userdata documents.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-f",
+    "--full",
+    "full",
+    is_flag=True,
+    default=False,
+    help="Show all lines of the document instead of first 4.",
+)
+def cli_provisioner_userdata_list(limit, full):
+    """
+    List all userdata documents in the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.userdata_list(CLI_CONFIG, limit)
+    if retcode:
+        if not full:
+            lines = 4
+        else:
+            lines = None
+        retdata = pvc.lib.provisioner.format_list_userdata(retdata, lines)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner script
 ###############################################################################
+@click.group(
+    name="script",
+    short_help="Manage PVC provisioner scripts.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_script():
+    """
+    Manage scripts in the PVC provisioner.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner script add
 ###############################################################################
+@click.command(name="add", short_help="Define script from file.")
+@connection_req
+@click.argument("name")
+@click.argument("filename", type=click.File())
+def cli_provisioner_script_add(name, filename):
+    """
+    Add a new script NAME from file FILENAME.
+    """
+
+    # Open the XML file
+    script = filename.read()
+    filename.close()
+
+    params = dict()
+    params["name"] = name
+    params["data"] = script.strip()
+
+    retcode, retmsg = pvc.lib.provisioner.script_add(CLI_CONFIG, params)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc provisioner script modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify existing script.")
+@connection_req
+@click.option(
+    "-e",
+    "--editor",
+    "editor",
+    is_flag=True,
+    help="Use local editor to modify existing document.",
+)
+@click.argument("name")
+@click.argument("filename", type=click.File(), default=None, required=False)
+def cli_provisioner_script_modify(name, filename, editor):
+    """
+    Modify existing script NAME, either in-editor or with replacement FILE.
+    """
+
+    if editor is False and filename is None:
+        finish(False, 'Either a file or the "--editor" option must be specified.')
+
+    if editor is True:
+        # Grab the current config
+        retcode, retdata = pvc.lib.provisioner.script_info(CLI_CONFIG, name)
+        if not retcode:
+            echo(retdata)
+            exit(1)
+        current_script = retdata["script"].strip()
+
+        new_script = click.edit(text=current_script, require_save=True, extension=".py")
+        if new_script is None:
+            echo("Aborting with no modifications.")
+            exit(0)
+        else:
+            new_script = new_script.strip()
+
+        # Show a diff and confirm
+        echo("Pending modifications:")
+        echo("")
+        diff = list(
+            difflib.unified_diff(
+                current_script.split("\n"),
+                new_script.split("\n"),
+                fromfile="current",
+                tofile="modified",
+                fromfiledate="",
+                tofiledate="",
+                n=3,
+                lineterm="",
+            )
+        )
+        for line in diff:
+            if re.match(r"^\+", line) is not None:
+                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            elif re.match(r"^\-", line) is not None:
+                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            elif re.match(r"^\^", line) is not None:
+                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            else:
+                echo(line)
+        echo("")
+
+        click.confirm("Write modifications to cluster?", abort=True)
+
+        script = new_script
+
+    # We're operating in replace mode
+    else:
+        # Open the new file
+        script = filename.read().strip()
+        filename.close()
+
+    params = dict()
+    params["data"] = script
+
+    retcode, retmsg = pvc.lib.provisioner.script_modify(CLI_CONFIG, name, params)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc provisioner script remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove script.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove provisioning script {name}")
+def cli_provisioner_script_remove(name):
+    """
+    Remove script NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.script_remove(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner script dump (was show)
+# > pvc provisioner script show
 ###############################################################################
+@click.command(name="show", short_help="Show contents of script documents.")
+@connection_req
+@click.argument("name")
+def cli_provisioner_script_show(name):
+    """
+    Show the full contents of script document NAME.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.script_show(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner script list
+# > pvc provisioner script list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all scripts.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-f",
+    "--full",
+    "full",
+    is_flag=True,
+    default=False,
+    help="Show all lines of the document instead of first 4.",
+)
+def cli_provisioner_script_list(limit, full):
+    """
+    List all scripts in the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.script_list(CLI_CONFIG, limit)
+    if retcode:
+        if not full:
+            lines = 4
+        else:
+            lines = None
+        retdata = pvc.lib.provisioner.format_list_script(retdata, lines)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner ova
 ###############################################################################
+@click.group(
+    name="ova",
+    short_help="Manage PVC provisioner OVA images.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_ova():
+    """
+    Manage ovas in the PVC provisioner.
+    """
+    pass
 
 
 ###############################################################################
-# > pvc provisioner ova add (was upload)
+# > pvc provisioner ova upload
 ###############################################################################
+@click.command(name="upload", short_help="Upload OVA file.")
+@connection_req
+@click.argument("name")
+@click.argument("filename")
+@click.option(
+    "-p", "--pool", "pool", required=True, help="The storage pool for the OVA images."
+)
+def cli_provisioner_ova_upload(name, filename, pool):
+    """
+    Upload a new OVA image NAME from FILENAME.
+
+    Only single-file (.ova) OVA/OVF images are supported. For multi-file (.ovf + .vmdk) OVF images, concatenate them with "tar" then upload the resulting file.
+
+    Once uploaded, a provisioner system template and OVA-type profile, each named NAME, will be created to store the configuration of the OVA.
+
+    Note that the provisioner profile for the OVA will not contain any network template definitions, and will ignore network definitions from the OVA itself. The administrator must modify the profile's network template as appropriate to set the desired network configuration.
+
+    Storage templates, provisioning scripts, and arguments for OVA-type profiles will be ignored and should not be set.
+    """
+
+    if not os.path.exists(filename):
+        echo("ERROR: File '{}' does not exist!".format(filename))
+        exit(1)
+
+    params = dict()
+    params["pool"] = pool
+    params["ova_size"] = os.path.getsize(filename)
+
+    retcode, retdata = pvc.lib.provisioner.ova_upload(
+        CLI_CONFIG, name, filename, params
+    )
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner ova remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove OVA image.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove OVA image {name}")
+def cli_provisioner_ova_remove(name):
+    """
+    Remove OVA image NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.ova_remove(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner ova info
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
-# > pvc provisioner ova list
+# > pvc provisioner ova list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List all OVA images.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_provisioner_ova_list(limit):
+    """
+    List all OVA images in the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.ova_list(CLI_CONFIG, limit)
+    if retcode:
+        retdata = pvc.lib.provisioner.format_list_ova(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner profile
 ###############################################################################
+@click.group(
+    name="profile",
+    short_help="Manage PVC provisioner profiless.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_provisioner_profile():
+    """
+    Manage profiles in the PVC provisioner.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc provisioner profile add
 ###############################################################################
+@click.command(name="add", short_help="Add provisioner profile.")
+@connection_req
+@click.argument("name")
+@click.option(
+    "-p",
+    "--profile-type",
+    "profile_type",
+    default="provisioner",
+    show_default=True,
+    type=click.Choice(["provisioner", "ova"], case_sensitive=False),
+    help="The type of profile.",
+)
+@click.option(
+    "-s",
+    "--system-template",
+    "system_template",
+    required=True,
+    help="The system template for the profile (required).",
+)
+@click.option(
+    "-n",
+    "--network-template",
+    "network_template",
+    help="The network template for the profile.",
+)
+@click.option(
+    "-t",
+    "--storage-template",
+    "storage_template",
+    help="The storage template for the profile.",
+)
+@click.option(
+    "-u",
+    "--userdata",
+    "userdata",
+    help="The userdata document for the profile.",
+)
+@click.option(
+    "-x",
+    "--script",
+    "script",
+    required=True,
+    help="The script for the profile (required).",
+)
+@click.option(
+    "-o",
+    "--ova",
+    "ova",
+    help="The OVA image for the profile; set automatically with 'provisioner ova upload'.",
+)
+@click.option(
+    "-a",
+    "--script-arg",
+    "script_args",
+    default=[],
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
+)
+def cli_provisioner_profile_add(
+    name,
+    profile_type,
+    system_template,
+    network_template,
+    storage_template,
+    userdata,
+    script,
+    ova,
+    script_args,
+):
+    """
+    Add a new provisioner profile NAME.
+    """
+
+    params = dict()
+    params["name"] = name
+    params["profile_type"] = profile_type
+    params["system_template"] = system_template
+    params["network_template"] = network_template
+    params["storage_template"] = storage_template
+    params["userdata"] = userdata
+    params["script"] = script
+    params["ova"] = ova
+    params["arg"] = script_args
+
+    retcode, retdata = pvc.lib.provisioner.profile_add(CLI_CONFIG, params)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner profile modify
 ###############################################################################
+@click.command(name="modify", short_help="Modify provisioner profile.")
+@connection_req
+@click.argument("name")
+@click.option(
+    "-s",
+    "--system-template",
+    "system_template",
+    default=None,
+    help="The system template for the profile.",
+)
+@click.option(
+    "-n",
+    "--network-template",
+    "network_template",
+    default=None,
+    help="The network template for the profile.",
+)
+@click.option(
+    "-t",
+    "--storage-template",
+    "storage_template",
+    default=None,
+    help="The storage template for the profile.",
+)
+@click.option(
+    "-u",
+    "--userdata",
+    "userdata",
+    default=None,
+    help="The userdata document for the profile.",
+)
+@click.option(
+    "-x", "--script", "script", default=None, help="The script for the profile."
+)
+@click.option(
+    "-d",
+    "--delete-script-args",
+    "delete_script_args",
+    default=False,
+    is_flag=True,
+    help="Delete any existing script arguments.",
+)
+@click.option(
+    "-a",
+    "--script-arg",
+    "script_args",
+    default=None,
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
+)
+def cli_provisioner_profile_modify(
+    name,
+    system_template,
+    network_template,
+    storage_template,
+    userdata,
+    script,
+    delete_script_args,
+    script_args,
+):
+    """
+    Modify existing provisioner profile NAME.
+    """
+
+    params = dict()
+    if system_template is not None:
+        params["system_template"] = system_template
+    if network_template is not None:
+        params["network_template"] = network_template
+    if storage_template is not None:
+        params["storage_template"] = storage_template
+    if userdata is not None:
+        params["userdata"] = userdata
+    if script is not None:
+        params["script"] = script
+    if delete_script_args:
+        params["arg"] = []
+    if script_args is not None:
+        params["arg"] = script_args
+
+    retcode, retdata = pvc.lib.provisioner.profile_modify(CLI_CONFIG, name, params)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner profile remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove profile.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove provisioner profile {name}")
+def cli_provisioner_profile_remove(name):
+    """
+    Remove profile NAME from the PVC cluster provisioner.
+    """
+
+    retcode, retdata = pvc.lib.provisioner.profile_remove(CLI_CONFIG, name)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc provisioner create
 ###############################################################################
+@click.command(name="create", short_help="Create new VM.")
+@connection_req
+@click.argument("name")
+@click.argument("profile")
+@click.option(
+    "-a",
+    "--script-arg",
+    "script_args",
+    default=[],
+    multiple=True,
+    help="Additional argument to the script install() function in key=value format.",
+)
+@click.option(
+    "-d/-D",
+    "--define/--no-define",
+    "define_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Define the VM automatically during provisioning.",
+)
+@click.option(
+    "-s/-S",
+    "--start/--no-start",
+    "start_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Start the VM automatically upon completion of provisioning.",
+)
+@click.option(
+    "-w",
+    "--wait",
+    "wait_flag",
+    is_flag=True,
+    default=False,
+    help="Wait for provisioning to complete, showing progress",
+)
+def cli_provisioner_create(
+    name, profile, wait_flag, define_flag, start_flag, script_args
+):
+    """
+    Create a new VM NAME with profile PROFILE.
+
+    The "--no-start" flag can be used to prevent automatic startup of the VM once provisioning
+    is completed. This can be useful for the administrator to preform additional actions to
+    the VM after provisioning is completed. Note that the VM will remain in "provision" state
+    until its state is explicitly changed (e.g. with "pvc vm start").
+
+    The "--no-define" flag implies "--no-start", and can be used to prevent definition of the
+    created VM on the PVC cluster. This can be useful for the administrator to create a "template"
+    set of VM disks via the normal provisioner, but without ever starting the resulting VM. The
+    resulting disk(s) can then be used as source volumes in other disk templates.
+
+    The "--script-arg" option can be specified as many times as required to pass additional,
+    VM-specific arguments to the provisioner install() function, beyond those set by the profile.
+    """
+    if not define_flag:
+        start_flag = False
+
+    retcode, retdata = pvc.lib.provisioner.vm_create(
+        CLI_CONFIG, name, profile, wait_flag, define_flag, start_flag, script_args
+    )
+
+    if retcode and wait_flag:
+        task_id = retdata
+
+        echo("Task ID: {}".format(task_id))
+        echo("")
+
+        # Wait for the task to start
+        echo("Waiting for task to start...", nl=False)
+        while True:
+            time.sleep(1)
+            task_status = pvc.lib.provisioner.task_status(
+                CLI_CONFIG, task_id, is_watching=True
+            )
+            if task_status.get("state") != "PENDING":
+                break
+            echo(".", nl=False)
+        echo(" done.")
+        echo("")
+
+        # Start following the task state, updating progress as we go
+        total_task = task_status.get("total")
+        with click.progressbar(length=total_task, show_eta=False) as bar:
+            last_task = 0
+            maxlen = 0
+            while True:
+                time.sleep(1)
+                if task_status.get("state") != "RUNNING":
+                    break
+                if task_status.get("current") > last_task:
+                    current_task = int(task_status.get("current"))
+                    bar.update(current_task - last_task)
+                    last_task = current_task
+                    # The extensive spaces at the end cause this to overwrite longer previous messages
+                    curlen = len(str(task_status.get("status")))
+                    if curlen > maxlen:
+                        maxlen = curlen
+                    lendiff = maxlen - curlen
+                    overwrite_whitespace = " " * lendiff
+                    echo(
+                        "  " + task_status.get("status") + overwrite_whitespace,
+                        nl=False,
+                    )
+                task_status = pvc.lib.provisioner.task_status(
+                    CLI_CONFIG, task_id, is_watching=True
+                )
+            if task_status.get("state") == "SUCCESS":
+                bar.update(total_task - last_task)
+
+        echo("")
+        retdata = task_status.get("state") + ": " + task_status.get("status")
+
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc provisioner status
+# > pvc provisioner status TODO:formatter
 ###############################################################################
+@click.command(name="status", short_help="Show status of provisioner job.")
+@connection_Req
+@click.argument("job", required=False, default=None)
+def cli_provisioner_status(job):
+    """
+    Show status of provisioner job JOB or a list of jobs.
+    """
+    retcode, retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, job)
+    if job is None and retcode:
+        retdata = pvc.lib.provisioner.format_list_task(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
@@ -4584,6 +5787,55 @@ cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_remove)
 cli_storage_volume.add_command(cli_storage_volume_snapshot)
 cli_storage.add_command(cli_storage_volume)
 cli.add_command(cli_storage)
+cli_provisioner_template_system.add_command(cli_provisioner_template_system_add)
+cli_provisioner_template_system.add_command(cli_provisioner_template_system_modify)
+cli_provisioner_template_system.add_command(cli_provisioner_template_system_remove)
+cli_provisioner_template_system.add_command(cli_provisioner_template_system_list)
+cli_provisioner_template.add_command(cli_provisioner_template_system)
+cli_provisioner_template_network.add_command(cli_provisioner_template_network_add)
+cli_provisioner_template_network.add_command(cli_provisioner_template_network_remove)
+cli_provisioner_template_network.add_command(cli_provisioner_template_network_list)
+cli_provisioner_template_network_vni.add_command(
+    cli_provisioner_template_network_vni_add
+)
+cli_provisioner_template_network_vni.add_command(
+    cli_provisioner_template_network_vni_remove
+)
+cli_provisioner_template_network.add_command(cli_provisioner_template_network_vni)
+cli_provisioner_template.add_command(cli_provisioner_template_network)
+cli_provisioner_template_storage.add_command(cli_provisioner_template_storage_add)
+cli_provisioner_template_storage.add_command(cli_provisioner_template_storage_remove)
+cli_provisioner_template_storage.add_command(cli_provisioner_template_storage_list)
+cli_provisioner_template_storage_disk.add_command(
+    cli_provisioner_template_storage_disk_add
+)
+cli_provisioner_template_storage_disk.add_command(
+    cli_provisioner_template_storage_disk_remove
+)
+cli_provisioner_template_storage.add_command(cli_provisioner_template_storage_disk)
+cli_provisioner_template.add_command(cli_provisioner_template_storage)
+cli_provisioner_userdata.add_command(cli_provisioner_userdata_add)
+cli_provisioner_userdata.add_command(cli_provisioner_userdata_modify)
+cli_provisioner_userdata.add_command(cli_provisioner_userdata_remove)
+cli_provisioner_userdata.add_command(cli_provisioner_userdata_show)
+cli_provisioner_userdata.add_command(cli_provisioner_userdata_list)
+cli_provisioner.add_command(cli_provisioner_userdata)
+cli_provisioner_script.add_command(cli_provisioner_script_add)
+cli_provisioner_script.add_command(cli_provisioner_script_modify)
+cli_provisioner_script.add_command(cli_provisioner_script_remove)
+cli_provisioner_script.add_command(cli_provisioner_script_show)
+cli_provisioner_script.add_command(cli_provisioner_script_list)
+cli_provisioner.add_command(cli_provisioner_script)
+cli_provisioner_ova.add_command(cli_provisioner_ova_upload)
+cli_provisioner_ova.add_command(cli_provisioner_ova_remove)
+cli_provisioner_ova.add_command(cli_provisioner_ova_list)
+cli_provisioner.add_command(cli_provisioner_ova)
+cli_provisioner_profile.add_command(cli_provisioner_profile_add)
+cli_provisioner_profile.add_command(cli_provisioner_profile_modify)
+cli_provisioner_profile.add_command(cli_provisioner_profile_remove)
+cli_provisioner.add_command(cli_provisioner_profile)
+cli_provisioner.add_command(cli_provisioner_create)
+cli_provisioner.add_command(cli_provisioner_status)
 cli.add_command(cli_provisioner)
 cli_cluster.add_command(cli_cluster_status)
 cli_cluster.add_command(cli_cluster_init)
