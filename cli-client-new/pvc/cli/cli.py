@@ -26,6 +26,7 @@ from json import loads as jloads
 from os import environ, makedirs, path
 from pkg_resources import get_distribution
 from lxml.etree import fromstring, tostring
+from re import sub
 
 from pvc.cli.helpers import *
 from pvc.cli.waiters import *
@@ -36,6 +37,7 @@ import pvc.lib.cluster
 import pvc.lib.node
 import pvc.lib.vm
 import pvc.lib.network
+import pvc.lib.storage
 import pvc.lib.provisioner
 
 import click
@@ -242,8 +244,15 @@ def confirm_opt(message):
 
             if confirm_action:
                 try:
-                    click.confirm(message, prompt_suffix="? ", abort=True)
+                    # Try to interpolate any variables in the message from the kwargs
+                    # This is slightly messy but allows for nicer specification of the variables
+                    # in the calling {message} string
+                    _message = sub(r"{([^{}]*)}", r"\"{kwargs['\1']}\"", message)
+                    _message = eval(f"""f'''{_message}'''""")
+
+                    click.confirm(_message, prompt_suffix="? ", abort=True)
                 except Exception:
+                    print("Aborted.")
                     exit(0)
 
             del kwargs["confirm_flag"]
@@ -394,7 +403,7 @@ def cli_cluster_status(
     default=False,
     help="Remove and overwrite any existing data (DANGEROUS)",
 )
-@confirm_opt
+@confirm_opt("Initialize the cluster and delete all data")
 def cli_cluster_init(
     overwrite_flag,
 ):
@@ -465,7 +474,7 @@ def cli_cluster_backup(
     type=click.File(),
     help="Read backup data from this file.",
 )
-@confirm_opt
+@confirm_opt("Restore backup and overwrite all cluster data")
 def cli_cluster_restore(
     filename,
 ):
@@ -1262,7 +1271,7 @@ def cli_vm_modify(
 @connection_req
 @click.argument("domain")
 @click.argument("new_name")
-@confirm_opt
+@confirm_opt("Rename virtual machine {domain} to {new_name}")
 def cli_vm_rename(domain, new_name):
     """
     Rename virtual machine DOMAIN, and all its connected disk volumes, to NEW_NAME. DOMAIN may be a UUID or name.
@@ -1278,7 +1287,7 @@ def cli_vm_rename(domain, new_name):
 @click.command(name="undefine", short_help="Undefine a virtual machine.")
 @connection_req
 @click.argument("domain")
-@confirm_opt
+@confirm_opt("Remove definition of virtual machine {domain}")
 def cli_vm_undefine(domain):
     """
     Stop virtual machine DOMAIN and remove it database, preserving disks. DOMAIN may be a UUID or name.
@@ -1294,7 +1303,7 @@ def cli_vm_undefine(domain):
 @click.command(name="remove", short_help="Remove a virtual machine.")
 @connection_req
 @click.argument("domain")
-@confirm_opt
+@confirm_opt("Remove virtual machine {domain} and all disks")
 def cli_vm_remove(domain):
     """
     Stop virtual machine DOMAIN and remove it, along with all disks,. DOMAIN may be a UUID or name.
@@ -1333,7 +1342,7 @@ def cli_vm_start(domain):
     default=False,
     help="Wait for restart to complete before returning.",
 )
-@confirm_opt
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_restart(domain, wait):
     """
     Restart running virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -1359,7 +1368,7 @@ def cli_vm_restart(domain, wait):
     default=False,
     help="Wait for shutdown to complete before returning.",
 )
-@confirm_opt
+@confirm_opt("Shut down virtual machine {domain}")
 def cli_vm_shutdown(domain, wait):
     """
     Gracefully shut down virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -1375,7 +1384,7 @@ def cli_vm_shutdown(domain, wait):
 @click.command(name="stop", short_help="Forcibly halt a running virtual machine.")
 @connection_req
 @click.argument("domain")
-@confirm_opt
+@confirm_opt("Forcibly stop virtual machine {domain}")
 def cli_vm_stop(domain):
     """
     Forcibly halt (destroy) running virtual machine DOMAIN. DOMAIN may be a UUID or name.
@@ -1398,7 +1407,7 @@ def cli_vm_stop(domain):
     default=False,
     help="Forcibly stop the VM instead of waiting for shutdown.",
 )
-@confirm_opt
+@confirm_opt("Shut down and disable virtual machine {domain}")
 def cli_vm_disable(domain, force_flag):
     """
     Shut down virtual machine DOMAIN and mark it as disabled. DOMAIN may be a UUID or name.
@@ -1718,7 +1727,7 @@ def cli_vm_vcpu_get(domain, raw):
     help="Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.",
 )
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_vcpu_set(domain, vcpus, topology, restart_flag):
     """
     Set the vCPU count of the virtual machine DOMAIN to VCPUS.
@@ -1794,7 +1803,7 @@ def cli_vm_memory_get(domain, raw):
 @click.argument("domain")
 @click.argument("memory")
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_memory_set(domain, memory, restart_flag):
     """
     Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
@@ -1897,7 +1906,7 @@ def cli_vm_network_get(domain, raw):
     help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_network_add(
     domain,
     net,
@@ -1968,7 +1977,7 @@ def cli_vm_network_add(
     help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag):
     """
     Remove the network NET from the virtual machine DOMAIN.
@@ -2074,7 +2083,7 @@ def cli_vm_volume_get(domain, raw):
     help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_flag):
     """
     Add the volume VOLUME to the virtual machine DOMAIN.
@@ -2106,7 +2115,7 @@ def cli_vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restar
     help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Confirm VM restart?")
+@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_volume_remove(domain, volume, live_flag, restart_flag):
     """
     Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
@@ -2533,7 +2542,7 @@ def cli_network_modify(
 @click.command(name="remove", short_help="Remove a virtual network.")
 @connection_req
 @click.argument("net")
-@confirm_opt
+@confirm_opt("Remove network {net}")
 def cli_network_remove(net):
     """
     Remove an existing virtual network NET; NET must be a VNI.
@@ -2630,7 +2639,7 @@ def cli_network_dhcp_add(net, ipaddr, macaddr, hostname):
 @connection_req
 @click.argument("net")
 @click.argument("macaddr")
-@confirm_opt
+@confirm_opt("Remove DHCP reservation {macaddr} from network {net}")
 def cli_network_dhcp_remove(net, macaddr):
     """
     Remove a DHCP lease for MACADDR from virtual network NET; NET must be a VNI.
@@ -2745,7 +2754,7 @@ def cli_network_acl_add(net, direction, description, rule, order):
 @click.argument(
     "rule",
 )
-@confirm_opt
+@confirm_opt("Remove firewall rule {rule} from network {net}")
 def cli_network_acl_remove(net, rule):
     """
     Remove an NFT firewall rule RULE from network NET; RULE must be a description; NET must be a VNI.
@@ -3005,193 +3014,777 @@ def cli_storage():
 
 
 ###############################################################################
-# > pvc storage status
+# > pvc storage status TODO:formatter
 ###############################################################################
+@click.command(name="status", short_help="Show storage cluster status.")
+@connection_req
+def cli_storage_status():
+    """
+    Show detailed status of the storage cluster.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_status(CLI_CONFIG)
+    if retcode:
+        retdata = pvc.lib.storage.format_raw_output(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc storage util
+# > pvc storage util TODO:formatter
 ###############################################################################
+@click.command(name="util", short_help="Show storage cluster utilization.")
+@connection_req
+def cli_storage_util():
+    """
+    Show utilization of the storage cluster.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_util(CLI_CONFIG)
+    if retcode:
+        retdata = pvc.lib.storage.format_raw_output(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc storage benchmark
 ###############################################################################
+@click.group(name="benchmark", short_help="Run or view cluster storage benchmarks.")
+def cli_storage_benchmark():
+    """
+    Run or view benchmarks of the storage cluster.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc storage benchmark run
 ###############################################################################
+@click.command(name="run", short_help="Run a storage benchmark.")
+@connection_req
+@click.argument("pool")
+@confirm_opt(
+    "Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue"
+)
+def cli_storage_benchmark_run(pool):
+    """
+    Run a storage benchmark on POOL in the background.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_benchmark_run(CLI_CONFIG, pool)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc storage benchmark info
+# > pvc storage benchmark info TODO:formatter
 ###############################################################################
+@click.command(name="info", short_help="Show detailed storage benchmark results.")
+@connection_req
+@click.argument("job", required=True)
+@click.option(
+    "-f",
+    "--format",
+    "oformat",
+    default="summary",
+    show_default=True,
+    type=click.Choice(["summary", "json", "json-pretty"]),
+    help="Output format of benchmark information.",
+)
+def cli_storage_benchmark_info(job, oformat):
+    """
+    Show full details of storage benchmark JOB.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_benchmark_list(CLI_CONFIG, job)
+    if retcode:
+        retdata = pvc.lib.storage.format_info_benchmark(CLI_CONFIG, oformat, retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
-# > pvc storage benchmark list
+# > pvc storage benchmark list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List storage benchmark results.")
+@connection_req
+@click.argument("job", default=None, required=False)
+def cli_storage_benchmark_list(job):
+    """
+    List all Ceph storage benchmarks; optionally only match JOB.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_benchmark_list(CLI_CONFIG, job)
+    if retcode:
+        retdata = pvc.lib.storage.format_list_benchmark(CLI_CONFIG, retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc storage osd
 ###############################################################################
+@click.group(
+    name="osd",
+    short_help="Manage OSDs in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_storage_osd():
+    """
+    Manage the Ceph OSDs of the PVC cluster.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc storage osd create-db-vg
 ###############################################################################
+@click.command(name="create-db-vg", short_help="Create new OSD database volume group.")
+@connection_req
+@click.argument("node")
+@click.argument("device")
+@confirm_opt(
+    "Destroy all data on and create a new OSD database volume group on node {node} device {device}"
+)
+def cli_storage_osd_create_db_vg(node, device):
+    """
+    Create a new Ceph OSD database volume group on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Using partitions is not supported.
+
+    This volume group will be used for Ceph OSD database and WAL functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance.
+
+    Only one OSD database volume group on a single physical device, named "osd-db", is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node. Attempting to add additional database volume groups after the first will result in an error.
+
+    WARNING: If the OSD database device fails, all OSDs on the node using it will be lost and must be recreated.
+
+    A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". Detect strings allow for automatic determination of Linux block device paths from known basic information about disks by leveraging "lsscsi" on the target host. The "NAME" should be some descriptive identifier, for instance the manufacturer (e.g. "INTEL"), the "HUMAN-SIZE" should be the labeled human-readable size of the device (e.g. "480GB", "1.92TB"), and "ID" specifies the Nth 0-indexed device which matches the "NAME" and "HUMAN-SIZE" values (e.g. "2" would match the third device with the corresponding "NAME" and "HUMAN-SIZE"). When matching against sizes, there is +/- 3% flexibility to account for base-1000 vs. base-1024 differences and rounding errors. The "NAME" may contain whitespace but if so the entire detect string should be quoted, and is case-insensitive. More information about detect strings can be found in the manual.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_db_vg_add(CLI_CONFIG, node, device)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd add
 ###############################################################################
+@click.command(name="add", short_help="Add new OSD.")
+@connection_req
+@click.argument("node")
+@click.argument("device")
+@click.option(
+    "-w",
+    "--weight",
+    "weight",
+    default=1.0,
+    show_default=True,
+    help="Weight of the OSD within the CRUSH map.",
+)
+@click.option(
+    "-d",
+    "--ext-db",
+    "ext_db_flag",
+    is_flag=True,
+    default=False,
+    help="Use an external database logical volume for this OSD.",
+)
+@click.option(
+    "-r",
+    "--ext-db-ratio",
+    "ext_db_ratio",
+    default=0.05,
+    show_default=True,
+    type=float,
+    help="Decimal ratio of the external database logical volume to the OSD size.",
+)
+@confirm_opt("Destroy all data on and create new OSD on node {node} device {device}")
+def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio):
+    """
+    Add a new Ceph OSD on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported.
+
+    A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". Detect strings allow for automatic determination of Linux block device paths from known basic information about disks by leveraging "lsscsi" on the target host. The "NAME" should be some descriptive identifier, for instance the manufacturer (e.g. "INTEL"), the "HUMAN-SIZE" should be the labeled human-readable size of the device (e.g. "480GB", "1.92TB"), and "ID" specifies the Nth 0-indexed device which matches the "NAME" and "HUMAN-SIZE" values (e.g. "2" would match the third device with the corresponding "NAME" and "HUMAN-SIZE"). When matching against sizes, there is +/- 3% flexibility to account for base-1000 vs. base-1024 differences and rounding errors. The "NAME" may contain whitespace but if so the entire detect string should be quoted, and is case-insensitive. More information about detect strings can be found in the pvcbootstrapd manual.
+
+    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For example, if all OSDs are the same size as recommended for PVC, 1 (the default) is a valid weight so that all are treated identically. If a new OSD is added later which is 4x the size of the existing OSDs, the new OSD's weight should then be 4 to tell the cluster that 4x the data can be stored on the OSD. Weights can also be tweaked for performance reasons, since OSDs with more data will incur more I/O load. For more information about CRUSH weights, please see the Ceph documentation.
+
+    If '--ext-db' is specified, the OSD database and WAL will be placed on a new logical volume in NODE's OSD database volume group. An OSD database volume group must exist on the node or the OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
+
+    The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_add(
+        CLI_CONFIG, node, device, weight, ext_db_flag, ext_db_ratio
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd replace
 ###############################################################################
+@click.command(name="replace", short_help="Replace OSD block device.")
+@connection_req
+@click.argument("osdid")
+@click.argument("device")
+@click.option(
+    "-w",
+    "--weight",
+    "weight",
+    default=1.0,
+    show_default=True,
+    help="New weight of the OSD within the CRUSH map.",
+)
+@confirm_opt("Replace OSD {osdid} with block device {device} weight {weight}")
+def cli_storage_osd_replace(osdid, device, weight):
+    """
+    Replace the block device of an existing OSD with ID OSDID with DEVICE. Use this command to replace a failed or smaller OSD block device with a new one.
+
+    DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+
+    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For details, see 'pvc storage osd add --help'. Note that the current weight must be explicitly specified if it differs from the default.
+
+    Existing IDs, external DB devices, etc. of the OSD will be preserved; data will be lost and rebuilt from the remaining healthy OSDs.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_replace(
+        CLI_CONFIG, osdid, device, weight
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd refresh
 ###############################################################################
+@click.command(name="refresh", short_help="Refresh (reimport) OSD device.")
+@connection_req
+@click.argument("osdid")
+@click.argument("device")
+@confirm_opt("Refresh OSD {osdid} on device {device}")
+def cli_storage_osd_refresh(osdid, device):
+    """
+    Refresh (reimport) the block DEVICE of an existing OSD with ID OSDID. Use this command to reimport a working OSD into a rebuilt/replaced node.
+
+    DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+
+    Existing data, IDs, weights, etc. of the OSD will be preserved.
+
+    NOTE: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD instead.
+    """
+    retcode, retmsg = pvc.lib.storage.ceph_osd_refresh(CLI_CONFIG, osdid, device)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove OSD.")
+@connection_req
+@click.argument("osdid")
+@click.option(
+    "-f",
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force removal even if steps fail",
+)
+@confirm_opt("Remove and destroy data on OSD {osdid}")
+def cli_storage_osd_remove(osdid, force_flag):
+    """
+    Remove a Ceph OSD with ID OSDID.
+
+    DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance, verified with 'pvc storage status', before removing an OSD.
+
+    NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_remove(CLI_CONFIG, osdid, force_flag)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd in
 ###############################################################################
+@click.command(name="in", short_help="Online OSD.")
+@connection_req
+@click.argument("osdid")
+def cli_storage_osd_in(osdid):
+    """
+    Set a Ceph OSD with ID OSDID online.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_state(CLI_CONFIG, osdid, "in")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd out
 ###############################################################################
+@click.command(name="out", short_help="Offline OSD.")
+@connection_req
+@click.argument("osdid")
+def cli_storage_osd_out(osdid):
+    """
+    Set a Ceph OSD with ID OSDID offline.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_state(CLI_CONFIG, osdid, "out")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd set
 ###############################################################################
+@click.command(name="set", short_help="Set OSD property.")
+@connection_req
+@click.argument("osd_property")
+def cli_storage_osd_set(osd_property):
+    """
+    Set (enable) a Ceph OSD property OSD_PROPERTY on the cluster.
+
+    Valid properties are:
+
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_option(CLI_CONFIG, osd_property, "set")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage osd unset
 ###############################################################################
+@click.command(name="unset", short_help="Unset OSD property.")
+@click.argument("osd_property")
+@cluster_req
+def cli_storage_osd_unset(osd_property):
+    """
+    Unset (disable) a Ceph OSD property OSD_PROPERTY on the cluster.
+
+    Valid properties are:
+
+      full|pause|noup|nodown|noout|noin|nobackfill|norebalance|norecover|noscrub|nodeep-scrub|notieragent|sortbitwise|recovery_deletes|require_jewel_osds|require_kraken_osds
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_osd_option(CLI_CONFIG, osd_property, "unset")
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc storage ods info
+# > pvc storage osd info
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
-# > pvc storage osd list
+# > pvc storage osd list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List cluster OSDs.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_storage_osd_list(limit):
+    """
+    List all Ceph OSDs; optionally only match elements matching ID regex LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_osd_list(CLI_CONFIG, limit)
+    if retcode:
+        retdata = pvc.lib.storage.format_list_osd(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc storage pool
 ###############################################################################
+@click.group(
+    name="pool",
+    short_help="Manage RBD pools in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_storage_pool():
+    """
+    Manage the Ceph RBD pools of the PVC cluster.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc storage pool add
 ###############################################################################
+@click.command(name="add", short_help="Add new RBD pool.")
+@connection_req
+@click.argument("name")
+@click.argument("pgs")
+@click.option(
+    "-t",
+    "--tier",
+    "tier",
+    default="default",
+    show_default=True,
+    type=click.Choice(["default", "hdd", "ssd", "nvme"]),
+    help="""
+    The device tier to limit the pool to. Default is all OSD tiers, and specific tiers can be specified instead. At least one full set of OSDs for a given tier must be present for the tier to be specified, or the pool creation will fail.
+    """,
+)
+@click.option(
+    "--replcfg",
+    "replcfg",
+    default="copies=3,mincopies=2",
+    show_default=True,
+    required=False,
+    help="""
+    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
+    """,
+)
+def cli_storage_pool_add(name, pgs, tier, replcfg):
+    """
+    Add a new Ceph RBD pool with name NAME and PGS placement groups.
+
+    The placement group count must be a non-zero power of 2.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_pool_add(
+        CLI_CONFIG, name, pgs, replcfg, tier
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage pool remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove RBD pool.")
+@connection_req
+@click.argument("name")
+@confirm_opt("Remove and destroy all data in RBD pool {name}")
+def cli_storage_pool_remove(name):
+    """
+    Remove a Ceph RBD pool with name NAME and all volumes on it.
+
+    DANGER: This will completely remove the pool and all volumes contained in it from the cluster.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_pool_remove(CLI_CONFIG, name)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage pool set-pgs
 ###############################################################################
+@click.command(name="set-pgs", short_help="Set PGs of an RBD pool.")
+@connection_req
+@click.argument("name")
+@click.argument("pgs")
+@confirm_opt("Adjust PG count of pool {name} to {pgs}")
+def cli_storage_pool_set_pgs(name, pgs):
+    """
+    Set the placement groups (PGs) count for the pool NAME to PGS.
+
+    The placement group count must be a non-zero power of 2.
+
+    Placement group counts may be increased or decreased as required though frequent alteration is not recommended.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_pool_set_pgs(CLI_CONFIG, name, pgs)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage pool info
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
-# > pvc storage pool list
+# > pvc storage pool list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List cluster RBD pools.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+def cli_storage_pool_list(limit):
+    """
+    List all Ceph RBD pools; optionally only match elements matching name regex LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_pool_list(CLI_CONFIG, limit)
+    if retcode:
+        retdata = pvc.lib.storage.format_list_pool(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc storage volume
 ###############################################################################
+@click.group(
+    name="volume",
+    short_help="Manage RBD volumes in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_storage_volume():
+    """
+    Manage the Ceph RBD volumes of the PVC cluster.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc storage volume add
 ###############################################################################
+@click.command(name="add", short_help="Add new RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@click.argument("size")
+def cli_storage_volume_add(pool, name, size):
+    """
+    Add a new Ceph RBD volume in pool POOL with name NAME and size SIZE (in human units, e.g. 1024M, 20G, etc.).
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_add(CLI_CONFIG, pool, name, size)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume upload
 ###############################################################################
+@click.command(name="upload", short_help="Upload a local image file to RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@click.argument("image_file")
+@click.option(
+    "-f",
+    "--format",
+    "image_format",
+    default="raw",
+    show_default=True,
+    help="The format of the source image.",
+)
+def cli_storage_volume_upload(pool, name, image_format, image_file):
+    """
+    Upload a disk image file IMAGE_FILE to the RBD volume NAME in pool POOL.
+
+    The volume NAME must exist in the pool before uploading to it, and must be large enough to fit the disk image in raw format.
+
+    If the image format is "raw", the image is uploaded directly to the target volume without modification. Otherwise, it will be converted into raw format by "qemu-img convert" on the remote side before writing using a temporary volume. The image format must be a valid format recognized by "qemu-img", such as "vmdk" or "qcow2".
+    """
+
+    if not os.path.exists(image_file):
+        echo("ERROR: File '{}' does not exist!".format(image_file))
+        exit(1)
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_upload(
+        CLI_CONFIG, pool, name, image_format, image_file
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@confirm_opt("Remove and delete data of RBD volume {name} in pool {pool}")
+def cli_storage_volume_remove(pool, name):
+    """
+    Remove a Ceph RBD volume with name NAME from pool POOL.
+
+    DANGER: This will completely remove the volume and all data contained in it.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_remove(CLI_CONFIG, pool, name)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume resize
 ###############################################################################
+@click.command(name="resize", short_help="Resize RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@click.argument("size")
+@confirm_opt("Resize volume {name} in pool {pool} to size {size}")
+def cli_storage_volume_resize(pool, name, size):
+    """
+    Resize an existing Ceph RBD volume with name NAME in pool POOL to size SIZE (in human units, e.g. 1024M, 20G, etc.).
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_modify(
+        CLI_CONFIG, pool, name, new_size=size
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume rename
 ###############################################################################
+@click.command(name="rename", short_help="Rename RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@click.argument("new_name")
+@confirm_opt("Rename volume {name} in pool {pool} to {new_name}")
+def cli_storage_volume_rename(pool, name, new_name):
+    """
+    Rename an existing Ceph RBD volume with name NAME in pool POOL to name NEW_NAME.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_modify(
+        CLI_CONFIG, pool, name, new_name=new_name
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume clone
 ###############################################################################
+@click.command(name="clone", short_help="Clone RBD volume.")
+@connection_req
+@click.argument("pool")
+@click.argument("name")
+@click.argument("new_name")
+def cli_storage_volume_clone(pool, name, new_name):
+    """
+    Clone a Ceph RBD volume with name NAME in pool POOL to name NEW_NAME in pool POOL.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_volume_clone(
+        CLI_CONFIG, pool, name, new_name
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume info
 ###############################################################################
+# Not implemented
 
 
 ###############################################################################
-# > pvc storage volume list
+# > pvc storage volume list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List cluster RBD volumes.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-p",
+    "--pool",
+    "pool",
+    default=None,
+    show_default=True,
+    help="Show volumes from this pool only.",
+)
+def cli_storage_volume_list(limit, pool):
+    """
+    List all Ceph RBD volumes; optionally only match elements matching name regex LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_volume_list(CLI_CONFIG, limit, pool)
+    if retcode:
+        retdata = pvc.lib.storage.format_list_volume(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
 # > pvc storage volume snapshot
 ###############################################################################
+@click.group(
+    name="snapshot",
+    short_help="Manage RBD volume snapshots in the PVC storage cluster.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_storage_volume_snapshot():
+    """
+    Manage the Ceph RBD volume snapshots of the PVC cluster.
+    """
+    pass
 
 
 ###############################################################################
 # > pvc storage volume snapshot add
 ###############################################################################
+@click.command(name="add", short_help="Add new RBD volume snapshot.")
+@connection_req
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
+def cli_storage_volume_snapshot_add(pool, volume, name):
+    """
+    Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_snapshot_add(CLI_CONFIG, pool, volume, name)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume snapshot rename
 ###############################################################################
+@click.command(name="rename", short_help="Rename RBD volume snapshot.")
+@connection_req
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
+@click.argument("new_name")
+def cli_storage_volume_snapshot_rename(pool, volume, name, new_name):
+    """
+    Rename an existing Ceph RBD volume snapshot with name NAME to name NEW_NAME for volume VOLUME in pool POOL.
+    """
+    retcode, retmsg = pvc.lib.storage.ceph_snapshot_modify(
+        CLI_CONFIG, pool, volume, name, new_name=new_name
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
 # > pvc storage volume snapshot remove
 ###############################################################################
+@click.command(name="remove", short_help="Remove RBD volume snapshot.")
+@connection_req
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
+@confirm_opt("Remove snapshot {name} for volume {pool}/{volume}")
+def cli_storage_volume_snapshot_remove(pool, volume, name):
+    """
+    Remove a Ceph RBD volume snapshot with name NAME from volume VOLUME in pool POOL.
+
+    DANGER: This will completely remove the snapshot.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_snapshot_remove(
+        CLI_CONFIG, pool, volume, name
+    )
+    finish(retcode, retmsg)
 
 
 ###############################################################################
-# > pvc storage volume snapshot list
+# > pvc storage volume snapshot list TODO:formatter
 ###############################################################################
+@click.command(name="list", short_help="List cluster RBD volume shapshots.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@click.option(
+    "-p",
+    "--pool",
+    "pool",
+    default=None,
+    show_default=True,
+    help="Show snapshots from this pool only.",
+)
+@click.option(
+    "-o",
+    "--volume",
+    "volume",
+    default=None,
+    show_default=True,
+    help="Show snapshots from this volume only.",
+)
+def cli_storage_volume_snapshot_list(pool, volume, limit):
+    """
+    List all Ceph RBD volume snapshots; optionally only match elements matching name regex LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.storage.ceph_snapshot_list(
+        CLI_CONFIG, limit, volume, pool
+    )
+    if retcode:
+        retdata = pvc.lib.storage.format_list_snapshot(retdata)
+    finish(retcode, retdata)
 
 
 ###############################################################################
@@ -3955,6 +4548,41 @@ cli_network_sriov_vf.add_command(cli_network_sriov_vf_list)
 cli_network_sriov.add_command(cli_network_sriov_vf)
 cli_network.add_command(cli_network_sriov)
 cli.add_command(cli_network)
+cli_storage.add_command(cli_storage_status)
+cli_storage.add_command(cli_storage_util)
+cli_storage_benchmark.add_command(cli_storage_benchmark_run)
+cli_storage_benchmark.add_command(cli_storage_benchmark_info)
+cli_storage_benchmark.add_command(cli_storage_benchmark_list)
+cli_storage.add_command(cli_storage_benchmark)
+cli_storage.add_command(cli_storage_osd_create_db_vg)
+cli_storage_osd.add_command(cli_storage_osd_create_db_vg)
+cli_storage_osd.add_command(cli_storage_osd_add)
+cli_storage_osd.add_command(cli_storage_osd_replace)
+cli_storage_osd.add_command(cli_storage_osd_refresh)
+cli_storage_osd.add_command(cli_storage_osd_remove)
+cli_storage_osd.add_command(cli_storage_osd_in)
+cli_storage_osd.add_command(cli_storage_osd_out)
+cli_storage_osd.add_command(cli_storage_osd_set)
+cli_storage_osd.add_command(cli_storage_osd_unset)
+cli_storage_osd.add_command(cli_storage_osd_list)
+cli_storage.add_command(cli_storage_osd)
+cli_storage_pool.add_command(cli_storage_pool_add)
+cli_storage_pool.add_command(cli_storage_pool_remove)
+cli_storage_pool.add_command(cli_storage_pool_set_pgs)
+cli_storage_pool.add_command(cli_storage_pool_list)
+cli_storage.add_command(cli_storage_pool)
+cli_storage_volume.add_command(cli_storage_volume_add)
+cli_storage_volume.add_command(cli_storage_volume_upload)
+cli_storage_volume.add_command(cli_storage_volume_remove)
+cli_storage_volume.add_command(cli_storage_volume_resize)
+cli_storage_volume.add_command(cli_storage_volume_rename)
+cli_storage_volume.add_command(cli_storage_volume_clone)
+cli_storage_volume.add_command(cli_storage_volume_list)
+cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_add)
+cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_rename)
+cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_remove)
+cli_storage_volume.add_command(cli_storage_volume_snapshot)
+cli_storage.add_command(cli_storage_volume)
 cli.add_command(cli_storage)
 cli.add_command(cli_provisioner)
 cli_cluster.add_command(cli_cluster_status)
@@ -3970,4 +4598,3 @@ cli_connection.add_command(cli_connection_remove)
 cli_connection.add_command(cli_connection_list)
 cli_connection.add_command(cli_connection_detail)
 cli.add_command(cli_connection)
-# cli.add_command(testing)
