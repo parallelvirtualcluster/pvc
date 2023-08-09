@@ -273,7 +273,7 @@ def getOutputColours(node_information):
     )
 
 
-def format_info(node_information, long_output):
+def format_info(config, node_information, long_output):
     (
         health_colour,
         daemon_state_colour,
@@ -442,7 +442,7 @@ def format_info(node_information, long_output):
     return "\n".join(ainformation)
 
 
-def format_list(node_list):
+def format_list(config, node_list):
     if node_list == "Node not found.":
         return node_list
 

@@ -286,19 +286,17 @@ def vm_tag_set(config, vm, action, tag, protected=False):
     return retstatus, response.json().get("message", "")
 
 
-def format_vm_tags(config, name, tags):
+def format_vm_tags(config, data):
     """
     Format the output of a tags dictionary in a nice table
     """
+
+    tags = data.get("tags", [])
+
     if len(tags) < 1:
         return "No tags found."
 
     output_list = []
-
-    name_length = 5
-    _name_length = len(name) + 1
-    if _name_length > name_length:
-        name_length = _name_length
 
     tags_name_length = 4
     tags_type_length = 5
@@ -495,24 +493,21 @@ def vm_vcpus_get(config, vm):
     except Exception:
         return False, "ERROR: Failed to parse XML data."
 
-    vm_vcpus = int(parsed_xml.vcpu.text)
-    vm_sockets = parsed_xml.cpu.topology.attrib.get("sockets")
-    vm_cores = parsed_xml.cpu.topology.attrib.get("cores")
-    vm_threads = parsed_xml.cpu.topology.attrib.get("threads")
+    data = dict()
+    data["name"] = vm
+    data["vcpus"] = int(parsed_xml.vcpu.text)
+    data["sockets"] = parsed_xml.cpu.topology.attrib.get("sockets")
+    data["cores"] = parsed_xml.cpu.topology.attrib.get("cores")
+    data["threads"] = parsed_xml.cpu.topology.attrib.get("threads")
 
-    return True, (vm_vcpus, (vm_sockets, vm_cores, vm_threads))
+    return True, data
 
 
-def format_vm_vcpus(config, name, vcpus):
+def format_vm_vcpus(config, data):
     """
     Format the output of a vCPU value in a nice table
     """
     output_list = []
-
-    name_length = 5
-    _name_length = len(name) + 1
-    if _name_length > name_length:
-        name_length = _name_length
 
     vcpus_length = 6
     sockets_length = 8
@@ -520,19 +515,16 @@ def format_vm_vcpus(config, name, vcpus):
     threads_length = 8
 
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{vcpus: <{vcpus_length}}   \
+        "{bold}{vcpus: <{vcpus_length}}  \
 {sockets: <{sockets_length}} \
 {cores: <{cores_length}} \
 {threads: <{threads_length}}{end_bold}".format(
-            name_length=name_length,
             vcpus_length=vcpus_length,
             sockets_length=sockets_length,
             cores_length=cores_length,
             threads_length=threads_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            name="Name",
             vcpus="vCPUs",
             sockets="Sockets",
             cores="Cores",
@@ -540,23 +532,20 @@ def format_vm_vcpus(config, name, vcpus):
         )
     )
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{vcpus: <{vcpus_length}}   \
+        "{bold}{vcpus: <{vcpus_length}}  \
 {sockets: <{sockets_length}} \
 {cores: <{cores_length}} \
 {threads: <{threads_length}}{end_bold}".format(
-            name_length=name_length,
             vcpus_length=vcpus_length,
             sockets_length=sockets_length,
             cores_length=cores_length,
             threads_length=threads_length,
             bold="",
             end_bold="",
-            name=name,
-            vcpus=vcpus[0],
-            sockets=vcpus[1][0],
-            cores=vcpus[1][1],
-            threads=vcpus[1][2],
+            vcpus=data["vcpus"],
+            sockets=data["sockets"],
+            cores=data["cores"],
+            threads=data["threads"],
         )
     )
     return "\n".join(output_list)
@@ -619,44 +608,35 @@ def vm_memory_get(config, vm):
     except Exception:
         return False, "ERROR: Failed to parse XML data."
 
-    vm_memory = int(parsed_xml.memory.text)
+    data = dict()
+    data["name"] = vm
+    data["memory"] = int(parsed_xml.memory.text)
 
-    return True, vm_memory
+    return True, data
 
 
-def format_vm_memory(config, name, memory):
+def format_vm_memory(config, data):
     """
     Format the output of a memory value in a nice table
     """
     output_list = []
 
-    name_length = 5
-    _name_length = len(name) + 1
-    if _name_length > name_length:
-        name_length = _name_length
-
     memory_length = 6
 
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{memory: <{memory_length}}{end_bold}".format(
-            name_length=name_length,
+        "{bold}{memory: <{memory_length}}{end_bold}".format(
             memory_length=memory_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            name="Name",
             memory="RAM (M)",
         )
     )
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{memory: <{memory_length}}{end_bold}".format(
-            name_length=name_length,
+        "{bold}{memory: <{memory_length}}{end_bold}".format(
             memory_length=memory_length,
             bold="",
             end_bold="",
-            name=name,
-            memory=memory,
+            memory=data["memory"],
         )
     )
     return "\n".join(output_list)
@@ -946,7 +926,9 @@ def vm_networks_get(config, vm):
     except Exception:
         return False, "ERROR: Failed to parse XML data."
 
-    network_data = list()
+    data = dict()
+    data["name"] = vm
+    data["networks"] = list()
     for interface in parsed_xml.devices.find("interface"):
         mac_address = interface.mac.attrib.get("address")
         model = interface.model.attrib.get("type")
@@ -960,76 +942,65 @@ def vm_networks_get(config, vm):
         elif interface_type == "hostdev":
             network = "hostdev:{}".format(interface.source.attrib.get("dev"))
 
-        network_data.append((network, mac_address, model))
+        data["networks"].append(
+            {"network": network, "mac_address": mac_address, "model": model}
+        )
 
-    return True, network_data
+    return True, data
 
 
-def format_vm_networks(config, name, networks):
+def format_vm_networks(config, data):
     """
     Format the output of a network list in a nice table
     """
     output_list = []
 
-    name_length = 5
-    vni_length = 8
+    network_length = 8
     macaddr_length = 12
     model_length = 6
 
-    _name_length = len(name) + 1
-    if _name_length > name_length:
-        name_length = _name_length
+    for network in data["networks"]:
+        _network_length = len(network["network"]) + 1
+        if _network_length > network_length:
+            network_length = _network_length
 
-    for network in networks:
-        _vni_length = len(network[0]) + 1
-        if _vni_length > vni_length:
-            vni_length = _vni_length
-
-        _macaddr_length = len(network[1]) + 1
+        _macaddr_length = len(network["mac_address"]) + 1
         if _macaddr_length > macaddr_length:
             macaddr_length = _macaddr_length
 
-        _model_length = len(network[2]) + 1
+        _model_length = len(network["model"]) + 1
         if _model_length > model_length:
             model_length = _model_length
 
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{vni: <{vni_length}} \
+        "{bold}{network: <{network_length}} \
 {macaddr: <{macaddr_length}} \
 {model: <{model_length}}{end_bold}".format(
-            name_length=name_length,
-            vni_length=vni_length,
+            network_length=network_length,
             macaddr_length=macaddr_length,
             model_length=model_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            name="Name",
-            vni="Network",
+            network="Network",
             macaddr="MAC Address",
             model="Model",
         )
     )
     count = 0
-    for network in networks:
-        if count > 0:
-            name = ""
+    for network in data["networks"]:
         count += 1
         output_list.append(
-            "{bold}{name: <{name_length}}  \
-{vni: <{vni_length}} \
+            "{bold}{network: <{network_length}} \
 {macaddr: <{macaddr_length}} \
 {model: <{model_length}}{end_bold}".format(
-                name_length=name_length,
-                vni_length=vni_length,
+                network_length=network_length,
                 macaddr_length=macaddr_length,
                 model_length=model_length,
                 bold="",
                 end_bold="",
-                name=name,
-                vni=network[0],
-                macaddr=network[1],
-                model=network[2],
+                network=network["network"],
+                macaddr=network["mac_address"],
+                model=network["model"],
             )
         )
     return "\n".join(output_list)
@@ -1270,7 +1241,9 @@ def vm_volumes_get(config, vm):
     except Exception:
         return False, "ERROR: Failed to parse XML data."
 
-    volume_data = list()
+    data = dict()
+    data["name"] = vm
+    data["volumes"] = list()
     for disk in parsed_xml.devices.find("disk"):
         protocol = disk.attrib.get("type")
         disk_id = disk.target.attrib.get("dev")
@@ -1285,58 +1258,52 @@ def vm_volumes_get(config, vm):
             protocol = "unknown"
             source = "unknown"
 
-        volume_data.append((source, disk_id, protocol, bus))
+        data["volumes"].append(
+            {"volume": source, "disk_id": disk_id, "protocol": protocol, "bus": bus}
+        )
 
-    return True, volume_data
+    return True, data
 
 
-def format_vm_volumes(config, name, volumes):
+def format_vm_volumes(config, data):
     """
     Format the output of a volume value in a nice table
     """
     output_list = []
 
-    name_length = 5
     volume_length = 7
     disk_id_length = 4
     protocol_length = 5
     bus_length = 4
 
-    _name_length = len(name) + 1
-    if _name_length > name_length:
-        name_length = _name_length
-
-    for volume in volumes:
-        _volume_length = len(volume[0]) + 1
+    for volume in data["volumes"]:
+        _volume_length = len(volume["volume"]) + 1
         if _volume_length > volume_length:
             volume_length = _volume_length
 
-        _disk_id_length = len(volume[1]) + 1
+        _disk_id_length = len(volume["disk_id"]) + 1
         if _disk_id_length > disk_id_length:
             disk_id_length = _disk_id_length
 
-        _protocol_length = len(volume[2]) + 1
+        _protocol_length = len(volume["protocol"]) + 1
         if _protocol_length > protocol_length:
             protocol_length = _protocol_length
 
-        _bus_length = len(volume[3]) + 1
+        _bus_length = len(volume["bus"]) + 1
         if _bus_length > bus_length:
             bus_length = _bus_length
 
     output_list.append(
-        "{bold}{name: <{name_length}}  \
-{volume: <{volume_length}} \
+        "{bold}{volume: <{volume_length}} \
 {disk_id: <{disk_id_length}} \
 {protocol: <{protocol_length}} \
 {bus: <{bus_length}}{end_bold}".format(
-            name_length=name_length,
             volume_length=volume_length,
             disk_id_length=disk_id_length,
             protocol_length=protocol_length,
             bus_length=bus_length,
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
-            name="Name",
             volume="Volume",
             disk_id="Dev",
             protocol="Type",
@@ -1344,28 +1311,23 @@ def format_vm_volumes(config, name, volumes):
         )
     )
     count = 0
-    for volume in volumes:
-        if count > 0:
-            name = ""
+    for volume in data["volumes"]:
         count += 1
         output_list.append(
-            "{bold}{name: <{name_length}}  \
-{volume: <{volume_length}} \
+            "{bold}{volume: <{volume_length}} \
 {disk_id: <{disk_id_length}} \
 {protocol: <{protocol_length}} \
 {bus: <{bus_length}}{end_bold}".format(
-                name_length=name_length,
                 volume_length=volume_length,
                 disk_id_length=disk_id_length,
                 protocol_length=protocol_length,
                 bus_length=bus_length,
                 bold="",
                 end_bold="",
-                name=name,
-                volume=volume[0],
-                disk_id=volume[1],
-                protocol=volume[2],
-                bus=volume[3],
+                volume=volume["volume"],
+                disk_id=volume["disk_id"],
+                protocol=volume["protocol"],
+                bus=volume["bus"],
             )
         )
     return "\n".join(output_list)
@@ -1869,7 +1831,7 @@ def format_info(config, domain_information, long_output):
     return "\n".join(ainformation)
 
 
-def format_list(config, vm_list, raw):
+def format_list(config, vm_list):
     # Function to strip the "br" off of nets and return a nicer list
     def getNiceNetID(domain_information):
         # Network list
@@ -1887,13 +1849,6 @@ def format_list(config, vm_list, raw):
         ):
             tag_list.append(tag["name"])
         return tag_list
-
-    # Handle raw mode since it just lists the names
-    if raw:
-        ainformation = list()
-        for vm in sorted(item["name"] for item in vm_list):
-            ainformation.append(vm)
-        return "\n".join(ainformation)
 
     vm_list_output = []
 

@@ -84,8 +84,12 @@ def finish(success=True, data=None, formatter=None):
     """
 
     if data is not None:
-        if formatter is not None:
-            echo(CLI_CONFIG, formatter(data))
+        if formatter is not None and success:
+            if formatter.__name__ == "<lambda>":
+                # We don't pass CLI_CONFIG into lambdas
+                echo(CLI_CONFIG, formatter(data))
+            else:
+                echo(CLI_CONFIG, formatter(CLI_CONFIG, data))
         else:
             echo(CLI_CONFIG, data)
 
@@ -1597,34 +1601,26 @@ def cli_vm_tag():
 
 
 ###############################################################################
-# > pvc vm tag get TODO:formatter
+# > pvc vm tag get
 ###############################################################################
 @click.command(name="get", short_help="Get the current tags of a virtual machine.")
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw value only without formatting.",
+@format_opt(
+    {
+        "pretty": cli_vm_tag_get_format_pretty,
+        "raw": lambda d: "\n".join([t["name"] for t in d["tags"]]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_tag_get(domain, raw):
+def cli_vm_tag_get(domain, format_function):
     """
     Get the current tags of the virtual machine DOMAIN.
     """
 
     retcode, retdata = pvc.lib.vm.vm_tags_get(CLI_CONFIG, domain)
-    if retcode:
-        if not raw:
-            retdata = pvc.lib.vm.format_vm_tags(CLI_CONFIG, domain, retdata["tags"])
-        else:
-            if len(retdata["tags"]) > 0:
-                retdata = "\n".join([tag["name"] for tag in retdata["tags"]])
-            else:
-                retdata = "No tags found."
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -1684,32 +1680,28 @@ def cli_vm_vcpu():
 
 
 ###############################################################################
-# > pvc vm vcpu get TODO:formatter
+# > pvc vm vcpu get
 ###############################################################################
 @click.command(
     name="get", short_help="Get the current vCPU count of a virtual machine."
 )
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw value only without formatting.",
+@format_opt(
+    {
+        "pretty": cli_vm_vcpu_get_format_pretty,
+        "raw": lambda d: d["vcpus"],
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_vcpu_get(domain, raw):
+def cli_vm_vcpu_get(domain, format_function):
     """
     Get the current vCPU count of the virtual machine DOMAIN.
     """
 
     retcode, retmsg = pvc.lib.vm.vm_vcpus_get(CLI_CONFIG, domain)
-    if not raw:
-        retmsg = pvc.lib.vm.format_vm_vcpus(CLI_CONFIG, domain, retmsg)
-    else:
-        retmsg = retmsg[0]  # Get only the first part of the tuple (vm_vcpus)
-    finish(retcode, retmsg)
+    finish(retcode, retmsg, format_function)
 
 
 ###############################################################################
@@ -1767,30 +1759,28 @@ def cli_vm_memory():
 
 
 ###############################################################################
-# > pvc vm memory get TODO:formatter
+# > pvc vm memory get
 ###############################################################################
 @click.command(
     name="get", short_help="Get the current provisioned memory of a virtual machine."
 )
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw value only without formatting.",
+@format_opt(
+    {
+        "pretty": cli_vm_memory_get_format_pretty,
+        "raw": lambda d: d["memory"],
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_memory_get(domain, raw):
+def cli_vm_memory_get(domain, format_function):
     """
     Get the current provisioned memory of the virtual machine DOMAIN.
     """
 
     retcode, retmsg = pvc.lib.vm.vm_memory_get(CLI_CONFIG, domain)
-    if not raw:
-        retmsg = pvc.lib.vm.format_vm_memory(CLI_CONFIG, domain, retmsg)
-    finish(retcode, retmsg)
+    finish(retcode, retmsg, format_function)
 
 
 ###############################################################################
@@ -1829,33 +1819,26 @@ def cli_vm_network():
 
 
 ###############################################################################
-# > pvc vm network get TODO:formatter
+# > pvc vm network get
 ###############################################################################
 @click.command(name="get", short_help="Get the networks of a virtual machine.")
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw values only without formatting.",
+@format_opt(
+    {
+        "pretty": cli_vm_network_get_format_pretty,
+        "raw": lambda d: ",".join([t["network"] for t in d["networks"]]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_network_get(domain, raw):
+def cli_vm_network_get(domain, format_function):
     """
     Get the networks of the virtual machine DOMAIN.
     """
 
     retcode, retdata = pvc.lib.vm.vm_networks_get(CLI_CONFIG, domain)
-    if not raw:
-        retmsg = pvc.lib.vm.format_vm_networks(CLI_CONFIG, domain, retdata)
-    else:
-        network_vnis = list()
-        for network in retdata:
-            network_vnis.append(network[0])
-        retmsg = ",".join(network_vnis)
-    finish(retcode, retmsg)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2013,33 +1996,28 @@ def cli_vm_volume():
 
 
 ###############################################################################
-# > pvc vm volume get TODO:formatter
+# > pvc vm volume get
 ###############################################################################
 @click.command(name="get", short_help="Get the volumes of a virtual machine.")
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw values only without formatting.",
+@format_opt(
+    {
+        "pretty": cli_vm_volume_get_format_pretty,
+        "raw": lambda d: ",".join(
+            [f"{v['protocol']}:{v['volume']}" for v in d["volumes"]]
+        ),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_volume_get(domain, raw):
+def cli_vm_volume_get(domain, format_function):
     """
     Get the volumes of the virtual machine DOMAIN.
     """
 
     retcode, retdata = pvc.lib.vm.vm_volumes_get(CLI_CONFIG, domain)
-    if not raw:
-        retmsg = pvc.lib.vm.format_vm_volumes(CLI_CONFIG, domain, retdata)
-    else:
-        volume_paths = list()
-        for volume in retdata:
-            volume_paths.append("{}:{}".format(volume[2], volume[0]))
-        retmsg = ",".join(volume_paths)
-    finish(retcode, retmsg)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2208,32 +2186,30 @@ def cli_vm_dump(filename, domain):
 
 
 ###############################################################################
-# > pvc vm info TODO:formatter
+# > pvc vm info
 ###############################################################################
 @click.command(name="info", short_help="Show details of a VM object.")
 @connection_req
 @click.argument("domain")
-@click.option(
-    "-l",
-    "--long",
-    "long_output",
-    is_flag=True,
-    default=False,
-    help="Display more detailed information.",
+@format_opt(
+    {
+        "pretty": cli_vm_info_format_pretty,
+        "long": cli_vm_info_format_long,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_vm_info(domain, long_output):
+def cli_vm_info(domain, format_function):
     """
     Show information about virtual machine DOMAIN. DOMAIN may be a UUID or name.
     """
 
     retcode, retdata = pvc.lib.vm.vm_info(CLI_CONFIG, domain)
-    if retcode:
-        retdata = pvc.lib.vm.format_info(CLI_CONFIG, retdata, long_output)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
-# > pvc vm list TODO:formatter
+# > pvc vm list
 ###############################################################################
 @click.command(name="list", short_help="List all VM objects.")
 @connection_req
@@ -2260,14 +2236,6 @@ def cli_vm_info(domain, long_output):
     help="Limit list to VMs with the specified tag.",
 )
 @click.option(
-    "-r",
-    "--raw",
-    "raw",
-    is_flag=True,
-    default=False,
-    help="Display the raw list of VM names only.",
-)
-@click.option(
     "-n",
     "--negate",
     "negate",
@@ -2275,7 +2243,15 @@ def cli_vm_info(domain, long_output):
     default=False,
     help="Negate the specified node, state, or tag limit(s).",
 )
-def cli_vm_list(target_node, target_state, target_tag, limit, raw, negate):
+@format_opt(
+    {
+        "pretty": cli_vm_list_format_pretty,
+        "raw": lambda d: "\n".join([v["name"] for v in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_vm_list(target_node, target_state, target_tag, limit, negate, format_function):
     """
     List all virtual machines; optionally only match names or full UUIDs matching regex LIMIT.
 
@@ -2285,12 +2261,7 @@ def cli_vm_list(target_node, target_state, target_tag, limit, raw, negate):
     retcode, retdata = pvc.lib.vm.vm_list(
         CLI_CONFIG, limit, target_node, target_state, target_tag, negate
     )
-    if retcode:
-        retdata = pvc.lib.vm.format_list(CLI_CONFIG, retdata, raw)
-    else:
-        if raw:
-            retdata = ""
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3347,8 +3318,8 @@ def cli_storage_osd_set(osd_property):
 # > pvc storage osd unset
 ###############################################################################
 @click.command(name="unset", short_help="Unset OSD property.")
+@connection_req
 @click.argument("osd_property")
-@cluster_req
 def cli_storage_osd_unset(osd_property):
     """
     Unset (disable) a Ceph OSD property OSD_PROPERTY on the cluster.
@@ -5218,7 +5189,7 @@ def cli_provisioner_create(
 # > pvc provisioner status TODO:formatter
 ###############################################################################
 @click.command(name="status", short_help="Show status of provisioner job.")
-@connection_Req
+@connection_req
 @click.argument("job", required=False, default=None)
 def cli_provisioner_status(job):
     """

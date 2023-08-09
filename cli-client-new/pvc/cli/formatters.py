@@ -21,6 +21,13 @@
 
 from pvc.lib.node import format_info as node_format_info
 from pvc.lib.node import format_list as node_format_list
+from pvc.lib.vm import format_vm_tags as vm_format_tags
+from pvc.lib.vm import format_vm_vcpus as vm_format_vcpus
+from pvc.lib.vm import format_vm_memory as vm_format_memory
+from pvc.lib.vm import format_vm_networks as vm_format_networks
+from pvc.lib.vm import format_vm_volumes as vm_format_volumes
+from pvc.lib.vm import format_info as vm_format_info
+from pvc.lib.vm import format_list as vm_format_list
 
 
 # Define colour values for use in formatters
@@ -36,7 +43,7 @@ ansii = {
 }
 
 
-def cli_cluster_status_format_pretty(data):
+def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the full output of cli_cluster_status
     """
@@ -188,7 +195,7 @@ def cli_cluster_status_format_pretty(data):
     return "\n".join(output)
 
 
-def cli_cluster_status_format_short(data):
+def cli_cluster_status_format_short(CLI_CONFIG, data):
     """
     Pretty format the health-only output of cli_cluster_status
     """
@@ -233,7 +240,7 @@ def cli_cluster_status_format_short(data):
     return "\n".join(output)
 
 
-def cli_connection_list_format_pretty(data):
+def cli_connection_list_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the output of cli_connection_list
     """
@@ -305,7 +312,7 @@ def cli_connection_list_format_pretty(data):
     return "\n".join(output)
 
 
-def cli_connection_detail_format_pretty(data):
+def cli_connection_detail_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the output of cli_connection_detail
     """
@@ -425,25 +432,89 @@ def cli_connection_detail_format_pretty(data):
     return "\n".join(output)
 
 
-def cli_node_info_format_pretty(data):
+def cli_node_info_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the basic output of cli_node_info
     """
 
-    return node_format_info(data, long_output=False)
+    return node_format_info(CLI_CONFIG, data, long_output=False)
 
 
-def cli_node_info_format_long(data):
+def cli_node_info_format_long(CLI_CONFIG, data):
     """
     Pretty format the full output of cli_node_info
     """
 
-    return node_format_info(data, long_output=True)
+    return node_format_info(CLI_CONFIG, data, long_output=True)
 
 
-def cli_node_list_format_pretty(data):
+def cli_node_list_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the output of cli_node_list
     """
 
-    return node_format_list(data)
+    return node_format_list(CLI_CONFIG, data)
+
+
+def cli_vm_tag_get_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_tag_get
+    """
+
+    return vm_format_tags(CLI_CONFIG, data)
+
+
+def cli_vm_vcpu_get_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_vcpu_get
+    """
+
+    return vm_format_vcpus(CLI_CONFIG, data)
+
+
+def cli_vm_memory_get_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_memory_get
+    """
+
+    return vm_format_memory(CLI_CONFIG, data)
+
+
+def cli_vm_network_get_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_network_get
+    """
+
+    return vm_format_networks(CLI_CONFIG, data)
+
+
+def cli_vm_volume_get_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_volume_get
+    """
+
+    return vm_format_volumes(CLI_CONFIG, data)
+
+
+def cli_vm_info_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the basic output of cli_vm_info
+    """
+
+    return vm_format_info(CLI_CONFIG, data, long_output=False)
+
+
+def cli_vm_info_format_long(CLI_CONFIG, data):
+    """
+    Pretty format the full output of cli_vm_info
+    """
+
+    return vm_format_info(CLI_CONFIG, data, long_output=True)
+
+
+def cli_vm_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_vm_list
+    """
+
+    return vm_format_list(CLI_CONFIG, data)
