@@ -542,11 +542,16 @@ def net_sriov_vf_info(config, node, vf):
             return False, "VF not found."
         else:
             # Return a single instance if the response is a list
+            data = dict()
+            data["node"] = node
             if isinstance(response.json(), list):
-                return True, response.json()[0]
+                data = dict()
+                data["vf_information"] = response.json()[0]
+                return True, data
             # This shouldn't happen, but is here just in case
             else:
-                return True, response.json()
+                data["vf_information"] = response.json()
+                return True, data
     else:
         return False, response.json().get("message", "")
 
@@ -714,7 +719,7 @@ def format_info(config, network_information, long_output):
                 )
                 ainformation.append("")
                 if retcode:
-                    firewall_rules_string = format_list_acl(firewall_rules_list)
+                    firewall_rules_string = format_list_acl(config, firewall_rules_list)
                     for line in firewall_rules_string.split("\n"):
                         ainformation.append(line)
                 else:
@@ -888,7 +893,7 @@ def format_list(config, network_list):
     return "\n".join(network_list_output)
 
 
-def format_list_dhcp(dhcp_lease_list):
+def format_list_dhcp(config, dhcp_lease_list):
     dhcp_lease_list_output = []
 
     # Determine optimal column widths
@@ -987,7 +992,7 @@ def format_list_dhcp(dhcp_lease_list):
     return "\n".join(dhcp_lease_list_output)
 
 
-def format_list_acl(acl_list):
+def format_list_acl(config, acl_list):
     # Handle when we get an empty entry
     if not acl_list:
         acl_list = list()
@@ -1086,7 +1091,7 @@ def format_list_acl(acl_list):
     return "\n".join(acl_list_output)
 
 
-def format_list_sriov_pf(pf_list):
+def format_list_sriov_pf(config, pf_list):
     # The maximum column width of the VFs column
     max_vfs_length = 70
 
@@ -1206,7 +1211,7 @@ def format_list_sriov_pf(pf_list):
     return "\n".join(pf_list_output)
 
 
-def format_list_sriov_vf(vf_list):
+def format_list_sriov_vf(config, vf_list):
     # Handle when we get an empty entry
     if not vf_list:
         vf_list = list()
@@ -1338,9 +1343,12 @@ def format_list_sriov_vf(vf_list):
     return "\n".join(vf_list_output)
 
 
-def format_info_sriov_vf(config, vf_information, node):
-    if not vf_information:
+def format_info_sriov_vf(config, data):
+    if not data or not data["vf_information"]:
         return "No VF found"
+
+    node = data["node"]
+    vf_information = data["vf_information"]
 
     # Get information on the using VM if applicable
     if vf_information["usage"]["used"] == "True" and vf_information["usage"]["domain"]:

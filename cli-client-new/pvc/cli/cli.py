@@ -2527,45 +2527,49 @@ def cli_network_remove(net):
 
 
 ###############################################################################
-# > pvc network info TODO:formatter
+# > pvc network info
 ###############################################################################
 @click.command(name="info", short_help="Show details of a network.")
 @connection_req
 @click.argument("vni")
-@click.option(
-    "-l",
-    "--long",
-    "long_output",
-    is_flag=True,
-    default=False,
-    help="Display more detailed information.",
+@format_opt(
+    {
+        "pretty": cli_network_info_format_pretty,
+        "long": cli_network_info_format_long,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_network_info(vni, long_output):
+def cli_network_info(vni, format_function):
     """
     Show information about virtual network VNI.
     """
 
     retcode, retdata = pvc.lib.network.net_info(CLI_CONFIG, vni)
-    if retcode:
-        retdata = pvc.lib.network.format_info(CLI_CONFIG, retdata, long_output)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
-# > pvc network list TODO:formatter
+# > pvc network list
 ###############################################################################
 @click.command(name="list", short_help="List all VM objects.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_network_list(limit):
+@format_opt(
+    {
+        "pretty": cli_network_list_format_pretty,
+        "raw": lambda d: "\n".join([f"{n['vni']}" for n in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_list(limit, format_function):
     """
     List all virtual networks; optionally only match VNIs or Descriptions matching regex LIMIT.
     """
 
     retcode, retdata = pvc.lib.network.net_list(CLI_CONFIG, limit)
-    if retcode:
-        retdata = pvc.lib.network.format_list(CLI_CONFIG, retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2621,7 +2625,7 @@ def cli_network_dhcp_remove(net, macaddr):
 
 
 ###############################################################################
-# > pvc network dhcp list TODO:formatter
+# > pvc network dhcp list
 ###############################################################################
 @click.command(name="list", short_help="List active DHCP leases.")
 @connection_req
@@ -2635,7 +2639,17 @@ def cli_network_dhcp_remove(net, macaddr):
     default=False,
     help="Show only static leases.",
 )
-def cli_network_dhcp_list(net, limit, only_static):
+@format_opt(
+    {
+        "pretty": cli_network_dhcp_list_format_pretty,
+        "raw": lambda d: "\n".join(
+            [f"{n['mac_address']}|{n['ip4_address']}|{n['hostname']}" for n in d]
+        ),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_dhcp_list(net, limit, only_static, format_function):
     """
     List all DHCP leases in virtual network NET; optionally only match elements matching regex LIMIT; NET must be a VNI.
     """
@@ -2643,9 +2657,7 @@ def cli_network_dhcp_list(net, limit, only_static):
     retcode, retdata = pvc.lib.network.net_dhcp_list(
         CLI_CONFIG, net, limit, only_static
     )
-    if retcode:
-        retdata = pvc.lib.network.format_list_dhcp(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2736,7 +2748,7 @@ def cli_network_acl_remove(net, rule):
 
 
 ###############################################################################
-# > pvc network acl list TODO:formatter
+# > pvc network acl list
 ###############################################################################
 @click.command(name="list", short_help="List firewall ACLs.")
 @connection_req
@@ -2750,7 +2762,17 @@ def cli_network_acl_remove(net, rule):
 )
 @click.argument("net")
 @click.argument("limit", default=None, required=False)
-def cli_network_acl_list(net, limit, direction):
+@format_opt(
+    {
+        "pretty": cli_network_acl_list_format_pretty,
+        "raw": lambda d: "\n".join(
+            [f"{n['direction']}|{n['order']}|{n['rule']}" for n in d]
+        ),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_acl_list(net, limit, direction, format_function):
     """
     List all NFT firewall rules in network NET; optionally only match elements matching description regex LIMIT; NET can be either a VNI or description.
     """
@@ -2761,9 +2783,7 @@ def cli_network_acl_list(net, limit, direction):
             direction = "out"
 
     retcode, retdata = pvc.lib.network.net_acl_list(CLI_CONFIG, net, limit, direction)
-    if retcode:
-        retdata = pvc.lib.network.format_list_acl(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2795,19 +2815,25 @@ def cli_network_sriov_pf():
 
 
 ###############################################################################
-# > pvc network sriov pf list TODO:formatter
+# > pvc network sriov pf list TODO:formatter-raw
 ###############################################################################
 @click.command(name="list", short_help="List PF devices.")
 @connection_req
 @click.argument("node")
-def cli_network_sriov_pf_list(node):
+@format_opt(
+    {
+        "pretty": cli_network_sriov_pf_list_format_pretty,
+        #        "raw": lambda d: "\n".join([f"{n['mac_address']}|{n['ip4_address']}|{n['hostname']}" for n in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_sriov_pf_list(node, format_function):
     """
     List all SR-IOV PFs on NODE.
     """
     retcode, retdata = pvc.lib.network.net_sriov_pf_list(CLI_CONFIG, node)
-    if retcode:
-        retdata = pvc.lib.network.format_list_sriov_pf(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -2936,37 +2962,48 @@ def net_sriov_vf_set(
 
 
 ###############################################################################
-# > pvc network sriov vf info TODO:formatter
+# > pvc network sriov vf info
 ###############################################################################
 @click.command(name="info", short_help="Show details of VF devices.")
 @connection_req
 @click.argument("node")
 @click.argument("vf")
-def cli_network_sriov_vf_info(node, vf):
+@format_opt(
+    {
+        "pretty": cli_network_sriov_vf_info_format_pretty,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_sriov_vf_info(node, vf, format_function):
     """
     Show details of the SR-IOV VF on NODE.
     """
     retcode, retdata = pvc.lib.network.net_sriov_vf_info(CLI_CONFIG, node, vf)
-    if retcode:
-        retdata = pvc.lib.network.format_info_sriov_vf(CLI_CONFIG, retdata, node)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
-# > pvc network sriov vf list TODO:formatter
+# > pvc network sriov vf list TODO:formatter-raw
 ###############################################################################
 @click.command(name="list", short_help="List VF devices.")
 @connection_req
 @click.argument("node")
 @click.argument("pf", default=None, required=False)
-def cli_network_sriov_vf_list(node, pf):
+@format_opt(
+    {
+        "pretty": cli_network_sriov_vf_list_format_pretty,
+        #        "raw": lambda d: "\n".join([f"{n['mac_address']}|{n['ip4_address']}|{n['hostname']}" for n in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_network_sriov_vf_list(node, pf, format_function):
     """
     List all SR-IOV VFs on NODE, optionally limited to device PF.
     """
     retcode, retdata = pvc.lib.network.net_sriov_vf_list(CLI_CONFIG, node, pf)
-    if retcode:
-        retdata = pvc.lib.network.format_list_sriov_vf(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################

@@ -28,6 +28,13 @@ from pvc.lib.vm import format_vm_networks as vm_format_networks
 from pvc.lib.vm import format_vm_volumes as vm_format_volumes
 from pvc.lib.vm import format_info as vm_format_info
 from pvc.lib.vm import format_list as vm_format_list
+from pvc.lib.network import format_info as network_format_info
+from pvc.lib.network import format_list as network_format_list
+from pvc.lib.network import format_list_dhcp as network_format_dhcp_list
+from pvc.lib.network import format_list_acl as network_format_acl_list
+from pvc.lib.network import format_list_sriov_pf as network_format_sriov_pf_list
+from pvc.lib.network import format_info_sriov_vf as network_format_sriov_vf_info
+from pvc.lib.network import format_list_sriov_vf as network_format_sriov_vf_list
 
 
 # Define colour values for use in formatters
@@ -518,3 +525,67 @@ def cli_vm_list_format_pretty(CLI_CONFIG, data):
     """
 
     return vm_format_list(CLI_CONFIG, data)
+
+
+def cli_network_info_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the full output of cli_network_info
+    """
+
+    return network_format_info(CLI_CONFIG, data, long_output=True)
+
+
+def cli_network_info_format_long(CLI_CONFIG, data):
+    """
+    Pretty format the full output of cli_network_info
+    """
+
+    return network_format_info(CLI_CONFIG, data, long_output=True)
+
+
+def cli_network_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_list
+    """
+
+    return network_format_list(CLI_CONFIG, data)
+
+
+def cli_network_dhcp_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_dhcp_list
+    """
+
+    return network_format_dhcp_list(CLI_CONFIG, data)
+
+
+def cli_network_acl_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_acl_list
+    """
+
+    return network_format_acl_list(CLI_CONFIG, data)
+
+
+def cli_network_sriov_pf_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_sriov_pf_list
+    """
+
+    return network_format_sriov_pf_list(CLI_CONFIG, data)
+
+
+def cli_network_sriov_vf_info_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_sriov_vf_info
+    """
+
+    return network_format_sriov_vf_info(CLI_CONFIG, data)
+
+
+def cli_network_sriov_vf_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_network_sriov_vf_list
+    """
+
+    return network_format_sriov_vf_list(CLI_CONFIG, data)
