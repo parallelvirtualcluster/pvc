@@ -3022,35 +3022,47 @@ def cli_storage():
 
 
 ###############################################################################
-# > pvc storage status TODO:formatter
+# > pvc storage status TODO:send JSON instead of raw
 ###############################################################################
 @click.command(name="status", short_help="Show storage cluster status.")
 @connection_req
-def cli_storage_status():
+@format_opt(
+    {
+        "pretty": cli_storage_status_format_raw,
+        #        "raw": lambda d: "\n".join([f"{n['mac_address']}|{n['ip4_address']}|{n['hostname']}" for n in d]),
+        #        "json": lambda d: jdumps(d),
+        #        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_status(format_function):
     """
     Show detailed status of the storage cluster.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_status(CLI_CONFIG)
-    if retcode:
-        retdata = pvc.lib.storage.format_raw_output(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
-# > pvc storage util TODO:formatter
+# > pvc storage util TODO:send JSON instead of raw
 ###############################################################################
 @click.command(name="util", short_help="Show storage cluster utilization.")
 @connection_req
-def cli_storage_util():
+@format_opt(
+    {
+        "pretty": cli_storage_util_format_raw,
+        #        "raw": lambda d: "\n".join([f"{n['mac_address']}|{n['ip4_address']}|{n['hostname']}" for n in d]),
+        #        "json": lambda d: jdumps(d),
+        #        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_util(format_function):
     """
     Show utilization of the storage cluster.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_util(CLI_CONFIG)
-    if retcode:
-        retdata = pvc.lib.storage.format_raw_output(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3083,46 +3095,47 @@ def cli_storage_benchmark_run(pool):
 
 
 ###############################################################################
-# > pvc storage benchmark info TODO:formatter
+# > pvc storage benchmark info
 ###############################################################################
 @click.command(name="info", short_help="Show detailed storage benchmark results.")
 @connection_req
 @click.argument("job", required=True)
-@click.option(
-    "-f",
-    "--format",
-    "oformat",
-    default="summary",
-    show_default=True,
-    type=click.Choice(["summary", "json", "json-pretty"]),
-    help="Output format of benchmark information.",
+@format_opt(
+    {
+        "pretty": cli_storage_benchmark_info_format_pretty,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
 )
-def cli_storage_benchmark_info(job, oformat):
+def cli_storage_benchmark_info(job, format_function):
     """
     Show full details of storage benchmark JOB.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_benchmark_list(CLI_CONFIG, job)
-    if retcode:
-        retdata = pvc.lib.storage.format_info_benchmark(CLI_CONFIG, oformat, retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
-# > pvc storage benchmark list TODO:formatter
+# > pvc storage benchmark list
 ###############################################################################
 @click.command(name="list", short_help="List storage benchmark results.")
 @connection_req
 @click.argument("job", default=None, required=False)
-def cli_storage_benchmark_list(job):
+@format_opt(
+    {
+        "pretty": cli_storage_benchmark_list_format_pretty,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_benchmark_list(job, format_function):
     """
     List all Ceph storage benchmarks; optionally only match JOB.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_benchmark_list(CLI_CONFIG, job)
-    if retcode:
-        retdata = pvc.lib.storage.format_list_benchmark(CLI_CONFIG, retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3377,20 +3390,26 @@ def cli_storage_osd_unset(osd_property):
 
 
 ###############################################################################
-# > pvc storage osd list TODO:formatter
+# > pvc storage osd list
 ###############################################################################
 @click.command(name="list", short_help="List cluster OSDs.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_storage_osd_list(limit):
+@format_opt(
+    {
+        "pretty": cli_storage_osd_list_format_pretty,
+        "raw": lambda d: "\n".join([f"{o['id']}:{o['node']}:{o['device']}" for o in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_osd_list(limit, format_function):
     """
     List all Ceph OSDs; optionally only match elements matching ID regex LIMIT.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_osd_list(CLI_CONFIG, limit)
-    if retcode:
-        retdata = pvc.lib.storage.format_list_osd(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3495,20 +3514,26 @@ def cli_storage_pool_set_pgs(name, pgs):
 
 
 ###############################################################################
-# > pvc storage pool list TODO:formatter
+# > pvc storage pool list
 ###############################################################################
 @click.command(name="list", short_help="List cluster RBD pools.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_storage_pool_list(limit):
+@format_opt(
+    {
+        "pretty": cli_storage_pool_list_format_pretty,
+        "raw": lambda d: "\n".join([p["name"] for p in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_pool_list(limit, format_function):
     """
     List all Ceph RBD pools; optionally only match elements matching name regex LIMIT.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_pool_list(CLI_CONFIG, limit)
-    if retcode:
-        retdata = pvc.lib.storage.format_list_pool(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3663,7 +3688,7 @@ def cli_storage_volume_clone(pool, name, new_name):
 
 
 ###############################################################################
-# > pvc storage volume list TODO:formatter
+# > pvc storage volume list
 ###############################################################################
 @click.command(name="list", short_help="List cluster RBD volumes.")
 @connection_req
@@ -3676,15 +3701,21 @@ def cli_storage_volume_clone(pool, name, new_name):
     show_default=True,
     help="Show volumes from this pool only.",
 )
-def cli_storage_volume_list(limit, pool):
+@format_opt(
+    {
+        "pretty": cli_storage_volume_list_format_pretty,
+        "raw": lambda d: "\n".join([f"{v['pool']}/{v['name']}" for v in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_volume_list(limit, pool, format_function):
     """
     List all Ceph RBD volumes; optionally only match elements matching name regex LIMIT.
     """
 
     retcode, retdata = pvc.lib.storage.ceph_volume_list(CLI_CONFIG, limit, pool)
-    if retcode:
-        retdata = pvc.lib.storage.format_list_volume(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -3761,7 +3792,7 @@ def cli_storage_volume_snapshot_remove(pool, volume, name):
 
 
 ###############################################################################
-# > pvc storage volume snapshot list TODO:formatter
+# > pvc storage volume snapshot list
 ###############################################################################
 @click.command(name="list", short_help="List cluster RBD volume shapshots.")
 @connection_req
@@ -3782,7 +3813,17 @@ def cli_storage_volume_snapshot_remove(pool, volume, name):
     show_default=True,
     help="Show snapshots from this volume only.",
 )
-def cli_storage_volume_snapshot_list(pool, volume, limit):
+@format_opt(
+    {
+        "pretty": cli_storage_snapshot_list_format_pretty,
+        "raw": lambda d: " ".join(
+            [f"{s['pool']}/{s['volume']}@{s['snapshot']}" for s in d]
+        ),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_storage_volume_snapshot_list(pool, volume, limit, format_function):
     """
     List all Ceph RBD volume snapshots; optionally only match elements matching name regex LIMIT.
     """
@@ -3790,9 +3831,7 @@ def cli_storage_volume_snapshot_list(pool, volume, limit):
     retcode, retdata = pvc.lib.storage.ceph_snapshot_list(
         CLI_CONFIG, limit, volume, pool
     )
-    if retcode:
-        retdata = pvc.lib.storage.format_list_snapshot(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -5792,6 +5831,7 @@ cli_storage_volume.add_command(cli_storage_volume_list)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_add)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_rename)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_remove)
+cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_list)
 cli_storage_volume.add_command(cli_storage_volume_snapshot)
 cli_storage.add_command(cli_storage_volume)
 cli.add_command(cli_storage)

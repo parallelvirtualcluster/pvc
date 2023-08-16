@@ -35,6 +35,13 @@ from pvc.lib.network import format_list_acl as network_format_acl_list
 from pvc.lib.network import format_list_sriov_pf as network_format_sriov_pf_list
 from pvc.lib.network import format_info_sriov_vf as network_format_sriov_vf_info
 from pvc.lib.network import format_list_sriov_vf as network_format_sriov_vf_list
+from pvc.lib.storage import format_raw_output as storage_format_raw
+from pvc.lib.storage import format_info_benchmark as storage_format_benchmark_info
+from pvc.lib.storage import format_list_benchmark as storage_format_benchmark_list
+from pvc.lib.storage import format_list_osd as storage_format_osd_list
+from pvc.lib.storage import format_list_pool as storage_format_pool_list
+from pvc.lib.storage import format_list_volume as storage_format_volume_list
+from pvc.lib.storage import format_list_snapshot as storage_format_snapshot_list
 
 
 # Define colour values for use in formatters
@@ -589,3 +596,67 @@ def cli_network_sriov_vf_list_format_pretty(CLI_CONFIG, data):
     """
 
     return network_format_sriov_vf_list(CLI_CONFIG, data)
+
+
+def cli_storage_status_format_raw(CLI_CONFIG, data):
+    """
+    Direct format the output of cli_storage_status
+    """
+
+    return storage_format_raw(CLI_CONFIG, data)
+
+
+def cli_storage_util_format_raw(CLI_CONFIG, data):
+    """
+    Direct format the output of cli_storage_util
+    """
+
+    return storage_format_raw(CLI_CONFIG, data)
+
+
+def cli_storage_benchmark_info_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_benchmark_info
+    """
+
+    return storage_format_benchmark_info(CLI_CONFIG, data)
+
+
+def cli_storage_benchmark_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_benchmark_list
+    """
+
+    return storage_format_benchmark_list(CLI_CONFIG, data)
+
+
+def cli_storage_osd_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_osd_list
+    """
+
+    return storage_format_osd_list(CLI_CONFIG, data)
+
+
+def cli_storage_pool_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_pool_list
+    """
+
+    return storage_format_pool_list(CLI_CONFIG, data)
+
+
+def cli_storage_volume_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_volume_list
+    """
+
+    return storage_format_volume_list(CLI_CONFIG, data)
+
+
+def cli_storage_snapshot_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_storage_snapshot_list
+    """
+
+    return storage_format_snapshot_list(CLI_CONFIG, data)

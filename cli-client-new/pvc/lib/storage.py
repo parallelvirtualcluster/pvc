@@ -21,7 +21,7 @@
 
 import math
 
-from json import dumps, loads
+from json import loads
 from requests_toolbelt.multipart.encoder import (
     MultipartEncoder,
     MultipartEncoderMonitor,
@@ -143,7 +143,7 @@ def ceph_util(config):
         return False, response.json().get("message", "")
 
 
-def format_raw_output(status_data):
+def format_raw_output(config, status_data):
     ainformation = list()
     ainformation.append(
         "{bold}Ceph cluster {stype} (primary node {end}{blue}{primary}{end}{bold}){end}\n".format(
@@ -379,7 +379,7 @@ def getOutputColoursOSD(osd_information):
     return osd_up_flag, osd_up_colour, osd_in_flag, osd_in_colour
 
 
-def format_list_osd(osd_list):
+def format_list_osd(config, osd_list):
     # Handle empty list
     if not osd_list:
         osd_list = list()
@@ -835,7 +835,7 @@ def ceph_pool_set_pgs(config, pool, pgs):
     return retstatus, response.json().get("message", "")
 
 
-def format_list_pool(pool_list):
+def format_list_pool(config, pool_list):
     # Handle empty list
     if not pool_list:
         pool_list = list()
@@ -1318,7 +1318,7 @@ def ceph_volume_clone(config, pool, volume, new_volume):
     return retstatus, response.json().get("message", "")
 
 
-def format_list_volume(volume_list):
+def format_list_volume(config, volume_list):
     # Handle empty list
     if not volume_list:
         volume_list = list()
@@ -1596,7 +1596,7 @@ def ceph_snapshot_modify(config, pool, volume, snapshot, new_name=None):
     return retstatus, response.json().get("message", "")
 
 
-def format_list_snapshot(snapshot_list):
+def format_list_snapshot(config, snapshot_list):
     # Handle empty list
     if not snapshot_list:
         snapshot_list = list()
@@ -1981,7 +1981,7 @@ def format_list_benchmark(config, benchmark_information):
     return "\n".join(benchmark_list_output)
 
 
-def format_info_benchmark(config, oformat, benchmark_information):
+def format_info_benchmark(config, benchmark_information):
     # This matrix is a list of the possible format functions for a benchmark result
     # It is extensable in the future should newer formats be required.
     benchmark_matrix = {
@@ -1991,12 +1991,7 @@ def format_info_benchmark(config, oformat, benchmark_information):
 
     benchmark_version = benchmark_information[0]["test_format"]
 
-    if oformat == "json-pretty":
-        return dumps(benchmark_information, indent=4)
-    elif oformat == "json":
-        return dumps(benchmark_information)
-    else:
-        return benchmark_matrix[benchmark_version](config, benchmark_information[0])
+    return benchmark_matrix[benchmark_version](config, benchmark_information[0])
 
 
 def format_info_benchmark_legacy(config, benchmark_information):
