@@ -3,7 +3,9 @@
 #   * W503 (line break before binary operator): Black moves these to new lines
 #   * E501 (line too long): Long lines are a fact of life in comment blocks; Black handles active instances of this
 #   * E203 (whitespace before ':'): Black recommends this as disabled
-ignore = W503, E501
+#   * F403 (import * used; unable to detect undefined names): We use a wildcard for helpers
+#   * F405 (possibly undefined name): We use a wildcard for helpers
+ignore = W503, E501, F403, F405
 extend-ignore = E203
 # We exclude the Debian, migrations, and provisioner examples
 exclude = debian,api-daemon/migrations/versions,api-daemon/provisioner/examples,node-daemon/monitoring
