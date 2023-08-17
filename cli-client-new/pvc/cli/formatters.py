@@ -42,6 +42,12 @@ from pvc.lib.storage import format_list_osd as storage_format_osd_list
 from pvc.lib.storage import format_list_pool as storage_format_pool_list
 from pvc.lib.storage import format_list_volume as storage_format_volume_list
 from pvc.lib.storage import format_list_snapshot as storage_format_snapshot_list
+from pvc.lib.provisioner import format_list_template as provisioner_format_template_list
+from pvc.lib.provisioner import format_list_userdata as provisioner_format_userdata_list
+from pvc.lib.provisioner import format_list_script as provisioner_format_script_list
+from pvc.lib.provisioner import format_list_ova as provisioner_format_ova_list
+from pvc.lib.provisioner import format_list_profile as provisioner_format_profile_list
+from pvc.lib.provisioner import format_list_task as provisioner_format_task_status
 
 
 # Define colour values for use in formatters
@@ -660,3 +666,67 @@ def cli_storage_snapshot_list_format_pretty(CLI_CONFIG, data):
     """
 
     return storage_format_snapshot_list(CLI_CONFIG, data)
+
+
+def cli_provisioner_template_system_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_template_system_list
+    """
+
+    return provisioner_format_template_list(CLI_CONFIG, data, template_type="system")
+
+
+def cli_provisioner_template_network_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_template_network_list
+    """
+
+    return provisioner_format_template_list(CLI_CONFIG, data, template_type="network")
+
+
+def cli_provisioner_template_storage_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_template_storage_list
+    """
+
+    return provisioner_format_template_list(CLI_CONFIG, data, template_type="storage")
+
+
+def cli_provisioner_userdata_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_userdata_list
+    """
+
+    return provisioner_format_userdata_list(CLI_CONFIG, data)
+
+
+def cli_provisioner_script_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_script_list
+    """
+
+    return provisioner_format_script_list(CLI_CONFIG, data)
+
+
+def cli_provisioner_ova_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_ova_list
+    """
+
+    return provisioner_format_ova_list(CLI_CONFIG, data)
+
+
+def cli_provisioner_profile_list_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_profile_list
+    """
+
+    return provisioner_format_profile_list(CLI_CONFIG, data)
+
+
+def cli_provisioner_status_format_pretty(CLI_CONFIG, data):
+    """
+    Pretty format the output of cli_provisioner_status
+    """
+
+    return provisioner_format_task_status(CLI_CONFIG, data)

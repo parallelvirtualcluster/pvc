@@ -4091,23 +4091,27 @@ def cli_provisioner_template_system_remove(name):
 
 
 ###############################################################################
-# > pvc provisioner template system list TODO:formatter
+# > pvc provisioner template system list
 ###############################################################################
 @click.command(name="list", short_help="List all system templates.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_provisioner_template_system_list(limit):
+@format_opt(
+    {
+        "pretty": cli_provisioner_template_system_list_format_pretty,
+        "raw": lambda d: "\n".join([t["name"] for t in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_template_system_list(limit, format_function):
     """
     List all system templates in the PVC cluster provisioner.
     """
     retcode, retdata = pvc.lib.provisioner.template_list(
         CLI_CONFIG, limit, template_type="system"
     )
-    if retcode:
-        retdata = pvc.lib.provisioner.format_list_template(
-            retdata, template_type="system"
-        )
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -4203,23 +4207,27 @@ def cli_provisioner_template_network_remove(name):
 
 
 ###############################################################################
-# > pvc provisioner template network list TODO:formatter
+# > pvc provisioner template network list
 ###############################################################################
 @click.command(name="list", short_help="List all network templates.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_provisioner_template_network_list(limit):
+@format_opt(
+    {
+        "pretty": cli_provisioner_template_network_list_format_pretty,
+        "raw": lambda d: "\n".join([t["name"] for t in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_template_network_list(limit, format_function):
     """
     List all network templates in the PVC cluster provisioner.
     """
     retcode, retdata = pvc.lib.provisioner.template_list(
         CLI_CONFIG, limit, template_type="network"
     )
-    if retcode:
-        retdata = pvc.lib.provisioner.format_list_template(
-            retdata, template_type="network"
-        )
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -4336,23 +4344,27 @@ def cli_provisioner_template_storage_remove(name):
 
 
 ###############################################################################
-# > pvc provisioner template storage list TODO:formatter
+# > pvc provisioner template storage list
 ###############################################################################
 @click.command(name="list", short_help="List all storage templates.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_provisioner_template_storage_list(limit):
+@format_opt(
+    {
+        "pretty": cli_provisioner_template_storage_list_format_pretty,
+        "raw": lambda d: "\n".join([t["name"] for t in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_template_storage_list(limit, format_function):
     """
     List all storage templates in the PVC cluster provisioner.
     """
     retcode, retdata = pvc.lib.provisioner.template_list(
         CLI_CONFIG, limit, template_type="storage"
     )
-    if retcode:
-        retdata = pvc.lib.provisioner.format_list_template(
-            retdata, template_type="storage"
-        )
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -4633,32 +4645,35 @@ def cli_provisioner_userdata_show(name):
 
 
 ###############################################################################
-# > pvc provisioner userdata list TODO:formatter
+# > pvc provisioner userdata list
 ###############################################################################
 @click.command(name="list", short_help="List all userdata documents.")
 @connection_req
 @click.argument("limit", default=None, required=False)
 @click.option(
-    "-f",
-    "--full",
-    "full",
+    "-l",
+    "--long",
+    "long_output",
     is_flag=True,
     default=False,
-    help="Show all lines of the document instead of first 4.",
+    help="Show all lines of the document instead of first 4 ('pretty' format only).",
 )
-def cli_provisioner_userdata_list(limit, full):
+@format_opt(
+    {
+        "pretty": cli_provisioner_userdata_list_format_pretty,
+        "raw": lambda d: "\n".join([u["name"] for u in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_userdata_list(limit, long_output, format_function):
     """
     List all userdata documents in the PVC cluster provisioner.
     """
 
     retcode, retdata = pvc.lib.provisioner.userdata_list(CLI_CONFIG, limit)
-    if retcode:
-        if not full:
-            lines = 4
-        else:
-            lines = None
-        retdata = pvc.lib.provisioner.format_list_userdata(retdata, lines)
-    finish(retcode, retdata)
+    CLI_CONFIG["long_output"] = long_output
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -4812,32 +4827,35 @@ def cli_provisioner_script_show(name):
 
 
 ###############################################################################
-# > pvc provisioner script list TODO:formatter
+# > pvc provisioner script list
 ###############################################################################
 @click.command(name="list", short_help="List all scripts.")
 @connection_req
 @click.argument("limit", default=None, required=False)
 @click.option(
-    "-f",
-    "--full",
-    "full",
+    "-l",
+    "--long",
+    "long_output",
     is_flag=True,
     default=False,
-    help="Show all lines of the document instead of first 4.",
+    help="Show all lines of the document instead of first 4 ('pretty' format only).",
 )
-def cli_provisioner_script_list(limit, full):
+@format_opt(
+    {
+        "pretty": cli_provisioner_script_list_format_pretty,
+        "raw": lambda d: "\n".join([s["name"] for s in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_script_list(limit, long_output, format_function):
     """
     List all scripts in the PVC cluster provisioner.
     """
 
     retcode, retdata = pvc.lib.provisioner.script_list(CLI_CONFIG, limit)
-    if retcode:
-        if not full:
-            lines = 4
-        else:
-            lines = None
-        retdata = pvc.lib.provisioner.format_list_script(retdata, lines)
-    finish(retcode, retdata)
+    CLI_CONFIG["long_output"] = long_output
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -4915,20 +4933,26 @@ def cli_provisioner_ova_remove(name):
 
 
 ###############################################################################
-# > pvc provisioner ova list TODO:formatter
+# > pvc provisioner ova list
 ###############################################################################
 @click.command(name="list", short_help="List all OVA images.")
 @connection_req
 @click.argument("limit", default=None, required=False)
-def cli_provisioner_ova_list(limit):
+@format_opt(
+    {
+        "pretty": cli_provisioner_ova_list_format_pretty,
+        "raw": lambda d: "\n".join([o["name"] for o in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_ova_list(limit, format_function):
     """
     List all OVA images in the PVC cluster provisioner.
     """
 
     retcode, retdata = pvc.lib.provisioner.ova_list(CLI_CONFIG, limit)
-    if retcode:
-        retdata = pvc.lib.provisioner.format_list_ova(retdata)
-    finish(retcode, retdata)
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -5141,6 +5165,34 @@ def cli_provisioner_profile_remove(name):
 
 
 ###############################################################################
+# > pvc provisioner profile info
+###############################################################################
+# Not implemented
+
+
+###############################################################################
+# > pvc provisioner profile list
+###############################################################################
+@click.command(name="list", short_help="List all profiles.")
+@connection_req
+@click.argument("limit", default=None, required=False)
+@format_opt(
+    {
+        "pretty": cli_provisioner_profile_list_format_pretty,
+        "raw": lambda d: "\n".join([o["name"] for o in d]),
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_profile_list(limit, format_function):
+    """
+    List all profiles in the PVC cluster provisioner.
+    """
+    retcode, retdata = pvc.lib.provisioner.profile_list(CLI_CONFIG, limit)
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
 # > pvc provisioner create
 ###############################################################################
 @click.command(name="create", short_help="Create new VM.")
@@ -5262,139 +5314,27 @@ def cli_provisioner_create(
 
 
 ###############################################################################
-# > pvc provisioner status TODO:formatter
+# > pvc provisioner status
 ###############################################################################
 @click.command(name="status", short_help="Show status of provisioner job.")
 @connection_req
 @click.argument("job", required=False, default=None)
-def cli_provisioner_status(job):
+@format_opt(
+    {
+        "pretty": cli_provisioner_status_format_pretty,
+        "raw": lambda d: "\n".join([t["id"] for t in d])
+        if isinstance(d, list)
+        else d["state"],
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_provisioner_status(job, format_function):
     """
     Show status of provisioner job JOB or a list of jobs.
     """
     retcode, retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, job)
-    if job is None and retcode:
-        retdata = pvc.lib.provisioner.format_list_task(retdata)
-    finish(retcode, retdata)
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
-
-
-###############################################################################
-# > pvc
-###############################################################################
+    finish(retcode, retdata, format_function)
 
 
 ###############################################################################
@@ -5862,6 +5802,7 @@ cli_provisioner_template_storage_disk.add_command(
 )
 cli_provisioner_template_storage.add_command(cli_provisioner_template_storage_disk)
 cli_provisioner_template.add_command(cli_provisioner_template_storage)
+cli_provisioner.add_command(cli_provisioner_template)
 cli_provisioner_userdata.add_command(cli_provisioner_userdata_add)
 cli_provisioner_userdata.add_command(cli_provisioner_userdata_modify)
 cli_provisioner_userdata.add_command(cli_provisioner_userdata_remove)
@@ -5881,6 +5822,7 @@ cli_provisioner.add_command(cli_provisioner_ova)
 cli_provisioner_profile.add_command(cli_provisioner_profile_add)
 cli_provisioner_profile.add_command(cli_provisioner_profile_modify)
 cli_provisioner_profile.add_command(cli_provisioner_profile_remove)
+cli_provisioner_profile.add_command(cli_provisioner_profile_list)
 cli_provisioner.add_command(cli_provisioner_profile)
 cli_provisioner.add_command(cli_provisioner_create)
 cli_provisioner.add_command(cli_provisioner_status)

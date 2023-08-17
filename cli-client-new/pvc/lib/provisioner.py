@@ -750,24 +750,11 @@ def task_status(config, task_id=None, is_watching=False):
         if response.status_code == 200:
             retvalue = True
             respjson = response.json()
-
             if is_watching:
-                # Just return the raw JSON to the watching process instead of formatting it
+                # Just return the raw JSON to the watching process instead of including value
                 return respjson
-
-            job_state = respjson["state"]
-            if job_state == "RUNNING":
-                retdata = "Job state: RUNNING\nStage: {}/{}\nStatus: {}".format(
-                    respjson["current"], respjson["total"], respjson["status"]
-                )
-            elif job_state == "FAILED":
-                retdata = "Job state: FAILED\nStatus: {}".format(respjson["status"])
-            elif job_state == "COMPLETED":
-                retdata = "Job state: COMPLETED\nStatus: {}".format(respjson["status"])
             else:
-                retdata = "Job state: {}\nStatus: {}".format(
-                    respjson["state"], respjson["status"]
-                )
+                return retvalue, respjson
         else:
             retvalue = False
             retdata = response.json().get("message", "")
@@ -814,7 +801,7 @@ def task_status(config, task_id=None, is_watching=False):
 #
 # Format functions
 #
-def format_list_template(template_data, template_type=None):
+def format_list_template(config, template_data, template_type=None):
     """
     Format the returned template template
 
@@ -1330,7 +1317,12 @@ def format_list_template_storage(template_template):
     return "\n".join(template_list_output)
 
 
-def format_list_userdata(userdata_data, lines=None):
+def format_list_userdata(config, userdata_data):
+    if not config.get("long_output"):
+        lines = 4
+    else:
+        lines = None
+
     if isinstance(userdata_data, dict):
         userdata_data = [userdata_data]
 
@@ -1432,7 +1424,12 @@ def format_list_userdata(userdata_data, lines=None):
     return "\n".join(userdata_list_output)
 
 
-def format_list_script(script_data, lines=None):
+def format_list_script(config, script_data):
+    if not config.get("long_output"):
+        lines = 4
+    else:
+        lines = None
+
     if isinstance(script_data, dict):
         script_data = [script_data]
 
@@ -1531,7 +1528,7 @@ def format_list_script(script_data, lines=None):
     return "\n".join(script_list_output)
 
 
-def format_list_ova(ova_data):
+def format_list_ova(config, ova_data):
     if isinstance(ova_data, dict):
         ova_data = [ova_data]
 
@@ -1678,7 +1675,7 @@ def format_list_ova(ova_data):
     return "\n".join(ova_list_output)
 
 
-def format_list_profile(profile_data):
+def format_list_profile(config, profile_data):
     if isinstance(profile_data, dict):
         profile_data = [profile_data]
 
@@ -1867,7 +1864,23 @@ def format_list_profile(profile_data):
     return "\n".join(profile_list_output)
 
 
-def format_list_task(task_data):
+def format_list_task(config, task_data):
+    if not isinstance(task_data, list):
+        job_state = task_data["state"]
+        if job_state == "RUNNING":
+            retdata = "Job state: RUNNING\nStage: {}/{}\nStatus: {}".format(
+                task_data["current"], task_data["total"], task_data["status"]
+            )
+        elif job_state == "FAILED":
+            retdata = "Job state: FAILED\nStatus: {}".format(task_data["status"])
+        elif job_state == "COMPLETED":
+            retdata = "Job state: COMPLETED\nStatus: {}".format(task_data["status"])
+        else:
+            retdata = "Job state: {}\nStatus: {}".format(
+                task_data["state"], task_data["status"]
+            )
+        return retdata
+
     task_list_output = []
 
     # Determine optimal column widths
