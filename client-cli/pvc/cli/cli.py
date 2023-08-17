@@ -93,14 +93,14 @@ def finish(success=True, data=None, formatter=None):
         else:
             echo(CLI_CONFIG, data)
 
-    # Allow passing
-    if isinstance(success, int):
-        exit(success)
-
-    if success:
-        exit(0)
+    # Allow passing raw values if not a bool
+    if isinstance(success, bool):
+        if success:
+            exit(0)
+        else:
+            exit(1)
     else:
-        exit(1)
+        exit(success)
 
 
 def version(ctx, param, value):
