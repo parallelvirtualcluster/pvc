@@ -27,8 +27,8 @@ from requests_toolbelt.multipart.encoder import (
     MultipartEncoderMonitor,
 )
 
-import pvc.cli_lib.ansiprint as ansiprint
-from pvc.cli_lib.common import UploadProgressBar, call_api
+import pvc.lib.ansiprint as ansiprint
+from pvc.lib.common import UploadProgressBar, call_api
 
 #
 # Supplemental functions

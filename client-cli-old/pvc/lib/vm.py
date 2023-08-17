@@ -22,8 +22,8 @@
 import time
 import re
 
-import pvc.cli_lib.ansiprint as ansiprint
-from pvc.cli_lib.common import call_api, format_bytes, format_metric
+import pvc.lib.ansiprint as ansiprint
+from pvc.lib.common import call_api, format_bytes, format_metric
 
 
 #
@@ -677,7 +677,7 @@ def vm_networks_add(
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from random import randint
-    import pvc.cli_lib.network as pvc_network
+    import pvc.lib.network as pvc_network
 
     network_exists, _ = pvc_network.net_info(config, network)
     if not network_exists:
@@ -1046,7 +1046,7 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, live, restart):
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from copy import deepcopy
-    import pvc.cli_lib.ceph as pvc_ceph
+    import pvc.lib.ceph as pvc_ceph
 
     if disk_type == "rbd":
         # Verify that the provided volume is valid

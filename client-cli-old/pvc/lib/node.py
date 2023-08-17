@@ -21,8 +21,8 @@
 
 import time
 
-import pvc.cli_lib.ansiprint as ansiprint
-from pvc.cli_lib.common import call_api
+import pvc.lib.ansiprint as ansiprint
+from pvc.lib.common import call_api
 
 
 #
