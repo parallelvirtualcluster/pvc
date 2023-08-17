@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="pvc",
     version="0.9.63",
-    packages=["pvc", "pvc.lib"],
+    packages=["pvc.cli", "pvc.lib"],
     install_requires=[
         "Click",
         "PyYAML",
@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "pvc = pvc.pvc:cli",
+            "pvc = pvc.cli.cli:cli",
         ],
     },
 )
