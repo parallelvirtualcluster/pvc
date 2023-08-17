@@ -469,6 +469,8 @@ class VMBuilderScript(VMBuilder):
                 "grub-pc",
                 "cloud-init",
                 "python3-cffi-backend",
+                "acpid",
+                "acpi-support-base",
                 "wget",
             ]
 
