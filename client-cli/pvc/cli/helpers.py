@@ -20,6 +20,7 @@
 ###############################################################################
 
 from click import echo as click_echo
+from click import progressbar
 from distutils.util import strtobool
 from json import load as jload
 from json import dump as jdump
@@ -27,8 +28,11 @@ from os import chmod, environ, getpid, path
 from socket import gethostname
 from sys import argv
 from syslog import syslog, openlog, closelog, LOG_AUTH
+from time import sleep
 from yaml import load as yload
 from yaml import BaseLoader
+
+import pvc.lib.provisioner
 
 
 DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
@@ -178,3 +182,60 @@ def update_store(store_path, store_data):
 
     with open(store_file, "w") as fh:
         jdump(store_data, fh, sort_keys=True, indent=4)
+
+
+def wait_for_provisioner(CLI_CONFIG, task_id):
+    """
+    Wait for a provisioner task to complete
+    """
+
+    echo(CLI_CONFIG, f"Task ID: {task_id}")
+    echo(CLI_CONFIG, "")
+
+    # Wait for the task to start
+    echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
+    while True:
+        sleep(1)
+        task_status = pvc.lib.provisioner.task_status(
+            CLI_CONFIG, task_id, is_watching=True
+        )
+        if task_status.get("state") != "PENDING":
+            break
+        echo(".", newline=False)
+    echo(CLI_CONFIG, " done.")
+    echo(CLI_CONFIG, "")
+
+    # Start following the task state, updating progress as we go
+    total_task = task_status.get("total")
+    with progressbar(length=total_task, show_eta=False) as bar:
+        last_task = 0
+        maxlen = 0
+        while True:
+            sleep(1)
+            if task_status.get("state") != "RUNNING":
+                break
+            if task_status.get("current") > last_task:
+                current_task = int(task_status.get("current"))
+                bar.update(current_task - last_task)
+                last_task = current_task
+                # The extensive spaces at the end cause this to overwrite longer previous messages
+                curlen = len(str(task_status.get("status")))
+                if curlen > maxlen:
+                    maxlen = curlen
+                lendiff = maxlen - curlen
+                overwrite_whitespace = " " * lendiff
+                echo(
+                    CLI_CONFIG,
+                    "  " + task_status.get("status") + overwrite_whitespace,
+                    newline=False,
+                )
+            task_status = pvc.lib.provisioner.task_status(
+                CLI_CONFIG, task_id, is_watching=True
+            )
+        if task_status.get("state") == "SUCCESS":
+            bar.update(total_task - last_task)
+
+    echo(CLI_CONFIG, "")
+    retdata = task_status.get("state") + ": " + task_status.get("status")
+
+    return retdata

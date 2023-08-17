@@ -5261,54 +5261,7 @@ def cli_provisioner_create(
 
     if retcode and wait_flag:
         task_id = retdata
-
-        echo("Task ID: {}".format(task_id))
-        echo("")
-
-        # Wait for the task to start
-        echo("Waiting for task to start...", nl=False)
-        while True:
-            time.sleep(1)
-            task_status = pvc.lib.provisioner.task_status(
-                CLI_CONFIG, task_id, is_watching=True
-            )
-            if task_status.get("state") != "PENDING":
-                break
-            echo(".", nl=False)
-        echo(" done.")
-        echo("")
-
-        # Start following the task state, updating progress as we go
-        total_task = task_status.get("total")
-        with click.progressbar(length=total_task, show_eta=False) as bar:
-            last_task = 0
-            maxlen = 0
-            while True:
-                time.sleep(1)
-                if task_status.get("state") != "RUNNING":
-                    break
-                if task_status.get("current") > last_task:
-                    current_task = int(task_status.get("current"))
-                    bar.update(current_task - last_task)
-                    last_task = current_task
-                    # The extensive spaces at the end cause this to overwrite longer previous messages
-                    curlen = len(str(task_status.get("status")))
-                    if curlen > maxlen:
-                        maxlen = curlen
-                    lendiff = maxlen - curlen
-                    overwrite_whitespace = " " * lendiff
-                    echo(
-                        "  " + task_status.get("status") + overwrite_whitespace,
-                        nl=False,
-                    )
-                task_status = pvc.lib.provisioner.task_status(
-                    CLI_CONFIG, task_id, is_watching=True
-                )
-            if task_status.get("state") == "SUCCESS":
-                bar.update(total_task - last_task)
-
-        echo("")
-        retdata = task_status.get("state") + ": " + task_status.get("status")
+        retdata = wait_for_provisioner(CLI_CONFIG, task_id)
 
     finish(retcode, retdata)
 
