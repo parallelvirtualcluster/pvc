@@ -441,7 +441,7 @@ class VMBuilderScript(VMBuilder):
 
         # The directory we mounted things on earlier during prepare(); this could very well
         # be exposed as a module-level variable if you so choose
-        temporary_directory = "/tmp/target"
+        temp_dir = "/tmp/target"
 
         # Use these convenient aliases for later (avoiding lots of "self.vm_data" everywhere)
         vm_name = self.vm_name
@@ -482,17 +482,17 @@ class VMBuilderScript(VMBuilder):
 
         # Perform a debootstrap installation
         print(
-            f"Installing system with debootstrap: debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
+            f"Installing system with debootstrap: debootstrap --include={','.join(deb_packages)} {deb_release} {temp_dir} {deb_mirror}"
         )
         os.system(
-            f"debootstrap --include={','.join(deb_packages)} {deb_release} {temporary_directory} {deb_mirror}"
+            f"debootstrap --include={','.join(deb_packages)} {deb_release} {temp_dir} {deb_mirror}"
         )
 
         # Bind mount the devfs so we can grub-install later
-        os.system("mount --bind /dev {}/dev".format(temporary_directory))
+        os.system("mount --bind /dev {}/dev".format(temp_dir))
 
         # Create an fstab entry for each volume
-        fstab_file = "{}/etc/fstab".format(temporary_directory)
+        fstab_file = "{}/etc/fstab".format(temp_dir)
         # The volume ID starts at zero and increments by one for each volume in the fixed-order
         # volume list. This lets us work around the insanity of Libvirt IDs not matching guest IDs,
         # while still letting us have some semblance of control here without enforcing things
@@ -537,13 +537,13 @@ class VMBuilderScript(VMBuilder):
             volume_id += 1
 
         # Write the hostname; you could also take an FQDN argument for this as an example
-        hostname_file = "{}/etc/hostname".format(temporary_directory)
+        hostname_file = "{}/etc/hostname".format(temp_dir)
         with open(hostname_file, "w") as fh:
             fh.write("{}".format(vm_name))
 
         # Fix the cloud-init.target since it's broken by default in Debian 11
         cloudinit_target_file = "{}/etc/systemd/system/cloud-init.target".format(
-            temporary_directory
+            temp_dir
         )
         with open(cloudinit_target_file, "w") as fh:
             # We lose our indent on these raw blocks to preserve the apperance of the files
@@ -557,7 +557,7 @@ After=multi-user.target
             fh.write(data)
 
         # Write the cloud-init configuration
-        ci_cfg_file = "{}/etc/cloud/cloud.cfg".format(temporary_directory)
+        ci_cfg_file = "{}/etc/cloud/cloud.cfg".format(temp_dir)
         with open(ci_cfg_file, "w") as fh:
             fh.write(
                 """
@@ -618,15 +618,15 @@ After=multi-user.target
                      - arches: [default]
                        failsafe:
                          primary: {deb_mirror}
-                """
-            ).format(deb_mirror=deb_mirror)
+                """.format(
+                    deb_mirror=deb_mirror
+                )
+            )
 
         # Due to device ordering within the Libvirt XML configuration, the first Ethernet interface
         # will always be on PCI bus ID 2, hence the name "ens2".
         # Write a DHCP stanza for ens2
-        ens2_network_file = "{}/etc/network/interfaces.d/ens2".format(
-            temporary_directory
-        )
+        ens2_network_file = "{}/etc/network/interfaces.d/ens2".format(temp_dir)
         with open(ens2_network_file, "w") as fh:
             data = """auto ens2
 iface ens2 inet dhcp
@@ -634,7 +634,7 @@ iface ens2 inet dhcp
             fh.write(data)
 
         # Write the DHCP config for ens2
-        dhclient_file = "{}/etc/dhcp/dhclient.conf".format(temporary_directory)
+        dhclient_file = "{}/etc/dhcp/dhclient.conf".format(temp_dir)
         with open(dhclient_file, "w") as fh:
             # We can use fstrings too, since PVC will always have Python 3.6+, though
             # using format() might be preferable for clarity in some situations
@@ -654,7 +654,7 @@ interface "ens2" {{
             fh.write(data)
 
         # Write the GRUB configuration
-        grubcfg_file = "{}/etc/default/grub".format(temporary_directory)
+        grubcfg_file = "{}/etc/default/grub".format(temp_dir)
         with open(grubcfg_file, "w") as fh:
             data = """# Written by the PVC provisioner
 GRUB_DEFAULT=0
@@ -671,7 +671,7 @@ GRUB_DISABLE_LINUX_UUID=false
             fh.write(data)
 
         # Do some tasks inside the chroot using the provided context manager
-        with chroot(temporary_directory):
+        with chroot(temp_dir):
             # Install and update GRUB
             os.system(
                 "grub-install --force /dev/rbd/{}/{}_{}".format(
@@ -704,16 +704,17 @@ GRUB_DISABLE_LINUX_UUID=false
         """
 
         # Run any imports first
+        import os
         from pvcapid.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 
-        # Set the tempdir we used in the prepare() and install() steps
+        # Set the temp_dir we used in the prepare() and install() steps
         temp_dir = "/tmp/target"
 
         # Unmount the bound devfs
-        os.system("umount {}/dev".format(temporary_directory))
+        os.system("umount {}/dev".format(temp_dir))
 
         # Use this construct for reversing the list, as the normal reverse() messes with the list
         for volume in list(reversed(self.vm_data["volumes"])):
