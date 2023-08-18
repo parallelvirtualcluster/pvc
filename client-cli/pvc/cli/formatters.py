@@ -159,6 +159,8 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     vms_strings = list()
     for state in vm_states:
+        if data.get("vms", {}).get(state) is None:
+            continue
         if state in ["start"]:
             state_colour = ansii["green"]
         elif state in ["migrate", "disable"]:
