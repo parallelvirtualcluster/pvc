@@ -790,6 +790,19 @@ class NodeInstance(object):
                 self.flush_stopper = False
                 return
 
+            # Wait for a VM in "restart" or "shutdown" state to complete transition
+            while self.zkhandler.read(("domain.state", dom_uuid)) in [
+                "restart",
+                "shutdown",
+            ]:
+                self.logger.out(
+                    'Waiting 2s for VM state change completion for VM "{}"'.format(
+                        dom_uuid
+                    ),
+                    state="i",
+                )
+                time.sleep(2)
+
             self.logger.out(
                 'Selecting target to migrate VM "{}"'.format(dom_uuid), state="i"
             )
@@ -806,17 +819,19 @@ class NodeInstance(object):
 
             if target_node is None:
                 self.logger.out(
-                    'Failed to find migration target for VM "{}"; shutting down and setting autostart flag'.format(
+                    'Failed to find migration target for running VM "{}"; shutting down and setting autostart flag'.format(
                         dom_uuid
                     ),
                     state="e",
                 )
-                self.zkhandler.write(
-                    [
-                        (("domain.state", dom_uuid), "shutdown"),
-                        (("domain.meta.autostart", dom_uuid), "True"),
-                    ]
-                )
+
+                if self.zkhandler.read(("domain.state", dom_uuid)) in ["start"]:
+                    self.zkhandler.write(
+                        [
+                            (("domain.state", dom_uuid), "shutdown"),
+                            (("domain.meta.autostart", dom_uuid), "True"),
+                        ]
+                    )
             else:
                 self.logger.out(
                     'Migrating VM "{}" to node "{}"'.format(dom_uuid, target_node),
