@@ -21,6 +21,8 @@ _pvc() {
 
 time_start=$(date +%s)
 
+set -o errexit
+
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 # Cluster tests
