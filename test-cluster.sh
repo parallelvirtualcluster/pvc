@@ -84,7 +84,7 @@ _pvc vm memory set --no-restart testx 4096
 _pvc vm memory get testx
 _pvc vm vcpu set --no-restart testx 2
 _pvc vm memory set testx 2048 --restart --yes
-sleep 5
+sleep 15
 _pvc vm list testx
 _pvc vm info --format long testx
 rm ${vm_tmp} || true
@@ -100,7 +100,7 @@ _pvc node flush --wait hv1
 _pvc node ready --wait hv1
 _pvc node list hv1
 _pvc node info hv1
-sleep 10
+sleep 15
 
 # Network tests
 _pvc network add 10001 --description testing --type managed --domain testing.local --ipnet 10.100.100.0/24 --gateway 10.100.100.1 --dhcp --dhcp-start 10.100.100.100 --dhcp-end 10.100.100.199
@@ -108,7 +108,7 @@ sleep 5
 _pvc vm network add --restart --yes testx 10001
 sleep 30
 _pvc vm network remove --restart --yes testx 10001
-sleep 5
+sleep 15
 
 _pvc network acl add 10001 --in --description test-acl --order 0 --rule "'ip daddr 10.0.0.0/8 counter'"
 _pvc network acl list 10001
@@ -126,7 +126,7 @@ _pvc vm network add testx 10001 --model virtio --restart --yes
 sleep 30
 _pvc vm network get testx
 _pvc vm network remove testx 10001 --restart --yes
-sleep 5
+sleep 15
 
 _pvc network remove --yes 10001
 
@@ -159,7 +159,7 @@ _pvc vm volume add testx --type rbd --disk-id sdh --bus scsi testing/testerY --r
 sleep 30
 _pvc vm volume get testx
 _pvc vm volume remove testx testing/testerY --restart --yes
-sleep 5
+sleep 15
 
 _pvc storage volume remove --yes testing testerY
 _pvc storage volume remove --yes testing testerX
