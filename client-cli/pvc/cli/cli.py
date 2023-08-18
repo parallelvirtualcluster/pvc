@@ -166,32 +166,24 @@ def connection_req(function):
 def restart_opt(function):
     """
     Click Option Decorator:
-    Wraps a Click command which requires confirm_flag or unsafe option or asks for VM restart confirmation
+    Wraps a Click command which requires a VM domain restart, to provide options for/against restart or prompt
     """
 
     @click.option(
-        "-r",
-        "--restart",
+        "-r/-R",
+        "--restart/--no-restart",
         "restart_flag",
         is_flag=True,
-        default=False,
-        help="Immediately restart VM to apply changes.",
+        default=None,
+        show_default=False,
+        help="Immediately restart VM to apply changes or do not restart VM, or prompt if unspecified.",
     )
     @wraps(function)
     def confirm_action(*args, **kwargs):
-        confirm_action = True
-        if "restart_flag" in kwargs:
-            if not kwargs.get("restart_flag", False):
-                if not CLI_CONFIG.get("unsafe", False):
-                    confirm_action = True
-                else:
-                    confirm_action = False
-            else:
-                confirm_action = False
-        else:
-            confirm_action = False
+        restart_state = kwargs.get("restart_flag", None)
 
-        if confirm_action:
+        if restart_state is None:
+            # Neither "--restart" or "--no-restart" was passed: prompt for restart or restart if "--unsafe"
             try:
                 click.confirm(
                     f"Restart VM {kwargs.get('domain')} to apply changes",
@@ -202,6 +194,12 @@ def restart_opt(function):
             except Exception:
                 echo(CLI_CONFIG, "Changes will be applied on next VM start/restart.")
                 kwargs["restart_flag"] = False
+        elif restart_state is True:
+            # "--restart" was passed: allow restart without confirming
+            kwargs["restart_flag"] = True
+        elif restart_state is False:
+            # "--no-restart" was passed: skip confirming and skip restart
+            kwargs["restart_flag"] = False
 
         return function(*args, **kwargs)
 
@@ -5550,7 +5548,7 @@ def cli_connection_detail(
     envvar="PVC_UNSAFE",
     is_flag=True,
     default=False,
-    help='Allow unsafe operations without confirmation/"--yes" argument.',
+    help='Perform unsafe operations without confirmation/"--yes" argument.',
 )
 @click.option(
     "--colour",
