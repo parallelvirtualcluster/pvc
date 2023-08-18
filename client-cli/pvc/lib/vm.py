@@ -1017,13 +1017,13 @@ def vm_volumes_add(config, vm, volume, disk_id, bus, disk_type, live, restart):
     from lxml.objectify import fromstring
     from lxml.etree import tostring
     from copy import deepcopy
-    import pvc.lib.ceph as pvc_ceph
+    import pvc.lib.storage as pvc_storage
 
     if disk_type == "rbd":
         # Verify that the provided volume is valid
         vpool = volume.split("/")[0]
         vname = volume.split("/")[1]
-        retcode, retdata = pvc_ceph.ceph_volume_info(config, vpool, vname)
+        retcode, retdata = pvc_storage.ceph_volume_info(config, vpool, vname)
         if not retcode:
             return False, "Volume {} is not present in the cluster.".format(volume)
 
