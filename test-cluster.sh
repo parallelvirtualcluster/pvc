@@ -26,8 +26,12 @@ set -o errexit
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 
 # Cluster tests
+_pvc connection list
+_pvc connection detail
+
 _pvc cluster maintenance on
 _pvc cluster maintenance off
+_pvc cluster status
 backup_tmp=$(mktemp)
 _pvc cluster backup --file ${backup_tmp}
 if [[ -n ${test_dangerously} ]]; then
@@ -96,9 +100,7 @@ _pvc node flush --wait hv1
 _pvc node ready --wait hv1
 _pvc node list hv1
 _pvc node info hv1
-
-_pvc vm start testx
-sleep 30
+sleep 10
 
 # Network tests
 _pvc network add 10001 --description testing --type managed --domain testing.local --ipnet 10.100.100.0/24 --gateway 10.100.100.1 --dhcp --dhcp-start 10.100.100.100 --dhcp-end 10.100.100.199
