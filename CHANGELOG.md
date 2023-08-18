@@ -1,5 +1,27 @@
 ## PVC Changelog
 
+###### [v0.9.64](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.64)
+
+  **Breaking Change [CLI]**: The CLI client root commands have been reorganized. The following commands have changed:
+
+   * `pvc cluster` -> `pvc connection` (all subcommands)
+   * `pvc task` -> `pvc cluster` (all subcommands)
+   * `pvc maintenance` -> `pvc cluster maintenance`
+   * `pvc status` -> `pvc cluster status`
+
+Ensure you have updated to the latest version of the PVC Ansible repository before deploying this version or using PVC Ansible oneshot playbooks for management.
+
+  **Breaking Change [CLI]**: The `--restart` option for VM configuration changes now has an explicit `--no-restart` to disable restarting, or a prompt if neither is specified; `--unsafe` no longer bypasses this prompt which was a bug. Applies to most `vm <cmd> set` commands like `vm vcpu set`, `vm memory set`, etc. All instances also feature restart confirmation afterwards, which, if `--restart` is provided, will prompt for confirmation unless `--yes` or `--unsafe` is specified.
+
+  **Breaking Change [CLI]**: The `--long` option previously on some `info` commands no longer exists; use `-f long`/`--format long` instead.
+
+  * [CLI] Significantly refactors the CLI client code for consistency and cleanliness
+  * [CLI] Implements `-f`/`--format` options for all `list` and `info` commands in a consistent way
+  * [CLI] Changes the behaviour of VM modification options with "--restart" to provide a "--no-restart"; defaults to a prompt if neither is specified and ignores the "--unsafe" global entirely
+  * [API] Fixes several bugs in the 3-debootstrap.py provisioner example script
+  * [Node] Fixes some bugs around VM shutdown on node flush
+  * [Documentation] Adds mentions of Ganeti and Harvester
+
 ###### [v0.9.63](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.63)
 
   * Mentions Ganeti in the docs
