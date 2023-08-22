@@ -850,14 +850,14 @@ def cli_node_info(
     help="Limit list to nodes in the specified daemon state.",
 )
 @click.option(
-    "-ds",
+    "-cs",
     "--coordinator-state",
     "coordinator_state_filter",
     default=None,
     help="Limit list to nodes in the specified coordinator state.",
 )
 @click.option(
-    "-ds",
+    "-vs",
     "--domain-state",
     "domain_state_filter",
     default=None,
