@@ -1,3 +1,10 @@
+pvc (0.9.65-0) unstable; urgency=high
+
+  * [CLI] Fixes a bug in the node list filtering command
+  * [CLI] Fixes a bug/default when no connection is specified
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 23 Aug 2023 01:56:57 -0400
+
 pvc (0.9.64-0) unstable; urgency=high
 
   **Breaking Change [CLI]**: The CLI client root commands have been reorganized. The following commands have changed:

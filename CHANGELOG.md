@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.65](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.65)
+
+  * [CLI] Fixes a bug in the node list filtering command
+  * [CLI] Fixes a bug/default when no connection is specified
+
 ###### [v0.9.64](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.64)
 
   **Breaking Change [CLI]**: The CLI client root commands have been reorganized. The following commands have changed:
