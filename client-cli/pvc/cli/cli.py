@@ -5600,11 +5600,8 @@ def cli(
     global CLI_CONFIG
     store_data = get_store(store_path)
 
-    # If no connection is specified, use the first connection in the store
-    if _connection is None:
-        CLI_CONFIG = get_config(store_data, list(store_data.keys())[0])
     # If the connection isn't in the store, mark it bad but pass the value
-    elif _connection not in store_data.keys():
+    if _connection is not None and _connection not in store_data.keys():
         CLI_CONFIG = {"badcfg": True, "connection": _connection}
     else:
         CLI_CONFIG = get_config(store_data, _connection)
