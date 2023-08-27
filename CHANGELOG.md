@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.66](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.66)
+
+  * [CLI] Fixes a missing YAML import in CLI
+
 ###### [v0.9.65](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.65)
 
   * [CLI] Fixes a bug in the node list filtering command
