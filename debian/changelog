@@ -1,3 +1,9 @@
+pvc (0.9.67-0) unstable; urgency=high
+
+  * [CLI] Fixes several more bugs in the refactored CLI
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 27 Aug 2023 14:47:20 -0400
+
 pvc (0.9.66-0) unstable; urgency=high
 
   * [CLI] Fixes a missing YAML import in CLI

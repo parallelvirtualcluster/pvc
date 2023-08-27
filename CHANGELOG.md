@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.67](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.67)
+
+  * [CLI] Fixes several more bugs in the refactored CLI
+
 ###### [v0.9.66](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.66)
 
   * [CLI] Fixes a missing YAML import in CLI
