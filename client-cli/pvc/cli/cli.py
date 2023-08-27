@@ -1196,7 +1196,7 @@ def cli_vm_modify(
             text=current_vm_cfgfile, require_save=True, extension=".xml"
         )
         if new_vm_cfgfile is None:
-            echo("Aborting with no modifications.")
+            echo(CLI_CONFIG, "Aborting with no modifications.")
             exit(0)
         else:
             new_vm_cfgfile = new_vm_cfgfile.strip()
@@ -1208,14 +1208,15 @@ def cli_vm_modify(
         cfgfile.close()
 
         echo(
+            CLI_CONFIG,
             'Replacing configuration of VM "{}" with file "{}".'.format(
                 dom_name, cfgfile.name
-            )
+            ),
         )
 
     # Show a diff and confirm
-    echo("Pending modifications:")
-    echo("")
+    echo(CLI_CONFIG, "Pending modifications:")
+    echo(CLI_CONFIG, "")
     diff = list(
         difflib.unified_diff(
             current_vm_cfgfile.split("\n"),
@@ -1230,14 +1231,14 @@ def cli_vm_modify(
     )
     for line in diff:
         if re.match(r"^\+", line) is not None:
-            echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
         elif re.match(r"^\-", line) is not None:
-            echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
         elif re.match(r"^\^", line) is not None:
-            echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
         else:
-            echo(line)
-    echo("")
+            echo(CLI_CONFIG, line)
+    echo(CLI_CONFIG, "")
 
     # Verify our XML is sensible
     try:
@@ -3594,7 +3595,7 @@ def cli_storage_volume_upload(pool, name, image_format, image_file):
     """
 
     if not os.path.exists(image_file):
-        echo("ERROR: File '{}' does not exist!".format(image_file))
+        echo(CLI_CONFIG, "ERROR: File '{}' does not exist!".format(image_file))
         exit(1)
 
     retcode, retmsg = pvc.lib.storage.ceph_volume_upload(
@@ -4432,7 +4433,8 @@ def cli_provisioner_template_storage_disk_add(
 
     if source_volume and (size or filesystem or mountpoint):
         echo(
-            'The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.'
+            CLI_CONFIG,
+            'The "--source-volume" option is not compatible with the "--size", "--filesystem", or "--mountpoint" options.',
         )
         exit(1)
 
@@ -4514,7 +4516,7 @@ def cli_provisioner_userdata_add(name, filename):
     try:
         yload(userdata, Loader=SafeYAMLLoader)
     except Exception as e:
-        echo("Error: Userdata document is malformed")
+        echo(CLI_CONFIG, "Error: Userdata document is malformed")
         cleanup(False, e)
 
     params = dict()
@@ -4551,7 +4553,7 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         # Grab the current config
         retcode, retdata = pvc.lib.provisioner.userdata_info(CLI_CONFIG, name)
         if not retcode:
-            echo(retdata)
+            echo(CLI_CONFIG, retdata)
             exit(1)
         current_userdata = retdata["userdata"].strip()
 
@@ -4559,14 +4561,14 @@ def cli_provisioner_userdata_modify(name, filename, editor):
             text=current_userdata, require_save=True, extension=".yaml"
         )
         if new_userdata is None:
-            echo("Aborting with no modifications.")
+            echo(CLI_CONFIG, "Aborting with no modifications.")
             exit(0)
         else:
             new_userdata = new_userdata.strip()
 
         # Show a diff and confirm
-        echo("Pending modifications:")
-        echo("")
+        echo(CLI_CONFIG, "Pending modifications:")
+        echo(CLI_CONFIG, "")
         diff = list(
             difflib.unified_diff(
                 current_userdata.split("\n"),
@@ -4581,14 +4583,14 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
-                echo(line)
-        echo("")
+                echo(CLI_CONFIG, line)
+        echo(CLI_CONFIG, "")
 
         click.confirm("Write modifications to cluster?", abort=True)
 
@@ -4603,7 +4605,7 @@ def cli_provisioner_userdata_modify(name, filename, editor):
     try:
         yload(userdata, Loader=SafeYAMLLoader)
     except Exception as e:
-        echo("Error: Userdata document is malformed")
+        echo(CLI_CONFIG, "Error: Userdata document is malformed")
         cleanup(False, e)
 
     params = dict()
@@ -4741,20 +4743,20 @@ def cli_provisioner_script_modify(name, filename, editor):
         # Grab the current config
         retcode, retdata = pvc.lib.provisioner.script_info(CLI_CONFIG, name)
         if not retcode:
-            echo(retdata)
+            echo(CLI_CONFIG, retdata)
             exit(1)
         current_script = retdata["script"].strip()
 
         new_script = click.edit(text=current_script, require_save=True, extension=".py")
         if new_script is None:
-            echo("Aborting with no modifications.")
+            echo(CLI_CONFIG, "Aborting with no modifications.")
             exit(0)
         else:
             new_script = new_script.strip()
 
         # Show a diff and confirm
-        echo("Pending modifications:")
-        echo("")
+        echo(CLI_CONFIG, "Pending modifications:")
+        echo(CLI_CONFIG, "")
         diff = list(
             difflib.unified_diff(
                 current_script.split("\n"),
@@ -4769,14 +4771,14 @@ def cli_provisioner_script_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                echo(colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                echo(colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                echo(colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
             else:
-                echo(line)
-        echo("")
+                echo(CLI_CONFIG, line)
+        echo(CLI_CONFIG, "")
 
         click.confirm("Write modifications to cluster?", abort=True)
 
@@ -4897,7 +4899,7 @@ def cli_provisioner_ova_upload(name, filename, pool):
     """
 
     if not os.path.exists(filename):
-        echo("ERROR: File '{}' does not exist!".format(filename))
+        echo(CLI_CONFIG, "ERROR: File '{}' does not exist!".format(filename))
         exit(1)
 
     params = dict()
