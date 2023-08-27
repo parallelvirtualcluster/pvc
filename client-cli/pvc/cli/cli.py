@@ -1216,9 +1216,6 @@ def cli_vm_modify(
             ),
         )
 
-    # Show a diff and confirm
-    echo(CLI_CONFIG, "Pending modifications:")
-    echo(CLI_CONFIG, "")
     diff = list(
         unified_diff(
             current_vm_cfgfile.split("\n"),
@@ -1231,6 +1228,13 @@ def cli_vm_modify(
             lineterm="",
         )
     )
+    if len(diff) < 1:
+        echo(CLI_CONFIG, "Aborting with no modifications.")
+        exit(0)
+
+    # Show a diff and confirm
+    echo(CLI_CONFIG, "Pending modifications:")
+    echo(CLI_CONFIG, "")
     for line in diff:
         if re.match(r"^\+", line) is not None:
             echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
@@ -4569,8 +4573,6 @@ def cli_provisioner_userdata_modify(name, filename, editor):
             new_userdata = new_userdata.strip()
 
         # Show a diff and confirm
-        echo(CLI_CONFIG, "Pending modifications:")
-        echo(CLI_CONFIG, "")
         diff = list(
             unified_diff(
                 current_userdata.split("\n"),
@@ -4583,6 +4585,12 @@ def cli_provisioner_userdata_modify(name, filename, editor):
                 lineterm="",
             )
         )
+        if len(diff) < 1:
+            echo(CLI_CONFIG, "Aborting with no modifications.")
+            exit(0)
+
+        echo(CLI_CONFIG, "Pending modifications:")
+        echo(CLI_CONFIG, "")
         for line in diff:
             if re.match(r"^\+", line) is not None:
                 echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
@@ -4757,8 +4765,6 @@ def cli_provisioner_script_modify(name, filename, editor):
             new_script = new_script.strip()
 
         # Show a diff and confirm
-        echo(CLI_CONFIG, "Pending modifications:")
-        echo(CLI_CONFIG, "")
         diff = list(
             unified_diff(
                 current_script.split("\n"),
@@ -4771,6 +4777,12 @@ def cli_provisioner_script_modify(name, filename, editor):
                 lineterm="",
             )
         )
+        if len(diff) < 1:
+            echo(CLI_CONFIG, "Aborting with no modifications.")
+            exit(0)
+
+        echo(CLI_CONFIG, "Pending modifications:")
+        echo(CLI_CONFIG, "")
         for line in diff:
             if re.match(r"^\+", line) is not None:
                 echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
