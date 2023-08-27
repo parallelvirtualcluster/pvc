@@ -27,6 +27,8 @@ from os import environ, makedirs, path
 from pkg_resources import get_distribution
 from lxml.etree import fromstring, tostring
 from re import sub
+from yaml import load as yload
+from yaml import SafeLoader as SafeYAMLLoader
 
 from pvc.cli.helpers import *
 from pvc.cli.waiters import *
@@ -4510,7 +4512,7 @@ def cli_provisioner_userdata_add(name, filename):
     userdata = filename.read()
     filename.close()
     try:
-        yaml.load(userdata, Loader=yaml.SafeLoader)
+        yload(userdata, Loader=SafeYAMLLoader)
     except Exception as e:
         echo("Error: Userdata document is malformed")
         cleanup(False, e)
@@ -4599,7 +4601,7 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         filename.close()
 
     try:
-        yaml.load(userdata, Loader=yaml.SafeLoader)
+        yload(userdata, Loader=SafeYAMLLoader)
     except Exception as e:
         echo("Error: Userdata document is malformed")
         cleanup(False, e)
