@@ -28,7 +28,7 @@ from json import loads as jloads
 from os import environ, makedirs, path
 from pkg_resources import get_distribution
 from lxml.etree import fromstring, tostring
-from re import sub
+from re import sub, match
 from yaml import load as yload
 from yaml import SafeLoader as SafeYAMLLoader
 
@@ -1236,11 +1236,11 @@ def cli_vm_modify(
     echo(CLI_CONFIG, "Pending modifications:")
     echo(CLI_CONFIG, "")
     for line in diff:
-        if re.match(r"^\+", line) is not None:
+        if match(r"^\+", line) is not None:
             echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
-        elif re.match(r"^\-", line) is not None:
+        elif match(r"^\-", line) is not None:
             echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
-        elif re.match(r"^\^", line) is not None:
+        elif match(r"^\^", line) is not None:
             echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
         else:
             echo(CLI_CONFIG, line)
@@ -4592,11 +4592,11 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         echo(CLI_CONFIG, "Pending modifications:")
         echo(CLI_CONFIG, "")
         for line in diff:
-            if re.match(r"^\+", line) is not None:
+            if match(r"^\+", line) is not None:
                 echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
-            elif re.match(r"^\-", line) is not None:
+            elif match(r"^\-", line) is not None:
                 echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
-            elif re.match(r"^\^", line) is not None:
+            elif match(r"^\^", line) is not None:
                 echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
             else:
                 echo(CLI_CONFIG, line)
@@ -4784,11 +4784,11 @@ def cli_provisioner_script_modify(name, filename, editor):
         echo(CLI_CONFIG, "Pending modifications:")
         echo(CLI_CONFIG, "")
         for line in diff:
-            if re.match(r"^\+", line) is not None:
+            if match(r"^\+", line) is not None:
                 echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
-            elif re.match(r"^\-", line) is not None:
+            elif match(r"^\-", line) is not None:
                 echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
-            elif re.match(r"^\^", line) is not None:
+            elif match(r"^\^", line) is not None:
                 echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
             else:
                 echo(CLI_CONFIG, line)
