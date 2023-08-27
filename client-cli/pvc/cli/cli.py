@@ -29,6 +29,7 @@ from lxml.etree import fromstring, tostring
 from re import sub
 from yaml import load as yload
 from yaml import SafeLoader as SafeYAMLLoader
+from colorama import Fore
 
 from pvc.cli.helpers import *
 from pvc.cli.waiters import *
@@ -1231,11 +1232,11 @@ def cli_vm_modify(
     )
     for line in diff:
         if re.match(r"^\+", line) is not None:
-            echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
         elif re.match(r"^\-", line) is not None:
-            echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
         elif re.match(r"^\^", line) is not None:
-            echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
+            echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
         else:
             echo(CLI_CONFIG, line)
     echo(CLI_CONFIG, "")
@@ -4583,11 +4584,11 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
             else:
                 echo(CLI_CONFIG, line)
         echo(CLI_CONFIG, "")
@@ -4771,11 +4772,11 @@ def cli_provisioner_script_modify(name, filename, editor):
         )
         for line in diff:
             if re.match(r"^\+", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.GREEN + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.GREEN + line + Fore.RESET)
             elif re.match(r"^\-", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.RED + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.RED + line + Fore.RESET)
             elif re.match(r"^\^", line) is not None:
-                echo(CLI_CONFIG, colorama.Fore.BLUE + line + colorama.Fore.RESET)
+                echo(CLI_CONFIG, Fore.BLUE + line + Fore.RESET)
             else:
                 echo(CLI_CONFIG, line)
         echo(CLI_CONFIG, "")
