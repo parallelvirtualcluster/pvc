@@ -19,6 +19,8 @@
 #
 ###############################################################################
 
+from colorama import Fore
+from difflib import unified_diff
 from functools import wraps
 from json import dump as jdump
 from json import dumps as jdumps
@@ -29,7 +31,6 @@ from lxml.etree import fromstring, tostring
 from re import sub
 from yaml import load as yload
 from yaml import SafeLoader as SafeYAMLLoader
-from colorama import Fore
 
 from pvc.cli.helpers import *
 from pvc.cli.waiters import *
@@ -1219,7 +1220,7 @@ def cli_vm_modify(
     echo(CLI_CONFIG, "Pending modifications:")
     echo(CLI_CONFIG, "")
     diff = list(
-        difflib.unified_diff(
+        unified_diff(
             current_vm_cfgfile.split("\n"),
             new_vm_cfgfile.split("\n"),
             fromfile="current",
@@ -4571,7 +4572,7 @@ def cli_provisioner_userdata_modify(name, filename, editor):
         echo(CLI_CONFIG, "Pending modifications:")
         echo(CLI_CONFIG, "")
         diff = list(
-            difflib.unified_diff(
+            unified_diff(
                 current_userdata.split("\n"),
                 new_userdata.split("\n"),
                 fromfile="current",
@@ -4759,7 +4760,7 @@ def cli_provisioner_script_modify(name, filename, editor):
         echo(CLI_CONFIG, "Pending modifications:")
         echo(CLI_CONFIG, "")
         diff = list(
-            difflib.unified_diff(
+            unified_diff(
                 current_script.split("\n"),
                 new_script.split("\n"),
                 fromfile="current",
