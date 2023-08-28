@@ -700,7 +700,7 @@ def format_info(config, network_information, long_output):
                 ainformation.append("")
                 if retcode:
                     dhcp4_reservations_string = format_list_dhcp(
-                        dhcp4_reservations_list
+                        config, dhcp4_reservations_list
                     )
                     for line in dhcp4_reservations_string.split("\n"):
                         ainformation.append(line)
