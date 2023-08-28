@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.68](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.68)
+
+  * [CLI] Fixes another bug with network info view
+
 ###### [v0.9.67](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.67)
 
   * [CLI] Fixes several more bugs in the refactored CLI

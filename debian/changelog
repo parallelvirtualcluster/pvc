@@ -1,3 +1,9 @@
+pvc (0.9.68-0) unstable; urgency=high
+
+  * [CLI] Fixes another bug with network info view
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sun, 27 Aug 2023 20:59:23 -0400
+
 pvc (0.9.67-0) unstable; urgency=high
 
   * [CLI] Fixes several more bugs in the refactored CLI
