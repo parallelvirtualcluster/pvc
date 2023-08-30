@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.69](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.69)
+
+  * [Node Daemon] Ensures that system load is always 2 decimal places on Bookworm
+  * [Node Daemon] Fixes bug blocking primary takeover at DNS Aggregator start if Patroni is down
+
 ###### [v0.9.68](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.68)
 
   * [CLI] Fixes another bug with network info view
