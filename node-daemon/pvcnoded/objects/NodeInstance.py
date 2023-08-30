@@ -620,9 +620,12 @@ class NodeInstance(object):
         for network in self.d_network:
             self.d_network[network].startDHCPServer()
         # 9. Start DNS aggregator; just continue if we fail
-        if not patroni_failed:
-            self.dns_aggregator.start_aggregator()
-        else:
+        try:
+            if not patroni_failed:
+                self.dns_aggregator.start_aggregator()
+            else:
+                raise
+        except Exception:
             self.logger.out(
                 "Not starting DNS aggregator due to Patroni failures", state="e"
             )
