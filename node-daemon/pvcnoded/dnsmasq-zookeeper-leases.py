@@ -77,7 +77,7 @@ def connect_zookeeper():
 
     with open(pvcnoded_config_file, "r") as cfgfile:
         try:
-            o_config = yaml.load(cfgfile)
+            o_config = yaml.load(cfgfile, yaml.SafeLoader)
         except Exception as e:
             print(
                 "ERROR: Failed to parse configuration file: {}".format(e),
