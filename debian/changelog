@@ -1,3 +1,9 @@
+pvc (0.9.70-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes several compatibility issues for Debian 12 "Bookworm"
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 31 Aug 2023 14:15:54 -0400
+
 pvc (0.9.69-0) unstable; urgency=high
 
   * [Node Daemon] Ensures that system load is always 2 decimal places on Bookworm

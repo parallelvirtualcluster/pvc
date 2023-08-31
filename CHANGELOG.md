@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.70](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.70)
+
+  * [Node Daemon] Fixes several compatibility issues for Debian 12 "Bookworm"
+
 ###### [v0.9.69](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.69)
 
   * [Node Daemon] Ensures that system load is always 2 decimal places on Bookworm
