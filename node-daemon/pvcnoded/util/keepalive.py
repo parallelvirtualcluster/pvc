@@ -338,8 +338,21 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             line = re.sub(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))", "", line)
             # Split it for parsing
             line = line.split()
-            if len(line) > 1 and line[1].isdigit():
-                # This is an OSD line so parse it
+
+            # Ceph 14 format:
+            #  ['|', '0', '|', 'hv1.p.u.bonilan.net', '|', '318G', '|', '463G', '|', '213', '|', '1430k', '|', '22', '|', '124k', '|', 'exists,up', '|']
+            # Ceph 16 format:
+            #  ['0', 'hv1.t.u.bonilan.net', '2489M', '236G', '0', '0', '0', '0', 'exists,up']
+
+            # Bypass obviously invalid lines
+            if len(line) < 1:
+                continue
+            elif line[0] == "+":
+                continue
+
+            # If line begins with | and second entry is a digit (i.e. OSD ID)
+            if line[0] == "|" and line[1].isdigit():
+                # Parse the line in Ceph 14 format
                 osd_id = line[1]
                 node = line[3].split(".")[0]
                 used = line[5]
@@ -349,20 +362,39 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
                 rd_ops = line[13]
                 rd_data = line[15]
                 state = line[17]
-                osd_status.update(
-                    {
-                        str(osd_id): {
-                            "node": node,
-                            "used": used,
-                            "avail": avail,
-                            "wr_ops": wr_ops,
-                            "wr_data": wr_data,
-                            "rd_ops": rd_ops,
-                            "rd_data": rd_data,
-                            "state": state,
-                        }
+            # If first entry is a digit (i.e. OSD ID)
+            elif line[0].isdigit():
+                # Parse the line in Ceph 16 format
+                osd_id = line[0]
+                node = line[1].split(".")[0]
+                used = line[2]
+                avail = line[3]
+                wr_ops = line[4]
+                wr_data = line[5]
+                rd_ops = line[6]
+                rd_data = line[7]
+                state = line[8]
+            # Otherwise, it's the header line and is ignored
+            else:
+                continue
+
+            # I don't know why 2018 me used this construct instead of a normal
+            # dictionary update, but it works so not changing it.
+            # ref: bfbe9188ce830381f3f2fa1da11f1973f08eca8c
+            osd_status.update(
+                {
+                    str(osd_id): {
+                        "node": node,
+                        "used": used,
+                        "avail": avail,
+                        "wr_ops": wr_ops,
+                        "wr_data": wr_data,
+                        "rd_ops": rd_ops,
+                        "rd_data": rd_data,
+                        "state": state,
                     }
-                )
+                }
+            )
 
         # Merge them together into a single meaningful dict
         if debug:
