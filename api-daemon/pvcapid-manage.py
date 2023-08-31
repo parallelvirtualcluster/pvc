@@ -19,8 +19,7 @@
 #
 ###############################################################################
 
-from flask_migrate import Migrate, MigrateCommand
-from flask_script import Manager
+from flask_migrate import Migrate, MigrateCommand, Manager
 
 from pvcapid.flaskapi import app, db
 from pvcapid.models import *  # noqa F401,F403
