@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# manage.py - PVC Database management tasks
+# pvcapid-manage_legacy.py - PVC Database management tasks (Legacy)
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>

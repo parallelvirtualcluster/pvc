@@ -11,5 +11,16 @@ if [[ ! -f ${PVC_CONFIG_FILE} ]]; then
 fi
 
 pushd /usr/share/pvc
-./pvcapid-manage.py db upgrade
+
+case "$( cat /etc/debian_version )" in
+    10.*|11.*)
+        # Debian 10 & 11
+        ./pvcapid-manage_legacy.py db upgrade
+    ;;
+    *)
+        # Debian 12+
+        flask --app ./pvcapid-manage_flask.py db upgrade
+    ;;
+esac
+
 popd
