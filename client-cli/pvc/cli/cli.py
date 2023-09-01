@@ -569,7 +569,7 @@ def cli_node():
     short_help="Set node as primary coordinator.",
 )
 @connection_req
-@click.argument("node")
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @click.option(
     "-w",
     "--wait",
@@ -619,7 +619,7 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     short_help="Set node as secondary coordinator.",
 )
 @connection_req
-@click.argument("node")
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @click.option(
     "-w",
     "--wait",
@@ -671,7 +671,7 @@ NOTE: There are currently {len(tasks_retdata)} active or queued provisioner task
     short_help="Take node out of service.",
 )
 @connection_req
-@click.argument("node")
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @click.option(
     "-w",
     "--wait",
@@ -709,7 +709,7 @@ def cli_node_flush(
     short_help="Restore node to service.",
 )
 @connection_req
-@click.argument("node")
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @click.option(
     "-w",
     "--wait",
@@ -747,7 +747,7 @@ def cli_node_ready(
     short_help="View node daemon logs.",
 )
 @connection_req
-@click.argument("node")
+@click.argument("node", default=DEFAULT_NODE_HOSTNAME)
 @click.option(
     "-l",
     "--lines",
