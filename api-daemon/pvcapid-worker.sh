@@ -27,12 +27,8 @@ case "$( cat /etc/debian_version )" in
     10.*)
         CELERY_ARGS="worker --app pvcapid.flaskapi.celery --concurrency 1 --loglevel INFO"
     ;;
-    11.*)
-        CELERY_ARGS="--app pvcapid.flaskapi.celery worker --concurrency 1 --loglevel INFO"
-    ;;
     *)
-        echo "Invalid Debian version found!"
-        exit 1
+        CELERY_ARGS="--app pvcapid.flaskapi.celery worker --concurrency 1 --loglevel INFO"
     ;;
 esac
 
