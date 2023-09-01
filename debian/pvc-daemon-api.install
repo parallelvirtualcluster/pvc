@@ -1,5 +1,5 @@
 api-daemon/pvcapid.py usr/share/pvc
-api-daemon/pvcapid-manage.py usr/share/pvc
+api-daemon/pvcapid-manage*.py usr/share/pvc
 api-daemon/pvc-api-db-upgrade usr/share/pvc
 api-daemon/pvcapid.sample.yaml etc/pvc
 api-daemon/pvcapid usr/share/pvc
