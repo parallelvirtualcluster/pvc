@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.72](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.72)
+
+  * [CLI] Restores old functionality for default node value
+
 ###### [v0.9.71](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.71)
 
   * [API] Adds API support for Debian Bookworm

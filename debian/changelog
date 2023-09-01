@@ -1,3 +1,9 @@
+pvc (0.9.72-0) unstable; urgency=high
+
+  * [CLI] Restores old functionality for default node value
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 01 Sep 2023 16:34:45 -0400
+
 pvc (0.9.71-0) unstable; urgency=high
 
   * [API] Adds API support for Debian Bookworm
