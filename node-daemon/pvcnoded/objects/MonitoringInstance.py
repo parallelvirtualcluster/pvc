@@ -317,18 +317,20 @@ class MonitoringInstance(object):
             return
 
         # Clean up any old plugin data for which a plugin file no longer exists
-        for plugin_key in self.zkhandler.children(
+        plugins_data = self.zkhandler.children(
             ("node.monitoring.data", self.this_node.name)
-        ):
-            if plugin_key not in self.all_plugin_names:
-                self.zkhandler.delete(
-                    (
-                        "node.monitoring.data",
-                        self.this_node.name,
-                        "monitoring_plugin",
-                        plugin_key,
+        )
+        if plugins_data is not None:
+            for plugin_key in plugins_data:
+                if plugin_key not in self.all_plugin_names:
+                    self.zkhandler.delete(
+                        (
+                            "node.monitoring.data",
+                            self.this_node.name,
+                            "monitoring_plugin",
+                            plugin_key,
+                        )
                     )
-                )
 
     def run_plugin(self, plugin):
         time_start = datetime.now()
