@@ -1,3 +1,9 @@
+pvc (0.9.73-0) unstable; urgency=high
+
+  * [Node Daemon] Fixes a bug creating monitoring instance
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 02 Sep 2023 02:16:19 -0400
+
 pvc (0.9.72-0) unstable; urgency=high
 
   * [CLI] Restores old functionality for default node value

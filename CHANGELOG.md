@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.73](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.73)
+
+  * [Node Daemon] Fixes a bug creating monitoring instance
+
 ###### [v0.9.72](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.72)
 
   * [CLI] Restores old functionality for default node value
