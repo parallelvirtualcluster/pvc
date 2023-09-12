@@ -80,6 +80,7 @@ celery.conf.update(app.config)
 # Custom decorators
 #
 
+
 # Request parser decorator
 class RequestParser(object):
     def __init__(self, reqargs):
@@ -163,6 +164,7 @@ def run_benchmark(self, pool):
 ##########################################################
 # API Root/Authentication
 ##########################################################
+
 
 # /
 class API_Root(Resource):
@@ -585,6 +587,7 @@ api.add_resource(API_Status, "/status")
 ##########################################################
 # Client API - Node
 ##########################################################
+
 
 # /node
 class API_Node_Root(Resource):
@@ -1013,6 +1016,7 @@ api.add_resource(API_Node_Log, "/node/<node>/log")
 ##########################################################
 # Client API - VM
 ##########################################################
+
 
 # /vm
 class API_VM_Root(Resource):
@@ -2293,6 +2297,7 @@ api.add_resource(API_VM_Device, "/vm/<vm>/device")
 # Client API - Network
 ##########################################################
 
+
 # /network
 class API_Network_Root(Resource):
     @RequestParser([{"name": "limit"}])
@@ -3261,6 +3266,7 @@ api.add_resource(API_Network_ACL_Element, "/network/<vni>/acl/<description>")
 # Client API - SR-IOV
 ##########################################################
 
+
 # /sriov
 class API_SRIOV_Root(Resource):
     @Authenticator
@@ -3587,6 +3593,7 @@ api.add_resource(API_SRIOV_VF_Element, "/sriov/vf/<node>/<vf>")
 #       Since Ceph is the only section not abstracted by PVC directly
 #       (i.e. it references Ceph-specific concepts), this makes more
 #       sense in the long-term.#
+
 
 # /storage
 class API_Storage_Root(Resource):
@@ -5399,6 +5406,7 @@ api.add_resource(
 ##########################################################
 # Provisioner API
 ##########################################################
+
 
 # /provisioner
 class API_Provisioner_Root(Resource):

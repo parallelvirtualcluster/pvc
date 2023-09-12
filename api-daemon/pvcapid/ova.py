@@ -44,6 +44,7 @@ import pvcapid.provisioner as provisioner
 # Common functions
 #
 
+
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(

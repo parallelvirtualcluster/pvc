@@ -112,7 +112,6 @@ class Logger(object):
 
     # Output function
     def out(self, message, state=None, prefix=""):
-
         # Get the date
         if self.config["log_dates"]:
             date = "{} ".format(datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"))

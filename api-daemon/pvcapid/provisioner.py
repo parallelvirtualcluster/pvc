@@ -59,6 +59,7 @@ class ProvisioningError(Exception):
 # Common functions
 #
 
+
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(

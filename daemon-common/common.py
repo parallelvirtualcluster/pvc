@@ -37,6 +37,7 @@ from functools import wraps
 # Performance Profiler decorator
 ###############################################################################
 
+
 # Get performance statistics on a function or class
 class Profiler(object):
     def __init__(self, config):
@@ -103,6 +104,7 @@ class Profiler(object):
 ###############################################################################
 # Supplemental functions
 ###############################################################################
+
 
 #
 # Run a local OS daemon in the background

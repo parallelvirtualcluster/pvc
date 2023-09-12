@@ -35,6 +35,7 @@ import daemon_lib.common as common
 # Supplemental functions
 #
 
+
 # Verify OSD is valid in cluster
 def verifyOSD(zkhandler, osd_id):
     return zkhandler.exists(("osd", osd_id))
