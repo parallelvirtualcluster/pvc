@@ -246,6 +246,7 @@ def get_configuration():
     config_intervals = {
         "vm_shutdown_timeout": int(o_intervals.get("vm_shutdown_timeout", 60)),
         "keepalive_interval": int(o_intervals.get("keepalive_interval", 5)),
+        "monitoring_interval": int(o_intervals.get("monitoring_interval", 60)),
         "fence_intervals": int(o_intervals.get("fence_intervals", 6)),
         "suicide_intervals": int(o_intervals.get("suicide_interval", 0)),
     }

@@ -100,6 +100,8 @@ pvc:
       vm_shutdown_timeout: 180
       # keepalive_interval: Number of seconds between keepalive/status updates
       keepalive_interval: 5
+      # monitoring_interval: Number of seconds between monitoring check updates
+      monitoring_interval: 60
       # fence_intervals: Number of keepalive_intervals to declare a node dead and fence it
       fence_intervals: 6
       # suicide_intervals: Numer of keepalive_intervals before a node considers itself dead and self-fences, 0 to disable 

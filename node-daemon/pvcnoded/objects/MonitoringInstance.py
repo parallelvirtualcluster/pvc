@@ -345,7 +345,7 @@ class MonitoringInstance(object):
         self.run_cleanups()
 
     def start_check_timer(self):
-        check_interval = 60
+        check_interval = self.config["monitoring_interval"]
         self.logger.out(
             f"Starting monitoring check timer ({check_interval} second interval)",
             state="s",
