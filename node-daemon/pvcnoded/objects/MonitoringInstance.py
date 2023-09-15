@@ -391,18 +391,7 @@ class MonitoringInstance(object):
         else:
             cst_colour = self.logger.fmt_cyan
 
-        self.logger.out(
-            "{}{} healthcheck @ {}{} [{}{}{}]".format(
-                self.logger.fmt_purple,
-                self.config["node_hostname"],
-                datetime.now(),
-                self.logger.fmt_end,
-                self.logger.fmt_bold + cst_colour,
-                self.this_node.coordinator_state,
-                self.logger.fmt_end,
-            ),
-            state="t",
-        )
+        active_coordinator_state = self.this_node.coordinator_state
 
         runtime_start = datetime.now()
         total_health = 100
@@ -457,9 +446,14 @@ class MonitoringInstance(object):
             health_text = "N/A"
 
         self.logger.out(
-            "Node health at {health_colour}{health}{nofmt}, checked in {runtime} seconds".format(
+            "{start_colour}{hostname} healthcheck @ {starttime}{nofmt} [{cst_colour}{costate}{nofmt}] result is {health_colour}{health}{nofmt} in {runtime} seconds".format(
+                start_colour=self.logger.fmt_purple,
+                cst_colour=self.logger.fmt_bold + cst_colour,
                 health_colour=health_colour,
                 nofmt=self.logger.fmt_end,
+                hostname=self.config["node_hostname"],
+                starttime=runtime_start,
+                costate=active_coordinator_state,
                 health=health_text,
                 runtime=runtime,
             ),
