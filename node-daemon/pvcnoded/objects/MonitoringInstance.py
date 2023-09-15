@@ -368,7 +368,7 @@ class MonitoringInstance(object):
     def run_plugin(self, plugin):
         time_start = datetime.now()
         try:
-            result = plugin.run(coordinator_state=self.this_node.router_state)
+            result = plugin.run(coordinator_state=self.this_node.coordinator_state)
         except Exception as e:
             self.logger.out(
                 f"Monitoring plugin {plugin.plugin_name} failed: {type(e).__name__}: {e}",
@@ -384,9 +384,9 @@ class MonitoringInstance(object):
         return result
 
     def run_plugins(self):
-        if self.this_node.router_state == "primary":
+        if self.this_node.coordinator_state == "primary":
             cst_colour = self.logger.fmt_green
-        elif self.this_node.router_state == "secondary":
+        elif self.this_node.coordinator_state == "secondary":
             cst_colour = self.logger.fmt_blue
         else:
             cst_colour = self.logger.fmt_cyan
@@ -398,7 +398,7 @@ class MonitoringInstance(object):
                 datetime.now(),
                 self.logger.fmt_end,
                 self.logger.fmt_bold + cst_colour,
-                self.this_node.router_state,
+                self.this_node.coordinator_state,
                 self.logger.fmt_end,
             ),
             state="t",

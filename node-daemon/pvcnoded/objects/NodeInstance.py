@@ -52,7 +52,7 @@ class NodeInstance(object):
         # States
         self.daemon_mode = self.zkhandler.read(("node.mode", self.name))
         self.daemon_state = "stop"
-        self.router_state = "client"
+        self.coordinator_state = "client"
         self.domain_state = "flushed"
         # Object lists
         self.d_node = d_node
@@ -149,10 +149,10 @@ class NodeInstance(object):
 
             if self.name == self.this_node and self.daemon_mode == "coordinator":
                 # We're a coordinator so we care about networking
-                if data != self.router_state:
-                    self.router_state = data
+                if data != self.coordinator_state:
+                    self.coordinator_state = data
                     if self.config["enable_networking"]:
-                        if self.router_state == "takeover":
+                        if self.coordinator_state == "takeover":
                             self.logger.out(
                                 "Setting node {} to primary state".format(self.name),
                                 state="i",
@@ -161,7 +161,7 @@ class NodeInstance(object):
                                 target=self.become_primary, args=(), kwargs={}
                             )
                             transition_thread.start()
-                        if self.router_state == "relinquish":
+                        if self.coordinator_state == "relinquish":
                             # Skip becoming secondary unless already running
                             if (
                                 self.daemon_state == "run"
@@ -539,7 +539,7 @@ class NodeInstance(object):
         tick = 1
         patroni_failed = True
         # As long as we're in takeover, keep trying to set the Patroni leader to us
-        while self.router_state == "takeover":
+        while self.coordinator_state == "takeover":
             # Switch Patroni leader to the local instance
             retcode, stdout, stderr = common.run_os_command(
                 """

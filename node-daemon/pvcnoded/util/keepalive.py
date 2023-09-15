@@ -98,7 +98,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
         return
 
     # Primary-only functions
-    if this_node.router_state == "primary":
+    if this_node.coordinator_state == "primary":
         # Get Ceph status information (pretty)
         if debug:
             logger.out(
@@ -417,7 +417,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
                 )
 
         # Upload OSD data for the cluster (primary-only)
-        if this_node.router_state == "primary":
+        if this_node.coordinator_state == "primary":
             if debug:
                 logger.out(
                     "Trigger updates for each OSD", state="d", prefix="ceph-thread"
@@ -679,9 +679,9 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
 
     # Display node information to the terminal
     if config["log_keepalives"]:
-        if this_node.router_state == "primary":
+        if this_node.coordinator_state == "primary":
             cst_colour = logger.fmt_green
-        elif this_node.router_state == "secondary":
+        elif this_node.coordinator_state == "secondary":
             cst_colour = logger.fmt_blue
         else:
             cst_colour = logger.fmt_cyan
@@ -692,7 +692,7 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
                 datetime.now(),
                 logger.fmt_end,
                 logger.fmt_bold + cst_colour,
-                this_node.router_state,
+                this_node.coordinator_state,
                 logger.fmt_end,
             ),
             state="t",
@@ -700,7 +700,7 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
 
     # Set the migration selector in Zookeeper for clients to read
     if config["enable_hypervisor"]:
-        if this_node.router_state == "primary":
+        if this_node.coordinator_state == "primary":
             try:
                 if (
                     zkhandler.read("base.config.migration_target_selector")
@@ -723,7 +723,7 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
 
     # Set the upstream IP in Zookeeper for clients to read
     if config["enable_networking"]:
-        if this_node.router_state == "primary":
+        if this_node.coordinator_state == "primary":
             try:
                 if (
                     zkhandler.read("base.config.upstream_ip")
@@ -757,7 +757,7 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
         logger.out(
             "Ensure the primary key is properly set", state="d", prefix="main-thread"
         )
-    if this_node.router_state == "primary":
+    if this_node.coordinator_state == "primary":
         if zkhandler.read("base.config.primary_node") != this_node.name:
             zkhandler.write([("base.config.primary_node", this_node.name)])
 

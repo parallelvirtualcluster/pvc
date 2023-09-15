@@ -235,12 +235,12 @@ def entrypoint():
 
         # Force into secondary coordinator state if needed
         try:
-            if this_node.router_state == "primary" and len(d_node) > 1:
+            if this_node.coordinator_state == "primary" and len(d_node) > 1:
                 zkhandler.write([("base.config.primary_node", "none")])
                 logger.out("Waiting for primary migration", state="s")
                 timeout = 240
                 count = 0
-                while this_node.router_state != "secondary" and count < timeout:
+                while this_node.coordinator_state != "secondary" and count < timeout:
                     sleep(0.5)
                     count += 1
         except Exception:
@@ -431,7 +431,7 @@ def entrypoint():
                 if new_primary == "none":
                     if (
                         this_node.daemon_state == "run"
-                        and this_node.router_state
+                        and this_node.coordinator_state
                         not in ["primary", "takeover", "relinquish"]
                     ):
                         logger.out(
@@ -477,7 +477,7 @@ def entrypoint():
                                 state="i",
                             )
                 elif new_primary == config["node_hostname"]:
-                    if this_node.router_state == "secondary":
+                    if this_node.coordinator_state == "secondary":
                         # Wait for 0.5s to ensure other contentions time out, then take over
                         sleep(0.5)
                         zkhandler.write(
@@ -489,7 +489,7 @@ def entrypoint():
                             ]
                         )
                 else:
-                    if this_node.router_state == "primary":
+                    if this_node.coordinator_state == "primary":
                         # Wait for 0.5s to ensure other contentions time out, then relinquish
                         sleep(0.5)
                         zkhandler.write(
@@ -536,7 +536,7 @@ def entrypoint():
                         )
                 # Start primary functionality
                 if (
-                    this_node.router_state == "primary"
+                    this_node.coordinator_state == "primary"
                     and d_network[network].nettype == "managed"
                 ):
                     d_network[network].createGateways()
@@ -549,7 +549,7 @@ def entrypoint():
                 # TODO: Move this to the Network structure
                 if d_network[network].nettype == "managed":
                     # Stop primary functionality
-                    if this_node.router_state == "primary":
+                    if this_node.coordinator_state == "primary":
                         d_network[network].stopDHCPServer()
                         d_network[network].removeGateways()
                         dns_aggregator.remove_network(d_network[network])
