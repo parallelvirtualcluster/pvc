@@ -62,9 +62,11 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         pass
 
-    def run(self):
+    def run(self, coordinator_state=None):
         """
         run(): Perform the check actions and return a PluginResult object
+
+        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "hypervisor" (non-coordinator)
         """
 
         # Run any imports first

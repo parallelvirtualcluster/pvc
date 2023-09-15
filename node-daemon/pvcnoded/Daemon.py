@@ -255,10 +255,10 @@ def entrypoint():
         except Exception:
             pass
 
-        # Clean up any monitoring plugins that have cleanup
+        # Shut down the monitoring system
         try:
-            logger.out("Performing monitoring plugin cleanup", state="s")
-            monitoring_instance.run_cleanups()
+            logger.out("Shutting down monitoring subsystem", state="s")
+            monitoring_instance.shutdown()
         except Exception:
             pass
 

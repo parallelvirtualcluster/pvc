@@ -859,11 +859,6 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
     except Exception:
         logger.out("Failed to set keepalive data", state="e")
 
-    # Run this here since monitoring plugins output directly
-    monitoring_instance.run_plugins()
-    # Allow the health value to update in the Node instance
-    time.sleep(0.1)
-
     if config["log_keepalives"]:
         if this_node.maintenance is True:
             maintenance_colour = logger.fmt_blue

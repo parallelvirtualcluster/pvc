@@ -26,6 +26,7 @@ import importlib.util
 from os import walk
 from datetime import datetime
 from json import dumps
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class PluginError(Exception):
@@ -173,9 +174,11 @@ class MonitoringPlugin(object):
         """
         pass
 
-    def run(self):
+    def run(self, coordinator_state=None):
         """
         run(): Run the plugin, returning a PluginResult object
+
+        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "hypervisor" (non-coordinator)
         """
         return self.plugin_result
 
@@ -332,10 +335,40 @@ class MonitoringInstance(object):
                         )
                     )
 
+        self.start_check_timer()
+
+    def __del__(self):
+        self.shutdown()
+
+    def shutdown(self):
+        self.stop_check_timer()
+        self.run_cleanups()
+
+    def start_check_timer(self):
+        check_interval = 60
+        self.logger.out(
+            f"Starting monitoring check timer ({check_interval} second interval)",
+            state="s",
+        )
+        self.check_timer = BackgroundScheduler()
+        self.check_timer.add_job(
+            self.run_plugins,
+            trigger="interval",
+            seconds=check_interval,
+        )
+        self.check_timer.start()
+
+    def stop_check_timer(self):
+        try:
+            self.check_timer.shutdown()
+            self.logger.out("Stopping monitoring check timer", state="s")
+        except Exception:
+            self.logger.out("Failed to stop monitoring check timer", state="w")
+
     def run_plugin(self, plugin):
         time_start = datetime.now()
         try:
-            result = plugin.run()
+            result = plugin.run(coordinator_state=self.this_node.router_state)
         except Exception as e:
             self.logger.out(
                 f"Monitoring plugin {plugin.plugin_name} failed: {type(e).__name__}: {e}",
@@ -351,12 +384,28 @@ class MonitoringInstance(object):
         return result
 
     def run_plugins(self):
+        if self.this_node.router_state == "primary":
+            cst_colour = self.logger.fmt_green
+        elif self.this_node.router_state == "secondary":
+            cst_colour = self.logger.fmt_blue
+        else:
+            cst_colour = self.logger.fmt_cyan
+
+        self.logger.out(
+            "{}{} healthcheck @ {}{} [{}{}{}]".format(
+                self.logger.fmt_purple,
+                self.config["node_hostname"],
+                datetime.now(),
+                self.logger.fmt_end,
+                self.logger.fmt_bold + cst_colour,
+                self.this_node.router_state,
+                self.logger.fmt_end,
+            ),
+            state="t",
+        )
+
+        runtime_start = datetime.now()
         total_health = 100
-        if self.config["log_keepalive_plugin_details"]:
-            self.logger.out(
-                f"Running monitoring plugins: {', '.join([x.plugin_name for x in self.all_plugins])}",
-                state="t",
-            )
         plugin_results = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=99) as executor:
             to_future_plugin_results = {
@@ -388,6 +437,33 @@ class MonitoringInstance(object):
                     total_health,
                 ),
             ]
+        )
+
+        runtime_end = datetime.now()
+        runtime_delta = runtime_end - runtime_start
+        runtime = "{:0.02f}".format(runtime_delta.total_seconds())
+        time.sleep(0.2)
+
+        if isinstance(self.this_node.health, int):
+            if self.this_node.health > 90:
+                health_colour = self.logger.fmt_green
+            elif self.this_node.health > 50:
+                health_colour = self.logger.fmt_yellow
+            else:
+                health_colour = self.logger.fmt_red
+            health_text = str(self.this_node.health) + "%"
+        else:
+            health_colour = self.logger.fmt_blue
+            health_text = "N/A"
+
+        self.logger.out(
+            "Node health at {health_colour}{health}{nofmt}, checked in {runtime} seconds".format(
+                health_colour=health_colour,
+                nofmt=self.logger.fmt_end,
+                health=health_text,
+                runtime=runtime,
+            ),
+            state="t",
         )
 
     def run_cleanup(self, plugin):
