@@ -61,7 +61,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         """
         run(): Perform the check actions and return a PluginResult object
 
-        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "hypervisor" (non-coordinator)
+        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "client" (non-coordinator)
         """
 
         # Run any imports first

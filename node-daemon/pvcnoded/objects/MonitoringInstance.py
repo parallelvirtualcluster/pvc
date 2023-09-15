@@ -178,7 +178,7 @@ class MonitoringPlugin(object):
         """
         run(): Run the plugin, returning a PluginResult object
 
-        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "hypervisor" (non-coordinator)
+        The {coordinator_state} can be used to check if this is a "primary" coordinator, "secondary" coordinator, or "client" (non-coordinator)
         """
         return self.plugin_result
 
