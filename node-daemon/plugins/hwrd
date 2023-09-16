@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+
+# hwrd.py - PVC Monitoring example plugin for hardware RAID Arrays
+# Part of the Parallel Virtual Cluster (PVC) system
+#
+#    Copyright (C) 2018-2023 Joshua M. Boniface <joshua@boniface.me>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, version 3.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+# This script provides an example of a PVC monitoring plugin script. It will create
+# a simple plugin to check any hardwrae RAID virtual disks for health and report errors.
+# Supports Dell BOSS cards, LSI/Avago/Broadcom MegaRAID, and HP SmartArray RAID.
+
+# This script can thus be used as an example or reference implementation of a
+# PVC monitoring pluginscript and expanded upon as required.
+
+# A monitoring plugin script must implement the class "MonitoringPluginScript" which
+# extends "MonitoringPlugin", providing the 3 functions indicated. Detailed explanation
+# of the role of each function is provided in context of the example; see the other
+# examples for more potential uses.
+
+# WARNING:
+#
+# This script will run in the context of the node daemon keepalives as root.
+# DO NOT install untrusted, unvetted plugins under any circumstances.
+
+
+# This import is always required here, as MonitoringPlugin is used by the
+# MonitoringPluginScript class
+from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+
+
+# A monitoring plugin script must always expose its nice name, which must be identical to
+# the file name
+PLUGIN_NAME = "hwrd"
+
+
+# The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
+class MonitoringPluginScript(MonitoringPlugin):
+    def check_dellboss(self):
+        # Run any imports first
+        from daemon_lib.common import run_os_command
+        from re import match
+
+        health_delta = 0
+        messages = list()
+
+        _dellboss_ret, _dellboss_list, _ = run_os_command("mvcli info -o vd")
+        if _dellboss_ret != 0:
+            health_delta = 50
+            messages.append("Error running MVCLI command")
+        else:
+            arrays = list()
+            idx = None
+
+            for line in _dellboss_list.split('\n'):
+                if match(r"^id:", line):
+                    idx = int(line.split(":")[-1].strip())
+                    arrays.append(dict())
+                if match(r"^name:", line):
+                    arrays[idx]["name"] = line.split(":")[-1].strip()
+                if match(r"^status:", line):
+                    arrays[idx]["status"] = line.split(":")[-1].strip()
+
+            for idx, array in enumerate(arrays):
+                if array["status"] != "functional":
+                    health_delta += 50
+                messages.append(f"RAID Dell BOSS ID {idx} (Name: {array['name']}, State: {array['status']})")
+                    
+        if len(messages) < 1:
+            messages.append(f"No valid RAID arrays found")
+
+        return health_delta, messages
+
+    def check_megaraid(self):
+        # Run any imports first
+        from daemon_lib.common import run_os_command
+        from re import match
+
+        health_delta = 0
+        messages = list()
+
+        _megaraid_ret, _megaraid_list, _ = run_os_command("megacli -LDInfo -Lall -aALL")
+        if _megaraid_ret != 0:
+            health_delta = 50
+            messages.append("Error running MegaCLI command")
+        else:
+            vd_list = _megaraid_list.split('\n\n\n')
+            for idx, _vd in enumerate(vd_list):
+                vd = _vd.split('\n')
+                if "Virtual Drive Information" not in vd[2]:
+                    continue
+
+                raid_name = None
+                raid_count = 0
+                raid_state = None
+
+                for entry in vd:
+                    if len(entry.split(':')) < 2:
+                        continue
+
+                    entry_key = entry.split(':')[0].strip()
+                    entry_value = entry.split(':')[1].strip()
+
+                    if entry_key == "State":
+                        raid_state = entry_value
+                    if entry_key == "Name":
+                        raid_name = entry_value
+                    if entry_key == "Number Of Drives":
+                        raid_count = entry_value
+
+                if raid_state is None or raid_name is None or raid_count == 0:
+                    health_delta += 10
+                    messages.append(f"RAID ID {idx} did not report useful values")
+                    continue
+
+                if raid_state != "Optimal":
+                    health_delta += 50
+                messages.append(f"RAID MegaRAID ID {idx} (Name: {raid_name}, Disks: {raid_count}, State: {raid_state})")
+                        
+        if len(messages) < 1:
+            messages.append(f"No valid RAID arrays found")
+
+        return health_delta, messages
+
+    def check_hpsa(self):
+        # Run any imports first
+        from daemon_lib.common import run_os_command
+        from re import match, findall
+
+        health_delta = 0
+        messages = list()
+
+        _hparray_ret, _hparray_list, _ = run_os_command(f"ssacli ctrl slot={self.controller_slot} ld all show")
+        if _hparray_ret != 0:
+            health_delta = 50
+            messages.append("Error running SSACLI command")
+        else:
+            vd_lines = _hparray_list.split('\n\n')
+
+            arrays = list()
+            cur_array = None
+            for idx, _line in enumerate(vd_lines):
+                line = _line.strip()
+                if match(r"^Array", line):
+                    cur_array = line
+                if match(r"^logicaldrive", line) and cur_array is not None:
+                    arrays.append(f"{cur_array} {line}")
+
+            for array in arrays:
+                if "OK" not in array:
+                    health_delta += 50
+                messages.append(f"RAID HPSA {array}")
+                        
+        if len(messages) < 1:
+            messages.append(f"No valid RAID arrays found")
+
+        return health_delta, messages
+
+    def setup(self):
+        """
+        setup(): Perform special setup steps during node daemon startup
+
+        This step is optional and should be used sparingly.
+
+        If you wish for the plugin to not load in certain conditions, do any checks here
+        and return a non-None failure message to indicate the error.
+        """
+
+        from daemon_lib.common import run_os_command
+        from re import match, findall
+
+        self.raid_type = list()
+
+        _dellboss_ret, _dellboss_list, _ = run_os_command("mvcli info -o vd")
+        if _dellboss_ret == 0:
+            # If this returns 0 at all, there's a valid BOSS card to manage
+            self.raid_type.append("dellboss")
+
+        _megaraid_ret, _megaraid_list, _ = run_os_command("megacli -LDInfo -Lall -aALL")
+        if _megaraid_ret == 0:
+            vd_list = _megaraid_list.split('\n\n\n')
+            for idx, _vd in enumerate(vd_list):
+                vd = _vd.split('\n')
+                if "Virtual Drive Information" in vd[2]:
+                    self.raid_type.append("megaraid")
+
+        _hpraid_ret, _hpraid_list, _ = run_os_command("ssacli ctrl all show status")
+        if _hpraid_ret == 0:
+            for line in _hpraid_list.split('\n'):
+                if match(r"^Smart", line):
+                    controller_slots = findall("Slot ([0-9])", line)
+                    if len(controller_slots) > 0:
+                        self.raid_type.append("hpsa")
+                        self.controller_slot = controller_slots[0]
+
+        if len(self.raid_type) < 1:
+            return "No hardware RAID management commands found"
+
+    def run(self, coordinator_state=None):
+        """
+        run(): Perform the check actions and return a PluginResult object
+        """
+
+        health_delta = 0
+        messages = list()
+
+        raid_function_map = {
+            "megaraid": self.check_megaraid,
+            "hpsa": self.check_hpsa,
+            "dellboss": self.check_dellboss,
+        }
+
+        for raid_type in self.raid_type:
+            _health_delta, _messages = raid_function_map.get(raid_type)()
+            health_delta += _health_delta
+            messages += _messages
+
+        # Set the health delta in our local PluginResult object
+        self.plugin_result.set_health_delta(health_delta)
+
+        # Set the message in our local PluginResult object
+        self.plugin_result.set_message(', '.join(messages))
+
+        # Return our local PluginResult object
+        return self.plugin_result
+
+    def cleanup(self):
+        """
+        cleanup(): Perform special cleanup steps during node daemon termination
+
+        This step is optional and should be used sparingly.
+        """
+
+        pass
