@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.74](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.74)
+
+  * [Docs] Removes docs from the main repo
+  * [Client CLI] Ensures that "provision" VMs are shown in the right colour
+  * [Node Daemon] Separates the node monitoring subsystem into its own thread with a longer, customizable update interval
+  * [Node Daemon] Adds checks for PSU input power reundancy (psur) and hardware RAID (hwrd)
+  * [Node Daemon] Updates when Keepalive start messages are printed (end of run, with runtime) to align with new monitoring messages
+
 ###### [v0.9.73](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.73)
 
   * [Node Daemon] Fixes a bug creating monitoring instance

@@ -1,3 +1,13 @@
+pvc (0.9.74-0) unstable; urgency=high
+
+  * [Docs] Removes docs from the main repo
+  * [Client CLI] Ensures that "provision" VMs are shown in the right colour
+  * [Node Daemon] Separates the node monitoring subsystem into its own thread with a longer, customizable update interval
+  * [Node Daemon] Adds checks for PSU input power reundancy (psur) and hardware RAID (hwrd)
+  * [Node Daemon] Updates when Keepalive start messages are printed (end of run, with runtime) to align with new monitoring messages
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 16 Sep 2023 00:18:13 -0400
+
 pvc (0.9.73-0) unstable; urgency=high
 
   * [Node Daemon] Fixes a bug creating monitoring instance
