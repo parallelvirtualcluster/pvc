@@ -111,7 +111,7 @@ class MonitoringPluginScript(MonitoringPlugin):
                         messages.append(f"Input power sensor {reading_sensor} reports {reading_text}")
                     elif reading_text == "No Reading":
                         health_delta += 5
-                        messages.append("Input power sensor {reading_sensor} reports {reading_text}, redundant power not configured")
+                        messages.append(f"Input power sensor {reading_sensor} reports {reading_text} (PSU redundancy not configured?)")
                     else:
                         health_delta += 10
                         messages.append(f"Input power sensor {reading_sensor} reports {reading_text}")
