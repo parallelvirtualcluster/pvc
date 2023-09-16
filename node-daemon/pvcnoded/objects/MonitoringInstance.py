@@ -335,8 +335,8 @@ class MonitoringInstance(object):
                         )
                     )
 
-        self.start_check_timer()
         self.run_plugins()
+        self.start_check_timer()
 
     def __del__(self):
         self.shutdown()
