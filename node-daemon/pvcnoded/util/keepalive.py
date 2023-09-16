@@ -685,18 +685,10 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
             cst_colour = logger.fmt_blue
         else:
             cst_colour = logger.fmt_cyan
-        logger.out(
-            "{}{} keepalive @ {}{} [{}{}{}]".format(
-                logger.fmt_purple,
-                config["node_hostname"],
-                datetime.now(),
-                logger.fmt_end,
-                logger.fmt_bold + cst_colour,
-                this_node.coordinator_state,
-                logger.fmt_end,
-            ),
-            state="t",
-        )
+
+        active_coordinator_state = this_node.coordinator_state
+
+        runtime_start = datetime.now()
 
     # Set the migration selector in Zookeeper for clients to read
     if config["enable_hypervisor"]:
@@ -860,6 +852,23 @@ def node_keepalive(logger, config, zkhandler, this_node, monitoring_instance):
         logger.out("Failed to set keepalive data", state="e")
 
     if config["log_keepalives"]:
+        runtime_end = datetime.now()
+        runtime_delta = runtime_end - runtime_start
+        runtime = "{:0.02f}".format(runtime_delta.total_seconds())
+
+        logger.out(
+            "{start_colour}{hostname} keepalive @ {starttime}{nofmt} [{cst_colour}{costate}{nofmt}] in {runtime} seconds".format(
+                start_colour=logger.fmt_purple,
+                cst_colour=logger.fmt_bold + cst_colour,
+                nofmt=logger.fmt_end,
+                hostname=config["node_hostname"],
+                starttime=runtime_start,
+                costate=active_coordinator_state,
+                runtime=runtime,
+            ),
+            state="t",
+        )
+
         if this_node.maintenance is True:
             maintenance_colour = logger.fmt_blue
         else:
