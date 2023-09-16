@@ -1024,14 +1024,14 @@ def entrypoint():
                         state="i",
                     )
 
-    # Set up the node monitoring instance
+    # Set up the node monitoring instance and thread
     monitoring_instance = MonitoringInstance.MonitoringInstance(
         zkhandler, config, logger, this_node
     )
 
     # Start keepalived thread
     keepalive_timer = pvcnoded.util.keepalive.start_keepalive_timer(
-        logger, config, zkhandler, this_node, monitoring_instance
+        logger, config, zkhandler, this_node
     )
 
     # Tick loop; does nothing since everything is async
