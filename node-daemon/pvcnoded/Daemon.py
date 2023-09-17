@@ -324,8 +324,13 @@ def entrypoint():
         config["ipmi_hostname"], config["ipmi_username"], config["ipmi_password"]
     ):
         logger.out(
-            "Our IPMI is not reachable; fencing of this node will likely fail",
+            "Our IPMI interface is not reachable; fencing of this node will fail until corrected",
             state="w",
+        )
+    else:
+        logger.out(
+            "Our IPMI interface is reachable; fencing of this node is possible",
+            state="o",
         )
 
     # Validate libvirt
