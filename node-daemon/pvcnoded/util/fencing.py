@@ -153,7 +153,13 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 
     # Loop through the VMs
     for dom_uuid in dead_node_running_domains:
-        fence_migrate_vm(dom_uuid)
+        try:
+            fence_migrate_vm(dom_uuid)
+        except Exception as e:
+            logger.out(
+                f"Failed to migrate VM {dom_uuid}, continuing: {e}",
+                state="w",
+            )
 
     # Set node in flushed state for easy remigrating when it comes back
     zkhandler.write([(("node.state.domain", node_name), "flushed")])
