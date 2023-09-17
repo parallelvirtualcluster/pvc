@@ -75,10 +75,10 @@ class MonitoringPluginScript(MonitoringPlugin):
         load_average = float(round(getloadavg()[0], 2))
 
         # Get the number of CPU cores
-        cpu_cores = float(cpu_count())
+        cpu_cores = cpu_count()
 
         # Check that the load average is greater or equal to the cpu count
-        if load_average > cpu_cores:
+        if load_average > float(cpu_cores):
             # Set the health delta to 10 (subtract 10 from the total of 100)
             health_delta = 50
             # Craft a message that can be used by the clients
