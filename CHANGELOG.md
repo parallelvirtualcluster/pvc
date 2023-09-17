@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v0.9.75](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.75)
+
+  * [Node Daemon] Adds a startup message about IPMI when succeeding
+  * [Node Daemon] Fixes a bug in fencing allowing non-failing VMs to migrate
+  * [Node Daemon] Adds rounding to load average in load plugin for consistency
+
 ###### [v0.9.74](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.74)
 
   * [Docs] Removes docs from the main repo

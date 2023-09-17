@@ -1,3 +1,11 @@
+pvc (0.9.75-0) unstable; urgency=high
+
+  * [Node Daemon] Adds a startup message about IPMI when succeeding
+  * [Node Daemon] Fixes a bug in fencing allowing non-failing VMs to migrate
+  * [Node Daemon] Adds rounding to load average in load plugin for consistency
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 16 Sep 2023 23:06:38 -0400
+
 pvc (0.9.74-0) unstable; urgency=high
 
   * [Docs] Removes docs from the main repo
