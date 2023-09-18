@@ -256,8 +256,13 @@ def getClusterInformation(zkhandler):
         "stop,unflush",
         "dead,ready",
         "dead,flush",
+        "dead,fence-flush",
         "dead,flushed",
         "dead,unflush",
+        "fenced,ready",
+        "fenced,flush",
+        "fenced,flushed",
+        "fenced,unflush",
     ]
     vm_state_combinations = [
         "start",

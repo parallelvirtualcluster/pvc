@@ -135,7 +135,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
             state_colour = ansii["green"]
         elif state in ["run,flush", "run,unflush", "run,flushed"]:
             state_colour = ansii["blue"]
-        elif "dead" in state or "stop" in state:
+        elif "dead" in state or "fenced" in state or "stop" in state:
             state_colour = ansii["red"]
         else:
             state_colour = ansii["yellow"]
