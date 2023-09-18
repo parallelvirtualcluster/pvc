@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.76](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.76)
+
+  * [API, Client CLI] Corrects some missing node states for fencing in status output
+
 ###### [v0.9.75](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.75)
 
   * [Node Daemon] Adds a startup message about IPMI when succeeding
