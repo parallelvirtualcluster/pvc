@@ -1188,10 +1188,8 @@ def cli_vm_modify(
 
     # Grab the current config
     current_vm_cfg_raw = vm_information.get("xml")
-    xml_data = etree.fromstring(current_vm_cfg_raw)
-    current_vm_cfgfile = (
-        etree.tostring(xml_data, pretty_print=True).decode("utf8").strip()
-    )
+    xml_data = fromstring(current_vm_cfg_raw)
+    current_vm_cfgfile = tostring(xml_data, pretty_print=True).decode("utf8").strip()
 
     if editor is True:
         new_vm_cfgfile = click.edit(
