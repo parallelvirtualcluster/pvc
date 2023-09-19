@@ -27,7 +27,7 @@ from ssl import SSLContext, TLSVersion
 from distutils.util import strtobool as dustrtobool
 
 # Daemon version
-version = "0.9.76"
+version = "0.9.77"
 
 # API version
 API_VERSION = 1.0

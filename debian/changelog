@@ -1,3 +1,9 @@
+pvc (0.9.77-0) unstable; urgency=high
+
+  * [Client CLI] Fixes a bug from a bad library import
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 19 Sep 2023 11:05:55 -0400
+
 pvc (0.9.76-0) unstable; urgency=high
 
   * [API, Client CLI] Corrects some missing node states for fencing in status output

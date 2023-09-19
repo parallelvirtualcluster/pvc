@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.77](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.77)
+
+  * [Client CLI] Fixes a bug from a bad library import
+
 ###### [v0.9.76](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.76)
 
   * [API, Client CLI] Corrects some missing node states for fencing in status output
