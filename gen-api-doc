@@ -14,7 +14,7 @@ sys.path.append('api-daemon')
 
 import pvcapid.flaskapi as pvc_api
 
-swagger_file = "docs/manuals/swagger.json"
+swagger_file = "swagger.json"
 swagger_data = swagger(pvc_api.app)
 swagger_data['info']['version'] = "1.0"
 swagger_data['info']['title'] = "PVC Client and Provisioner API"
@@ -22,3 +22,5 @@ swagger_data['host'] = "pvc.local:7370"
 
 with open(swagger_file, 'w') as fd:
     fd.write(json.dumps(swagger_data, sort_keys=True, indent=4))
+
+print(f"Swagger file output to {swagger_file}; add it to the PVC documentation repo.")
