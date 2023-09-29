@@ -21,6 +21,7 @@
 
 import math
 
+from os import path
 from json import loads
 from requests_toolbelt.multipart.encoder import (
     MultipartEncoder,
@@ -1209,6 +1210,11 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
     """
     import click
 
+    if image_format != "raw":
+        file_size = path.getsize(image_file)
+    else:
+        file_size = None
+
     bar = UploadProgressBar(
         image_file, end_message="Parsing file on remote side...", end_nl=False
     )
@@ -1220,7 +1226,7 @@ def ceph_volume_upload(config, pool, volume, image_format, image_file):
     upload_monitor = MultipartEncoderMonitor(upload_data, bar.update)
 
     headers = {"Content-Type": upload_monitor.content_type}
-    params = {"image_format": image_format}
+    params = {"image_format": image_format, "file_size": file_size}
 
     response = call_api(
         config,

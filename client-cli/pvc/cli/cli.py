@@ -3598,7 +3598,7 @@ def cli_storage_volume_upload(pool, name, image_format, image_file):
     If the image format is "raw", the image is uploaded directly to the target volume without modification. Otherwise, it will be converted into raw format by "qemu-img convert" on the remote side before writing using a temporary volume. The image format must be a valid format recognized by "qemu-img", such as "vmdk" or "qcow2".
     """
 
-    if not os.path.exists(image_file):
+    if not path.exists(image_file):
         echo(CLI_CONFIG, "ERROR: File '{}' does not exist!".format(image_file))
         exit(1)
 
@@ -4910,13 +4910,13 @@ def cli_provisioner_ova_upload(name, filename, pool):
     Storage templates, provisioning scripts, and arguments for OVA-type profiles will be ignored and should not be set.
     """
 
-    if not os.path.exists(filename):
+    if not path.exists(filename):
         echo(CLI_CONFIG, "ERROR: File '{}' does not exist!".format(filename))
         exit(1)
 
     params = dict()
     params["pool"] = pool
-    params["ova_size"] = os.path.getsize(filename)
+    params["ova_size"] = path.getsize(filename)
 
     retcode, retdata = pvc.lib.provisioner.ova_upload(
         CLI_CONFIG, name, filename, params

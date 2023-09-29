@@ -5088,7 +5088,12 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
                 "required": True,
                 "location": ["args"],
                 "helptext": "A source image format must be specified.",
-            }
+            },
+            {
+                "name": "file_size",
+                "required": False,
+                "location": ["args"],
+            },
         ]
     )
     @Authenticator
@@ -5113,6 +5118,11 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
               - qed
               - vdi
               - vpc
+          - in: query
+            name: file_size
+            type: integer
+            required: false
+            description: The size of the image file, if {image_format} is not "raw"
         responses:
           200:
             description: OK
@@ -5131,7 +5141,10 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
               id: Message
         """
         return api_helper.ceph_volume_upload(
-            pool, volume, reqargs.get("image_format", None)
+            pool,
+            volume,
+            reqargs.get("image_format", None),
+            reqargs.get("file_size", None),
         )
 
 

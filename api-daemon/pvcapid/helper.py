@@ -1584,7 +1584,7 @@ def ceph_volume_remove(zkhandler, pool, name):
 
 
 @ZKConnection(config)
-def ceph_volume_upload(zkhandler, pool, volume, img_type):
+def ceph_volume_upload(zkhandler, pool, volume, img_type, file_size=None):
     """
     Upload a raw file via HTTP post to a PVC Ceph volume
     """
@@ -1605,7 +1605,17 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
         }
         retcode = 400
         return output, retcode
-    dev_size = retdata[0]["stats"]["size"]
+
+    try:
+        dev_size = retdata[0]["stats"]["size"]
+    except Exception:
+        output = {
+            "message": "Target volume '{}' does not exist in pool '{}'.".format(
+                volume, pool
+            )
+        }
+        retcode = 400
+        return output, retcode
 
     def cleanup_maps_and_volumes():
         # Unmap the target blockdev
@@ -1621,6 +1631,13 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
 
     # Create a temporary block device to store non-raw images
     if img_type == "raw":
+        if file_size != dev_size:
+            output = {
+                "message": f"Image file size {file_size} does not match volume size {dev_size}"
+            }
+            retcode = 400
+            return output, retcode
+
         # Map the target blockdev
         retflag, retdata = pvc_ceph.map_volume(zkhandler, pool, volume)
         if not retflag:
@@ -1661,9 +1678,14 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type):
 
     # Write the image directly to the blockdev
     else:
+        if file_size is None:
+            output = {"message": "A file size must be specified"}
+            retcode = 400
+            return output, retcode
+
         # Create a temporary blockdev
         retflag, retdata = pvc_ceph.add_volume(
-            zkhandler, pool, "{}_tmp".format(volume), dev_size
+            zkhandler, pool, "{}_tmp".format(volume), file_size
         )
         if not retflag:
             output = {"message": retdata.replace('"', "'")}
