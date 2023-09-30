@@ -1629,7 +1629,6 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type, file_size=None):
             zkhandler, pool, "{}_tmp".format(volume)
         )
 
-    # Create a temporary block device to store non-raw images
     if img_type == "raw":
         if file_size != dev_size:
             output = {
@@ -1676,7 +1675,6 @@ def ceph_volume_upload(zkhandler, pool, volume, img_type, file_size=None):
         cleanup_maps_and_volumes()
         return output, retcode
 
-    # Write the image directly to the blockdev
     else:
         if file_size is None:
             output = {"message": "A file size must be specified"}
