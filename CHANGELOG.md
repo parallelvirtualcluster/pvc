@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.78](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.78)
+
+  * [API, Client CLI] Fixes several bugs around image uploads; adds a new query parameter for non-raw images
+  * [API] Ensures RBD images are created with a raw bytes value to avoid rounding errors
+
 ###### [v0.9.77](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.77)
 
   * [Client CLI] Fixes a bug from a bad library import

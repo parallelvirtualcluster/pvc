@@ -1,3 +1,10 @@
+pvc (0.9.78-0) unstable; urgency=high
+
+  * [API, Client CLI] Fixes several bugs around image uploads; adds a new query parameter for non-raw images
+  * [API] Ensures RBD images are created with a raw bytes value to avoid rounding errors
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 30 Sep 2023 12:57:55 -0400
+
 pvc (0.9.77-0) unstable; urgency=high
 
   * [Client CLI] Fixes a bug from a bad library import
