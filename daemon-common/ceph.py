@@ -763,9 +763,7 @@ def add_volume(zkhandler, pool, name, size):
 
     # 2. Create the volume
     retcode, stdout, stderr = common.run_os_command(
-        "rbd create --size {} {}/{}".format(
-            format_bytes_tohuman(size_bytes), pool, name
-        )
+        "rbd create --size {}B {}/{}".format(size_bytes, pool, name)
     )
     if retcode:
         return False, 'ERROR: Failed to create RBD volume "{}": {}'.format(name, stderr)
