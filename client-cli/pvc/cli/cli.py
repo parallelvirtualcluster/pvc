@@ -3457,14 +3457,14 @@ def cli_storage_pool():
     show_default=True,
     required=False,
     help="""
-    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and should not exceed the total number of nodes; the "mincopies" value specifies the minimum number of available copies to allow writes. For additional details please see the Cluster Architecture documentation.
+    The replication configuration, specifying both a "copies" and "mincopies" value, separated by a comma, e.g. "copies=3,mincopies=2". The "copies" value specifies the total number of replicas and the "mincopies" value specifies the minimum number of active replicas to allow I/O. For additional details please see the documentation.
     """,
 )
 def cli_storage_pool_add(name, pgs, tier, replcfg):
     """
     Add a new Ceph RBD pool with name NAME and PGS placement groups.
 
-    The placement group count must be a non-zero power of 2.
+    The placement group count must be a non-zero power of 2. Generally you should choose a PGS number such that there will be 50-150 PGs on each OSD in a single node (before replicas); 64, 128, or 256 are good values for small clusters (1-5 OSDs per node); higher values are recommended for higher node or OSD counts. For additional details please see the documentation.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_pool_add(
@@ -3503,9 +3503,9 @@ def cli_storage_pool_set_pgs(name, pgs):
     """
     Set the placement groups (PGs) count for the pool NAME to PGS.
 
-    The placement group count must be a non-zero power of 2.
+    The placement group count must be a non-zero power of 2. Generally you should choose a PGS number such that there will be 50-150 PGs on each OSD in a single node (before replicas); 64, 128, or 256 are good values for small clusters (1-5 OSDs per node); higher values are recommended for higher node or OSD counts. For additional details please see the documentation.
 
-    Placement group counts may be increased or decreased as required though frequent alteration is not recommended.
+    Placement group counts may be increased or decreased as required though frequent alteration is not recommended. Placement group alterations are intensive operations on the storage cluster.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_pool_set_pgs(CLI_CONFIG, name, pgs)
