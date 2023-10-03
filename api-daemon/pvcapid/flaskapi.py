@@ -5122,7 +5122,7 @@ class API_Storage_Ceph_Volume_Element_Upload(Resource):
             name: file_size
             type: integer
             required: false
-            description: The size of the image file, if {image_format} is not "raw"
+            description: The size of the image file, in bytes, if {image_format} is not "raw"
         responses:
           200:
             description: OK
