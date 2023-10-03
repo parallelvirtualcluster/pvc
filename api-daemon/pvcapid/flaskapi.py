@@ -4843,7 +4843,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
             {
                 "name": "size",
                 "required": True,
-                "helptext": "A volume size in bytes (or with k/M/G/T suffix) must be specified.",
+                "helptext": "A volume size in bytes (B implied or with SI suffix k/M/G/T) must be specified.",
             },
         ]
     )
@@ -4869,7 +4869,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
             name: size
             type: string
             required: true
-            description: The volume size in bytes (or with a metric suffix, i.e. k/M/G/T)
+            description: The volume size, in bytes (B implied) or with a single-character SI suffix (k/M/G/T)
         responses:
           200:
             description: OK
