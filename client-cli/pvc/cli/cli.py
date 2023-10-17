@@ -1632,10 +1632,10 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
         f"Backing up VM {domain}... ",
         newline=False,
     )
-    echo(CLI_CONFIG, "")
     retcode, retmsg = pvc.lib.vm.vm_backup(
         CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshots
     )
+    echo(CLI_CONFIG, "")
     finish(retcode, retmsg)
 
 
