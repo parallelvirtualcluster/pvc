@@ -1308,7 +1308,7 @@ def backup_vm(
     zkhandler, domain, target_path, incremental_parent=None, retain_snapshots=False
 ):
 
-    tstart = datetime.now()
+    tstart = time.time()
 
     # 0. Validations
     # Validate that VM exists in cluster
@@ -1454,8 +1454,8 @@ def backup_vm(
                     which_snapshot_remove_failed.append(f"{pool}/{volume}")
                     msg_snapshot_remove_failed.append(retmsg)
 
-    tend = datetime.now()
-    ttot = (tend - tstart).total_seconds()
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
 
     if is_snapshot_remove_failed:
         return (
@@ -1465,5 +1465,5 @@ def backup_vm(
 
     return (
         True,
-        f"Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds",
+        f"Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds.",
     )
