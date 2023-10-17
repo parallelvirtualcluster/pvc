@@ -1470,4 +1470,4 @@ def backup_vm(
             f"Successfully backed up VM '{domain}' ({backup_type} @ {datestring}) to '{target_path}' in {ttot} seconds.",
         )
 
-    return (True, retmsg)
+    return True, retmsg
