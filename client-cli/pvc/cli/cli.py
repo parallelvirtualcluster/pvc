@@ -1599,7 +1599,8 @@ def cli_vm_flush_locks(domain):
 @click.argument("target_path")
 @click.option(
     "-i",
-    "--incremental" "incremental_parent",
+    "--incremental",
+    "incremental_parent",
     default=None,
     help="Perform an incremental volume backup from this parent backup datestring.",
 )
