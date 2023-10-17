@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -o xtrace
 exec 3>&1
 exec 1>&2

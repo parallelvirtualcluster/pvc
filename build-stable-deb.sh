@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 ver="$( head -1 debian/changelog | awk -F'[()-]' '{ print $2 }' )"
 git pull

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # A useful script for testing out changes to PVC by building the debs and deploying them out to a
 # set of hosts automatically, including restarting the daemon (with a pause between) on the remote
