@@ -1178,13 +1178,15 @@ def get_info(zkhandler, domain):
     return True, domain_information
 
 
-def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
-    if node:
+def get_list(
+    zkhandler, node=None, state=None, tag=None, limit=None, is_fuzzy=True, negate=False
+):
+    if node is not None:
         # Verify node is valid
         if not common.verifyNode(zkhandler, node):
             return False, 'Specified node "{}" is invalid.'.format(node)
 
-    if state:
+    if state is not None:
         valid_states = [
             "start",
             "restart",
@@ -1203,7 +1205,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
     full_vm_list.sort()
 
     # Set our limit to a sensible regex
-    if limit:
+    if limit is not None:
         # Check if the limit is a UUID
         is_limit_uuid = False
         try:
@@ -1232,7 +1234,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
         is_state_match = False
 
         # Check on limit
-        if limit:
+        if limit is not None:
             # Try to match the limit against the UUID (if applicable) and name
             try:
                 if is_limit_uuid and re.fullmatch(limit, vm):
@@ -1244,7 +1246,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
         else:
             is_limit_match = True
 
-        if tag:
+        if tag is not None:
             vm_tags = zkhandler.children(("domain.meta.tags", vm))
             if negate and tag not in vm_tags:
                 is_tag_match = True
@@ -1254,7 +1256,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
             is_tag_match = True
 
         # Check on node
-        if node:
+        if node is not None:
             vm_node = zkhandler.read(("domain.node", vm))
             if negate and vm_node != node:
                 is_node_match = True
@@ -1264,7 +1266,7 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
             is_node_match = True
 
         # Check on state
-        if state:
+        if state is not None:
             vm_state = zkhandler.read(("domain.state", vm))
             if negate and vm_state != state:
                 is_state_match = True
