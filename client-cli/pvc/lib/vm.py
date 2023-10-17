@@ -433,6 +433,27 @@ def vm_locks(config, vm):
     return retstatus, response.json().get("message", "")
 
 
+def vm_backup(config, vm, target_path, incremental_parent=None, retain_snapshots=False):
+    """
+    Create a backup of {vm} and its volumes to a local primary coordinator filesystem path
+
+    API endpoint: GET /vm/{vm}/backup
+    API arguments: target_path={target_path}, incremental_parent={incremental_parent}, retain_snapshots={retain_snapshots}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "target_path": target_path,
+        "incremental_parent": incremental_parent,
+        "retain_snapshots": retain_snapshots,
+    }
+    response = call_api(config, "get", "/vm/{vm}/backup".format(vm=vm), params=params)
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

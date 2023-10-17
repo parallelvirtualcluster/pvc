@@ -21,12 +21,15 @@
 
 import time
 import re
+import os.path
 import lxml.objectify
 import lxml.etree
 
 from distutils.util import strtobool
 from uuid import UUID
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from json import dump as jdump
 
 import daemon_lib.common as common
 
@@ -1297,3 +1300,159 @@ def get_list(zkhandler, node, state, tag, limit, is_fuzzy=True, negate=False):
                 pass
 
     return True, sorted(vm_data_list, key=lambda d: d["name"])
+
+
+def backup_vm(
+    zkhandler, domain, target_path, incremental_parent=None, retain_snapshots=False
+):
+
+    # 0. Validations
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Validate that the target path exists
+    if not re.match(r"^/", target_path):
+        return (
+            False,
+            f"ERROR: Target path {target_path} is not a valid absolute path on the primary coordinator!",
+        )
+
+    # Ensure that target_path (on this node) exists
+    if not os.path.isdir(target_path):
+        return False, f"ERROR: Target path {target_path} does not exist!"
+
+    # 1. Get information about VM
+    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[0]
+    vm_volumes = [
+        tuple(d["name"].split("/")) for d in vm_detail["disks"] if d["type"] == "rbd"
+    ]
+
+    # 2a. Validate that all volumes exist (they should, but just in case)
+    for pool, volume in vm_volumes:
+        if not ceph.verifyVolume(zkhandler, pool, volume):
+            return (
+                False,
+                f"ERROR: VM defines a volume {pool}/{volume} which does not exist!",
+            )
+
+    # 2b. Validate that, if an incremental_parent is given, it is valid
+    # The incremental parent is just a datestring
+    if incremental_parent is not None:
+        for pool, volume in vm_volumes:
+            if not ceph.verifySnapshot(
+                zkhandler, pool, volume, f"backup_{incremental_parent}"
+            ):
+                return (
+                    False,
+                    f"ERROR: Incremental parent {incremental_parent} given, but no snapshot {pool}/{volume}@backup_{incremental_parent} was found; cannot export an incremental backup.",
+                )
+
+        export_fileext = "rbddiff"
+    else:
+        export_fileext = "rbdimg"
+
+    # 3. Set datestring in YYYYMMDDHHMMSS format
+    now = datetime.now()
+    datestring = f"{now.year}{now.month}{now.day}{now.hour}{now.minute}{now.second}"
+
+    snapshot_name = f"backup_{datestring}"
+
+    # 4. Create destination directory
+    vm_target_root = f"{target_path}/{domain}"
+    vm_target_backup = f"{target_path}/{domain}/.{datestring}"
+    if not os.path.isdir(vm_target_backup):
+        try:
+            os.makedirs(vm_target_backup)
+        except Exception as e:
+            return False, f"ERROR: Failed to create backup directory: {e}"
+
+    # 5. Take snapshot of each disks with the name @backup_{datestring}
+    is_snapshot_create_failed = False
+    which_snapshot_create_failed = list()
+    msg_snapshot_create_failed = list()
+    for pool, volume in vm_volumes:
+        retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, snapshot_name)
+        if not retcode:
+            is_snapshot_create_failed = True
+            which_snapshot_create_failed.append(f"{pool}/{volume}")
+            msg_snapshot_create_failed.append(retmsg)
+
+    if is_snapshot_create_failed:
+        for pool, volume in vm_volumes:
+            if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
+                ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+        return (
+            False,
+            f'ERROR: Failed to create snapshot for volume(s) {", ".join(which_snapshot_create_failed)}: {", ".join(msg_snapshot_create_failed)}',
+        )
+
+    # 6. Dump snapshot to folder with `rbd export` (full) or `rbd export-diff` (incremental)
+    is_snapshot_export_failed = False
+    which_snapshot_export_failed = list()
+    msg_snapshot_export_failed = list()
+    for pool, volume in vm_volumes:
+        if incremental_parent is not None:
+            incremental_parent_snapshot_name = f"backup_{incremental_parent}"
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd export-diff --from-snap {incremental_parent_snapshot_name} {pool}/{volume}@{snapshot_name} {vm_target_backup}/{volume}.{export_fileext}"
+            )
+            if retcode:
+                is_snapshot_export_failed = True
+                which_snapshot_export_failed.append(f"{pool}/{volume}")
+                msg_snapshot_export_failed.append(stderr)
+        else:
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd export --export-format 2 {pool}/{volume}@{snapshot_name} {vm_target_backup}/{volume}.{export_fileext}"
+            )
+            if retcode:
+                is_snapshot_export_failed = True
+                which_snapshot_export_failed.append(f"{pool}/{volume}")
+                msg_snapshot_export_failed.append(stderr)
+
+    if is_snapshot_export_failed:
+        for pool, volume in vm_volumes:
+            if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
+                ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+        return (
+            False,
+            f'ERROR: Failed to export snapshot for volume(s) {", ".join(which_snapshot_export_failed)}: {", ".join(msg_snapshot_export_failed)}',
+        )
+
+    # 7. Create and dump VM backup information
+    vm_backup = {
+        "type": "incremental" if incremental_parent is not None else "full",
+        "datestring": datestring,
+        "incremental_parent": incremental_parent,
+        "vm_detail": vm_detail,
+        "backup_files": [f".{datestring}/{v}.{export_fileext}" for p, v in vm_volumes],
+    }
+    with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
+        jdump(fh, vm_backup)
+
+    # 8. Remove snapshots if retain_snapshot is False
+    if not retain_snapshots:
+        is_snapshot_remove_failed = False
+        which_snapshot_remove_failed = list()
+        msg_snapshot_remove_failed = list()
+        for pool, volume in vm_volumes:
+            if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
+                retcode, retmsg = ceph.remove_snapshot(
+                    zkhandler, pool, volume, snapshot_name
+                )
+                if not retcode:
+                    is_snapshot_remove_failed = True
+                    which_snapshot_remove_failed.append(f"{pool}/{volume}")
+                    msg_snapshot_remove_failed.append(retmsg)
+
+        if is_snapshot_remove_failed:
+            for pool, volume in vm_volumes:
+                if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
+                    ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+        return (
+            True,
+            f'WARNING: Successfully backed up VM {domain} @ {datestring} to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
+        )
+
+    return True, f"Successfully backed up VM {domain} @ {datestring} to {target_path}"

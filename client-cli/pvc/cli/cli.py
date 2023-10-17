@@ -1591,6 +1591,48 @@ def cli_vm_flush_locks(domain):
 
 
 ###############################################################################
+# > pvc vm backup
+###############################################################################
+@click.command(name="backup", short_help="Create a backup of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("target_path")
+@click.option(
+    "-i",
+    "--incremental" "incremental_parent",
+    default=None,
+    help="Perform an incremental volume backup from this parent backup datestring.",
+)
+@click.option(
+    "-r",
+    "--retain-snapshots",
+    "retain_snapshots",
+    is_flag=True,
+    default=False,
+    help="Retain volume snapshots for future incremental use.",
+)
+def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
+    """
+    Create a backup of virtual machine DOMAIN to TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+
+    TARGET_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing writes from the API daemon (normally running as "root"). The TARGET_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+
+    The backup will export the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes, using a datestring formatted backup name (i.e. YYYYMMDDHHMMSS).
+
+    The virtual machine DOMAIN may be running, and due to snapshots the backup should be crash-consistent, but will be in an unclean state and this must be considered when restoring from backups.
+
+    Incremental snapshots are possible by specifying the "-i"/"--incremental" option along with a source backup datestring. The snapshots from that source backup must have been retained using the "-r"/"--retain-snapshots" option. Arbitrary snapshots, assuming they are valid for all attached RBD volumes, may also be used, as long as they are prefixed with "backup_". Retaining snapshots of incremental backups is supported, though it is not recommended to "chain" incremental backups in this way as it can make managing restores more difficult.
+
+    Full backup volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the TARGET_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
+    """
+
+    retcode, retmsg = pvc.lib.vm.vm_backup(
+        CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshots
+    )
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm tag
 ###############################################################################
 @click.group(
@@ -5659,6 +5701,7 @@ cli_vm.add_command(cli_vm_move)
 cli_vm.add_command(cli_vm_migrate)
 cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
+cli_vm.add_command(cli_vm_backup)
 cli_vm_tag.add_command(cli_vm_tag_get)
 cli_vm_tag.add_command(cli_vm_tag_add)
 cli_vm_tag.add_command(cli_vm_tag_remove)

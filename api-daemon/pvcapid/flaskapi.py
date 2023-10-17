@@ -2140,7 +2140,7 @@ class API_VM_Locks(Resource):
 api.add_resource(API_VM_Locks, "/vm/<vm>/locks")
 
 
-# /vm/<vm</console
+# /vm/<vm>/console
 class API_VM_Console(Resource):
     @RequestParser([{"name": "lines"}])
     @Authenticator
@@ -2291,6 +2291,77 @@ class API_VM_Device(Resource):
 
 
 api.add_resource(API_VM_Device, "/vm/<vm>/device")
+
+
+# /vm/<vm>/backup
+class API_VM_Backup(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "target_path",
+                "required": True,
+                "helptext": "A local filesystem path on the primary coordinator must be specified",
+            },
+            {
+                "name": "incremental_parent",
+                "required": False,
+            },
+            {
+                "name": "retain_snapshots",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def get(self, vm, reqargs):
+        """
+        Create a backup of {vm} and its volumes to a local primary coordinator filesystem path
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: target_path
+            type: string
+            required: true
+            description: A local filesystem path on the primary coordinator to store the backup
+          - in: query
+            name: incremental_parent
+            type: string
+            required: false
+            description: A previous backup datestamp to use as an incremental parent; if unspecified a full backup is taken
+          - in: query
+            name: retain_snapshots
+            type: boolean
+            required: false
+            default: false
+            description: Whether or not to retain this backup's volume snapshots to use as a future incremental parent
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        target_path = reqargs.get("target_path", None)
+        incremental_parent = reqargs.get("incremental_parent", None)
+        retain_snapshots = bool(strtobool(reqargs.get("retain_snapshots", "false")))
+        return api_helper.backup_vm(
+            vm, target_path, incremental_parent, retain_snapshots
+        )
+
+
+api.add_resource(API_VM_Backup, "/vm/<vm>/backup")
 
 
 ##########################################################
