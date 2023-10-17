@@ -1360,7 +1360,7 @@ def backup_vm(
 
     # 3. Set datestring in YYYYMMDDHHMMSS format
     now = datetime.now()
-    datestring = f"{now.year}{now.month}{now.day}{now.hour}{now.minute}{now.second}"
+    datestring = now.strftime("%Y%m%d%H%M%S")
 
     snapshot_name = f"backup_{datestring}"
 
