@@ -1458,12 +1458,16 @@ def backup_vm(
     ttot = round(tend - tstart, 2)
 
     if is_snapshot_remove_failed:
-        return (
-            True,
-            f'WARNING: Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
+        retmsg = (
+            f"WARNING: Successfully backed up VM '{domain}' ({backup_type} @ {datestring}) to '{target_path}' in {ttot} seconds, but failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}",
+        )
+    elif retain_snapshots:
+        retmsg = (
+            f"Successfully backed up VM '{domain}' ({backup_type} @ {datestring}, snapshots retained) to '{target_path}' in {ttot} seconds.",
+        )
+    else:
+        retmsg = (
+            f"Successfully backed up VM '{domain}' ({backup_type} @ {datestring}) to '{target_path}' in {ttot} seconds.",
         )
 
-    return (
-        True,
-        f"Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds.",
-    )
+    return (True, retmsg)
