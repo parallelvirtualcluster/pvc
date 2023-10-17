@@ -1426,8 +1426,9 @@ def backup_vm(
         )
 
     # 7. Create and dump VM backup information
+    backup_type = "incremental" if incremental_parent is not None else "full"
     vm_backup = {
-        "type": "incremental" if incremental_parent is not None else "full",
+        "type": backup_type,
         "datestring": datestring,
         "incremental_parent": incremental_parent,
         "vm_detail": vm_detail,
@@ -1454,7 +1455,10 @@ def backup_vm(
         if is_snapshot_remove_failed:
             return (
                 True,
-                f'WARNING: Successfully backed up VM {domain} @ {datestring} to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
+                f'WARNING: Successfully backed up VM {domain} ({backup_type}@{datestring}) to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
             )
 
-    return True, f"Successfully backed up VM {domain} @ {datestring} to {target_path}"
+    return (
+        True,
+        f"Successfully backed up VM {domain} ({backup_type}@{datestring}) to {target_path}",
+    )
