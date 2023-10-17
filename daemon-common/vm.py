@@ -1434,7 +1434,7 @@ def backup_vm(
         "backup_files": [f".{datestring}/{v}.{export_fileext}" for p, v in vm_volumes],
     }
     with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
-        jdump(fh, vm_backup)
+        jdump(vm_backup, fh)
 
     # 8. Remove snapshots if retain_snapshot is False
     if not retain_snapshots:
@@ -1452,12 +1452,9 @@ def backup_vm(
                     msg_snapshot_remove_failed.append(retmsg)
 
         if is_snapshot_remove_failed:
-            for pool, volume in vm_volumes:
-                if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
-                    ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
-        return (
-            True,
-            f'WARNING: Successfully backed up VM {domain} @ {datestring} to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
-        )
+            return (
+                True,
+                f'WARNING: Successfully backed up VM {domain} @ {datestring} to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
+            )
 
     return True, f"Successfully backed up VM {domain} @ {datestring} to {target_path}"
