@@ -1326,7 +1326,10 @@ def backup_vm(
         return False, f"ERROR: Target path {target_path} does not exist!"
 
     # 1. Get information about VM
-    _, vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[0]
+    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    if not isinstance(vm_detail, dict):
+        return False, f"ERROR: VM listing returned invalid data: {vm_detail}"
+
     vm_volumes = [
         tuple(d["name"].split("/")) for d in vm_detail["disks"] if d["type"] == "rbd"
     ]
