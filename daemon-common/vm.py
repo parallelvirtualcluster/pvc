@@ -1308,6 +1308,8 @@ def backup_vm(
     zkhandler, domain, target_path, incremental_parent=None, retain_snapshots=False
 ):
 
+    tstart = datetime.now()
+
     # 0. Validations
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -1438,10 +1440,10 @@ def backup_vm(
         jdump(vm_backup, fh)
 
     # 8. Remove snapshots if retain_snapshot is False
+    is_snapshot_remove_failed = False
+    which_snapshot_remove_failed = list()
+    msg_snapshot_remove_failed = list()
     if not retain_snapshots:
-        is_snapshot_remove_failed = False
-        which_snapshot_remove_failed = list()
-        msg_snapshot_remove_failed = list()
         for pool, volume in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 retcode, retmsg = ceph.remove_snapshot(
@@ -1452,13 +1454,16 @@ def backup_vm(
                     which_snapshot_remove_failed.append(f"{pool}/{volume}")
                     msg_snapshot_remove_failed.append(retmsg)
 
-        if is_snapshot_remove_failed:
-            return (
-                True,
-                f'WARNING: Successfully backed up VM {domain} ({backup_type}@{datestring}) to {target_path}, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
-            )
+    tend = datetime.now()
+    ttot = (tend - tstart).total_seconds()
+
+    if is_snapshot_remove_failed:
+        return (
+            True,
+            f'WARNING: Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds, but failed to remove snapshot as requested for volume(s) {", ".join(which_snapshot_remove_failed)}: {", ".join(msg_snapshot_remove_failed)}',
+        )
 
     return (
         True,
-        f"Successfully backed up VM {domain} ({backup_type}@{datestring}) to {target_path}",
+        f"Successfully backed up VM {domain} ({backup_type} @ {datestring}) to {target_path} in {ttot} seconds",
     )
