@@ -2356,7 +2356,7 @@ class API_VM_Backup(Resource):
         target_path = reqargs.get("target_path", None)
         incremental_parent = reqargs.get("incremental_parent", None)
         retain_snapshots = bool(strtobool(reqargs.get("retain_snapshots", "false")))
-        return api_helper.backup_vm(
+        return api_helper.vm_backup(
             vm, target_path, incremental_parent, retain_snapshots
         )
 
