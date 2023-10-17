@@ -1351,7 +1351,7 @@ def backup_vm(
             ):
                 return (
                     False,
-                    f"ERROR: Incremental parent {incremental_parent} given, but no snapshot {pool}/{volume}@backup_{incremental_parent} was found; cannot export an incremental backup.",
+                    f"ERROR: Incremental parent {incremental_parent} given, but no snapshots were found; cannot export an incremental backup.",
                 )
 
         export_fileext = "rbddiff"
