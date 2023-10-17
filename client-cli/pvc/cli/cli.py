@@ -1627,6 +1627,12 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
     Full backup volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the TARGET_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
     """
 
+    echo(
+        CLI_CONFIG,
+        f"Backing up VM {domain}... ",
+        newline=False,
+    )
+    echo(CLI_CONFIG, "")
     retcode, retmsg = pvc.lib.vm.vm_backup(
         CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshots
     )
