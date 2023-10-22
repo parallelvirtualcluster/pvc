@@ -132,7 +132,7 @@ class MonitoringPluginScript(MonitoringPlugin):
                 for slave_interface in slave_interfaces:
                     if slave_interface[1] == 'up':
                         slave_interface_up_count += 1
-                if slave_interface_up_count < 2:
+                if slave_interface_up_count < len(slave_interfaces):
                     messages.append(f"{dev} DEGRADED with {slave_interface_up_count} active slaves")
                     health_delta += 10
                 else:
