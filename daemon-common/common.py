@@ -146,7 +146,11 @@ def run_os_daemon(command_string, environment=None, logfile=None):
 # Run a local OS command via shell
 #
 def run_os_command(command_string, background=False, environment=None, timeout=None):
-    command = shlex_split(command_string)
+    if not isinstance(command_string, list):
+        command = shlex_split(command_string)
+    else:
+        command = command_string
+
     if background:
 
         def runcmd():
