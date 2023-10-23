@@ -29,7 +29,6 @@ from distutils.util import strtobool
 from uuid import UUID
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from shutil import rmtree
 from json import dump as jdump
 from json import load as jload
 
@@ -1432,46 +1431,19 @@ def backup_vm(
             f'ERROR: Failed to export snapshot for volume(s) {", ".join(which_snapshot_export_failed)}: {", ".join(msg_snapshot_export_failed)}',
         )
 
-    # 7. Archive RBD images to a single tar file
-    backup_archive_file = f"{vm_target_root}/{domain}.{datestring}.pvcdisks"
-    tar_cmd_base = [
-        "tar",
-        "--create",
-        "--file",
-        backup_archive_file,
-        "--directory",
-        f"{vm_target_root}/.{datestring}",
-    ]
-    tar_cmd_files = [f"{v}.{export_fileext}" for p, v in vm_volumes]
-    tar_cmd = tar_cmd_base + tar_cmd_files
-    retcode, stdout, stderr = common.run_os_command(tar_cmd)
-    if retcode:
-        return (
-            False,
-            f"ERROR: Failed to combine export files into archive: {stderr}",
-        )
-
-    is_exports_remove_failed = False
-    msg_exports_remove_failed = ""
-    try:
-        rmtree(f"{vm_target_root}/.{datestring}")
-    except Exception as e:
-        is_exports_remove_failed = True
-        msg_exports_remove_failed = str(e)
-
-    # 8. Create and dump VM backup information
+    # 7. Create and dump VM backup information
     backup_type = "incremental" if incremental_parent is not None else "full"
     vm_backup = {
         "type": backup_type,
         "datestring": datestring,
         "incremental_parent": incremental_parent,
         "vm_detail": vm_detail,
-        "backup_archive_file": backup_archive_file,
+        "backup_files": [f".{datestring}/{v}.{export_fileext}" for p, v in vm_volumes],
     }
     with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
         jdump(vm_backup, fh)
 
-    # 9. Remove snapshots if retain_snapshot is False
+    # 8. Remove snapshots if retain_snapshot is False
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
@@ -1489,14 +1461,12 @@ def backup_vm(
     tend = time.time()
     ttot = round(tend - tstart, 2)
 
-    if retain_snapshots:
+    if is_snapshot_remove_failed:
+        retmsg = f"WARNING: Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{target_path}' in {ttot} seconds, but failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+    elif retain_snapshots:
         retmsg = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{target_path}' in {ttot} seconds."
     else:
         retmsg = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{target_path}' in {ttot} seconds."
-    if is_exports_remove_failed:
-        retmsg = f"WARNING: Failed to remove raw export files: {msg_exports_remove_failed}\n{retmsg}"
-    if is_snapshot_remove_failed:
-        retmsg = f"WARNING: Failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}\n{retmsg}"
 
     return True, retmsg
 
