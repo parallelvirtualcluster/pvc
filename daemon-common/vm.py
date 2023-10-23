@@ -31,6 +31,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from shutil import rmtree
 from json import dump as jdump
+from json import load as jload
 
 import daemon_lib.common as common
 
@@ -1361,6 +1362,9 @@ def backup_vm(
     else:
         export_fileext = "rbdimg"
 
+    # 2c. Validate that there's enough space on the target
+    # TODO
+
     # 3. Set datestring in YYYYMMDDHHMMSS format
     now = datetime.now()
     datestring = now.strftime("%Y%m%d%H%M%S")
@@ -1495,3 +1499,94 @@ def backup_vm(
         retmsg = f"WARNING: Failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}\n{retmsg}"
 
     return True, retmsg
+
+
+def restore_vm(zkhandler, domain, datestring, source_path, incremental_parent=None):
+
+    tstart = time.time()
+
+    # 0. Validations
+    # Validate that VM does not exist in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if dom_uuid:
+        return (
+            False,
+            f'ERROR: VM "{domain}" already exists in the cluster! Remove or rename it before restoring a backup.',
+        )
+
+    # Validate that the target path exists
+    if not re.match(r"^/", source_path):
+        return (
+            False,
+            f"ERROR: Source path {source_path} is not a valid absolute path on the primary coordinator!",
+        )
+
+    # Ensure that source_path (on this node) exists
+    if not os.path.isdir(source_path):
+        return False, f"ERROR: Source path {source_path} does not exist!"
+
+    # Ensure that domain path (on this node) exists
+    vm_source_path = f"{source_path}/{domain}"
+    if not os.path.isdir(vm_source_path):
+        return False, f"ERROR: Source VM path {vm_source_path} does not exist!"
+
+    # Ensure that the archives are present
+    vm_source_pvcbackup_file = f"{vm_source_path}/{domain}.{datestring}.pvcbackup"
+    vm_source_pvcdisks_file = f"{vm_source_path}/{domain}.{datestring}.pvcdisks"
+    if not os.path.isfile(vm_source_pvcbackup_file) or not os.path.isfile(
+        vm_source_pvcdisks_file
+    ):
+        return False, f"ERROR: The specified source backup files do not exist!"
+
+    if incremental_parent is not None:
+        vm_source_parent_pvcbackup_file = (
+            f"{vm_source_path}/{domain}.{incremental_parent}.pvcbackup"
+        )
+        vm_source_parent_pvcdisks_file = (
+            f"{vm_source_path}/{domain}.{incremental_parent}.pvcdisks"
+        )
+        if not os.path.isfile(vm_source_parent_pvcbackup_file) or not os.path.isfile(
+            vm_source_parent_pvcdisks_file
+        ):
+            return (
+                False,
+                f"ERROR: The specified incremental parent source backup files do not exist!",
+            )
+
+    # 1. Read the backup file and get VM details
+    try:
+        with open(vm_source_pvcbackup_file) as fh:
+            vm_source_details = jload(fh)
+    except Exception as e:
+        return False, f"ERROR: Failed to read source backup details: {e}"
+
+    # 2. Import VM config and metadata in provision state
+    vm_config_xml = vm_source_details.get("xml")
+    vm_config_meta = {
+        "node": vm_source_details.get("node"),
+        "node_limit": vm_source_details.get("node_limit"),
+        "node_selector": vm_source_details.get("node_selector"),
+        "node_autostart": vm_source_details.get("node_autostart"),
+        "migration_method": vm_source_details.get("migration_method"),
+        "tags": vm_source_details.get("tags"),
+        "description": vm_source_details.get("description"),
+        "profile": vm_source_details.get("profile"),
+    }
+
+    define_vm(
+        zkhandler,
+        vm_confing_xml,
+        vm_source_details.get("node"),
+        vm_source_details.get("node_limit"),
+        vm_source_details.get("node_selector"),
+        vm_source_details.get("node_autostart"),
+        vm_source_details.get("migration_method"),
+        vm_source_details.get("profile"),
+        vm_source_details.get("tags"),
+        "restore",
+    )
+
+    # 4. Import parent snapshot disks (if applicable)
+
+    # 5. Apply diffs (if applicable)
+    # 5. Start VM
