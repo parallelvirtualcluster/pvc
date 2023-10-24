@@ -1666,7 +1666,7 @@ def cli_vm_restore(domain, backup_datestring, target_path, retain_snapshot):
 
     The restore will import the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental backups will be automatically handled.
 
-    A VM named DOMAIN must not exist; if the VM already exists, it must be removed before restoring. Renaming is not sufficient as the UUID will remain the same.
+    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed, or renamed and then undefined (to preserve volumes), before restoring.
 
     If the "-r"/"--retain-snapshot" option is specified (the default), for incremental restores, only the parent snapshot is kept; for full restores, the restored snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
 
