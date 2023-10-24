@@ -77,5 +77,5 @@ def start_system_services(logger, config):
     start_ceph_mon(logger, config)
     start_ceph_mgr(logger, config)
 
-    logger.out("Waiting 3 seconds for daemons to start", state="s")
-    sleep(3)
+    logger.out("Waiting 10 seconds for daemons to start", state="s")
+    sleep(10)
