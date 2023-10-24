@@ -1,3 +1,15 @@
+pvc (0.9.79-0) unstable; urgency=high
+
+  **API Changes**: New endpoints /vm/{vm}/backup, /vm/{vm}/restore
+
+  * [CLI Client] Fixes some storage pool help text messages
+  * [Node Daemon] Increases the IPMI monitoring plugin timeout
+  * [All] Adds support for VM backups, including creation, removal, and restore
+  * [Repository] Fixes shebangs in scripts to be consistent
+  * [Daemon Library] Improves the handling of VM list arguments (default None)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 24 Oct 2023 02:10:24 -0400
+
 pvc (0.9.78-0) unstable; urgency=high
 
   * [API, Client CLI] Fixes several bugs around image uploads; adds a new query parameter for non-raw images

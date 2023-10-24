@@ -1,5 +1,15 @@
 ## PVC Changelog
 
+###### [v0.9.79](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.79)
+
+  **API Changes**: New endpoints /vm/{vm}/backup, /vm/{vm}/restore
+
+  * [CLI Client] Fixes some storage pool help text messages
+  * [Node Daemon] Increases the IPMI monitoring plugin timeout
+  * [All] Adds support for VM backups, including creation, removal, and restore
+  * [Repository] Fixes shebangs in scripts to be consistent
+  * [Daemon Library] Improves the handling of VM list arguments (default None)
+
 ###### [v0.9.78](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.78)
 
   * [API, Client CLI] Fixes several bugs around image uploads; adds a new query parameter for non-raw images
