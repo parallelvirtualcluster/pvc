@@ -29,6 +29,7 @@ from distutils.util import strtobool
 from uuid import UUID
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from socket import gethostname
 from json import dump as jdump
 from json import load as jload
 
@@ -1333,12 +1334,30 @@ def backup_vm(
     if not isinstance(vm_detail, dict):
         return False, f"ERROR: VM listing returned invalid data: {vm_detail}"
 
-    vm_volumes = [
-        tuple(d["name"].split("/")) for d in vm_detail["disks"] if d["type"] == "rbd"
-    ]
+    vm_volumes = list()
+    for disk in vm_detail["disks"]:
+        if disk["type"] != "rbd":
+            continue
+
+        pool, volume = disk["name"].split('/')
+
+        retcode, retdata = ceph.get_list_volume(zkhandler, pool, volume, is_fuzzy=False)
+        if not retcode or len(retdata) != 1:
+            if len(retdata) < 1:
+                retdata = "No volumes returned."
+            elif len(retdata) > 1:
+                retdata = "Multiple volumes returned."
+            return False, f"ERROR: Failed to get volume details for {pool}/{volume}: {retdata}"
+
+        try:
+            size = retdata[0]["stats"]["size"]
+        except Exception as e:
+            return False, f"ERROR: Failed to get volume size for {pool}/{volume}: {e}"
+
+        vm_volumes.append((pool, volume, size))
 
     # 2a. Validate that all volumes exist (they should, but just in case)
-    for pool, volume in vm_volumes:
+    for pool, volume, _ in vm_volumes:
         if not ceph.verifyVolume(zkhandler, pool, volume):
             return (
                 False,
@@ -1348,7 +1367,7 @@ def backup_vm(
     # 2b. Validate that, if an incremental_parent is given, it is valid
     # The incremental parent is just a datestring
     if incremental_parent is not None:
-        for pool, volume in vm_volumes:
+        for pool, volume, _ in vm_volumes:
             if not ceph.verifySnapshot(
                 zkhandler, pool, volume, f"backup_{incremental_parent}"
             ):
@@ -1372,7 +1391,7 @@ def backup_vm(
 
     # 4. Create destination directory
     vm_target_root = f"{target_path}/{domain}"
-    vm_target_backup = f"{target_path}/{domain}/.{datestring}"
+    vm_target_backup = f"{target_path}/{domain}/{domain}.{datestring}.pvcdisks"
     if not os.path.isdir(vm_target_backup):
         try:
             os.makedirs(vm_target_backup)
@@ -1383,7 +1402,7 @@ def backup_vm(
     is_snapshot_create_failed = False
     which_snapshot_create_failed = list()
     msg_snapshot_create_failed = list()
-    for pool, volume in vm_volumes:
+    for pool, volume, _ in vm_volumes:
         retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, snapshot_name)
         if not retcode:
             is_snapshot_create_failed = True
@@ -1391,7 +1410,7 @@ def backup_vm(
             msg_snapshot_create_failed.append(retmsg)
 
     if is_snapshot_create_failed:
-        for pool, volume in vm_volumes:
+        for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
         return (
@@ -1403,11 +1422,11 @@ def backup_vm(
     is_snapshot_export_failed = False
     which_snapshot_export_failed = list()
     msg_snapshot_export_failed = list()
-    for pool, volume in vm_volumes:
+    for pool, volume, _ in vm_volumes:
         if incremental_parent is not None:
             incremental_parent_snapshot_name = f"backup_{incremental_parent}"
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd export-diff --from-snap {incremental_parent_snapshot_name} {pool}/{volume}@{snapshot_name} {vm_target_backup}/{volume}.{export_fileext}"
+                f"rbd export-diff --from-snap {incremental_parent_snapshot_name} {pool}/{volume}@{snapshot_name} {vm_target_backup}/{pool}.{volume}.{export_fileext}"
             )
             if retcode:
                 is_snapshot_export_failed = True
@@ -1415,7 +1434,7 @@ def backup_vm(
                 msg_snapshot_export_failed.append(stderr)
         else:
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd export --export-format 2 {pool}/{volume}@{snapshot_name} {vm_target_backup}/{volume}.{export_fileext}"
+                f"rbd export --export-format 2 {pool}/{volume}@{snapshot_name} {vm_target_backup}/{pool}.{volume}.{export_fileext}"
             )
             if retcode:
                 is_snapshot_export_failed = True
@@ -1423,7 +1442,7 @@ def backup_vm(
                 msg_snapshot_export_failed.append(stderr)
 
     if is_snapshot_export_failed:
-        for pool, volume in vm_volumes:
+        for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
         return (
@@ -1438,7 +1457,7 @@ def backup_vm(
         "datestring": datestring,
         "incremental_parent": incremental_parent,
         "vm_detail": vm_detail,
-        "backup_files": [f".{datestring}/{v}.{export_fileext}" for p, v in vm_volumes],
+        "backup_files": [(f"{domain}.{datestring}.pvcdisks/{p}.{v}.{export_fileext}", s) for p, v, s in vm_volumes],
     }
     with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
         jdump(vm_backup, fh)
@@ -1448,7 +1467,7 @@ def backup_vm(
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
     if not retain_snapshots:
-        for pool, volume in vm_volumes:
+        for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 retcode, retmsg = ceph.remove_snapshot(
                     zkhandler, pool, volume, snapshot_name
@@ -1460,18 +1479,21 @@ def backup_vm(
 
     tend = time.time()
     ttot = round(tend - tstart, 2)
+    retlines = list()
 
     if is_snapshot_remove_failed:
-        retmsg = f"WARNING: Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{target_path}' in {ttot} seconds, but failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
-    elif retain_snapshots:
-        retmsg = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{target_path}' in {ttot} seconds."
+        retlines.append(f"WARNING: Failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
+
+    myhostname = gethostname().split(".")[0]
+    if retain_snapshots:
+        retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{myhostname}:{target_path}' in {ttot}s.")
     else:
-        retmsg = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{target_path}' in {ttot} seconds."
+        retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{myhostname}:{target_path}' in {ttot}s.")
 
-    return True, retmsg
+    return True, '\n'.join(retlines)
 
 
-def restore_vm(zkhandler, domain, datestring, source_path, incremental_parent=None):
+def restore_vm(zkhandler, domain, source_path, datestring):
 
     tstart = time.time()
 
@@ -1496,67 +1518,158 @@ def restore_vm(zkhandler, domain, datestring, source_path, incremental_parent=No
         return False, f"ERROR: Source path {source_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    vm_source_path = f"{source_path}/{domain}"
-    if not os.path.isdir(vm_source_path):
-        return False, f"ERROR: Source VM path {vm_source_path} does not exist!"
+    backup_source_path = f"{source_path}/{domain}"
+    if not os.path.isdir(backup_source_path):
+        return False, f"ERROR: Source VM path {backup_source_path} does not exist!"
 
     # Ensure that the archives are present
-    vm_source_pvcbackup_file = f"{vm_source_path}/{domain}.{datestring}.pvcbackup"
-    vm_source_pvcdisks_file = f"{vm_source_path}/{domain}.{datestring}.pvcdisks"
-    if not os.path.isfile(vm_source_pvcbackup_file) or not os.path.isfile(
-        vm_source_pvcdisks_file
-    ):
-        return False, f"ERROR: The specified source backup files do not exist!"
-
-    if incremental_parent is not None:
-        vm_source_parent_pvcbackup_file = (
-            f"{vm_source_path}/{domain}.{incremental_parent}.pvcbackup"
-        )
-        vm_source_parent_pvcdisks_file = (
-            f"{vm_source_path}/{domain}.{incremental_parent}.pvcdisks"
-        )
-        if not os.path.isfile(vm_source_parent_pvcbackup_file) or not os.path.isfile(
-            vm_source_parent_pvcdisks_file
-        ):
-            return (
-                False,
-                f"ERROR: The specified incremental parent source backup files do not exist!",
-            )
+    backup_source_pvcbackup_file = f"{backup_source_path}/{domain}.{datestring}.pvcbackup"
+    if not os.path.isfile(backup_source_pvcbackup_file):
+        return False, "ERROR: The specified source backup files do not exist!"
 
     # 1. Read the backup file and get VM details
     try:
-        with open(vm_source_pvcbackup_file) as fh:
-            vm_source_details = jload(fh)
+        with open(backup_source_pvcbackup_file) as fh:
+            backup_source_details = jload(fh)
     except Exception as e:
         return False, f"ERROR: Failed to read source backup details: {e}"
 
+    # Handle incrementals
+    incremental_parent = backup_source_details.get("incremental_parent", None)
+    if incremental_parent is not None:
+        backup_source_parent_pvcbackup_file = (
+            f"{backup_source_path}/{domain}.{incremental_parent}.pvcbackup"
+        )
+        if not os.path.isfile(backup_source_parent_pvcbackup_file):
+            return (
+                False,
+                "ERROR: The specified backup is incremental but the required incremental parent source backup files do not exist!",
+            )
+
+        try:
+            with open(backup_source_parent_pvcbackup_file) as fh:
+                backup_source_parent_details = jload(fh)
+        except Exception as e:
+            return False, f"ERROR: Failed to read source incremental parent backup details: {e}"
+
     # 2. Import VM config and metadata in provision state
-    vm_config_xml = vm_source_details.get("xml")
-    vm_config_meta = {
-        "node": vm_source_details.get("node"),
-        "node_limit": vm_source_details.get("node_limit"),
-        "node_selector": vm_source_details.get("node_selector"),
-        "node_autostart": vm_source_details.get("node_autostart"),
-        "migration_method": vm_source_details.get("migration_method"),
-        "tags": vm_source_details.get("tags"),
-        "description": vm_source_details.get("description"),
-        "profile": vm_source_details.get("profile"),
-    }
+    try:
+        retcode, retmsg = define_vm(
+            zkhandler,
+            backup_source_details["vm_detail"]["xml"],
+            backup_source_details["vm_detail"]["node"],
+            backup_source_details["vm_detail"]["node_limit"],
+            backup_source_details["vm_detail"]["node_selector"],
+            backup_source_details["vm_detail"]["node_autostart"],
+            backup_source_details["vm_detail"]["migration_method"],
+            backup_source_details["vm_detail"]["profile"],
+            backup_source_details["vm_detail"]["tags"],
+            "restore",
+        )
+        if not retcode:
+            return False, f"ERROR: Failed to define restored VM: {retmsg}"
+    except Exception as e:
+        return False, f"ERROR: Failed to parse VM backup details: {e}"
 
-    define_vm(
-        zkhandler,
-        vm_confing_xml,
-        vm_source_details.get("node"),
-        vm_source_details.get("node_limit"),
-        vm_source_details.get("node_selector"),
-        vm_source_details.get("node_autostart"),
-        vm_source_details.get("migration_method"),
-        vm_source_details.get("profile"),
-        vm_source_details.get("tags"),
-        "restore",
-    )
+    # 4. Import volumes
+    is_snapshot_remove_failed = False
+    which_snapshot_remove_failed = list()
+    msg_snapshot_remove_failed = list()
+    if incremental_parent is not None:
+        for volume_file, volume_size in backup_source_details.get('backup_files'):
+            pool, volume, _ = volume_file.split('/')[-1].split('.')
+            try:
+                parent_volume_file = [f[0] for f in backup_source_parent_details.get('backup_files') if f[0].split('/')[-1].replace('.rbdimg', '') == volume_file.split('/')[-1].replace('.rbddiff', '')][0]
+            except Exception as e:
+                return False, f"ERROR: Failed to find parent volume for volume {pool}/{volume}; backup may be corrupt or invalid: {e}"
 
-    # 4. Import parent snapshot disks (if applicable)
+            # First we create the expected volumes then clean them up
+            #   This process is a bit of a hack because rbd import does not expect an existing volume,
+            #   but we need the information in PVC.
+            #   Thus create the RBD volume using ceph.add_volume based on the backup size, and then
+            #   manually remove the RBD volume (leaving the PVC metainfo)
+            retcode, retmsg = ceph.add_volume(zkhandler, pool, volume, volume_size)
+            if not retcode:
+                return False, f"ERROR: Failed to create restored volume: {retmsg}"
 
-    # 5. Apply diffs (if applicable)
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd remove {pool}/{volume}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}"
+
+            # Next we import the parent images
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd import --export-format 2 --dest-pool {pool} {source_path}/{domain}/{parent_volume_file} {volume}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to import parent backup image {parent_volume_file}: {stderr}"
+
+            # Then we import the incremental diffs
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd import-diff {source_path}/{domain}/{volume_file} {pool}/{volume}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to import incremental backup image {volume_file}: {stderr}"
+
+            # Finally we remove the parent and child snapshots (no longer required required)
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd snap rm {pool}/{volume}@backup_{incremental_parent}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to remove imported image snapshot for {parent_volume_file}: {stderr}"
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd snap rm {pool}/{volume}@backup_{datestring}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}"
+
+    else:
+        for volume_file, volume_size in backup_source_details.get('backup_files'):
+            pool, volume, _ = volume_file.split('/')[-1].split('.')
+
+            # First we create the expected volumes then clean them up
+            #   This process is a bit of a hack because rbd import does not expect an existing volume,
+            #   but we need the information in PVC.
+            #   Thus create the RBD volume using ceph.add_volume based on the backup size, and then
+            #   manually remove the RBD volume (leaving the PVC metainfo)
+            retcode, retmsg = ceph.add_volume(zkhandler, pool, volume, volume_size)
+            if not retcode:
+                return False, f"ERROR: Failed to create restored volume: {retmsg}"
+
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd remove {pool}/{volume}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}"
+
+            # Then we perform the actual import
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd import --export-format 2 --dest-pool {pool} {source_path}/{domain}/{volume_file} {volume}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to import backup image {volume_file}: {stderr}"
+
+            # Finally we remove the source snapshot (not required)
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd snap rm {pool}/{volume}@backup_{datestring}"
+            )
+            if retcode:
+                return False, f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}"
+
     # 5. Start VM
+    retcode, retmsg = start_vm(zkhandler, domain)
+    if not retcode:
+        return False, f"ERROR: Failed to start restored VM {domain}: {retmsg}"
+
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
+    retlines = list()
+
+    if is_snapshot_remove_failed:
+        retlines.append(f"WARNING: Failed to remove parent snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
+
+    myhostname = gethostname().split(".")[0]
+    retlines.append(f"Successfully restored VM backup {datestring} for '{domain}' from '{myhostname}:{source_path}' in {ttot}s.")
+
+    return True, '\n'.join(retlines)

@@ -499,6 +499,32 @@ def vm_backup(
 
 
 @ZKConnection(config)
+def vm_restore(
+    zkhandler,
+    domain,
+    target_path,
+    datestring,
+):
+    """
+    Restore a VM from a local (primary coordinator) filesystem path.
+    """
+    retflag, retdata = pvc_vm.restore_vm(
+        zkhandler,
+        domain,
+        target_path,
+        datestring,
+    )
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def vm_attach_device(zkhandler, vm, device_spec_xml):
     """
     Hot-attach a device (via XML spec) to a VM.

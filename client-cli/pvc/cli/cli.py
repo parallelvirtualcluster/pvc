@@ -1643,6 +1643,40 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
 
 
 ###############################################################################
+# > pvc vm restore
+###############################################################################
+@click.command(name="restore", short_help="Restore a backup of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("backup_datestring")
+@click.argument("target_path")
+def cli_vm_restore(domain, backup_datestring, target_path):
+    """
+    Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+
+    TARGET_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing reads from the API daemon (normally running as "root"). The TARGET_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+
+    The restore will import the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental backups will be automatically handled.
+
+    A VM named DOMAIN must not exist; if the VM already exists, it must be removed before restoring. Renaming is not sufficient as the UUID will remain the same.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Restoring backup {backup_datestring} of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_restore(
+        CLI_CONFIG, domain, target_path, backup_datestring
+    )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm tag
 ###############################################################################
 @click.group(
@@ -5712,6 +5746,7 @@ cli_vm.add_command(cli_vm_migrate)
 cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
 cli_vm.add_command(cli_vm_backup)
+cli_vm.add_command(cli_vm_restore)
 cli_vm_tag.add_command(cli_vm_tag_get)
 cli_vm_tag.add_command(cli_vm_tag_add)
 cli_vm_tag.add_command(cli_vm_tag_remove)

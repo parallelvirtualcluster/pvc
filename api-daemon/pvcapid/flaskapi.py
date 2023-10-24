@@ -2313,7 +2313,7 @@ class API_VM_Backup(Resource):
         ]
     )
     @Authenticator
-    def get(self, vm, reqargs):
+    def post(self, vm, reqargs):
         """
         Create a backup of {vm} and its volumes to a local primary coordinator filesystem path
         ---
@@ -2362,6 +2362,67 @@ class API_VM_Backup(Resource):
 
 
 api.add_resource(API_VM_Backup, "/vm/<vm>/backup")
+
+
+# /vm/<vm>/restore
+class API_VM_Restore(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "target_path",
+                "required": True,
+                "helptext": "A local filesystem path on the primary coordinator must be specified",
+            },
+            {
+                "name": "backup_datestring",
+                "required": True,
+                "helptext": "A backup datestring must be specified",
+            }
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Restore a backup of {vm} and its volumes from a local primary coordinator filesystem path
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: target_path
+            type: string
+            required: true
+            description: A local filesystem path on the primary coordinator where the backup is stored
+          - in: query
+            name: backup_datestring
+            type: string
+            required: true
+            description: The backup datestring identifier (e.g. 20230102030405)
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        target_path = reqargs.get("target_path", None)
+        backup_datestring = reqargs.get("backup_datestring", None)
+        return api_helper.vm_restore(
+            vm, target_path, backup_datestring
+        )
+
+
+api.add_resource(API_VM_Restore, "/vm/<vm>/restore")
 
 
 ##########################################################
