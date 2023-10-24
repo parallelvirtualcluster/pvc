@@ -1810,7 +1810,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
                     zkhandler,
                     pool,
                     volume,
-                    f"backup_{incremental_parent}",
+                    f"backup_{datestring}",
                     zk_only=True,
                 )
                 if not retcode:
