@@ -36,34 +36,37 @@ echo "Preparing code (format and lint)..."
 ./lint || exit 1
 
 # Build the packages
-echo -n "Building packages... "
+echo -n "Building packages..."
 version="$( ./build-unstable-deb.sh 2>/dev/null )"
-echo "done. Package version ${version}."
+echo " done. Package version ${version}."
 
 # Install the client(s) locally
-echo -n "Installing client packages locally... "
+echo -n "Installing client packages locally..."
 $SUDO dpkg -i ../pvc-client*_${version}*.deb &>/dev/null
-echo "done".
+echo " done".
 
 for HOST in ${HOSTS[@]}; do
     echo "> Deploying packages to host ${HOST}"
-    echo -n "Copying packages... "
+    echo -n "Copying packages..."
     ssh $HOST $SUDO rm -rf /tmp/pvc &>/dev/null
     ssh $HOST mkdir /tmp/pvc &>/dev/null
     scp ../pvc-*_${version}*.deb $HOST:/tmp/pvc/ &>/dev/null
-    echo "done."
-    echo -n "Installing packages... "
+    echo " done."
+    echo -n "Installing packages..."
     ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb &>/dev/null
     ssh $HOST rm -rf /tmp/pvc &>/dev/null
-    echo "done."
-    echo -n "Restarting PVC daemons... "
+    echo " done."
+    echo -n "Restarting PVC daemons..."
     ssh $HOST $SUDO systemctl restart pvcapid &>/dev/null
     ssh $HOST $SUDO systemctl restart pvcapid-worker &>/dev/null
     ssh $HOST $SUDO systemctl restart pvcnoded &>/dev/null
-    echo "done."
-    echo -n "Waiting 30s for host to stabilize... "
-    sleep 30
-    echo "done."
+    echo " done."
+    echo -n "Waiting for node daemon to be running..."
+    while [[ $( ssh $HOST "pvc -q node list -f json ${HOST%%.*} | jq -r '.[].daemon_state'" ) != "run" ]]; do
+        sleep 5
+        echo -n "."
+    done
+    echo " done."
 done
 if [[ -z ${KEEP_ARTIFACTS} ]]; then
     rm ../pvc*_${version}*
