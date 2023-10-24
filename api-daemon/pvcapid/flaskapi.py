@@ -2298,7 +2298,7 @@ class API_VM_Backup(Resource):
     @RequestParser(
         [
             {
-                "name": "target_path",
+                "name": "backup_path",
                 "required": True,
                 "helptext": "A local filesystem path on the primary coordinator must be specified",
             },
@@ -2321,7 +2321,7 @@ class API_VM_Backup(Resource):
           - vm
         parameters:
           - in: query
-            name: target_path
+            name: backup_path
             type: string
             required: true
             description: A local filesystem path on the primary coordinator to store the backup
@@ -2353,17 +2353,17 @@ class API_VM_Backup(Resource):
               type: object
               id: Message
         """
-        target_path = reqargs.get("target_path", None)
+        backup_path = reqargs.get("backup_path", None)
         incremental_parent = reqargs.get("incremental_parent", None)
         retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "false")))
         return api_helper.vm_backup(
-            vm, target_path, incremental_parent, retain_snapshot
+            vm, backup_path, incremental_parent, retain_snapshot
         )
 
     @RequestParser(
         [
             {
-                "name": "target_path",
+                "name": "backup_path",
                 "required": True,
                 "helptext": "A local filesystem path on the primary coordinator must be specified",
             },
@@ -2383,7 +2383,7 @@ class API_VM_Backup(Resource):
           - vm
         parameters:
           - in: query
-            name: target_path
+            name: backup_path
             type: string
             required: true
             description: A local filesystem path on the primary coordinator where the backup is stored
@@ -2409,11 +2409,9 @@ class API_VM_Backup(Resource):
               type: object
               id: Message
         """
-        target_path = reqargs.get("target_path", None)
+        backup_path = reqargs.get("backup_path", None)
         backup_datestring = reqargs.get("backup_datestring", None)
-        return api_helper.vm_remove_backup(
-            vm, target_path, backup_datestring
-        )
+        return api_helper.vm_remove_backup(vm, backup_path, backup_datestring)
 
 
 api.add_resource(API_VM_Backup, "/vm/<vm>/backup")
@@ -2424,7 +2422,7 @@ class API_VM_Restore(Resource):
     @RequestParser(
         [
             {
-                "name": "target_path",
+                "name": "backup_path",
                 "required": True,
                 "helptext": "A local filesystem path on the primary coordinator must be specified",
             },
@@ -2448,7 +2446,7 @@ class API_VM_Restore(Resource):
           - vm
         parameters:
           - in: query
-            name: target_path
+            name: backup_path
             type: string
             required: true
             description: A local filesystem path on the primary coordinator where the backup is stored
@@ -2480,11 +2478,11 @@ class API_VM_Restore(Resource):
               type: object
               id: Message
         """
-        target_path = reqargs.get("target_path", None)
+        backup_path = reqargs.get("backup_path", None)
         backup_datestring = reqargs.get("backup_datestring", None)
         retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "true")))
         return api_helper.vm_restore(
-            vm, target_path, backup_datestring, retain_snapshot
+            vm, backup_path, backup_datestring, retain_snapshot
         )
 
 

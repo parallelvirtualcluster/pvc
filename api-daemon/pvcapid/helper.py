@@ -474,7 +474,7 @@ def vm_define(
 def vm_backup(
     zkhandler,
     domain,
-    target_path,
+    backup_path,
     incremental_parent=None,
     retain_snapshot=False,
 ):
@@ -484,7 +484,7 @@ def vm_backup(
     retflag, retdata = pvc_vm.backup_vm(
         zkhandler,
         domain,
-        target_path,
+        backup_path,
         incremental_parent,
         retain_snapshot,
     )
@@ -528,7 +528,7 @@ def vm_remove_backup(
 def vm_restore(
     zkhandler,
     domain,
-    target_path,
+    backup_path,
     datestring,
     retain_snapshot=False,
 ):
@@ -538,7 +538,7 @@ def vm_restore(
     retflag, retdata = pvc_vm.restore_vm(
         zkhandler,
         domain,
-        target_path,
+        backup_path,
         datestring,
         retain_snapshot,
     )

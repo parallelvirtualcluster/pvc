@@ -1611,7 +1611,7 @@ def cli_vm_backup():
 @click.command(name="create", short_help="Create a backup of a virtual machine.")
 @connection_req
 @click.argument("domain")
-@click.argument("target_path")
+@click.argument("backup_path")
 @click.option(
     "-i",
     "--incremental",
@@ -1627,11 +1627,11 @@ def cli_vm_backup():
     default=False,
     help="Retain volume snapshot for future incremental use (full only).",
 )
-def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapshot):
+def cli_vm_backup_create(domain, backup_path, incremental_parent, retain_snapshot):
     """
-    Create a backup of virtual machine DOMAIN to TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+    Create a backup of virtual machine DOMAIN to BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
-    TARGET_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing writes from the API daemon (normally running as "root"). The TARGET_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+    BACKUP_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing writes from the API daemon (normally running as "root"). The BACKUP_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
 
     The backup will export the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes, using a datestring formatted backup name (i.e. YYYYMMDDHHMMSS).
 
@@ -1639,7 +1639,7 @@ def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapsho
 
     Incremental snapshots are possible by specifying the "-i"/"--incremental" option along with a source backup datestring. The snapshots from that source backup must have been retained using the "-r"/"--retain-snapshots" option. Retaining snapshots of incremental backups is not supported as incremental backups cannot be chained.
 
-    Full backup volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the TARGET_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
+    Full backup volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the BACKUP_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
     """
 
     echo(
@@ -1648,7 +1648,7 @@ def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapsho
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_backup(
-        CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshot
+        CLI_CONFIG, domain, backup_path, incremental_parent, retain_snapshot
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
@@ -1664,7 +1664,7 @@ def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapsho
 @connection_req
 @click.argument("domain")
 @click.argument("backup_datestring")
-@click.argument("target_path")
+@click.argument("backup_path")
 @click.option(
     "-r/-R",
     "--retain-snapshot/--remove-snapshot",
@@ -1673,11 +1673,11 @@ def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapsho
     default=True,
     help="Retain or remove restored (parent, if incremental) snapshot.",
 )
-def cli_vm_backup_restore(domain, backup_datestring, target_path, retain_snapshot):
+def cli_vm_backup_restore(domain, backup_datestring, backup_path, retain_snapshot):
     """
-    Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+    Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
-    TARGET_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing reads from the API daemon (normally running as "root"). The TARGET_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+    BACKUP_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing reads from the API daemon (normally running as "root"). The BACKUP_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
 
     The restore will import the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental backups will be automatically handled.
 
@@ -1694,7 +1694,7 @@ def cli_vm_backup_restore(domain, backup_datestring, target_path, retain_snapsho
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_restore(
-        CLI_CONFIG, domain, target_path, backup_datestring, retain_snapshot
+        CLI_CONFIG, domain, backup_path, backup_datestring, retain_snapshot
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
@@ -1710,10 +1710,10 @@ def cli_vm_backup_restore(domain, backup_datestring, target_path, retain_snapsho
 @connection_req
 @click.argument("domain")
 @click.argument("backup_datestring")
-@click.argument("target_path")
-def cli_vm_backup_remove(domain, backup_datestring, target_path):
+@click.argument("backup_path")
+def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     """
-    Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+    Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in BACKUP_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
     WARNING: Removing an incremental parent will invalidate any existing incremental backups based on that backup.
     """
@@ -1724,7 +1724,7 @@ def cli_vm_backup_remove(domain, backup_datestring, target_path):
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_remove_backup(
-        CLI_CONFIG, domain, target_path, backup_datestring
+        CLI_CONFIG, domain, backup_path, backup_datestring
     )
     if retcode:
         echo(CLI_CONFIG, "done.")

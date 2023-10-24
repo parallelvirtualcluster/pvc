@@ -1309,7 +1309,7 @@ def get_list(
 
 
 def backup_vm(
-    zkhandler, domain, target_path, incremental_parent=None, retain_snapshot=False
+    zkhandler, domain, backup_path, incremental_parent=None, retain_snapshot=False
 ):
 
     tstart = time.time()
@@ -1317,7 +1317,10 @@ def backup_vm(
     # 0. Validations
     # Disallow retaining snapshots with an incremental parent
     if incremental_parent is not None and retain_snapshot:
-        return False, 'ERROR: Retaining snapshots of incremental backups is not supported!'
+        return (
+            False,
+            "ERROR: Retaining snapshots of incremental backups is not supported!",
+        )
 
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -1325,15 +1328,15 @@ def backup_vm(
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Validate that the target path is valid
-    if not re.match(r"^/", target_path):
+    if not re.match(r"^/", backup_path):
         return (
             False,
-            f"ERROR: Target path {target_path} is not a valid absolute path on the primary coordinator!",
+            f"ERROR: Target path {backup_path} is not a valid absolute path on the primary coordinator!",
         )
 
-    # Ensure that target_path (on this node) exists
-    if not os.path.isdir(target_path):
-        return False, f"ERROR: Target path {target_path} does not exist!"
+    # Ensure that backup_path (on this node) exists
+    if not os.path.isdir(backup_path):
+        return False, f"ERROR: Target path {backup_path} does not exist!"
 
     # 1. Get information about VM
     vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
@@ -1345,7 +1348,7 @@ def backup_vm(
         if disk["type"] != "rbd":
             continue
 
-        pool, volume = disk["name"].split('/')
+        pool, volume = disk["name"].split("/")
 
         retcode, retdata = ceph.get_list_volume(zkhandler, pool, volume, is_fuzzy=False)
         if not retcode or len(retdata) != 1:
@@ -1353,7 +1356,10 @@ def backup_vm(
                 retdata = "No volumes returned."
             elif len(retdata) > 1:
                 retdata = "Multiple volumes returned."
-            return False, f"ERROR: Failed to get volume details for {pool}/{volume}: {retdata}"
+            return (
+                False,
+                f"ERROR: Failed to get volume details for {pool}/{volume}: {retdata}",
+            )
 
         try:
             size = retdata[0]["stats"]["size"]
@@ -1396,8 +1402,8 @@ def backup_vm(
     snapshot_name = f"backup_{datestring}"
 
     # 4. Create destination directory
-    vm_target_root = f"{target_path}/{domain}"
-    vm_target_backup = f"{target_path}/{domain}/{domain}.{datestring}.pvcdisks"
+    vm_target_root = f"{backup_path}/{domain}"
+    vm_target_backup = f"{backup_path}/{domain}/{domain}.{datestring}.pvcdisks"
     if not os.path.isdir(vm_target_backup):
         try:
             os.makedirs(vm_target_backup)
@@ -1463,7 +1469,10 @@ def backup_vm(
         "datestring": datestring,
         "incremental_parent": incremental_parent,
         "vm_detail": vm_detail,
-        "backup_files": [(f"{domain}.{datestring}.pvcdisks/{p}.{v}.{export_fileext}", s) for p, v, s in vm_volumes],
+        "backup_files": [
+            (f"{domain}.{datestring}.pvcdisks/{p}.{v}.{export_fileext}", s)
+            for p, v, s in vm_volumes
+        ],
     }
     with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
         jdump(vm_backup, fh)
@@ -1488,18 +1497,24 @@ def backup_vm(
     retlines = list()
 
     if is_snapshot_remove_failed:
-        retlines.append(f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
+        retlines.append(
+            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+        )
 
     myhostname = gethostname().split(".")[0]
     if retain_snapshot:
-        retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{myhostname}:{target_path}' in {ttot}s.")
+        retlines.append(
+            f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{myhostname}:{backup_path}' in {ttot}s."
+        )
     else:
-        retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{myhostname}:{target_path}' in {ttot}s.")
+        retlines.append(
+            f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{myhostname}:{backup_path}' in {ttot}s."
+        )
 
-    return True, '\n'.join(retlines)
+    return True, "\n".join(retlines)
 
 
-def remove_backup(zkhandler, domain, source_path, datestring):
+def remove_backup(zkhandler, domain, backup_path, datestring):
     tstart = time.time()
 
     # 0. Validation
@@ -1509,27 +1524,29 @@ def remove_backup(zkhandler, domain, source_path, datestring):
         return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
 
     # Validate that the source path is valid
-    if not re.match(r"^/", source_path):
+    if not re.match(r"^/", backup_path):
         return (
             False,
-            f"ERROR: Source path {source_path} is not a valid absolute path on the primary coordinator!",
+            f"ERROR: Source path {backup_path} is not a valid absolute path on the primary coordinator!",
         )
 
-    # Ensure that source_path (on this node) exists
-    if not os.path.isdir(source_path):
-        return False, f"ERROR: Source path {source_path} does not exist!"
+    # Ensure that backup_path (on this node) exists
+    if not os.path.isdir(backup_path):
+        return False, f"ERROR: Source path {backup_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    backup_source_path = f"{source_path}/{domain}"
-    if not os.path.isdir(backup_source_path):
-        return False, f"ERROR: Source VM path {backup_source_path} does not exist!"
+    backup_backup_path = f"{backup_path}/{domain}"
+    if not os.path.isdir(backup_backup_path):
+        return False, f"ERROR: Source VM path {backup_backup_path} does not exist!"
 
     # Ensure that the archives are present
-    backup_source_pvcbackup_file = f"{backup_source_path}/{domain}.{datestring}.pvcbackup"
+    backup_source_pvcbackup_file = (
+        f"{backup_backup_path}/{domain}.{datestring}.pvcbackup"
+    )
     if not os.path.isfile(backup_source_pvcbackup_file):
         return False, "ERROR: The specified source backup files do not exist!"
 
-    backup_source_pvcdisks_path = f"{backup_source_path}/{domain}.{datestring}.pvcdisks"
+    backup_source_pvcdisks_path = f"{backup_backup_path}/{domain}.{datestring}.pvcdisks"
     if not os.path.isdir(backup_source_pvcdisks_path):
         return False, "ERROR: The specified source backup files do not exist!"
 
@@ -1544,8 +1561,8 @@ def remove_backup(zkhandler, domain, source_path, datestring):
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
-    for volume_file, _ in backup_source_details.get('backup_files'):
-        pool, volume, _ = volume_file.split('/')[-1].split('.')
+    for volume_file, _ in backup_source_details.get("backup_files"):
+        pool, volume, _ = volume_file.split("/")[-1].split(".")
         snapshot = f"backup_{datestring}"
         retcode, retmsg = ceph.remove_snapshot(zkhandler, pool, volume, snapshot)
         if not retcode:
@@ -1568,18 +1585,24 @@ def remove_backup(zkhandler, domain, source_path, datestring):
     retlines = list()
 
     if is_snapshot_remove_failed:
-        retlines.append(f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
+        retlines.append(
+            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+        )
 
     if is_files_remove_failed:
-        retlines.append(f"WARNING: Failed to remove backup file(s) from {source_path}: {msg_files_remove_failed}")
+        retlines.append(
+            f"WARNING: Failed to remove backup file(s) from {backup_path}: {msg_files_remove_failed}"
+        )
 
     myhostname = gethostname().split(".")[0]
-    retlines.append(f"Removed VM backup {datestring} for '{domain}' from '{myhostname}:{source_path}' in {ttot}s.")
+    retlines.append(
+        f"Removed VM backup {datestring} for '{domain}' from '{myhostname}:{backup_path}' in {ttot}s."
+    )
 
-    return True, '\n'.join(retlines)
+    return True, "\n".join(retlines)
 
 
-def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False):
+def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False):
     tstart = time.time()
 
     # 0. Validations
@@ -1592,23 +1615,25 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
         )
 
     # Validate that the source path is valid
-    if not re.match(r"^/", source_path):
+    if not re.match(r"^/", backup_path):
         return (
             False,
-            f"ERROR: Source path {source_path} is not a valid absolute path on the primary coordinator!",
+            f"ERROR: Source path {backup_path} is not a valid absolute path on the primary coordinator!",
         )
 
-    # Ensure that source_path (on this node) exists
-    if not os.path.isdir(source_path):
-        return False, f"ERROR: Source path {source_path} does not exist!"
+    # Ensure that backup_path (on this node) exists
+    if not os.path.isdir(backup_path):
+        return False, f"ERROR: Source path {backup_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    backup_source_path = f"{source_path}/{domain}"
-    if not os.path.isdir(backup_source_path):
-        return False, f"ERROR: Source VM path {backup_source_path} does not exist!"
+    backup_backup_path = f"{backup_path}/{domain}"
+    if not os.path.isdir(backup_backup_path):
+        return False, f"ERROR: Source VM path {backup_backup_path} does not exist!"
 
     # Ensure that the archives are present
-    backup_source_pvcbackup_file = f"{backup_source_path}/{domain}.{datestring}.pvcbackup"
+    backup_source_pvcbackup_file = (
+        f"{backup_backup_path}/{domain}.{datestring}.pvcbackup"
+    )
     if not os.path.isfile(backup_source_pvcbackup_file):
         return False, "ERROR: The specified source backup files do not exist!"
 
@@ -1623,7 +1648,7 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
     incremental_parent = backup_source_details.get("incremental_parent", None)
     if incremental_parent is not None:
         backup_source_parent_pvcbackup_file = (
-            f"{backup_source_path}/{domain}.{incremental_parent}.pvcbackup"
+            f"{backup_backup_path}/{domain}.{incremental_parent}.pvcbackup"
         )
         if not os.path.isfile(backup_source_parent_pvcbackup_file):
             return (
@@ -1635,7 +1660,10 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
             with open(backup_source_parent_pvcbackup_file) as fh:
                 backup_source_parent_details = jload(fh)
         except Exception as e:
-            return False, f"ERROR: Failed to read source incremental parent backup details: {e}"
+            return (
+                False,
+                f"ERROR: Failed to read source incremental parent backup details: {e}",
+            )
 
     # 2. Import VM config and metadata in provision state
     try:
@@ -1661,12 +1689,20 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
     if incremental_parent is not None:
-        for volume_file, volume_size in backup_source_details.get('backup_files'):
-            pool, volume, _ = volume_file.split('/')[-1].split('.')
+        for volume_file, volume_size in backup_source_details.get("backup_files"):
+            pool, volume, _ = volume_file.split("/")[-1].split(".")
             try:
-                parent_volume_file = [f[0] for f in backup_source_parent_details.get('backup_files') if f[0].split('/')[-1].replace('.rbdimg', '') == volume_file.split('/')[-1].replace('.rbddiff', '')][0]
+                parent_volume_file = [
+                    f[0]
+                    for f in backup_source_parent_details.get("backup_files")
+                    if f[0].split("/")[-1].replace(".rbdimg", "")
+                    == volume_file.split("/")[-1].replace(".rbddiff", "")
+                ][0]
             except Exception as e:
-                return False, f"ERROR: Failed to find parent volume for volume {pool}/{volume}; backup may be corrupt or invalid: {e}"
+                return (
+                    False,
+                    f"ERROR: Failed to find parent volume for volume {pool}/{volume}; backup may be corrupt or invalid: {e}",
+                )
 
             # First we create the expected volumes then clean them up
             #   This process is a bit of a hack because rbd import does not expect an existing volume,
@@ -1681,27 +1717,45 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
                 f"rbd remove {pool}/{volume}"
             )
             if retcode:
-                return False, f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}"
+                return (
+                    False,
+                    f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}",
+                )
 
             # Next we import the parent images
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {source_path}/{domain}/{parent_volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{parent_volume_file} {volume}"
             )
             if retcode:
-                return False, f"ERROR: Failed to import parent backup image {parent_volume_file}: {stderr}"
+                return (
+                    False,
+                    f"ERROR: Failed to import parent backup image {parent_volume_file}: {stderr}",
+                )
 
             # Then we import the incremental diffs
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import-diff {source_path}/{domain}/{volume_file} {pool}/{volume}"
+                f"rbd import-diff {backup_path}/{domain}/{volume_file} {pool}/{volume}"
             )
             if retcode:
-                return False, f"ERROR: Failed to import incremental backup image {volume_file}: {stderr}"
+                return (
+                    False,
+                    f"ERROR: Failed to import incremental backup image {volume_file}: {stderr}",
+                )
 
             # Finally we remove the parent and child snapshots (no longer required required)
             if retain_snapshot:
-                retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, f"backup_{incremental_parent}", zk_only=True)
+                retcode, retmsg = ceph.add_snapshot(
+                    zkhandler,
+                    pool,
+                    volume,
+                    f"backup_{incremental_parent}",
+                    zk_only=True,
+                )
                 if not retcode:
-                    return False, f"ERROR: Failed to add imported image snapshot for {parent_volume_file}: {retmsg}"
+                    return (
+                        False,
+                        f"ERROR: Failed to add imported image snapshot for {parent_volume_file}: {retmsg}",
+                    )
             else:
                 retcode, stdout, stderr = common.run_os_command(
                     f"rbd snap rm {pool}/{volume}@backup_{incremental_parent}"
@@ -1719,8 +1773,8 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
                 msg_snapshot_remove_failed.append(retmsg)
 
     else:
-        for volume_file, volume_size in backup_source_details.get('backup_files'):
-            pool, volume, _ = volume_file.split('/')[-1].split('.')
+        for volume_file, volume_size in backup_source_details.get("backup_files"):
+            pool, volume, _ = volume_file.split("/")[-1].split(".")
 
             # First we create the expected volumes then clean them up
             #   This process is a bit of a hack because rbd import does not expect an existing volume,
@@ -1735,26 +1789,44 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
                 f"rbd remove {pool}/{volume}"
             )
             if retcode:
-                return False, f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}"
+                return (
+                    False,
+                    f"ERROR: Failed to remove temporary RBD volume '{pool}/{volume}': {stderr}",
+                )
 
             # Then we perform the actual import
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {source_path}/{domain}/{volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{volume_file} {volume}"
             )
             if retcode:
-                return False, f"ERROR: Failed to import backup image {volume_file}: {stderr}"
+                return (
+                    False,
+                    f"ERROR: Failed to import backup image {volume_file}: {stderr}",
+                )
 
             # Finally we remove the source snapshot (not required)
             if retain_snapshot:
-                retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, f"backup_{incremental_parent}", zk_only=True)
+                retcode, retmsg = ceph.add_snapshot(
+                    zkhandler,
+                    pool,
+                    volume,
+                    f"backup_{incremental_parent}",
+                    zk_only=True,
+                )
                 if not retcode:
-                    return False, f"ERROR: Failed to add imported image snapshot for {volume_file}: {retmsg}"
+                    return (
+                        False,
+                        f"ERROR: Failed to add imported image snapshot for {volume_file}: {retmsg}",
+                    )
             else:
                 retcode, stdout, stderr = common.run_os_command(
                     f"rbd snap rm {pool}/{volume}@backup_{datestring}"
                 )
                 if retcode:
-                    return False, f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}"
+                    return (
+                        False,
+                        f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}",
+                    )
 
     # 5. Start VM
     retcode, retmsg = start_vm(zkhandler, domain)
@@ -1766,9 +1838,13 @@ def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False
     retlines = list()
 
     if is_snapshot_remove_failed:
-        retlines.append(f"WARNING: Failed to remove hanging snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
+        retlines.append(
+            f"WARNING: Failed to remove hanging snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+        )
 
     myhostname = gethostname().split(".")[0]
-    retlines.append(f"Successfully restored VM backup {datestring} for '{domain}' from '{myhostname}:{source_path}' in {ttot}s.")
+    retlines.append(
+        f"Successfully restored VM backup {datestring} for '{domain}' from '{myhostname}:{backup_path}' in {ttot}s."
+    )
 
-    return True, '\n'.join(retlines)
+    return True, "\n".join(retlines)
