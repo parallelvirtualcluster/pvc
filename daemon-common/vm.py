@@ -30,7 +30,6 @@ from datetime import datetime
 from distutils.util import strtobool
 from json import dump as jdump
 from json import load as jload
-from os import remove
 from shutil import rmtree
 from socket import gethostname
 from uuid import UUID
@@ -1403,7 +1402,7 @@ def backup_vm(
 
     # 4. Create destination directory
     vm_target_root = f"{backup_path}/{domain}"
-    vm_target_backup = f"{backup_path}/{domain}/{domain}.{datestring}.pvcdisks"
+    vm_target_backup = f"{backup_path}/{domain}/{datestring}/pvcdisks"
     if not os.path.isdir(vm_target_backup):
         try:
             os.makedirs(vm_target_backup)
@@ -1471,11 +1470,10 @@ def backup_vm(
         "retained_snapshot": retain_snapshot,
         "vm_detail": vm_detail,
         "backup_files": [
-            (f"{domain}.{datestring}.pvcdisks/{p}.{v}.{export_fileext}", s)
-            for p, v, s in vm_volumes
+            (f"pvcdisks/{p}.{v}.{export_fileext}", s) for p, v, s in vm_volumes
         ],
     }
-    with open(f"{vm_target_root}/{domain}.{datestring}.pvcbackup", "w") as fh:
+    with open(f"{vm_target_root}/{datestring}/pvcbackup.json", "w") as fh:
         jdump(vm_backup, fh)
 
     # 8. Remove snapshots if retain_snapshot is False
@@ -1536,18 +1534,16 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
         return False, f"ERROR: Source path {backup_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    backup_backup_path = f"{backup_path}/{domain}"
-    if not os.path.isdir(backup_backup_path):
-        return False, f"ERROR: Source VM path {backup_backup_path} does not exist!"
+    vm_backup_path = f"{backup_path}/{domain}"
+    if not os.path.isdir(vm_backup_path):
+        return False, f"ERROR: Source VM path {vm_backup_path} does not exist!"
 
     # Ensure that the archives are present
-    backup_source_pvcbackup_file = (
-        f"{backup_backup_path}/{domain}.{datestring}.pvcbackup"
-    )
+    backup_source_pvcbackup_file = f"{vm_backup_path}/{datestring}/pvcbackup.json"
     if not os.path.isfile(backup_source_pvcbackup_file):
         return False, "ERROR: The specified source backup files do not exist!"
 
-    backup_source_pvcdisks_path = f"{backup_backup_path}/{domain}.{datestring}.pvcdisks"
+    backup_source_pvcdisks_path = f"{vm_backup_path}/{datestring}/pvcdisks"
     if not os.path.isdir(backup_source_pvcdisks_path):
         return False, "ERROR: The specified source backup files do not exist!"
 
@@ -1576,8 +1572,7 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
     is_files_remove_failed = False
     msg_files_remove_failed = None
     try:
-        remove(backup_source_pvcbackup_file)
-        rmtree(backup_source_pvcdisks_path)
+        rmtree(f"{vm_backup_path}/{datestring}")
     except Exception as e:
         is_files_remove_failed = True
         msg_files_remove_failed = e
@@ -1628,14 +1623,12 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
         return False, f"ERROR: Source path {backup_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    backup_backup_path = f"{backup_path}/{domain}"
-    if not os.path.isdir(backup_backup_path):
-        return False, f"ERROR: Source VM path {backup_backup_path} does not exist!"
+    vm_backup_path = f"{backup_path}/{domain}"
+    if not os.path.isdir(vm_backup_path):
+        return False, f"ERROR: Source VM path {vm_backup_path} does not exist!"
 
     # Ensure that the archives are present
-    backup_source_pvcbackup_file = (
-        f"{backup_backup_path}/{domain}.{datestring}.pvcbackup"
-    )
+    backup_source_pvcbackup_file = f"{vm_backup_path}/{datestring}/pvcbackup.json"
     if not os.path.isfile(backup_source_pvcbackup_file):
         return False, "ERROR: The specified source backup files do not exist!"
 
@@ -1650,7 +1643,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
     incremental_parent = backup_source_details.get("incremental_parent", None)
     if incremental_parent is not None:
         backup_source_parent_pvcbackup_file = (
-            f"{backup_backup_path}/{domain}.{incremental_parent}.pvcbackup"
+            f"{vm_backup_path}/{incremental_parent}/pvcbackup.json"
         )
         if not os.path.isfile(backup_source_parent_pvcbackup_file):
             return (
@@ -1726,7 +1719,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
 
             # Next we import the parent images
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{parent_volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{incremental_parent}/{parent_volume_file} {volume}"
             )
             if retcode:
                 return (
@@ -1736,7 +1729,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
 
             # Then we import the incremental diffs
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import-diff {backup_path}/{domain}/{volume_file} {pool}/{volume}"
+                f"rbd import-diff {backup_path}/{domain}/{datestring}/{volume_file} {pool}/{volume}"
             )
             if retcode:
                 return (
@@ -1798,7 +1791,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
 
             # Then we perform the actual import
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {backup_path}/{domain}/{datestring}/{volume_file} {volume}"
             )
             if retcode:
                 return (
