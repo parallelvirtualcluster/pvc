@@ -1468,6 +1468,7 @@ def backup_vm(
         "type": backup_type,
         "datestring": datestring,
         "incremental_parent": incremental_parent,
+        "retained_snapshot": retain_snapshot,
         "vm_detail": vm_detail,
         "backup_files": [
             (f"{domain}.{datestring}.pvcdisks/{p}.{v}.{export_fileext}", s)
@@ -1561,14 +1562,15 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
-    for volume_file, _ in backup_source_details.get("backup_files"):
-        pool, volume, _ = volume_file.split("/")[-1].split(".")
-        snapshot = f"backup_{datestring}"
-        retcode, retmsg = ceph.remove_snapshot(zkhandler, pool, volume, snapshot)
-        if not retcode:
-            is_snapshot_remove_failed = True
-            which_snapshot_remove_failed.append(f"{pool}/{volume}")
-            msg_snapshot_remove_failed.append(retmsg)
+    if backup_source_details["retained_snapshot"]:
+        for volume_file, _ in backup_source_details.get("backup_files"):
+            pool, volume, _ = volume_file.split("/")[-1].split(".")
+            snapshot = f"backup_{datestring}"
+            retcode, retmsg = ceph.remove_snapshot(zkhandler, pool, volume, snapshot)
+            if not retcode:
+                is_snapshot_remove_failed = True
+                which_snapshot_remove_failed.append(f"{pool}/{volume}")
+                msg_snapshot_remove_failed.append(retmsg)
 
     # 3. Remove files
     is_files_remove_failed = False
