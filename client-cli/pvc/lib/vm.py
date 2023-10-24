@@ -433,18 +433,18 @@ def vm_locks(config, vm):
     return retstatus, response.json().get("message", "")
 
 
-def vm_backup(config, vm, target_path, incremental_parent=None, retain_snapshots=False):
+def vm_backup(config, vm, target_path, incremental_parent=None, retain_snapshot=False):
     """
     Create a backup of {vm} and its volumes to a local primary coordinator filesystem path
 
     API endpoint: POST /vm/{vm}/backup
-    API arguments: target_path={target_path}, incremental_parent={incremental_parent}, retain_snapshots={retain_snapshots}
+    API arguments: target_path={target_path}, incremental_parent={incremental_parent}, retain_snapshot={retain_snapshot}
     API schema: {"message":"{data}"}
     """
     params = {
         "target_path": target_path,
         "incremental_parent": incremental_parent,
-        "retain_snapshots": retain_snapshots,
+        "retain_snapshot": retain_snapshot,
     }
     response = call_api(config, "post", "/vm/{vm}/backup".format(vm=vm), params=params)
 
@@ -454,17 +454,18 @@ def vm_backup(config, vm, target_path, incremental_parent=None, retain_snapshots
         return True, response.json().get("message", "")
 
 
-def vm_restore(config, vm, target_path, backup_datestring):
+def vm_restore(config, vm, target_path, backup_datestring, retain_snapshot=False):
     """
     Restore a backup of {vm} and its volumes from a local primary coordinator filesystem path
 
     API endpoint: POST /vm/{vm}/restore
-    API arguments: target_path={target_path}, backup_datestring={backup_datestring}
+    API arguments: target_path={target_path}, backup_datestring={backup_datestring}, retain_snapshot={retain_snapshot}
     API schema: {"message":"{data}"}
     """
     params = {
         "target_path": target_path,
         "backup_datestring": backup_datestring,
+        "retain_snapshot": retain_snapshot,
     }
     response = call_api(config, "post", "/vm/{vm}/restore".format(vm=vm), params=params)
 

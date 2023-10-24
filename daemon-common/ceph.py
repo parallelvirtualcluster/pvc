@@ -1113,23 +1113,24 @@ def getCephSnapshots(zkhandler, pool, volume):
     return snapshot_list
 
 
-def add_snapshot(zkhandler, pool, volume, name):
+def add_snapshot(zkhandler, pool, volume, name, zk_only=False):
     if not verifyVolume(zkhandler, pool, volume):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(
             volume, pool
         )
 
     # 1. Create the snapshot
-    retcode, stdout, stderr = common.run_os_command(
-        "rbd snap create {}/{}@{}".format(pool, volume, name)
-    )
-    if retcode:
-        return (
-            False,
-            'ERROR: Failed to create RBD snapshot "{}" of volume "{}" in pool "{}": {}'.format(
-                name, volume, pool, stderr
-            ),
+    if not zk_only:
+        retcode, stdout, stderr = common.run_os_command(
+            "rbd snap create {}/{}@{}".format(pool, volume, name)
         )
+        if retcode:
+            return (
+                False,
+                'ERROR: Failed to create RBD snapshot "{}" of volume "{}" in pool "{}": {}'.format(
+                    name, volume, pool, stderr
+                ),
+            )
 
     # 2. Add the snapshot to Zookeeper
     zkhandler.write(

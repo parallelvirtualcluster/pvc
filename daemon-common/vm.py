@@ -1307,12 +1307,16 @@ def get_list(
 
 
 def backup_vm(
-    zkhandler, domain, target_path, incremental_parent=None, retain_snapshots=False
+    zkhandler, domain, target_path, incremental_parent=None, retain_snapshot=False
 ):
 
     tstart = time.time()
 
     # 0. Validations
+    # Disallow retaining snapshots with an incremental parent
+    if incremental_parent is not None and retain_snapshot:
+        return False, 'ERROR: Retaining snapshots of incremental backups is not supported!'
+
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -1466,7 +1470,7 @@ def backup_vm(
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
     msg_snapshot_remove_failed = list()
-    if not retain_snapshots:
+    if not retain_snapshot:
         for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 retcode, retmsg = ceph.remove_snapshot(
@@ -1485,7 +1489,7 @@ def backup_vm(
         retlines.append(f"WARNING: Failed to remove snapshot as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}")
 
     myhostname = gethostname().split(".")[0]
-    if retain_snapshots:
+    if retain_snapshot:
         retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{myhostname}:{target_path}' in {ttot}s.")
     else:
         retlines.append(f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{myhostname}:{target_path}' in {ttot}s.")
@@ -1493,7 +1497,7 @@ def backup_vm(
     return True, '\n'.join(retlines)
 
 
-def restore_vm(zkhandler, domain, source_path, datestring):
+def restore_vm(zkhandler, domain, source_path, datestring, retain_snapshot=False):
 
     tstart = time.time()
 
@@ -1613,11 +1617,16 @@ def restore_vm(zkhandler, domain, source_path, datestring):
                 return False, f"ERROR: Failed to import incremental backup image {volume_file}: {stderr}"
 
             # Finally we remove the parent and child snapshots (no longer required required)
-            retcode, stdout, stderr = common.run_os_command(
-                f"rbd snap rm {pool}/{volume}@backup_{incremental_parent}"
-            )
-            if retcode:
-                return False, f"ERROR: Failed to remove imported image snapshot for {parent_volume_file}: {stderr}"
+            if retain_snapshot:
+                retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, f"backup_{incremental_parent}", zk_only=True)
+                if not retcode:
+                    return False, f"ERROR: Failed to add imported image snapshot for {parent_volume_file}: {retmsg}"
+            else:
+                retcode, stdout, stderr = common.run_os_command(
+                    f"rbd snap rm {pool}/{volume}@backup_{incremental_parent}"
+                )
+                if retcode:
+                    return False, f"ERROR: Failed to remove imported image snapshot for {parent_volume_file}: {stderr}"
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd snap rm {pool}/{volume}@backup_{datestring}"
             )
@@ -1651,11 +1660,16 @@ def restore_vm(zkhandler, domain, source_path, datestring):
                 return False, f"ERROR: Failed to import backup image {volume_file}: {stderr}"
 
             # Finally we remove the source snapshot (not required)
-            retcode, stdout, stderr = common.run_os_command(
-                f"rbd snap rm {pool}/{volume}@backup_{datestring}"
-            )
-            if retcode:
-                return False, f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}"
+            if retain_snapshot:
+                retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, f"backup_{incremental_parent}", zk_only=True)
+                if not retcode:
+                    return False, f"ERROR: Failed to add imported image snapshot for {volume_file}: {retmsg}"
+            else:
+                retcode, stdout, stderr = common.run_os_command(
+                    f"rbd snap rm {pool}/{volume}@backup_{datestring}"
+                )
+                if retcode:
+                    return False, f"ERROR: Failed to remove imported image snapshot for {volume_file}: {stderr}"
 
     # 5. Start VM
     retcode, retmsg = start_vm(zkhandler, domain)

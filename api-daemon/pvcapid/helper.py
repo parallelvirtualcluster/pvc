@@ -476,7 +476,7 @@ def vm_backup(
     domain,
     target_path,
     incremental_parent=None,
-    retain_snapshots=False,
+    retain_snapshot=False,
 ):
     """
     Back up a VM to a local (primary coordinator) filesystem path.
@@ -486,7 +486,7 @@ def vm_backup(
         domain,
         target_path,
         incremental_parent,
-        retain_snapshots,
+        retain_snapshot,
     )
 
     if retflag:
@@ -504,6 +504,7 @@ def vm_restore(
     domain,
     target_path,
     datestring,
+    retain_snapshot=False,
 ):
     """
     Restore a VM from a local (primary coordinator) filesystem path.
@@ -513,6 +514,7 @@ def vm_restore(
         domain,
         target_path,
         datestring,
+        retain_snapshot,
     )
 
     if retflag:

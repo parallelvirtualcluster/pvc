@@ -2307,7 +2307,7 @@ class API_VM_Backup(Resource):
                 "required": False,
             },
             {
-                "name": "retain_snapshots",
+                "name": "retain_snapshot",
                 "required": False,
             },
         ]
@@ -2331,11 +2331,11 @@ class API_VM_Backup(Resource):
             required: false
             description: A previous backup datestamp to use as an incremental parent; if unspecified a full backup is taken
           - in: query
-            name: retain_snapshots
+            name: retain_snapshot
             type: boolean
             required: false
             default: false
-            description: Whether or not to retain this backup's volume snapshots to use as a future incremental parent
+            description: Whether or not to retain this backup's volume snapshots to use as a future incremental parent; full backups only
         responses:
           200:
             description: OK
@@ -2355,9 +2355,9 @@ class API_VM_Backup(Resource):
         """
         target_path = reqargs.get("target_path", None)
         incremental_parent = reqargs.get("incremental_parent", None)
-        retain_snapshots = bool(strtobool(reqargs.get("retain_snapshots", "false")))
+        retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "false")))
         return api_helper.vm_backup(
-            vm, target_path, incremental_parent, retain_snapshots
+            vm, target_path, incremental_parent, retain_snapshot
         )
 
 
@@ -2377,7 +2377,11 @@ class API_VM_Restore(Resource):
                 "name": "backup_datestring",
                 "required": True,
                 "helptext": "A backup datestring must be specified",
-            }
+            },
+            {
+                "name": "retain_snapshot",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -2398,6 +2402,12 @@ class API_VM_Restore(Resource):
             type: string
             required: true
             description: The backup datestring identifier (e.g. 20230102030405)
+          - in: query
+            name: retain_snapshot
+            type: boolean
+            required: false
+            default: true
+            description: Whether or not to retain the (parent, if incremental) volume snapshot after restore
         responses:
           200:
             description: OK
@@ -2417,8 +2427,9 @@ class API_VM_Restore(Resource):
         """
         target_path = reqargs.get("target_path", None)
         backup_datestring = reqargs.get("backup_datestring", None)
+        retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "true")))
         return api_helper.vm_restore(
-            vm, target_path, backup_datestring
+            vm, target_path, backup_datestring, retain_snapshot
         )
 
 

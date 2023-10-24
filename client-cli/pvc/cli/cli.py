@@ -1606,13 +1606,13 @@ def cli_vm_flush_locks(domain):
 )
 @click.option(
     "-r",
-    "--retain-snapshots",
-    "retain_snapshots",
+    "--retain-snapshot",
+    "retain_snapshot",
     is_flag=True,
     default=False,
-    help="Retain volume snapshots for future incremental use.",
+    help="Retain volume snapshot for future incremental use (full only).",
 )
-def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
+def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshot):
     """
     Create a backup of virtual machine DOMAIN to TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -1622,7 +1622,7 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
 
     The virtual machine DOMAIN may be running, and due to snapshots the backup should be crash-consistent, but will be in an unclean state and this must be considered when restoring from backups.
 
-    Incremental snapshots are possible by specifying the "-i"/"--incremental" option along with a source backup datestring. The snapshots from that source backup must have been retained using the "-r"/"--retain-snapshots" option. Arbitrary snapshots, assuming they are valid for all attached RBD volumes, may also be used, as long as they are prefixed with "backup_". Retaining snapshots of incremental backups is supported, though it is not recommended to "chain" incremental backups in this way as it can make managing restores more difficult.
+    Incremental snapshots are possible by specifying the "-i"/"--incremental" option along with a source backup datestring. The snapshots from that source backup must have been retained using the "-r"/"--retain-snapshots" option. Retaining snapshots of incremental backups is not supported as incremental backups cannot be chained.
 
     Full backup volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the TARGET_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
     """
@@ -1633,7 +1633,7 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_backup(
-        CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshots
+        CLI_CONFIG, domain, target_path, incremental_parent, retain_snapshot
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
@@ -1650,7 +1650,15 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshots):
 @click.argument("domain")
 @click.argument("backup_datestring")
 @click.argument("target_path")
-def cli_vm_restore(domain, backup_datestring, target_path):
+@click.option(
+    "-r/-R",
+    "--retain-snapshot/--remove-snapshot",
+    "retain_snapshot",
+    is_flag=True,
+    default=True,
+    help="Retain or remove restored (parent, if incremental) snapshot.",
+)
+def cli_vm_restore(domain, backup_datestring, target_path, retain_snapshot):
     """
     Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -1659,6 +1667,10 @@ def cli_vm_restore(domain, backup_datestring, target_path):
     The restore will import the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental backups will be automatically handled.
 
     A VM named DOMAIN must not exist; if the VM already exists, it must be removed before restoring. Renaming is not sufficient as the UUID will remain the same.
+
+    If the "-r"/"--retain-snapshot" option is specified (the default), for incremental restores, only the parent snapshot is kept; for full restores, the restored snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
+
+    WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental backups based on the same incremental parent for the restored VM.
     """
 
     echo(
@@ -1667,7 +1679,7 @@ def cli_vm_restore(domain, backup_datestring, target_path):
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_restore(
-        CLI_CONFIG, domain, target_path, backup_datestring
+        CLI_CONFIG, domain, target_path, backup_datestring, retain_snapshot
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
