@@ -499,6 +499,32 @@ def vm_backup(
 
 
 @ZKConnection(config)
+def vm_remove_backup(
+    zkhandler,
+    domain,
+    source_path,
+    datestring,
+):
+    """
+    Remove a VM backup from snapshots and a local (primary coordinator) filesystem path.
+    """
+    retflag, retdata = pvc_vm.remove_backup(
+        zkhandler,
+        domain,
+        source_path,
+        datestring,
+    )
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def vm_restore(
     zkhandler,
     domain,

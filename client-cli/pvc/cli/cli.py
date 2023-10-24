@@ -1593,7 +1593,22 @@ def cli_vm_flush_locks(domain):
 ###############################################################################
 # > pvc vm backup
 ###############################################################################
-@click.command(name="backup", short_help="Create a backup of a virtual machine.")
+@click.group(
+    name="backup",
+    short_help="Manage backups for PVC VMs.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_vm_backup():
+    """
+    Manage backups of VMs in a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# > pvc vm backup create
+###############################################################################
+@click.command(name="create", short_help="Create a backup of a virtual machine.")
 @connection_req
 @click.argument("domain")
 @click.argument("target_path")
@@ -1612,7 +1627,7 @@ def cli_vm_flush_locks(domain):
     default=False,
     help="Retain volume snapshot for future incremental use (full only).",
 )
-def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshot):
+def cli_vm_backup_create(domain, target_path, incremental_parent, retain_snapshot):
     """
     Create a backup of virtual machine DOMAIN to TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -1643,7 +1658,7 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshot):
 
 
 ###############################################################################
-# > pvc vm restore
+# > pvc vm backup restore
 ###############################################################################
 @click.command(name="restore", short_help="Restore a backup of a virtual machine.")
 @connection_req
@@ -1658,7 +1673,7 @@ def cli_vm_backup(domain, target_path, incremental_parent, retain_snapshot):
     default=True,
     help="Retain or remove restored (parent, if incremental) snapshot.",
 )
-def cli_vm_restore(domain, backup_datestring, target_path, retain_snapshot):
+def cli_vm_backup_restore(domain, backup_datestring, target_path, retain_snapshot):
     """
     Restore the backup BACKUP_DATESTRING of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
 
@@ -1680,6 +1695,36 @@ def cli_vm_restore(domain, backup_datestring, target_path, retain_snapshot):
     )
     retcode, retmsg = pvc.lib.vm.vm_restore(
         CLI_CONFIG, domain, target_path, backup_datestring, retain_snapshot
+    )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm backup remove
+###############################################################################
+@click.command(name="remove", short_help="Remove a backup of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("backup_datestring")
+@click.argument("target_path")
+def cli_vm_backup_remove(domain, backup_datestring, target_path):
+    """
+    Remove the backup BACKUP_DATESTRING, including snapshots, of virtual machine DOMAIN stored in TARGET_PATH on the cluster primary coordinator. DOMAIN may be a UUID or name.
+
+    WARNING: Removing an incremental parent will invalidate any existing incremental backups based on that backup.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Removing backup {backup_datestring} of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_remove_backup(
+        CLI_CONFIG, domain, target_path, backup_datestring
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
@@ -5757,8 +5802,10 @@ cli_vm.add_command(cli_vm_move)
 cli_vm.add_command(cli_vm_migrate)
 cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
+cli_vm_backup.add_command(cli_vm_backup_create)
+cli_vm_backup.add_command(cli_vm_backup_restore)
+cli_vm_backup.add_command(cli_vm_backup_remove)
 cli_vm.add_command(cli_vm_backup)
-cli_vm.add_command(cli_vm_restore)
 cli_vm_tag.add_command(cli_vm_tag_get)
 cli_vm_tag.add_command(cli_vm_tag_add)
 cli_vm_tag.add_command(cli_vm_tag_remove)

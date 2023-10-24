@@ -454,6 +454,26 @@ def vm_backup(config, vm, target_path, incremental_parent=None, retain_snapshot=
         return True, response.json().get("message", "")
 
 
+def vm_remove_backup(config, vm, target_path, backup_datestring):
+    """
+    Remove a backup of {vm}, including snapshots, from a local primary coordinator filesystem path
+
+    API endpoint: DELETE /vm/{vm}/backup
+    API arguments: target_path={target_path}, backup_datestring={backup_datestring}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "target_path": target_path,
+        "backup_datestring": backup_datestring,
+    }
+    response = call_api(config, "delete", "/vm/{vm}/backup".format(vm=vm), params=params)
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_restore(config, vm, target_path, backup_datestring, retain_snapshot=False):
     """
     Restore a backup of {vm} and its volumes from a local primary coordinator filesystem path

@@ -2360,6 +2360,61 @@ class API_VM_Backup(Resource):
             vm, target_path, incremental_parent, retain_snapshot
         )
 
+    @RequestParser(
+        [
+            {
+                "name": "target_path",
+                "required": True,
+                "helptext": "A local filesystem path on the primary coordinator must be specified",
+            },
+            {
+                "name": "backup_datestring",
+                "required": True,
+                "helptext": "A backup datestring must be specified",
+            },
+        ]
+    )
+    @Authenticator
+    def delete(self, vm, reqargs):
+        """
+        Remove a backup of {vm}, including snapshots, from a local primary coordinator filesystem path
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: target_path
+            type: string
+            required: true
+            description: A local filesystem path on the primary coordinator where the backup is stored
+          - in: query
+            name: backup_datestring
+            type: string
+            required: true
+            description: The backup datestring identifier (e.g. 20230102030405)
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        target_path = reqargs.get("target_path", None)
+        backup_datestring = reqargs.get("backup_datestring", None)
+        return api_helper.vm_remove_backup(
+            vm, target_path, backup_datestring
+        )
+
 
 api.add_resource(API_VM_Backup, "/vm/<vm>/backup")
 
