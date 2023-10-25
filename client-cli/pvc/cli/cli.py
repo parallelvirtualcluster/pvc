@@ -25,9 +25,8 @@ from functools import wraps
 from json import dump as jdump
 from json import dumps as jdumps
 from json import loads as jloads
-from os import environ, makedirs, path
-from pkg_resources import get_distribution
 from lxml.etree import fromstring, tostring
+from os import environ, makedirs, path
 from re import sub, match
 from yaml import load as yload
 from yaml import SafeLoader as SafeYAMLLoader
@@ -114,6 +113,8 @@ def version(ctx, param, value):
 
     if not value or ctx.resilient_parsing:
         return
+
+    from pkg_resources import get_distribution
 
     version = get_distribution("pvc").version
     echo(CLI_CONFIG, f"Parallel Virtual Cluster CLI client version {version}")
