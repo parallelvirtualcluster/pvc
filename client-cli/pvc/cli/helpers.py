@@ -65,10 +65,9 @@ def audit():
     """
 
     args = argv
-    args[0] = "pvc"
     pid = getpid()
 
-    openlog(facility=LOG_AUTH, ident=f"{args[0]}[{pid}]")
+    openlog(facility=LOG_AUTH, ident=f"{args[0].split('/')[-1]}[{pid}]")
     syslog(
         f"""client audit: command "{' '.join(args)}" by user {environ.get('USER', None)}"""
     )
