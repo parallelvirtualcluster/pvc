@@ -14,3 +14,6 @@ if systemctl is-active --quiet pvcnoded.service; then
 else
     echo "NOTE: The PVC node daemon (pvcnoded.service) has not been started; create a config file at /etc/pvc/pvcnoded.yaml then start it."
 fi
+
+# Clean up any old sample configs
+rm /etc/pvc/pvcnoded.sample.yaml || true
