@@ -51,7 +51,9 @@ import click
 ###############################################################################
 
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"], max_content_width=120)
+CONTEXT_SETTINGS = dict(
+    help_option_names=["-h", "--help"], max_content_width=MAX_CONTENT_WIDTH
+)
 IS_COMPLETION = True if environ.get("_PVC_COMPLETE", "") == "complete" else False
 
 CLI_CONFIG = dict()
@@ -1732,6 +1734,64 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     else:
         echo(CLI_CONFIG, "failed.")
     finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm autobackup
+###############################################################################
+@click.command(
+    name="autobackup", short_help="Perform automatic virtual machine backups."
+)
+@connection_req
+@click.option(
+    "-f",
+    "--configuration",
+    "autobackup_cfgfile",
+    envvar="PVC_AUTOBACKUP_CFGFILE",
+    default=DEFAULT_AUTOBACKUP_FILENAME,
+    show_default=True,
+    help="Override default config file location.",
+)
+@click.option(
+    "--force-full",
+    "force_full_flag",
+    default=False,
+    is_flag=True,
+    help="Force all backups to be full backups this run.",
+)
+def cli_vm_autobackup(autobackup_cfgfile, force_full_flag):
+    """
+    Perform automated backups of VMs, with integrated cleanup and full/incremental scheduling.
+
+    This command enables automatic backup of PVC VMs at the block level, leveraging the various "pvc vm backup"
+    functions with an internal rentention and cleanup system as well as determination of full vs. incremental
+    backups at different intervals. VMs are selected based on configured VM tags. The destination storage
+    may either be local, or provided by a remote filesystem which is automatically mounted and unmounted during
+    the backup run.
+
+    NOTE: This command performs its tasks in a local context. It MUST be run from the cluster's active primary
+    coordinator using the "local" connection only; if either is not correct, the command will error.
+
+    NOTE: This command should be run as the same user as the API daemon, usually "root" with "sudo -E" or in
+    a cronjob as "root", to ensure permissions are correct on the backup files. Failure to do so will still take
+    the backup, but the state update write will likely fail and the backup will become untracked. The command
+    will prompt for confirmation if it is found not to be running as "root" and this cannot be bypassed.
+
+    This command should be run from cron or a timer at a regular interval (e.g. daily, hourly, etc.) which defines
+    how often backups are taken. Backup format (full/incremental) and retention is based only on the number of
+    recorded backups, not on the time interval between them. Backups taken manually outside of the "autobackup"
+    command are not counted towards the format or retention of autobackups.
+
+    The PVC_AUTOBACKUP_CFGFILE envvar or "-f"/"--configuration" option can be used to override the default
+    configuration file path if required by a particular run. For full details of the possible options, please
+    see the example configuration file at "/usr/share/pvc/autobackup.sample.yaml".
+
+    The "--force-full" option can be used to force all configured VMs to perform a "full" level backup this run,
+    which can help synchronize the backups of existing VMs with new ones.
+    """
+
+    # All work here is done in the helper function for portability; we don't even use "finish"
+    vm_autobackup(CLI_CONFIG, autobackup_cfgfile, force_full_flag)
 
 
 ###############################################################################
@@ -5807,6 +5867,7 @@ cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)
 cli_vm_backup.add_command(cli_vm_backup_remove)
 cli_vm.add_command(cli_vm_backup)
+cli_vm.add_command(cli_vm_autobackup)
 cli_vm_tag.add_command(cli_vm_tag_get)
 cli_vm_tag.add_command(cli_vm_tag_add)
 cli_vm_tag.add_command(cli_vm_tag_remove)

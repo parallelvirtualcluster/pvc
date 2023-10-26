@@ -1,0 +1,147 @@
+---
+# Root level configuration key
+autobackup:
+
+  # Backup root path on the node, used as the remote mountpoint
+  # Must be an absolute path beginning with '/'
+  # If remote_mount is enabled, the remote mount will be mounted on this directory
+  # If remote_mount is enabled, it is recommended to use a path under `/tmp` for this
+  # If remote_mount is disabled, a real filesystem must be mounted here (PVC system volumes are small!)
+  backup_root_path: "/tmp/backups"
+
+  # Suffix to the backup root path, used to allow multiple PVC systems to write to a single root path
+  # Must begin with '/'; leave empty to use the backup root path directly
+  # Note that most remote mount options can fake this if needed, but provided to ensure local compatability
+  backup_root_suffix: "/mycluster"
+
+  # VM tag(s) to back up
+  # Only VMs with at least one of the given tag(s) will be backed up; all others will be skipped
+  backup_tags:
+    - "backup"
+    - "mytag"
+
+  # Backup schedule: when and what format to take backups
+  backup_schedule:
+    full_interval:  7  # Number of total backups between full backups; others are incremental
+                       # > If this number is 1, every backup will be a full backup and no incremental
+                       #   backups will be taken
+                       # > If this number is 2, every second backup will be a full backup, etc.
+    full_retention: 2  # Keep this many full backups; the oldest will be deleted when a new one is
+                       # taken, along with all child incremental backups of that backup
+                       # > Should usually be at least 2 when using incrementals (full_interval > 1) to
+                       #   avoid there being too few backups after cleanup from a new full backup
+
+  # Remote mount settings for backup root path
+  # If remote mount support is disabled, it is up to the administrator to that the backup root path is
+  # created and a valid destination filesystem is mounted on it
+  remote_mount:
+    enabled: no  # Enable automatic remote mount/unmount support
+    type: sshfs  # Set the type of remote mount; optional if remote_mount is disabled
+                 # > Supported values are: sshfs, nfs, cifs (i.e. SMB), cephfs, and s3fs
+                 # > WARNING: s3fs has serious known bugs that we don't work around; avoid it if possible
+
+  # Remote mount configurations, per-type; you only need to specify the type(s) you plan to use, but all
+  # are given here for completeness as examples
+  # > NOTE: This key (and all children) are optional if remote mounting is not enabled
+  remote_mount_config:
+
+    # SSHFS specific options
+    # > NOTE: This SSHFS implementation does not support password authentication; keys MUST be used
+    sshfs:
+      # Remote username
+      user: username
+      # Remote hostname
+      host: hostname
+      # Remote path
+      path: /srv/vm_backups
+      # Required command to check for or error
+      command: /usr/bin/sshfs
+      # Options to pass to the mount command (joined, each requires "-o"!)
+      # See the command manual page for more options
+      options:
+        - "-o IdentityFile=/srv/pvc_autobackup.id_ed25519" # Identity (SSH key) file, required!
+        - "-o port=22" # Port number
+        - "-o reconnect" # Enable reconnection
+        - "-o default_permissions" # Enable local permission checking
+        - "-o compression=no" # Disable compression; testing shows that compression slows things
+                              # down a fair bit (1m40.435s vs 0m22.253s for 750MB on 10GbE net)
+        - "-o sshfs_sync" # Enable sync; ensures consistent writes with an acceptable performance
+                          # overhead (0m22.253s vs 0m17.453s for 750GB on 10GbE net)
+      # Mount command, populated at import time
+      mount_cmd: "{command} {sshfs_user}@{sshfs_host}:{sshfs_path} {backup_root_path} {sshfs_options}"
+      # Unmount command, populated at import time
+      unmount_cmd: "fusermount3 -u {backup_root_path}"
+
+    # NFS specific options
+    nfs:
+      # Remote hostname
+      host: hostname
+      # Remote path
+      path: /srv/vm_backups
+      # Required command to check for or error
+      command: /usr/sbin/mount.nfs
+      # Options to pass to the mount command (joined and passed to "-o")
+      # See the command manual page for more options
+      options:
+        - "nfsvers=3" # Use a specific NFS version
+      # Mount command, populated at import time
+      mount_cmd: "{command} -o {nfs_options} {nfs_host}:{nfs_path} {backup_root_path}"
+      # Unmount command, populated at import time
+      unmount_cmd: "umount {backup_root_path}"
+
+    # CIFS specific options
+    cifs:
+      # Remote hostname
+      host: hostname
+      # Remote path be sure to include the leading '/'!)
+      path: /srv/vm_backups
+      # Required command to check for or error
+      command: /usr/sbin/mount.cifs
+      # Options to pass to the mount command (joined and passed to "-o")
+      # See the command manual page for more options
+      options:
+        - "credentials=/srv/backup_vms.cifs_credentials" # Specify a credentials file
+        - "guest" # Use guest access, alternate to above
+      # Mount command, populated at import time
+      mount_cmd: "{command} -o {cifs_options} //{cifs_host}{cifs_path} {backup_root_path}"
+      # Unmount command, populated at import time
+      unmount_cmd: "umount {backup_root_path}"
+
+    # CephFS specific options
+    cephfs:
+      # Monitor address/hostname list
+      monitors:
+        - mon1
+      # CephFS path; at least "/" is always required
+      path: "/mysubdir"
+      # Required command to check for or error
+      command: /usr/sbin/mount.ceph
+      # Options to pass to mount command (joined and passed to "-o")
+      # See the command manual page for more options
+      options:
+        - "secretfile=/srv/backup_vms.cephfs_secret" # Specify a cephx secret file
+        - "conf=/srv/backup_vms.ceph.conf" # Specify a nonstandard ceph.conf file
+      # Mount command, populated at import time
+      mount_cmd: "{command} {cephfs_monitors}:{cephfs_path} {backup_root_path} -o {cephfs_options}"
+      # Unmount command, populated at import time
+      unmount_cmd: "umount {backup_root_path}"
+
+    # S3FS specific options
+    s3fs:
+      # S3 bucket
+      bucket: mybucket
+      # S3 bucket (sub)path, including leading ':' if used!
+      # Leave empty for no (sub)path
+      path: ":/mypath"
+      # Required command to check for or error
+      command: /usr/bin/s3fs
+      # Options to pass to the mount command (joined, each requires "-o"!)
+      # See the command manual page for more options
+      options:
+        - "-o passwd_file=/srv/backup_vms.s3fs_credentials" # Specify a password file
+        - "-o host=https://s3.amazonaws.com" # Specify an alternate host
+        - "-o endpoint=us-east-1" # Specify an alternate endpoint/region
+      # Mount command, populated at import time
+      mount_cmd: "{command} {s2fs_bucket}{s3fs_path} {backup_root_path} {s3fs_options}"
+      # Unmount command, populated at import time
+      unmount_cmd: "fusermount3 -u {backup_root_path}"
