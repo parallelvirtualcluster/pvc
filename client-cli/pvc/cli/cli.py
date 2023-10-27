@@ -47,7 +47,7 @@ import click
 
 
 ###############################################################################
-# Context and completion handler
+# Context and completion handler, globals
 ###############################################################################
 
 
@@ -57,25 +57,6 @@ CONTEXT_SETTINGS = dict(
 IS_COMPLETION = True if environ.get("_PVC_COMPLETE", "") == "complete" else False
 
 CLI_CONFIG = dict()
-
-if not IS_COMPLETION:
-    cli_client_dir = environ.get("PVC_CLIENT_DIR", None)
-    home_dir = environ.get("HOME", None)
-    if cli_client_dir:
-        store_path = cli_client_dir
-    elif home_dir:
-        store_path = f"{home_dir}/.config/pvc"
-    else:
-        print(
-            "WARNING: No client or home configuration directory found; using /tmp instead"
-        )
-        store_path = "/tmp/pvc"
-
-    if not path.isdir(store_path):
-        makedirs(store_path)
-
-    if not path.isfile(f"{store_path}/{DEFAULT_STORE_FILENAME}"):
-        update_store(store_path, {"local": DEFAULT_STORE_DATA})
 
 
 ###############################################################################
@@ -1759,7 +1740,14 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     is_flag=True,
     help="Force all backups to be full backups this run.",
 )
-def cli_vm_autobackup(autobackup_cfgfile, force_full_flag):
+@click.option(
+    "--cron",
+    "cron_flag",
+    default=False,
+    is_flag=True,
+    help="Cron mode; don't error exit if this isn't the primary coordinator.",
+)
+def cli_vm_autobackup(autobackup_cfgfile, force_full_flag, cron_flag):
     """
     Perform automated backups of VMs, with integrated cleanup and full/incremental scheduling.
 
@@ -1791,7 +1779,7 @@ def cli_vm_autobackup(autobackup_cfgfile, force_full_flag):
     """
 
     # All work here is done in the helper function for portability; we don't even use "finish"
-    vm_autobackup(CLI_CONFIG, autobackup_cfgfile, force_full_flag)
+    vm_autobackup(CLI_CONFIG, autobackup_cfgfile, force_full_flag, cron_flag)
 
 
 ###############################################################################
@@ -5818,6 +5806,29 @@ def cli(
     """
 
     global CLI_CONFIG
+    CLI_CONFIG["quiet"] = _quiet
+    CLI_CONFIG["silent"] = _silent
+
+    cli_client_dir = environ.get("PVC_CLIENT_DIR", None)
+    home_dir = environ.get("HOME", None)
+    if cli_client_dir:
+        store_path = cli_client_dir
+    elif home_dir:
+        store_path = f"{home_dir}/.config/pvc"
+    else:
+        echo(
+            CLI_CONFIG,
+            "WARNING: No client or home configuration directory found; using /tmp instead",
+            stderr=True,
+        )
+        store_path = "/tmp/pvc"
+
+    if not path.isdir(store_path):
+        makedirs(store_path)
+
+    if not path.isfile(f"{store_path}/{DEFAULT_STORE_FILENAME}"):
+        update_store(store_path, {"local": DEFAULT_STORE_DATA})
+
     store_data = get_store(store_path)
 
     # If the connection isn't in the store, mark it bad but pass the value
