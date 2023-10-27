@@ -1755,7 +1755,7 @@ def cli_vm_autobackup(autobackup_cfgfile, force_full_flag, cron_flag):
     functions with an internal rentention and cleanup system as well as determination of full vs. incremental
     backups at different intervals. VMs are selected based on configured VM tags. The destination storage
     may either be local, or provided by a remote filesystem which is automatically mounted and unmounted during
-    the backup run.
+    the backup run via a set of configured commands before and after the backup run.
 
     NOTE: This command performs its tasks in a local context. It MUST be run from the cluster's active primary
     coordinator using the "local" connection only; if either is not correct, the command will error.

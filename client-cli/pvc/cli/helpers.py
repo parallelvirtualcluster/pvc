@@ -258,118 +258,25 @@ def get_autobackup_config(CLI_CONFIG, cfgfile):
         config["backup_root_suffix"] = backup_config["backup_root_suffix"]
         config["backup_tags"] = backup_config["backup_tags"]
         config["backup_schedule"] = backup_config["backup_schedule"]
-        config["remote_mount_enabled"] = backup_config["remote_mount"]["enabled"]
-        if config["remote_mount_enabled"]:
-            config["remote_mount_type"] = backup_config["remote_mount"]["type"]
-        else:
-            config["remote_mount_type"] = None
+        config["auto_mount_enabled"] = backup_config["auto_mount"]["enabled"]
+        if config["auto_mount_enabled"]:
+            config["mount_cmds"] = list()
+            _mount_cmds = backup_config["auto_mount"]["mount_cmds"]
+            for _mount_cmd in _mount_cmds:
+                if "{backup_root_path}" in _mount_cmd:
+                    _mount_cmd = _mount_cmd.format(
+                        backup_root_path=backup_config["backup_root_path"]
+                    )
+                config["mount_cmds"].append(_mount_cmd)
 
-        if config["remote_mount_type"] == "sshfs":
-            config["check_command"] = backup_config["remote_mount_config"]["sshfs"][
-                "command"
-            ]
-            config["remote_mount_cmd"] = backup_config["remote_mount_config"]["sshfs"][
-                "mount_cmd"
-            ].format(
-                command=backup_config["remote_mount_config"]["sshfs"]["command"],
-                sshfs_user=backup_config["remote_mount_config"]["sshfs"]["user"],
-                sshfs_host=backup_config["remote_mount_config"]["sshfs"]["host"],
-                sshfs_path=backup_config["remote_mount_config"]["sshfs"]["path"],
-                sshfs_options=" ".join(
-                    backup_config["remote_mount_config"]["sshfs"]["options"]
-                ),
-                backup_root_path=backup_config["backup_root_path"],
-            )
-            config["remote_unmount_cmd"] = backup_config["remote_mount_config"][
-                "sshfs"
-            ]["unmount_cmd"].format(
-                backup_root_path=backup_config["backup_root_path"],
-            )
-        elif config["remote_mount_type"] == "nfs":
-            config["check_command"] = backup_config["remote_mount_config"]["nfs"][
-                "command"
-            ]
-            config["remote_mount_cmd"] = backup_config["remote_mount_config"]["nfs"][
-                "mount_cmd"
-            ].format(
-                command=backup_config["remote_mount_config"]["nfs"]["command"],
-                nfs_host=backup_config["remote_mount_config"]["nfs"]["host"],
-                nfs_path=backup_config["remote_mount_config"]["nfs"]["path"],
-                nfs_options=",".join(
-                    backup_config["remote_mount_config"]["nfs"]["options"]
-                ),
-                backup_root_path=backup_config["backup_root_path"],
-            )
-            config["remote_unmount_cmd"] = backup_config["remote_mount_config"]["nfs"][
-                "unmount_cmd"
-            ].format(
-                backup_root_path=backup_config["backup_root_path"],
-            )
-        elif config["remote_mount_type"] == "cifs":
-            config["check_command"] = backup_config["remote_mount_config"]["cifs"][
-                "command"
-            ]
-            config["remote_mount_cmd"] = backup_config["remote_mount_config"]["cifs"][
-                "mount_cmd"
-            ].format(
-                command=backup_config["remote_mount_config"]["cifs"]["command"],
-                cifs_host=backup_config["remote_mount_config"]["cifs"]["host"],
-                cifs_path=backup_config["remote_mount_config"]["cifs"]["path"],
-                cifs_options=",".join(
-                    backup_config["remote_mount_config"]["cifs"]["options"]
-                ),
-                backup_root_path=backup_config["backup_root_path"],
-            )
-            config["remote_unmount_cmd"] = backup_config["remote_mount_config"]["cifs"][
-                "unmount_cmd"
-            ].format(
-                backup_root_path=backup_config["backup_root_path"],
-            )
-        elif config["remote_mount_type"] == "s3fs":
-            config["check_command"] = backup_config["remote_mount_config"]["s3fs"][
-                "command"
-            ]
-            config["remote_mount_cmd"] = backup_config["remote_mount_config"]["s3fs"][
-                "mount_cmd"
-            ].format(
-                command=backup_config["remote_mount_config"]["s3fs"]["command"],
-                s2fs_bucket=backup_config["remote_mount_config"]["s3fs"]["bucket"],
-                s2fs_path=backup_config["remote_mount_config"]["s3fs"]["path"],
-                s3fs_options=" ".join(
-                    backup_config["remote_mount_config"]["s3fs"]["options"]
-                ),
-                backup_root_path=backup_config["backup_root_path"],
-            )
-            config["remote_unmount_cmd"] = backup_config["remote_mount_config"]["s3fs"][
-                "unmount_cmd"
-            ].format(
-                backup_root_path=backup_config["backup_root_path"],
-            )
-        elif config["remote_mount_type"] == "cephfs":
-            config["check_command"] = backup_config["remote_mount_config"]["cephfs"][
-                "command"
-            ]
-            config["remote_mount_cmd"] = backup_config["remote_mount_config"]["cephfs"][
-                "mount_cmd"
-            ].format(
-                command=backup_config["remote_mount_config"]["cephfs"]["command"],
-                cephfs_monitors=",".join(
-                    backup_config["remote_mount_config"]["cephfs"]["monitors"]
-                ),
-                cephfs_path=backup_config["remote_mount_config"]["cephfs"]["path"],
-                cephfs_options=",".join(
-                    backup_config["remote_mount_config"]["cephfs"]["options"]
-                ),
-                backup_root_path=backup_config["backup_root_path"],
-            )
-            config["remote_unmount_cmd"] = backup_config["remote_mount_config"][
-                "cephfs"
-            ]["unmount_cmd"].format(
-                backup_root_path=backup_config["backup_root_path"],
-            )
-        else:
-            config["remote_mount_cmd"] = None
-            config["remote_unmount_cmd"] = None
+            config["unmount_cmds"] = list()
+            _unmount_cmds = backup_config["auto_mount"]["unmount_cmds"]
+            for _unmount_cmd in _unmount_cmds:
+                if "{backup_root_path}" in _unmount_cmd:
+                    _unmount_cmd = _unmount_cmd.format(
+                        backup_root_path=backup_config["backup_root_path"]
+                    )
+                config["unmount_cmds"].append(_unmount_cmd)
 
     except FileNotFoundError:
         echo(CLI_CONFIG, "ERROR: Specified backup configuration does not exist!")
@@ -382,7 +289,10 @@ def get_autobackup_config(CLI_CONFIG, cfgfile):
 
 
 def vm_autobackup(
-    CLI_CONFIG, autobackup_cfgfile=DEFAULT_AUTOBACKUP_FILENAME, force_full_flag=False
+    CLI_CONFIG,
+    autobackup_cfgfile=DEFAULT_AUTOBACKUP_FILENAME,
+    force_full_flag=False,
+    cron_flag=False,
 ):
     """
     Perform automatic backups of VMs based on an external config file.
@@ -393,15 +303,22 @@ def vm_autobackup(
     CLI_CONFIG["connection"] = "local"
     retcode, retdata = pvc.lib.node.node_info(CLI_CONFIG, DEFAULT_NODE_HOSTNAME)
     if not retcode or retdata.get("coordinator_state") != "primary":
-        echo(
-            CLI_CONFIG,
-            f"ERROR: Current host is not the primary coordinator of the local cluster; got connection '{real_connection}', host '{DEFAULT_NODE_HOSTNAME}'.",
-        )
-        echo(
-            CLI_CONFIG,
-            "Autobackup MUST be run from the cluster active primary coordinator using the 'local' connection. See '-h'/'--help' for details.",
-        )
-        exit(1)
+        if cron_flag:
+            echo(
+                CLI_CONFIG,
+                "Current host is not the primary coordinator of the local cluster and running in cron mode. Exiting cleanly.",
+            )
+            exit(0)
+        else:
+            echo(
+                CLI_CONFIG,
+                f"ERROR: Current host is not the primary coordinator of the local cluster; got connection '{real_connection}', host '{DEFAULT_NODE_HOSTNAME}'.",
+            )
+            echo(
+                CLI_CONFIG,
+                "Autobackup MUST be run from the cluster active primary coordinator using the 'local' connection. See '-h'/'--help' for details.",
+            )
+            exit(1)
 
     # Ensure we're running as root, or show a warning & confirmation
     if getuser() != "root":
@@ -463,38 +380,34 @@ def vm_autobackup(
     echo(CLI_CONFIG, "  {}".format("\n  ".join(vm_list_rows)), stderr=True)
     echo(CLI_CONFIG, "", stderr=True)
 
-    if autobackup_config["remote_mount_cmd"] is not None:
-        # Validate that the mount command is valid
-        if not path.exists(autobackup_config["check_command"]):
+    if autobackup_config["auto_mount_enabled"]:
+        # Execute each mount_cmds command in sequence
+        for cmd in autobackup_config["mount_cmds"]:
             echo(
                 CLI_CONFIG,
-                f"ERROR: Failed to find required command {autobackup_config['check_command']}; ensure it is installed.",
+                f"Executing mount command '{cmd.split()[0]}'... ",
+                newline=False,
             )
-            exit(1)
-
-        # Try to mount the remote mount
-        echo(
-            CLI_CONFIG,
-            f"Mounting remote {autobackup_config['remote_mount_type']} filesystem on {autobackup_config['backup_root_path']}... ",
-            newline=False,
-        )
-        tstart = datetime.now()
-        ret = run(
-            autobackup_config["remote_mount_cmd"].split(),
-            stdout=PIPE,
-            stderr=PIPE,
-        )
-        tend = datetime.now()
-        ttot = tend - tstart
-        if ret.returncode != 0:
-            echo(
-                CLI_CONFIG,
-                f"failed. [{ttot.seconds}s]",
+            tstart = datetime.now()
+            ret = run(
+                cmd.split(),
+                stdout=PIPE,
+                stderr=PIPE,
             )
-            echo(CLI_CONFIG, f"Exiting; command reports: {ret.stderr.decode().strip()}")
-            exit(1)
-        else:
-            echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
+            tend = datetime.now()
+            ttot = tend - tstart
+            if ret.returncode != 0:
+                echo(
+                    CLI_CONFIG,
+                    f"failed. [{ttot.seconds}s]",
+                )
+                echo(
+                    CLI_CONFIG,
+                    f"Exiting; command reports: {ret.stderr.decode().strip()}",
+                )
+                exit(1)
+            else:
+                echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
 
     # For each VM, perform the backup
     for vm in backup_vms:
@@ -625,26 +538,30 @@ def vm_autobackup(
         with open(autobackup_state_file, "w") as fh:
             jdump(state_data, fh)
 
-    # Try to unmount the remote mount
-    if autobackup_config["remote_unmount_cmd"] is not None:
-        echo(
-            CLI_CONFIG,
-            f"Unmounting remote {autobackup_config['remote_mount_type']} filesystem from {autobackup_config['backup_root_path']}... ",
-            newline=False,
-        )
-        tstart = datetime.now()
-        ret = run(
-            autobackup_config["remote_unmount_cmd"].split(),
-            stdout=PIPE,
-            stderr=PIPE,
-        )
-        tend = datetime.now()
-        ttot = tend - tstart
-        if ret.returncode != 0:
-            echo(CLI_CONFIG, f"failed. [{ttot.seconds}s]")
+    if autobackup_config["auto_mount_enabled"]:
+        # Execute each unmount_cmds command in sequence
+        for cmd in autobackup_config["unmount_cmds"]:
             echo(
                 CLI_CONFIG,
-                f"Continuing; command reports: {ret.stderr.decode().strip()}",
+                f"Executing unmount command '{cmd.split()[0]}'... ",
+                newline=False,
             )
-        else:
-            echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
+            tstart = datetime.now()
+            ret = run(
+                cmd.split(),
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+            tend = datetime.now()
+            ttot = tend - tstart
+            if ret.returncode != 0:
+                echo(
+                    CLI_CONFIG,
+                    f"failed. [{ttot.seconds}s]",
+                )
+                echo(
+                    CLI_CONFIG,
+                    f"Continuing; command reports: {ret.stderr.decode().strip()}",
+                )
+            else:
+                echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
