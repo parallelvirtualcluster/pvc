@@ -1,3 +1,13 @@
+pvc (0.9.80-0) unstable; urgency=high
+
+  * [CLI] Improves CLI performance by not loading "pkg_resources" until needed
+  * [CLI] Improves the output of the audit log (full command paths)
+  * [Node Daemon/API Daemon] Moves the sample YAML configurations to /usr/share/pvc instead of /etc/pvc and cleans up the old locations automatically
+  * [CLI] Adds VM autobackup functionality to automate VM backup/retention and scheduling
+  * [CLI] Handles the internal store in a better way to ensure CLI can be used as a module properly
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 27 Oct 2023 09:56:31 -0400
+
 pvc (0.9.79-0) unstable; urgency=high
 
   **API Changes**: New endpoints /vm/{vm}/backup, /vm/{vm}/restore

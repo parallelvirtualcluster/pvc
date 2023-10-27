@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.80](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.80)
+
+  * [CLI] Improves CLI performance by not loading "pkg_resources" until needed
+  * [CLI] Improves the output of the audit log (full command paths)
+  * [Node Daemon/API Daemon] Moves the sample YAML configurations to /usr/share/pvc instead of /etc/pvc and cleans up the old locations automatically
+  * [CLI] Adds VM autobackup functionality to automate VM backup/retention and scheduling
+  * [CLI] Handles the internal store in a better way to ensure CLI can be used as a module properly
+
 ###### [v0.9.79](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.79)
 
   **API Changes**: New endpoints /vm/{vm}/backup, /vm/{vm}/restore
