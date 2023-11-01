@@ -1917,7 +1917,6 @@ def cli_vm_vcpu_get(domain, format_function):
     help="Use an alternative topology for the vCPUs in the CSV form <sockets>,<cores>,<threads>. SxCxT must equal VCPUS.",
 )
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_vcpu_set(domain, vcpus, topology, restart_flag):
     """
     Set the vCPU count of the virtual machine DOMAIN to VCPUS.
@@ -1991,7 +1990,6 @@ def cli_vm_memory_get(domain, format_function):
 @click.argument("domain")
 @click.argument("memory")
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_memory_set(domain, memory, restart_flag):
     """
     Set the provisioned memory of the virtual machine DOMAIN to MEMORY; MEMORY must be an integer in MB.
@@ -2087,7 +2085,6 @@ def cli_vm_network_get(domain, format_function):
     help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_network_add(
     domain,
     net,
@@ -2158,7 +2155,6 @@ def cli_vm_network_add(
     help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_network_remove(domain, net, macaddr, sriov_flag, live_flag, restart_flag):
     """
     Remove the network NET from the virtual machine DOMAIN.
@@ -2259,7 +2255,6 @@ def cli_vm_volume_get(domain, format_function):
     help="Immediately live-attach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restart_flag):
     """
     Add the volume VOLUME to the virtual machine DOMAIN.
@@ -2291,7 +2286,6 @@ def cli_vm_volume_add(domain, volume, disk_id, bus, disk_type, live_flag, restar
     help="Immediately live-detach device to VM [default] or disable this behaviour.",
 )
 @restart_opt
-@confirm_opt("Restart virtual machine {domain}")
 def cli_vm_volume_remove(domain, volume, live_flag, restart_flag):
     """
     Remove VOLUME from the virtual machine DOMAIN; VOLUME must be a file path or RBD path in 'pool/volume' format.
