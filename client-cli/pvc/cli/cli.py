@@ -169,9 +169,10 @@ def restart_opt(function):
     @wraps(function)
     def confirm_action(*args, **kwargs):
         restart_state = kwargs.get("restart_flag", None)
+        live_state = kwargs.get("live_flag", False)
 
-        if restart_state is None:
-            # Neither "--restart" or "--no-restart" was passed: prompt for restart or restart if "--unsafe"
+        if restart_state is None and not live_state:
+            # Neither "--restart" or "--no-restart" was passed, and "--no-live" was passed: prompt for restart or restart if "--unsafe"
             try:
                 click.confirm(
                     f"Restart VM {kwargs.get('domain')} to apply changes",
