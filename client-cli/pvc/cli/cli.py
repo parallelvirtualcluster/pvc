@@ -180,6 +180,7 @@ def restart_opt(function):
                     abort=True,
                 )
                 kwargs["restart_flag"] = True
+                kwargs["confirm_flag"] = True
             except Exception:
                 echo(CLI_CONFIG, "Changes will be applied on next VM start/restart.")
                 kwargs["restart_flag"] = False
