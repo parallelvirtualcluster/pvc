@@ -350,32 +350,35 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             elif line[0] == "+":
                 continue
 
-            # If line begins with | and second entry is a digit (i.e. OSD ID)
-            if line[0] == "|" and line[1].isdigit():
-                # Parse the line in Ceph 14 format
-                osd_id = line[1]
-                node = line[3].split(".")[0]
-                used = line[5]
-                avail = line[7]
-                wr_ops = line[9]
-                wr_data = line[11]
-                rd_ops = line[13]
-                rd_data = line[15]
-                state = line[17]
-            # If first entry is a digit (i.e. OSD ID)
-            elif line[0].isdigit():
-                # Parse the line in Ceph 16 format
-                osd_id = line[0]
-                node = line[1].split(".")[0]
-                used = line[2]
-                avail = line[3]
-                wr_ops = line[4]
-                wr_data = line[5]
-                rd_ops = line[6]
-                rd_data = line[7]
-                state = line[8]
-            # Otherwise, it's the header line and is ignored
-            else:
+            try:
+                # If line begins with | and second entry is a digit (i.e. OSD ID)
+                if line[0] == "|" and line[1].isdigit():
+                    # Parse the line in Ceph 14 format
+                    osd_id = line[1]
+                    node = line[3].split(".")[0]
+                    used = line[5]
+                    avail = line[7]
+                    wr_ops = line[9]
+                    wr_data = line[11]
+                    rd_ops = line[13]
+                    rd_data = line[15]
+                    state = line[17]
+                # If first entry is a digit (i.e. OSD ID)
+                elif line[0].isdigit():
+                    # Parse the line in Ceph 16 format
+                    osd_id = line[0]
+                    node = line[1].split(".")[0]
+                    used = line[2]
+                    avail = line[3]
+                    wr_ops = line[4]
+                    wr_data = line[5]
+                    rd_ops = line[6]
+                    rd_data = line[7]
+                    state = line[8]
+                # Otherwise, it's the header line and is ignored
+                else:
+                    continue
+            except IndexError:
                 continue
 
             # I don't know why 2018 me used this construct instead of a normal
