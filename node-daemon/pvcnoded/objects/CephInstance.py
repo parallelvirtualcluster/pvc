@@ -394,7 +394,7 @@ class CephOSDInstance(object):
                 osd_clusterfsid = osd_details["tags"]["ceph.cluster_fsid"]
                 osd_fsid = osd_details["tags"]["ceph.osd_fsid"]
                 osd_id = osd_details["tags"]["ceph.osd_id"]
-                db_device = osd_details["tags"].get("ceph.db_device", None)
+                db_device = osd_details["tags"].get("ceph.db_device", "")
                 osd_vg = osd_details["vg_name"]
                 osd_lv = osd_details["lv_name"]
 
