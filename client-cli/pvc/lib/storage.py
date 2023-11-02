@@ -231,25 +231,27 @@ def ceph_osd_list(config, limit):
         return False, response.json().get("message", "")
 
 
-def ceph_osd_add(
-    config, node, device, weight, ext_db_flag, ext_db_ratio, split_flag, split_count
-):
+def ceph_osd_add(config, node, device, weight, ext_db_ratio, ext_db_size, osd_count):
     """
     Add new Ceph OSD
 
     API endpoint: POST /api/v1/storage/ceph/osd
-    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}, ext_db_ratio={ext_db_ratio}, split={split_flag}, count={split_count}
+    API arguments: node={node}, device={device}, weight={weight}, [ext_db_ratio={ext_db_ratio}, ext_db_size={ext_db_size}, osd_count={osd_count}]
     API schema: {"message":"{data}"}
     """
     params = {
         "node": node,
         "device": device,
         "weight": weight,
-        "ext_db": ext_db_flag,
-        "ext_db_ratio": ext_db_ratio,
-        "split": split_flag,
-        "count": split_count,
     }
+
+    if ext_db_ratio is not None:
+        params["ext_db_ratio"] = ext_db_ratio
+    if ext_db_size is not None:
+        params["ext_db_size"] = ext_db_size
+    if osd_count is not None:
+        params["osd_count"] = osd_count
+
     response = call_api(config, "post", "/storage/ceph/osd", params=params)
 
     if response.status_code == 200:

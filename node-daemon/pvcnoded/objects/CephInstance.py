@@ -23,6 +23,7 @@ import time
 import json
 
 import daemon_lib.common as common
+from daemon_lib.ceph import format_bytes_fromhuman
 
 from distutils.util import strtobool
 from re import search, match, sub
@@ -266,10 +267,9 @@ class CephOSDInstance(object):
         node,
         device,
         weight,
-        ext_db_flag=False,
-        ext_db_ratio=0.05,
-        split_device=False,
-        split_count=1,
+        ext_db_ratio=None,
+        ext_db_size=None,
+        split_count=None,
     ):
         # Handle a detect device if that is passed
         if match(r"detect:", device):
@@ -287,7 +287,19 @@ class CephOSDInstance(object):
                 )
                 device = ddevice
 
-        if split_device and split_count > 1:
+        if ext_db_size is not None and ext_db_ratio is not None:
+            logger.out(
+                "Invalid configuration: both an ext_db_size and ext_db_ratio were specified",
+                state="e",
+            )
+            return False
+
+        if ext_db_size is not None or ext_db_ratio is not None:
+            ext_db_flag = True
+        else:
+            ext_db_flag = False
+
+        if split_count is not None:
             split_flag = f"--osds-per-device {split_count}"
             logger.out(
                 f"Creating {split_count} new OSD disks on block device {device}",
@@ -352,16 +364,21 @@ class CephOSDInstance(object):
                     )
 
                     # 4b. Prepare the logical volume if ext_db_flag
-                    _, osd_size_bytes, _ = common.run_os_command(
-                        f"blockdev --getsize64 {osd_lv}"
-                    )
-                    osd_size_bytes = int(osd_size_bytes)
+                    if ext_db_ratio is not None:
+                        _, osd_size_bytes, _ = common.run_os_command(
+                            f"blockdev --getsize64 {osd_lv}"
+                        )
+                        osd_size_bytes = int(osd_size_bytes)
+                        osd_db_size_bytes = int(osd_size_bytes * ext_db_ratio)
+                    if ext_db_size is not None:
+                        osd_db_size_bytes = format_bytes_fromhuman(ext_db_size)
+
                     result = CephOSDInstance.create_osd_db_lv(
-                        zkhandler, logger, osd_id, ext_db_ratio, osd_size_bytes
+                        zkhandler, logger, osd_id, osd_db_size_bytes
                     )
                     if not result:
                         raise Exception
-                    db_device = "osd-db/osd-{}".format(osd_id)
+                    db_device = f"osd-db/osd-{osd_id}"
 
                     # 4c. Attach the new DB device to the OSD
                     retcode, stdout, stderr = common.run_os_command(
@@ -1078,7 +1095,7 @@ class CephOSDInstance(object):
             return False
 
     @staticmethod
-    def create_osd_db_lv(zkhandler, logger, osd_id, ext_db_ratio, osd_size_bytes):
+    def create_osd_db_lv(zkhandler, logger, osd_id, osd_db_size_bytes):
         logger.out(
             "Creating new OSD database logical volume for OSD ID {}".format(osd_id),
             state="i",
@@ -1096,18 +1113,16 @@ class CephOSDInstance(object):
                 return False
 
             # 1. Determine LV sizing
-            osd_db_size = int(osd_size_bytes * ext_db_ratio / 1024 / 1024)
+            osd_db_size_m = int(osd_db_size_bytes / 1024 / 1024)
 
             # 2. Create the LV
             logger.out(
-                'Creating DB LV "osd-db/osd-{}" of {}M ({} * {})'.format(
-                    osd_id, osd_db_size, osd_size_bytes, ext_db_ratio
-                ),
+                f'Creating DB LV "osd-db/osd-{osd_id}" of size {osd_db_size_m}M',
                 state="i",
             )
             retcode, stdout, stderr = common.run_os_command(
                 "lvcreate --yes --name osd-{} --size {} osd-db".format(
-                    osd_id, osd_db_size
+                    osd_id, osd_db_size_m
                 )
             )
             if retcode:
@@ -1245,15 +1260,19 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
             node,
             device,
             weight,
-            ext_db_flag,
             ext_db_ratio,
-            split_flag,
+            ext_db_size,
             split_count,
         ) = args.split(",")
-        ext_db_flag = bool(strtobool(ext_db_flag))
-        ext_db_ratio = float(ext_db_ratio)
-        split_flag = bool(strtobool(split_flag))
-        split_count = int(split_count)
+        try:
+            ext_db_ratio = float(ext_db_ratio)
+        except Exception:
+            ext_db_ratio = None
+        try:
+            split_count = int(split_count)
+        except Exception:
+            split_count = None
+
         if node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock("base.cmd.ceph")
@@ -1265,9 +1284,8 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
                     node,
                     device,
                     weight,
-                    ext_db_flag,
                     ext_db_ratio,
-                    split_flag,
+                    ext_db_size,
                     split_count,
                 )
                 # Command succeeded

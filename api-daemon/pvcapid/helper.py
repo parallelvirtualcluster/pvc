@@ -1371,10 +1371,9 @@ def ceph_osd_add(
     node,
     device,
     weight,
-    ext_db_flag=False,
-    ext_db_ratio=0.05,
-    split_flag=False,
-    split_count=1,
+    ext_db_ratio=None,
+    ext_db_size=None,
+    split_count=None,
 ):
     """
     Add a Ceph OSD to the PVC Ceph storage cluster.
@@ -1384,9 +1383,8 @@ def ceph_osd_add(
         node,
         device,
         weight,
-        ext_db_flag,
         ext_db_ratio,
-        split_flag,
+        ext_db_size,
         split_count,
     )
 

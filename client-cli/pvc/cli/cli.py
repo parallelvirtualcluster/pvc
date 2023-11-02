@@ -3395,30 +3395,29 @@ def cli_storage_osd_create_db_vg(node, device):
     help="Weight of the OSD(s) within the CRUSH map.",
 )
 @click.option(
-    "-d",
-    "--ext-db",
-    "ext_db_flag",
-    is_flag=True,
-    default=False,
-    help="Use an external database logical volume for these OSD(s).",
-)
-@click.option(
     "-r",
     "--ext-db-ratio",
     "ext_db_ratio",
-    default=0.05,
-    show_default=True,
+    default=None,
     type=float,
-    help="Decimal ratio of the external database logical volume to the OSD size.",
+    help="Create an external database logical volume for the OSD(s) with this decimal ratio of the DB LV to the OSD size.",
 )
 @click.option(
     "-s",
-    "--split",
-    "split_count",
+    "--ext-db-size",
+    "ext_db_size",
+    default=None,
+    show_default=True,
+    help="Create an external database logical volume for the OSD(s) with this fixed human-unit size.",
+)
+@click.option(
+    "-c",
+    "--osd-count",
+    "osd_count",
     default=None,
     show_default=False,
     type=int,
-    help="Split an NVMe disk into this many OSDs",
+    help="Split (an NVMe) disk into this many OSDs",
 )
 @confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
 def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_count):
@@ -3427,17 +3426,16 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
 
     A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". Detect strings allow for automatic determination of Linux block device paths from known basic information about disks by leveraging "lsscsi" on the target host. The "NAME" should be some descriptive identifier, for instance the manufacturer (e.g. "INTEL"), the "HUMAN-SIZE" should be the labeled human-readable size of the device (e.g. "480GB", "1.92TB"), and "ID" specifies the Nth 0-indexed device which matches the "NAME" and "HUMAN-SIZE" values (e.g. "2" would match the third device with the corresponding "NAME" and "HUMAN-SIZE"). When matching against sizes, there is +/- 3% flexibility to account for base-1000 vs. base-1024 differences and rounding errors. The "NAME" may contain whitespace but if so the entire detect string should be quoted, and is case-insensitive. More information about detect strings can be found in the pvcbootstrapd manual.
 
-    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For example, if all OSDs are the same size as recommended for PVC, 1 (the default) is a valid weight so that all are treated identically. If a new OSD is added later which is 4x the size of the existing OSDs, the new OSD's weight should then be 4 to tell the cluster that 4x the data can be stored on the OSD. Weights can also be tweaked for performance reasons, since OSDs with more data will incur more I/O load. For more information about CRUSH weights, please see the Ceph documentation.
+    The weight of an OSD should reflect the ratio of the size of the OSD to the other OSDs in the storage cluster. For example, with a 200GB disk and a 400GB disk in each node, the 400GB disk should have twice the weight as the 200GB disk. For more information about CRUSH weights, please see the Ceph documentation.
 
-    If '--ext-db' is specified, the OSD database and WAL will be placed on a new logical volume in NODE's OSD database volume group. An OSD database volume group must exist on the node or the OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
+    The "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" options, if specified, and if a OSD DB VG exists on the node (see "pvc storage osd create-db-vg"), will instruct the OSD to locate its RocksDB database and WAL on a new logical volume on that OSD DB VG. If "-r"/"--ext-db-ratio" is specified, the sizing of this DB LV will be the given ratio (specified as a decimal percentage e.g. 0.05 for 5%) of the size of the OSD (e.g. 0.05 on a 1TB SSD will create a 50GB LV). If "-s"/"--ext-db-size" is specified, the sizing of this DB LV will be the given human-unit size (e.g. 1024M, 20GB, etc.).
 
-    The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
+    An external DB is only recommended for relatively slow OSD devices (i.e. SATA SSDs) when there is also a smaller, faster (i.e. an NVMe or 3DXPoint SSD) device in the node. For pure-NVMe OSDs, an external DB is not required nor recommended for optimal performance. Usually, an "--ext-db-ratio" of 0.05 (5%) is best for most workloads and OSD sizes; the Ceph documentation recommends a minimum of 0.02 (2%), and higher values may improve performance under write-heavy workloads with fewer OSDs per node. The explicit size option is also permitted to allow more fine-grained sizing, allowing the administrator to pre-calculate the desired size rather than relying on a ratio.
 
-    For NVMe devices, it is recommended to split block device into multiple OSDs to provide better processing throughput. To do this, specify "-s"/"--split" and the number of OSDs to create on the block device. For most NVMe devices, the recommended value is 2 or 4, such that each OSD is at least 500GB. Numbers higher than 4 are not recommended. This is NOT RECOMMENDED for SATA SSDs. If a block device is split, EACH OSD will have the weight indicated by "-w"/"--weight" value and EACH OSD will have a unique DB block device with "-r"/"--ext-db-ratio", if applicable ("-d"/"--ext-db" set).
+    The "-c"/"--osd-count" option allows the splitting of a single block device into multiple logical OSDs. This is recommended in the Ceph literature for extremely fast OSD block devices (i.e. NVMe or 3DXPoint) which can saturate a single OSD process. Usually, 2 or 4 OSDs is recommended, based on the size of the OSD disk such that each OSD is roughly 1TB or higher; more than 4 OSDs per volume is not recommended, and this option is not recommended for SATA SSDs.
+
+    Note that, if "-c"/"--osd-count" is specified, the provided "-w"/"--weight" will be the weight of EACH created OSD, not the block device as a whole. Ensure you take this into account if mixing and matching OSD block devices. Additionally, if "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" is specified, one DB LV will be created for EACH created OSD, of the given ratio/size per OSD (ratios are calculated from the OSD size, not the underlying block device).
     """
-
-    if split_count is not None:
-        split_flag = True
 
     echo(
         CLI_CONFIG,
@@ -3449,9 +3447,8 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
         node,
         device,
         weight,
-        ext_db_flag,
         ext_db_ratio,
-        split_flag,
+        ext_db_size,
         split_count,
     )
     echo(CLI_CONFIG, "done.")

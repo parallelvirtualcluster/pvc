@@ -4282,19 +4282,15 @@ class API_Storage_Ceph_OSD_Root(Resource):
                 "helptext": "An OSD weight must be specified.",
             },
             {
-                "name": "ext_db",
-                "required": False,
-            },
-            {
                 "name": "ext_db_ratio",
                 "required": False,
             },
             {
-                "name": "split",
+                "name": "ext_db_size",
                 "required": False,
             },
             {
-                "name": "count",
+                "name": "osd_count",
                 "required": False,
             },
         ]
@@ -4303,7 +4299,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
     def post(self, reqargs):
         """
         Add a Ceph OSD to the cluster
-        Note: This task may take up to 30s to complete and return
+        Note: This task may take up to 60s to complete and return
         ---
         tags:
           - storage / ceph
@@ -4324,25 +4320,20 @@ class API_Storage_Ceph_OSD_Root(Resource):
             required: true
             description: The Ceph CRUSH weight for the OSD
           - in: query
-            name: ext_db
-            type: boolean
-            required: false
-            description: Whether to use an external OSD DB LV device
-          - in: query
             name: ext_db_ratio
             type: float
             required: false
-            description: Decimal ratio of total OSD size for the external OSD DB LV device, default 0.05 (5%)
+            description: If set, creates an OSD DB LV with this decimal ratio of DB to total OSD size (usually 0.05 i.e. 5%); mutually exclusive with ext_db_size
           - in: query
-            name: split
-            type: boolean
+            name: ext_db_size
+            type: float
             required: false
-            description: Whether to split the block device into multiple OSDs (recommended for NVMe devices)
+            description: If set, creates an OSD DB LV with this explicit size in human units (e.g. 1024M, 20G); mutually exclusive with ext_db_ratio
           - in: query
-            name: count
+            name: osd_count
             type: integer
             required: false
-            description: If {split}, how many OSDs to create on the block device; usually 2 or 4 depending on size
+            description: If set, create this many OSDs on the block device instead of 1; usually 2 or 4 depending on size
         responses:
           200:
             description: OK
@@ -4359,10 +4350,9 @@ class API_Storage_Ceph_OSD_Root(Resource):
             reqargs.get("node", None),
             reqargs.get("device", None),
             reqargs.get("weight", None),
-            reqargs.get("ext_db", False),
-            float(reqargs.get("ext_db_ratio", 0.05)),
-            reqargs.get("split", False),
-            reqargs.get("count", 1),
+            reqargs.get("ext_db_ratio", None),
+            reqargs.get("ext_db_size", None),
+            reqargs.get("osd_count", None),
         )
 
 

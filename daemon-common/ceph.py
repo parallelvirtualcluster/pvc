@@ -273,11 +273,17 @@ def add_osd(
     node,
     device,
     weight,
-    ext_db_flag=False,
-    ext_db_ratio=0.05,
-    split_flag=False,
-    split_count=1,
+    ext_db_ratio=None,
+    ext_db_size=None,
+    split_count=None,
 ):
+    # Verify that options are valid
+    if ext_db_ratio is not None and ext_db_size is not None:
+        return (
+            False,
+            "ERROR: Both an ext_db_ratio and ext_db_size were specified; choose only one.",
+        )
+
     # Verify the target node exists
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
@@ -295,8 +301,8 @@ def add_osd(
         )
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = "osd_add {},{},{},{},{},{},{}".format(
-        node, device, weight, ext_db_flag, ext_db_ratio, split_flag, split_count
+    add_osd_string = "osd_add {},{},{},{},{},{}".format(
+        node, device, weight, ext_db_ratio, ext_db_size, split_count
     )
     zkhandler.write([("base.cmd.ceph", add_osd_string)])
     # Wait 1/2 second for the cluster to get the message and start working
