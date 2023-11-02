@@ -3392,7 +3392,7 @@ def cli_storage_osd_create_db_vg(node, device):
     "weight",
     default=1.0,
     show_default=True,
-    help="Weight of the OSD within the CRUSH map.",
+    help="Weight of the OSD(s) within the CRUSH map.",
 )
 @click.option(
     "-d",
@@ -3400,7 +3400,7 @@ def cli_storage_osd_create_db_vg(node, device):
     "ext_db_flag",
     is_flag=True,
     default=False,
-    help="Use an external database logical volume for this OSD.",
+    help="Use an external database logical volume for these OSD(s).",
 )
 @click.option(
     "-r",
@@ -3433,7 +3433,7 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
 
     The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
 
-    For NVMe devices, it is recommended to split block device into multiple OSDs to provide better processing throughput. To do this, specify "-s"/"--split" and the number of OSDs to create on the block device. For most NVMe devices, the recommended value is 2 or 4, such that each OSD is at least 500GB. Numbers higher than 4 are not recommended. This is NOT RECOMMENDED for SATA SSDs.
+    For NVMe devices, it is recommended to split block device into multiple OSDs to provide better processing throughput. To do this, specify "-s"/"--split" and the number of OSDs to create on the block device. For most NVMe devices, the recommended value is 2 or 4, such that each OSD is at least 500GB. Numbers higher than 4 are not recommended. This is NOT RECOMMENDED for SATA SSDs. If a block device is split, EACH OSD will have the weight indicated by "-w"/"--weight" value and EACH OSD will have a unique DB block device with "-r"/"--ext-db-ratio", if applicable ("-d"/"--ext-db" set).
     """
 
     if split_count is not None:
