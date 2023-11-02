@@ -887,7 +887,7 @@ class CephOSDInstance(object):
                     raise Exception
 
             # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
-            logger.out("Waiting for OSD {osd_id} to be safe to remove", state="i")
+            logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
             while True:
                 retcode, stdout, stderr = common.run_os_command(
                     f"ceph osd safe-to-destroy osd.{osd_id}"
