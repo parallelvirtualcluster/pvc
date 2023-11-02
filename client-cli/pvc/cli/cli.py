@@ -3439,6 +3439,11 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
     if split_count is not None:
         split_flag = True
 
+    echo(
+        CLI_CONFIG,
+        "Waiting for node task to complete, this may take some time... ",
+        newline=False,
+    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_add(
         CLI_CONFIG,
         node,
@@ -3449,6 +3454,7 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
         split_flag,
         split_count,
     )
+    echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
 
 
@@ -3479,9 +3485,15 @@ def cli_storage_osd_replace(osdid, device, weight):
     Existing IDs, external DB devices, etc. of the OSD will be preserved; data will be lost and rebuilt from the remaining healthy OSDs.
     """
 
+    echo(
+        CLI_CONFIG,
+        "Waiting for node task to complete, this may take some time... ",
+        newline=False,
+    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_replace(
         CLI_CONFIG, osdid, device, weight
     )
+    echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
 
 
@@ -3503,7 +3515,14 @@ def cli_storage_osd_refresh(osdid, device):
 
     NOTE: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD instead.
     """
+
+    echo(
+        CLI_CONFIG,
+        "Waiting for node task to complete, this may take some time... ",
+        newline=False,
+    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_refresh(CLI_CONFIG, osdid, device)
+    echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
 
 
@@ -3531,7 +3550,13 @@ def cli_storage_osd_remove(osdid, force_flag):
     NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
     """
 
+    echo(
+        CLI_CONFIG,
+        "Waiting for node task to complete, this may take some time... ",
+        newline=False,
+    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_remove(CLI_CONFIG, osdid, force_flag)
+    echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
 
 
