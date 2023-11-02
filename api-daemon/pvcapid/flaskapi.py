@@ -4284,12 +4284,18 @@ class API_Storage_Ceph_OSD_Root(Resource):
             {
                 "name": "ext_db",
                 "required": False,
-                "helptext": "Whether to use an external OSD DB LV device.",
             },
             {
                 "name": "ext_db_ratio",
                 "required": False,
-                "helptext": "Decimal size ratio of the external OSD DB LV device.",
+            },
+            {
+                "name": "split",
+                "required": False,
+            },
+            {
+                "name": "count",
+                "required": False,
             },
         ]
     )
@@ -4327,6 +4333,16 @@ class API_Storage_Ceph_OSD_Root(Resource):
             type: float
             required: false
             description: Decimal ratio of total OSD size for the external OSD DB LV device, default 0.05 (5%)
+          - in: query
+            name: split
+            type: boolean
+            required: false
+            description: Whether to split the block device into multiple OSDs (recommended for NVMe devices)
+          - in: query
+            name: count
+            type: integer
+            required: false
+            description: If {split}, how many OSDs to create on the block device; usually 2 or 4 depending on size
         responses:
           200:
             description: OK
@@ -4345,6 +4361,8 @@ class API_Storage_Ceph_OSD_Root(Resource):
             reqargs.get("weight", None),
             reqargs.get("ext_db", False),
             float(reqargs.get("ext_db_ratio", 0.05)),
+            reqargs.get("split", False),
+            reqargs.get("count", 1),
         )
 
 

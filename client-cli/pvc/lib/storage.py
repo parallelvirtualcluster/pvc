@@ -231,12 +231,14 @@ def ceph_osd_list(config, limit):
         return False, response.json().get("message", "")
 
 
-def ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio):
+def ceph_osd_add(
+    config, node, device, weight, ext_db_flag, ext_db_ratio, split_flag, split_count
+):
     """
     Add new Ceph OSD
 
     API endpoint: POST /api/v1/storage/ceph/osd
-    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}, ext_db_ratio={ext_db_ratio}
+    API arguments: node={node}, device={device}, weight={weight}, ext_db={ext_db_flag}, ext_db_ratio={ext_db_ratio}, split={split_flag}, count={split_count}
     API schema: {"message":"{data}"}
     """
     params = {
@@ -245,6 +247,8 @@ def ceph_osd_add(config, node, device, weight, ext_db_flag, ext_db_ratio):
         "weight": weight,
         "ext_db": ext_db_flag,
         "ext_db_ratio": ext_db_ratio,
+        "split": split_flag,
+        "count": split_count,
     }
     response = call_api(config, "post", "/storage/ceph/osd", params=params)
 

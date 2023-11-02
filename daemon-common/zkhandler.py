@@ -540,7 +540,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 9
+    _version = 10
 
     # Root for doing nested keys
     _schema_root = ""
@@ -719,6 +719,7 @@ class ZKSchema(object):
             "lvm": "/lvm",
             "vg": "/lvm/vg",
             "lv": "/lvm/lv",
+            "is_split": "/is_split",
             "stats": "/stats",
         },
         # The schema of an individual pool entry (/ceph/pools/{pool_name})
@@ -963,7 +964,9 @@ class ZKSchema(object):
                     kpath = f"{elem}.{ikey}"
                     # Validate that the key exists for that child
                     if not zkhandler.zk_conn.exists(self.path(kpath, child)):
-                        if elem == "pool" and ikey == "tier":
+                        if elem == "osd" and ikey == "is_split":
+                            default_data = "False"
+                        elif elem == "pool" and ikey == "tier":
                             default_data = "default"
                         else:
                             default_data = ""

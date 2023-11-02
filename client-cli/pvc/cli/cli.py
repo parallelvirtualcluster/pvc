@@ -3411,8 +3411,17 @@ def cli_storage_osd_create_db_vg(node, device):
     type=float,
     help="Decimal ratio of the external database logical volume to the OSD size.",
 )
-@confirm_opt("Destroy all data on and create new OSD on node {node} device {device}")
-def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio):
+@click.option(
+    "-s",
+    "--split",
+    "split_count",
+    default=None,
+    show_default=False,
+    type=int,
+    help="Split an NVMe disk into this many OSDs",
+)
+@confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
+def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_count):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported.
 
@@ -3423,10 +3432,22 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio):
     If '--ext-db' is specified, the OSD database and WAL will be placed on a new logical volume in NODE's OSD database volume group. An OSD database volume group must exist on the node or the OSD creation will fail. See the 'pvc storage osd create-db-vg' command for more details.
 
     The default '--ext-db-ratio' of 0.05 (5%) is sufficient for most RBD workloads and OSD sizes, though this can be adjusted based on the sizes of the OSD(s) and the underlying database device. Ceph documentation recommends at least 0.02 (2%) for RBD use-cases, and higher values may improve WAL performance under write-heavy workloads with fewer OSDs per node.
+
+    For NVMe devices, it is recommended to split block device into multiple OSDs to provide better processing throughput. To do this, specify "-s"/"--split" and the number of OSDs to create on the block device. For most NVMe devices, the recommended value is 2 or 4, such that each OSD is at least 500GB. Numbers higher than 4 are not recommended. This is NOT RECOMMENDED for SATA SSDs.
     """
 
+    if split_count is not None:
+        split_flag = True
+
     retcode, retmsg = pvc.lib.storage.ceph_osd_add(
-        CLI_CONFIG, node, device, weight, ext_db_flag, ext_db_ratio
+        CLI_CONFIG,
+        node,
+        device,
+        weight,
+        ext_db_flag,
+        ext_db_ratio,
+        split_flag,
+        split_count,
     )
     finish(retcode, retmsg)
 

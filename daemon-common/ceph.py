@@ -211,6 +211,7 @@ def getOSDInformation(zkhandler, osd_id):
     # Get the devices
     osd_node = zkhandler.read(("osd.node", osd_id))
     osd_device = zkhandler.read(("osd.device", osd_id))
+    osd_is_split = zkhandler.read(("osd.is_split", osd_id))
     osd_db_device = zkhandler.read(("osd.db_device", osd_id))
     # Parse the stats data
     osd_stats_raw = zkhandler.read(("osd.stats", osd_id))
@@ -220,6 +221,7 @@ def getOSDInformation(zkhandler, osd_id):
         "id": osd_id,
         "node": osd_node,
         "device": osd_device,
+        "is_split": osd_is_split,
         "db_device": osd_db_device,
         "stats": osd_stats,
     }
@@ -266,7 +268,16 @@ def add_osd_db_vg(zkhandler, node, device):
 
 # OSD actions use the /cmd/ceph pipe
 # These actions must occur on the specific node they reference
-def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.05):
+def add_osd(
+    zkhandler,
+    node,
+    device,
+    weight,
+    ext_db_flag=False,
+    ext_db_ratio=0.05,
+    split_flag=False,
+    split_count=1,
+):
     # Verify the target node exists
     if not common.verifyNode(zkhandler, node):
         return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
@@ -284,8 +295,8 @@ def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.0
         )
 
     # Tell the cluster to create a new OSD for the host
-    add_osd_string = "osd_add {},{},{},{},{}".format(
-        node, device, weight, ext_db_flag, ext_db_ratio
+    add_osd_string = "osd_add {},{},{},{},{},{},{}".format(
+        node, device, weight, ext_db_flag, ext_db_ratio, split_flag, split_count
     )
     zkhandler.write([("base.cmd.ceph", add_osd_string)])
     # Wait 1/2 second for the cluster to get the message and start working
@@ -295,14 +306,10 @@ def add_osd(zkhandler, node, device, weight, ext_db_flag=False, ext_db_ratio=0.0
         try:
             result = zkhandler.read("base.cmd.ceph").split()[0]
             if result == "success-osd_add":
-                message = 'Created new OSD with block device "{}" on node "{}".'.format(
-                    device, node
-                )
+                message = f'Created {split_count} new OSD(s) on node "{node}" block device "{device}"'
                 success = True
             else:
-                message = (
-                    "ERROR: Failed to create new OSD; check node logs for details."
-                )
+                message = "ERROR: Failed to create OSD(s); check node logs for details."
                 success = False
         except Exception:
             message = "ERROR: Command ignored by node."
