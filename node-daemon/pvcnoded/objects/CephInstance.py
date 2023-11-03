@@ -562,10 +562,9 @@ class CephOSDInstance(object):
             )
 
         # Try to determine if any other OSDs shared a block device with this OSD
+        _, osd_list = get_list_osd(zkhandler, None)
         all_osds_on_block = [
-            o
-            for o in get_list_osd(zkhandler, None)
-            if o["node"] == node and o["device"] == osd_block
+            o for o in osd_list if o["node"] == node and o["device"] == osd_block
         ]
 
         # Remove each OSD on the block device
@@ -596,7 +595,7 @@ class CephOSDInstance(object):
                 f"blockdev --getsize64 {all_osds_on_block[0]['db_device']}"
             )
             osd_db_ratio = None
-            osd_db_size = f"{osd_db_size}B"
+            osd_db_size = f"{osd_db_size_bytes}B"
         else:
             osd_db_ratio = None
             osd_db_size = None
@@ -789,15 +788,16 @@ class CephOSDInstance(object):
                     raise Exception
 
             # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
-            logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
-            while True:
-                retcode, stdout, stderr = common.run_os_command(
-                    f"ceph osd safe-to-destroy osd.{osd_id}"
-                )
-                if int(retcode) in [0, 11]:
-                    break
-                else:
-                    time.sleep(5)
+            if not force_flag:
+                logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
+                while True:
+                    retcode, stdout, stderr = common.run_os_command(
+                        f"ceph osd safe-to-destroy osd.{osd_id}"
+                    )
+                    if int(retcode) in [0, 11]:
+                        break
+                    else:
+                        time.sleep(1)
 
             # 3. Stop the OSD process and wait for it to be terminated
             logger.out("Stopping OSD {}".format(osd_id), state="i")
@@ -812,7 +812,7 @@ class CephOSDInstance(object):
                     logger.out("Ignoring error due to force flag", state="i")
                 else:
                     raise Exception
-            time.sleep(2)
+            time.sleep(5)
 
             if not skip_zap_flag:
                 # 4. Determine the block devices
@@ -843,7 +843,7 @@ class CephOSDInstance(object):
                         raise Exception
 
             # 5. Purge the OSD from Ceph
-            logger.out("Purging OSD {osd_id}", state="i")
+            logger.out(f"Purging OSD {osd_id}", state="i")
             if force_flag:
                 force_arg = "--force"
             else:
