@@ -210,6 +210,7 @@ def getClusterOSDList(zkhandler):
 
 def getOSDInformation(zkhandler, osd_id):
     # Get the devices
+    osd_fsid = zkhandler.read(("osd.fsid", osd_id))
     osd_node = zkhandler.read(("osd.node", osd_id))
     osd_device = zkhandler.read(("osd.device", osd_id))
     osd_is_split = bool(strtobool(zkhandler.read(("osd.is_split", osd_id))))
@@ -220,6 +221,7 @@ def getOSDInformation(zkhandler, osd_id):
 
     osd_information = {
         "id": osd_id,
+        "fsid": osd_fsid,
         "node": osd_node,
         "device": osd_device,
         "is_split": osd_is_split,
