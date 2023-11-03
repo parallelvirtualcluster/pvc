@@ -3420,7 +3420,7 @@ def cli_storage_osd_create_db_vg(node, device):
     help="Split (an NVMe) disk into this many OSDs.",
 )
 @confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
-def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_count):
+def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_count):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported.
 
@@ -3449,7 +3449,7 @@ def cli_storage_osd_add(node, device, weight, ext_db_flag, ext_db_ratio, split_c
         weight,
         ext_db_ratio,
         ext_db_size,
-        split_count,
+        osd_count,
     )
     echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
