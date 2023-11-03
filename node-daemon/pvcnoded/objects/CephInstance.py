@@ -301,12 +301,14 @@ class CephOSDInstance(object):
 
         if split_count is not None:
             split_flag = f"--osds-per-device {split_count}"
+            is_split = True
             logger.out(
                 f"Creating {split_count} new OSD disks on block device {device}",
                 state="i",
             )
         else:
             split_flag = ""
+            is_split = False
             logger.out(f"Creating 1 new OSD disk on block device {device}", state="i")
 
         if "nvme" in device:
@@ -464,7 +466,7 @@ class CephOSDInstance(object):
                         (("osd.lvm", osd_id), ""),
                         (("osd.vg", osd_id), osd_vg),
                         (("osd.lv", osd_id), osd_lv),
-                        (("osd.is_split", osd_id), split_flag),
+                        (("osd.is_split", osd_id), is_split),
                         (
                             ("osd.stats", osd_id),
                             '{"uuid": "|", "up": 0, "in": 0, "primary_affinity": "|", "utilization": "|", "var": "|", "pgs": "|", "kb": "|", "weight": "|", "reweight": "|", "node": "|", "used": "|", "avail": "|", "wr_ops": "|", "wr_data": "|", "rd_ops": "|", "rd_data": "|", "state": "|"}',
