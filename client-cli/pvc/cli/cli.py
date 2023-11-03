@@ -3366,7 +3366,7 @@ def cli_storage_osd_create_db_vg(node, device):
     """
     Create a new Ceph OSD database volume group on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Using partitions is not supported.
 
-    This volume group will be used for Ceph OSD database and WAL functionality if the '--ext-db' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance.
+    This volume group will be used for Ceph OSD database and WAL functionality if an'--ext-db-*' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. For mor edetails, see the "pvc storage osd add" command help.
 
     Only one OSD database volume group on a single physical device, named "osd-db", is supported per node, so it must be fast and large enough to act as an effective OSD database device for all OSDs on the node. Attempting to add additional database volume groups after the first will result in an error.
 
