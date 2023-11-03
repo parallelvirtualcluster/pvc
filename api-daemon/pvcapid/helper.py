@@ -1398,11 +1398,21 @@ def ceph_osd_add(
 
 
 @ZKConnection(config)
-def ceph_osd_replace(zkhandler, osd_id, device, weight):
+def ceph_osd_replace(
+    zkhandler,
+    osd_id,
+    new_device,
+    old_device=None,
+    weight=None,
+    ext_db_ratio=None,
+    ext_db_size=None,
+):
     """
     Replace a Ceph OSD in the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.replace_osd(zkhandler, osd_id, device, weight)
+    retflag, retdata = pvc_ceph.replace_osd(
+        zkhandler, osd_id, new_device, old_device, weight, ext_db_ratio, ext_db_size
+    )
 
     if retflag:
         retcode = 200

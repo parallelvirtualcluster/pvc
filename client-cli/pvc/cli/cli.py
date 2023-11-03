@@ -3428,13 +3428,15 @@ def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_cou
 
     The weight of an OSD should reflect the ratio of the size of the OSD to the other OSDs in the storage cluster. For example, with a 200GB disk and a 400GB disk in each node, the 400GB disk should have twice the weight as the 200GB disk. For more information about CRUSH weights, please see the Ceph documentation.
 
-    The "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" options, if specified, and if a OSD DB VG exists on the node (see "pvc storage osd create-db-vg"), will instruct the OSD to locate its RocksDB database and WAL on a new logical volume on that OSD DB VG. If "-r"/"--ext-db-ratio" is specified, the sizing of this DB LV will be the given ratio (specified as a decimal percentage e.g. 0.05 for 5%) of the size of the OSD (e.g. 0.05 on a 1TB SSD will create a 50GB LV). If "-s"/"--ext-db-size" is specified, the sizing of this DB LV will be the given human-unit size (e.g. 1024M, 20GB, etc.).
+    The "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" options, if specified, and if a OSD DB VG exists on the node (see "pvc storage osd create-db-vg"), will instruct the OSD to locate its DB database and WAL on a new logical volume on that OSD DB VG. If "-r"/"--ext-db-ratio" is specified, the sizing of this DB LV will be the given ratio (specified as a decimal percentage e.g. 0.05 for 5%) of the size of the OSD (e.g. 0.05 on a 1TB SSD will create a 50GB LV). If "-s"/"--ext-db-size" is specified, the sizing of this DB LV will be the given human-unit size (e.g. 1024M, 20GB, etc.).
 
     An external DB is only recommended for relatively slow OSD devices (i.e. SATA SSDs) when there is also a smaller, faster (i.e. NVMe or 3DXPoint SSD) device in the node. For NVMe OSDs, an external DB is not required nor recommended for optimal performance. An "--ext-db-ratio" of 0.05 (5%) is recommended for most workloads and OSD sizes; the Ceph documentation recommends a minimum of 0.02 (2%), and higher values may improve performance under write-heavy workloads with fewer OSDs per node. The explicit size option is also permitted to allow more fine-grained sizing, allowing the administrator to pre-calculate the desired size rather than relying on a ratio.
 
     The "-c"/"--osd-count" option allows the splitting of a single block device into multiple logical OSDs. This is recommended in the Ceph literature for extremely fast OSD block devices (i.e. NVMe or 3DXPoint) which can saturate a single OSD process. Usually, 2 or 4 OSDs is recommended, based on the size and performance of the OSD disk; more than 4 OSDs per volume is not recommended, and this option is not recommended for SATA SSDs.
 
     Note that, if "-c"/"--osd-count" is specified, the provided "-w"/"--weight" will be the weight of EACH created OSD, not the block device as a whole. Ensure you take this into account if mixing and matching OSD block devices. Additionally, if "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" is specified, one DB LV will be created for EACH created OSD, of the given ratio/size per OSD; ratios are calculated from the OSD size, not the underlying device.
+
+    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     echo(
@@ -3461,25 +3463,57 @@ def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_cou
 @click.command(name="replace", short_help="Replace OSD block device.")
 @connection_req
 @click.argument("osdid")
-@click.argument("device")
+@click.argument("new_device")
+@click.option(
+    "-o",
+    "--old-device",
+    "old_device",
+    default=None,
+    help="The old OSD block device, if known and valid",
+)
 @click.option(
     "-w",
     "--weight",
     "weight",
-    default=1.0,
-    show_default=True,
-    help="New weight of the OSD within the CRUSH map.",
+    default=None,
+    help="New weight of the OSD(s) within the CRUSH map; if unset, old weight is used",
 )
-@confirm_opt("Replace OSD {osdid} with block device {device} weight {weight}")
-def cli_storage_osd_replace(osdid, device, weight):
+@click.option(
+    "-r",
+    "--ext-db-ratio",
+    "ext_db_ratio",
+    default=None,
+    help="Create a new external database logical volume for the OSD(s) with this decimal ratio of the DB LV to the OSD size; if unset, old ext_db_size is used",
+)
+@click.option(
+    "-s",
+    "--ext-db-size",
+    "ext_db_size",
+    default=None,
+    help="Create a new external database logical volume for the OSD(s) with this human-unit size; if unset, old ext_db_size is used",
+)
+@confirm_opt(
+    "Destroy all data on and replace OSD {osdid} (and peer split OSDs) with new device {new_device}"
+)
+def cli_storage_osd_replace(
+    osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
+):
     """
-    Replace the block device of an existing OSD with ID OSDID with DEVICE. Use this command to replace a failed or smaller OSD block device with a new one.
+    Replace the block device of an existing OSD with ID OSDID, and any peer split OSDs with the same block device, with NEW_DEVICE. Use this command to replace a failed or smaller OSD block device with a new one in one command.
 
-    DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+    DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'. The path or detect string must be valid on the current node housing the OSD.
 
-    The weight of an OSD should reflect the ratio of the OSD to other OSDs in the storage cluster. For details, see 'pvc storage osd add --help'. Note that the current weight must be explicitly specified if it differs from the default.
+    If OSDID is part of a split OSD set, any peer split OSDs with the same configured block device will be replaced as well. The split count will be retained and cannot be changed with this command; to do so, all OSDs in the split OSD set must be removed and new OSD(s) created.
 
-    Existing IDs, external DB devices, etc. of the OSD will be preserved; data will be lost and rebuilt from the remaining healthy OSDs.
+    WARNING: This operation entails (and is functionally equivalent to) a removal and recreation of the specified OSD and, if applicable, all peer split OSDs. This is an intensive and potentially destructive action. Ensure that the cluster is otherwise healthy before proceeding, and ensure the subsequent rebuild completes successfully. Do not attempt this operation on a severely degraded cluster without first considering the possible data loss implications.
+
+    If the "-o"/"--old-device" option is specified, is a valid block device on the node, is readable/accessible, and contains the metadata for the specified OSD, it will be zapped. If this option is not specified, the system will try to find the old block device automatically to zap it. If it can't be found, the OSD will simply be removed from the CRUSH map and PVC database before recreating. This option can provide a cleaner deletion when replacing a working device that has a different block path, but is otherwise unnecessary.
+
+    The "-w"/"--weight", "-r"/"--ext-db-ratio", and "-s"/"--ext-db-size" allow overriding the existing weight and external DB LV for the OSD(s), if desired. If unset, the existing weight and external DB LV size (if applicable) will be used for the replacement OSD(s) instead.
+
+    NOTE: If neither the "-r"/"--ext-db-ratio" or "-s"/"--ext-db-size" option is specified, and the OSD(s) had an external DB LV, it cannot be removed a new DB LV will be created for the replacement OSD(s); this cannot be avoided. However, if the OSD(s) did not have an external DB LV, and one of these options is specified, a new DB LV will be added to the new OSD.
+
+    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     echo(
@@ -3488,7 +3522,7 @@ def cli_storage_osd_replace(osdid, device, weight):
         newline=False,
     )
     retcode, retmsg = pvc.lib.storage.ceph_osd_replace(
-        CLI_CONFIG, osdid, device, weight
+        CLI_CONFIG, osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
     )
     echo(CLI_CONFIG, "done.")
     finish(retcode, retmsg)
@@ -3510,7 +3544,9 @@ def cli_storage_osd_refresh(osdid, device):
 
     Existing data, IDs, weights, etc. of the OSD will be preserved.
 
-    NOTE: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD instead.
+    WARNING: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD (e.g. with "pvc storage osd replace") instead.
+
+    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     echo(
@@ -3545,6 +3581,8 @@ def cli_storage_osd_remove(osdid, force_flag):
     DANGER: This will completely remove the OSD from the cluster. OSDs will rebalance which will negatively affect performance and available space. It is STRONGLY RECOMMENDED to set an OSD out (using 'pvc storage osd out') and allow the cluster to fully rebalance, verified with 'pvc storage status', before removing an OSD.
 
     NOTE: The "-f"/"--force" option is useful after replacing a failed node, to ensure the OSD is removed even if the OSD in question does not properly exist on the node after a rebuild.
+
+    NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
     echo(

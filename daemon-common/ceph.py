@@ -26,6 +26,7 @@ import time
 import math
 
 from concurrent.futures import ThreadPoolExecutor
+from distutils.util import strtobool
 
 import daemon_lib.vm as vm
 import daemon_lib.common as common
@@ -211,7 +212,7 @@ def getOSDInformation(zkhandler, osd_id):
     # Get the devices
     osd_node = zkhandler.read(("osd.node", osd_id))
     osd_device = zkhandler.read(("osd.device", osd_id))
-    osd_is_split = zkhandler.read(("osd.is_split", osd_id))
+    osd_is_split = bool(strtobool(zkhandler.read(("osd.is_split", osd_id))))
     osd_db_device = zkhandler.read(("osd.db_device", osd_id))
     # Parse the stats data
     osd_stats_raw = zkhandler.read(("osd.stats", osd_id))
@@ -329,12 +330,18 @@ def add_osd(
     return success, message
 
 
-def replace_osd(zkhandler, osd_id, new_device, weight):
+def replace_osd(
+    zkhandler,
+    osd_id,
+    new_device,
+    old_device=None,
+    weight=None,
+    ext_db_ratio=None,
+    ext_db_size=None,
+):
     # Get current OSD information
     osd_information = getOSDInformation(zkhandler, osd_id)
     node = osd_information["node"]
-    old_device = osd_information["device"]
-    ext_db_flag = True if osd_information["db_device"] else False
 
     # Verify target block device isn't in use
     block_osd = verifyOSDBlock(zkhandler, node, new_device)
@@ -347,8 +354,8 @@ def replace_osd(zkhandler, osd_id, new_device, weight):
         )
 
     # Tell the cluster to create a new OSD for the host
-    replace_osd_string = "osd_replace {},{},{},{},{},{}".format(
-        node, osd_id, old_device, new_device, weight, ext_db_flag
+    replace_osd_string = "osd_replace {},{},{},{},{},{},{}".format(
+        node, osd_id, new_device, old_device, weight, ext_db_ratio, ext_db_size
     )
     zkhandler.write([("base.cmd.ceph", replace_osd_string)])
     # Wait 1/2 second for the cluster to get the message and start working

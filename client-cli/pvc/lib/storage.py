@@ -262,15 +262,30 @@ def ceph_osd_add(config, node, device, weight, ext_db_ratio, ext_db_size, osd_co
     return retstatus, response.json().get("message", "")
 
 
-def ceph_osd_replace(config, osdid, device, weight):
+def ceph_osd_replace(
+    config, osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
+):
     """
     Replace an existing Ceph OSD with a new device
 
     API endpoint: POST /api/v1/storage/ceph/osd/{osdid}
-    API arguments: device={device}, weight={weight}
+    API arguments: new_device, [old_device={old_device}, weight={weight}, ext_db_ratio={ext_db_ratio}, ext_db_size={ext_db_size}]
     API schema: {"message":"{data}"}
     """
-    params = {"device": device, "weight": weight, "yes-i-really-mean-it": "yes"}
+    params = {
+        "new_device": new_device,
+        "yes-i-really-mean-it": "yes",
+    }
+
+    if old_device is not None:
+        params["old_device"] = old_device
+    if weight is not None:
+        params["weight"] = weight
+    if ext_db_ratio is not None:
+        params["ext_db_ratio"] = ext_db_ratio
+    if ext_db_size is not None:
+        params["ext_db_size"] = ext_db_size
+
     response = call_api(config, "post", f"/storage/ceph/osd/{osdid}", params=params)
 
     if response.status_code == 200:
@@ -437,6 +452,9 @@ def format_list_osd(config, osd_list):
                 f"Details for OSD {osd_information['id']} missing required keys, skipping."
             )
             continue
+
+        if osd_information["is_split"]:
+            osd_information["device"] = f"{osd_information['device']} *s"
 
         # Deal with the size to human readable
         osd_information["stats"]["size"] = osd_information["stats"]["kb"] * 1024

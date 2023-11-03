@@ -4379,14 +4379,25 @@ class API_Storage_Ceph_OSD_Element(Resource):
     @RequestParser(
         [
             {
-                "name": "device",
+                "name": "new_device",
                 "required": True,
                 "helptext": "A valid device or detect string must be specified.",
             },
             {
+                "name": "old_device",
+                "required": False,
+            },
+            {
                 "name": "weight",
-                "required": True,
-                "helptext": "An OSD weight must be specified.",
+                "required": False,
+            },
+            {
+                "name": "ext_db_ratio",
+                "required": False,
+            },
+            {
+                "name": "ext_db_size",
+                "required": False,
             },
             {
                 "name": "yes-i-really-mean-it",
@@ -4405,15 +4416,30 @@ class API_Storage_Ceph_OSD_Element(Resource):
           - storage / ceph
         parameters:
           - in: query
-            name: device
+            name: new_device
             type: string
             required: true
             description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") to replace the OSD onto
           - in: query
+            name: old_device
+            type: string
+            required: false
+            description: The block device (e.g. "/dev/sdb", "/dev/disk/by-path/...", etc.) or detect string ("detect:NAME:SIZE:ID") of the original OSD
+          - in: query
             name: weight
             type: number
-            required: true
-            description: The Ceph CRUSH weight for the replaced OSD
+            required: false
+            description: The Ceph CRUSH weight for the replacement OSD
+          - in: query
+            name: ext_db_ratio
+            type: float
+            required: false
+            description: If set, creates an OSD DB LV for the replcement OSD with this decimal ratio of DB to total OSD size (usually 0.05 i.e. 5%); if unset, use existing ext_db_size
+          - in: query
+            name: ext_db_size
+            type: float
+            required: false
+            description: If set, creates an OSD DB LV for the replacement OSD with this explicit size in human units (e.g. 1024M, 20G); if unset, use existing ext_db_size
         responses:
           200:
             description: OK
@@ -4428,8 +4454,11 @@ class API_Storage_Ceph_OSD_Element(Resource):
         """
         return api_helper.ceph_osd_replace(
             osdid,
-            reqargs.get("device", None),
+            reqargs.get("new_device"),
+            reqargs.get("old_device", None),
             reqargs.get("weight", None),
+            reqargs.get("ext_db_ratio", None),
+            reqargs.get("ext_db_size", None),
         )
 
     @RequestParser(
