@@ -406,7 +406,6 @@ def format_list_osd(config, osd_list):
     osd_used_length = 5
     osd_free_length = 6
     osd_util_length = 6
-    osd_var_length = 5
     osd_wrops_length = 4
     osd_wrdata_length = 5
     osd_rdops_length = 4
@@ -509,10 +508,6 @@ def format_list_osd(config, osd_list):
         if _osd_util_length > osd_util_length:
             osd_util_length = _osd_util_length
 
-        _osd_var_length = len(str(osd_information["stats"]["var"])) + 1
-        if _osd_var_length > osd_var_length:
-            osd_var_length = _osd_var_length
-
         # Set the read/write IOPS/data and length
         _osd_wrops_length = len(osd_information["stats"]["wr_ops"]) + 1
         if _osd_wrops_length > osd_wrops_length:
@@ -548,8 +543,7 @@ def format_list_osd(config, osd_list):
             + osd_used_length
             + osd_free_length
             + osd_util_length
-            + osd_var_length
-            + 7,
+            + 6,
             read_header_length=osd_rdops_length + osd_rddata_length + 1,
             write_header_length=osd_wrops_length + osd_wrdata_length + 1,
             osd_header="OSDs "
@@ -581,8 +575,7 @@ def format_list_osd(config, osd_list):
                         + osd_used_length
                         + osd_free_length
                         + osd_util_length
-                        + osd_var_length
-                        + 6,
+                        + 5,
                     )
                 ]
             ),
@@ -608,7 +601,6 @@ def format_list_osd(config, osd_list):
 {osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
-{osd_var: <{osd_var_length}} \
 {osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
 {osd_wrops: <{osd_wrops_length}} \
@@ -629,7 +621,6 @@ def format_list_osd(config, osd_list):
             osd_used_length=osd_used_length,
             osd_free_length=osd_free_length,
             osd_util_length=osd_util_length,
-            osd_var_length=osd_var_length,
             osd_wrops_length=osd_wrops_length,
             osd_wrdata_length=osd_wrdata_length,
             osd_rdops_length=osd_rdops_length,
@@ -647,7 +638,6 @@ def format_list_osd(config, osd_list):
             osd_used="Used",
             osd_free="Free",
             osd_util="Util%",
-            osd_var="Var",
             osd_wrops="OPS",
             osd_wrdata="Data",
             osd_rdops="OPS",
@@ -680,7 +670,6 @@ def format_list_osd(config, osd_list):
 {osd_used: <{osd_used_length}} \
 {osd_free: <{osd_free_length}} \
 {osd_util: <{osd_util_length}} \
-{osd_var: <{osd_var_length}} \
 {osd_rdops: <{osd_rdops_length}} \
 {osd_rddata: <{osd_rddata_length}} \
 {osd_wrops: <{osd_wrops_length}} \
@@ -702,7 +691,6 @@ def format_list_osd(config, osd_list):
                 osd_used_length=osd_used_length,
                 osd_free_length=osd_free_length,
                 osd_util_length=osd_util_length,
-                osd_var_length=osd_var_length,
                 osd_wrops_length=osd_wrops_length,
                 osd_wrdata_length=osd_wrdata_length,
                 osd_rdops_length=osd_rdops_length,
@@ -722,7 +710,6 @@ def format_list_osd(config, osd_list):
                 osd_used=osd_information["stats"]["used"],
                 osd_free=osd_information["stats"]["avail"],
                 osd_util=osd_information["stats"]["utilization"],
-                osd_var=osd_information["stats"]["var"],
                 osd_wrops=osd_information["stats"]["wr_ops"],
                 osd_wrdata=osd_information["stats"]["wr_data"],
                 osd_rdops=osd_information["stats"]["rd_ops"],
