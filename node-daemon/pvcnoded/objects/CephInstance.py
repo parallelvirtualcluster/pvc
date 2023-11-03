@@ -959,9 +959,13 @@ class CephOSDInstance(object):
                     raise Exception
 
             # 5. Purge the OSD from Ceph
-            logger.out("Purging OSD {}".format(osd_id), state="i")
+            logger.out("Purging OSD {osd_id}", state="i")
+            if force_flag:
+                force_arg = "--force"
+            else:
+                force_arg = ""
             retcode, stdout, stderr = common.run_os_command(
-                "ceph osd purge {} --yes-i-really-mean-it".format(osd_id)
+                f"ceph osd purge {osd_id} {force_arg} --yes-i-really-mean-it"
             )
             if retcode:
                 print("ceph osd purge")
