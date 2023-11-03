@@ -860,17 +860,28 @@ class CephOSDInstance(object):
                 else:
                     raise Exception
 
-            if not skip_zap_flag:
-                # 7. Remove the DB device
-                if zkhandler.exists(("osd.db_device", osd_id)):
-                    db_device = zkhandler.read(("osd.db_device", osd_id))
-                    logger.out(
-                        'Removing OSD DB logical volume "{}"'.format(db_device),
-                        state="i",
-                    )
-                    retcode, stdout, stderr = common.run_os_command(
-                        "lvremove --yes --force {}".format(db_device)
-                    )
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph osd crush rm osd.{osd_id}"
+            )
+            if retcode:
+                print("ceph osd crush rm")
+                print(stdout)
+                print(stderr)
+                if force_flag:
+                    logger.out("Ignoring error due to force flag", state="i")
+                else:
+                    raise Exception
+
+            # 7. Remove the DB device
+            if zkhandler.exists(("osd.db_device", osd_id)):
+                db_device = zkhandler.read(("osd.db_device", osd_id))
+                logger.out(
+                    'Removing OSD DB logical volume "{}"'.format(db_device),
+                    state="i",
+                )
+                retcode, stdout, stderr = common.run_os_command(
+                    "lvremove --yes --force {}".format(db_device)
+                )
 
             # 8. Delete OSD from ZK
             logger.out("Deleting OSD {} from Zookeeper".format(osd_id), state="i")
