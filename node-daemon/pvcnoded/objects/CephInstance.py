@@ -1360,6 +1360,9 @@ def ceph_command(zkhandler, logger, this_node, data, d_osd):
         force_flag = bool(strtobool(force))
 
         # Verify osd_id is in the list
+        if osd_id not in d_osd.keys():
+            return
+
         if d_osd[osd_id] and d_osd[osd_id].node == this_node.name:
             # Lock the command queue
             zk_lock = zkhandler.writelock("base.cmd.ceph")
