@@ -27,6 +27,7 @@ from daemon_lib.ceph import format_bytes_fromhuman, get_list_osd
 
 from distutils.util import strtobool
 from re import search, match, sub
+from uuid import uuid4
 from json import loads as jloads
 
 
@@ -431,24 +432,24 @@ class CephOSDInstance(object):
             osd_vg = osd_details["vg_name"]
             osd_lv = osd_details["lv_name"]
 
-            # 5b. Activate the OSD
-            logger.out(f"Activating OSD {osd_id}", state="i")
-            retcode, stdout, stderr = common.run_os_command(
-                f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
-            )
-            if retcode:
-                logger.out("Failed: ceph-volume lvm activate", state="e")
-                logger.out(stdout, state="d")
-                logger.out(stderr, state="d")
-                raise Exception
-
-            # 5c. Add it to the crush map
+            # 5b. Add it to the crush map
             logger.out(f"Adding OSD {osd_id} to CRUSH map", state="i")
             retcode, stdout, stderr = common.run_os_command(
                 f"ceph osd crush add osd.{osd_id} {weight} root=default host={node}"
             )
             if retcode:
                 logger.out("Failed: ceph osd crush add", state="e")
+                logger.out(stdout, state="d")
+                logger.out(stderr, state="d")
+                raise Exception
+
+            # 5c. Activate the OSD
+            logger.out(f"Activating OSD {osd_id}", state="i")
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
+            )
+            if retcode:
+                logger.out("Failed: ceph-volume lvm activate", state="e")
                 logger.out(stdout, state="d")
                 logger.out(stderr, state="d")
                 raise Exception
@@ -563,59 +564,232 @@ class CephOSDInstance(object):
         if weight is None:
             weight = all_osds_on_block[0]["stats"]["weight"]
 
-        # Determine how many split OSD(s) to recreate
-        if len(all_osds_on_block) > 1 and all_osds_on_block[0]["is_split"]:
-            split_count = len(all_osds_on_block)
-        else:
-            split_count = None
+        # Take down the OSD(s), but keep it's CRUSH map details and IDs
+        try:
+            for osd in all_osds_on_block:
+                osd_id = osd["id"]
 
-        # Determine if an ext_db should be readded
-        if ext_db_ratio is not None:
-            osd_db_ratio = ext_db_ratio
-            osd_db_size = None
-        elif ext_db_size is not None:
-            osd_db_ratio = None
-            osd_db_size = ext_db_size
-        elif all_osds_on_block[0]["db_device"]:
-            _, osd_db_size_bytes, _ = common.run_os_command(
-                f"blockdev --getsize64 {all_osds_on_block[0]['db_device']}"
-            )
-            osd_db_ratio = None
-            osd_db_size = f"{osd_db_size_bytes}"
-            if not osd_db_size:
-                logger.out(
-                    f"Could not get size of device {all_osds_on_block[0]['db_device']}; skipping external database creation",
-                    state="w",
+                # 1. Set the OSD down and out so it will flush
+                logger.out(f"Setting down OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph osd down {osd_id}"
                 )
-                osd_db_size = None
-        else:
-            osd_db_ratio = None
-            osd_db_size = None
+                if retcode:
+                    logger.out("Failed: ceph osd down", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
 
-        # Remove each OSD on the block device
-        for osd in all_osds_on_block:
-            result = CephOSDInstance.remove_osd(
-                zkhandler,
-                logger,
-                node,
-                osd["id"],
-                force_flag=True,
-                skip_zap_flag=skip_zap,
+                logger.out(f"Setting out OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph osd out {osd_id}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph osd out", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
+                logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
+                while True:
+                    retcode, stdout, stderr = common.run_os_command(
+                        f"ceph osd safe-to-destroy osd.{osd_id}"
+                    )
+                    if int(retcode) in [0, 11]:
+                        break
+                    else:
+                        time.sleep(1)
+
+                # 3. Stop the OSD process and wait for it to be terminated
+                logger.out(f"Stopping OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"systemctl stop ceph-osd@{osd_id}"
+                )
+                if retcode:
+                    logger.out("Failed: systemctl stop", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+                time.sleep(5)
+
+                # 4. Destroy the OSD
+                logger.out(f"Destroying OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph osd destroy {osd_id} --yes-i-really-mean-it"
+                )
+                if retcode:
+                    logger.out("Failed: ceph osd destroy", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+
+            if not skip_zap:
+                # 5. Zap the old disk
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph-volume lvm zap --destroy {real_old_device}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph-volume lvm zap", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+            # 6. Prepare the volume group on the new device
+            logger.out(f"Preparing LVM volume group on disk {new_device}", state="i")
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph-volume lvm zap --destroy {new_device}"
+            )
+            if retcode:
+                logger.out("Failed: ceph-volume lvm zap", state="e")
+                logger.out(stdout, state="d")
+                logger.out(stderr, state="d")
+                raise Exception
+
+            retcode, stdout, stderr = common.run_os_command(f"pvcreate {new_device}")
+            if retcode:
+                logger.out("Failed: pvcreate", state="e")
+                logger.out(stdout, state="d")
+                logger.out(stderr, state="d")
+                raise Exception
+
+            vg_uuid = str(uuid4())
+            retcode, stdout, stderr = common.run_os_command(
+                f"vgcreate ceph-{vg_uuid} {new_device}"
+            )
+            if retcode:
+                logger.out("Failed: vgcreate", state="e")
+                logger.out(stdout, state="d")
+                logger.out(stderr, state="d")
+                raise Exception
+
+            # Determine how many OSDs we want on the new device
+            osds_count = len(all_osds_on_block)
+
+            # Determine the size of the new device
+            _, new_device_size_bytes, _ = common.run_os_command(
+                f"blockdev --getsize64 {new_device}"
             )
 
-        # Create [a] new OSD[s], on the new block device
-        result = CephOSDInstance.add_osd(
-            zkhandler,
-            logger,
-            node,
-            new_device,
-            weight,
-            ext_db_ratio=osd_db_ratio,
-            ext_db_size=osd_db_size,
-            split_count=split_count,
-        )
+            # Calculate the size of each OSD (in MB) based on the default 4M extent size
+            new_osd_size_mb = (
+                int(int(int(new_device_size_bytes) / osds_count) / 1024 / 1024 / 4) * 4
+            )
 
-        return result
+            # Calculate the size, if applicable, of the OSD block if we were passed a ratio
+            if ext_db_ratio is not None:
+                osd_new_db_size_mb = int(
+                    int(int(new_osd_size_mb * ext_db_ratio) / 4) * 4
+                )
+            elif ext_db_size is not None:
+                osd_new_db_size_mb = int(
+                    int(int(format_bytes_fromhuman(ext_db_size)) / 1024 / 1024 / 4) * 4
+                )
+            else:
+                _, new_device_size_bytes, _ = common.run_os_command(
+                    f"blockdev --getsize64 {all_osds_on_block[0]['db_device']}"
+                )
+                osd_new_db_size_mb = int(
+                    int(int(new_device_size_bytes) / 1024 / 1024 / 4) * 4
+                )
+
+            for osd in all_osds_on_block:
+                osd_id = osd["id"]
+                osd_fsid = osd["stats"]["uuid"]
+
+                logger.out(
+                    f"Preparing LVM logical volume on disk {new_device} for OSD {osd_id}",
+                    state="i",
+                )
+                retcode, stdout, stderr = common.run_os_command(
+                    f"lvcreate -L {new_osd_size_mb}M -n osd-block-{osd_fsid} ceph-{vg_uuid}"
+                )
+                if retcode:
+                    logger.out("Failed: lvcreate", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                logger.out(f"Preparing OSD {osd_id} on disk {new_device}", state="i")
+                retcode, stdout, stderr = common.run_os_comand(
+                    f"ceph-volume lvm prepare --bluestore --osd-id {osd_id} --osd-fsid {osd_fsid} --data /dev/ceph-{vg_uuid}/osd-block-{osd_fsid}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph-volume lvm prepare", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+            for osd in all_osds_on_block:
+                osd_id = osd["id"]
+                osd_fsid = osd["stats"]["uuid"]
+
+                if osd["db_device"]:
+                    db_device = f"osd-db/osd-{osd_id}"
+
+                    logger.out(
+                        f"Destroying old Bluestore DB volume for OSD {osd_id}",
+                        state="i",
+                    )
+                    retcode, stdout, stderr = common.run_os_command(
+                        f"lvremove {db_device}"
+                    )
+
+                    logger.out(
+                        f"Creating new Bluestore DB volume for OSD {osd_id}", state="i"
+                    )
+                    retcode, stdout, stderr = common.run_os_command(
+                        f"lvcreate -L {osd_new_db_size_mb}M -n osd-{osd_id} osd-db"
+                    )
+                    if retcode:
+                        logger.out("Failed: lvcreate", state="e")
+                        logger.out(stdout, state="d")
+                        logger.out(stderr, state="d")
+                        raise Exception
+
+                    logger.out(
+                        f"Attaching old Bluestore DB volume to OSD {osd_id}", state="i"
+                    )
+                    retcode, stdout, stderr = common.run_os_command(
+                        f"ceph-volume lvm new-db --osd-id {osd_id} --osd-fsid {osd_fsid} --target {db_device}"
+                    )
+                    if retcode:
+                        logger.out("Failed: ceph-volume lvm new-db", state="e")
+                        logger.out(stdout, state="d")
+                        logger.out(stderr, state="d")
+                        raise Exception
+
+                logger.out(f"Adding OSD {osd_id} to CRUSH map", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph osd crush add osd.{osd_id} {weight} root=default host={node}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph osd crush add", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                logger.out(f"Activating OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph-volume lvm activate", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+            # Log it
+            logger.out(
+                f"Successfully replaced OSDs {','.join([o['id'] for o in all_osds_on_block])} on new disk {new_device}",
+                state="o",
+            )
+            return True
+        except Exception as e:
+            # Log it
+            logger.out(
+                f"Failed to replace OSD(s) on new disk {new_device}: {e}", state="e"
+            )
+            return False
 
     @staticmethod
     def refresh_osd(zkhandler, logger, node, osd_id, device, ext_db_flag):
