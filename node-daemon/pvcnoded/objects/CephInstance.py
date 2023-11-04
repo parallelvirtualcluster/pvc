@@ -996,7 +996,18 @@ class CephOSDInstance(object):
             logger.out(f"Deleting OSD {osd_id} from PVC", state="i")
             zkhandler.delete(("osd", osd_id), recursive=True)
 
-            # 5. Purge the OSD from Ceph
+            # 5a. Destroy the OSD from Ceph
+            logger.out(f"Destroying OSD {osd_id}", state="i")
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph osd destroy {osd_id} --yes-i-really-mean-it"
+            )
+            if retcode:
+                logger.out("Failed: ceph osd destroy", state="e")
+                logger.out(stdout, state="d")
+                logger.out(stderr, state="d")
+            time.sleep(2)
+
+            # 5b. Purge the OSD from Ceph
             logger.out(f"Purging OSD {osd_id}", state="i")
             if force_flag:
                 force_arg = "--force"
