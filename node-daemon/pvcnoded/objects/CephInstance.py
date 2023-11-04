@@ -27,6 +27,7 @@ from daemon_lib.ceph import format_bytes_fromhuman, get_list_osd
 
 from distutils.util import strtobool
 from re import search, match, sub
+from os import path
 from uuid import uuid4
 from json import loads as jloads
 
@@ -454,12 +455,12 @@ class CephOSDInstance(object):
                 logger.out(stderr, state="d")
                 raise Exception
 
-            # 5d. Wait half a second for it to activate
-            time.sleep(0.5)
+            # 5d. Wait 1 second for it to activate
+            time.sleep(1)
 
             # 5e. Verify it started
             retcode, stdout, stderr = common.run_os_command(
-                "systemctl status ceph-osd@{osdid}".format(osdid=osd_id)
+                f"systemctl status ceph-osd@{osd_id}"
             )
             if retcode:
                 logger.out(f"Failed: OSD {osd_id} unit is not active", state="e")
@@ -789,6 +790,19 @@ class CephOSDInstance(object):
                     logger.out(stderr, state="d")
                     raise Exception
 
+                # Wait 1 second for it to activate
+                time.sleep(1)
+
+                # Verify it started
+                retcode, stdout, stderr = common.run_os_command(
+                    f"systemctl status ceph-osd@{osd_id}"
+                )
+                if retcode:
+                    logger.out(f"Failed: OSD {osd_id} unit is not active", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
                 logger.out(f"Updating OSD {osd_id} details in PVC", state="i")
                 zkhandler.write(
                     [
@@ -829,115 +843,103 @@ class CephOSDInstance(object):
                 )
                 device = ddevice
 
-        # We are ready to create a new OSD on this node
+        retcode, stdout, stderr = common.run_os_command("ceph osd ls")
+        osd_list = stdout.split("\n")
+        if osd_id not in osd_list:
+            logger.out(f"Could not find OSD {osd_id} in the cluster", state="e")
+            return False
+
+        found_osds = CephOSDInstance.find_osds_from_block(logger, device)
+        if osd_id not in found_osds.keys():
+            logger.out(f"Could not find OSD {osd_id} on device {device}", state="e")
+            return False
+
         logger.out(
-            "Refreshing OSD {} disk on block device {}".format(osd_id, device),
+            f"Refreshing OSD {osd_id} disk on block device {device}",
             state="i",
         )
         try:
-            # 1. Verify the OSD is present
-            retcode, stdout, stderr = common.run_os_command("ceph osd ls")
-            osd_list = stdout.split("\n")
-            if osd_id not in osd_list:
+            for osd in found_osds:
+                found_osd = found_osds[osd]
+                lv_device = found_osd["lv_path"]
+
+                _, osd_pvc_information = get_list_osd(zkhandler, osd_id)
+                osd_information = osd_pvc_information[0]
+
+                logger.out(f"Querying OSD on device {lv_device}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph-volume lvm list --format json {lv_device}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph-volume lvm list", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                osd_detail = jloads(stdout)[osd_id][0]
+
+                osd_fsid = osd_detail["tags"]["ceph.osd_fsid"]
+                if osd_fsid != osd_information["fsid"]:
+                    logger.out(
+                        f"OSD {osd_id} FSID {osd_information['fsid']} does not match volume FSID {osd_fsid}; OSD cannot be imported",
+                        state="e",
+                    )
+
+                dev_flags = f"--data {lv_device}"
+
+                if ext_db_flag:
+                    db_device = "osd-db/osd-{osd_id}"
+                    dev_flags += f" --block.db {db_device}"
+
+                    if not path.exists(f"/dev/{db_device}"):
+                        logger.out(
+                            f"OSD Bluestore DB volume {db_device} does not exist; OSD cannot be imported",
+                            state="e",
+                        )
+                        return
+                else:
+                    db_device = ""
+
+                logger.out(f"Activating OSD {osd_id}", state="i")
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
+                )
+                if retcode:
+                    logger.out("Failed: ceph-volume lvm activate", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                # Wait 1 second for it to activate
+                time.sleep(1)
+
+                # Verify it started
+                retcode, stdout, stderr = common.run_os_command(
+                    f"systemctl status ceph-osd@{osd_id}"
+                )
+                if retcode:
+                    logger.out(f"Failed: OSD {osd_id} unit is not active", state="e")
+                    logger.out(stdout, state="d")
+                    logger.out(stderr, state="d")
+                    raise Exception
+
+                logger.out(f"Updating OSD {osd_id} details in PVC", state="i")
+                zkhandler.write(
+                    [
+                        (("osd.device", osd_id), device),
+                        (("osd.vg", osd_id), osd_detail["vg_name"]),
+                        (("osd.lv", osd_id), osd_detail["lv_name"]),
+                    ]
+                )
+
                 logger.out(
-                    "Could not find OSD {} in the cluster".format(osd_id), state="e"
+                    f"Successfully reimported OSD {osd_id} on {device}", state="o"
                 )
-                return True
 
-            dev_flags = "--data {}".format(device)
-
-            if ext_db_flag:
-                db_device = "osd-db/osd-{}".format(osd_id)
-                dev_flags += " --block.db {}".format(db_device)
-            else:
-                db_device = ""
-
-            # 2. Get OSD information
-            logger.out(
-                "Getting OSD information for ID {} on {}".format(osd_id, device),
-                state="i",
-            )
-            retcode, stdout, stderr = common.run_os_command(
-                "ceph-volume lvm list {device}".format(device=device)
-            )
-            for line in stdout.split("\n"):
-                if "block device" in line:
-                    osd_blockdev = line.split()[-1]
-                if "osd fsid" in line:
-                    osd_fsid = line.split()[-1]
-                if "cluster fsid" in line:
-                    osd_clusterfsid = line.split()[-1]
-                if "devices" in line:
-                    osd_device = line.split()[-1]
-
-            if not osd_fsid:
-                logger.out("Failed: ceph-volume lvm list", state="e")
-                logger.out(stdout, state="d")
-                logger.out(stderr, state="d")
-                raise Exception
-
-            # Split OSD blockdev into VG and LV components
-            # osd_blockdev = /dev/ceph-<uuid>/osd-block-<uuid>
-            _, _, osd_vg, osd_lv = osd_blockdev.split("/")
-
-            # Reset whatever we were given to Ceph's /dev/xdX naming
-            if device != osd_device:
-                device = osd_device
-
-            # 3. Activate the OSD
-            logger.out("Activating new OSD disk with ID {}".format(osd_id), state="i")
-            retcode, stdout, stderr = common.run_os_command(
-                "ceph-volume lvm activate --bluestore {osdid} {osdfsid}".format(
-                    osdid=osd_id, osdfsid=osd_fsid
-                )
-            )
-            if retcode:
-                logger.out("Failed: ceph-volume lvm activate", state="e")
-                logger.out(stdout, state="d")
-                logger.out(stderr, state="d")
-                raise Exception
-
-            time.sleep(0.5)
-
-            # 4. Verify it started
-            retcode, stdout, stderr = common.run_os_command(
-                "systemctl status ceph-osd@{osdid}".format(osdid=osd_id)
-            )
-            if retcode:
-                logger.out("Failed: systemctl status", state="e")
-                logger.out(stdout, state="d")
-                logger.out(stderr, state="d")
-                raise Exception
-
-            # 5. Update Zookeeper information
-            logger.out(
-                "Adding new OSD disk with ID {} to Zookeeper".format(osd_id), state="i"
-            )
-            zkhandler.write(
-                [
-                    (("osd", osd_id), ""),
-                    (("osd.node", osd_id), node),
-                    (("osd.device", osd_id), device),
-                    (("osd.db_device", osd_id), db_device),
-                    (("osd.fsid", osd_id), ""),
-                    (("osd.ofsid", osd_id), osd_fsid),
-                    (("osd.cfsid", osd_id), osd_clusterfsid),
-                    (("osd.lvm", osd_id), ""),
-                    (("osd.vg", osd_id), osd_vg),
-                    (("osd.lv", osd_id), osd_lv),
-                    (
-                        ("osd.stats", osd_id),
-                        '{"uuid": "|", "up": 0, "in": 0, "primary_affinity": "|", "utilization": "|", "var": "|", "pgs": "|", "kb": "|", "weight": "|", "reweight": "|", "node": "|", "used": "|", "avail": "|", "wr_ops": "|", "wr_data": "|", "rd_ops": "|", "rd_data": "|", "state": "|"}',
-                    ),
-                ]
-            )
-
-            # Log it
-            logger.out("Refreshed OSD {} disk on {}".format(osd_id, device), state="o")
             return True
         except Exception as e:
             # Log it
-            logger.out("Failed to refresh OSD {} disk: {}".format(osd_id, e), state="e")
+            logger.out(f"Failed to refresh OSD {osd_id} disk: {e}", state="e")
             return False
 
     @staticmethod
