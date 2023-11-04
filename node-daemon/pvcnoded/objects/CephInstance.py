@@ -549,7 +549,7 @@ class CephOSDInstance(object):
         if real_old_device is None:
             skip_zap = True
             logger.out(
-                "No valid old block device found for OSD; skipping zap", state="w"
+                "No valid old block device found for OSD(s); skipping zap", state="w"
             )
         else:
             skip_zap = False
@@ -634,6 +634,7 @@ class CephOSDInstance(object):
                     logger.out(stderr, state="d")
 
             if not skip_zap:
+                logger.out(f"Zapping disk {real_old_device}", state="i")
                 # 5. Zap the old disk
                 retcode, stdout, stderr = common.run_os_command(
                     f"ceph-volume lvm zap --destroy {real_old_device}"
