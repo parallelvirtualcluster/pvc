@@ -3546,9 +3546,9 @@ def cli_storage_osd_refresh(osdid, device):
 
     DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'. The path or detect string must be valid on the current node housing the OSD.
 
-    Existing data, IDs, weights, etc. of the OSD will be preserved.
+    Existing data, IDs, weights, DB LVs, etc. of the OSD will be preserved. Any split peer OSD(s) on the same block device will also be automatically refreshed.
 
-    WARNING: If a device had an external DB device, this is not automatically handled at this time. It is best to remove and re-add the OSD (e.g. with "pvc storage osd replace") instead.
+    NOTE: If the OSD(s) had an external DB device, it must exist before refreshing the OSD. If it can't be found, the OSD cannot be reimported and must be recreated.
 
     NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
