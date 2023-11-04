@@ -454,7 +454,7 @@ def format_list_osd(config, osd_list):
             continue
 
         if osd_information["is_split"]:
-            osd_information["device"] = f"{osd_information['device']} *s"
+            osd_information["device"] = f"{osd_information['device']} [s]"
 
         # Deal with the size to human readable
         if isinstance(osd_information["stats"]["kb"], int):
