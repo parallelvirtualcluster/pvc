@@ -592,6 +592,7 @@ class CephOSDInstance(object):
 
                 # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
                 logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
+                tcount = 0
                 while True:
                     retcode, stdout, stderr = common.run_os_command(
                         f"ceph osd safe-to-destroy osd.{osd_id}"
@@ -599,7 +600,16 @@ class CephOSDInstance(object):
                     if int(retcode) in [0, 11]:
                         break
                     else:
+                        common.run_os_command(f"ceph osd down {osd_id}")
+                        common.run_os_command(f"ceph osd out {osd_id}")
                         time.sleep(1)
+                        tcount += 1
+                    if tcount > 60:
+                        logger.out(
+                            f"Timed out (60s) waiting for OSD {osd_id} to be safe to remove; proceeding",
+                            state="w",
+                        )
+                        break
 
                 # 3. Stop the OSD process and wait for it to be terminated
                 logger.out(f"Stopping OSD {osd_id}", state="i")
@@ -971,6 +981,7 @@ class CephOSDInstance(object):
             # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
             if not force_flag:
                 logger.out(f"Waiting for OSD {osd_id} to be safe to remove", state="i")
+                tcount = 0
                 while True:
                     retcode, stdout, stderr = common.run_os_command(
                         f"ceph osd safe-to-destroy osd.{osd_id}"
@@ -978,7 +989,16 @@ class CephOSDInstance(object):
                     if int(retcode) in [0, 11]:
                         break
                     else:
+                        common.run_os_command(f"ceph osd down {osd_id}")
+                        common.run_os_command(f"ceph osd out {osd_id}")
                         time.sleep(1)
+                        tcount += 1
+                    if tcount > 60:
+                        logger.out(
+                            f"Timed out (60s) waiting for OSD {osd_id} to be safe to remove; proceeding",
+                            state="w",
+                        )
+                        break
 
             # 3. Stop the OSD process and wait for it to be terminated
             logger.out(f"Stopping OSD {osd_id}", state="i")
