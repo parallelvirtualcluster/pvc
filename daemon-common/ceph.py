@@ -392,16 +392,6 @@ def refresh_osd(zkhandler, osd_id, device):
     node = osd_information["node"]
     ext_db_flag = True if osd_information["db_device"] else False
 
-    # Verify target block device isn't in use
-    block_osd = verifyOSDBlock(zkhandler, node, device)
-    if not block_osd or block_osd != osd_id:
-        return (
-            False,
-            'ERROR: Block device "{}" on node "{}" is not used by OSD "{}"; use replace instead'.format(
-                device, node, osd_id
-            ),
-        )
-
     # Tell the cluster to create a new OSD for the host
     refresh_osd_string = "osd_refresh {},{},{},{}".format(
         node, osd_id, device, ext_db_flag
