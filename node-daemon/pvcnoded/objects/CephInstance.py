@@ -694,7 +694,7 @@ class CephOSDInstance(object):
 
             for osd in all_osds_on_block:
                 osd_id = osd["id"]
-                osd_fsid = osd["fsid"]
+                osd_fsid = osd["ofsid"]
 
                 logger.out(
                     f"Preparing LVM logical volume on disk {new_device} for OSD {osd_id}",
@@ -710,7 +710,7 @@ class CephOSDInstance(object):
                     raise Exception
 
                 logger.out(f"Preparing OSD {osd_id} on disk {new_device}", state="i")
-                retcode, stdout, stderr = common.run_os_comand(
+                retcode, stdout, stderr = common.run_os_command(
                     f"ceph-volume lvm prepare --bluestore --osd-id {osd_id} --osd-fsid {osd_fsid} --data /dev/ceph-{vg_uuid}/osd-block-{osd_fsid}"
                 )
                 if retcode:
@@ -721,7 +721,7 @@ class CephOSDInstance(object):
 
             for osd in all_osds_on_block:
                 osd_id = osd["id"]
-                osd_fsid = osd["stats"]["uuid"]
+                osd_fsid = osd["ofsid"]
 
                 if osd["db_device"]:
                     db_device = f"osd-db/osd-{osd_id}"
