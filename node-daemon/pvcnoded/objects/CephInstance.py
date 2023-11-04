@@ -475,7 +475,7 @@ class CephOSDInstance(object):
                     (("osd.node", osd_id), node),
                     (("osd.device", osd_id), device),
                     (("osd.db_device", osd_id), db_device),
-                    (("osd.fsid", osd_id), osd_fsid),
+                    (("osd.fsid", osd_id), ""),
                     (("osd.ofsid", osd_id), osd_fsid),
                     (("osd.cfsid", osd_id), osd_clusterfsid),
                     (("osd.lvm", osd_id), ""),
