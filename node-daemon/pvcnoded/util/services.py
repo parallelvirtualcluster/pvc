@@ -69,6 +69,13 @@ def start_ceph_mgr(logger, config):
         )
 
 
+def start_api_worker(logger, config):
+    if config["enable_api"] and config["daemon_mode"] == "coordinator":
+        logger.out("Starting API worker daemon", state="i")
+        # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
+        common.run_os_command("systemctl start pvcapid-worker.service")
+
+
 def start_system_services(logger, config):
     start_zookeeper(logger, config)
     start_libvirtd(logger, config)
@@ -76,6 +83,7 @@ def start_system_services(logger, config):
     start_frrouting(logger, config)
     start_ceph_mon(logger, config)
     start_ceph_mgr(logger, config)
+    start_api_worker(logger, config)
 
     logger.out("Waiting 10 seconds for daemons to start", state="s")
     sleep(10)
