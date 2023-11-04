@@ -694,7 +694,7 @@ class CephOSDInstance(object):
 
             for osd in all_osds_on_block:
                 osd_id = osd["id"]
-                osd_fsid = osd["ofsid"]
+                osd_fsid = osd["fsid"]
 
                 logger.out(
                     f"Preparing LVM logical volume on disk {new_device} for OSD {osd_id}",
@@ -721,7 +721,7 @@ class CephOSDInstance(object):
 
             for osd in all_osds_on_block:
                 osd_id = osd["id"]
-                osd_fsid = osd["ofsid"]
+                osd_fsid = osd["fsid"]
 
                 if osd["db_device"]:
                     db_device = f"osd-db/osd-{osd_id}"
