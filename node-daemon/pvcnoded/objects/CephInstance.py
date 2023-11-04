@@ -310,6 +310,15 @@ class CephOSDInstance(object):
             )
             return False
 
+        # Check if device has a partition table; it's not valid if it does
+        retcode, _, _ = common.run_os_command(f"sfdisk --dump {device}")
+        if retcode < 1:
+            logger.out(
+                f"Device {device} has a partition table and is unsuitable for an OSD",
+                state="e",
+            )
+            return False
+
         if ext_db_size is not None or ext_db_ratio is not None:
             ext_db_flag = True
         else:
@@ -524,6 +533,15 @@ class CephOSDInstance(object):
                     state="i",
                 )
                 new_device = ddevice
+
+        # Check if device has a partition table; it's not valid if it does
+        retcode, _, _ = common.run_os_command(f"sfdisk --dump {new_device}")
+        if retcode < 1:
+            logger.out(
+                f"Device {new_device} has a partition table and is unsuitable for an OSD",
+                state="e",
+            )
+            return False
 
         # Phase 1: Try to determine what we can about the old device
         real_old_device = None
