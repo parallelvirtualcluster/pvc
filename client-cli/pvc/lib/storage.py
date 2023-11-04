@@ -457,7 +457,10 @@ def format_list_osd(config, osd_list):
             osd_information["device"] = f"{osd_information['device']} *s"
 
         # Deal with the size to human readable
-        osd_information["stats"]["size"] = osd_information["stats"]["kb"] * 1024
+        if isinstance(osd_information["stats"]["kb"], int):
+            osd_information["stats"]["size"] = osd_information["stats"]["kb"] * 1024
+        else:
+            osd_information["stats"]["size"] = "N/A"
         for datatype in "size", "wr_data", "rd_data":
             databytes = osd_information["stats"][datatype]
             if isinstance(databytes, int):
