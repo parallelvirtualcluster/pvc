@@ -208,7 +208,7 @@ def wait_for_provisioner(CLI_CONFIG, task_id):
         )
         if task_status.get("state") != "PENDING":
             break
-        echo(".", newline=False)
+        echo(CLI_CONFIG, ".", newline=False)
     echo(CLI_CONFIG, " done.")
     echo(CLI_CONFIG, "")
 
