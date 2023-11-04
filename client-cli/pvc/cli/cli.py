@@ -3364,7 +3364,9 @@ def cli_storage_osd():
 )
 def cli_storage_osd_create_db_vg(node, device):
     """
-    Create a new Ceph OSD database volume group on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Using partitions is not supported.
+    Create a new Ceph OSD database volume group on node NODE with block device DEVICE.
+
+    DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'. The path or detect string must be valid on the current node housing the OSD.
 
     This volume group will be used for Ceph OSD database and WAL functionality if an'--ext-db-*' flag is passed to newly-created OSDs during 'pvc storage osd add'. DEVICE should be an extremely fast SSD device (NVMe, Intel Optane, etc.) which is significantly faster than the normal OSD disks and with very high write endurance. For mor edetails, see the "pvc storage osd add" command help.
 
@@ -3422,7 +3424,9 @@ def cli_storage_osd_create_db_vg(node, device):
 @confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
 def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_count):
     """
-    Add a new Ceph OSD on node NODE with block device DEVICE. DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported.
+    Add a new Ceph OSD on node NODE with block device DEVICE.
+
+    DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". The path or detect string must be valid on the current node housing the OSD.
 
     A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". Detect strings allow for automatic determination of Linux block device paths from known basic information about disks by leveraging "lsscsi" on the target host. The "NAME" should be some descriptive identifier, for instance the manufacturer (e.g. "INTEL"), the "HUMAN-SIZE" should be the labeled human-readable size of the device (e.g. "480GB", "1.92TB"), and "ID" specifies the Nth 0-indexed device which matches the "NAME" and "HUMAN-SIZE" values (e.g. "2" would match the third device with the corresponding "NAME" and "HUMAN-SIZE"). When matching against sizes, there is +/- 3% flexibility to account for base-1000 vs. base-1024 differences and rounding errors. The "NAME" may contain whitespace but if so the entire detect string should be quoted, and is case-insensitive. More information about detect strings can be found in the pvcbootstrapd manual.
 
@@ -3540,7 +3544,7 @@ def cli_storage_osd_refresh(osdid, device):
     """
     Refresh (reimport) the block DEVICE of an existing OSD with ID OSDID. Use this command to reimport a working OSD into a rebuilt/replaced node.
 
-    DEVICE must be a valid block device path (e.g. '/dev/sda', '/dev/nvme0n1', '/dev/disk/by-path/...', '/dev/disk/by-id/...') or a "detect" string. Using partitions is not supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'.
+    DEVICE must be a valid block device path (e.g. '/dev/nvme0n1', '/dev/disk/by-path/...') or a "detect" string. Partitions are NOT supported. A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". For details, see 'pvc storage osd add --help'. The path or detect string must be valid on the current node housing the OSD.
 
     Existing data, IDs, weights, etc. of the OSD will be preserved.
 
