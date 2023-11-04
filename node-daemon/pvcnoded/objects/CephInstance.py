@@ -731,14 +731,14 @@ class CephOSDInstance(object):
                         state="i",
                     )
                     retcode, stdout, stderr = common.run_os_command(
-                        f"lvremove {db_device}"
+                        f"lvremove --force {db_device}"
                     )
 
                     logger.out(
                         f"Creating new Bluestore DB volume for OSD {osd_id}", state="i"
                     )
                     retcode, stdout, stderr = common.run_os_command(
-                        f"lvcreate -L {osd_new_db_size_mb}M -n osd-{osd_id} osd-db"
+                        f"lvcreate -L {osd_new_db_size_mb}M -n osd-{osd_id} --yes osd-db"
                     )
                     if retcode:
                         logger.out("Failed: lvcreate", state="e")
@@ -777,6 +777,15 @@ class CephOSDInstance(object):
                     logger.out(stdout, state="d")
                     logger.out(stderr, state="d")
                     raise Exception
+
+                logger.out(f"Updating OSD {osd_id} details in PVC", state="i")
+                zkhandler.write(
+                    [
+                        (("osd.device", osd_id), new_device),
+                        (("osd.vg", osd_id), f"ceph-{vg_uuid}"),
+                        (("osd.lv", osd_id), f"osd-block-{osd_fsid}"),
+                    ]
+                )
 
             # Log it
             logger.out(
