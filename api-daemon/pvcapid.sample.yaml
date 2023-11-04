@@ -45,8 +45,8 @@ pvc:
     provisioner:
         # database: Backend database configuration
         database:
-            # host: PostgreSQL hostname, usually 'localhost'
-            host: localhost
+            # host: PostgreSQL hostname, the primary coordinator floating IP in the cluster network
+            host: pvchvP
             # port: PostgreSQL port, invariably '5432'
             port: 5432
             # name: PostgreSQL database name, invariably 'pvcapi'
@@ -55,14 +55,6 @@ pvc:
             user: pvcapi
             # pass: PostgreSQL user password, randomly generated
             pass: pvcapi
-        # queue: Celery backend queue using the PVC Zookeeper cluster
-        queue:
-            # host: Redis hostname, usually 'localhost'
-            host: localhost
-            # port: Redis port, invariably '6279'
-            port: 6379
-            # path: Redis queue path, invariably '/0'
-            path: /0
         # ceph_cluster: Information about the Ceph storage cluster
         ceph_cluster:
             # storage_hosts: The list of hosts that the Ceph monitors are valid on; if empty (the default),

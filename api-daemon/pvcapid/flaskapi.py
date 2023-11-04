@@ -38,12 +38,27 @@ from flask_sqlalchemy import SQLAlchemy
 
 # Create Flask app and set config values
 app = flask.Flask(__name__)
-app.config["CELERY_BROKER_URL"] = "redis://{}:{}{}".format(
-    config["queue_host"], config["queue_port"], config["queue_path"]
+
+# Set up Celery queue
+# Default Zookeeper port; not configurable
+queue_port = 2181
+# Default Zookeeper path, not configurable
+queue_path = "/apibroker"
+# Join the coordinator hostnames with the queue port, semicolon separated for Celery
+queue_hostport_pairs = ";".join([f"{h}:{queue_port}" for h in config["coordinators"]])
+app.config["CELERY_BROKER_URL"] = "zookeeper://{}{}".format(
+    queue_hostport_pairs, queue_path
 )
-app.config["CELERY_RESULT_BACKEND"] = "redis://{}:{}{}".format(
-    config["queue_host"], config["queue_port"], config["queue_path"]
+app.config["CELERY_RESULT_BACKEND"] = "db+postgresql://{}:{}@{}:{}/{}".format(
+    config["database_user"],
+    config["database_password"],
+    config["database_host"],
+    config["database_port"],
+    config["database_name"],
 )
+app.config.database_engine_options = {"echo": True}
+
+# Set up SQLAlchemy backend
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@{}:{}/{}".format(
     config["database_user"],
@@ -53,11 +68,13 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@{}:{}/{}".format(
     config["database_name"],
 )
 
+# Set up debugging
 if config["debug"]:
     app.config["DEBUG"] = True
 else:
     app.config["DEBUG"] = False
 
+# Set up authentication
 if config["auth_enabled"]:
     app.config["SECRET_KEY"] = config["auth_secret_key"]
 

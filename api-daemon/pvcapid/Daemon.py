@@ -90,9 +90,6 @@ try:
         "database_name": o_config["pvc"]["provisioner"]["database"]["name"],
         "database_user": o_config["pvc"]["provisioner"]["database"]["user"],
         "database_password": o_config["pvc"]["provisioner"]["database"]["pass"],
-        "queue_host": o_config["pvc"]["provisioner"]["queue"]["host"],
-        "queue_port": o_config["pvc"]["provisioner"]["queue"]["port"],
-        "queue_path": o_config["pvc"]["provisioner"]["queue"]["path"],
         "storage_hosts": o_config["pvc"]["provisioner"]["ceph_cluster"][
             "storage_hosts"
         ],
