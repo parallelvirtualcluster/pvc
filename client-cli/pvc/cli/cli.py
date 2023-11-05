@@ -5664,7 +5664,7 @@ def cli_connection_add(
     scheme = "https" if ssl_flag else "http"
 
     # Get the store data
-    connections_config = get_store(store_path)
+    connections_config = get_store(CLI_CONFIG["store_path"])
 
     # Add (or update) the new connection details
     connections_config[name] = {
@@ -5676,7 +5676,7 @@ def cli_connection_add(
     }
 
     # Update the store data
-    update_store(store_path, connections_config)
+    update_store(CLI_CONFIG["store_path"], connections_config)
 
     finish(
         True,
@@ -5700,7 +5700,7 @@ def cli_connection_remove(
     """
 
     # Get the store data
-    connections_config = get_store(store_path)
+    connections_config = get_store(CLI_CONFIG["store_path"])
 
     # Remove the entry matching the name
     try:
@@ -5709,7 +5709,7 @@ def cli_connection_remove(
         finish(False, f"""No connection found with name "{name}" in local database""")
 
     # Update the store data
-    update_store(store_path, connections_config)
+    update_store(CLI_CONFIG["store_path"], connections_config)
 
     finish(True, f"""Removed connection "{name}" from client database""")
 
@@ -5752,7 +5752,7 @@ def cli_connection_list(
         "json-pretty": Output in formatted JSON.
     """
 
-    connections_config = get_store(store_path)
+    connections_config = get_store(CLI_CONFIG["store_path"])
     connections_data = cli_connection_list_parser(connections_config, show_keys_flag)
     finish(True, connections_data, format_function)
 
@@ -5790,7 +5790,7 @@ def cli_connection_detail(
         newline=False,
         stderr=True,
     )
-    connections_config = get_store(store_path)
+    connections_config = get_store(CLI_CONFIG["store_path"])
     connections_data = cli_connection_detail_parser(connections_config)
     echo(CLI_CONFIG, "done.", stderr=True)
     echo(CLI_CONFIG, "", stderr=True)
@@ -5930,6 +5930,7 @@ def cli(
         CLI_CONFIG["colour"] = _colour
         CLI_CONFIG["quiet"] = _quiet
         CLI_CONFIG["silent"] = _silent
+        CLI_CONFIG["store_path"] = store_path
 
     audit()
 
