@@ -612,8 +612,6 @@ class NodeInstance(object):
             self.logger.out("Starting PVC API client service", state="i")
             common.run_os_command("systemctl enable pvcapid.service")
             common.run_os_command("systemctl start pvcapid.service")
-            self.logger.out("Starting PVC Provisioner Worker service", state="i")
-            common.run_os_command("systemctl start pvcapid-worker.service")
         # 7. Start metadata API; just continue if we fail
         self.metadata_api.start()
         # 8. Start DHCP servers
