@@ -24,6 +24,7 @@ import math
 import time
 import requests
 import click
+from ast import literal_eval
 from urllib3 import disable_warnings
 
 
@@ -199,3 +200,64 @@ def call_api(
 
     # Return the response object
     return response
+
+
+def task_status(config, task_id=None, is_watching=False):
+    """
+    Get information about Celery job {task_id}, or all tasks if None
+
+    API endpoint: GET /api/v1/tasks/{task_id}
+    API arguments:
+    API schema: {json_data_object}
+    """
+    if task_id is not None:
+        response = call_api(config, "get", f"/tasks/{task_id}")
+    else:
+        response = call_api(config, "get", "/tasks")
+
+    if task_id is not None:
+        if response.status_code == 200:
+            retvalue = True
+            respjson = response.json()
+            if is_watching:
+                # Just return the raw JSON to the watching process instead of including value
+                return respjson
+            else:
+                return retvalue, respjson
+        else:
+            retvalue = False
+            retdata = response.json().get("message", "")
+    else:
+        retvalue = True
+        task_data_raw = response.json()
+        # Format the Celery data into a more useful data structure
+        task_data = list()
+        for task_type in ["active", "reserved", "scheduled"]:
+            try:
+                type_data = task_data_raw[task_type]
+            except Exception:
+                type_data = None
+
+            if not type_data:
+                type_data = dict()
+            for task_host in type_data:
+                for task_job in task_data_raw[task_type][task_host]:
+                    task = dict()
+                    if task_type == "reserved":
+                        task["type"] = "pending"
+                    else:
+                        task["type"] = task_type
+                    task["worker"] = task_host
+                    task["id"] = task_job.get("id")
+                    try:
+                        task["args"] = literal_eval(task_job.get("args"))
+                    except Exception:
+                        task["args"] = task_job.get("args")
+                    try:
+                        task["kwargs"] = literal_eval(task_job.get("kwargs"))
+                    except Exception:
+                        task["kwargs"] = task_job.get("kwargs")
+                    task_data.append(task)
+        retdata = task_data
+
+    return retvalue, retdata

@@ -30,14 +30,17 @@ from datetime import datetime
 from distutils.util import strtobool
 from json import dump as jdump
 from json import load as jload
+from json import loads as jloads
+from libvirt import open as lvopen
 from shutil import rmtree
 from socket import gethostname
 from uuid import UUID
 
 import daemon_lib.common as common
-
 import daemon_lib.ceph as ceph
+
 from daemon_lib.network import set_sriov_vf_vm, unset_sriov_vf_vm
+from daemon_lib.celery import start, update, fail, finish
 
 
 #
@@ -338,100 +341,6 @@ def define_vm(
     return True, 'Added new VM with Name "{}" and UUID "{}" to database.'.format(
         dom_name, dom_uuid
     )
-
-
-def attach_vm_device(zkhandler, domain, device_spec_xml):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zkhandler, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
-
-    # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
-    state = zkhandler.read(("domain.state", dom_uuid))
-    if state != "start":
-        return (
-            False,
-            'ERROR: VM "{}" is not in started state; live-add unneccessary.'.format(
-                domain
-            ),
-        )
-
-    # Tell the cluster to attach the device
-    attach_device_string = "attach_device {} {}".format(dom_uuid, device_spec_xml)
-    zkhandler.write([("base.cmd.domain", attach_device_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock("base.cmd.domain")
-    with lock:
-        try:
-            result = zkhandler.read("base.cmd.domain").split()[0]
-            if result == "success-attach_device":
-                message = 'Attached device on VM "{}"'.format(domain)
-                success = True
-            else:
-                message = 'ERROR: Failed to attach device on VM "{}"; check node logs for details.'.format(
-                    domain
-                )
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock("base.cmd.domain")
-    with lock:
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.domain", "")])
-
-    return success, message
-
-
-def detach_vm_device(zkhandler, domain, device_spec_xml):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zkhandler, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
-
-    # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
-    state = zkhandler.read(("domain.state", dom_uuid))
-    if state != "start":
-        return (
-            False,
-            'ERROR: VM "{}" is not in started state; live-add unneccessary.'.format(
-                domain
-            ),
-        )
-
-    # Tell the cluster to detach the device
-    detach_device_string = "detach_device {} {}".format(dom_uuid, device_spec_xml)
-    zkhandler.write([("base.cmd.domain", detach_device_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock("base.cmd.domain")
-    with lock:
-        try:
-            result = zkhandler.read("base.cmd.domain").split()[0]
-            if result == "success-detach_device":
-                message = 'Attached device on VM "{}"'.format(domain)
-                success = True
-            else:
-                message = 'ERROR: Failed to detach device on VM "{}"; check node logs for details.'.format(
-                    domain
-                )
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock("base.cmd.domain")
-    with lock:
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.domain", "")])
-
-    return success, message
 
 
 def modify_vm_metadata(
@@ -1843,3 +1752,163 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
     )
 
     return True, "\n".join(retlines)
+
+
+#
+# Celery worker tasks (must be run on node, outputs log messages to worker)
+#
+def vm_worker_helper_getdom(tuuid):
+    lv_conn = None
+    libvirt_uri = "qemu:///system"
+
+    # Convert (text) UUID into bytes
+    buuid = UUID(tuuid).bytes
+
+    try:
+        lv_conn = lvopen(libvirt_uri)
+        if lv_conn is None:
+            raise Exception("Failed to open local libvirt connection")
+
+        # Lookup the UUID
+        dom = lv_conn.lookupByUUID(buuid)
+    except Exception as e:
+        print(f"Error: {e}")
+        dom = None
+    finally:
+        if lv_conn is not None:
+            lv_conn.close()
+
+    return dom
+
+
+def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
+    start(
+        celery,
+        f"Flushing RBD locks for VM {domain} [forced={force_unlock}]",
+        current=1,
+        total=4,
+    )
+
+    dom_uuid = getDomainUUID(zkhandler, domain)
+
+    # Check that the domain is stopped (unless force_unlock is set)
+    domain_state = zkhandler.read(("domain.state", dom_uuid))
+    if not force_unlock and domain_state not in ["stop", "disable", "fail"]:
+        fail(
+            celery,
+            f"VM state {domain_state} not in [stop, disable, fail] and not forcing",
+        )
+        return
+
+    # Get the list of RBD images
+    rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
+
+    update(celery, f"Obtaining RBD locks for VM {domain}", current=2, total=4)
+
+    # Prepare a list of locks
+    rbd_locks = list()
+    for rbd in rbd_list:
+        # Check if a lock exists
+        (
+            lock_list_retcode,
+            lock_list_stdout,
+            lock_list_stderr,
+        ) = common.run_os_command(f"rbd lock list --format json {rbd}")
+
+        if lock_list_retcode != 0:
+            fail(
+                celery,
+                f"Failed to obtain lock list for volume {rbd}: {lock_list_stderr}",
+            )
+            return
+
+        try:
+            lock_list = jloads(lock_list_stdout)
+        except Exception as e:
+            fail(celery, f"Failed to parse JSON lock list for volume {rbd}: {e}")
+            return
+
+        if lock_list:
+            for lock in lock_list:
+                rbd_locks.append({"rbd": rbd, "lock": lock})
+
+    update(celery, f"Freeing RBD locks for VM {domain}", current=3, total=4)
+
+    for _lock in rbd_locks:
+        rbd = _lock["rbd"]
+        lock = _lock["lock"]
+
+        (
+            lock_remove_retcode,
+            lock_remove_stdout,
+            lock_remove_stderr,
+        ) = common.run_os_command(
+            f"rbd lock remove {rbd} \"{lock['id']}\" \"{lock['locker']}\""
+        )
+
+        if lock_remove_retcode != 0:
+            fail(
+                celery,
+                f"Failed to free RBD lock {lock['id']} on volume {rbd}: {lock_remove_stderr}",
+                current=3,
+                total=4,
+            )
+            return
+
+    return finish(
+        celery, f"Successfully flushed RBD locks for VM {domain}", current=4, total=4
+    )
+
+
+def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
+    start(celery, f"Hot-attaching XML device to VM {domain}")
+
+    dom_uuid = getDomainUUID(zkhandler, domain)
+
+    state = zkhandler.read(("domain.state", dom_uuid))
+    if state not in ["start"]:
+        fail(
+            celery,
+            f"VM {domain} not in start state; hot-attach unnecessary or impossible",
+        )
+        return
+
+    dom = vm_worker_helper_getdom(dom_uuid)
+    if dom is None:
+        fail(celery, f"Failed to find Libvirt object for VM {domain}")
+        return
+
+    try:
+        dom.attachDevice(xml_spec)
+    except Exception as e:
+        fail(celery, e)
+        return
+
+    return finish(celery, f"Successfully hot-attached XML device to VM {domain}")
+
+
+def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
+    start(celery, f"Hot-detaching XML device from VM {domain}")
+
+    dom_uuid = getDomainUUID(zkhandler, domain)
+
+    state = zkhandler.read(("domain.state", dom_uuid))
+    if state not in ["start"]:
+        fail(
+            celery,
+            f"VM {domain} not in start state; hot-detach unnecessary or impossible",
+        )
+        return
+
+    dom = vm_worker_helper_getdom(dom_uuid)
+    if dom is None:
+        fail(celery, f"Failed to find Libvirt object for VM {domain}")
+        return
+
+    try:
+        dom.detachDevice(xml_spec)
+    except Exception as e:
+        fail(celery, e)
+        return
+
+    return finish(celery, f"Successfully hot-detached XML device from VM {domain}")

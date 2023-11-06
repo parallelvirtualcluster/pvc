@@ -355,6 +355,9 @@ def vm_node(zkhandler, vm):
         zkhandler, None, None, None, vm, is_fuzzy=False, negate=False
     )
 
+    if len(retdata) > 0:
+        retdata = retdata[0]
+
     if retflag:
         if retdata:
             retcode = 200

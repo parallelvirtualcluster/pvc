@@ -1567,12 +1567,25 @@ def cli_vm_unmigrate(domain, wait, force_live):
 )
 @connection_req
 @click.argument("domain")
-def cli_vm_flush_locks(domain):
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
+def cli_vm_flush_locks(domain, wait_flag):
     """
-    Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in a stopped state before flushing locks.
+    Flush stale RBD locks for virtual machine DOMAIN. DOMAIN may be a UUID or name. DOMAIN must be in the stop, disable, or fail state before flushing locks.
+
+    NOTE: This is a task-based command. The "--wait" flag (default) will block and show progress. Specifying the "--no-wait" flag will return immediately with a job ID instead, which can be queried externally later.
     """
 
-    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain)
+    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag=wait_flag)
+
+    if retcode and wait_flag:
+        retmsg = wait_for_flush_locks(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 

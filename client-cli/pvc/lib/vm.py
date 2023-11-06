@@ -152,7 +152,7 @@ def vm_device_attach(config, vm, xml):
     data = {"xml": xml}
     response = call_api(config, "post", "/vm/{vm}/device".format(vm=vm), data=data)
 
-    if response.status_code == 200:
+    if response.status_code in [200, 202]:
         retstatus = True
     else:
         retstatus = False
@@ -171,7 +171,7 @@ def vm_device_detach(config, vm, xml):
     data = {"xml": xml}
     response = call_api(config, "delete", "/vm/{vm}/device".format(vm=vm), data=data)
 
-    if response.status_code == 200:
+    if response.status_code in [200, 202]:
         retstatus = True
     else:
         retstatus = False
@@ -415,7 +415,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     return retstatus, response.json().get("message", "")
 
 
-def vm_locks(config, vm):
+def vm_locks(config, vm, wait_flag=False):
     """
     Flush RBD locks of (stopped) VM
 
@@ -423,14 +423,23 @@ def vm_locks(config, vm):
     API arguments:
     API schema: {"message":"{data}"}
     """
-    response = call_api(config, "post", "/vm/{vm}/locks".format(vm=vm))
+    response = call_api(config, "post", f"/vm/{vm}/locks")
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
 def vm_backup(config, vm, backup_path, incremental_parent=None, retain_snapshot=False):
