@@ -1332,6 +1332,36 @@ def ceph_osd_list(zkhandler, limit=None):
     return retdata, retcode
 
 
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def ceph_osd_node(zkhandler, osd):
+    """
+    Return the current node of OSD OSD.
+    """
+    retflag, retdata = pvc_ceph.get_list_osd(zkhandler, None)
+
+    if retflag:
+        if retdata:
+            osd = [o for o in retdata if o["id"] == osd]
+            if len(osd) < 1:
+                retcode = 404
+                retdata = {"message": "OSD not found."}
+            else:
+                retcode = 200
+                retdata = {
+                    "id": osd[0]["id"],
+                    "node": osd[0]["node"],
+                }
+        else:
+            retcode = 404
+            retdata = {"message": "OSD not found."}
+    else:
+        retcode = 400
+        retdata = {"message": retdata}
+
+    return retdata, retcode
+
+
 @ZKConnection(config)
 def ceph_osd_state(zkhandler, osd):
     retflag, retdata = pvc_ceph.get_list_osd(zkhandler, osd)

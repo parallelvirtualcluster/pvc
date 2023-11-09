@@ -30,25 +30,40 @@ class TaskFailure(Exception):
     pass
 
 
-def start(celery, msg, current=1, total=2):
+def start(celery, msg, current=0, total=1):
     logger = getLogger(__name__)
-    logger.info(f"Starting: {msg}")
+    logger.info(f"Starting {current}/{total}: {msg}")
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
     sleep(0.5)
 
 
-def fail(celery, msg, current=1, total=2):
+def fail(celery, msg, current=1, total=1):
     logger = getLogger(__name__)
     logger.error(msg)
     sys.tracebacklimit = 0
     raise TaskFailure(msg)
 
 
+def log_info(celery, msg):
+    logger = getLogger(__name__)
+    logger.info(f"Task log: {msg}")
+
+
+def log_warn(celery, msg):
+    logger = getLogger(__name__)
+    logger.warning(f"Task log: {msg}")
+
+
+def log_err(celery, msg):
+    logger = getLogger(__name__)
+    logger.error(f"Task log: {msg}")
+
+
 def update(celery, msg, current=1, total=2):
     logger = getLogger(__name__)
-    logger.info(f"Task update: {msg}")
+    logger.info(f"Task update {current}/{total}: {msg}")
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
@@ -57,10 +72,11 @@ def update(celery, msg, current=1, total=2):
 
 def finish(celery, msg, current=2, total=2):
     logger = getLogger(__name__)
+    logger.info(f"Task update {current}/{total}: Finishing up")
     celery.update_state(
         state="RUNNING",
         meta={"current": current, "total": total, "status": "Finishing up"},
     )
-    sleep(0.25)
-    logger.info(f"Success: {msg}")
+    sleep(0.5)
+    logger.info(f"Success {current}/{total}: {msg}")
     return {"status": msg, "current": current, "total": total}

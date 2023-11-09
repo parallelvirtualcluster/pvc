@@ -1582,10 +1582,10 @@ def cli_vm_flush_locks(domain, wait_flag):
     NOTE: This is a task-based command. The "--wait" flag (default) will block and show progress. Specifying the "--no-wait" flag will return immediately with a job ID instead, which can be queried externally later.
     """
 
-    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag=wait_flag)
+    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag)
 
     if retcode and wait_flag:
-        retmsg = wait_for_flush_locks(CLI_CONFIG, retmsg)
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -3372,10 +3372,18 @@ def cli_storage_osd():
 @connection_req
 @click.argument("node")
 @click.argument("device")
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt(
     "Destroy all data on and create a new OSD database volume group on node {node} device {device}"
 )
-def cli_storage_osd_create_db_vg(node, device):
+def cli_storage_osd_create_db_vg(node, device, wait_flag):
     """
     Create a new Ceph OSD database volume group on node NODE with block device DEVICE.
 
@@ -3390,7 +3398,12 @@ def cli_storage_osd_create_db_vg(node, device):
     A "detect" string is a string in the form "detect:<NAME>:<HUMAN-SIZE>:<ID>". Detect strings allow for automatic determination of Linux block device paths from known basic information about disks by leveraging "lsscsi" on the target host. The "NAME" should be some descriptive identifier, for instance the manufacturer (e.g. "INTEL"), the "HUMAN-SIZE" should be the labeled human-readable size of the device (e.g. "480GB", "1.92TB"), and "ID" specifies the Nth 0-indexed device which matches the "NAME" and "HUMAN-SIZE" values (e.g. "2" would match the third device with the corresponding "NAME" and "HUMAN-SIZE"). When matching against sizes, there is +/- 3% flexibility to account for base-1000 vs. base-1024 differences and rounding errors. The "NAME" may contain whitespace but if so the entire detect string should be quoted, and is case-insensitive. More information about detect strings can be found in the manual.
     """
 
-    retcode, retmsg = pvc.lib.storage.ceph_osd_db_vg_add(CLI_CONFIG, node, device)
+    retcode, retmsg = pvc.lib.storage.ceph_osd_db_vg_add(
+        CLI_CONFIG, node, device, wait_flag
+    )
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -3434,8 +3447,18 @@ def cli_storage_osd_create_db_vg(node, device):
     type=int,
     help="Split (an NVMe) disk into this many OSDs.",
 )
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt("Destroy all data on and create new OSD(s) on node {node} device {device}")
-def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_count):
+def cli_storage_osd_add(
+    node, device, weight, ext_db_ratio, ext_db_size, osd_count, wait_flag
+):
     """
     Add a new Ceph OSD on node NODE with block device DEVICE.
 
@@ -3456,11 +3479,6 @@ def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_cou
     NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
-    echo(
-        CLI_CONFIG,
-        "Waiting for node task to complete, this may take some time... ",
-        newline=False,
-    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_add(
         CLI_CONFIG,
         node,
@@ -3469,8 +3487,11 @@ def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_cou
         ext_db_ratio,
         ext_db_size,
         osd_count,
+        wait_flag,
     )
-    echo(CLI_CONFIG, "done.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -3509,11 +3530,19 @@ def cli_storage_osd_add(node, device, weight, ext_db_ratio, ext_db_size, osd_cou
     default=None,
     help="Create a new external database logical volume for the OSD(s) with this human-unit size; if unset, old ext_db_size is used",
 )
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt(
     "Destroy all data on and replace OSD {osdid} (and peer split OSDs) with new device {new_device}"
 )
 def cli_storage_osd_replace(
-    osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
+    osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size, wait_flag
 ):
     """
     Replace the block device of an existing OSD with ID OSDID, and any peer split OSDs with the same block device, with NEW_DEVICE. Use this command to replace a failed or smaller OSD block device with a new one in one command.
@@ -3533,15 +3562,19 @@ def cli_storage_osd_replace(
     NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
-    echo(
-        CLI_CONFIG,
-        "Waiting for node task to complete, this may take some time... ",
-        newline=False,
-    )
     retcode, retmsg = pvc.lib.storage.ceph_osd_replace(
-        CLI_CONFIG, osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
+        CLI_CONFIG,
+        osdid,
+        new_device,
+        old_device,
+        weight,
+        ext_db_ratio,
+        ext_db_size,
+        wait_flag,
     )
-    echo(CLI_CONFIG, "done.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -3552,8 +3585,16 @@ def cli_storage_osd_replace(
 @connection_req
 @click.argument("osdid")
 @click.argument("device")
-@confirm_opt("Refresh OSD {osdid} on device {device}")
-def cli_storage_osd_refresh(osdid, device):
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
+@confirm_opt("Refresh OSD {osdid} (and peer split OSDs) on device {device}")
+def cli_storage_osd_refresh(osdid, device, wait_flag):
     """
     Refresh (reimport) the block DEVICE of an existing OSD with ID OSDID. Use this command to reimport a working OSD into a rebuilt/replaced node.
 
@@ -3566,13 +3607,12 @@ def cli_storage_osd_refresh(osdid, device):
     NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
-    echo(
-        CLI_CONFIG,
-        "Waiting for node task to complete, this may take some time... ",
-        newline=False,
+    retcode, retmsg = pvc.lib.storage.ceph_osd_refresh(
+        CLI_CONFIG, osdid, device, wait_flag
     )
-    retcode, retmsg = pvc.lib.storage.ceph_osd_refresh(CLI_CONFIG, osdid, device)
-    echo(CLI_CONFIG, "done.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -3590,8 +3630,16 @@ def cli_storage_osd_refresh(osdid, device):
     default=False,
     help="Force removal even if steps fail",
 )
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt("Remove and destroy data on OSD {osdid}")
-def cli_storage_osd_remove(osdid, force_flag):
+def cli_storage_osd_remove(osdid, force_flag, wait_flag):
     """
     Remove a Ceph OSD with ID OSDID.
 
@@ -3602,13 +3650,12 @@ def cli_storage_osd_remove(osdid, force_flag):
     NOTE: This command may take a long time to complete. Observe the node logs of the hosting OSD node for detailed status.
     """
 
-    echo(
-        CLI_CONFIG,
-        "Waiting for node task to complete, this may take some time... ",
-        newline=False,
+    retcode, retmsg = pvc.lib.storage.ceph_osd_remove(
+        CLI_CONFIG, osdid, force_flag, wait_flag
     )
-    retcode, retmsg = pvc.lib.storage.ceph_osd_remove(CLI_CONFIG, osdid, force_flag)
-    echo(CLI_CONFIG, "done.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 

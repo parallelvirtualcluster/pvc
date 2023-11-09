@@ -20,7 +20,7 @@
 ###############################################################################
 
 from click import echo as click_echo
-from click import progressbar, confirm
+from click import confirm
 from datetime import datetime
 from distutils.util import strtobool
 from getpass import getuser
@@ -32,7 +32,6 @@ from socket import gethostname
 from subprocess import run, PIPE
 from sys import argv
 from syslog import syslog, openlog, closelog, LOG_AUTH
-from time import sleep
 from yaml import load as yload
 from yaml import BaseLoader, SafeLoader
 
@@ -189,123 +188,6 @@ def update_store(store_path, store_data):
 
     with open(store_file, "w") as fh:
         jdump(store_data, fh, sort_keys=True, indent=4)
-
-
-def wait_for_flush_locks(CLI_CONFIG, task_detail):
-    """
-    Wait for a flush_locks task to complete
-    """
-
-    task_id = task_detail["task_id"]
-    run_on = task_detail["run_on"]
-
-    echo(CLI_CONFIG, f"Task ID: {task_id} assigned to node {run_on}")
-    echo(CLI_CONFIG, "")
-
-    # Wait for the task to start
-    echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
-    while True:
-        sleep(0.25)
-        task_status = pvc.lib.common.task_status(
-            CLI_CONFIG, task_id=task_id, is_watching=True
-        )
-        if task_status.get("state") != "PENDING":
-            break
-        echo(CLI_CONFIG, ".", newline=False)
-    echo(CLI_CONFIG, " done.")
-    echo(CLI_CONFIG, "")
-
-    # Start following the task state, updating progress as we go
-    total_task = task_status.get("total")
-    with progressbar(length=total_task, show_eta=False) as bar:
-        last_task = 0
-        maxlen = 0
-        while True:
-            sleep(0.25)
-            if task_status.get("state") != "RUNNING":
-                break
-            if task_status.get("current") > last_task:
-                current_task = int(task_status.get("current"))
-                bar.update(current_task - last_task)
-                last_task = current_task
-                # The extensive spaces at the end cause this to overwrite longer previous messages
-                curlen = len(str(task_status.get("status")))
-                if curlen > maxlen:
-                    maxlen = curlen
-                lendiff = maxlen - curlen
-                overwrite_whitespace = " " * lendiff
-                echo(
-                    CLI_CONFIG,
-                    "  " + task_status.get("status") + overwrite_whitespace,
-                    newline=False,
-                )
-            task_status = pvc.lib.common.task_status(
-                CLI_CONFIG, task_id=task_id, is_watching=True
-            )
-        if task_status.get("state") == "SUCCESS":
-            bar.update(total_task - last_task)
-
-    echo(CLI_CONFIG, "")
-    retdata = task_status.get("state") + ": " + task_status.get("status")
-
-    return retdata
-
-
-def wait_for_provisioner(CLI_CONFIG, task_id):
-    """
-    Wait for a provisioner task to complete
-    """
-
-    echo(CLI_CONFIG, f"Task ID: {task_id}")
-    echo(CLI_CONFIG, "")
-
-    # Wait for the task to start
-    echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
-    while True:
-        sleep(1)
-        task_status = pvc.lib.provisioner.task_status(
-            CLI_CONFIG, task_id, is_watching=True
-        )
-        if task_status.get("state") != "PENDING":
-            break
-        echo(CLI_CONFIG, ".", newline=False)
-    echo(CLI_CONFIG, " done.")
-    echo(CLI_CONFIG, "")
-
-    # Start following the task state, updating progress as we go
-    total_task = task_status.get("total")
-    with progressbar(length=total_task, show_eta=False) as bar:
-        last_task = 0
-        maxlen = 0
-        while True:
-            sleep(1)
-            if task_status.get("state") != "RUNNING":
-                break
-            if task_status.get("current") > last_task:
-                current_task = int(task_status.get("current"))
-                bar.update(current_task - last_task)
-                last_task = current_task
-                # The extensive spaces at the end cause this to overwrite longer previous messages
-                curlen = len(str(task_status.get("status")))
-                if curlen > maxlen:
-                    maxlen = curlen
-                lendiff = maxlen - curlen
-                overwrite_whitespace = " " * lendiff
-                echo(
-                    CLI_CONFIG,
-                    "  " + task_status.get("status") + overwrite_whitespace,
-                    newline=False,
-                )
-            task_status = pvc.lib.provisioner.task_status(
-                CLI_CONFIG, task_id, is_watching=True
-            )
-        if task_status.get("state") == "SUCCESS":
-            bar.update(total_task - last_task)
-
-    echo(CLI_CONFIG, "")
-    retdata = task_status.get("state") + ": " + task_status.get("status")
-
-    return retdata
 
 
 def get_autobackup_config(CLI_CONFIG, cfgfile):

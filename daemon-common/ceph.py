@@ -27,9 +27,15 @@ import math
 
 from concurrent.futures import ThreadPoolExecutor
 from distutils.util import strtobool
+from json import loads as jloads
+from re import match, search
+from uuid import uuid4
+from os import path
 
 import daemon_lib.vm as vm
 import daemon_lib.common as common
+
+from daemon_lib.celery import start, log_info, log_warn, update, fail, finish
 
 
 #
@@ -229,233 +235,6 @@ def getOSDInformation(zkhandler, osd_id):
         "stats": osd_stats,
     }
     return osd_information
-
-
-# OSD DB VG actions use the /cmd/ceph pipe
-# These actions must occur on the specific node they reference
-def add_osd_db_vg(zkhandler, node, device):
-    # Verify the target node exists
-    if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
-
-    # Tell the cluster to create a new OSD for the host
-    add_osd_db_vg_string = "db_vg_add {},{}".format(node, device)
-    zkhandler.write([("base.cmd.ceph", add_osd_db_vg_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    with zkhandler.readlock("base.cmd.ceph"):
-        try:
-            result = zkhandler.read("base.cmd.ceph").split()[0]
-            if result == "success-db_vg_add":
-                message = 'Created new OSD database VG at "{}" on node "{}".'.format(
-                    device, node
-                )
-                success = True
-            else:
-                message = "ERROR: Failed to create new OSD database VG; check node logs for details."
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    with zkhandler.writelock("base.cmd.ceph"):
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.ceph", "")])
-
-    return success, message
-
-
-# OSD actions use the /cmd/ceph pipe
-# These actions must occur on the specific node they reference
-def add_osd(
-    zkhandler,
-    node,
-    device,
-    weight,
-    ext_db_ratio=None,
-    ext_db_size=None,
-    split_count=None,
-):
-    # Verify that options are valid
-    if ext_db_ratio is not None and ext_db_size is not None:
-        return (
-            False,
-            "ERROR: Both an ext_db_ratio and ext_db_size were specified; choose only one.",
-        )
-
-    # Verify the target node exists
-    if not common.verifyNode(zkhandler, node):
-        return False, 'ERROR: No node named "{}" is present in the cluster.'.format(
-            node
-        )
-
-    # Verify target block device isn't in use
-    block_osd = verifyOSDBlock(zkhandler, node, device)
-    if block_osd:
-        return (
-            False,
-            'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(
-                device, node, block_osd
-            ),
-        )
-
-    # Tell the cluster to create a new OSD for the host
-    add_osd_string = "osd_add {},{},{},{},{},{}".format(
-        node, device, weight, ext_db_ratio, ext_db_size, split_count
-    )
-    zkhandler.write([("base.cmd.ceph", add_osd_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    with zkhandler.readlock("base.cmd.ceph"):
-        try:
-            result = zkhandler.read("base.cmd.ceph").split()[0]
-            if result == "success-osd_add":
-                message = f'Created {split_count} new OSD(s) on node "{node}" block device "{device}"'
-                success = True
-            else:
-                message = "ERROR: Failed to create OSD(s); check node logs for details."
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    with zkhandler.writelock("base.cmd.ceph"):
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.ceph", "")])
-
-    return success, message
-
-
-def replace_osd(
-    zkhandler,
-    osd_id,
-    new_device,
-    old_device=None,
-    weight=None,
-    ext_db_ratio=None,
-    ext_db_size=None,
-):
-    # Get current OSD information
-    osd_information = getOSDInformation(zkhandler, osd_id)
-    node = osd_information["node"]
-
-    # Verify target block device isn't in use
-    block_osd = verifyOSDBlock(zkhandler, node, new_device)
-    if block_osd and block_osd != osd_id:
-        return (
-            False,
-            'ERROR: Block device "{}" on node "{}" is used by OSD "{}"'.format(
-                new_device, node, block_osd
-            ),
-        )
-
-    # Tell the cluster to create a new OSD for the host
-    replace_osd_string = "osd_replace {},{},{},{},{},{},{}".format(
-        node, osd_id, new_device, old_device, weight, ext_db_ratio, ext_db_size
-    )
-    zkhandler.write([("base.cmd.ceph", replace_osd_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    with zkhandler.readlock("base.cmd.ceph"):
-        try:
-            result = zkhandler.read("base.cmd.ceph").split()[0]
-            if result == "success-osd_replace":
-                message = 'Replaced OSD {} with block device "{}" on node "{}".'.format(
-                    osd_id, new_device, node
-                )
-                success = True
-            else:
-                message = "ERROR: Failed to replace OSD; check node logs for details."
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    with zkhandler.writelock("base.cmd.ceph"):
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.ceph", "")])
-
-    return success, message
-
-
-def refresh_osd(zkhandler, osd_id, device):
-    # Get current OSD information
-    osd_information = getOSDInformation(zkhandler, osd_id)
-    node = osd_information["node"]
-    ext_db_flag = True if osd_information["db_device"] else False
-
-    # Tell the cluster to create a new OSD for the host
-    refresh_osd_string = "osd_refresh {},{},{},{}".format(
-        node, osd_id, device, ext_db_flag
-    )
-    zkhandler.write([("base.cmd.ceph", refresh_osd_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    with zkhandler.readlock("base.cmd.ceph"):
-        try:
-            result = zkhandler.read("base.cmd.ceph").split()[0]
-            if result == "success-osd_refresh":
-                message = (
-                    'Refreshed OSD {} with block device "{}" on node "{}".'.format(
-                        osd_id, device, node
-                    )
-                )
-                success = True
-            else:
-                message = "ERROR: Failed to refresh OSD; check node logs for details."
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    with zkhandler.writelock("base.cmd.ceph"):
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.ceph", "")])
-
-    return success, message
-
-
-def remove_osd(zkhandler, osd_id, force_flag):
-    if not verifyOSD(zkhandler, osd_id):
-        return False, 'ERROR: No OSD with ID "{}" is present in the cluster.'.format(
-            osd_id
-        )
-
-    # Tell the cluster to remove an OSD
-    remove_osd_string = "osd_remove {},{}".format(osd_id, str(force_flag))
-    zkhandler.write([("base.cmd.ceph", remove_osd_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    with zkhandler.readlock("base.cmd.ceph"):
-        try:
-            result = zkhandler.read("base.cmd.ceph").split()[0]
-            if result == "success-osd_remove":
-                message = 'Removed OSD "{}" from the cluster.'.format(osd_id)
-                success = True
-            else:
-                message = "ERROR: Failed to remove OSD; check node logs for details."
-                success = False
-        except Exception:
-            success = False
-            message = "ERROR Command ignored by node."
-
-    # Acquire a write lock to ensure things go smoothly
-    with zkhandler.writelock("base.cmd.ceph"):
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.ceph", "")])
-
-    return success, message
 
 
 def in_osd(zkhandler, osd_id):
@@ -1298,3 +1077,1382 @@ def get_list_snapshot(zkhandler, pool, volume, limit, is_fuzzy=True):
             )
 
     return True, sorted(snapshot_list, key=lambda x: str(x["snapshot"]))
+
+
+#
+# Celery worker tasks (must be run on node, outputs log messages to worker)
+#
+def osd_worker_helper_find_osds_from_block(device):
+    # Try to query the passed block device directly
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph-volume lvm list --format json {device}"
+    )
+    if retcode:
+        found_osds = []
+    else:
+        found_osds = jloads(stdout)
+
+    return found_osds
+
+
+def osd_worker_add_osd(
+    zkhandler,
+    celery,
+    node,
+    device,
+    weight,
+    ext_db_ratio=None,
+    ext_db_size=None,
+    split_count=None,
+):
+    current_stage = 0
+    total_stages = 4
+    if split_count is None:
+        _split_count = 1
+    else:
+        _split_count = split_count
+    total_stages = total_stages + 3 * int(_split_count)
+    if ext_db_ratio is not None or ext_db_size is not None:
+        total_stages = total_stages + 3 * int(_split_count) + 1
+
+    start(
+        celery,
+        f"Adding {_split_count} new OSD(s) on device {device} with weight {weight}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Handle a detect device if that is passed
+    if match(r"detect:", device):
+        ddevice = common.get_detect_device(device)
+        if ddevice is None:
+            fail(
+                celery,
+                f"Failed to determine block device from detect string {device}",
+            )
+            return
+        else:
+            log_info(
+                celery, f"Determined block device {ddevice} from detect string {device}"
+            )
+            device = ddevice
+
+    if ext_db_size is not None and ext_db_ratio is not None:
+        fail(
+            celery,
+            "Invalid configuration: both an ext_db_size and ext_db_ratio were specified",
+        )
+        return
+
+    # Check if device has a partition table; it's not valid if it does
+    retcode, _, _ = common.run_os_command(f"sfdisk --dump {device}")
+    if retcode < 1:
+        fail(
+            celery,
+            f"Device {device} has a partition table and is unsuitable for an OSD",
+        )
+        return
+
+    if ext_db_size is not None or ext_db_ratio is not None:
+        ext_db_flag = True
+    else:
+        ext_db_flag = False
+
+    if split_count is not None:
+        split_flag = f"--osds-per-device {split_count}"
+        is_split = True
+        log_info(
+            celery, f"Creating {split_count} new OSD disks on block device {device}"
+        )
+    else:
+        split_flag = ""
+        is_split = False
+        log_info(celery, f"Creating 1 new OSD disk on block device {device}")
+
+    if "nvme" in device:
+        class_flag = "--crush-device-class nvme"
+    else:
+        class_flag = "--crush-device-class ssd"
+
+    # 1. Zap the block device
+    current_stage += 1
+    update(
+        celery,
+        f"Zapping block device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph-volume lvm zap --destroy {device}"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to perform ceph-volume lvm zap on {device}")
+        return
+
+    # 2. Prepare the OSD(s)
+    current_stage += 1
+    update(
+        celery,
+        f"Preparing OSD(s) on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph-volume lvm batch --yes --prepare --bluestore {split_flag} {class_flag} {device}"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to perform ceph-volume lvm batch on {device}")
+        return
+
+    # 3. Get the list of created OSDs on the device (initial pass)
+    current_stage += 1
+    update(
+        celery,
+        f"Querying OSD(s) on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph-volume lvm list --format json {device}"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to perform ceph-volume lvm list on {device}")
+        return
+
+    created_osds = jloads(stdout)
+
+    # 4. Prepare the WAL and DB devices
+    if ext_db_flag:
+        for created_osd in created_osds:
+            # 4a. Get the OSD FSID and ID from the details
+            osd_details = created_osds[created_osd][0]
+            osd_fsid = osd_details["tags"]["ceph.osd_fsid"]
+            osd_id = osd_details["tags"]["ceph.osd_id"]
+            osd_lv = osd_details["lv_path"]
+
+            current_stage += 1
+            update(
+                celery,
+                f"Preparing DB LV for OSD {osd_id}",
+                current=current_stage,
+                total=total_stages,
+            )
+
+            # 4b. Prepare the logical volume if ext_db_flag
+            if ext_db_ratio is not None:
+                _, osd_size_bytes, _ = common.run_os_command(
+                    f"blockdev --getsize64 {osd_lv}"
+                )
+                osd_size_bytes = int(osd_size_bytes)
+                osd_db_size_bytes = int(osd_size_bytes * ext_db_ratio)
+            if ext_db_size is not None:
+                osd_db_size_bytes = format_bytes_fromhuman(ext_db_size)
+            osd_db_size_mb = int(osd_db_size_bytes / 1024 / 1024)
+
+            db_device = f"osd-db/osd-{osd_id}"
+
+            current_stage += 1
+            update(
+                celery,
+                f"Preparing Bluestore DB volume for OSD {osd_id} on {db_device}",
+                current=current_stage,
+                total=total_stages,
+            )
+
+            retcode, stdout, stderr = common.run_os_command(
+                f"lvcreate -L {osd_db_size_mb}M -n osd-{osd_id} --yes osd-db"
+            )
+            log_info(celery, f"stdout: {stdout}")
+            log_info(celery, f"stderr: {stderr}")
+            if retcode:
+                fail(celery, f"Failed to run lvcreate on {db_device}")
+                return
+
+            # 4c. Attach the new DB device to the OSD
+            current_stage += 1
+            update(
+                celery,
+                f"Attaching Bluestore DB volume to OSD {osd_id}",
+                current=current_stage,
+                total=total_stages,
+            )
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph-volume lvm new-db --osd-id {osd_id} --osd-fsid {osd_fsid} --target {db_device}"
+            )
+            log_info(celery, f"stdout: {stdout}")
+            log_info(celery, f"stderr: {stderr}")
+            if retcode:
+                fail(
+                    celery, f"Failed to perform ceph-volume lvm new-db on OSD {osd_id}"
+                )
+                return
+
+        # 4d. Get the list of created OSDs on the device (final pass)
+        current_stage += 1
+        update(
+            celery,
+            f"Requerying OSD(s) on device {device}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm list --format json {device}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to perform ceph-volume lvm list on {device}")
+            return
+
+        created_osds = jloads(stdout)
+
+    # 5. Activate the OSDs
+    for created_osd in created_osds:
+        # 5a. Get the OSD FSID and ID from the details
+        osd_details = created_osds[created_osd][0]
+        osd_clusterfsid = osd_details["tags"]["ceph.cluster_fsid"]
+        osd_fsid = osd_details["tags"]["ceph.osd_fsid"]
+        osd_id = osd_details["tags"]["ceph.osd_id"]
+        db_device = osd_details["tags"].get("ceph.db_device", "")
+        osd_vg = osd_details["vg_name"]
+        osd_lv = osd_details["lv_name"]
+
+        # 5b. Add it to the crush map
+        current_stage += 1
+        update(
+            celery,
+            f"Adding OSD {osd_id} to CRUSH map",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph osd crush add osd.{osd_id} {weight} root=default host={node}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to perform ceph osd crush add for OSD {osd_id}")
+            return
+
+        # 5c. Activate the OSD
+        current_stage += 1
+        update(
+            celery,
+            f"Activating OSD {osd_id}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to perform ceph osd crush add for OSD {osd_id}")
+            return
+
+        # 5d. Wait 1 second for it to activate
+        time.sleep(1)
+
+        # 5e. Verify it started
+        retcode, stdout, stderr = common.run_os_command(
+            f"systemctl status ceph-osd@{osd_id}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to start OSD {osd_id} process")
+            return
+
+        # 5f. Add the new OSD to PVC
+        current_stage += 1
+        update(
+            celery,
+            f"Adding OSD {osd_id} to PVC",
+            current=current_stage,
+            total=total_stages,
+        )
+        zkhandler.write(
+            [
+                (("osd", osd_id), ""),
+                (("osd.node", osd_id), node),
+                (("osd.device", osd_id), device),
+                (("osd.db_device", osd_id), db_device),
+                (("osd.fsid", osd_id), ""),
+                (("osd.ofsid", osd_id), osd_fsid),
+                (("osd.cfsid", osd_id), osd_clusterfsid),
+                (("osd.lvm", osd_id), ""),
+                (("osd.vg", osd_id), osd_vg),
+                (("osd.lv", osd_id), osd_lv),
+                (("osd.is_split", osd_id), is_split),
+                (
+                    ("osd.stats", osd_id),
+                    '{"uuid": "|", "up": 0, "in": 0, "primary_affinity": "|", "utilization": "|", "var": "|", "pgs": "|", "kb": "|", "weight": "|", "reweight": "|", "node": "|", "used": "|", "avail": "|", "wr_ops": "|", "wr_data": "|", "rd_ops": "|", "rd_data": "|", "state": "|"}',
+                ),
+            ]
+        )
+
+    # 6. Log it
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully created {len(created_osds.keys())} new OSD(s) {','.join(created_osds.keys())} on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def osd_worker_replace_osd(
+    zkhandler,
+    celery,
+    node,
+    osd_id,
+    new_device,
+    old_device=None,
+    weight=None,
+    ext_db_ratio=None,
+    ext_db_size=None,
+):
+    # Try to determine if any other OSDs shared a block device with this OSD
+    _, osd_list = get_list_osd(zkhandler, None)
+    osd_block = zkhandler.read(("osd.device", osd_id))
+    all_osds_on_block = [
+        o for o in osd_list if o["node"] == node and o["device"] == osd_block
+    ]
+    all_osds_on_block_ids = [o["id"] for o in all_osds_on_block]
+
+    # Set up stages
+    current_stage = 0
+    total_stages = 3
+    _split_count = len(all_osds_on_block_ids)
+    total_stages = total_stages + 10 * int(_split_count)
+    if (
+        ext_db_ratio is not None
+        or ext_db_size is not None
+        or any([True for o in all_osds_on_block if o["db_device"]])
+    ):
+        total_stages = total_stages + 2 * int(_split_count)
+
+    start(
+        celery,
+        f"Replacing OSD(s) {','.join(all_osds_on_block_ids)} with device {new_device}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Handle a detect device if that is passed
+    if match(r"detect:", new_device):
+        ddevice = common.get_detect_device(new_device)
+        if ddevice is None:
+            fail(
+                celery,
+                f"Failed to determine block device from detect string {new_device}",
+            )
+            return
+        else:
+            log_info(
+                celery,
+                f"Determined block device {ddevice} from detect string {new_device}",
+            )
+            new_device = ddevice
+
+    # Check if device has a partition table; it's not valid if it does
+    retcode, _, _ = common.run_os_command(f"sfdisk --dump {new_device}")
+    if retcode < 1:
+        fail(
+            celery,
+            f"Device {new_device} has a partition table and is unsuitable for an OSD",
+        )
+        return
+
+    # Phase 1: Try to determine what we can about the old device
+    real_old_device = None
+
+    # Determine information from a passed old_device
+    if old_device is not None:
+        found_osds = osd_worker_helper_find_osds_from_block(old_device)
+        if found_osds and osd_id in found_osds.keys():
+            real_old_device = old_device
+        else:
+            log_warn(
+                celery,
+                f"No OSD(s) found on device {old_device}; falling back to PVC detection",
+            )
+
+    # Try to get an old_device from our PVC information
+    if real_old_device is None:
+        found_osds = osd_worker_helper_find_osds_from_block(osd_block)
+
+        if osd_id in found_osds.keys():
+            real_old_device = osd_block
+
+    if real_old_device is None:
+        skip_zap = True
+        log_warn(
+            celery,
+            "No valid old block device found for OSD(s); skipping zap",
+        )
+    else:
+        skip_zap = False
+
+    # Determine the weight of the OSD(s)
+    if weight is None:
+        weight = all_osds_on_block[0]["stats"]["weight"]
+
+    # Take down the OSD(s), but keep it's CRUSH map details and IDs
+    for osd in all_osds_on_block:
+        osd_id = osd["id"]
+
+        # 1. Set the OSD down and out so it will flush
+        current_stage += 1
+        update(
+            celery,
+            f"Setting OSD {osd_id} down",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(f"ceph osd down {osd_id}")
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to set OSD {osd_id} down")
+            return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Setting OSD {osd_id} out",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(f"ceph osd out {osd_id}")
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to set OSD {osd_id} out")
+            return
+
+        # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
+        current_stage += 1
+        update(
+            celery,
+            f"Waiting for OSD {osd_id} to be safe to remove",
+            current=current_stage,
+            total=total_stages,
+        )
+        tcount = 0
+        while True:
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph osd safe-to-destroy osd.{osd_id}"
+            )
+            if int(retcode) in [0, 11]:
+                break
+            else:
+                common.run_os_command(f"ceph osd down {osd_id}")
+                common.run_os_command(f"ceph osd out {osd_id}")
+                time.sleep(1)
+                tcount += 1
+            if tcount > 60:
+                log_warn(
+                    celery,
+                    f"Timed out (60s) waiting for OSD {osd_id} to be safe to remove; proceeding anyways",
+                )
+                break
+
+        # 3. Stop the OSD process and wait for it to be terminated
+        current_stage += 1
+        update(
+            celery,
+            f"Stopping OSD {osd_id}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"systemctl stop ceph-osd@{osd_id}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to stop OSD {osd_id}")
+            return
+        time.sleep(5)
+
+        # 4. Destroy the OSD
+        current_stage += 1
+        update(
+            celery,
+            f"Destroying OSD {osd_id}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph osd destroy {osd_id} --yes-i-really-mean-it"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to destroy OSD {osd_id}")
+            return
+
+    current_stage += 1
+    update(
+        celery,
+        f"Zapping old disk {real_old_device} if possible",
+        current=current_stage,
+        total=total_stages,
+    )
+    if not skip_zap:
+        # 5. Zap the old disk
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm zap --destroy {real_old_device}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            log_warn(
+                celery, f"Failed to zap old disk {real_old_device}; proceeding anyways"
+            )
+
+    # 6. Prepare the volume group on the new device
+    current_stage += 1
+    update(
+        celery,
+        f"Preparing LVM volume group on new disk {new_device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph-volume lvm zap --destroy {new_device}"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to run ceph-volume lvm zap on new disk {new_device}")
+        return
+
+    retcode, stdout, stderr = common.run_os_command(f"pvcreate {new_device}")
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to run pvcreate on new disk {new_device}")
+        return
+
+    vg_uuid = str(uuid4())
+    retcode, stdout, stderr = common.run_os_command(
+        f"vgcreate ceph-{vg_uuid} {new_device}"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(celery, f"Failed to run vgcreate on new disk {new_device}")
+        return
+
+    # Determine how many OSDs we want on the new device
+    osds_count = len(all_osds_on_block)
+
+    # Determine the size of the new device
+    _, new_device_size_bytes, _ = common.run_os_command(
+        f"blockdev --getsize64 {new_device}"
+    )
+
+    # Calculate the size of each OSD (in MB) based on the default 4M extent size
+    new_osd_size_mb = (
+        int(int(int(new_device_size_bytes) / osds_count) / 1024 / 1024 / 4) * 4
+    )
+
+    # Calculate the size, if applicable, of the OSD block if we were passed a ratio
+    if ext_db_ratio is not None:
+        osd_new_db_size_mb = int(int(int(new_osd_size_mb * ext_db_ratio) / 4) * 4)
+    elif ext_db_size is not None:
+        osd_new_db_size_mb = int(
+            int(int(format_bytes_fromhuman(ext_db_size)) / 1024 / 1024 / 4) * 4
+        )
+    else:
+        if all_osds_on_block[0]["db_device"]:
+            _, new_device_size_bytes, _ = common.run_os_command(
+                f"blockdev --getsize64 {all_osds_on_block[0]['db_device']}"
+            )
+            osd_new_db_size_mb = int(
+                int(int(new_device_size_bytes) / 1024 / 1024 / 4) * 4
+            )
+        else:
+            osd_new_db_size_mb = None
+
+    for osd in all_osds_on_block:
+        osd_id = osd["id"]
+        osd_fsid = osd["fsid"]
+
+        current_stage += 1
+        update(
+            celery,
+            f"Preparing LVM logical volume for OSD {osd_id} on new disk {new_device}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"lvcreate -L {new_osd_size_mb}M -n osd-block-{osd_fsid} ceph-{vg_uuid}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run lvcreate for OSD {osd_id}")
+            return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Preparing OSD {osd_id} on new disk {new_device}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm prepare --bluestore --osd-id {osd_id} --osd-fsid {osd_fsid} --data /dev/ceph-{vg_uuid}/osd-block-{osd_fsid}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run ceph-volume lvm prepare for OSD {osd_id}")
+            return
+
+    for osd in all_osds_on_block:
+        osd_id = osd["id"]
+        osd_fsid = osd["fsid"]
+
+        if osd["db_device"]:
+            db_device = f"osd-db/osd-{osd_id}"
+
+            current_stage += 1
+            update(
+                celery,
+                f"Preparing Bluestore DB volume for OSD {osd_id} on {db_device}",
+                current=current_stage,
+                total=total_stages,
+            )
+
+            retcode, stdout, stderr = common.run_os_command(
+                f"lvremove --force {db_device}"
+            )
+            log_info(celery, f"stdout: {stdout}")
+            log_info(celery, f"stderr: {stderr}")
+            if retcode:
+                fail(celery, f"Failed to run lvremove on {db_device}")
+                return
+
+            retcode, stdout, stderr = common.run_os_command(
+                f"lvcreate -L {osd_new_db_size_mb}M -n osd-{osd_id} --yes osd-db"
+            )
+            log_info(celery, f"stdout: {stdout}")
+            log_info(celery, f"stderr: {stderr}")
+            if retcode:
+                fail(celery, f"Failed to run lvcreate on {db_device}")
+                return
+
+            current_stage += 1
+            update(
+                celery,
+                f"Attaching Bluestore DB volume to OSD {osd_id}",
+                current=current_stage,
+                total=total_stages,
+            )
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph-volume lvm new-db --osd-id {osd_id} --osd-fsid {osd_fsid} --target {db_device}"
+            )
+            log_info(celery, f"stdout: {stdout}")
+            log_info(celery, f"stderr: {stderr}")
+            if retcode:
+                fail(celery, f"Failed to run ceph-volume lvm new-db for OSD {osd_id}")
+                return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Updating OSD {osd_id} in CRUSH map",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph osd crush add osd.{osd_id} {weight} root=default host={node}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run ceph osd crush add for OSD {osd_id}")
+            return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Activating OSD {osd_id}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm activate --bluestore {osd_id} {osd_fsid}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run ceph-volume lvm activate for OSD {osd_id}")
+            return
+
+        # Wait 1 second for it to activate
+        time.sleep(1)
+
+        # Verify it started
+        retcode, stdout, stderr = common.run_os_command(
+            f"systemctl status ceph-osd@{osd_id}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to start OSD {osd_id} process")
+            return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Updating OSD {osd_id} in PVC",
+            current=current_stage,
+            total=total_stages,
+        )
+        zkhandler.write(
+            [
+                (("osd.device", osd_id), new_device),
+                (("osd.vg", osd_id), f"ceph-{vg_uuid}"),
+                (("osd.lv", osd_id), f"osd-block-{osd_fsid}"),
+            ]
+        )
+
+    # 6. Log it
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully replaced OSD(s) {','.join(all_osds_on_block_ids)} on new disk {new_device}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def osd_worker_refresh_osd(
+    zkhandler,
+    celery,
+    node,
+    osd_id,
+    device,
+    ext_db_flag,
+):
+    # Try to determine if any other OSDs shared a block device with this OSD
+    _, osd_list = get_list_osd(zkhandler, None)
+    osd_block = zkhandler.read(("osd.device", osd_id))
+    all_osds_on_block = [
+        o for o in osd_list if o["node"] == node and o["device"] == osd_block
+    ]
+    all_osds_on_block_ids = [o["id"] for o in all_osds_on_block]
+
+    # Set up stages
+    current_stage = 0
+    total_stages = 1
+    _split_count = len(all_osds_on_block_ids)
+    total_stages = total_stages + 3 * int(_split_count)
+
+    start(
+        celery,
+        f"Refreshing/reimporting OSD(s) {','.join(all_osds_on_block_ids)} on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Handle a detect device if that is passed
+    if match(r"detect:", device):
+        ddevice = common.get_detect_device(device)
+        if ddevice is None:
+            fail(
+                celery,
+                f"Failed to determine block device from detect string {device}",
+            )
+            return
+        else:
+            log_info(
+                celery,
+                f"Determined block device {ddevice} from detect string {device}",
+            )
+            device = ddevice
+
+    retcode, stdout, stderr = common.run_os_command("ceph osd ls")
+    osd_list = stdout.split("\n")
+    if osd_id not in osd_list:
+        fail(
+            celery,
+            f"Could not find OSD {osd_id} in the cluster",
+        )
+        return
+
+    found_osds = osd_worker_helper_find_osds_from_block(device)
+    if osd_id not in found_osds.keys():
+        fail(
+            celery,
+            f"Could not find OSD {osd_id} on device {device}",
+        )
+        return
+
+    for osd in found_osds:
+        found_osd = found_osds[osd][0]
+        lv_device = found_osd["lv_path"]
+
+        _, osd_pvc_information = get_list_osd(zkhandler, osd)
+        osd_information = osd_pvc_information[0]
+
+        current_stage += 1
+        update(
+            celery,
+            "Querying for OSD on device",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm list --format json {lv_device}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run ceph-volume lvm list for OSD {osd}")
+            return
+
+        osd_detail = jloads(stdout)[osd][0]
+
+        osd_fsid = osd_detail["tags"]["ceph.osd_fsid"]
+        if osd_fsid != osd_information["fsid"]:
+            fail(
+                celery,
+                f"OSD {osd} FSID {osd_information['fsid']} does not match volume FSID {osd_fsid}; OSD cannot be imported",
+            )
+            return
+
+        dev_flags = f"--data {lv_device}"
+
+        if ext_db_flag:
+            db_device = "osd-db/osd-{osd}"
+            dev_flags += f" --block.db {db_device}"
+
+            if not path.exists(f"/dev/{db_device}"):
+                fail(
+                    celery,
+                    f"OSD Bluestore DB volume {db_device} does not exist; OSD cannot be imported",
+                )
+                return
+        else:
+            db_device = ""
+
+        current_stage += 1
+        update(
+            celery,
+            f"Activating OSD {osd}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"ceph-volume lvm activate --bluestore {osd} {osd_fsid}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to run ceph-volume lvm activate for OSD {osd}")
+            return
+
+        # Wait 1 second for it to activate
+        time.sleep(1)
+
+        # Verify it started
+        retcode, stdout, stderr = common.run_os_command(
+            f"systemctl status ceph-osd@{osd}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            fail(celery, f"Failed to start OSD {osd} process")
+            return
+
+        current_stage += 1
+        update(
+            celery,
+            f"Updating OSD {osd} in PVC",
+            current=current_stage,
+            total=total_stages,
+        )
+        zkhandler.write(
+            [
+                (("osd.device", osd), device),
+                (("osd.vg", osd), osd_detail["vg_name"]),
+                (("osd.lv", osd), osd_detail["lv_name"]),
+            ]
+        )
+
+    # 6. Log it
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully reimported OSD(s) {','.join(all_osds_on_block_ids)} on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def osd_worker_remove_osd(
+    zkhandler, celery, node, osd_id, force_flag=False, skip_zap_flag=False
+):
+    # Get initial data
+    data_device = zkhandler.read(("osd.device", osd_id))
+    if zkhandler.exists(("osd.db_device", osd_id)):
+        db_device = zkhandler.read(("osd.db_device", osd_id))
+    else:
+        db_device = None
+
+    # Set up stages
+    current_stage = 0
+    total_stages = 7
+    if not force_flag:
+        total_stages += 1
+    if not skip_zap_flag:
+        total_stages += 2
+    if db_device is not None:
+        total_stages += 1
+
+    start(
+        celery,
+        f"Removing OSD {osd_id}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Verify the OSD is present
+    retcode, stdout, stderr = common.run_os_command("ceph osd ls")
+    osd_list = stdout.split("\n")
+    if osd_id not in osd_list:
+        if not force_flag:
+            fail(
+                celery,
+                f"OSD {osd_id} not found in Ceph",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"OSD {osd_id} not found in Ceph; ignoring error due to force flag",
+            )
+
+    # 1. Set the OSD down and out so it will flush
+    current_stage += 1
+    update(
+        celery,
+        f"Setting OSD {osd_id} down",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(f"ceph osd down {osd_id}")
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to set OSD {osd_id} down",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to set OSD {osd_id} down; ignoring error due to force flag",
+            )
+
+    current_stage += 1
+    update(
+        celery,
+        f"Setting OSD {osd_id} out",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(f"ceph osd out {osd_id}")
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to set OSD {osd_id} down",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to set OSD {osd_id} down; ignoring error due to force flag",
+            )
+
+    # 2. Wait for the OSD to be safe to remove (but don't wait for rebalancing to complete)
+    if not force_flag:
+        current_stage += 1
+        update(
+            celery,
+            f"Waiting for OSD {osd_id} to be safe to remove",
+            current=current_stage,
+            total=total_stages,
+        )
+        tcount = 0
+        while True:
+            retcode, stdout, stderr = common.run_os_command(
+                f"ceph osd safe-to-destroy osd.{osd_id}"
+            )
+            if int(retcode) in [0, 11]:
+                break
+            else:
+                common.run_os_command(f"ceph osd down {osd_id}")
+                common.run_os_command(f"ceph osd out {osd_id}")
+                time.sleep(1)
+                tcount += 1
+            if tcount > 60:
+                log_warn(
+                    celery,
+                    f"Timed out (60s) waiting for OSD {osd_id} to be safe to remove; proceeding anyways",
+                )
+                break
+
+    # 3. Stop the OSD process and wait for it to be terminated
+    current_stage += 1
+    update(
+        celery,
+        f"Stopping OSD {osd_id}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(f"systemctl stop ceph-osd@{osd_id}")
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to stop OSD {osd_id} process",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to stop OSD {osd_id} process; ignoring error due to force flag",
+            )
+    time.sleep(5)
+
+    # 4. Delete OSD from ZK
+    current_stage += 1
+    update(
+        celery,
+        f"Deleting OSD {osd_id} from PVC",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    zkhandler.delete(("osd", osd_id), recursive=True)
+
+    # 5a. Destroy the OSD from Ceph
+    current_stage += 1
+    update(
+        celery,
+        f"Destroying OSD {osd_id}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph osd destroy {osd_id} --yes-i-really-mean-it"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to destroy OSD {osd_id}",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to destroy OSD {osd_id}; ignoring error due to force flag",
+            )
+    time.sleep(2)
+
+    # 5b. Purge the OSD from Ceph
+    current_stage += 1
+    update(
+        celery,
+        f"Removing OSD {osd_id} from CRUSH map",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    # Remove the OSD from the CRUSH map
+    retcode, stdout, stderr = common.run_os_command(f"ceph osd crush rm osd.{osd_id}")
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to remove OSD {osd_id} from CRUSH map",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to remove OSD {osd_id} from CRUSH map; ignoring error due to force flag",
+            )
+
+    # Purge the OSD
+    current_stage += 1
+    update(
+        celery,
+        f"Purging OSD {osd_id}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    if force_flag:
+        force_arg = "--force"
+    else:
+        force_arg = ""
+
+    retcode, stdout, stderr = common.run_os_command(
+        f"ceph osd purge {osd_id} {force_arg} --yes-i-really-mean-it"
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        if not force_flag:
+            fail(
+                celery,
+                f"Failed to purge OSD {osd_id}",
+            )
+            return
+        else:
+            log_warn(
+                celery,
+                f"Failed to purge OSD {osd_id}; ignoring error due to force flag",
+            )
+
+    # 6. Remove the DB device
+    if db_device is not None:
+        current_stage += 1
+        update(
+            celery,
+            f"Removing OSD DB logical volume {db_device}",
+            current=current_stage,
+            total=total_stages,
+        )
+        retcode, stdout, stderr = common.run_os_command(
+            f"lvremove --yes --force {db_device}"
+        )
+        log_info(celery, f"stdout: {stdout}")
+        log_info(celery, f"stderr: {stderr}")
+        if retcode:
+            if not force_flag:
+                fail(
+                    celery,
+                    f"Failed to remove OSD DB logical volume {db_device}",
+                )
+                return
+            else:
+                log_warn(
+                    celery,
+                    f"Failed to remove OSD DB logical volume {db_device}; ignoring error due to force flag",
+                )
+
+    if not skip_zap_flag:
+        current_stage += 1
+        update(
+            celery,
+            f"Zapping old disk {data_device} if possible",
+            current=current_stage,
+            total=total_stages,
+        )
+
+        # 7. Determine the block devices
+        found_osds = osd_worker_helper_find_osds_from_block(data_device)
+        if osd_id in found_osds.keys():
+            # Try to determine if any other OSDs shared a block device with this OSD
+            _, osd_list = get_list_osd(zkhandler, None)
+            all_osds_on_block = [
+                o for o in osd_list if o["node"] == node and o["device"] == data_device
+            ]
+
+            if len(all_osds_on_block) < 1:
+                log_info(
+                    celery,
+                    f"Found no peer split OSD(s) on {data_device}; zapping disk",
+                )
+                retcode, stdout, stderr = common.run_os_command(
+                    f"ceph-volume lvm zap --destroy {data_device}"
+                )
+                log_info(celery, f"stdout: {stdout}")
+                log_info(celery, f"stderr: {stderr}")
+                if retcode:
+                    if not force_flag:
+                        fail(
+                            celery,
+                            f"Failed to run ceph-volume lvm zap on device {data_device}",
+                        )
+                        return
+                    else:
+                        log_warn(
+                            celery,
+                            f"Failed to run ceph-volume lvm zap on device {data_device}; ignoring error due to force flag",
+                        )
+            else:
+                log_warn(
+                    celery,
+                    f"Found {len(all_osds_on_block)} OSD(s) still remaining on {data_device}; skipping zap",
+                )
+        else:
+            log_warn(
+                celery,
+                f"Could not find OSD {osd_id} on device {data_device}; skipping zap",
+            )
+
+    # 6. Log it
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully removed OSD {osd_id}",
+        current=current_stage,
+        total=total_stages,
+    )
+
+
+def osd_worker_add_db_vg(zkhandler, celery, device):
+    # Set up stages
+    current_stage = 0
+    total_stages = 4
+
+    start(
+        celery,
+        f"Creating new OSD database volume group on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    # Check if an existsing volume group exists
+    retcode, stdout, stderr = common.run_os_command("vgdisplay osd-db")
+    if retcode != 5:
+        fail(
+            celery,
+            "Ceph OSD database VG already exists",
+        )
+        return
+
+    # Handle a detect device if that is passed
+    if match(r"detect:", device):
+        ddevice = common.get_detect_device(device)
+        if ddevice is None:
+            fail(
+                celery,
+                f"Failed to determine block device from detect string {device}",
+            )
+            return
+        else:
+            log_info(
+                celery,
+                f"Determined block device {ddevice} from detect string {device}",
+            )
+            device = ddevice
+
+    # 1. Create an empty partition table
+    current_stage += 1
+    update(
+        celery,
+        f"Creating partitions on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command("sgdisk --clear {}".format(device))
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(
+            celery,
+            f"Failed to create partition table on device {device}",
+        )
+        return
+
+    retcode, stdout, stderr = common.run_os_command(
+        "sgdisk --new 1:: --typecode 1:8e00 {}".format(device)
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(
+            celery,
+            f"Failed to set partition type to LVM PV on device {device}",
+        )
+        return
+
+    # Handle the partition ID portion
+    if search(r"by-path", device) or search(r"by-id", device):
+        # /dev/disk/by-path/pci-0000:03:00.0-scsi-0:1:0:0 -> pci-0000:03:00.0-scsi-0:1:0:0-part1
+        partition = "{}-part1".format(device)
+    elif search(r"nvme", device):
+        # /dev/nvme0n1 -> nvme0n1p1
+        partition = "{}p1".format(device)
+    else:
+        # /dev/sda -> sda1
+        # No other '/dev/disk/by-*' types are valid for raw block devices anyways
+        partition = "{}1".format(device)
+
+    # 2. Create the PV
+    current_stage += 1
+    update(
+        celery,
+        f"Creating LVM PV on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        "pvcreate --force {}".format(partition)
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(
+            celery,
+            f"Failed to create LVM PV on device {device}",
+        )
+        return
+
+    # 2. Create the VG (named 'osd-db')
+    current_stage += 1
+    update(
+        celery,
+        f'Creating LVM VG "osd-db" on device {device}',
+        current=current_stage,
+        total=total_stages,
+    )
+    retcode, stdout, stderr = common.run_os_command(
+        "vgcreate --force osd-db {}".format(partition)
+    )
+    log_info(celery, f"stdout: {stdout}")
+    log_info(celery, f"stderr: {stderr}")
+    if retcode:
+        fail(
+            celery,
+            f"Failed to create LVM VG on device {device}",
+        )
+        return
+
+    # Log it
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully created new OSD DB volume group on device {device}",
+        current=current_stage,
+        total=total_stages,
+    )

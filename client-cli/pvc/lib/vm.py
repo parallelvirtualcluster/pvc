@@ -415,7 +415,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     return retstatus, response.json().get("message", "")
 
 
-def vm_locks(config, vm, wait_flag=False):
+def vm_locks(config, vm, wait_flag):
     """
     Flush RBD locks of (stopped) VM
 

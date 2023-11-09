@@ -164,7 +164,7 @@ def format_raw_output(config, status_data):
 #
 # OSD DB VG functions
 #
-def ceph_osd_db_vg_add(config, node, device):
+def ceph_osd_db_vg_add(config, node, device, wait_flag):
     """
     Add new Ceph OSD database volume group
 
@@ -175,12 +175,21 @@ def ceph_osd_db_vg_add(config, node, device):
     params = {"node": node, "device": device}
     response = call_api(config, "post", "/storage/ceph/osddb", params=params)
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
 #
@@ -231,7 +240,9 @@ def ceph_osd_list(config, limit):
         return False, response.json().get("message", "")
 
 
-def ceph_osd_add(config, node, device, weight, ext_db_ratio, ext_db_size, osd_count):
+def ceph_osd_add(
+    config, node, device, weight, ext_db_ratio, ext_db_size, osd_count, wait_flag
+):
     """
     Add new Ceph OSD
 
@@ -254,16 +265,25 @@ def ceph_osd_add(config, node, device, weight, ext_db_ratio, ext_db_size, osd_co
 
     response = call_api(config, "post", "/storage/ceph/osd", params=params)
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
 def ceph_osd_replace(
-    config, osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size
+    config, osdid, new_device, old_device, weight, ext_db_ratio, ext_db_size, wait_flag
 ):
     """
     Replace an existing Ceph OSD with a new device
@@ -288,15 +308,24 @@ def ceph_osd_replace(
 
     response = call_api(config, "post", f"/storage/ceph/osd/{osdid}", params=params)
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
-def ceph_osd_refresh(config, osdid, device):
+def ceph_osd_refresh(config, osdid, device, wait_flag):
     """
     Refresh (reimport) an existing Ceph OSD with device {device}
 
@@ -309,15 +338,24 @@ def ceph_osd_refresh(config, osdid, device):
     }
     response = call_api(config, "put", f"/storage/ceph/osd/{osdid}", params=params)
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
-def ceph_osd_remove(config, osdid, force_flag):
+def ceph_osd_remove(config, osdid, force_flag, wait_flag):
     """
     Remove Ceph OSD
 
@@ -330,12 +368,21 @@ def ceph_osd_remove(config, osdid, force_flag):
         config, "delete", "/storage/ceph/osd/{osdid}".format(osdid=osdid), params=params
     )
 
-    if response.status_code == 200:
-        retstatus = True
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
     else:
-        retstatus = False
+        retvalue = False
+        retdata = response.json().get("message", "")
 
-    return retstatus, response.json().get("message", "")
+    return retvalue, retdata
 
 
 def ceph_osd_state(config, osdid, state):

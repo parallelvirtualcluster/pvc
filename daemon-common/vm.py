@@ -1782,11 +1782,14 @@ def vm_worker_helper_getdom(tuuid):
 
 
 def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
+    current_stage = 0
+    total_stages = 3
+
     start(
         celery,
         f"Flushing RBD locks for VM {domain} [forced={force_unlock}]",
-        current=1,
-        total=4,
+        current=current_stage,
+        total=total_stages,
     )
 
     dom_uuid = getDomainUUID(zkhandler, domain)
@@ -1803,7 +1806,13 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
     # Get the list of RBD images
     rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
 
-    update(celery, f"Obtaining RBD locks for VM {domain}", current=2, total=4)
+    current_stage += 1
+    update(
+        celery,
+        f"Obtaining RBD locks for VM {domain}",
+        current=current_stage,
+        total=total_stages,
+    )
 
     # Prepare a list of locks
     rbd_locks = list()
@@ -1825,14 +1834,23 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
         try:
             lock_list = jloads(lock_list_stdout)
         except Exception as e:
-            fail(celery, f"Failed to parse JSON lock list for volume {rbd}: {e}")
+            fail(
+                celery,
+                f"Failed to parse JSON lock list for volume {rbd}: {e}",
+            )
             return
 
         if lock_list:
             for lock in lock_list:
                 rbd_locks.append({"rbd": rbd, "lock": lock})
 
-    update(celery, f"Freeing RBD locks for VM {domain}", current=3, total=4)
+    current_stage += 1
+    update(
+        celery,
+        f"Freeing RBD locks for VM {domain}",
+        current=current_stage,
+        total=total_stages,
+    )
 
     for _lock in rbd_locks:
         rbd = _lock["rbd"]
@@ -1850,18 +1868,28 @@ def vm_worker_flush_locks(zkhandler, celery, domain, force_unlock=False):
             fail(
                 celery,
                 f"Failed to free RBD lock {lock['id']} on volume {rbd}: {lock_remove_stderr}",
-                current=3,
-                total=4,
             )
             return
 
+    current_stage += 1
     return finish(
-        celery, f"Successfully flushed RBD locks for VM {domain}", current=4, total=4
+        celery,
+        f"Successfully flushed RBD locks for VM {domain}",
+        current=4,
+        total=4,
     )
 
 
 def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
-    start(celery, f"Hot-attaching XML device to VM {domain}")
+    current_stage = 0
+    total_stages = 1
+
+    start(
+        celery,
+        f"Hot-attaching XML device to VM {domain}",
+        current=current_stage,
+        total=total_stages,
+    )
 
     dom_uuid = getDomainUUID(zkhandler, domain)
 
@@ -1875,7 +1903,10 @@ def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
 
     dom = vm_worker_helper_getdom(dom_uuid)
     if dom is None:
-        fail(celery, f"Failed to find Libvirt object for VM {domain}")
+        fail(
+            celery,
+            f"Failed to find Libvirt object for VM {domain}",
+        )
         return
 
     try:
@@ -1884,11 +1915,25 @@ def vm_worker_attach_device(zkhandler, celery, domain, xml_spec):
         fail(celery, e)
         return
 
-    return finish(celery, f"Successfully hot-attached XML device to VM {domain}")
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully hot-attached XML device to VM {domain}",
+        current=current_stage,
+        total=total_stages,
+    )
 
 
 def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
-    start(celery, f"Hot-detaching XML device from VM {domain}")
+    current_stage = 0
+    total_stages = 1
+
+    start(
+        celery,
+        f"Hot-detaching XML device from VM {domain}",
+        current=current_stage,
+        total_stages=total_stages,
+    )
 
     dom_uuid = getDomainUUID(zkhandler, domain)
 
@@ -1902,7 +1947,10 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
 
     dom = vm_worker_helper_getdom(dom_uuid)
     if dom is None:
-        fail(celery, f"Failed to find Libvirt object for VM {domain}")
+        fail(
+            celery,
+            f"Failed to find Libvirt object for VM {domain}",
+        )
         return
 
     try:
@@ -1911,4 +1959,10 @@ def vm_worker_detach_device(zkhandler, celery, domain, xml_spec):
         fail(celery, e)
         return
 
-    return finish(celery, f"Successfully hot-detached XML device from VM {domain}")
+    current_stage += 1
+    return finish(
+        celery,
+        f"Successfully hot-detached XML device from VM {domain}",
+        current=current_stage,
+        total_stages=total_stages,
+    )
