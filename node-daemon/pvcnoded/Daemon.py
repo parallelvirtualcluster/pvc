@@ -903,14 +903,6 @@ def entrypoint():
                 )
 
     if config["enable_hypervisor"]:
-        # VM command pipeline key
-        @zkhandler.zk_conn.DataWatch(zkhandler.schema.path("base.cmd.domain"))
-        def run_domain_command(data, stat, event=""):
-            if data:
-                VMInstance.vm_command(
-                    zkhandler, logger, this_node, data.decode("ascii")
-                )
-
         # VM domain objects
         @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path("base.domain"))
         def update_domains(new_domain_list):
@@ -942,14 +934,6 @@ def entrypoint():
                 d_node[node].update_domain_list(d_domain)
 
     if config["enable_storage"]:
-        # Ceph command pipeline key
-        @zkhandler.zk_conn.DataWatch(zkhandler.schema.path("base.cmd.ceph"))
-        def run_ceph_command(data, stat, event=""):
-            if data:
-                CephInstance.ceph_command(
-                    zkhandler, logger, this_node, data.decode("ascii"), d_osd
-                )
-
         # OSD objects
         @zkhandler.zk_conn.ChildrenWatch(zkhandler.schema.path("base.osd"))
         def update_osds(new_osd_list):

@@ -22,7 +22,6 @@
 import uuid
 import time
 import libvirt
-import json
 
 from threading import Thread
 
@@ -31,8 +30,6 @@ from xml.etree import ElementTree
 import daemon_lib.common as common
 
 import pvcnoded.objects.VMConsoleWatcherInstance as VMConsoleWatcherInstance
-
-import daemon_lib.common as daemon_common
 
 
 class VMInstance(object):
@@ -116,7 +113,7 @@ class VMInstance(object):
             if self.dom is not None:
                 memory = int(self.dom.info()[2] / 1024)
             else:
-                domain_information = daemon_common.getInformationFromXML(
+                domain_information = common.getInformationFromXML(
                     self.zkhandler, self.domuuid
                 )
                 memory = int(domain_information["memory"])
@@ -961,98 +958,3 @@ class VMInstance(object):
 
         # Return the dom object (or None)
         return dom
-
-    # Flush the locks of a VM based on UUID
-    @staticmethod
-    def flush_locks(zkhandler, logger, dom_uuid, this_node=None):
-        logger.out('Flushing RBD locks for VM "{}"'.format(dom_uuid), state="i")
-        # Get the list of RBD images
-        rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
-
-        for rbd in rbd_list:
-            # Check if a lock exists
-            (
-                lock_list_retcode,
-                lock_list_stdout,
-                lock_list_stderr,
-            ) = common.run_os_command("rbd lock list --format json {}".format(rbd))
-            if lock_list_retcode != 0:
-                logger.out(
-                    'Failed to obtain lock list for volume "{}"'.format(rbd), state="e"
-                )
-                continue
-
-            try:
-                lock_list = json.loads(lock_list_stdout)
-            except Exception as e:
-                logger.out(
-                    'Failed to parse lock list for volume "{}": {}'.format(rbd, e),
-                    state="e",
-                )
-                continue
-
-            # If there's at least one lock
-            if lock_list:
-                # Loop through the locks
-                for lock in lock_list:
-                    if (
-                        this_node is not None
-                        and zkhandler.read(("domain.state", dom_uuid)) != "stop"
-                        and lock["address"].split(":")[0] != this_node.storage_ipaddr
-                    ):
-                        logger.out(
-                            "RBD lock does not belong to this host (lock owner: {}): freeing this lock would be unsafe, aborting".format(
-                                lock["address"].split(":")[0]
-                            ),
-                            state="e",
-                        )
-                        zkhandler.write(
-                            [
-                                (("domain.state", dom_uuid), "fail"),
-                                (
-                                    ("domain.failed_reason", dom_uuid),
-                                    "Could not safely free RBD lock {} ({}) on volume {}; stop VM and flush locks manually".format(
-                                        lock["id"], lock["address"], rbd
-                                    ),
-                                ),
-                            ]
-                        )
-                        break
-                    # Free the lock
-                    (
-                        lock_remove_retcode,
-                        lock_remove_stdout,
-                        lock_remove_stderr,
-                    ) = common.run_os_command(
-                        'rbd lock remove {} "{}" "{}"'.format(
-                            rbd, lock["id"], lock["locker"]
-                        )
-                    )
-                    if lock_remove_retcode != 0:
-                        logger.out(
-                            'Failed to free RBD lock "{}" on volume "{}": {}'.format(
-                                lock["id"], rbd, lock_remove_stderr
-                            ),
-                            state="e",
-                        )
-                        zkhandler.write(
-                            [
-                                (("domain.state", dom_uuid), "fail"),
-                                (
-                                    ("domain.failed_reason", dom_uuid),
-                                    "Could not free RBD lock {} ({}) on volume {}: {}".format(
-                                        lock["id"],
-                                        lock["address"],
-                                        rbd,
-                                        lock_remove_stderr,
-                                    ),
-                                ),
-                            ]
-                        )
-                        break
-                    logger.out(
-                        'Freed RBD lock "{}" on volume "{}"'.format(lock["id"], rbd),
-                        state="o",
-                    )
-
-        return True

@@ -138,53 +138,6 @@ def is_migrated(zkhandler, domain):
         return False
 
 
-def flush_locks(zkhandler, domain):
-    # Validate that VM exists in cluster
-    dom_uuid = getDomainUUID(zkhandler, domain)
-    if not dom_uuid:
-        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
-
-    # Verify that the VM is in a stopped state; freeing locks is not safe otherwise
-    state = zkhandler.read(("domain.state", dom_uuid))
-    if state != "stop":
-        return (
-            False,
-            'ERROR: VM "{}" is not in stopped state; flushing RBD locks on a running VM is dangerous.'.format(
-                domain
-            ),
-        )
-
-    # Tell the cluster to create a new OSD for the host
-    flush_locks_string = "flush_locks {}".format(dom_uuid)
-    zkhandler.write([("base.cmd.domain", flush_locks_string)])
-    # Wait 1/2 second for the cluster to get the message and start working
-    time.sleep(0.5)
-    # Acquire a read lock, so we get the return exclusively
-    lock = zkhandler.readlock("base.cmd.domain")
-    with lock:
-        try:
-            result = zkhandler.read("base.cmd.domain").split()[0]
-            if result == "success-flush_locks":
-                message = 'Flushed locks on VM "{}"'.format(domain)
-                success = True
-            else:
-                message = 'ERROR: Failed to flush locks on VM "{}"; check node logs for details.'.format(
-                    domain
-                )
-                success = False
-        except Exception:
-            message = "ERROR: Command ignored by node."
-            success = False
-
-    # Acquire a write lock to ensure things go smoothly
-    lock = zkhandler.writelock("base.cmd.domain")
-    with lock:
-        time.sleep(0.5)
-        zkhandler.write([("base.cmd.domain", "")])
-
-    return success, message
-
-
 def define_vm(
     zkhandler,
     config_data,
