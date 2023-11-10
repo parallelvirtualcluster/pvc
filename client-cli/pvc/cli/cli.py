@@ -247,6 +247,8 @@ def confirm_opt(message):
                     print("Aborted.")
                     exit(0)
 
+                click.echo()
+
             del kwargs["confirm_flag"]
 
             return function(*args, **kwargs)

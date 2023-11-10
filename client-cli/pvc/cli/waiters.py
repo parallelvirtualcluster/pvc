@@ -91,9 +91,18 @@ def wait_for_celery_task(CLI_CONFIG, task_detail):
 
     # Start following the task state, updating progress as we go
     total_task = task_status.get("total")
+    echo(
+        CLI_CONFIG,
+        task_status.get("status") + ":",
+    )
     with progressbar(length=total_task, show_eta=False) as bar:
         last_task = 0
-        maxlen = 0
+        maxlen = 21
+        echo(
+            CLI_CONFIG,
+            "  " + "Gathering information",
+            newline=False,
+        )
         while True:
             sleep(0.25)
             if task_status.get("state") != "RUNNING":
