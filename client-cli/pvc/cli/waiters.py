@@ -79,7 +79,7 @@ def wait_for_celery_task(CLI_CONFIG, task_detail):
     # Wait for the task to start
     echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
     while True:
-        sleep(0.25)
+        sleep(0.5)
         task_status = pvc.lib.common.task_status(
             CLI_CONFIG, task_id=task_id, is_watching=True
         )
@@ -104,7 +104,7 @@ def wait_for_celery_task(CLI_CONFIG, task_detail):
             newline=False,
         )
         while True:
-            sleep(0.25)
+            sleep(0.5)
             if task_status.get("state") != "RUNNING":
                 break
             if task_status.get("current") > last_task:

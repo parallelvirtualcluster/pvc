@@ -36,7 +36,7 @@ def start(celery, msg, current=0, total=1):
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
-    sleep(0.5)
+    sleep(1)
 
 
 def fail(celery, msg, current=1, total=1):
@@ -67,7 +67,7 @@ def update(celery, msg, current=1, total=2):
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
-    sleep(0.5)
+    sleep(1)
 
 
 def finish(celery, msg, current=2, total=2):
@@ -77,6 +77,6 @@ def finish(celery, msg, current=2, total=2):
         state="RUNNING",
         meta={"current": current, "total": total, "status": "Finishing up"},
     )
-    sleep(0.5)
+    sleep(1)
     logger.info(f"Success {current}/{total}: {msg}")
     return {"status": msg, "current": current, "total": total}
