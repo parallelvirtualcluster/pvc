@@ -1106,7 +1106,7 @@ def osd_worker_add_osd(
     split_count=None,
 ):
     current_stage = 0
-    total_stages = 4
+    total_stages = 5
     if split_count is None:
         _split_count = 1
     else:
@@ -1398,7 +1398,30 @@ def osd_worker_add_osd(
             ]
         )
 
-    # 6. Log it
+    # 6. Wait for OSD to check in
+    current_stage += 1
+    update(
+        celery,
+        "Waiting for new OSD(s) to report stats",
+        current=current_stage,
+        total=total_stages,
+    )
+
+    last_osd = None
+    for osd in created_osds:
+        last_osd = osd
+
+    while (
+        jloads(
+            zkhandler.read(
+                ("osd.stats", created_osds[last_osd][0]["tags"]["ceph.osd_id"])
+            )
+        )["weight"]
+        == "|"
+    ):
+        time.sleep(1)
+
+    # 7. Log it
     current_stage += 1
     return finish(
         celery,
@@ -2020,7 +2043,7 @@ def osd_worker_remove_osd(
         total_stages += 1
     if not skip_zap_flag:
         total_stages += 2
-    if db_device is not None:
+    if db_device:
         total_stages += 1
 
     start(
@@ -2243,7 +2266,7 @@ def osd_worker_remove_osd(
             )
 
     # 6. Remove the DB device
-    if db_device is not None:
+    if db_device:
         current_stage += 1
         update(
             celery,
