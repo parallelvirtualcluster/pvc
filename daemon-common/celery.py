@@ -33,6 +33,8 @@ class TaskFailure(Exception):
 def start(celery, msg, current=0, total=1):
     logger = getLogger(__name__)
     logger.info(f"Starting {current}/{total}: {msg}")
+    if celery is None:
+        return
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
@@ -64,6 +66,8 @@ def log_err(celery, msg):
 def update(celery, msg, current=1, total=2):
     logger = getLogger(__name__)
     logger.info(f"Task update {current}/{total}: {msg}")
+    if celery is None:
+        return
     celery.update_state(
         state="RUNNING", meta={"current": current, "total": total, "status": msg}
     )
@@ -73,6 +77,8 @@ def update(celery, msg, current=1, total=2):
 def finish(celery, msg, current=2, total=2):
     logger = getLogger(__name__)
     logger.info(f"Task update {current}/{total}: Finishing up")
+    if celery is None:
+        return
     celery.update_state(
         state="RUNNING",
         meta={"current": current, "total": total, "status": "Finishing up"},

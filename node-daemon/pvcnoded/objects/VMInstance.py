@@ -24,8 +24,8 @@ import time
 import libvirt
 
 from threading import Thread
-
 from xml.etree import ElementTree
+from json import loads as jloads
 
 import daemon_lib.common as common
 
@@ -283,9 +283,49 @@ class VMInstance(object):
             self.logger.out(
                 "Flushing RBD locks", state="i", prefix="Domain {}".format(self.domuuid)
             )
-            VMInstance.flush_locks(
-                self.zkhandler, self.logger, self.domuuid, self.this_node
-            )
+
+            rbd_list = self.zkhandler.read(
+                ("domain.storage.volumes", self.domuuid)
+            ).split(",")
+
+            locks = list()
+            for rbd in rbd_list:
+                retcode, stdout, stderr = common.run_os_command(
+                    f"rbd lock list --format json {rbd}"
+                )
+                if retcode == 0:
+                    _locks = jloads(stdout)
+                    for lock in _locks:
+                        lock["rbd"] = rbd
+                        locks.append(lock)
+
+            for lock in locks:
+                lockid = lock["id"]
+                locker = lock["locker"]
+                owner = lock["address"].split(":")[0]
+                rbd = lock["rbd"]
+
+                if owner == self.this_node.storage_ipaddr:
+                    retcode, stdout, stderr = common.run_os_command(
+                        f'rbd lock remove {rbd} "{lockid}" "{locker}"'
+                    )
+                else:
+                    self.logger.out(
+                        "RBD lock does not belong to this host (owner {owner}) so freeing this long is dangerous; aborting VM start",
+                        state="e",
+                        prefix="Domain {}".format(self.domuuid),
+                    )
+                    self.zkhandler.write(
+                        [
+                            (("domain.state", self.domuuid), "fail"),
+                            (
+                                ("domain.failed_reason", self.domuuid),
+                                f"Could not safely free RBD lock {lockid} ({owner}) on volume {rbd}; stop VM and flush locks manually",
+                            ),
+                        ]
+                    )
+                    break
+
             if self.zkhandler.read(("domain.state", self.domuuid)) == "fail":
                 lv_conn.close()
                 self.dom = None

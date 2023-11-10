@@ -23,7 +23,7 @@ import time
 
 import daemon_lib.common as common
 
-from pvcnoded.objects.VMInstance import VMInstance
+from daemon_lib.vm import vm_worker_flush_locks
 
 
 #
@@ -121,7 +121,7 @@ def migrateFromFencedNode(zkhandler, node_name, config, logger):
 
     # Migrate a VM after a flush
     def fence_migrate_vm(dom_uuid):
-        VMInstance.flush_locks(zkhandler, logger, dom_uuid)
+        vm_worker_flush_locks(zkhandler, None, dom_uuid, force_unlock=True)
 
         target_node = common.findTargetNode(zkhandler, dom_uuid)
 
