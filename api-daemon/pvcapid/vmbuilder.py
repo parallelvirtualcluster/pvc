@@ -152,10 +152,7 @@ def chroot(destination):
         os.fchdir(fake_root)
         yield
     except Exception:
-        fail(
-            None,
-            f"Failed to chroot into {destination}",
-        )
+        raise
     finally:
         os.fchdir(real_root)
         os.chroot(".")
@@ -187,10 +184,7 @@ def open_db(config):
     try:
         yield cur
     except Exception:
-        fail(
-            None,
-            "Failed to yield database handle",
-        )
+        raise
     finally:
         conn.commit()
         cur.close()
@@ -213,10 +207,7 @@ def open_zk(config):
     try:
         yield zkhandler
     except Exception:
-        fail(
-            None,
-            "Failed to yield Zookeeper connection",
-        )
+        raise
     finally:
         zkhandler.disconnect()
         del zkhandler
