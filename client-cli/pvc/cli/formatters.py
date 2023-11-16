@@ -284,7 +284,8 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
     task_list_output = []
 
     # Determine optimal column widths
-    task_id_length = 7
+    task_id_length = 3
+    task_name_length = 5
     task_type_length = 7
     task_worker_length = 7
     task_arg_name_length = 5
@@ -296,6 +297,10 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
         _task_id_length = len(str(task["id"])) + 1
         if _task_id_length > task_id_length:
             task_id_length = _task_id_length
+        # task_name column
+        _task_name_length = len(str(task["name"])) + 1
+        if _task_name_length > task_name_length:
+            task_name_length = _task_name_length
         # task_worker column
         _task_worker_length = len(str(task["worker"])) + 1
         if _task_worker_length > task_worker_length:
@@ -316,8 +321,8 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
             if _task_arg_name_length > task_arg_name_length:
                 task_arg_name_length = _task_arg_name_length
 
-            if len(str(arg_data)) > 20:
-                arg_data = arg_data[:20] + "..."
+            if len(str(arg_data)) > 17:
+                arg_data = arg_data[:17] + "..."
 
             # task_arg_data column
             _task_arg_data_length = len(str(arg_data)) + 1
@@ -334,39 +339,50 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
             bold=ansii["bold"],
             end_bold=ansii["end"],
             task_header_length=task_id_length
+            + task_name_length
             + task_type_length
             + task_worker_length
-            + 2,
+            + 3,
             arg_header_length=task_arg_name_length + task_arg_data_length,
             task_header="Tasks "
             + "".join(
                 [
                     "-"
                     for _ in range(
-                        6, task_id_length + task_type_length + task_worker_length + 1
+                        6,
+                        task_id_length
+                        + task_name_length
+                        + task_type_length
+                        + task_worker_length
+                        + 2,
                     )
                 ]
             ),
             arg_header="Arguments "
             + "".join(
-                ["-" for _ in range(12, task_arg_name_length + task_arg_data_length)]
+                [
+                    "-"
+                    for _ in range(11, task_arg_name_length + task_arg_data_length + 1)
+                ]
             ),
         )
     )
 
     task_list_output.append(
-        "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+        "{bold}{task_id: <{task_id_length}} {task_name: <{task_name_length}} {task_type: <{task_type_length}} \
 {task_worker: <{task_worker_length}} \
 {task_arg_name: <{task_arg_name_length}} \
 {task_arg_data: <{task_arg_data_length}}{end_bold}".format(
             task_id_length=task_id_length,
+            task_name_length=task_name_length,
             task_type_length=task_type_length,
             task_worker_length=task_worker_length,
             task_arg_name_length=task_arg_name_length,
             task_arg_data_length=task_arg_data_length,
             bold=ansii["bold"],
             end_bold=ansii["end"],
-            task_id="Job ID",
+            task_id="ID",
+            task_name="Name",
             task_type="Status",
             task_worker="Worker",
             task_arg_name="Name",
@@ -377,11 +393,12 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
     # Format the string (elements)
     for task in sorted(tasks, key=lambda i: i.get("type", None)):
         task_list_output.append(
-            "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+            "{bold}{task_id: <{task_id_length}} {task_name: <{task_name_length}} {task_type: <{task_type_length}} \
 {task_worker: <{task_worker_length}} \
 {task_arg_name: <{task_arg_name_length}} \
 {task_arg_data: <{task_arg_data_length}}{end_bold}".format(
                 task_id_length=task_id_length,
+                task_name_length=task_name_length,
                 task_type_length=task_type_length,
                 task_worker_length=task_worker_length,
                 task_arg_name_length=task_arg_name_length,
@@ -389,6 +406,7 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
                 bold="",
                 end_bold="",
                 task_id=task["id"],
+                task_name=task["name"],
                 task_type=task["type"],
                 task_worker=task["worker"],
                 task_arg_name=str(task["kwargs"][0]["name"]),
@@ -397,11 +415,12 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
         )
         for arg in task["kwargs"][1:]:
             task_list_output.append(
-                "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+                "{bold}{task_id: <{task_id_length}} {task_name: <{task_name_length}} {task_type: <{task_type_length}} \
 {task_worker: <{task_worker_length}} \
 {task_arg_name: <{task_arg_name_length}} \
 {task_arg_data: <{task_arg_data_length}}{end_bold}".format(
                     task_id_length=task_id_length,
+                    task_name_length=task_name_length,
                     task_type_length=task_type_length,
                     task_worker_length=task_worker_length,
                     task_arg_name_length=task_arg_name_length,
@@ -409,6 +428,7 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
                     bold="",
                     end_bold="",
                     task_id="",
+                    task_name="",
                     task_type="",
                     task_worker="",
                     task_arg_name=str(arg["name"]),

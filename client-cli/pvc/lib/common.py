@@ -267,6 +267,7 @@ def task_status(config, task_id=None, is_watching=False):
                         task["type"] = task_type
                     task["worker"] = task_host
                     task["id"] = task_job.get("id")
+                    task["name"] = task_job.get("name")
                     try:
                         task["args"] = literal_eval(task_job.get("args"))
                     except Exception:
