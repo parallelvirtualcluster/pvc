@@ -316,8 +316,8 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
             if _task_arg_name_length > task_arg_name_length:
                 task_arg_name_length = _task_arg_name_length
 
-            if len(str(arg_data)) > 30:
-                arg_data = arg_data[:30]
+            if len(str(arg_data)) > 20:
+                arg_data = arg_data[:20] + "..."
 
             # task_arg_data column
             _task_arg_data_length = len(str(arg_data)) + 1
