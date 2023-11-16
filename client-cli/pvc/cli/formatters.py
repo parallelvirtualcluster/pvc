@@ -307,6 +307,10 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
 
         updated_kwargs = list()
         for arg_name, arg_data in task["kwargs"].items():
+            # Skip the "run_on" argument
+            if arg_name == "run_on":
+                continue
+
             # task_arg_name column
             _task_arg_name_length = len(str(arg_name)) + 1
             if _task_arg_name_length > task_arg_name_length:
