@@ -698,7 +698,6 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.setup()
     except Exception as e:
-        general_cleanup()
         fail_clean(
             celery,
             f"Error in script setup() step: {e}",
@@ -720,7 +719,6 @@ def create_vm(
             with chroot(temp_dir):
                 vm_schema = vm_builder.create()
         except Exception as e:
-            general_cleanup()
             fail_clean(
                 celery,
                 f"Error in script create() step: {e}",
@@ -766,9 +764,6 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.prepare()
     except Exception as e:
-        with chroot(temp_dir):
-            vm_builder.cleanup()
-        general_cleanup()
         fail_clean(
             celery,
             f"Error in script prepare() step: {e}",
@@ -789,9 +784,6 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.install()
     except Exception as e:
-        with chroot(temp_dir):
-            vm_builder.cleanup()
-        general_cleanup()
         fail_clean(
             celery,
             f"Error in script install() step: {e}",
