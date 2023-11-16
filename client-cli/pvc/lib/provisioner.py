@@ -25,7 +25,7 @@ from requests_toolbelt.multipart.encoder import (
 )
 
 import pvc.lib.ansiprint as ansiprint
-from pvc.lib.common import UploadProgressBar, call_api
+from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
 from ast import literal_eval
 
 
@@ -700,7 +700,7 @@ def profile_remove(config, name):
     return retvalue, response.json().get("message", "")
 
 
-def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_args):
+def vm_create(config, name, profile, define_flag, start_flag, script_args, wait_flag):
     """
     Create a new VM named {name} with profile {profile}
 
@@ -717,18 +717,7 @@ def vm_create(config, name, profile, wait_flag, define_flag, start_flag, script_
     }
     response = call_api(config, "post", "/provisioner/create", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        if not wait_flag:
-            retdata = "Task ID: {}".format(response.json()["task_id"])
-        else:
-            # Just return the task_id raw, instead of formatting it
-            retdata = response.json()["task_id"]
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def task_status(config, task_id=None, is_watching=False):

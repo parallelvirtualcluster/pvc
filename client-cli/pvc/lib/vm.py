@@ -23,7 +23,7 @@ import time
 import re
 
 import pvc.lib.ansiprint as ansiprint
-from pvc.lib.common import call_api, format_bytes, format_metric
+from pvc.lib.common import call_api, format_bytes, format_metric, get_wait_retdata
 
 
 #
@@ -425,21 +425,7 @@ def vm_locks(config, vm, wait_flag):
     """
     response = call_api(config, "post", f"/vm/{vm}/locks")
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def vm_backup(config, vm, backup_path, incremental_parent=None, retain_snapshot=False):

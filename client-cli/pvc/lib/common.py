@@ -202,6 +202,24 @@ def call_api(
     return response
 
 
+def get_wait_retdata(response, wait_flag):
+    if response.status_code == 202:
+        retvalue = True
+        retjson = response.json()
+        if not wait_flag:
+            retdata = (
+                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
+            )
+        else:
+            # Just return the task JSON without formatting
+            retdata = response.json()
+    else:
+        retvalue = False
+        retdata = response.json().get("message", "")
+
+    return retvalue, retdata
+
+
 def task_status(config, task_id=None, is_watching=False):
     """
     Get information about Celery job {task_id}, or all tasks if None

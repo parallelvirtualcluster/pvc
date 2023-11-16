@@ -29,7 +29,7 @@ from requests_toolbelt.multipart.encoder import (
 )
 
 import pvc.lib.ansiprint as ansiprint
-from pvc.lib.common import UploadProgressBar, call_api
+from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
 
 #
 # Supplemental functions
@@ -175,21 +175,7 @@ def ceph_osd_db_vg_add(config, node, device, wait_flag):
     params = {"node": node, "device": device}
     response = call_api(config, "post", "/storage/ceph/osddb", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 #
@@ -265,21 +251,7 @@ def ceph_osd_add(
 
     response = call_api(config, "post", "/storage/ceph/osd", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def ceph_osd_replace(
@@ -308,21 +280,7 @@ def ceph_osd_replace(
 
     response = call_api(config, "post", f"/storage/ceph/osd/{osdid}", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def ceph_osd_refresh(config, osdid, device, wait_flag):
@@ -338,21 +296,7 @@ def ceph_osd_refresh(config, osdid, device, wait_flag):
     }
     response = call_api(config, "put", f"/storage/ceph/osd/{osdid}", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def ceph_osd_remove(config, osdid, force_flag, wait_flag):
@@ -368,21 +312,7 @@ def ceph_osd_remove(config, osdid, force_flag, wait_flag):
         config, "delete", "/storage/ceph/osd/{osdid}".format(osdid=osdid), params=params
     )
 
-    if response.status_code == 202:
-        retvalue = True
-        retjson = response.json()
-        if not wait_flag:
-            retdata = (
-                f"Task ID: {retjson['task_id']} assigned to node {retjson['run_on']}"
-            )
-        else:
-            # Just return the task JSON without formatting
-            retdata = response.json()
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def ceph_osd_state(config, osdid, state):
@@ -1765,7 +1695,7 @@ def format_list_snapshot(config, snapshot_list):
 #
 # Benchmark functions
 #
-def ceph_benchmark_run(config, pool):
+def ceph_benchmark_run(config, pool, wait_flag):
     """
     Run a storage benchmark against {pool}
 
@@ -1776,14 +1706,7 @@ def ceph_benchmark_run(config, pool):
     params = {"pool": pool}
     response = call_api(config, "post", "/storage/ceph/benchmark", params=params)
 
-    if response.status_code == 202:
-        retvalue = True
-        retdata = "Task ID: {}".format(response.json()["task_id"])
-    else:
-        retvalue = False
-        retdata = response.json().get("message", "")
-
-    return retvalue, retdata
+    return get_wait_retdata(response, wait_flag)
 
 
 def ceph_benchmark_list(config, job):

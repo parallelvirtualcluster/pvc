@@ -3296,15 +3296,26 @@ def cli_storage_benchmark():
 @click.command(name="run", short_help="Run a storage benchmark.")
 @connection_req
 @click.argument("pool")
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt(
     "Storage benchmarks take approximately 10 minutes to run and generate significant load on the cluster; they should be run sparingly. Continue"
 )
-def cli_storage_benchmark_run(pool):
+def cli_storage_benchmark_run(pool, wait_flag):
     """
     Run a storage benchmark on POOL in the background.
     """
 
-    retcode, retmsg = pvc.lib.storage.ceph_benchmark_run(CLI_CONFIG, pool)
+    retcode, retmsg = pvc.lib.storage.ceph_benchmark_run(CLI_CONFIG, pool, wait_flag)
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -5581,15 +5592,15 @@ def cli_provisioner_profile_list(limit, format_function):
     help="Start the VM automatically upon completion of provisioning.",
 )
 @click.option(
-    "-w",
-    "--wait",
+    "--wait/--no-wait",
     "wait_flag",
     is_flag=True,
-    default=False,
-    help="Wait for provisioning to complete, showing progress",
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
 )
 def cli_provisioner_create(
-    name, profile, wait_flag, define_flag, start_flag, script_args
+    name, profile, define_flag, start_flag, script_args, wait_flag
 ):
     """
     Create a new VM NAME with profile PROFILE.
@@ -5610,15 +5621,13 @@ def cli_provisioner_create(
     if not define_flag:
         start_flag = False
 
-    retcode, retdata = pvc.lib.provisioner.vm_create(
-        CLI_CONFIG, name, profile, wait_flag, define_flag, start_flag, script_args
+    retcode, retmsg = pvc.lib.provisioner.vm_create(
+        CLI_CONFIG, name, profile, define_flag, start_flag, script_args, wait_flag
     )
 
     if retcode and wait_flag:
-        task_id = retdata
-        retdata = wait_for_provisioner(CLI_CONFIG, task_id)
-
-    finish(retcode, retdata)
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
+    finish(retcode, retmsg)
 
 
 ###############################################################################
