@@ -62,7 +62,7 @@ for HOST in ${HOSTS[@]}; do
     ssh $HOST $SUDO systemctl restart pvcnoded &>/dev/null
     echo " done."
     echo -n "Waiting for node daemon to be running..."
-    while [[ $( ssh $HOST "pvc -q node list -f json ${HOST%%.*} | jq -r '.[].daemon_state'" ) != "run" ]]; do
+    while [[ $( ssh $HOST "pvc -q node list -f json ${HOST%%.*} | jq -r '.[].daemon_state'" 2>/dev/null ) != "run" ]]; do
         sleep 5
         echo -n "."
     done
