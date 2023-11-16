@@ -535,6 +535,30 @@ def cli_cluster_maintenance_off():
 
 
 ###############################################################################
+# > pvc cluster task
+###############################################################################
+@click.command(name="task", short_help="Show status of worker task.")
+@connection_req
+@click.argument("job_id", required=False, default=None)
+@format_opt(
+    {
+        "pretty": cli_provisioner_status_format_pretty,
+        "raw": lambda d: "\n".join([t["id"] for t in d])
+        if isinstance(d, list)
+        else d["state"],
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_cluster_task(job_id, format_function):
+    """
+    Show the current status of worker task JOB_ID or a list of all active and pending tasks.
+    """
+    retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, job_id)
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
 # > pvc node
 ###############################################################################
 @click.group(
@@ -5631,30 +5655,6 @@ def cli_provisioner_create(
 
 
 ###############################################################################
-# > pvc provisioner status
-###############################################################################
-@click.command(name="status", short_help="Show status of provisioner job.")
-@connection_req
-@click.argument("job", required=False, default=None)
-@format_opt(
-    {
-        "pretty": cli_provisioner_status_format_pretty,
-        "raw": lambda d: "\n".join([t["id"] for t in d])
-        if isinstance(d, list)
-        else d["state"],
-        "json": lambda d: jdumps(d),
-        "json-pretty": lambda d: jdumps(d, indent=2),
-    }
-)
-def cli_provisioner_status(job, format_function):
-    """
-    Show status of provisioner job JOB or a list of jobs.
-    """
-    retcode, retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, job)
-    finish(retcode, retdata, format_function)
-
-
-###############################################################################
 # > pvc connection
 ###############################################################################
 @click.group(
@@ -6168,7 +6168,6 @@ cli_provisioner_profile.add_command(cli_provisioner_profile_remove)
 cli_provisioner_profile.add_command(cli_provisioner_profile_list)
 cli_provisioner.add_command(cli_provisioner_profile)
 cli_provisioner.add_command(cli_provisioner_create)
-cli_provisioner.add_command(cli_provisioner_status)
 cli.add_command(cli_provisioner)
 cli_cluster.add_command(cli_cluster_status)
 cli_cluster.add_command(cli_cluster_init)
@@ -6177,6 +6176,7 @@ cli_cluster.add_command(cli_cluster_restore)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_on)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_off)
 cli_cluster.add_command(cli_cluster_maintenance)
+cli_cluster.add_command(cli_cluster_task)
 cli.add_command(cli_cluster)
 cli_connection.add_command(cli_connection_add)
 cli_connection.add_command(cli_connection_remove)

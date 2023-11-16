@@ -26,7 +26,6 @@ from requests_toolbelt.multipart.encoder import (
 
 import pvc.lib.ansiprint as ansiprint
 from pvc.lib.common import UploadProgressBar, call_api, get_wait_retdata
-from ast import literal_eval
 
 
 #
@@ -718,73 +717,6 @@ def vm_create(config, name, profile, define_flag, start_flag, script_args, wait_
     response = call_api(config, "post", "/provisioner/create", params=params)
 
     return get_wait_retdata(response, wait_flag)
-
-
-def task_status(config, task_id=None, is_watching=False):
-    """
-    Get information about provisioner job {task_id} or all tasks if None
-
-    API endpoint: GET /api/v1/provisioner/status
-    API arguments:
-    API schema: {json_data_object}
-    """
-    if task_id is not None:
-        response = call_api(
-            config, "get", "/provisioner/status/{task_id}".format(task_id=task_id)
-        )
-    else:
-        response = call_api(config, "get", "/provisioner/status")
-
-    if task_id is not None:
-        if response.status_code == 200:
-            retvalue = True
-            respjson = response.json()
-            if is_watching:
-                # Just return the raw JSON to the watching process instead of including value
-                return respjson
-            else:
-                return retvalue, respjson
-        else:
-            retvalue = False
-            retdata = response.json().get("message", "")
-    else:
-        retvalue = True
-        task_data_raw = response.json()
-        # Format the Celery data into a more useful data structure
-        task_data = list()
-        for task_type in ["active", "reserved", "scheduled"]:
-            try:
-                type_data = task_data_raw[task_type]
-            except Exception:
-                type_data = None
-
-            if not type_data:
-                type_data = dict()
-            for task_host in type_data:
-                for task_job in task_data_raw[task_type][task_host]:
-                    task = dict()
-                    if task_type == "reserved":
-                        task["type"] = "pending"
-                    else:
-                        task["type"] = task_type
-                    task["worker"] = task_host
-                    task["id"] = task_job.get("id")
-                    try:
-                        task_args = literal_eval(task_job.get("args"))
-                    except Exception:
-                        task_args = task_job.get("args")
-                    task["vm_name"] = task_args[0]
-                    task["vm_profile"] = task_args[1]
-                    try:
-                        task_kwargs = literal_eval(task_job.get("kwargs"))
-                    except Exception:
-                        task_kwargs = task_job.get("kwargs")
-                    task["vm_define"] = str(bool(task_kwargs["define_vm"]))
-                    task["vm_start"] = str(bool(task_kwargs["start_vm"]))
-                    task_data.append(task)
-        retdata = task_data
-
-    return retvalue, retdata
 
 
 #
