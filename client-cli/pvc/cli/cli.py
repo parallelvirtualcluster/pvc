@@ -599,18 +599,6 @@ def cli_node_primary(
     Set NODE in primary coordinator state, making it the primary coordinator for the cluster.
     """
 
-    # Handle active provisioner task warnings
-    _, tasks_retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, None)
-    if len(tasks_retdata) > 0:
-        echo(
-            CLI_CONFIG,
-            f"""\
-NOTE: There are currently {len(tasks_retdata)} active or queued provisioner tasks.
-      These jobs will continue executing, but their status visibility will be lost until
-      the current primary node returns to primary state.
-        """,
-        )
-
     retcode, retdata = pvc.lib.node.node_coordinator_state(CLI_CONFIG, node, "primary")
     if not retcode or "already" in retdata:
         finish(retcode, retdata)
@@ -648,18 +636,6 @@ def cli_node_secondary(
     """
     Set NODE in secondary coordinator state, making another active node the primary node for the cluster.
     """
-
-    # Handle active provisioner task warnings
-    _, tasks_retdata = pvc.lib.provisioner.task_status(CLI_CONFIG, None)
-    if len(tasks_retdata) > 0:
-        echo(
-            CLI_CONFIG,
-            f"""\
-NOTE: There are currently {len(tasks_retdata)} active or queued provisioner tasks.
-      These jobs will continue executing, but their status visibility will be lost until
-      the current primary node returns to primary state.
-        """,
-        )
 
     retcode, retdata = pvc.lib.node.node_coordinator_state(
         CLI_CONFIG, node, "secondary"
