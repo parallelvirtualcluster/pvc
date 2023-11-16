@@ -521,9 +521,11 @@ class VMBuilderScript(VMBuilder):
         self.log_info(
             f"Installing system with rinse: rinse --arch {rinse_architecture} --directory {temporary_directory} --distribution {rinse_release} --cache-dir {rinse_cache} --add-pkg-list /tmp/addpkg --verbose {mirror_arg}"
         )
-        os.system(
+        ret = os.system(
             f"rinse --arch {rinse_architecture} --directory {temporary_directory} --distribution {rinse_release} --cache-dir {rinse_cache} --add-pkg-list /tmp/addpkg --verbose {mirror_arg}"
         )
+        if ret > 0:
+            self.fail("Failed to run rinse")
 
         # Bind mount the devfs, sysfs, and procfs so we can grub-install later
         os.system("mount --bind /dev {}/dev".format(temporary_directory))

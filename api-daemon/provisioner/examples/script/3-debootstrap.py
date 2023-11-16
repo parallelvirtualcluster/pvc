@@ -495,9 +495,11 @@ class VMBuilderScript(VMBuilder):
         self.log_info(
             f"Installing system with debootstrap: debootstrap --include={','.join(deb_packages)} {deb_release} {temp_dir} {deb_mirror}"
         )
-        os.system(
+        ret = os.system(
             f"debootstrap --include={','.join(deb_packages)} {deb_release} {temp_dir} {deb_mirror}"
         )
+        if ret > 0:
+            self.fail("Failed to run debootstrap")
 
         # Bind mount the devfs so we can grub-install later
         os.system("mount --bind /dev {}/dev".format(temp_dir))
@@ -733,6 +735,7 @@ GRUB_DISABLE_LINUX_UUID=false
             dst_volume = f"{volume['pool']}/{dst_volume_name}"
             mapped_dst_volume = f"/dev/rbd/{dst_volume}"
             mount_path = f"{temp_dir}/{volume['mountpoint']}"
+            self.log_info(f"Unmounting {dst_volume} from {mount_path}")
 
             if (
                 volume.get("source_volume") is None
