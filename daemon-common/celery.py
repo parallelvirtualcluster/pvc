@@ -45,7 +45,7 @@ def fail(celery, msg, exception=None, current=1, total=1):
     if exception is None:
         exception = TaskFailure
 
-    msg = f"{exception}: {msg}"
+    msg = f"{type(exception()).__name__}: {msg}"
 
     logger = getLogger(__name__)
     logger.error(msg)
