@@ -539,7 +539,15 @@ def cli_cluster_maintenance_off():
 ###############################################################################
 @click.command(name="task", short_help="Show status of worker task.")
 @connection_req
-@click.argument("job_id", required=False, default=None)
+@click.argument("task_id", required=False, default=None)
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="""Wait or don't wait for task to complete, showing progress. Requires TASK_ID; overrides "-f"/"--format".""",
+)
 @format_opt(
     {
         "pretty": cli_provisioner_status_format_pretty,
@@ -550,12 +558,26 @@ def cli_cluster_maintenance_off():
         "json-pretty": lambda d: jdumps(d, indent=2),
     }
 )
-def cli_cluster_task(job_id, format_function):
+def cli_cluster_task(task_id, wait_flag, format_function):
     """
-    Show the current status of worker task JOB_ID or a list of all active and pending tasks.
+    Show the current status of worker task TASK_ID or a list of all active and pending tasks.
     """
-    retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, job_id)
-    finish(retcode, retdata, format_function)
+    if task_id is None:
+        wait_flag = False
+
+    if wait_flag:
+        # First validate that this is actually a valid task that is running
+        retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, None)
+        if task_id in [i["id"] for i in retdata]:
+            retmsg = wait_for_celery_task(
+                CLI_CONFIG, {"task_id": task_id}, start_late=True
+            )
+        else:
+            retmsg = f"No task with ID {task_id} found."
+        finish(retcode, retmsg)
+    else:
+        retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, task_id)
+        finish(retcode, retdata, format_function)
 
 
 ###############################################################################

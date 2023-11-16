@@ -65,36 +65,45 @@ def cli_node_waiter(config, node, state_field, state_value):
     echo(config, f" done. [{int(t_end - t_start)}s]")
 
 
-def wait_for_celery_task(CLI_CONFIG, task_detail):
+def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
     """
     Wait for a Celery task to complete
     """
 
     task_id = task_detail["task_id"]
-    run_on = task_detail["run_on"]
 
-    echo(CLI_CONFIG, f"Task ID: {task_id} assigned to node {run_on}")
-    echo(CLI_CONFIG, "")
+    if not start_late:
+        run_on = task_detail["run_on"]
 
-    # Wait for the task to start
-    echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
-    while True:
-        sleep(0.5)
+        echo(CLI_CONFIG, f"Task ID: {task_id} assigned to node {run_on}")
+        echo(CLI_CONFIG, "")
+
+        # Wait for the task to start
+        echo(CLI_CONFIG, "Waiting for task to start...", newline=False)
+        while True:
+            sleep(0.5)
+            task_status = pvc.lib.common.task_status(
+                CLI_CONFIG, task_id=task_id, is_watching=True
+            )
+            if task_status.get("state") != "PENDING":
+                break
+            echo(CLI_CONFIG, ".", newline=False)
+        echo(CLI_CONFIG, " done.")
+        echo(CLI_CONFIG, "")
+
+        echo(
+            CLI_CONFIG,
+            task_status.get("status") + ":",
+        )
+    else:
         task_status = pvc.lib.common.task_status(
             CLI_CONFIG, task_id=task_id, is_watching=True
         )
-        if task_status.get("state") != "PENDING":
-            break
-        echo(CLI_CONFIG, ".", newline=False)
-    echo(CLI_CONFIG, " done.")
-    echo(CLI_CONFIG, "")
+
+        echo(CLI_CONFIG, f"Watching existing task {task_id}:")
 
     # Start following the task state, updating progress as we go
     total_task = task_status.get("total")
-    echo(
-        CLI_CONFIG,
-        task_status.get("status") + ":",
-    )
     with progressbar(length=total_task, show_eta=False) as bar:
         last_task = 0
         maxlen = 21
