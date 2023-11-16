@@ -2437,7 +2437,7 @@ class API_VM_Locks(Resource):
         else:
             return vm_node_detail, retcode
 
-        task = vm_flush_locks.delay(vm, run_on=vm_node)
+        task = vm_flush_locks.delay(domain=vm, run_on=vm_node)
 
         return (
             {"task_id": task.id, "run_on": vm_node},
@@ -2572,7 +2572,7 @@ class API_VM_Device(Resource):
         else:
             return vm_node_detail, retcode
 
-        task = vm_device_attach.delay(vm, xml, run_on=vm_node)
+        task = vm_device_attach.delay(domain=vm, xml=xml, run_on=vm_node)
 
         return (
             {"task_id": task.id, "run_on": vm_node},
@@ -2626,7 +2626,7 @@ class API_VM_Device(Resource):
         else:
             return vm_node_detail, retcode
 
-        task = vm_device_detach.delay(vm, xml, run_on=vm_node)
+        task = vm_device_detach.delay(domain=vm, xml=xml, run_on=vm_node)
 
         return (
             {"task_id": task.id, "run_on": vm_node},
@@ -4382,7 +4382,7 @@ class API_Storage_Ceph_Benchmark(Resource):
                 "message": 'Pool "{}" is not valid.'.format(reqargs.get("pool"))
             }, 400
 
-        task = run_benchmark.delay(reqargs.get("pool", None), run_on="primary")
+        task = run_benchmark.delay(pool=reqargs.get("pool", None), run_on="primary")
         return (
             {"task_id": task.id, "run_on": get_primary_node()},
             202,
@@ -4502,7 +4502,7 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
         """
         node = reqargs.get("node", None)
 
-        task = osd_add_db_vg.delay(reqargs.get("device", None), run_on=node)
+        task = osd_add_db_vg.delay(device=reqargs.get("device", None), run_on=node)
 
         return (
             {"task_id": task.id, "run_on": node},
@@ -4700,11 +4700,11 @@ class API_Storage_Ceph_OSD_Root(Resource):
         node = reqargs.get("node", None)
 
         task = osd_add.delay(
-            reqargs.get("device", None),
-            reqargs.get("weight", None),
-            reqargs.get("ext_db_ratio", None),
-            reqargs.get("ext_db_size", None),
-            reqargs.get("osd_count", None),
+            device=reqargs.get("device", None),
+            weight=reqargs.get("weight", None),
+            ext_db_ratio=reqargs.get("ext_db_ratio", None),
+            ext_db_size=reqargs.get("ext_db_size", None),
+            split_count=reqargs.get("osd_count", None),
             run_on=node,
         )
 
@@ -4818,12 +4818,12 @@ class API_Storage_Ceph_OSD_Element(Resource):
             return osd_node_detail, retcode
 
         task = osd_replace.delay(
-            osdid,
-            reqargs.get("new_device"),
-            reqargs.get("old_device", None),
-            reqargs.get("weight", None),
-            reqargs.get("ext_db_ratio", None),
-            reqargs.get("ext_db_size", None),
+            osd_id=osdid,
+            new_device=reqargs.get("new_device"),
+            old_device=reqargs.get("old_device", None),
+            weight=reqargs.get("weight", None),
+            ext_db_ratio=reqargs.get("ext_db_ratio", None),
+            ext_db_size=reqargs.get("ext_db_size", None),
             run_on=node,
         )
 
@@ -4875,8 +4875,9 @@ class API_Storage_Ceph_OSD_Element(Resource):
             return osd_node_detail, retcode
 
         task = osd_refresh.delay(
-            osdid,
-            reqargs.get("device", None),
+            osd_id=osdid,
+            device=reqargs.get("device", None),
+            ext_db_flag=False,
             run_on=node,
         )
 
@@ -4944,7 +4945,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
             return osd_node_detail, retcode
 
         task = osd_remove.delay(
-            osdid,
+            osd_id=osdid,
             force_flag=reqargs.get("force", False),
             run_on=node,
         )
@@ -8472,8 +8473,8 @@ class API_Provisioner_Create_Root(Resource):
             start_vm = False
 
         task = create_vm.delay(
-            reqargs.get("name", None),
-            reqargs.get("profile", None),
+            vm_name=reqargs.get("name", None),
+            profile_name=reqargs.get("profile", None),
             define_vm=define_vm,
             start_vm=start_vm,
             script_run_args=reqargs.get("arg", []),
