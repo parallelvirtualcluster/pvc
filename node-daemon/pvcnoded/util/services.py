@@ -78,7 +78,7 @@ def start_keydb(logger, config):
 
 def start_api_worker(logger, config):
     if config["enable_api"]:
-        logger.out("Starting API worker daemon", state="i")
+        logger.out("Starting Celery Worker daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
         common.run_os_command("systemctl start pvcworkerd.service")
 
