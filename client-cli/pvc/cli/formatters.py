@@ -47,7 +47,6 @@ from pvc.lib.provisioner import format_list_userdata as provisioner_format_userd
 from pvc.lib.provisioner import format_list_script as provisioner_format_script_list
 from pvc.lib.provisioner import format_list_ova as provisioner_format_ova_list
 from pvc.lib.provisioner import format_list_profile as provisioner_format_profile_list
-from pvc.lib.provisioner import format_list_task as provisioner_format_task_status
 
 
 # Define colour values for use in formatters
@@ -260,6 +259,160 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
     output.append("")
 
     return "\n".join(output)
+
+
+def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
+    """
+    Pretty format the output of cli_cluster_task
+    """
+    if not isinstance(task_data, list):
+        job_state = task_data["state"]
+        if job_state == "RUNNING":
+            retdata = "Job state: RUNNING\nStage: {}/{}\nStatus: {}".format(
+                task_data["current"], task_data["total"], task_data["status"]
+            )
+        elif job_state == "FAILED":
+            retdata = "Job state: FAILED\nStatus: {}".format(task_data["status"])
+        elif job_state == "COMPLETED":
+            retdata = "Job state: COMPLETED\nStatus: {}".format(task_data["status"])
+        else:
+            retdata = "Job state: {}\nStatus: {}".format(
+                task_data["state"], task_data["status"]
+            )
+        return retdata
+
+    task_list_output = []
+
+    # Determine optimal column widths
+    task_id_length = 7
+    task_type_length = 7
+    task_worker_length = 7
+    task_arg_name_length = 5
+    task_arg_data_length = 10
+
+    tasks = list()
+    for task in task_data:
+        # task_id column
+        _task_id_length = len(str(task["id"])) + 1
+        if _task_id_length > task_id_length:
+            task_id_length = _task_id_length
+        # task_worker column
+        _task_worker_length = len(str(task["worker"])) + 1
+        if _task_worker_length > task_worker_length:
+            task_worker_length = _task_worker_length
+        # task_type column
+        _task_type_length = len(str(task["type"])) + 1
+        if _task_type_length > task_type_length:
+            task_type_length = _task_type_length
+
+        updated_kwargs = list()
+        for arg_name, arg_data in task["kwargs"].items():
+            # task_arg_name column
+            _task_arg_name_length = len(str(arg_name)) + 1
+            if _task_arg_name_length > task_arg_name_length:
+                task_arg_name_length = _task_arg_name_length
+
+            if len(str(arg_data)) > 30:
+                arg_data = arg_data[:30]
+
+            # task_arg_data column
+            _task_arg_data_length = len(str(arg_data)) + 1
+            if _task_arg_data_length > task_arg_data_length:
+                task_arg_data_length = _task_arg_data_length
+
+            updated_kwargs.append({"name": arg_name, "data": arg_data})
+        task["kwargs"] = updated_kwargs
+        tasks.append(task)
+
+    # Format the string (header)
+    task_list_output.append(
+        "{bold}{task_header: <{task_header_length}} {arg_header: <{arg_header_length}}{end_bold}".format(
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            task_header_length=task_id_length
+            + task_type_length
+            + task_worker_length
+            + 2,
+            arg_header_length=task_arg_name_length + task_arg_data_length,
+            task_header="Tasks "
+            + "".join(
+                [
+                    "-"
+                    for _ in range(
+                        6, task_id_length + task_type_length + task_worker_length + 1
+                    )
+                ]
+            ),
+            arg_header="Arguments "
+            + "".join(
+                ["-" for _ in range(12, task_arg_name_length + task_arg_data_length)]
+            ),
+        )
+    )
+
+    task_list_output.append(
+        "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+{task_worker: <{task_worker_length}} \
+{task_arg_name: <{task_arg_name_length}} \
+{task_arg_data: <{task_arg_data_length}}{end_bold}".format(
+            task_id_length=task_id_length,
+            task_type_length=task_type_length,
+            task_worker_length=task_worker_length,
+            task_arg_name_length=task_arg_name_length,
+            task_arg_data_length=task_arg_data_length,
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            task_id="Job ID",
+            task_type="Status",
+            task_worker="Worker",
+            task_arg_name="Name",
+            task_arg_data="Data",
+        )
+    )
+
+    # Format the string (elements)
+    for task in sorted(tasks, key=lambda i: i.get("type", None)):
+        task_list_output.append(
+            "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+{task_worker: <{task_worker_length}} \
+{task_arg_name: <{task_arg_name_length}} \
+{task_arg_data: <{task_arg_data_length}}{end_bold}".format(
+                task_id_length=task_id_length,
+                task_type_length=task_type_length,
+                task_worker_length=task_worker_length,
+                task_arg_name_length=task_arg_name_length,
+                task_arg_data_length=task_arg_data_length,
+                bold="",
+                end_bold="",
+                task_id=task["id"],
+                task_type=task["type"],
+                task_worker=task["worker"],
+                task_arg_name=str(task["kwargs"][0]["name"]),
+                task_arg_data=str(task["kwargs"][0]["data"]),
+            )
+        )
+        for arg in task["kwargs"][1:]:
+            task_list_output.append(
+                "{bold}{task_id: <{task_id_length}} {task_type: <{task_type_length}} \
+{task_worker: <{task_worker_length}} \
+{task_arg_name: <{task_arg_name_length}} \
+{task_arg_data: <{task_arg_data_length}}{end_bold}".format(
+                    task_id_length=task_id_length,
+                    task_type_length=task_type_length,
+                    task_worker_length=task_worker_length,
+                    task_arg_name_length=task_arg_name_length,
+                    task_arg_data_length=task_arg_data_length,
+                    bold="",
+                    end_bold="",
+                    task_id="",
+                    task_type="",
+                    task_worker="",
+                    task_arg_name=str(arg["name"]),
+                    task_arg_data=str(arg["data"]),
+                )
+            )
+
+    return "\n".join(task_list_output)
 
 
 def cli_connection_list_format_pretty(CLI_CONFIG, data):
@@ -724,11 +877,3 @@ def cli_provisioner_profile_list_format_pretty(CLI_CONFIG, data):
     """
 
     return provisioner_format_profile_list(CLI_CONFIG, data)
-
-
-def cli_provisioner_status_format_pretty(CLI_CONFIG, data):
-    """
-    Pretty format the output of cli_provisioner_status
-    """
-
-    return provisioner_format_task_status(CLI_CONFIG, data)

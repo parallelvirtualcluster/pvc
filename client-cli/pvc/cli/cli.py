@@ -550,7 +550,7 @@ def cli_cluster_maintenance_off():
 )
 @format_opt(
     {
-        "pretty": cli_provisioner_status_format_pretty,
+        "pretty": cli_cluster_task_format_pretty,
         "raw": lambda d: "\n".join([t["id"] for t in d])
         if isinstance(d, list)
         else d["state"],
