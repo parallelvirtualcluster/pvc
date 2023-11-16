@@ -681,9 +681,15 @@ def create_vm(
 
     def fail_clean(celery, msg, exception=ProvisioningError):
         try:
-            vm_builder.cleanup()
+            with chroot(temp_dir):
+                vm_builder.cleanup()
+        except Exception:
+            # We're already failing, do the best we can
+            pass
+        try:
             general_cleanup()
         except Exception:
+            # We're already failing, do the best we can
             pass
         fail(celery, msg, exception=exception)
 
