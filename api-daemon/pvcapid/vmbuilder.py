@@ -100,7 +100,7 @@ class VMBuilder(object):
         log_err(None, msg)
 
     def fail(self, msg, exception=ProvisioningError):
-        fail(None, msg, exception=exception)
+        raise exception(msg)
 
     #
     # Primary class functions; implemented by the individual scripts
