@@ -56,12 +56,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 # Create Flask app and set config values
 app = flask.Flask(__name__)
-app.config["CELERY_BROKER_URL"] = "redis://{}:{}{}".format(
+celery_task_uri = "redis://{}:{}{}".format(
     config["queue_host"], config["queue_port"], config["queue_path"]
 )
-app.config["CELERY_RESULT_BACKEND"] = "redis://{}:{}{}".format(
-    config["queue_host"], config["queue_port"], config["queue_path"]
-)
+app.config["CELERY_BROKER_URL"] = celery_task_uri
+app.config["CELERY_RESULT_BACKEND"] = celery_task_uri
 
 
 # Set up Celery queues
@@ -132,7 +131,12 @@ api = Api(blueprint)
 app.register_blueprint(blueprint)
 
 # Create celery definition
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+celery = Celery(
+    app.name,
+    broker=celery_task_uri,
+    result_backend=celery_task_uri,
+    result_extended=True,
+)
 celery.conf.update(app.config)
 
 #
