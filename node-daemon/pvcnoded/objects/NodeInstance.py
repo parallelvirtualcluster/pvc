@@ -670,13 +670,13 @@ class NodeInstance(object):
         self.zkhandler.write([("base.config.primary_node.sync_lock", "")])
         lock.release()
         self.logger.out("Released write lock for synchronization phase B", state="o")
-        # 3. Stop client API
+        # 3. Stop metadata API
+        self.metadata_api.stop()
+        # 4. Stop client API
         if self.config["enable_api"]:
             self.logger.out("Stopping PVC API client service", state="i")
-            common.run_os_command("systemctl stop pvcapid.service")
-            common.run_os_command("systemctl disable pvcapid.service")
-        # 4. Stop metadata API
-        self.metadata_api.stop()
+            common.run_os_command("systemctl stop pvcapid.service", background=True)
+            common.run_os_command("systemctl disable pvcapid.service", background=True)
         time.sleep(0.1)  # Time fir new writer to acquire the lock
 
         # Synchronize nodes C (I am reader)
