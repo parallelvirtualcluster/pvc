@@ -569,8 +569,11 @@ def cli_cluster_task(task_id, wait_flag, format_function):
         # First validate that this is actually a valid task that is running
         retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, None)
         if task_id in [i["id"] for i in retdata]:
+            task = [i for i in retdata if i["id"] == task_id][0]
             retmsg = wait_for_celery_task(
-                CLI_CONFIG, {"task_id": task_id}, start_late=True
+                CLI_CONFIG,
+                {"task_id": task["id"], "task_name": task["name"]},
+                start_late=True,
             )
         else:
             retmsg = f"No task with ID {task_id} found."
