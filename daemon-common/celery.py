@@ -41,11 +41,17 @@ def start(celery, msg, current=0, total=1):
     sleep(1)
 
 
-def fail(celery, msg, current=1, total=1):
+def fail(celery, msg, exception=None, current=1, total=1):
+    if exception is None:
+        exception = TaskFailure
+
+    msg = f"{exception}: {msg}"
+
     logger = getLogger(__name__)
     logger.error(msg)
+
     sys.tracebacklimit = 0
-    raise TaskFailure(msg)
+    raise exception(msg)
 
 
 def log_info(celery, msg):
