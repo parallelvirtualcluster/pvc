@@ -31,6 +31,20 @@
 # function is provided in context of the example; see the other examples for
 # more potential uses.
 
+# Within the VMBuilderScript class, several helper functions are exposed through
+# the parent VMBuilder class:
+#  self.log_info(message):
+#    Use this function to log an "informational" message instead of "print()"
+#  self.log_warn(message):
+#    Use this function to log a "warning" message
+#  self.log_err(message):
+#    Use this function to log an "error" message outside of an exception (see below)
+#  self.fail(message, exception=<ExceptionClass>):
+#    Use this function to bail out of the script safely instead if raising a
+#    normal Python exception. You may pass an optional exception class keyword
+#    argument for posterity in the logs if you wish; otherwise, ProvisioningException
+#    is used. This function implicitly calls a "self.log_err" with the passed message
+
 # Within the VMBuilderScript class, several common variables are exposed through
 # the parent VMBuilder class:
 #  self.vm_name: The name of the VM from PVC's perspective
@@ -132,9 +146,8 @@
 # since they could still do destructive things to /dev and the like!
 
 
-# This import is always required here, as VMBuilder is used by the VMBuilderScript class
-# and ProvisioningError is the primary exception that should be raised within the class.
-from pvcapid.vmbuilder import VMBuilder, ProvisioningError
+# This import is always required here, as VMBuilder is used by the VMBuilderScript class.
+from pvcapid.vmbuilder import VMBuilder
 
 
 # The VMBuilderScript class must be named as such, and extend VMBuilder.

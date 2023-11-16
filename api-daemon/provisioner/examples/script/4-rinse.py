@@ -31,6 +31,20 @@
 # function is provided in context of the example; see the other examples for
 # more potential uses.
 
+# Within the VMBuilderScript class, several helper functions are exposed through
+# the parent VMBuilder class:
+#  self.log_info(message):
+#    Use this function to log an "informational" message instead of "print()"
+#  self.log_warn(message):
+#    Use this function to log a "warning" message
+#  self.log_err(message):
+#    Use this function to log an "error" message outside of an exception (see below)
+#  self.fail(message, exception=<ExceptionClass>):
+#    Use this function to bail out of the script safely instead if raising a
+#    normal Python exception. You may pass an optional exception class keyword
+#    argument for posterity in the logs if you wish; otherwise, ProvisioningException
+#    is used. This function implicitly calls a "self.log_err" with the passed message
+
 # Within the VMBuilderScript class, several common variables are exposed through
 # the parent VMBuilder class:
 #  self.vm_name: The name of the VM from PVC's perspective
@@ -132,9 +146,8 @@
 # since they could still do destructive things to /dev and the like!
 
 
-# This import is always required here, as VMBuilder is used by the VMBuilderScript class
-# and ProvisioningError is the primary exception that should be raised within the class.
-from pvcapid.vmbuilder import VMBuilder, ProvisioningError
+# This import is always required here, as VMBuilder is used by the VMBuilderScript class.
+from pvcapid.vmbuilder import VMBuilder
 
 
 # The VMBuilderScript class must be named as such, and extend VMBuilder.
@@ -159,7 +172,7 @@ class VMBuilderScript(VMBuilder):
         if retcode:
             # Raise a ProvisioningError for any exception; the provisioner will handle
             # this gracefully and properly, avoiding dangling mounts, RBD maps, etc.
-            raise ProvisioningError("Failed to find critical dependency: rinse")
+            self.fail("Failed to find critical dependency: rinse")
 
     def create(self):
         """
@@ -312,9 +325,9 @@ class VMBuilderScript(VMBuilder):
                         volume["source_volume"],
                         f"{self.vm_name}_{volume['disk_id']}",
                     )
-                    print(message)
+                    self.log_info(message)
                     if not success:
-                        raise ProvisioningError(
+                        self.fail(
                             f"Failed to clone volume '{volume['source_volume']}' to '{volume['disk_id']}'."
                         )
             else:
@@ -325,11 +338,9 @@ class VMBuilderScript(VMBuilder):
                         f"{self.vm_name}_{volume['disk_id']}",
                         f"{volume['disk_size_gb']}G",
                     )
-                    print(message)
+                    self.log_info(message)
                     if not success:
-                        raise ProvisioningError(
-                            f"Failed to create volume '{volume['disk_id']}'."
-                        )
+                        self.fail(f"Failed to create volume '{volume['disk_id']}'.")
 
         # Second loop: Map the disks to the local system
         for volume in self.vm_data["volumes"]:
@@ -342,9 +353,9 @@ class VMBuilderScript(VMBuilder):
                     volume["pool"],
                     dst_volume_name,
                 )
-                print(message)
+                self.log_info(message)
                 if not success:
-                    raise ProvisioningError(f"Failed to map volume '{dst_volume}'.")
+                    self.fail(f"Failed to map volume '{dst_volume}'.")
 
         # Third loop: Create filesystems on the volumes
         for volume in self.vm_data["volumes"]:
@@ -370,19 +381,17 @@ class VMBuilderScript(VMBuilder):
                     f"mkswap -f /dev/rbd/{dst_volume}"
                 )
                 if retcode:
-                    raise ProvisioningError(
-                        f"Failed to create swap on '{dst_volume}': {stderr}"
-                    )
+                    self.fail(f"Failed to create swap on '{dst_volume}': {stderr}")
             else:
                 retcode, stdout, stderr = pvc_common.run_os_command(
                     f"mkfs.{volume['filesystem']} {filesystem_args} /dev/rbd/{dst_volume}"
                 )
                 if retcode:
-                    raise ProvisioningError(
+                    self.fail(
                         f"Faield to create {volume['filesystem']} file on '{dst_volume}': {stderr}"
                     )
 
-            print(stdout)
+            self.log_info(stdout)
 
         # Create a temporary directory to use during install
         temp_dir = "/tmp/target"
@@ -413,7 +422,7 @@ class VMBuilderScript(VMBuilder):
                 f"mount {mapped_dst_volume} {mount_path}"
             )
             if retcode:
-                raise ProvisioningError(
+                self.fail(
                     f"Failed to mount '{mapped_dst_volume}' on '{mount_path}': {stderr}"
                 )
 
@@ -492,7 +501,7 @@ class VMBuilderScript(VMBuilder):
             if volume["mountpoint"] == "/":
                 root_volume = volume
         if not root_volume:
-            raise ProvisioningError("Failed to find root volume in volumes list")
+            self.fail("Failed to find root volume in volumes list")
 
         if rinse_mirror is not None:
             mirror_arg = f"--mirror {rinse_mirror}"
@@ -509,7 +518,7 @@ class VMBuilderScript(VMBuilder):
                 fh.write(f"{pkg}\n")
 
         # Perform a rinse installation
-        print(
+        self.log_info(
             f"Installing system with rinse: rinse --arch {rinse_architecture} --directory {temporary_directory} --distribution {rinse_release} --cache-dir {rinse_cache} --add-pkg-list /tmp/addpkg --verbose {mirror_arg}"
         )
         os.system(
@@ -711,7 +720,7 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
                     f"umount {mount_path}"
                 )
                 if retcode:
-                    raise ProvisioningError(
+                    self.log_err(
                         f"Failed to unmount '{mapped_dst_volume}' on '{mount_path}': {stderr}"
                     )
 
@@ -723,6 +732,4 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
                     dst_volume_name,
                 )
             if not success:
-                raise ProvisioningError(
-                    f"Failed to unmap '{mapped_dst_volume}': {stderr}"
-                )
+                self.log_err(f"Failed to unmap '{mapped_dst_volume}': {stderr}")

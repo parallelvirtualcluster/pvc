@@ -57,6 +57,20 @@
 # function is provided in context of the example; see the other examples for
 # more potential uses.
 
+# Within the VMBuilderScript class, several helper functions are exposed through
+# the parent VMBuilder class:
+#  self.log_info(message):
+#    Use this function to log an "informational" message instead of "print()"
+#  self.log_warn(message):
+#    Use this function to log a "warning" message
+#  self.log_err(message):
+#    Use this function to log an "error" message outside of an exception (see below)
+#  self.fail(message, exception=<ExceptionClass>):
+#    Use this function to bail out of the script safely instead if raising a
+#    normal Python exception. You may pass an optional exception class keyword
+#    argument for posterity in the logs if you wish; otherwise, ProvisioningException
+#    is used. This function implicitly calls a "self.log_err" with the passed message
+
 # Within the VMBuilderScript class, several common variables are exposed through
 # the parent VMBuilder class:
 #  self.vm_name: The name of the VM from PVC's perspective
@@ -158,9 +172,8 @@
 # since they could still do destructive things to /dev and the like!
 
 
-# This import is always required here, as VMBuilder is used by the VMBuilderScript class
-# and ProvisioningError is the primary exception that should be raised within the class.
-from pvcapid.vmbuilder import VMBuilder, ProvisioningError
+# This import is always required here, as VMBuilder is used by the VMBuilderScript class.
+from pvcapid.vmbuilder import VMBuilder
 
 
 # Set up some variables for later; if you frequently use these tools, you might benefit from
@@ -189,9 +202,7 @@ class VMBuilderScript(VMBuilder):
         # Ensure that our required runtime variables are defined
 
         if self.vm_data["script_arguments"].get("pfsense_wan_iface") is None:
-            raise ProvisioningError(
-                "Required script argument 'pfsense_wan_iface' not provided"
-            )
+            self.fail("Required script argument 'pfsense_wan_iface' not provided")
 
         if self.vm_data["script_arguments"].get("pfsense_wan_dhcp") is None:
             for argument in [
@@ -199,9 +210,7 @@ class VMBuilderScript(VMBuilder):
                 "pfsense_wan_gateway",
             ]:
                 if self.vm_data["script_arguments"].get(argument) is None:
-                    raise ProvisioningError(
-                        f"Required script argument '{argument}' not provided"
-                    )
+                    self.fail(f"Required script argument '{argument}' not provided")
 
         # Ensure we have all dependencies intalled on the provisioner system
         for dependency in "wget", "unzip", "gzip":
@@ -209,9 +218,7 @@ class VMBuilderScript(VMBuilder):
             if retcode:
                 # Raise a ProvisioningError for any exception; the provisioner will handle
                 # this gracefully and properly, avoiding dangling mounts, RBD maps, etc.
-                raise ProvisioningError(
-                    f"Failed to find critical dependency: {dependency}"
-                )
+                self.fail(f"Failed to find critical dependency: {dependency}")
 
         # Create a temporary directory to use for Packer binaries/scripts
         packer_temp_dir = "/tmp/packer"
@@ -361,41 +368,39 @@ class VMBuilderScript(VMBuilder):
         packer_temp_dir = "/tmp/packer"
 
         # Download pfSense image file to temporary target directory
-        print(f"Downloading pfSense ISO image from {PFSENSE_ISO_URL}")
+        self.log_info(f"Downloading pfSense ISO image from {PFSENSE_ISO_URL}")
         retcode, stdout, stderr = pvc_common.run_os_command(
             f"wget --output-document={packer_temp_dir}/dl/pfsense.iso.gz {PFSENSE_ISO_URL}"
         )
         if retcode:
-            raise ProvisioningError(
-                f"Failed to download pfSense image from {PFSENSE_ISO_URL}"
-            )
+            self.fail(f"Failed to download pfSense image from {PFSENSE_ISO_URL}")
 
         # Extract pfSense image file under temporary target directory
-        print(f"Extracting pfSense ISO image")
+        self.log_info(f"Extracting pfSense ISO image")
         retcode, stdout, stderr = pvc_common.run_os_command(
             f"gzip --decompress {packer_temp_dir}/dl/pfsense.iso.gz"
         )
         if retcode:
-            raise ProvisioningError("Failed to extract pfSense ISO image")
+            self.fail("Failed to extract pfSense ISO image")
 
         # Download Packer to temporary target directory
-        print(f"Downloading Packer from {PACKER_URL}")
+        self.log_info(f"Downloading Packer from {PACKER_URL}")
         retcode, stdout, stderr = pvc_common.run_os_command(
             f"wget --output-document={packer_temp_dir}/packer.zip {PACKER_URL}"
         )
         if retcode:
-            raise ProvisioningError(f"Failed to download Packer from {PACKER_URL}")
+            self.fail(f"Failed to download Packer from {PACKER_URL}")
 
         # Extract Packer under temporary target directory
-        print(f"Extracting Packer binary")
+        self.log_info(f"Extracting Packer binary")
         retcode, stdout, stderr = pvc_common.run_os_command(
             f"unzip {packer_temp_dir}/packer.zip -d {packer_temp_dir}"
         )
         if retcode:
-            raise ProvisioningError("Failed to extract Packer binary")
+            self.fail("Failed to extract Packer binary")
 
         # Output the Packer configuration
-        print(f"Generating Packer configurations")
+        self.log_info(f"Generating Packer configurations")
         first_volume = self.vm_data["volumes"][0]
         first_volume_size_mb = int(first_volume["disk_size_gb"]) * 1024
 
@@ -829,7 +834,7 @@ class VMBuilderScript(VMBuilder):
             fh.write(pfsense_config)
 
         # Create the disk(s)
-        print(f"Creating volumes")
+        self.log_info(f"Creating volumes")
         for volume in self.vm_data["volumes"]:
             with open_zk(config) as zkhandler:
                 success, message = pvc_ceph.add_volume(
@@ -838,14 +843,12 @@ class VMBuilderScript(VMBuilder):
                     f"{self.vm_name}_{volume['disk_id']}",
                     f"{volume['disk_size_gb']}G",
                 )
-                print(message)
+                self.log_info(message)
                 if not success:
-                    raise ProvisioningError(
-                        f"Failed to create volume '{volume['disk_id']}'."
-                    )
+                    self.fail(f"Failed to create volume '{volume['disk_id']}'.")
 
         # Map the target RBD volumes
-        print(f"Mapping volumes")
+        self.log_info(f"Mapping volumes")
         for volume in self.vm_data["volumes"]:
             dst_volume_name = f"{self.vm_name}_{volume['disk_id']}"
             dst_volume = f"{volume['pool']}/{dst_volume_name}"
@@ -856,9 +859,9 @@ class VMBuilderScript(VMBuilder):
                     volume["pool"],
                     dst_volume_name,
                 )
-                print(message)
+                self.log_info(message)
                 if not success:
-                    raise ProvisioningError(f"Failed to map volume '{dst_volume}'.")
+                    self.fail(f"Failed to map volume '{dst_volume}'.")
 
     def install(self):
         """
@@ -871,7 +874,7 @@ class VMBuilderScript(VMBuilder):
 
         packer_temp_dir = "/tmp/packer"
 
-        print(
+        self.log_info(
             f"Running Packer: PACKER_LOG=1 PACKER_CONFIG_DIR={packer_temp_dir} PACKER_CACHE_DIR={packer_temp_dir} {packer_temp_dir}/packer build {packer_temp_dir}/build.json"
         )
         os.system(
@@ -879,9 +882,9 @@ class VMBuilderScript(VMBuilder):
         )
 
         if not os.path.exists(f"{packer_temp_dir}/bin/{self.vm_name}"):
-            raise ProvisioningError("Packer failed to build output image")
+            self.fail("Packer failed to build output image")
 
-        print("Copying output image to first volume")
+        self.log_info("Copying output image to first volume")
         first_volume = self.vm_data["volumes"][0]
         dst_volume_name = f"{self.vm_name}_{first_volume['disk_id']}"
         dst_volume = f"{first_volume['pool']}/{dst_volume_name}"

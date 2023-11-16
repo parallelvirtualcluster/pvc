@@ -99,13 +99,8 @@ class VMBuilder(object):
     def log_err(self, msg):
         log_err(None, msg)
 
-    def fail(self, msg):
-        self.log_err(msg)
-        try:
-            self.cleanup()
-        except Exception:
-            pass
-        raise ProvisioningError()
+    def fail(self, msg, exception=ProvisioningError):
+        fail(None, msg, exception=exception)
 
     #
     # Primary class functions; implemented by the individual scripts
@@ -693,6 +688,14 @@ def create_vm(
             # We don't care about fails during cleanup, log and continue
             log_warn(celery, f"Suberror during general cleanup script removal: {e}")
 
+    def fail_clean(celery, msg, exception=ProvisioningError):
+        try:
+            vm_builder.cleanup()
+            general_cleanup()
+        except Exception:
+            pass
+        fail(celery, msg, exception=exception)
+
     # Phase 4 - script: setup()
     #  * Run pre-setup steps
     current_stage += 1
@@ -705,7 +708,7 @@ def create_vm(
             vm_builder.setup()
     except Exception as e:
         general_cleanup()
-        fail(
+        fail_clean(
             celery,
             f"Error in script setup() step: {e}",
             exception=ProvisioningError,
@@ -727,7 +730,7 @@ def create_vm(
                 vm_schema = vm_builder.create()
         except Exception as e:
             general_cleanup()
-            fail(
+            fail_clean(
                 celery,
                 f"Error in script create() step: {e}",
                 exception=ProvisioningError,
@@ -775,7 +778,7 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.cleanup()
         general_cleanup()
-        fail(
+        fail_clean(
             celery,
             f"Error in script prepare() step: {e}",
             exception=ProvisioningError,
@@ -798,7 +801,7 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.cleanup()
         general_cleanup()
-        fail(
+        fail_clean(
             celery,
             f"Error in script install() step: {e}",
             exception=ProvisioningError,
@@ -818,7 +821,6 @@ def create_vm(
         with chroot(temp_dir):
             vm_builder.cleanup()
     except Exception as e:
-        general_cleanup()
         fail(
             celery,
             f"Error in script cleanup() step: {e}",
