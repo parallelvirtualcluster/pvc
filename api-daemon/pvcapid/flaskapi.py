@@ -89,6 +89,8 @@ def route_task(name, args, kwargs, options, task=None, **kw):
     # If an explicit routing_key is set and it's in the kwargs of the function, use it to set the queue
     if options["routing_key"] != "default" and options["routing_key"] in kwargs.keys():
         run_on = kwargs[options["routing_key"]]
+        if run_on == "primary":
+            run_on = get_primary_node()
     # Otherwise, use the primary node
     else:
         run_on = get_primary_node()
