@@ -610,8 +610,7 @@ class NodeInstance(object):
         # 6. Start client API
         if self.config["enable_api"]:
             self.logger.out("Starting PVC API client service", state="i")
-            common.run_os_command("systemctl enable pvcapid.service")
-            common.run_os_command("systemctl start pvcapid.service")
+            common.run_os_command("systemctl enable --now pvcapid.service")
         # 7. Start metadata API; just continue if we fail
         self.metadata_api.start()
         # 8. Start DHCP servers
@@ -675,8 +674,9 @@ class NodeInstance(object):
         # 4. Stop client API
         if self.config["enable_api"]:
             self.logger.out("Stopping PVC API client service", state="i")
-            common.run_os_command("systemctl stop pvcapid.service", background=True)
-            common.run_os_command("systemctl disable pvcapid.service", background=True)
+            common.run_os_command(
+                "systemctl disable --now pvcapid.service", background=True
+            )
         time.sleep(0.1)  # Time fir new writer to acquire the lock
 
         # Synchronize nodes C (I am reader)
