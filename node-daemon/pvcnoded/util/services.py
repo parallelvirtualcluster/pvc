@@ -80,7 +80,7 @@ def start_api_worker(logger, config):
     if config["enable_api"]:
         logger.out("Starting API worker daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
-        common.run_os_command("systemctl start pvcapid-worker.service")
+        common.run_os_command("systemctl start pvcworkerd.service")
 
 
 def start_system_services(logger, config):

@@ -1,7 +1,7 @@
-# Parallel Virtual Cluster Provisioner API provisioner worker unit file
+# Parallel Virtual Cluster Celery Worker daemon unit file
 
 [Unit]
-Description = Parallel Virtual Cluster API provisioner worker
+Description = Parallel Virtual Cluster Celery Worker daemon
 After = network-online.target
 
 [Service]
@@ -9,7 +9,7 @@ Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
 Environment = PVC_CONFIG_FILE=/etc/pvc/pvcapid.yaml
-ExecStart = /usr/share/pvc/pvcapid-worker.sh
+ExecStart = /usr/share/pvc/pvcworkerd.sh
 Restart = on-failure
 
 [Install]

@@ -607,7 +607,7 @@ class NodeInstance(object):
                 patroni_failed = False
                 time.sleep(0.2)
                 break
-        # 6. Start client API (and provisioner worker)
+        # 6. Start client API
         if self.config["enable_api"]:
             self.logger.out("Starting PVC API client service", state="i")
             common.run_os_command("systemctl enable pvcapid.service")

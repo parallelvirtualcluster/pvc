@@ -10,13 +10,13 @@ if systemctl is-active --quiet pvcapid.service; then
     systemctl start pvcapid.service
 fi
 # Restart the worker daemon
-if systemctl is-active --quiet pvcapid-worker.service; then
-    systemctl stop pvcapid-worker.service
-    systemctl start pvcapid-worker.service
+if systemctl is-active --quiet pvcworkerd.service; then
+    systemctl stop pvcworkerd.service
+    systemctl start pvcworkerd.service
 fi
 
 if [ ! -f /etc/pvc/pvcapid.yaml ]; then
-    echo "NOTE: The PVC client API daemon (pvcapid.service) and the PVC provisioner worker daemon (pvcapid-worker.service) have not been started; create a config file at /etc/pvc/pvcapid.yaml, then run the database configuration (/usr/share/pvc/pvc-api-db-upgrade) and start them manually."
+    echo "NOTE: The PVC client API daemon (pvcapid.service) and the PVC Worker daemon (pvcworkerd.service) have not been started; create a config file at /etc/pvc/pvcapid.yaml, then run the database configuration (/usr/share/pvc/pvc-api-db-upgrade) and start them manually."
 fi
 
 # Clean up any old sample configs

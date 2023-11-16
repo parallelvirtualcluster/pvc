@@ -58,7 +58,7 @@ for HOST in ${HOSTS[@]}; do
     echo " done."
     echo -n "Restarting PVC daemons..."
     ssh $HOST $SUDO systemctl restart pvcapid &>/dev/null
-    ssh $HOST $SUDO systemctl restart pvcapid-worker &>/dev/null
+    ssh $HOST $SUDO systemctl restart pvcworkerd &>/dev/null
     ssh $HOST $SUDO systemctl restart pvcnoded &>/dev/null
     echo " done."
     echo -n "Waiting for node daemon to be running..."

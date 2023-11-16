@@ -188,7 +188,7 @@ def entrypoint():
 
         # Restart the API daemons if applicable
         logger.out("Restarting services", state="s")
-        common.run_os_command("systemctl restart pvcapid-worker.service")
+        common.run_os_command("systemctl restart pvcworkerd.service")
         if zkhandler.read("base.config.primary_node") == config["node_hostname"]:
             common.run_os_command("systemctl restart pvcapid.service")
 

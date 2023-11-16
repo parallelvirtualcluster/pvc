@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# pvcapid-worker.py - API Celery worker daemon startup stub
+# pvcworkerd.py - API Celery worker daemon startup stub
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
