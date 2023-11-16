@@ -71,6 +71,11 @@ def get_all_nodes(zkhandler):
     return [n["name"] for n in all_nodes]
 
 
+@ZKConnection(config)
+def get_primary_node(zkhandler):
+    return getPrimaryNode(zkhandler)
+
+
 app.config["CELERY_QUEUES"] = tuple(
     [Queue(h, routing_key=f"{h}.#") for h in get_all_nodes()]
 )
@@ -78,10 +83,6 @@ app.config["CELERY_QUEUES"] = tuple(
 
 # Set up Celery queue routing
 def route_task(name, args, kwargs, options, task=None, **kw):
-    @ZKConnection(config)
-    def get_primary_node(zkhandler):
-        return getPrimaryNode(zkhandler)
-
     print("----")
     print(f"Incoming Celery task: '{name}' with args {args}, kwargs {kwargs}")
 
@@ -4381,7 +4382,7 @@ class API_Storage_Ceph_Benchmark(Resource):
 
         task = run_benchmark.delay(reqargs.get("pool", None), run_on="primary")
         return (
-            {"task_id": task.id},
+            {"task_id": task.id, "run_on": get_primary_node()},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -8477,7 +8478,7 @@ class API_Provisioner_Create_Root(Resource):
             run_on="primary",
         )
         return (
-            {"task_id": task.id},
+            {"task_id": task.id, "run_on": get_primary_node()},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
