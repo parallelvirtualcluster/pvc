@@ -223,7 +223,7 @@ def create_vm(
     total_stages = 10
     start(
         celery,
-        f"Starting provisioning of VM '{vm_name}' with profile '{vm_profile}'",
+        f"Provisioning new VM '{vm_name}' with profile '{vm_profile}'",
         current=current_stage,
         total=total_stages,
     )
