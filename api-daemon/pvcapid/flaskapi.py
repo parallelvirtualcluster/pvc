@@ -204,8 +204,8 @@ def Authenticator(function):
 @celery.task(name="provisioner.create", bind=True, routing_key="run_on")
 def create_vm(
     self,
-    vm_name,
-    profile_name,
+    vm_name=None,
+    profile_name=None,
     define_vm=True,
     start_vm=True,
     script_run_args=[],
@@ -222,12 +222,12 @@ def create_vm(
 
 
 @celery.task(name="storage.benchmark", bind=True, routing_key="run_on")
-def run_benchmark(self, pool, run_on="primary"):
+def run_benchmark(self, pool=None, run_on="primary"):
     return api_benchmark.run_benchmark(self, pool)
 
 
 @celery.task(name="vm.flush_locks", bind=True, routing_key="run_on")
-def vm_flush_locks(self, domain, force_unlock=False, run_on="primary"):
+def vm_flush_locks(self, domain=None, force_unlock=False, run_on="primary"):
     @ZKConnection(config)
     def run_vm_flush_locks(zkhandler, self, domain, force_unlock=False):
         return vm_worker_flush_locks(zkhandler, self, domain, force_unlock=force_unlock)
@@ -236,7 +236,7 @@ def vm_flush_locks(self, domain, force_unlock=False, run_on="primary"):
 
 
 @celery.task(name="vm.device_attach", bind=True, routing_key="run_on")
-def vm_device_attach(self, domain, xml, run_on=None):
+def vm_device_attach(self, domain=None, xml=None, run_on=None):
     @ZKConnection(config)
     def run_vm_device_attach(zkhandler, self, domain, xml):
         return vm_worker_attach_device(zkhandler, self, domain, xml)
@@ -245,7 +245,7 @@ def vm_device_attach(self, domain, xml, run_on=None):
 
 
 @celery.task(name="vm.device_detach", bind=True, routing_key="run_on")
-def vm_device_detach(self, domain, xml, run_on=None):
+def vm_device_detach(self, domain=None, xml=None, run_on=None):
     @ZKConnection(config)
     def run_vm_device_detach(zkhandler, self, domain, xml):
         return vm_worker_detach_device(zkhandler, self, domain, xml)
@@ -256,8 +256,8 @@ def vm_device_detach(self, domain, xml, run_on=None):
 @celery.task(name="osd.add", bind=True, routing_key="run_on")
 def osd_add(
     self,
-    device,
-    weight,
+    device=None,
+    weight=None,
     ext_db_ratio=None,
     ext_db_size=None,
     split_count=None,
@@ -293,8 +293,8 @@ def osd_add(
 @celery.task(name="osd.replace", bind=True, routing_key="run_on")
 def osd_replace(
     self,
-    osd_id,
-    new_device,
+    osd_id=None,
+    new_device=None,
     old_device=None,
     weight=None,
     ext_db_ratio=None,
@@ -331,7 +331,7 @@ def osd_replace(
 
 
 @celery.task(name="osd.refresh", bind=True, routing_key="run_on")
-def osd_refresh(self, osd_id, device, ext_db_flag=False, run_on=None):
+def osd_refresh(self, osd_id=None, device=None, ext_db_flag=False, run_on=None):
     @ZKConnection(config)
     def run_osd_refresh(zkhandler, self, run_on, osd_id, device, ext_db_flag=False):
         return osd_worker_refresh_osd(
@@ -342,7 +342,7 @@ def osd_refresh(self, osd_id, device, ext_db_flag=False, run_on=None):
 
 
 @celery.task(name="osd.remove", bind=True, routing_key="run_on")
-def osd_remove(self, osd_id, force_flag=False, skip_zap_flag=False, run_on=None):
+def osd_remove(self, osd_id=None, force_flag=False, skip_zap_flag=False, run_on=None):
     @ZKConnection(config)
     def run_osd_remove(
         zkhandler, self, run_on, osd_id, force_flag=False, skip_zap_flag=False
@@ -355,7 +355,7 @@ def osd_remove(self, osd_id, force_flag=False, skip_zap_flag=False, run_on=None)
 
 
 @celery.task(name="osd.add_db_vg", bind=True, routing_key="run_on")
-def osd_add_db_vg(self, device, run_on=None):
+def osd_add_db_vg(self, device=None, run_on=None):
     @ZKConnection(config)
     def run_osd_add_db_vg(zkhandler, self, run_on, device):
         return osd_worker_add_db_vg(zkhandler, self, run_on, device)
