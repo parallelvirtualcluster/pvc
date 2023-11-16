@@ -2458,7 +2458,7 @@ class API_VM_Locks(Resource):
         task = run_celery_task(vm_flush_locks, domain=vm, run_on=vm_node)
 
         return (
-            {"task_id": task.id, "run_on": vm_node},
+            {"task_id": task.id, "task_name": "vm.flush_locks", "run_on": vm_node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -2593,7 +2593,7 @@ class API_VM_Device(Resource):
         task = run_celery_task(vm_device_attach, domain=vm, xml=xml, run_on=vm_node)
 
         return (
-            {"task_id": task.id, "run_on": vm_node},
+            {"task_id": task.id, "task_name": "vm.device_attach", "run_on": vm_node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -2647,7 +2647,7 @@ class API_VM_Device(Resource):
         task = run_celery_task(vm_device_detach, domain=vm, xml=xml, run_on=vm_node)
 
         return (
-            {"task_id": task.id, "run_on": vm_node},
+            {"task_id": task.id, "task_name": "vm.device_detach", "run_on": vm_node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4404,7 +4404,11 @@ class API_Storage_Ceph_Benchmark(Resource):
             run_benchmark, pool=reqargs.get("pool", None), run_on="primary"
         )
         return (
-            {"task_id": task.id, "run_on": get_primary_node()},
+            {
+                "task_id": task.id,
+                "task_name": "storage.benchmark",
+                "run_on": get_primary_node(),
+            },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4527,7 +4531,7 @@ class API_Storage_Ceph_OSDDB_Root(Resource):
         )
 
         return (
-            {"task_id": task.id, "run_on": node},
+            {"task_id": task.id, "task_name": "osd.add_db_vg", "run_on": node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4732,7 +4736,7 @@ class API_Storage_Ceph_OSD_Root(Resource):
         )
 
         return (
-            {"task_id": task.id, "run_on": node},
+            {"task_id": task.id, "task_name": "osd.add", "run_on": node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4852,7 +4856,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
         )
 
         return (
-            {"task_id": task.id, "run_on": node},
+            {"task_id": task.id, "task_name": "osd.replace", "run_on": node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4907,7 +4911,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
         )
 
         return (
-            {"task_id": task.id, "run_on": node},
+            {"task_id": task.id, "task_name": "osd.refresh", "run_on": node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -4977,7 +4981,7 @@ class API_Storage_Ceph_OSD_Element(Resource):
         )
 
         return (
-            {"task_id": task.id, "run_on": node},
+            {"task_id": task.id, "task_name": "osd.remove", "run_on": node},
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
@@ -8508,7 +8512,11 @@ class API_Provisioner_Create_Root(Resource):
             run_on="primary",
         )
         return (
-            {"task_id": task.id, "run_on": get_primary_node()},
+            {
+                "task_id": task.id,
+                "task_name": "provisioner.create",
+                "run_on": get_primary_node(),
+            },
             202,
             {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )

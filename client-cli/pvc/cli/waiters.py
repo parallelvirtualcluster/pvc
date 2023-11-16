@@ -71,11 +71,12 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
     """
 
     task_id = task_detail["task_id"]
+    task_name = task_detail["task_name"]
 
     if not start_late:
         run_on = task_detail["run_on"]
 
-        echo(CLI_CONFIG, f"Task ID: {task_id} assigned to node {run_on}")
+        echo(CLI_CONFIG, f"Task ID: {task_id} ({task_name}) assigned to node {run_on}")
         echo(CLI_CONFIG, "")
 
         # Wait for the task to start
@@ -100,7 +101,7 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
             CLI_CONFIG, task_id=task_id, is_watching=True
         )
 
-        echo(CLI_CONFIG, f"Watching existing task {task_id}:")
+        echo(CLI_CONFIG, f"Watching existing task {task_id} ({task_name}):")
 
     # Start following the task state, updating progress as we go
     total_task = task_status.get("total")
