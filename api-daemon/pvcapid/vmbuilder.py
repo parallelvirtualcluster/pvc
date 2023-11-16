@@ -34,7 +34,7 @@ from contextlib import contextmanager
 from pvcapid.Daemon import config
 
 from daemon_lib.zkhandler import ZKHandler
-from daemon_lib.celery import start, fail, log_info, log_warn, update, finish
+from daemon_lib.celery import start, fail, log_info, log_warn, log_err, update, finish
 
 import daemon_lib.common as pvc_common
 import daemon_lib.node as pvc_node
@@ -86,6 +86,26 @@ class VMBuilder(object):
         self.vm_uuid = uuid.uuid4()
         self.vm_profile = vm_profile
         self.vm_data = vm_data
+
+    #
+    # Helper class functions; used by the individual scripts
+    #
+    def log_info(self, msg):
+        log_info(None, msg)
+
+    def log_warn(self, msg):
+        log_warn(None, msg)
+
+    def log_err(self, msg):
+        log_err(None, msg)
+
+    def fail(self, msg):
+        self.log_err(msg)
+        try:
+            self.cleanup()
+        except Exception:
+            pass
+        raise ProvisioningError()
 
     #
     # Primary class functions; implemented by the individual scripts
