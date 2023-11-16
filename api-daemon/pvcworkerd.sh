@@ -25,10 +25,10 @@ CELERY_BIN="$( which celery )"
 # app arguments work in a non-backwards-compatible way with Celery 5.
 case "$( cat /etc/debian_version )" in
     10.*)
-        CELERY_ARGS="worker --app pvcapid.flaskapi.celery --concurrency 3 --hostname pvcworkerd@$(hostname -s) --queues $(hostname -s) --loglevel INFO"
+        CELERY_ARGS="worker --app pvcapid.flaskapi.celery --events --concurrency 3 --hostname pvcworkerd@$(hostname -s) --queues $(hostname -s) --loglevel INFO"
     ;;
     *)
-        CELERY_ARGS="--app pvcapid.flaskapi.celery worker --concurrency 3 --hostname pvcworkerd@$(hostname -s) --queues $(hostname -s) --loglevel INFO"
+        CELERY_ARGS="--app pvcapid.flaskapi.celery worker --events --concurrency 3 --hostname pvcworkerd@$(hostname -s) --queues $(hostname -s) --loglevel INFO"
     ;;
 esac
 
