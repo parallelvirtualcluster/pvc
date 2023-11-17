@@ -427,7 +427,7 @@ def run_benchmark(self, pool):
     current_stage += 1
     return finish(
         self,
-        f"Storage benchmark {job_name} completed successfully.",
+        f"Storage benchmark {job_name} completed successfully",
         current=current_stage,
         total=total_stages,
     )

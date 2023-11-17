@@ -373,7 +373,7 @@ def create_vm(
         if pvc_vm.searchClusterByName(zkhandler, vm_name):
             fail(
                 celery,
-                f"A VM with the name '{vm_name}' already exists in the cluster.",
+                f"A VM with the name '{vm_name}' already exists in the cluster",
                 exception=ClusterError,
             )
 
@@ -416,7 +416,7 @@ def create_vm(
             ]:
                 fail(
                     celery,
-                    f'The network VNI "{vni}" is not present on the cluster.',
+                    f'The network VNI "{vni}" is not present on the cluster',
                     exception=ClusterError,
                 )
 
@@ -432,7 +432,7 @@ def create_vm(
                 if not volume_data:
                     fail(
                         celery,
-                        f"The source volume {volume['pool']}/{volume['source_volume']} could not be found.",
+                        f"The source volume {volume['pool']}/{volume['source_volume']} could not be found",
                         exception=ClusterError,
                     )
                 if not volume["pool"] in pools:
@@ -463,7 +463,7 @@ def create_vm(
             except Exception:
                 fail(
                     celery,
-                    f'Pool "{pool}" is not present on the cluster.',
+                    f'Pool "{pool}" is not present on the cluster',
                     exception=ClusterError,
                 )
             pool_free_space_gb = int(
@@ -474,7 +474,7 @@ def create_vm(
             if pool_vm_usage_gb >= pool_free_space_gb:
                 fail(
                     celery,
-                    f'Pool "{pool}" has only {pool_free_space_gb} GB free but VM requires {pool_vm_usage_gb} GB.',
+                    f'Pool "{pool}" has only {pool_free_space_gb} GB free but VM requires {pool_vm_usage_gb} GB',
                     exception=ClusterError,
                 )
 
