@@ -155,6 +155,7 @@ def entrypoint():
     print("|----------------------------------------------------------|")
     print("")
 
+    pvc_api.celery_startup()
     pvc_api.app.run(
         config["listen_address"],
         config["listen_port"],
