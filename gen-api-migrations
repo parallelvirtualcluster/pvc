@@ -7,7 +7,7 @@ VERSION="$( head -1 debian/changelog | awk -F'[()-]' '{ print $2 }' )"
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 pushd api-daemon &>/dev/null
 export PVC_CONFIG_FILE="./pvcapid.sample.yaml"
-./pvcapid-manage.py db migrate -m "PVC version ${VERSION}"
-./pvcapid-manage.py db upgrade
+./pvcapid-manage_flask.py db migrate -m "PVC version ${VERSION}"
+./pvcapid-manage_flask.py db upgrade
 popd &>/dev/null
 popd &>/dev/null
