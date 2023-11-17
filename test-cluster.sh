@@ -78,9 +78,9 @@ _pvc vm tag get testx
 _pvc vm list --tag mytag
 _pvc vm tag remove testx mytag
 _pvc vm network get testx
-_pvc vm vcpu set --no-restart testx 4
+_pvc vm vcpu set --no-restart testx 1
 _pvc vm vcpu get testx
-_pvc vm memory set --no-restart testx 4096
+_pvc vm memory set --no-restart testx 1024
 _pvc vm memory get testx
 _pvc vm vcpu set --no-restart testx 2
 _pvc vm memory set testx 2048 --restart --yes
