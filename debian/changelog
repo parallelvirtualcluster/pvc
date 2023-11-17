@@ -1,3 +1,21 @@
+pvc (0.9.81-0) unstable; urgency=high
+
+  **Breaking Changes:** This large release features a number of major changes. While these should all be a seamless transition, the behaviour of several commands and the backend system for handling them has changed significantly, along with new dependencies from PVC Ansible. A full cluster configuration update via `pvc.yml` is recommended after installing this version. Redis is replaced with KeyDB on coordinator nodes as a Celery backend; this transition will be handled gracefully by the `pvc-ansible` playbooks, though note that KeyDB will be exposed on the Upstream interface. The Celery worker system is renamed `pvcworkerd`, is now active on all nodes (coordinator and non-coordinator), and is expanded to encompass several commands that previously used a similar, custom setup within the node daemons, including "pvc vm flush-locks" and all "pvc storage osd" tasks. The previously-mentioned CLI commands now all feature "--wait"/"--no-wait" flags, with wait showing a progress bar and status output of the task run. The "pvc cluster task" command can now used for viewing all task types, replacing the previously-custom/specific "pvc provisioner status" command. All example provisioner scripts have been updated to leverage new helper functions in the Celery system; while updating these is optional, an administrator is recommended to do so for optimal log output behaviour.
+
+  * [CLI Client] Fixes "--live" argument handling and duplicate restart prompts.
+  * [All] Adds support for multiple OSDs on individual disks (NVMe workloads).
+  * [All] Corrects and updates OSD replace, refresh, remove, and add functionality; replace no longer purges.
+  * [All] Switches to KeyDB (multi-master) instead of Redis and adds node monitoring plugin.
+  * [All] Replaces Zookeeper/Node Daemon-based message passing and task handling with pvcworkerd Celery workers on all nodes; increases worker concurrency to 3 (per node).
+  * [All] Moves all task-like functions to Celery and updates existing Celery tasks to use new helpers and ID system.
+  * [CLI Client] Adds "--wait/--no-wait" options with progress bars to all Celery-based tasks, "--wait" default; adds a standardized task interface under "pvc cluster task".
+  * [Node Daemon] Cleans up the fencing handler and related functions.
+  * [Node Daemon] Fixes bugs with VM memory reporting during keepalives.
+  * [Node Daemon] Fixes a potential race condition during primary/secondary transition by backgrounding systemctl commands.
+  * [API Daemon] Updates example provisioner plugins to use new Celery functions.
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 17 Nov 2023 01:29:41 -0500
+
 pvc (0.9.80-0) unstable; urgency=high
 
   * [CLI] Improves CLI performance by not loading "pkg_resources" until needed
