@@ -1,6 +1,8 @@
 *.pyc
 *.tmp
 *.swp
+# Ignore swagger output (for pvc-docs instead)
+swagger.json
 # Ignore build artifacts
 debian/pvc-*/
 debian/*.log
