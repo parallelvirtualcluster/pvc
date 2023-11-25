@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.82](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.82)
+
+  * [API Daemon] Fixes a bug where the Celery result_backend was not loading properly on Celery <5.2.x (Debian 10/11).
+
 ###### [v0.9.81](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.81)
 
   **Breaking Changes:** This large release features a number of major changes. While these should all be a seamless transition, the behaviour of several commands and the backend system for handling them has changed significantly, along with new dependencies from PVC Ansible. A full cluster configuration update via `pvc.yml` is recommended after installing this version. Redis is replaced with KeyDB on coordinator nodes as a Celery backend; this transition will be handled gracefully by the `pvc-ansible` playbooks, though note that KeyDB will be exposed on the Upstream interface. The Celery worker system is renamed `pvcworkerd`, is now active on all nodes (coordinator and non-coordinator), and is expanded to encompass several commands that previously used a similar, custom setup within the node daemons, including "pvc vm flush-locks" and all "pvc storage osd" tasks. The previously-mentioned CLI commands now all feature "--wait"/"--no-wait" flags, with wait showing a progress bar and status output of the task run. The "pvc cluster task" command can now used for viewing all task types, replacing the previously-custom/specific "pvc provisioner status" command. All example provisioner scripts have been updated to leverage new helper functions in the Celery system; while updating these is optional, an administrator is recommended to do so for optimal log output behaviour.
