@@ -141,11 +141,15 @@ celery = Celery(
     result_backend=celery_task_uri,
     result_extended=True,
 )
+app.config["broker_url"] = celery_task_uri
+app.config["result_backend"] = celery_task_uri
+celery.conf.update(app.config)
 
 
 def celery_startup():
-    app.config["CELERY_broker_url"] = celery_task_uri
-    app.config["result_backend"] = celery_task_uri
+    """
+    Runs when the API daemon starts, but not the Celery workers or the API doc generator
+    """
     app.config["task_queues"] = tuple(
         [Queue(h, routing_key=f"{h}.#") for h in get_all_nodes()]
     )
