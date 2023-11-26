@@ -743,10 +743,27 @@ add rule inet filter forward ip6 saddr {netaddr6} counter jump {vxlannic}-out
             )
 
             # Recreate the environment we need for dnsmasq
-            pvcnoded_config_file = os.environ["PVCD_CONFIG_FILE"]
+            pvc_config_file = None
+            try:
+                _config_file = "/etc/pvc/pvcnoded.yaml"
+                if not os.path.exists(_config_file):
+                    raise
+                pvc_config_file = _config_file
+            except Exception:
+                pass
+            try:
+                _config_file = os.environ["PVC_CONFIG_FILE"]
+                if not os.path.exists(_config_file):
+                    raise
+                pvc_config_file = _config_file
+            except Exception:
+                pass
+            if pvc_config_file is None:
+                raise Exception
+
             dhcp_environment = {
                 "DNSMASQ_BRIDGE_INTERFACE": self.bridge_nic,
-                "PVCD_CONFIG_FILE": pvcnoded_config_file,
+                "PVC_CONFIG_FILE": pvc_config_file,
             }
 
             # Define the dnsmasq config fragments

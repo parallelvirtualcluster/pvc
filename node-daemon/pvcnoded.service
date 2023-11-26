@@ -10,7 +10,7 @@ PartOf = pvc.target
 Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
-Environment = PVCD_CONFIG_FILE=/etc/pvc/pvcnoded.yaml
+Environment = PVC_CONFIG_FILE=/etc/pvc/pvc.conf
 ExecStartPre = /bin/sleep 2
 ExecStart = /usr/share/pvc/pvcnoded.py
 ExecStopPost = /bin/sleep 2

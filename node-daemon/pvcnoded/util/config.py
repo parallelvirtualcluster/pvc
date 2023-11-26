@@ -70,11 +70,29 @@ def get_static_data():
 
 
 def get_configuration_path():
+    config_file = None
     try:
-        return os.environ["PVCD_CONFIG_FILE"]
-    except KeyError:
-        print('ERROR: The "PVCD_CONFIG_FILE" environment variable must be set.')
+        _config_file = "/etc/pvc/pvcnoded.yaml"
+        if not os.path.exists(_config_file):
+            raise
+        config_file = _config_file
+        config_type = "legacy"
+    except Exception:
+        pass
+    try:
+        _config_file = os.environ["PVC_CONFIG_FILE"]
+        if not os.path.exists(_config_file):
+            raise
+        config_file = _config_file
+        config_type = "current"
+    except Exception:
+        pass
+
+    if not config_file:
+        print('ERROR: The "PVC_CONFIG_FILE" environment variable must be set.')
         os._exit(1)
+
+    return config_file, config_type
 
 
 def get_hostname():
@@ -119,12 +137,215 @@ def validate_floating_ip(config, network):
     return True, ""
 
 
-def get_configuration():
-    """
-    Parse the configuration of the node daemon.
-    """
-    pvcnoded_config_file = get_configuration_path()
+def get_configuration_current(config_file):
+    print('Loading configuration from file "{}"'.format(config_file))
 
+    with open(config_file, "r") as cfgfh:
+        try:
+            o_config = yaml.load(cfgfh, Loader=yaml.SafeLoader)
+        except Exception as e:
+            print(f"ERROR: Failed to parse configuration file: {e}")
+            os._exit(1)
+
+    config = dict()
+
+    node_fqdn, node_hostname, node_domain, node_id = get_hostname()
+
+    config_thisnode = {
+        "node": node_hostname,
+        "node_hostname": node_hostname,
+        "node_fqdn": node_fqdn,
+        "node_domain": node_domain,
+        "node_id": node_id,
+    }
+    config = {**config, **config_thisnode}
+
+    try:
+        o_path = o_config["path"]
+        config_path = {
+            "node_ip_file": o_path["node_ip_file"],
+            "plugin_directory": o_path.get(
+                "plugin_directory", "/usr/share/pvc/plugins"
+            ),
+            "dynamic_directory": o_path["dynamic_directory"],
+            "log_directory": o_path["log_directory"],
+            "console_log_directory": o_path["console_log_directory"],
+            "ceph_directory": o_path["ceph_directory"],
+        }
+        config = {**config, **config_path}
+
+        o_cluster = o_config["cluster"]
+        config_cluster = {
+            "cluster_name": o_cluster["name"],
+            "all_nodes": o_cluster["all_nodes"],
+            "coordinators": o_cluster["all_coordinators"],
+        }
+        config = {**config, **config_cluster}
+
+        o_cluster_networks = o_cluster["networks"]
+        for network_type in ["cluster", "storage", "upstream"]:
+            o_cluster_networks_specific = o_cluster_networks[network_type]
+            config_cluster_networks_specific = {
+                f"{network_type}_domain": o_cluster_networks_specific["domain"],
+                f"{network_type}_dev": o_cluster_networks_specific["device"],
+                f"{network_type}_mtu": o_cluster_networks_specific["mtu"],
+                f"{network_type}_network": o_cluster_networks_specific["ipv4"][
+                    "network_address"
+                ]
+                + "/"
+                + o_cluster_networks_specific["ipv4"]["netmask"],
+                f"{network_type}_floating_ip": o_cluster_networks_specific["ipv4"][
+                    "floating_address"
+                ]
+                + "/"
+                + o_cluster_networks_specific["ipv4"]["netmask"],
+                f"{network_type}_gateway": o_cluster_networks_specific["ipv4"][
+                    "gateway_address"
+                ],
+                f"{network_type}_node_ip_selection": o_cluster_networks_specific[
+                    "node_ip_selection"
+                ],
+            }
+
+            result, msg = validate_floating_ip(
+                config_cluster_networks_specific, network_type
+            )
+            if not result:
+                raise MalformedConfigurationError(msg)
+
+            network = ip_network(
+                config_cluster_networks_specific[f"{network_type}_network"]
+            )
+
+            if config["upstream_node_ip_selection"] == "static":
+                with open(config["node_ip_file"], "r") as ipfh:
+                    ip_last_octet = ipfh.read().strip()
+                address_id = [
+                    idx
+                    for idx, ip in enumerate(list(network.hosts()))
+                    if int(ip.split(".")[-1]) == ip_last_octet
+                ][0]
+            else:
+                address_id = int(node_id) - 1
+
+            config_cluster_networks_specific[
+                f"{network_type}_dev_ip"
+            ] = f"{list(network.hosts())[address_id]}/{network.prefixlen}"
+
+            config = {**config, **config_cluster_networks_specific}
+
+        o_database = o_config["database"]
+        config_database = {
+            "zookeeper_port": o_database["zookeeper"]["port"],
+            "keydb_port": o_database["keydb"]["port"],
+            "keydb_host": o_database["keydb"]["hostname"],
+            "keydb_path": o_database["keydb"]["path"],
+            "metadata_postgresql_port": o_database["postgres"]["port"],
+            "metadata_postgresql_host": o_database["postgres"]["hostname"],
+            "metadata_postgresql_dbname": o_database["postgres"]["credentials"]["api"][
+                "database"
+            ],
+            "metadata_postgresql_user": o_database["postgres"]["credentials"]["api"][
+                "username"
+            ],
+            "metadata_postgresql_password": o_database["postgres"]["credentials"][
+                "api"
+            ]["password"],
+            "pdns_postgresql_port": o_database["postgres"]["port"],
+            "pdns_postgresql_host": o_database["postgres"]["hostname"],
+            "pdns_postgresql_dbname": o_database["postgres"]["credentials"]["dns"][
+                "database"
+            ],
+            "pdns_postgresql_user": o_database["postgres"]["credentials"]["dns"][
+                "username"
+            ],
+            "pdns_postgresql_password": o_database["postgres"]["credentials"]["dns"][
+                "password"
+            ],
+        }
+        config = {**config, **config_database}
+
+        o_timer = o_config["timer"]
+        config_timer = {
+            "vm_shutdown_timeout": int(o_timer.get("vm_shutdown_timeout", 180)),
+            "keepalive_interval": int(o_timer.get("keepalive_interval", 5)),
+            "monitoring_interval": int(o_timer.get("monitoring_interval", 60)),
+        }
+        config = {**config, **config_timer}
+
+        o_fencing = o_config["fencing"]
+        config_fencing = {
+            "disable_on_ipmi_failure": o_fencing["disble_on_ipmi_failure"],
+            "fence_intervals": int(o_fencing["intervals"].get("fence_intervals", 6)),
+            "suicide_intervals": int(o_fencing["intervals"].get("suicide_interval", 0)),
+            "successful_fence": o_fencing["actions"].get("successful_fence", None),
+            "failed_fence": o_fencing["actions"].get("failed_fence", None),
+            "ipmi_hostname": o_fencing["ipmi"]["hostname_format"].format(
+                node_id=node_id
+            ),
+            "ipmi_username": o_fencing["ipmi"]["username"],
+            "ipmi_password": o_fencing["ipmi"]["password"],
+        }
+        config = {**config, **config_fencing}
+
+        o_migration = o_config["migration"]
+        config_migration = {
+            "migration_target_selector": o_migration.get("target_selector", "mem"),
+        }
+        config = {**config, **config_migration}
+
+        o_logging = o_config["logging"]
+        config_logging = {
+            "debug": o_logging.get("debug_logging", False),
+            "file_logging": o_logging.get("file_logging", False),
+            "stdout_logging": o_logging.get("stdout_logging", False),
+            "zookeeper_logging": o_logging.get("zookeeper_logging", False),
+            "log_colours": o_logging.get("log_colours", False),
+            "log_dates": o_logging.get("log_dates", False),
+            "log_keepalives": o_logging.get("log_keepalives", False),
+            "log_keepalive_cluster_details": o_logging.get(
+                "log_cluster_details", False
+            ),
+            "log_keepalive_plugin_details": o_logging.get(
+                "log_monitoring_details", False
+            ),
+            "console_log_lines": o_logging.get("console_log_lines", False),
+            "node_log_lines": o_logging.get("node_log_lines", False),
+        }
+        config = {**config, **config_logging}
+
+        o_guest_networking = o_config["guest_networking"]
+        config_guest_networking = {
+            "bridge_dev": o_guest_networking["bridge_device"],
+            "bridge_mtu": o_guest_networking["bridge_mtu"],
+            "enable_sriov": o_guest_networking.get("sriov_enable", False),
+            "sriov_device": o_guest_networking.get("sriov_device", list()),
+        }
+        config = {**config, **config_guest_networking}
+
+        o_ceph = o_config["ceph"]
+        config_ceph = {
+            "ceph_config_file": config["ceph_directory"]
+            + "/"
+            + o_ceph["ceph_config_file"],
+            "ceph_admin_keyring": config["ceph_directory"]
+            + "/"
+            + o_ceph["ceph_keyring_file"],
+            "ceph_monitor_port": o_ceph["monitor_port"],
+            "ceph_secret_uuid": o_ceph["secret_uuid"],
+        }
+        config = {**config, **config_ceph}
+
+        # Add our node static data to the config
+        config["static_data"] = get_static_data()
+
+    except Exception as e:
+        raise MalformedConfigurationError(e)
+
+    return config
+
+
+def get_configuration_legacy(pvcnoded_config_file):
     print('Loading configuration from file "{}"'.format(pvcnoded_config_file))
 
     with open(pvcnoded_config_file, "r") as cfgfile:
@@ -415,6 +636,18 @@ def get_configuration():
         config["static_data"] = get_static_data()
 
     return config
+
+
+def get_configuration():
+    """
+    Parse the configuration of the node daemon.
+    """
+    pvc_config_file, pvc_config_type = get_configuration_path()
+
+    if pvc_config_type == "legacy":
+        return get_configuration_legacy(pvc_config_file)
+    else:
+        return get_configuration_current(pvc_config_file)
 
 
 def validate_directories(config):
