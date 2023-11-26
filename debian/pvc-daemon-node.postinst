@@ -12,8 +12,5 @@ systemctl enable /lib/systemd/system/pvc.target
 if systemctl is-active --quiet pvcnoded.service; then
     echo "NOTE: The PVC node daemon (pvcnoded.service) has not been restarted; this is up to the administrator."
 else
-    echo "NOTE: The PVC node daemon (pvcnoded.service) has not been started; create a config file at /etc/pvc/pvcnoded.yaml then start it."
+    echo "NOTE: The PVC node daemon (pvcnoded.service) has not been started; create a config file at /etc/pvc/pvc.conf then start it."
 fi
-
-# Clean up any old sample configs
-rm /etc/pvc/pvcnoded.sample.yaml || true
