@@ -70,12 +70,12 @@ def get_client_id():
 def connect_zookeeper():
     # We expect the environ to contain the config file
     try:
-        pvcnoded_config_file = os.environ["PVCD_CONFIG_FILE"]
+        pvc_config_file = os.environ["PVC_CONFIG_FILE"]
     except Exception:
         # Default place
-        pvcnoded_config_file = "/etc/pvc/pvcnoded.yaml"
+        pvc_config_file = "/etc/pvc/pvc.conf"
 
-    with open(pvcnoded_config_file, "r") as cfgfile:
+    with open(pvc_config_file, "r") as cfgfile:
         try:
             o_config = yaml.load(cfgfile, yaml.SafeLoader)
         except Exception as e:
@@ -87,7 +87,7 @@ def connect_zookeeper():
 
     try:
         zk_conn = kazoo.client.KazooClient(
-            hosts=o_config["pvc"]["cluster"]["coordinators"]
+            hosts=o_config["cluster"]["coordinator_nodes"]
         )
         zk_conn.start()
     except Exception as e:
