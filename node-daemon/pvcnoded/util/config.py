@@ -172,6 +172,18 @@ def get_configuration_current(config_file):
             "console_log_directory": o_path["console_log_directory"],
             "ceph_directory": o_path["ceph_directory"],
         }
+        # Define our dynamic directory schema
+        config_path["dnsmasq_dynamic_directory"] = (
+            config_path["dynamic_directory"] + "/dnsmasq"
+        )
+        config_path["pdns_dynamic_directory"] = (
+            config_path["dynamic_directory"] + "/pdns"
+        )
+        config_path["nft_dynamic_directory"] = config_path["dynamic_directory"] + "/nft"
+        # Define our log directory schema
+        config_path["dnsmasq_log_directory"] = config_path["log_directory"] + "/dnsmasq"
+        config_path["pdns_log_directory"] = config_path["log_directory"] + "/pdns"
+        config_path["nft_log_directory"] = config_path["log_directory"] + "/nft"
         config = {**config, **config_path}
 
         o_subsystem = o_config["subsystem"]
