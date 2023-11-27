@@ -8,7 +8,7 @@ After = network-online.target
 Type = simple
 WorkingDirectory = /usr/share/pvc
 Environment = PYTHONUNBUFFERED=true
-Environment = PVC_CONFIG_FILE=/etc/pvc/pvcapid.yaml
+Environment = PVC_CONFIG_FILE=/etc/pvc/pvc.conf
 ExecStart = /usr/share/pvc/pvcworkerd.sh
 Restart = on-failure
 
