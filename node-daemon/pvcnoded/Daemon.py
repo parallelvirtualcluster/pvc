@@ -65,11 +65,6 @@ def entrypoint():
     config = pvcnoded.util.config.get_configuration()
     config["pvcnoded_version"] = version
 
-    # Set some useful booleans for later (fewer characters)
-    debug = config["debug"]
-    if debug:
-        print("DEBUG MODE ENABLED")
-
     # Create and validate our directories
     pvcnoded.util.config.validate_directories(config)
 
