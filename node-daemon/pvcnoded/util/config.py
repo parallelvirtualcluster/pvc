@@ -168,7 +168,7 @@ def get_configuration_current(config_file):
                 "plugin_directory", "/usr/share/pvc/plugins"
             ),
             "dynamic_directory": o_path["dynamic_directory"],
-            "log_directory": o_path["log_directory"],
+            "log_directory": o_path["system_log_directory"],
             "console_log_directory": o_path["console_log_directory"],
             "ceph_directory": o_path["ceph_directory"],
         }
@@ -178,7 +178,7 @@ def get_configuration_current(config_file):
         config_cluster = {
             "cluster_name": o_cluster["name"],
             "all_nodes": o_cluster["all_nodes"],
-            "coordinators": o_cluster["all_coordinators"],
+            "coordinators": o_cluster["coordinator_nodes"],
         }
         config = {**config, **config_cluster}
 
@@ -193,19 +193,24 @@ def get_configuration_current(config_file):
                     "network_address"
                 ]
                 + "/"
-                + o_cluster_networks_specific["ipv4"]["netmask"],
+                + str(o_cluster_networks_specific["ipv4"]["netmask"]),
                 f"{network_type}_floating_ip": o_cluster_networks_specific["ipv4"][
                     "floating_address"
                 ]
                 + "/"
-                + o_cluster_networks_specific["ipv4"]["netmask"],
-                f"{network_type}_gateway": o_cluster_networks_specific["ipv4"][
-                    "gateway_address"
-                ],
+                + str(o_cluster_networks_specific["ipv4"]["netmask"]),
                 f"{network_type}_node_ip_selection": o_cluster_networks_specific[
                     "node_ip_selection"
                 ],
             }
+
+            if (
+                o_cluster_networks_specific["ipv4"].get("gateway_address", None)
+                is not None
+            ):
+                config_cluster_networks_specific[
+                    "{network_type}_gateway"
+                ] = o_cluster_networks_specific["ipv4"]["gateway_address"]
 
             result, msg = validate_floating_ip(
                 config_cluster_networks_specific, network_type
@@ -217,7 +222,10 @@ def get_configuration_current(config_file):
                 config_cluster_networks_specific[f"{network_type}_network"]
             )
 
-            if config["upstream_node_ip_selection"] == "static":
+            if (
+                config_cluster_networks_specific[f"{network_type}_node_ip_selection"]
+                == "static"
+            ):
                 with open(config["node_ip_file"], "r") as ipfh:
                     ip_last_octet = ipfh.read().strip()
                 address_id = [
@@ -275,7 +283,7 @@ def get_configuration_current(config_file):
 
         o_fencing = o_config["fencing"]
         config_fencing = {
-            "disable_on_ipmi_failure": o_fencing["disble_on_ipmi_failure"],
+            "disable_on_ipmi_failure": o_fencing["disable_on_ipmi_failure"],
             "fence_intervals": int(o_fencing["intervals"].get("fence_intervals", 6)),
             "suicide_intervals": int(o_fencing["intervals"].get("suicide_interval", 0)),
             "successful_fence": o_fencing["actions"].get("successful_fence", None),
@@ -645,9 +653,11 @@ def get_configuration():
     pvc_config_file, pvc_config_type = get_configuration_path()
 
     if pvc_config_type == "legacy":
-        return get_configuration_legacy(pvc_config_file)
+        config = get_configuration_legacy(pvc_config_file)
     else:
-        return get_configuration_current(pvc_config_file)
+        config = get_configuration_current(pvc_config_file)
+
+    return config
 
 
 def validate_directories(config):

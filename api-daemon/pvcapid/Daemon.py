@@ -99,7 +99,8 @@ def get_configuration_current(config_file):
         # Create the config object
         config = {
             "debug": strtobool(o_config["logging"].get("debug_logging", "False")),
-            "coordinators": o_config["cluster"]["all_coordinators"],
+            "all_nodes": o_config["cluster"]["all_nodes"],
+            "coordinators": o_config["cluster"]["coordinator_nodes"],
             "listen_address": o_config["api"]["listen"]["address"],
             "listen_port": int(o_config["api"]["listen"]["port"]),
             "auth_enabled": strtobool(
