@@ -174,6 +174,16 @@ def get_configuration_current(config_file):
         }
         config = {**config, **config_path}
 
+        o_subsystem = o_config["subsystem"]
+        config_subsystem = {
+            "enable_hypervisor": o_subsystem.get("enable_hypervisor", True),
+            "enable_networking": o_subsystem.get("enable_networking", True),
+            "enable_storage": o_subsystem.get("enable_storage", True),
+            "enable_worker": o_subsystem.get("enable_worker", True),
+            "enable_api": o_subsystem.get("enable_api", True),
+        }
+        config = {**config, **config_subsystem}
+
         o_cluster = o_config["cluster"]
         config_cluster = {
             "cluster_name": o_cluster["name"],
@@ -397,6 +407,7 @@ def get_configuration_legacy(pvcnoded_config_file):
         "enable_hypervisor": o_functions.get("enable_hypervisor", False),
         "enable_networking": o_functions.get("enable_networking", False),
         "enable_storage": o_functions.get("enable_storage", False),
+        "enable_worker": o_functions.get("enable_worker", True),
         "enable_api": o_functions.get("enable_api", False),
     }
 

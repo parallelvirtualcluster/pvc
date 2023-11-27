@@ -70,14 +70,16 @@ def start_ceph_mgr(logger, config):
 
 
 def start_keydb(logger, config):
-    if config["enable_api"] and config["daemon_mode"] == "coordinator":
+    if (config["enable_api"] or config["enable_worker"]) and config[
+        "daemon_mode"
+    ] == "coordinator":
         logger.out("Starting KeyDB daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
         common.run_os_command("systemctl start keydb-server.service")
 
 
-def start_api_worker(logger, config):
-    if config["enable_api"]:
+def start_worker(logger, config):
+    if config["enable_worker"]:
         logger.out("Starting Celery Worker daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
         common.run_os_command("systemctl start pvcworkerd.service")
@@ -91,7 +93,7 @@ def start_system_services(logger, config):
     start_ceph_mon(logger, config)
     start_ceph_mgr(logger, config)
     start_keydb(logger, config)
-    start_api_worker(logger, config)
+    start_worker(logger, config)
 
     logger.out("Waiting 10 seconds for daemons to start", state="s")
     sleep(10)
