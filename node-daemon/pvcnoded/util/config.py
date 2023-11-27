@@ -218,9 +218,9 @@ def get_configuration_current(config_file):
                 o_cluster_networks_specific["ipv4"].get("gateway_address", None)
                 is not None
             ):
-                config_cluster_networks_specific[
-                    "{network_type}_gateway"
-                ] = o_cluster_networks_specific["ipv4"]["gateway_address"]
+                config[f"{network_type}_gateway"] = o_cluster_networks_specific["ipv4"][
+                    "gateway_address"
+                ]
 
             result, msg = validate_floating_ip(
                 config_cluster_networks_specific, network_type
