@@ -163,7 +163,6 @@ def get_configuration_current(config_file):
     try:
         o_path = o_config["path"]
         config_path = {
-            "node_ip_file": o_path["node_ip_file"],
             "plugin_directory": o_path.get(
                 "plugin_directory", "/usr/share/pvc/plugins"
             ),
@@ -246,17 +245,19 @@ def get_configuration_current(config_file):
 
             if (
                 config_cluster_networks_specific[f"{network_type}_node_ip_selection"]
-                == "static"
+                == "by-id"
             ):
-                with open(config["node_ip_file"], "r") as ipfh:
-                    ip_last_octet = ipfh.read().strip()
+                address_id = int(node_id) - 1
+            else:
+                # This roundabout solution ensures the given IP is in the subnet and is something valid
                 address_id = [
                     idx
                     for idx, ip in enumerate(list(network.hosts()))
-                    if int(ip.split(".")[-1]) == ip_last_octet
+                    if str(ip)
+                    == config_cluster_networks_specific[
+                        f"{network_type}_node_ip_selection"
+                    ]
                 ][0]
-            else:
-                address_id = int(node_id) - 1
 
             config_cluster_networks_specific[
                 f"{network_type}_dev_ip"
