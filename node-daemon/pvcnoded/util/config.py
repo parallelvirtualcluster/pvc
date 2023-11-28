@@ -311,9 +311,7 @@ def get_configuration_current(config_file):
             "suicide_intervals": int(o_fencing["intervals"].get("suicide_interval", 0)),
             "successful_fence": o_fencing["actions"].get("successful_fence", None),
             "failed_fence": o_fencing["actions"].get("failed_fence", None),
-            "ipmi_hostname": o_fencing["ipmi"]["hostname_format"].format(
-                node_id=node_id
-            ),
+            "ipmi_hostname": o_fencing["ipmi"]["hostname"].format(node_id=node_id),
             "ipmi_username": o_fencing["ipmi"]["username"],
             "ipmi_password": o_fencing["ipmi"]["password"],
         }
