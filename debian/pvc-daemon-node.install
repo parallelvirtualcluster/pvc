@@ -4,4 +4,3 @@ node-daemon/pvcnoded.service lib/systemd/system
 node-daemon/pvc.target lib/systemd/system
 node-daemon/pvcautoready.service lib/systemd/system
 node-daemon/monitoring usr/share/pvc
-node-daemon/plugins usr/share/pvc

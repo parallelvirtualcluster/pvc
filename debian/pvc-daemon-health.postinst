@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Reload systemd's view of the units
+systemctl daemon-reload
+
+# Enable the service and target
+systemctl enable /lib/systemd/system/pvchealthd.service
+
+# Inform administrator of the service restart/startup not occurring automatically
+if systemctl is-active --quiet pvchealthd.service; then
+    echo "NOTE: The PVC health daemon (pvchealthd.service) has not been restarted; this is up to the administrator."
+else
+    echo "NOTE: The PVC health daemon (pvchealthd.service) has not been started; create a config file at /etc/pvc/pvc.conf then start it."
+fi

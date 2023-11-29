@@ -1,0 +1,4 @@
+health-daemon/pvchealthd.py usr/share/pvc
+health-daemon/pvchealthd usr/share/pvc
+health-daemon/pvchealthd.service lib/systemd/system
+health-daemon/plugins usr/share/pvc

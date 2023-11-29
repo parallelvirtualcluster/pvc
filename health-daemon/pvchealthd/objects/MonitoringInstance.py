@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# PluginInstance.py - Class implementing a PVC monitoring instance
+# MonitoringInstance.py - Class implementing a PVC monitor in pvchealthd
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>

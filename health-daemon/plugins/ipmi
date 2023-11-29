@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# psur.py - PVC Monitoring example plugin for PSU Redundancy
+# ipmi.py - PVC Monitoring example plugin for IPMI
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
@@ -20,7 +20,7 @@
 ###############################################################################
 
 # This script provides an example of a PVC monitoring plugin script. It will create
-# a simple plugin to check IPMI for power supply reundancy status.
+# a simple plugin to check whether the system IPMI is reachable.
 
 # This script can thus be used as an example or reference implementation of a
 # PVC monitoring pluginscript and expanded upon as required.
@@ -38,12 +38,12 @@
 
 # This import is always required here, as MonitoringPlugin is used by the
 # MonitoringPluginScript class
-from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+from pvchealthd.objects.MonitoringInstance import MonitoringPlugin
 
 
 # A monitoring plugin script must always expose its nice name, which must be identical to
 # the file name
-PLUGIN_NAME = "psur"
+PLUGIN_NAME = "ipmi"
 
 
 # The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
@@ -54,26 +54,11 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         This step is optional and should be used sparingly.
 
-        If you wish for the plugin to not load in certain conditions, do any checks here
+        If you wish for the plugin to not ipmi in certain conditions, do any checks here
         and return a non-None failure message to indicate the error.
         """
 
-        # Run any imports first
-        from daemon_lib.common import run_os_command
-        from re import match
-
-        _ipmitool_ret, _ipmitool_list, _ = run_os_command("ipmitool sdr type 'Power Supply'")
-        if _ipmitool_ret != 0:
-            return "Error running ipmitool command"
-        else:
-            search_values = [
-                "PS Redundancy",  # Dell PowerEdge
-                "Power Supplies", # HP ProLiant
-                "PS_RDNDNT_MODE", # Cisco UCS
-            ]
-            reading_lines = [l for l in _ipmitool_list.split('\n') if len(l.split('|')) > 0 and l.split('|')[0].strip() in search_values]
-            if len(reading_lines) < 1:
-                return "No valid input power sensors found"
+        pass
 
     def run(self, coordinator_state=None):
         """
@@ -84,46 +69,32 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Run any imports first
         from daemon_lib.common import run_os_command
-        from re import match
 
-        health_delta = 0
-        messages = list()
+        # Check the node's IPMI interface
+        ipmi_hostname = self.config["ipmi_hostname"]
+        ipmi_username = self.config["ipmi_username"]
+        ipmi_password = self.config["ipmi_password"]
+        retcode, _, _ = run_os_command(
+            f"/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_username} -P {ipmi_password} chassis power status",
+            timeout=5
+        )
 
-        _ipmitool_ret, _ipmitool_list, _ = run_os_command("ipmitool sdr type 'Power Supply'")
-        if _ipmitool_ret != 0 or len(_ipmitool_list.split('\n')) < 1:
-            health_delta = 0
-            messages.append("Error running ipmitool command")
+        if retcode > 0:
+            # Set the health delta to 10 (subtract 10 from the total of 100)
+            health_delta = 10
+            # Craft a message that can be used by the clients
+            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is NOT responding"
         else:
-            search_values = [
-                "PS Redundancy",  # Dell PowerEdge
-                "Power Supplies", # HP ProLiant
-                "PS_RDNDNT_MODE", # Cisco UCS
-            ]
-
-            reading_lines = [l for l in _ipmitool_list.split('\n') if len(l.split('|')) > 0 and l.split('|')[0].strip() in search_values]
-            if len(reading_lines) > 0:
-                for reading_line in reading_lines:
-                    reading_sensor = reading_line.split('|')[1].strip()
-                    reading_text = reading_line.split('|')[-1].strip()
-
-                    if reading_text == "Fully Redundant":
-                        health_delta += 0
-                        messages.append(f"Input power sensor {reading_sensor} reports {reading_text}")
-                    elif reading_text == "No Reading":
-                        health_delta += 5
-                        messages.append(f"Input power sensor {reading_sensor} reports {reading_text} (PSU redundancy not configured?)")
-                    else:
-                        health_delta += 10
-                        messages.append(f"Input power sensor {reading_sensor} reports {reading_text}")
-            else:
-                health_delta = 5
-                messages.append("No valid input power sensors found, but configured")
+            # Set the health delta to 0 (no change)
+            health_delta = 0
+            # Craft a message that can be used by the clients
+            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is responding"
 
         # Set the health delta in our local PluginResult object
         self.plugin_result.set_health_delta(health_delta)
 
         # Set the message in our local PluginResult object
-        self.plugin_result.set_message(', '.join(messages))
+        self.plugin_result.set_message(message)
 
         # Return our local PluginResult object
         return self.plugin_result

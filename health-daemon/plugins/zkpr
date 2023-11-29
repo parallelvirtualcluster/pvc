@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# edac.py - PVC Monitoring example plugin for EDAC
+# zkpr.py - PVC Monitoring example plugin for Zookeeper
 # Part of the Parallel Virtual Cluster (PVC) system
 #
 #    Copyright (C) 2018-2022 Joshua M. Boniface <joshua@boniface.me>
@@ -20,7 +20,7 @@
 ###############################################################################
 
 # This script provides an example of a PVC monitoring plugin script. It will create
-# a simple plugin to check the system's EDAC registers and report any failures.
+# a simple plugin to check the Zookeeper instance on the node for operation.
 
 # This script can thus be used as an example or reference implementation of a
 # PVC monitoring pluginscript and expanded upon as required.
@@ -38,12 +38,12 @@
 
 # This import is always required here, as MonitoringPlugin is used by the
 # MonitoringPluginScript class
-from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+from pvchealthd.objects.MonitoringInstance import MonitoringPlugin
 
 
 # A monitoring plugin script must always expose its nice name, which must be identical to
 # the file name
-PLUGIN_NAME = "edac"
+PLUGIN_NAME = "zkpr"
 
 
 # The MonitoringPluginScript class must be named as such, and extend MonitoringPlugin.
@@ -54,7 +54,7 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         This step is optional and should be used sparingly.
 
-        If you wish for the plugin to not load in certain conditions, do any checks here
+        If you wish for the plugin to not zkpr in certain conditions, do any checks here
         and return a non-None failure message to indicate the error.
         """
 
@@ -68,26 +68,27 @@ class MonitoringPluginScript(MonitoringPlugin):
         """
 
         # Run any imports first
-        import daemon_lib.common as common
-        from re import match, search
+        from kazoo.client import KazooClient, KazooState
 
-        # Get edac-util output
-        retcode, stdout, stderr = common.run_os_command('/usr/bin/edac-util')
+        zk_conn = None
 
-        # If there's no errors, we're OK
-        if match(r'^edac-util: No errors to report.', stdout):
-            health_delta = 0
-            message = "EDAC reports no errors"
-        else:
-            health_delta = 0
-            message = "EDAC reports errors: "
-            errors = list()
-            for line in stdout.split('\n'):
-                if match(r'^mc[0-9]: csrow', line):
-                    if 'Uncorrected' in line:
-                        health_delta = 50
-                    errors.append(' '.join(line.split()[2:]))
-            message += ', '.join(errors)
+        # Set the health delta to 0 (no change)
+        health_delta = 0
+        # Craft a message that can be used by the clients
+        message = "Successfully connected to Zookeeper on localhost"
+
+        # Check the Zookeeper connection
+        try:
+            zk_conn = KazooClient(hosts=[f"{self.this_node.name}:2181"], timeout=1, read_only=True)
+            zk_conn.start(timeout=1)
+            data = zk_conn.get('/schema/version')
+        except Exception as e:
+            health_delta = 50
+            message = f"Failed to connect to Zookeeper: {e}"
+        finally:
+            if zk_conn is not None:
+                zk_conn.stop()
+                zk_conn.close()
 
         # Set the health delta in our local PluginResult object
         self.plugin_result.set_health_delta(health_delta)

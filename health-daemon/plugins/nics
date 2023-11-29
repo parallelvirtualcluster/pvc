@@ -39,7 +39,7 @@
 
 # This import is always required here, as MonitoringPlugin is used by the
 # MonitoringPluginScript class
-from pvcnoded.objects.MonitoringInstance import MonitoringPlugin
+from pvchealthd.objects.MonitoringInstance import MonitoringPlugin
 
 
 # A monitoring plugin script must always expose its nice name, which must be identical to

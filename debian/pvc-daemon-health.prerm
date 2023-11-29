@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Disable the services
+systemctl disable pvchealthd.service

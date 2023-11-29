@@ -27,7 +27,6 @@ import pvcnoded.util.services
 import pvcnoded.util.libvirt
 import pvcnoded.util.zookeeper
 
-import pvcnoded.objects.MonitoringInstance as MonitoringInstance
 import pvcnoded.objects.DNSAggregatorInstance as DNSAggregatorInstance
 import pvcnoded.objects.MetadataAPIInstance as MetadataAPIInstance
 import pvcnoded.objects.VMInstance as VMInstance
@@ -59,7 +58,6 @@ version = "0.9.82"
 
 def entrypoint():
     keepalive_timer = None
-    monitoring_instance = None
 
     # Get our configuration
     config = pvcnoded.util.config.get_configuration()
@@ -202,7 +200,7 @@ def entrypoint():
 
     # Define a cleanup function
     def cleanup(failure=False):
-        nonlocal logger, zkhandler, keepalive_timer, d_domain, monitoring_instance
+        nonlocal logger, zkhandler, keepalive_timer, d_domain
 
         logger.out("Terminating pvcnoded and cleaning up", state="s")
 
@@ -248,13 +246,6 @@ def entrypoint():
 
             logger.out("Performing final keepalive update", state="s")
             pvcnoded.util.keepalive.node_keepalive(logger, config, zkhandler, this_node)
-        except Exception:
-            pass
-
-        # Shut down the monitoring system
-        try:
-            logger.out("Shutting down monitoring subsystem", state="s")
-            monitoring_instance.shutdown()
         except Exception:
             pass
 
@@ -1008,11 +999,6 @@ def entrypoint():
                         f'{logger.fmt_blue}Volume list [{pool}]:{logger.fmt_end} {" ".join(volume_list[pool])}',
                         state="i",
                     )
-
-    # Set up the node monitoring instance and thread
-    monitoring_instance = MonitoringInstance.MonitoringInstance(
-        zkhandler, config, logger, this_node
-    )
 
     # Start keepalived thread
     keepalive_timer = pvcnoded.util.keepalive.start_keepalive_timer(
