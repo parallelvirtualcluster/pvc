@@ -63,7 +63,8 @@ def entrypoint():
 
     # Get our configuration
     config = pvcnoded.util.config.get_configuration()
-    config["pvcnoded_version"] = version
+    config["daemon_name"] = "pvcnoded"
+    config["daemon_version"] = version
 
     # Create and validate our directories
     pvcnoded.util.config.validate_directories(config)

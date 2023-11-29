@@ -123,7 +123,7 @@ def setup_node(logger, config, zkhandler):
                 ),
                 (
                     ("node.data.pvc_version", config["node_hostname"]),
-                    config["pvcnoded_version"],
+                    config["daemon_version"],
                 ),
                 (
                     ("node.ipmi.hostname", config["node_hostname"]),
@@ -159,7 +159,7 @@ def setup_node(logger, config, zkhandler):
                 ),
                 (
                     ("node.data.pvc_version", config["node_hostname"]),
-                    config["pvcnoded_version"],
+                    config["daemon_version"],
                 ),
                 (
                     ("node.ipmi.hostname", config["node_hostname"]),

@@ -76,7 +76,9 @@ class Logger(object):
         self.config = config
 
         if self.config["file_logging"]:
-            self.logfile = self.config["log_directory"] + "/pvc.log"
+            self.logfile = (
+                self.config["log_directory"] + "/" + self.config["daemon_name"] + ".log"
+            )
             # We open the logfile for the duration of our session, but have a hup function
             self.writer = open(self.logfile, "a", buffering=0)
 
@@ -139,20 +141,25 @@ class Logger(object):
         if prefix != "":
             prefix = prefix + " - "
 
-        # Assemble message string
-        message = colour + prompt + endc + date + prefix + message
-
         # Log to stdout
         if self.config["stdout_logging"]:
-            print(message)
+            # Assemble output string
+            output = colour + prompt + endc + date + prefix + message
+            print(output)
 
         # Log to file
         if self.config["file_logging"]:
-            self.writer.write(message + "\n")
+            # Assemble output string
+            output = colour + prompt + endc + date + prefix + message
+            self.writer.write(output + "\n")
 
         # Log to Zookeeper
         if self.config["zookeeper_logging"]:
-            self.zookeeper_queue.put(message)
+            # Set the daemon value (only used here as others do not overlap with different daemons)
+            daemon = f"{self.config['daemon_name']}: "
+            # Assemble output string
+            output = daemon + colour + prompt + endc + date + prefix + message
+            self.zookeeper_queue.put(output)
 
         # Set last message variables
         self.last_colour = colour
