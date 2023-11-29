@@ -157,6 +157,8 @@ class Logger(object):
         if self.config["zookeeper_logging"]:
             # Set the daemon value (only used here as others do not overlap with different daemons)
             daemon = f"{self.config['daemon_name']}: "
+            # Expand to match all daemon names (pvcnoded, pvcworkerd, pvchealthd)
+            daemon = "{daemon: <12}".format(daemon=daemon)
             # Assemble output string
             output = daemon + colour + prompt + endc + date + prefix + message
             self.zookeeper_queue.put(output)
