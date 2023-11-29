@@ -344,6 +344,7 @@ class MonitoringInstance(object):
     def shutdown(self):
         self.stop_check_timer()
         self.run_cleanups()
+        return
 
     def start_check_timer(self):
         check_interval = self.config["monitoring_interval"]
