@@ -46,12 +46,18 @@ $SUDO dpkg -i ../pvc-client*_${version}*.deb &>/dev/null
 echo " done".
 
 for HOST in ${HOSTS[@]}; do
-    echo "> Deploying packages to host ${HOST}"
-    echo -n "Copying packages..."
+    echo -n "Copying packages to host ${HOST}..."
     ssh $HOST $SUDO rm -rf /tmp/pvc &>/dev/null
     ssh $HOST mkdir /tmp/pvc &>/dev/null
     scp ../pvc-*_${version}*.deb $HOST:/tmp/pvc/ &>/dev/null
     echo " done."
+done
+if [[ -z ${KEEP_ARTIFACTS} ]]; then
+    rm ../pvc*_${version}*
+fi
+
+for HOST in ${HOSTS[@]}; do
+    echo "> Deploying packages to host ${HOST}"
     echo -n "Installing packages..."
     ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb &>/dev/null
     ssh $HOST rm -rf /tmp/pvc &>/dev/null
@@ -68,8 +74,5 @@ for HOST in ${HOSTS[@]}; do
     done
     echo " done."
 done
-if [[ -z ${KEEP_ARTIFACTS} ]]; then
-    rm ../pvc*_${version}*
-fi
 
 popd &>/dev/null
