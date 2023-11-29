@@ -324,8 +324,8 @@ class MonitoringInstance(object):
             return
 
         self.logger.out(
-            f'{self.logger.fmt_blue}Plugin list:{self.logger.fmt_end} {" ".join(self.all_plugin_names)}',
-            state="i",
+            f'{self.logger.fmt_cyan}Plugin list:{self.logger.fmt_end} {" ".join(self.all_plugin_names)}',
+            state="s",
         )
 
         # Clean up any old plugin data for which a plugin file no longer exists
