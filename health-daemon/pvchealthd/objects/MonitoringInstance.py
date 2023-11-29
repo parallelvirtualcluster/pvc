@@ -317,7 +317,16 @@ class MonitoringInstance(object):
         )
 
         if successful_plugins < 1:
+            self.logger.out(
+                "No plugins loaded; pvchealthd going into noop loop. Incorrect plugin directory? Fix and restart pvchealthd.",
+                state="e",
+            )
             return
+
+        self.logger.out(
+            f'{self.logger.fmt_blue}Plugin list:{self.logger.fmt_end} {" ".join(self.all_plugin_names)}',
+            state="i",
+        )
 
         # Clean up any old plugin data for which a plugin file no longer exists
         plugins_data = self.zkhandler.children(
