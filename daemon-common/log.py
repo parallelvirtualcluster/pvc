@@ -97,8 +97,6 @@ class Logger(object):
 
     # Provide a termination function so all messages are flushed before terminating the main daemon
     def terminate(self):
-        if self.config["file_logging"]:
-            self.writer.close()
         if self.config["zookeeper_logging"]:
             self.out("Waiting for Zookeeper message queue to drain", state="s")
 
@@ -111,6 +109,9 @@ class Logger(object):
 
             self.zookeeper_logger.stop()
             self.zookeeper_logger.join()
+
+        if self.config["file_logging"]:
+            self.writer.close()
 
     # Output function
     def out(self, message, state=None, prefix=""):
