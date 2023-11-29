@@ -75,7 +75,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Set the health delta to 0 (no change)
         health_delta = 0
         # Craft a message that can be used by the clients
-        message = "Successfully connected to Libvirtd on localhost"
+        message = "Successfully connected to KeyDB/Redis on localhost"
 
         # Check the Zookeeper connection
         try:
