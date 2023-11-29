@@ -142,9 +142,8 @@ def follow_node_log(config, node, lines=10):
         node_log = new_node_log
 
         # Get the difference between the two sets of lines
-        old_node_loglines_set = set(old_node_loglines)
         diff_node_loglines = [
-            x for x in new_node_loglines if x not in old_node_loglines_set
+            x for x in new_node_loglines if x not in old_node_loglines
         ]
 
         # If there's a difference, print it out

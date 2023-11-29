@@ -198,16 +198,9 @@ class ZookeeperLogger(Thread):
         self.zkhandler.write([("base.logs", ""), (("logs", self.node), "")])
 
     def run(self):
-        while not self.connected:
-            self.start_zkhandler()
-            sleep(1)
-
+        self.start_zkhandler()
         self.running = True
-        # Get the logs that are currently in Zookeeper and populate our deque
-        raw_logs = self.zkhandler.read(("logs.messages", self.node))
-        if raw_logs is None:
-            raw_logs = ""
-        logs = deque(raw_logs.split("\n"), self.max_lines)
+
         while self.running:
             # Get a new message
             try:
@@ -222,25 +215,26 @@ class ZookeeperLogger(Thread):
                 date = "{} ".format(datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"))
             else:
                 date = ""
-            # Add the message to the deque
-            logs.append(f"{date}{message}")
 
-            tick_count = 0
-            while True:
-                try:
+            try:
+                with self.zkhandler.writelock(("logs.messages", self.node)):
+                    # Get the logs that are currently in Zookeeper and populate our deque
+                    cur_logs = self.zkhandler.read(("logs.messages", self.node))
+                    if cur_logs is None:
+                        cur_logs = ""
+
+                    logs = deque(cur_logs.split("\n"), self.max_lines - 1)
+
+                    # Add the message to the deque
+                    logs.append(f"{date}{message}")
+
                     # Write the updated messages into Zookeeper
                     self.zkhandler.write(
                         [(("logs.messages", self.node), "\n".join(logs))]
                     )
-                    break
-                except Exception:
-                    # The write failed (connection loss, etc.) so retry for 15 seconds
-                    sleep(0.5)
-                    tick_count += 1
-                    if tick_count > 30:
-                        break
-                    else:
-                        continue
+            except Exception:
+                continue
+
         return
 
     def stop(self):
