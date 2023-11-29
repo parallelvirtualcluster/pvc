@@ -9,7 +9,7 @@ X-Python3-Version: >= 3.2
 Package: pvc-daemon-node
 Architecture: all
 Depends: systemd, pvc-daemon-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, python3-rados, python3-gevent, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
-Description: Parallel Virtual Cluster node daemon (Python 3)
+Description: Parallel Virtual Cluster node daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC node daemon
@@ -17,7 +17,7 @@ Description: Parallel Virtual Cluster node daemon (Python 3)
 Package: pvc-daemon-api
 Architecture: all
 Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python-celery-common, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate, fio
-Description: Parallel Virtual Cluster API daemon (Python 3)
+Description: Parallel Virtual Cluster API daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC API daemon
@@ -25,7 +25,7 @@ Description: Parallel Virtual Cluster API daemon (Python 3)
 Package: pvc-daemon-common
 Architecture: all
 Depends: python3-kazoo, python3-psutil, python3-click, python3-lxml
-Description: Parallel Virtual Cluster common libraries (Python 3)
+Description: Parallel Virtual Cluster common libraries
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the common libraries for the daemon and API
@@ -33,7 +33,7 @@ Description: Parallel Virtual Cluster common libraries (Python 3)
 Package: pvc-client-cli
 Architecture: all
 Depends: python3-requests, python3-requests-toolbelt, python3-yaml, python3-lxml, python3-click
-Description: Parallel Virtual Cluster CLI client (Python 3)
+Description: Parallel Virtual Cluster CLI client
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
  This package installs the PVC API command-line client
