@@ -80,7 +80,7 @@ class Logger(object):
                 self.config["log_directory"] + "/" + self.config["daemon_name"] + ".log"
             )
             # We open the logfile for the duration of our session, but have a hup function
-            self.writer = open(self.logfile, "a", buffering=0)
+            self.writer = open(self.logfile, "a")
 
         self.last_colour = ""
         self.last_prompt = ""
@@ -93,7 +93,7 @@ class Logger(object):
     # Provide a hup function to close and reopen the writer
     def hup(self):
         self.writer.close()
-        self.writer = open(self.logfile, "a", buffering=0)
+        self.writer = open(self.logfile, "a")
 
     # Provide a termination function so all messages are flushed before terminating the main daemon
     def terminate(self):
@@ -152,6 +152,7 @@ class Logger(object):
             # Assemble output string
             output = colour + prompt + endc + date + prefix + message
             self.writer.write(output + "\n")
+            self.writer.flush()
 
         # Log to Zookeeper
         if self.config["zookeeper_logging"]:
