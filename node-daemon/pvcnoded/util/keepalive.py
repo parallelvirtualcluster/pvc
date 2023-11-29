@@ -700,6 +700,10 @@ def node_keepalive(logger, config, zkhandler, this_node):
         active_coordinator_state = this_node.coordinator_state
 
         runtime_start = datetime.now()
+        logger.out(
+            "Starting node keepalive run",
+            state="t",
+        )
 
     # Set the migration selector in Zookeeper for clients to read
     if config["enable_hypervisor"]:

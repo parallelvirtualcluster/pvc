@@ -386,8 +386,8 @@ def entrypoint():
 
         node_list = new_node_list
         logger.out(
-            f'{logger.fmt_blue}Node list:{logger.fmt_end} {" ".join(node_list)}',
-            state="i",
+            f'{logger.fmt_cyan}Node list:{logger.fmt_end} {" ".join(node_list)}',
+            state="s",
         )
 
         # Update node objects lists
@@ -554,8 +554,8 @@ def entrypoint():
             # Update the new list
             network_list = new_network_list
             logger.out(
-                f'{logger.fmt_blue}Network list:{logger.fmt_end} {" ".join(network_list)}',
-                state="i",
+                f'{logger.fmt_cyan}Network list:{logger.fmt_end} {" ".join(network_list)}',
+                state="s",
             )
 
             # Update node objects list
@@ -885,8 +885,8 @@ def entrypoint():
 
                 sriov_vf_list = sorted(new_sriov_vf_list)
                 logger.out(
-                    f'{logger.fmt_blue}SR-IOV VF list:{logger.fmt_end} {" ".join(sriov_vf_list)}',
-                    state="i",
+                    f'{logger.fmt_cyan}SR-IOV VF list:{logger.fmt_end} {" ".join(sriov_vf_list)}',
+                    state="s",
                 )
 
     if config["enable_hypervisor"]:
@@ -912,8 +912,8 @@ def entrypoint():
             # Update the new list
             domain_list = new_domain_list
             logger.out(
-                f'{logger.fmt_blue}Domain list:{logger.fmt_end} {" ".join(domain_list)}',
-                state="i",
+                f'{logger.fmt_cyan}Domain list:{logger.fmt_end} {" ".join(domain_list)}',
+                state="s",
             )
 
             # Update node objects' list
@@ -939,8 +939,8 @@ def entrypoint():
             # Update the new list
             osd_list = new_osd_list
             logger.out(
-                f'{logger.fmt_blue}OSD list:{logger.fmt_end} {" ".join(osd_list)}',
-                state="i",
+                f'{logger.fmt_cyan}OSD list:{logger.fmt_end} {" ".join(osd_list)}',
+                state="s",
             )
 
         # Pool objects
@@ -964,8 +964,8 @@ def entrypoint():
             # Update the new list
             pool_list = new_pool_list
             logger.out(
-                f'{logger.fmt_blue}Pool list:{logger.fmt_end} {" ".join(pool_list)}',
-                state="i",
+                f'{logger.fmt_cyan}Pool list:{logger.fmt_end} {" ".join(pool_list)}',
+                state="s",
             )
 
             # Volume objects (in each pool)
@@ -996,8 +996,8 @@ def entrypoint():
                     # Update the new list
                     volume_list[pool] = new_volume_list
                     logger.out(
-                        f'{logger.fmt_blue}Volume list [{pool}]:{logger.fmt_end} {" ".join(volume_list[pool])}',
-                        state="i",
+                        f'{logger.fmt_cyan}Volume list [{pool}]:{logger.fmt_end} {" ".join(volume_list[pool])}',
+                        state="s",
                     )
 
     # Start keepalived thread
