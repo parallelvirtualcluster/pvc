@@ -21,6 +21,8 @@
 
 import time
 
+from collections import deque
+
 import pvc.lib.ansiprint as ansiprint
 from pvc.lib.common import call_api
 
@@ -107,7 +109,9 @@ def follow_node_log(config, node, lines=10):
     API schema: {"name":"{nodename}","data":"{node_log}"}
     """
     # We always grab 200 to match the follow call, but only _show_ `lines` number
-    params = {"lines": 200}
+    max_lines = 200
+
+    params = {"lines": max_lines}
     response = call_api(
         config, "get", "/node/{node}/log".format(node=node), params=params
     )
@@ -117,42 +121,50 @@ def follow_node_log(config, node, lines=10):
 
     # Shrink the log buffer to length lines
     node_log = response.json()["data"]
-    shrunk_log = node_log.split("\n")[-int(lines) :]
-    loglines = "\n".join(shrunk_log)
+    full_log = node_log.split("\n")
+    shrunk_log = full_log[-int(lines) :]
 
     # Print the initial data and begin following
-    print(loglines, end="")
-    print("\n", end="")
+    for line in shrunk_log:
+        print(line)
+
+    # Create the deque we'll use to buffer loglines
+    loglines = deque(full_log, max_lines)
 
     while True:
+        # Wait half a second
+        time.sleep(0.5)
+
         # Grab the next line set (200 is a reasonable number of lines per half-second; any more are skipped)
         try:
-            params = {"lines": 200}
+            params = {"lines": max_lines}
             response = call_api(
                 config, "get", "/node/{node}/log".format(node=node), params=params
             )
             new_node_log = response.json()["data"]
         except Exception:
             break
+
         # Split the new and old log strings into constitutent lines
-        old_node_loglines = node_log.split("\n")
         new_node_loglines = new_node_log.split("\n")
 
-        # Set the node log to the new log value for the next iteration
-        node_log = new_node_log
+        # Find where in the new lines the last entryin the ongoing deque is
+        start_idx = 0
+        for idx, line in enumerate(new_node_loglines):
+            if line == loglines[-1]:
+                start_idx = idx
 
-        # Get the difference between the two sets of lines
-        diff_node_loglines = [
-            x for x in new_node_loglines if x not in old_node_loglines
-        ]
+        # Get the new lines starting from the found index plus one
+        diff_node_loglines = new_node_loglines[start_idx + 1 :]
 
-        # If there's a difference, print it out
+        # If there's a difference, add the lines to the ongling deque and print then out
         if len(diff_node_loglines) > 0:
-            print("\n".join(diff_node_loglines), end="")
-            print("\n", end="")
+            for line in diff_node_loglines:
+                loglines.append(line)
+                print(line)
 
-        # Wait half a second
-        time.sleep(0.5)
+        del new_node_loglines
+        del diff_node_loglines
 
     return True, ""
 
