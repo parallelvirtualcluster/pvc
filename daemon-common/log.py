@@ -98,7 +98,7 @@ class Logger(object):
         if self.config["file_logging"]:
             self.writer.close()
         if self.config["zookeeper_logging"]:
-            self.out("Waiting 15s for Zookeeper message queue to drain", state="s")
+            self.out("Waiting for Zookeeper message queue to drain", state="s")
 
             tick_count = 0
             while not self.zookeeper_queue.empty():
