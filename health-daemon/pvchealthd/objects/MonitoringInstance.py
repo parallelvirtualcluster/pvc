@@ -405,6 +405,11 @@ class MonitoringInstance(object):
         active_coordinator_state = self.this_node.coordinator_state
 
         runtime_start = datetime.now()
+        self.logger.out(
+            "Starting monitoring healthcheck run",
+            state="t",
+        )
+
         total_health = 100
         plugin_results = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=99) as executor:
