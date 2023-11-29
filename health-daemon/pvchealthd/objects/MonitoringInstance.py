@@ -421,10 +421,7 @@ class MonitoringInstance(object):
                 plugin_results.append(future.result())
 
         for result in sorted(plugin_results, key=lambda x: x.plugin_name):
-            if (
-                self.config["log_keepalives"]
-                and self.config["log_keepalive_plugin_details"]
-            ):
+            if self.config["log_monitoring_details"]:
                 self.logger.out(
                     result.message + f" [-{result.health_delta}]",
                     state="t",

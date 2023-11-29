@@ -332,12 +332,7 @@ def get_configuration_current(config_file):
             "log_colours": o_logging.get("log_colours", False),
             "log_dates": o_logging.get("log_dates", False),
             "log_keepalives": o_logging.get("log_keepalives", False),
-            "log_keepalive_cluster_details": o_logging.get(
-                "log_cluster_details", False
-            ),
-            "log_keepalive_plugin_details": o_logging.get(
-                "log_monitoring_details", False
-            ),
+            "log_monitoring_details": o_logging.get("log_monitoring_details", False),
             "console_log_lines": o_logging.get("console_log_lines", False),
             "node_log_lines": o_logging.get("node_log_lines", False),
         }
@@ -476,12 +471,7 @@ def get_configuration_legacy(pvcnoded_config_file):
         "log_colours": o_logging.get("log_colours", False),
         "log_dates": o_logging.get("log_dates", False),
         "log_keepalives": o_logging.get("log_keepalives", False),
-        "log_keepalive_cluster_details": o_logging.get(
-            "log_keepalive_cluster_details", False
-        ),
-        "log_keepalive_plugin_details": o_logging.get(
-            "log_keepalive_plugin_details", False
-        ),
+        "log_monitoring_details": o_logging.get("log_keepalive_plugin_details", False),
         "console_log_lines": o_logging.get("console_log_lines", False),
         "node_log_lines": o_logging.get("node_log_lines", False),
     }
