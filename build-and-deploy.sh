@@ -59,7 +59,7 @@ fi
 for HOST in ${HOSTS[@]}; do
     echo "> Deploying packages to host ${HOST}"
     echo -n "Installing packages..."
-    ssh $HOST $SUDO dpkg -i /tmp/pvc/{pvc-client-cli,pvc-daemon-common,pvc-daemon-api,pvc-daemon-node}*.deb &>/dev/null
+    ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb &>/dev/null
     ssh $HOST rm -rf /tmp/pvc &>/dev/null
     echo " done."
     echo -n "Restarting PVC daemons..."
