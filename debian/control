@@ -8,7 +8,7 @@ X-Python3-Version: >= 3.7
 
 Package: pvc-daemon-node
 Architecture: all
-Depends: systemd, pvc-daemon-common, pvc-daemon-health, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, python3-rados, python3-gevent, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
+Depends: systemd, pvc-daemon-common, pvc-daemon-health, pvc-daemon-worker, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, python3-rados, python3-gevent, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
 Description: Parallel Virtual Cluster node daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
