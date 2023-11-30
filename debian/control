@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Joshua Boniface <joshua@boniface.me>
 Standards-Version: 3.9.8
 Homepage: https://www.boniface.me
-X-Python3-Version: >= 3.2
+X-Python3-Version: >= 3.7
 
 Package: pvc-daemon-node
 Architecture: all
@@ -22,9 +22,17 @@ Description: Parallel Virtual Cluster health daemon
  .
  This package installs the PVC health monitoring daemon
 
+Package: pvc-daemon-worker
+Architecture: all
+Depends: systemd, pvc-daemon-common, python3-kazoo, python3-celery, python3-redis, python3-yaml, python-celery-common, fio
+Description: Parallel Virtual Cluster worker daemon
+ A KVM/Zookeeper/Ceph-based VM and private cloud manager
+ .
+ This package installs the PVC Celery task worker daemon
+
 Package: pvc-daemon-api
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python-celery-common, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate, fio
+Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate
 Description: Parallel Virtual Cluster API daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .

@@ -31,8 +31,6 @@ import uuid
 
 from contextlib import contextmanager
 
-from pvcapid.Daemon import config
-
 from daemon_lib.zkhandler import ZKHandler
 from daemon_lib.celery import start, fail, log_info, log_warn, log_err, update, finish
 
@@ -216,8 +214,14 @@ def open_zk(config):
 #
 # Main VM provisioning function - executed by the Celery worker
 #
-def create_vm(
-    celery, vm_name, vm_profile, define_vm=True, start_vm=True, script_run_args=[]
+def worker_create_vm(
+    celery,
+    config,
+    vm_name,
+    vm_profile,
+    define_vm=True,
+    start_vm=True,
+    script_run_args=[],
 ):
     current_stage = 0
     total_stages = 11

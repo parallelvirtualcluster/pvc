@@ -1,0 +1,4 @@
+worker-daemon/pvcworkerd.sh usr/share/pvc
+worker-daemon/pvcworkerd.py usr/share/pvc
+worker-daemon/pvcworkerd usr/share/pvc
+worker-daemon/pvcworkerd.service lib/systemd/system

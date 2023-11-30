@@ -31,25 +31,12 @@ from uuid import uuid4
 from daemon_lib.common import getPrimaryNode
 from daemon_lib.zkhandler import ZKConnection
 from daemon_lib.node import get_list as get_node_list
-from daemon_lib.vm import (
-    vm_worker_flush_locks,
-    vm_worker_attach_device,
-    vm_worker_detach_device,
-)
-from daemon_lib.ceph import (
-    osd_worker_add_osd,
-    osd_worker_replace_osd,
-    osd_worker_refresh_osd,
-    osd_worker_remove_osd,
-    osd_worker_add_db_vg,
-)
+from daemon_lib.benchmark import list_benchmarks
 
 from pvcapid.Daemon import config, strtobool, API_VERSION
 
 import pvcapid.helper as api_helper
 import pvcapid.provisioner as api_provisioner
-import pvcapid.vmbuilder as api_vmbuilder
-import pvcapid.benchmark as api_benchmark
 import pvcapid.ova as api_ova
 
 from flask_sqlalchemy import SQLAlchemy
@@ -4191,7 +4178,7 @@ class API_Storage_Ceph_Benchmark(Resource):
                               type: string (integer)
                               description: The number of minor page faults during the test
         """
-        return api_benchmark.list_benchmarks(reqargs.get("job", None))
+        return list_benchmarks(config, reqargs.get("job", None))
 
     @RequestParser(
         [

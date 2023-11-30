@@ -42,7 +42,7 @@ echo " done. Package version ${version}."
 
 # Install the client(s) locally
 echo -n "Installing client packages locally..."
-$SUDO dpkg -i ../pvc-client*_${version}*.deb &>/dev/null
+$SUDO dpkg -i --force-all ../pvc-client*_${version}*.deb &>/dev/null
 echo " done".
 
 for HOST in ${HOSTS[@]}; do
@@ -59,7 +59,7 @@ fi
 for HOST in ${HOSTS[@]}; do
     echo "> Deploying packages to host ${HOST}"
     echo -n "Installing packages..."
-    ssh $HOST $SUDO dpkg -i /tmp/pvc/*.deb &>/dev/null
+    ssh $HOST $SUDO dpkg -i --force-all /tmp/pvc/*.deb &>/dev/null
     ssh $HOST rm -rf /tmp/pvc &>/dev/null
     echo " done."
     echo -n "Restarting PVC daemons..."

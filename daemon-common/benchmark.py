@@ -25,9 +25,6 @@ import psycopg2.extras
 from datetime import datetime
 from json import loads, dumps
 
-from pvcapid.Daemon import config
-
-from daemon_lib.zkhandler import ZKHandler
 from daemon_lib.celery import start, fail, log_info, update, finish
 
 import daemon_lib.common as pvc_common
@@ -137,7 +134,7 @@ def open_database(config):
     conn = psycopg2.connect(
         host=config["api_postgresql_host"],
         port=config["api_postgresql_port"],
-        dbname=config["api_postgresql_name"],
+        dbname=config["api_postgresql_dbname"],
         user=config["api_postgresql_user"],
         password=config["api_postgresql_password"],
     )
@@ -152,7 +149,7 @@ def close_database(conn, cur, failed=False):
     conn.close()
 
 
-def list_benchmarks(job=None):
+def list_benchmarks(config, job=None):
     if job is not None:
         query = "SELECT * FROM {} WHERE job = %s;".format("storage_benchmarks")
         args = (job,)
@@ -278,17 +275,8 @@ def run_benchmark_job(
     return jstdout
 
 
-def run_benchmark(self, pool):
+def worker_run_benchmark(zkhandler, celery, config, pool):
     # Phase 0 - connect to databases
-    try:
-        zkhandler = ZKHandler(config)
-        zkhandler.connect()
-    except Exception:
-        fail(
-            self,
-            "Failed to connect to Zookeeper",
-        )
-
     cur_time = datetime.now().isoformat(timespec="seconds")
     cur_primary = zkhandler.read("base.config.primary_node")
     job_name = f"{cur_time}_{cur_primary}"
@@ -296,7 +284,7 @@ def run_benchmark(self, pool):
     current_stage = 0
     total_stages = 13
     start(
-        self,
+        celery,
         f"Running storage benchmark '{job_name}' on pool '{pool}'",
         current=current_stage,
         total=total_stages,
@@ -312,13 +300,13 @@ def run_benchmark(self, pool):
             zkhandler=zkhandler,
         )
         fail(
-            self,
+            celery,
             "Failed to connect to Postgres",
         )
 
     current_stage += 1
     update(
-        self,
+        celery,
         "Storing running status in database",
         current=current_stage,
         total=total_stages,
@@ -340,11 +328,11 @@ def run_benchmark(self, pool):
             db_cur=db_cur,
             zkhandler=zkhandler,
         )
-        fail(self, f"Failed to store running status: {e}", exception=BenchmarkError)
+        fail(celery, f"Failed to store running status: {e}", exception=BenchmarkError)
 
     current_stage += 1
     update(
-        self,
+        celery,
         "Creating benchmark volume",
         current=current_stage,
         total=total_stages,
@@ -363,7 +351,7 @@ def run_benchmark(self, pool):
     for test in test_matrix:
         current_stage += 1
         update(
-            self,
+            celery,
             f"Running benchmark job '{test}'",
             current=current_stage,
             total=total_stages,
@@ -381,7 +369,7 @@ def run_benchmark(self, pool):
     # Phase 3 - cleanup
     current_stage += 1
     update(
-        self,
+        celery,
         "Cleaning up venchmark volume",
         current=current_stage,
         total=total_stages,
@@ -397,7 +385,7 @@ def run_benchmark(self, pool):
 
     current_stage += 1
     update(
-        self,
+        celery,
         "Storing results in database",
         current=current_stage,
         total=total_stages,
@@ -415,7 +403,7 @@ def run_benchmark(self, pool):
             db_cur=db_cur,
             zkhandler=zkhandler,
         )
-        fail(self, f"Failed to store test results: {e}", exception=BenchmarkError)
+        fail(celery, f"Failed to store test results: {e}", exception=BenchmarkError)
 
     cleanup(
         job_name,
@@ -426,7 +414,7 @@ def run_benchmark(self, pool):
 
     current_stage += 1
     return finish(
-        self,
+        celery,
         f"Storage benchmark {job_name} completed successfully",
         current=current_stage,
         total=total_stages,

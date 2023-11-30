@@ -8,7 +8,7 @@ import os
 import sys
 import json
 
-os.environ['PVC_CONFIG_FILE'] = "./api-daemon/pvcapid.sample.yaml"
+os.environ['PVC_CONFIG_FILE'] = "./pvc.sample.conf"
 
 sys.path.append('api-daemon')
 

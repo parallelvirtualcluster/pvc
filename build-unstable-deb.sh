@@ -14,9 +14,10 @@ tmpdir=$( mktemp -d )
 cp -a debian/changelog client-cli/setup.py ${tmpdir}/
 cp -a node-daemon/pvcnoded/Daemon.py ${tmpdir}/node-Daemon.py
 cp -a health-daemon/pvchealthd/Daemon.py ${tmpdir}/health-Daemon.py
+cp -a worker-daemon/pvcworkerd/Daemon.py ${tmpdir}/worker-Daemon.py
 cp -a api-daemon/pvcapid/Daemon.py ${tmpdir}/api-Daemon.py
 # Replace the "base" version with the git revision version
-sed -i "s/version = \"${base_ver}\"/version = \"${new_ver}\"/" node-daemon/pvcnoded/Daemon.py health-daemon/pvchealthd/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py
+sed -i "s/version = \"${base_ver}\"/version = \"${new_ver}\"/" node-daemon/pvcnoded/Daemon.py health-daemon/pvchealthd/Daemon.py worker-daemon/pvcworkerd/Daemon.py api-daemon/pvcapid/Daemon.py client-cli/setup.py
 sed -i "s/${base_ver}-0/${new_ver}/" debian/changelog 
 cat <<EOF > debian/changelog
 pvc (${new_ver}) unstable; urgency=medium
@@ -35,6 +36,7 @@ cp -a ${tmpdir}/changelog debian/changelog
 cp -a ${tmpdir}/setup.py client-cli/setup.py
 cp -a ${tmpdir}/node-Daemon.py node-daemon/pvcnoded/Daemon.py
 cp -a ${tmpdir}/health-Daemon.py health-daemon/pvchealthd/Daemon.py
+cp -a ${tmpdir}/worker-Daemon.py worker-daemon/pvcworkerd/Daemon.py
 cp -a ${tmpdir}/api-Daemon.py api-daemon/pvcapid/Daemon.py
 
 # Clean up
