@@ -48,11 +48,11 @@ import pvcapid.provisioner as provisioner
 # Database connections
 def open_database(config):
     conn = psycopg2.connect(
-        host=config["database_host"],
-        port=config["database_port"],
-        dbname=config["database_name"],
-        user=config["database_user"],
-        password=config["database_password"],
+        host=config["api_postgresql_host"],
+        port=config["api_postgresql_port"],
+        dbname=config["api_postgresql_name"],
+        user=config["api_postgresql_user"],
+        password=config["api_postgresql_password"],
     )
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn, cur

@@ -131,11 +131,11 @@ class MetadataAPIInstance(object):
     # Helper functions
     def open_database(self):
         conn = psycopg2.connect(
-            host=self.config["metadata_postgresql_host"],
-            port=self.config["metadata_postgresql_port"],
-            dbname=self.config["metadata_postgresql_dbname"],
-            user=self.config["metadata_postgresql_user"],
-            password=self.config["metadata_postgresql_password"],
+            host=self.config["api_postgresql_host"],
+            port=self.config["api_postgresql_port"],
+            dbname=self.config["api_postgresql_dbname"],
+            user=self.config["api_postgresql_user"],
+            password=self.config["api_postgresql_password"],
         )
         cur = conn.cursor(cursor_factory=RealDictCursor)
         return conn, cur

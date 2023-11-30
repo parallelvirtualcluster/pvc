@@ -61,11 +61,11 @@ app = flask.Flask(__name__)
 # Set up SQLAlchemy backend
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@{}:{}/{}".format(
-    config["database_user"],
-    config["database_password"],
-    config["database_host"],
-    config["database_port"],
-    config["database_name"],
+    config["api_postgresql_user"],
+    config["api_postgresql_password"],
+    config["api_postgresql_host"],
+    config["api_postgresql_port"],
+    config["api_postgresql_dbname"],
 )
 
 if config["debug"]:
@@ -73,8 +73,8 @@ if config["debug"]:
 else:
     app.config["DEBUG"] = False
 
-if config["auth_enabled"]:
-    app.config["SECRET_KEY"] = config["auth_secret_key"]
+if config["api_auth_enabled"]:
+    app.config["SECRET_KEY"] = config["api_auth_secret_key"]
 
 # Create SQLAlchemy database
 db = SQLAlchemy(app)
@@ -133,7 +133,7 @@ def run_celery_task(task_def, **kwargs):
 
 # Create celery definition
 celery_task_uri = "redis://{}:{}{}".format(
-    config["queue_host"], config["queue_port"], config["queue_path"]
+    config["keydb_host"], config["keydb_port"], config["keydb_path"]
 )
 celery = Celery(
     app.name,
@@ -199,7 +199,7 @@ def Authenticator(function):
     @wraps(function)
     def authenticate(*args, **kwargs):
         # No authentication required
-        if not config["auth_enabled"]:
+        if not config["api_auth_enabled"]:
             return function(*args, **kwargs)
         # Session-based authentication
         if "token" in flask.session:
@@ -208,7 +208,7 @@ def Authenticator(function):
         if "X-Api-Key" in flask.request.headers:
             if any(
                 token
-                for token in config["auth_tokens"]
+                for token in config["api_auth_tokens"]
                 if flask.request.headers.get("X-Api-Key") == token.get("token")
             ):
                 return function(*args, **kwargs)
@@ -469,12 +469,12 @@ class API_Login(Resource):
               type: object
               id: Message
         """
-        if not config["auth_enabled"]:
+        if not config["api_auth_enabled"]:
             return flask.redirect(Api.url_for(api, API_Root))
 
         if any(
             token
-            for token in config["auth_tokens"]
+            for token in config["api_auth_tokens"]
             if flask.request.values["token"] in token["token"]
         ):
             flask.session["token"] = flask.request.form["token"]
@@ -503,7 +503,7 @@ class API_Logout(Resource):
           302:
             description: Authentication disabled
         """
-        if not config["auth_enabled"]:
+        if not config["api_auth_enabled"]:
             return flask.redirect(Api.url_for(api, API_Root))
 
         flask.session.pop("token", None)

@@ -271,17 +271,17 @@ def get_configuration_current(config_file):
             "keydb_port": o_database["keydb"]["port"],
             "keydb_host": o_database["keydb"]["hostname"],
             "keydb_path": o_database["keydb"]["path"],
-            "metadata_postgresql_port": o_database["postgres"]["port"],
-            "metadata_postgresql_host": o_database["postgres"]["hostname"],
-            "metadata_postgresql_dbname": o_database["postgres"]["credentials"]["api"][
+            "api_postgresql_port": o_database["postgres"]["port"],
+            "api_postgresql_host": o_database["postgres"]["hostname"],
+            "api_postgresql_dbname": o_database["postgres"]["credentials"]["api"][
                 "database"
             ],
-            "metadata_postgresql_user": o_database["postgres"]["credentials"]["api"][
+            "api_postgresql_user": o_database["postgres"]["credentials"]["api"][
                 "username"
             ],
-            "metadata_postgresql_password": o_database["postgres"]["credentials"][
-                "api"
-            ]["password"],
+            "api_postgresql_password": o_database["postgres"]["credentials"]["api"][
+                "password"
+            ],
             "pdns_postgresql_port": o_database["postgres"]["port"],
             "pdns_postgresql_host": o_database["postgres"]["hostname"],
             "pdns_postgresql_dbname": o_database["postgres"]["credentials"]["dns"][
@@ -335,9 +335,7 @@ def get_configuration_current(config_file):
             "log_keepalive_cluster_details": o_logging.get(
                 "log_cluster_details", False
             ),
-            "log_keepalive_plugin_details": o_logging.get(
-                "log_monitoring_details", False
-            ),
+            "log_monitoring_details": o_logging.get("log_monitoring_details", False),
             "console_log_lines": o_logging.get("console_log_lines", False),
             "node_log_lines": o_logging.get("node_log_lines", False),
         }
@@ -362,8 +360,48 @@ def get_configuration_current(config_file):
             + o_ceph["ceph_keyring_file"],
             "ceph_monitor_port": o_ceph["monitor_port"],
             "ceph_secret_uuid": o_ceph["secret_uuid"],
+            "storage_hosts": o_ceph.get("monitor_hosts", None),
         }
         config = {**config, **config_ceph}
+
+        o_api = o_config["api"]
+
+        o_api_listen = o_api["listen"]
+        config_api_listen = {
+            "api_listen_address": o_api_listen["address"],
+            "api_listen_port": o_api_listen["port"],
+        }
+        config = {**config, **config_api_listen}
+
+        o_api_authentication = o_api["authentication"]
+        config_api_authentication = {
+            "api_auth_enabled": o_api_authentication.get("enabled", False),
+            "api_auth_secret_key": o_api_authentication.get("secret_key", ""),
+            "api_auth_source": o_api_authentication.get("source", "token"),
+        }
+        config = {**config, **config_api_authentication}
+
+        o_api_ssl = o_api["ssl"]
+        config_api_ssl = {
+            "api_ssl_enabled": o_api_ssl.get("enabled", False),
+            "api_ssl_cert_file": o_api_ssl.get("certificate", None),
+            "api_ssl_key_file": o_api_ssl.get("private_key", None),
+        }
+        config = {**config, **config_api_ssl}
+
+        # Use coordinators as storage hosts if not explicitly specified
+        if not config["storage_hosts"] or len(config["storage_hosts"]) < 1:
+            config["storage_hosts"] = config["coordinators"]
+
+        # Set up our token list if specified
+        if config["api_auth_source"] == "token":
+            config["api_auth_tokens"] = o_api["token"]
+        else:
+            if config["api_auth_enabled"]:
+                print(
+                    "WARNING: No authentication method provided; disabling API authentication."
+                )
+                config["api_auth_enabled"] = False
 
         # Add our node static data to the config
         config["static_data"] = get_static_data()

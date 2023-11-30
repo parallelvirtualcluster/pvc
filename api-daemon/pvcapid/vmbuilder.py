@@ -167,11 +167,11 @@ def chroot(destination):
 def open_db(config):
     try:
         conn = psycopg2.connect(
-            host=config["database_host"],
-            port=config["database_port"],
-            dbname=config["database_name"],
-            user=config["database_user"],
-            password=config["database_password"],
+            host=config["api_postgresql_host"],
+            port=config["api_postgresql_port"],
+            dbname=config["api_postgresql_name"],
+            user=config["api_postgresql_user"],
+            password=config["api_postgresql_password"],
         )
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     except Exception:
@@ -326,9 +326,9 @@ def create_vm(
     vm_data["system_architecture"] = stdout.strip()
 
     monitor_list = list()
-    coordinator_names = config["storage_hosts"]
-    for coordinator in coordinator_names:
-        monitor_list.append("{}.{}".format(coordinator, config["storage_domain"]))
+    monitor_names = config["storage_hosts"]
+    for monitor in monitor_names:
+        monitor_list.append("{}.{}".format(monitor, config["storage_domain"]))
     vm_data["ceph_monitor_list"] = monitor_list
     vm_data["ceph_monitor_port"] = config["ceph_monitor_port"]
     vm_data["ceph_monitor_secret"] = config["ceph_storage_secret_uuid"]

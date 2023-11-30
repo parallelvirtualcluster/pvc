@@ -20,7 +20,6 @@
 ###############################################################################
 
 import pvcnoded.util.keepalive
-import pvcnoded.util.config
 import pvcnoded.util.fencing
 import pvcnoded.util.networking
 import pvcnoded.util.services
@@ -35,6 +34,7 @@ import pvcnoded.objects.VXNetworkInstance as VXNetworkInstance
 import pvcnoded.objects.SRIOVVFInstance as SRIOVVFInstance
 import pvcnoded.objects.CephInstance as CephInstance
 
+import daemon_lib.config as cfg
 import daemon_lib.log as log
 import daemon_lib.common as common
 
@@ -60,12 +60,12 @@ def entrypoint():
     keepalive_timer = None
 
     # Get our configuration
-    config = pvcnoded.util.config.get_configuration()
+    config = cfg.get_configuration()
     config["daemon_name"] = "pvcnoded"
     config["daemon_version"] = version
 
     # Create and validate our directories
-    pvcnoded.util.config.validate_directories(config)
+    cfg.validate_directories(config)
 
     # Set up the logger instance
     logger = log.Logger(config)

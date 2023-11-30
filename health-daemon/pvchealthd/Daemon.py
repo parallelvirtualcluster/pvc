@@ -19,12 +19,12 @@
 #
 ###############################################################################
 
-import pvchealthd.util.config
 import pvchealthd.util.zookeeper
 
 import pvchealthd.objects.MonitoringInstance as MonitoringInstance
 import pvchealthd.objects.NodeInstance as NodeInstance
 
+import daemon_lib.config as cfg
 import daemon_lib.log as log
 
 from time import sleep
@@ -45,7 +45,7 @@ def entrypoint():
     monitoring_instance = None
 
     # Get our configuration
-    config = pvchealthd.util.config.get_configuration()
+    config = cfg.get_configuration()
     config["daemon_name"] = "pvchealthd"
     config["daemon_version"] = version
 
