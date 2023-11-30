@@ -44,7 +44,7 @@ DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
 DEFAULT_STORE_FILENAME = "pvc.json"
 DEFAULT_API_PREFIX = "/api/v1"
 DEFAULT_NODE_HOSTNAME = gethostname().split(".")[0]
-DEFAULT_AUTOBACKUP_FILENAME = "/etc/pvc/autobackup.yaml"
+DEFAULT_AUTOBACKUP_FILENAME = "/etc/pvc/pvc.conf"
 MAX_CONTENT_WIDTH = 120
 
 
