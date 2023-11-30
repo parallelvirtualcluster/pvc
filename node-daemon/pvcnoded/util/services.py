@@ -78,11 +78,17 @@ def start_keydb(logger, config):
         common.run_os_command("systemctl start keydb-server.service")
 
 
-def start_worker(logger, config):
+def start_workerd(logger, config):
     if config["enable_worker"]:
         logger.out("Starting Celery Worker daemon", state="i")
         # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
         common.run_os_command("systemctl start pvcworkerd.service")
+
+
+def start_healthd(logger, config):
+    logger.out("Starting Health Monitoring daemon", state="i")
+    # TODO: Move our handling out of Systemd and integrate it directly as a subprocess?
+    common.run_os_command("systemctl start pvchealthd.service")
 
 
 def start_system_services(logger, config):
@@ -93,7 +99,8 @@ def start_system_services(logger, config):
     start_ceph_mon(logger, config)
     start_ceph_mgr(logger, config)
     start_keydb(logger, config)
-    start_worker(logger, config)
+    start_workerd(logger, config)
+    start_healthd(logger, config)
 
-    logger.out("Waiting 10 seconds for daemons to start", state="s")
-    sleep(10)
+    logger.out("Waiting 5 seconds for daemons to start", state="s")
+    sleep(5)
