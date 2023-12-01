@@ -512,7 +512,7 @@ class MonitoringInstance(object):
         # If a fault already exists with this ID, just update the time
         if not self.zkhandler.exists("base.faults"):
             self.logger.out(
-                "Skipping fault reporting for {fault_id} due to missing Zookeeper schemas",
+                f"Skipping fault reporting for {fault_id} due to missing Zookeeper schemas",
                 state="w",
             )
             return
@@ -522,7 +522,20 @@ class MonitoringInstance(object):
             self.logger.out(
                 f"Updating fault {fault_id}: {fault_message} @ {fault_time}", state="i"
             )
+        else:
+            self.logger.out(
+                f"Generating fault {fault_id}: {fault_message} @ {fault_time}",
+                state="i",
+            )
 
+        if self.zkhandler.read("base.config.maintenance") == "true":
+            self.logger.out(
+                f"Skipping fault reporting for {fault_id} due to maintenance mode",
+                state="w",
+            )
+            return
+
+        if fault_id in existing_faults:
             self.zkhandler.write(
                 [
                     (("faults.last_time", fault_id), str(fault_time)),
@@ -530,10 +543,6 @@ class MonitoringInstance(object):
             )
         # Otherwise, generate a new fault event
         else:
-            self.logger.out(
-                f"Generating fault {fault_id}: {fault_message} @ {fault_time}",
-                state="i",
-            )
             self.zkhandler.write(
                 [
                     (("faults.id", fault_id), ""),
