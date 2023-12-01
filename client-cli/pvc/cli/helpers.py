@@ -33,7 +33,7 @@ from subprocess import run, PIPE
 from sys import argv
 from syslog import syslog, openlog, closelog, LOG_AUTH
 from yaml import load as yload
-from yaml import BaseLoader, SafeLoader
+from yaml import SafeLoader
 
 import pvc.lib.provisioner
 import pvc.lib.vm
@@ -88,7 +88,7 @@ def read_config_from_yaml(cfgfile):
 
     try:
         with open(cfgfile) as fh:
-            api_config = yload(fh, Loader=BaseLoader)["api"]
+            api_config = yload(fh, Loader=SafeLoader)["api"]
 
         host = api_config["listen"]["address"]
         port = api_config["listen"]["port"]
