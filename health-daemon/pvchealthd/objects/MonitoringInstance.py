@@ -200,7 +200,7 @@ class MonitoringInstance(object):
 
         # Create functions for each fault type
         def get_node_health_states():
-            node_entries = list()
+            node_health_states = list()
             for node in self.zkhandler.children("base.node"):
                 node_health = self.zkhandler.read(("node.monitoring.health", node))
                 node_faulty_plugins = list()
@@ -217,43 +217,62 @@ class MonitoringInstance(object):
                     if int(plugin_delta) > 0:
                         node_faulty_plugins.append(f"{plugin}@-{plugin_delta}%")
 
-                node_entries.append(
-                    (
-                        f"{node} was at {node_health}% ({', '.join(node_faulty_plugins)})",
-                        node_health,
-                    )
+                node_health_states.append(
+                    {
+                        "entry": f"{node} was at {node_health}% ({', '.join(node_faulty_plugins)})",
+                        "check": node_health,
+                        "details": "",
+                    }
                 )
-
-            return node_entries
+            return node_health_states
 
         def get_node_daemon_states():
-            return [
-                (node, self.zkhandler.read(("node.state.daemon", node)))
+            node_daemon_states = [
+                {
+                    "entry": node,
+                    "check": self.zkhandler.read(("node.state.daemon", node)),
+                    "details": "",
+                }
                 for node in self.zkhandler.children("base.node")
             ]
+            return node_daemon_states
 
-        def get_osd_out_states():
-            return [
-                (osd, loads(self.zkhandler.read(("osd.stats", osd))).get("out", 0))
+        def get_osd_in_states():
+            osd_in_states = [
+                {
+                    "entry": osd,
+                    "check": loads(self.zkhandler.read(("osd.stats", osd))).get(
+                        "in", 0
+                    ),
+                    "details": "",
+                }
                 for osd in self.zkhandler.children("base.osd")
             ]
+            return osd_in_states
 
         def get_ceph_health_entries():
-            return [
-                (value, key)
+            ceph_health_entries = [
+                {
+                    "entry": f"{value['severity']} {key}",
+                    "check": value["severity"],
+                    "details": value["summary"]["message"],
+                }
                 for key, value in loads(zkhandler.read("base.storage.health"))[
                     "checks"
                 ].items()
             ]
+            return ceph_health_entries
 
         def get_vm_states():
-            return [
-                (
-                    self.zkhandler.read(("domain.name", domain)),
-                    self.zkhandler.read(("domain.state", domain)),
-                )
+            vm_states = [
+                {
+                    "entry": self.zkhandler.read(("domain.name", domain)),
+                    "check": self.zkhandler.read(("domain.state", domain)),
+                    "details": self.zkhandler.read(("domain.failed_reason", domain)),
+                }
                 for domain in self.zkhandler.children("base.domain")
             ]
+            return vm_states
 
         def get_overprovisioned_memory():
             all_nodes = self.zkhandler.children("base.node")
@@ -275,12 +294,14 @@ class MonitoringInstance(object):
                 op_str = "overprovisioned"
             else:
                 op_str = "ok"
-            return [
-                (
-                    f"{current_memory_provisioned}MB > {available_node_memory}MB (N-1)",
-                    op_str,
-                )
+            overprovisioned_memory = [
+                {
+                    "entry": f"{current_memory_provisioned}MB > {available_node_memory}MB (N-1)",
+                    "check": op_str,
+                    "details": "",
+                }
             ]
+            return overprovisioned_memory
 
         # This is a list of all possible faults (cluster error messages) and their corresponding details
         self.cluster_faults_map = {
@@ -297,22 +318,22 @@ class MonitoringInstance(object):
                 "message": "Node {entry} was dead and/or fenced",
             },
             "ceph_osd_out": {
-                "entries": get_osd_out_states,
-                "conditions": ["1"],
+                "entries": get_osd_in_states,
+                "conditions": ["0"],
                 "delta": 25,
                 "message": "OSD {entry} was marked out",
             },
             "ceph_err": {
                 "entries": get_ceph_health_entries,
-                "conditions": ["HEALTH_ERR"],
+                "conditions": ["HEALTH_ERR", "HEALTH_WARN"],
                 "delta": 50,
-                "message": "HEALTH_ERR {entry} reported by Ceph",
+                "message": "{entry} reported by Ceph ({details})",
             },
             "vm_failed": {
                 "entries": get_vm_states,
                 "conditions": ["fail"],
                 "delta": 10,
-                "message": "VM {entry} was failed",
+                "message": "VM {entry} was failed ({details})",
             },
             "memory_overprovisioned": {
                 "entries": get_overprovisioned_memory,
@@ -578,15 +599,36 @@ class MonitoringInstance(object):
         for fault_type in self.cluster_faults_map.keys():
             fault_details = self.cluster_faults_map[fault_type]
 
+            if self.config["log_monitoring_details"] or self.config["debug"]:
+                self.logger.out(
+                    f"Running fault check {fault_type}",
+                    state="t",
+                )
+
             entries = fault_details["entries"]()
+
+            if self.config["debug"]:
+                self.logger.out(
+                    f"Entries for fault check {fault_type}:",
+                    state="d",
+                )
+                for line in dumps(entries, indent=2).split("\n"):
+                    self.logger.out(
+                        line,
+                        state="d",
+                    )
+
             for _entry in entries:
-                entry = _entry[0]
-                check = _entry[1]
+                entry = _entry["entry"]
+                check = _entry["check"]
+                details = _entry["details"]
                 for condition in fault_details["conditions"]:
                     if str(condition) == str(check):
                         fault_time = datetime.now()
                         fault_delta = fault_details["delta"]
-                        fault_message = fault_details["message"].format(entry=entry)
+                        fault_message = fault_details["message"].format(
+                            entry=entry, details=details
+                        )
                         fault_count += 1
                         self.generate_fault(
                             fault_type, fault_time, fault_delta, fault_message
