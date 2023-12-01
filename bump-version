@@ -17,7 +17,6 @@ echo "# Write the changelog below; comments will be ignored" >> ${changelog_file
 $EDITOR ${changelog_file}
 
 changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
-rm ${changelog_file}
 
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvcnoded/Daemon.py
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvchealthd/Daemon.py
@@ -52,6 +51,8 @@ git add node-daemon/pvcnoded/Daemon.py health-daemon/pvchealthd/Daemon.py worker
 git commit -v
 
 popd &>/dev/null
+
+rm ${changelog_file}
 
 echo
 echo "Release message:"
