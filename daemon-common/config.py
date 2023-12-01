@@ -284,7 +284,7 @@ def get_parsed_configuration(config_file):
         config_timer = {
             "vm_shutdown_timeout": int(o_timer.get("vm_shutdown_timeout", 180)),
             "keepalive_interval": int(o_timer.get("keepalive_interval", 5)),
-            "monitoring_interval": int(o_timer.get("monitoring_interval", 60)),
+            "monitoring_interval": int(o_timer.get("monitoring_interval", 15)),
         }
         config = {**config, **config_timer}
 
