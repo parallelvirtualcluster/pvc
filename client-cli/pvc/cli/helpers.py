@@ -40,7 +40,7 @@ import pvc.lib.vm
 import pvc.lib.node
 
 
-DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvcapid.yaml"}
+DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvc.conf"}
 DEFAULT_STORE_FILENAME = "pvc.json"
 DEFAULT_API_PREFIX = "/api/v1"
 DEFAULT_NODE_HOSTNAME = gethostname().split(".")[0]
@@ -88,14 +88,15 @@ def read_config_from_yaml(cfgfile):
 
     try:
         with open(cfgfile) as fh:
-            api_config = yload(fh, Loader=BaseLoader)["pvc"]["api"]
+            api_config = yload(fh, Loader=BaseLoader)["api"]
 
-        host = api_config["listen_address"]
-        port = api_config["listen_port"]
-        scheme = "https" if strtobool(api_config["ssl"]["enabled"]) else "http"
+        host = api_config["listen"]["address"]
+        port = api_config["listen"]["port"]
+        scheme = "https" if api_config["ssl"]["enabled"] else "http"
         api_key = (
-            api_config["authentication"]["tokens"][0]["token"]
-            if strtobool(api_config["authentication"]["enabled"])
+            api_config["token"][0]["token"]
+            if api_config["authentication"]["enabled"]
+            and api_config["authentication"]["source"] == "token"
             else None
         )
     except KeyError:

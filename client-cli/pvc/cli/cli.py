@@ -5960,8 +5960,8 @@ def cli(
       "PVC_COLOUR": Force colour on the output even if Click determines it is not a console (e.g. with 'watch')
 
     If a "-c"/"--connection"/"PVC_CONNECTION" is not specified, the CLI will attempt to read a "local" connection
-    from the API configuration at "/etc/pvc/pvcapid.yaml". If no such configuration is found, the command will
-    abort with an error. This applies to all commands except those under "connection".
+    from the API configuration at "/etc/pvc/pvc.conf". If no such configuration is found, the command will abort
+    with an error. This applies to all commands except those under "connection".
     """
 
     global CLI_CONFIG
