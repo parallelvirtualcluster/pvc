@@ -328,7 +328,7 @@ class ZKHandler(object):
 
         return True
 
-    def children(self, key):
+    def children(self, key, retval=None):
         """
         Lists all children of a key
         """
@@ -336,11 +336,11 @@ class ZKHandler(object):
             path = self.get_schema_path(key)
             if path is None:
                 # This path is invalid; this is likely due to missing schema entries, so return None
-                return None
+                return retval
 
             return self.zk_conn.get_children(path)
         except NoNodeError:
-            return None
+            return retval
 
     def rename(self, kkpairs):
         """
@@ -540,7 +540,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 10
+    _version = 11
 
     # Root for doing nested keys
     _schema_root = ""
@@ -560,7 +560,8 @@ class ZKSchema(object):
             "config.primary_node.sync_lock": f"{_schema_root}/config/primary_node/sync_lock",
             "config.upstream_ip": f"{_schema_root}/config/upstream_ip",
             "config.migration_target_selector": f"{_schema_root}/config/migration_target_selector",
-            "logs": "/logs",
+            "logs": f"{_schema_root}/logs",
+            "faults": f"{_schema_root}/faults",
             "node": f"{_schema_root}/nodes",
             "domain": f"{_schema_root}/domains",
             "network": f"{_schema_root}/networks",
@@ -576,6 +577,16 @@ class ZKSchema(object):
         "logs": {
             "node": "",  # The root key
             "messages": "/messages",
+        },
+        # The schema of an individual logs entry (/logs/{id})
+        "faults": {
+            "id": "",  # The root key
+            "last_time": "/last_time",
+            "first_time": "/first_time",
+            "ack_time": "/ack_time",
+            "status": "/status",
+            "delta": "/delta",
+            "message": "/message",
         },
         # The schema of an individual node entry (/nodes/{node_name})
         "node": {
@@ -619,7 +630,11 @@ class ZKSchema(object):
             "runtime": "/runtime",
         },
         # The schema of an individual SR-IOV PF entry (/nodes/{node_name}/sriov/pf/{pf})
-        "sriov_pf": {"phy": "", "mtu": "/mtu", "vfcount": "/vfcount"},  # The root key
+        "sriov_pf": {
+            "phy": "",
+            "mtu": "/mtu",
+            "vfcount": "/vfcount",
+        },  # The root key
         # The schema of an individual SR-IOV VF entry (/nodes/{node_name}/sriov/vf/{vf})
         "sriov_vf": {
             "phy": "",  # The root key
@@ -665,7 +680,11 @@ class ZKSchema(object):
             "migrate.sync_lock": "/migrate_sync_lock",
         },
         # The schema of an individual domain tag entry (/domains/{domain}/tags/{tag})
-        "tag": {"name": "", "type": "/type", "protected": "/protected"},  # The root key
+        "tag": {
+            "name": "",
+            "type": "/type",
+            "protected": "/protected",
+        },  # The root key
         # The schema of an individual network entry (/networks/{vni})
         "network": {
             "vni": "",  # The root key
@@ -702,7 +721,11 @@ class ZKSchema(object):
             "client_id": "/clientid",
         },
         # The schema for an individual network ACL entry (/networks/{vni}/firewall_rules/(in|out)/{acl}
-        "rule": {"description": "", "rule": "/rule", "order": "/order"},  # The root key
+        "rule": {
+            "description": "",
+            "rule": "/rule",
+            "order": "/order",
+        },  # The root key
         # The schema of an individual OSD entry (/ceph/osds/{osd_id})
         "osd": {
             "id": "",  # The root key
@@ -726,9 +749,15 @@ class ZKSchema(object):
             "stats": "/stats",
         },  # The root key
         # The schema of an individual volume entry (/ceph/volumes/{pool_name}/{volume_name})
-        "volume": {"name": "", "stats": "/stats"},  # The root key
+        "volume": {
+            "name": "",
+            "stats": "/stats",
+        },  # The root key
         # The schema of an individual snapshot entry (/ceph/volumes/{pool_name}/{volume_name}/{snapshot_name})
-        "snapshot": {"name": "", "stats": "/stats"},  # The root key
+        "snapshot": {
+            "name": "",
+            "stats": "/stats",
+        },  # The root key
     }
 
     # Properties
