@@ -43,8 +43,8 @@ from daemon_lib.vmbuilder import (
     worker_create_vm,
 )
 
-
-version = "0.9.82"
+# Daemon version
+version = "0.9.83"
 
 
 config = cfg.get_configuration()
