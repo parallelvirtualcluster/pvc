@@ -328,19 +328,19 @@ class ZKHandler(object):
 
         return True
 
-    def children(self, key, retval=None):
+    def children(self, key):
         """
         Lists all children of a key
         """
         try:
             path = self.get_schema_path(key)
             if path is None:
-                # This path is invalid; this is likely due to missing schema entries, so return None
-                return retval
+                raise NoNodeError
 
             return self.zk_conn.get_children(path)
         except NoNodeError:
-            return retval
+            # This path is invalid; this is likely due to missing schema entries, so return None
+            return None
 
     def rename(self, kkpairs):
         """
