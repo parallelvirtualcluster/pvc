@@ -67,8 +67,8 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Run any imports first
         from psycopg2 import connect
 
-        conn_metadata = None
-        cur_metadata = None
+        conn_api = None
+        cur_api = None
         conn_dns = None
         cur_dns = None
 
@@ -79,25 +79,25 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Check the Metadata database (primary)
         try:
-            conn_metadata = connect(
+            conn_api = connect(
                 host=self.this_node.name,
-                port=self.config["metadata_postgresql_port"],
-                dbname=self.config["metadata_postgresql_dbname"],
-                user=self.config["metadata_postgresql_user"],
-                password=self.config["metadata_postgresql_password"],
+                port=self.config["api_postgresql_port"],
+                dbname=self.config["api_postgresql_dbname"],
+                user=self.config["api_postgresql_user"],
+                password=self.config["api_postgresql_password"],
             )
-            cur_metadata = conn_metadata.cursor()
-            cur_metadata.execute("""SELECT * FROM alembic_version""")
-            data = cur_metadata.fetchone()
+            cur_api = conn_api.cursor()
+            cur_api.execute("""SELECT * FROM alembic_version""")
+            data = cur_api.fetchone()
         except Exception as e:
             health_delta = 50
             err = str(e).split('\n')[0]
-            message = f"Failed to connect to PostgreSQL database {self.config['metadata_postgresql_dbname']}: {err}"
+            message = f"Failed to connect to PostgreSQL database {self.config['api_postgresql_dbname']}: {err}"
         finally:
-            if cur_metadata is not None:
-                cur_metadata.close()
-            if conn_metadata is not None:
-                conn_metadata.close()
+            if cur_api is not None:
+                cur_api.close()
+            if conn_api is not None:
+                conn_api.close()
 
         if health_delta == 0:
             # Check the PowerDNS database (secondary)
