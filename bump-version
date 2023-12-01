@@ -19,8 +19,8 @@ $EDITOR ${changelog_file}
 changelog="$( cat ${changelog_file} | grep -v '^#' | sed 's/^*/  */' )"
 
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvcnoded/Daemon.py
-sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvchealthd/Daemon.py
-sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," node-daemon/pvcworkerd/Daemon.py
+sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," health-daemon/pvchealthd/Daemon.py
+sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," worker-daemon/pvcworkerd/Daemon.py
 sed -i "s,version = \"${current_version}\",version = \"${new_version}\"," api-daemon/pvcapid/Daemon.py
 sed -i "s,version=\"${current_version}\",version=\"${new_version}\"," client-cli/setup.py
 echo ${new_version} > .version
