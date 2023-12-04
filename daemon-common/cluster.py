@@ -22,6 +22,7 @@
 from json import loads
 
 import daemon_lib.common as common
+import daemon_lib.faults as faults
 import daemon_lib.vm as pvc_vm
 import daemon_lib.node as pvc_node
 import daemon_lib.network as pvc_network
@@ -42,6 +43,39 @@ def set_maintenance(zkhandler, maint_state):
     else:
         zkhandler.write([("base.config.maintenance", "false")])
         return True, "Successfully set cluster in normal mode"
+
+
+def getClusterHealthFromFaults(zkhandler):
+    faults_list = faults.getAllFaults(zkhandler)
+
+    unacknowledged_faults = [fault for fault in faults_list if fault["status"] != "ack"]
+
+    # Generate total cluster health numbers
+    cluster_health_value = 100
+    cluster_health_messages = list()
+
+    for fault in sorted(
+        unacknowledged_faults,
+        key=lambda x: (x["health_delta"], x["last_reported"]),
+        reverse=True,
+    ):
+        cluster_health_value = -fault["health_delta"]
+        message = {
+            "id": fault["id"],
+            "health_delta": fault["health_delta"],
+            "text": fault["message"],
+        }
+        cluster_health_messages.append(message)
+
+    if cluster_health_value < 0:
+        cluster_health_value = 0
+
+    cluster_health = {
+        "health": cluster_health_value,
+        "messages": cluster_health_messages,
+    }
+
+    return cluster_health
 
 
 def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
@@ -318,9 +352,7 @@ def getClusterInformation(zkhandler):
 
     # Format the status data
     cluster_information = {
-        "cluster_health": getClusterHealth(
-            zkhandler, node_list, vm_list, ceph_osd_list
-        ),
+        "cluster_health": getClusterHealthFromFaults(zkhandler),
         "node_health": getNodeHealth(zkhandler, node_list),
         "maintenance": maintenance_state,
         "primary_node": primary_node,

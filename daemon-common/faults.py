@@ -37,6 +37,10 @@ def getFault(zkhandler, fault_id):
     fault_delta = int(zkhandler.read(("faults.delta", fault_id)))
     fault_message = zkhandler.read(("faults.message", fault_id))
 
+    # Acknowledged faults have a delta of 0
+    if fault_ack_time != "":
+        fault_delta = 0
+
     fault = {
         "id": fault_id,
         "last_reported": fault_last_time,

@@ -511,11 +511,12 @@ def cli_cluster_fault():
 @click.argument("limit", default=None, required=False)
 @format_opt(
     {
-        "pretty": cli_cluster_fault_list_format_pretty,
-        #        "short": cli_cluster_status_format_short,
+        "short": cli_cluster_fault_list_format_short,
+        "long": cli_cluster_fault_list_format_long,
         "json": lambda d: jdumps(d),
         "json-pretty": lambda d: jdumps(d, indent=2),
-    }
+    },
+    default_format="short",
 )
 @connection_req
 def cli_cluster_fault_list(limit, format_function):

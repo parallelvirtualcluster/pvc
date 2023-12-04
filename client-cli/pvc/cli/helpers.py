@@ -26,7 +26,7 @@ from distutils.util import strtobool
 from getpass import getuser
 from json import load as jload
 from json import dump as jdump
-from os import chmod, environ, getpid, path, makedirs
+from os import chmod, environ, getpid, path, makedirs, get_terminal_size
 from re import findall
 from socket import gethostname
 from subprocess import run, PIPE
@@ -45,7 +45,9 @@ DEFAULT_STORE_FILENAME = "pvc.json"
 DEFAULT_API_PREFIX = "/api/v1"
 DEFAULT_NODE_HOSTNAME = gethostname().split(".")[0]
 DEFAULT_AUTOBACKUP_FILENAME = "/etc/pvc/pvc.conf"
-MAX_CONTENT_WIDTH = 120
+
+# Define the content width to be the maximum temminal size
+MAX_CONTENT_WIDTH = get_terminal_size().columns - 1
 
 
 def echo(config, message, newline=True, stderr=False):

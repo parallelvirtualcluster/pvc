@@ -19,6 +19,7 @@
 #
 ###############################################################################
 
+from pvc.cli.helpers import MAX_CONTENT_WIDTH
 from pvc.lib.node import format_info as node_format_info
 from pvc.lib.node import format_list as node_format_list
 from pvc.lib.vm import format_vm_tags as vm_format_tags
@@ -96,6 +97,11 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
     output.append(f"{ansii['bold']}PVC cluster status:{ansii['end']}")
     output.append("")
 
+    output.append(f"{ansii['purple']}Primary node:{ansii['end']}  {primary_node}")
+    output.append(f"{ansii['purple']}PVC version:{ansii['end']}   {pvc_version}")
+    output.append(f"{ansii['purple']}Upstream IP:{ansii['end']}   {upstream_ip}")
+    output.append("")
+
     if health != "-1":
         health = f"{health}%"
     else:
@@ -105,18 +111,33 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
         health = f"{health} (maintenance on)"
 
     output.append(
-        f"{ansii['purple']}Cluster health:{ansii['end']}   {health_colour}{health}{ansii['end']}"
+        f"{ansii['purple']}Health:{ansii['end']}        {health_colour}{health}{ansii['end']}"
     )
 
     if messages is not None and len(messages) > 0:
-        messages = "\n                  ".join(sorted(messages))
-        output.append(f"{ansii['purple']}Health messages:{ansii['end']}  {messages}")
+        message_list = list()
+        for message in messages:
+            if message["health_delta"] >= 50:
+                message_colour = ansii["red"]
+            elif message["health_delta"] >= 10:
+                message_colour = ansii["yellow"]
+            else:
+                message_colour = ansii["green"]
+            message_delta = (
+                f"({message_colour}-{message['health_delta']}%{ansii['end']})"
+            )
+            message_list.append(
+                # 15 length due to ANSI colour sequences
+                "{id} {delta:<15} {text}".format(
+                    id=message["id"],
+                    delta=message_delta,
+                    text=message["text"],
+                )
+            )
 
-    output.append("")
+        messages = "\n               ".join(message_list)
+        output.append(f"{ansii['purple']}New Faults:{ansii['end']}    {messages}")
 
-    output.append(f"{ansii['purple']}Primary node:{ansii['end']}     {primary_node}")
-    output.append(f"{ansii['purple']}PVC version:{ansii['end']}      {pvc_version}")
-    output.append(f"{ansii['purple']}Upstream IP:{ansii['end']}      {upstream_ip}")
     output.append("")
 
     node_states = ["run,ready"]
@@ -145,7 +166,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     nodes_string = ", ".join(nodes_strings)
 
-    output.append(f"{ansii['purple']}Nodes:{ansii['end']}            {nodes_string}")
+    output.append(f"{ansii['purple']}Nodes:{ansii['end']}         {nodes_string}")
 
     vm_states = ["start", "disable"]
     vm_states.extend(
@@ -175,7 +196,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     vms_string = ", ".join(vms_strings)
 
-    output.append(f"{ansii['purple']}VMs:{ansii['end']}              {vms_string}")
+    output.append(f"{ansii['purple']}VMs:{ansii['end']}           {vms_string}")
 
     osd_states = ["up,in"]
     osd_states.extend(
@@ -201,15 +222,15 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
 
     osds_string = " ".join(osds_strings)
 
-    output.append(f"{ansii['purple']}OSDs:{ansii['end']}             {osds_string}")
+    output.append(f"{ansii['purple']}OSDs:{ansii['end']}          {osds_string}")
 
-    output.append(f"{ansii['purple']}Pools:{ansii['end']}            {total_pools}")
+    output.append(f"{ansii['purple']}Pools:{ansii['end']}         {total_pools}")
 
-    output.append(f"{ansii['purple']}Volumes:{ansii['end']}          {total_volumes}")
+    output.append(f"{ansii['purple']}Volumes:{ansii['end']}       {total_volumes}")
 
-    output.append(f"{ansii['purple']}Snapshots:{ansii['end']}        {total_snapshots}")
+    output.append(f"{ansii['purple']}Snapshots:{ansii['end']}     {total_snapshots}")
 
-    output.append(f"{ansii['purple']}Networks:{ansii['end']}         {total_networks}")
+    output.append(f"{ansii['purple']}Networks:{ansii['end']}      {total_networks}")
 
     output.append("")
 
@@ -249,19 +270,143 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
         health = f"{health} (maintenance on)"
 
     output.append(
-        f"{ansii['purple']}Cluster health:{ansii['end']}   {health_colour}{health}{ansii['end']}"
+        f"{ansii['purple']}Health:{ansii['end']}  {health_colour}{health}{ansii['end']}"
     )
 
     if messages is not None and len(messages) > 0:
-        messages = "\n                  ".join(sorted(messages))
-        output.append(f"{ansii['purple']}Health messages:{ansii['end']}  {messages}")
+        messages = "\n         ".join(sorted(messages))
+        output.append(f"{ansii['purple']}Faults:{ansii['end']}  {messages}")
 
     output.append("")
 
     return "\n".join(output)
 
 
-def cli_cluster_fault_list_format_pretty(CLI_CONFIG, fault_data):
+def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
+    """
+    Short pretty format the output of cli_cluster_fault_list
+    """
+
+    fault_list_output = []
+
+    # Determine optimal column widths
+    fault_id_length = 3  # "ID"
+    fault_last_reported_length = 14  # "Last Reported"
+    fault_health_delta_length = 7  # "Health"
+    fault_message_length = 8  # "Message"
+
+    for fault in fault_data:
+        # fault_id column
+        _fault_id_length = len(str(fault["id"])) + 1
+        if _fault_id_length > fault_id_length:
+            fault_id_length = _fault_id_length
+
+        # health_delta column
+        _fault_health_delta_length = len(str(fault["health_delta"])) + 1
+        if _fault_health_delta_length > fault_health_delta_length:
+            fault_health_delta_length = _fault_health_delta_length
+
+        # last_reported column
+        _fault_last_reported_length = len(str(fault["last_reported"])) + 1
+        if _fault_last_reported_length > fault_last_reported_length:
+            fault_last_reported_length = _fault_last_reported_length
+
+        # message column
+        _fault_message_length = len(str(fault["message"])) + 1
+        if _fault_message_length > fault_message_length:
+            fault_message_length = _fault_message_length
+
+    message_prefix_len = (
+        fault_id_length
+        + 1
+        + fault_health_delta_length
+        + 1
+        + fault_last_reported_length
+        + 1
+    )
+    message_length = MAX_CONTENT_WIDTH - message_prefix_len
+
+    if fault_message_length > message_length:
+        fault_message_length = message_length
+
+    meta_header_length = fault_id_length + fault_health_delta_length + 1
+    detail_header_length = (
+        fault_health_delta_length
+        + fault_last_reported_length
+        + fault_message_length
+        + 2
+        - meta_header_length
+        + 8
+    )
+
+    # Format the string (header)
+    fault_list_output.append(
+        "{bold}Meta {meta_dashes} Fault {detail_dashes}{end_bold}".format(
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            meta_dashes="-" * (meta_header_length - len("Meta ")),
+            detail_dashes="-" * (detail_header_length - len("Fault ")),
+        )
+    )
+
+    fault_list_output.append(
+        "{bold}{fault_id: <{fault_id_length}} {fault_health_delta: <{fault_health_delta_length}} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            fault_id_length=fault_id_length,
+            fault_health_delta_length=fault_health_delta_length,
+            fault_last_reported_length=fault_last_reported_length,
+            fault_id="ID",
+            fault_health_delta="Health",
+            fault_last_reported="Last Reported",
+            fault_message="Message",
+        )
+    )
+
+    for fault in sorted(
+        fault_data,
+        key=lambda x: (x["health_delta"], x["last_reported"]),
+        reverse=True,
+    ):
+        health_delta = fault["health_delta"]
+        if fault["acknowledged_at"] != "":
+            health_colour = ansii["blue"]
+        elif health_delta >= 50:
+            health_colour = ansii["red"]
+        elif health_delta >= 10:
+            health_colour = ansii["yellow"]
+        else:
+            health_colour = ansii["green"]
+
+        if len(fault["message"]) > message_length:
+            split_message = list(
+                fault["message"][0 + i : message_length + i].strip()
+                for i in range(0, len(fault["message"]), message_length)
+            )
+            message = f"\n{' ' * message_prefix_len}".join(split_message)
+        else:
+            message = fault["message"]
+
+        fault_list_output.append(
+            "{bold}{fault_id: <{fault_id_length}} {health_colour}{fault_health_delta: <{fault_health_delta_length}}{end_colour} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
+                bold="",
+                end_bold="",
+                health_colour=health_colour,
+                end_colour=ansii["end"],
+                fault_id_length=fault_id_length,
+                fault_health_delta_length=fault_health_delta_length,
+                fault_last_reported_length=fault_last_reported_length,
+                fault_id=fault["id"],
+                fault_health_delta=f"-{fault['health_delta']}%",
+                fault_last_reported=fault["last_reported"],
+                fault_message=message,
+            )
+        )
+
+    return "\n".join(fault_list_output)
+
+
+def cli_cluster_fault_list_format_long(CLI_CONFIG, fault_data):
     """
     Pretty format the output of cli_cluster_fault_list
     """
@@ -272,9 +417,9 @@ def cli_cluster_fault_list_format_pretty(CLI_CONFIG, fault_data):
     fault_id_length = 3  # "ID"
     fault_status_length = 7  # "Status"
     fault_health_delta_length = 7  # "Health"
-    fault_acknowledged_at_length = 6  # "Ack'd"
-    fault_last_reported_length = 5  # "Last"
-    fault_first_reported_length = 6  # "First"
+    fault_acknowledged_at_length = 9  # "Ack'd On"
+    fault_last_reported_length = 14  # "Last Reported"
+    fault_first_reported_length = 15  # "First Reported"
     # Message goes on its own line
 
     for fault in fault_data:
@@ -322,9 +467,9 @@ def cli_cluster_fault_list_format_pretty(CLI_CONFIG, fault_data):
             fault_id="ID",
             fault_status="Status",
             fault_health_delta="Health",
-            fault_acknowledged_at="Ack'd",
-            fault_last_reported="Last",
-            fault_first_reported="First",
+            fault_acknowledged_at="Ack'd On",
+            fault_last_reported="Last Reported",
+            fault_first_reported="First Reported",
         )
     )
     fault_list_output.append(
