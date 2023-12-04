@@ -528,7 +528,7 @@ class MonitoringInstance(object):
     def generate_fault(self, fault_name, fault_time, fault_delta, fault_message):
         # Generate a fault ID from the fault_message and fault_delta
         fault_str = f"{fault_name} {fault_delta} {fault_message}"
-        fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())
+        fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
 
         # If a fault already exists with this ID, just update the time
         if not self.zkhandler.exists("base.faults"):
