@@ -261,6 +261,127 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
     return "\n".join(output)
 
 
+def cli_cluster_fault_list_format_pretty(CLI_CONFIG, fault_data):
+    """
+    Pretty format the output of cli_cluster_fault_list
+    """
+
+    fault_list_output = []
+
+    # Determine optimal column widths
+    fault_id_length = 3  # "ID"
+    fault_status_length = 7  # "Status"
+    fault_health_delta_length = 7  # "Health"
+    fault_acknowledged_at_length = 6  # "Ack'd"
+    fault_last_reported_length = 5  # "Last"
+    fault_first_reported_length = 6  # "First"
+    # Message goes on its own line
+
+    for fault in fault_data:
+        # fault_id column
+        _fault_id_length = len(str(fault["id"])) + 1
+        if _fault_id_length > fault_id_length:
+            fault_id_length = _fault_id_length
+
+        # status column
+        _fault_status_length = len(str(fault["status"])) + 1
+        if _fault_status_length > fault_status_length:
+            fault_status_length = _fault_status_length
+
+        # health_delta column
+        _fault_health_delta_length = len(str(fault["health_delta"])) + 1
+        if _fault_health_delta_length > fault_health_delta_length:
+            fault_health_delta_length = _fault_health_delta_length
+
+        # acknowledged_at column
+        _fault_acknowledged_at_length = len(str(fault["acknowledged_at"])) + 1
+        if _fault_acknowledged_at_length > fault_acknowledged_at_length:
+            fault_acknowledged_at_length = _fault_acknowledged_at_length
+
+        # last_reported column
+        _fault_last_reported_length = len(str(fault["last_reported"])) + 1
+        if _fault_last_reported_length > fault_last_reported_length:
+            fault_last_reported_length = _fault_last_reported_length
+
+        # first_reported column
+        _fault_first_reported_length = len(str(fault["first_reported"])) + 1
+        if _fault_first_reported_length > fault_first_reported_length:
+            fault_first_reported_length = _fault_first_reported_length
+
+    # Format the string (header)
+    fault_list_output.append(
+        "{bold}{fault_id: <{fault_id_length}} {fault_status: <{fault_status_length}} {fault_health_delta: <{fault_health_delta_length}} {fault_acknowledged_at: <{fault_acknowledged_at_length}} {fault_last_reported: <{fault_last_reported_length}} {fault_first_reported: <{fault_first_reported_length}}{end_bold}".format(
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            fault_id_length=fault_id_length,
+            fault_status_length=fault_status_length,
+            fault_health_delta_length=fault_health_delta_length,
+            fault_acknowledged_at_length=fault_acknowledged_at_length,
+            fault_last_reported_length=fault_last_reported_length,
+            fault_first_reported_length=fault_first_reported_length,
+            fault_id="ID",
+            fault_status="Status",
+            fault_health_delta="Health",
+            fault_acknowledged_at="Ack'd",
+            fault_last_reported="Last",
+            fault_first_reported="First",
+        )
+    )
+    fault_list_output.append(
+        "{bold}> {fault_message}{end_bold}".format(
+            bold=ansii["bold"],
+            end_bold=ansii["end"],
+            fault_message="Message",
+        )
+    )
+
+    for fault in sorted(
+        fault_data,
+        key=lambda x: (x["status"], x["health_delta"], x["last_reported"]),
+        reverse=True,
+    ):
+        health_delta = fault["health_delta"]
+        if fault["acknowledged_at"] != "":
+            health_colour = ansii["blue"]
+        elif health_delta >= 50:
+            health_colour = ansii["red"]
+        elif health_delta >= 10:
+            health_colour = ansii["yellow"]
+        else:
+            health_colour = ansii["green"]
+
+        fault_list_output.append("")
+        fault_list_output.append(
+            "{bold}{fault_id: <{fault_id_length}} {health_colour}{fault_status: <{fault_status_length}} {fault_health_delta: <{fault_health_delta_length}}{end_colour} {fault_acknowledged_at: <{fault_acknowledged_at_length}} {fault_last_reported: <{fault_last_reported_length}} {fault_first_reported: <{fault_first_reported_length}}{end_bold}".format(
+                bold="",
+                end_bold="",
+                health_colour=health_colour,
+                end_colour=ansii["end"],
+                fault_id_length=fault_id_length,
+                fault_status_length=fault_status_length,
+                fault_health_delta_length=fault_health_delta_length,
+                fault_acknowledged_at_length=fault_acknowledged_at_length,
+                fault_last_reported_length=fault_last_reported_length,
+                fault_first_reported_length=fault_first_reported_length,
+                fault_id=fault["id"],
+                fault_status=fault["status"].title(),
+                fault_health_delta=f"-{fault['health_delta']}%",
+                fault_acknowledged_at=fault["acknowledged_at"]
+                if fault["acknowledged_at"] != ""
+                else "N/A",
+                fault_last_reported=fault["last_reported"],
+                fault_first_reported=fault["first_reported"],
+            )
+        )
+        fault_list_output.append(
+            "> {fault_message}".format(
+                fault_message=fault["message"],
+            )
+        )
+
+    return "\n".join(fault_list_output)
+
+
 def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
     """
     Pretty format the output of cli_cluster_task

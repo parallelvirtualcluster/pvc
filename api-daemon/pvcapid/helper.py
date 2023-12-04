@@ -31,6 +31,7 @@ from daemon_lib.zkhandler import ZKConnection
 
 import daemon_lib.common as pvc_common
 import daemon_lib.cluster as pvc_cluster
+import daemon_lib.faults as pvc_faults
 import daemon_lib.node as pvc_node
 import daemon_lib.vm as pvc_vm
 import daemon_lib.network as pvc_network
@@ -114,6 +115,65 @@ def cluster_maintenance(zkhandler, maint_state="false"):
         retcode = 200
     else:
         retcode = 400
+
+    return retdata, retcode
+
+
+#
+# Fault functions
+#
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def fault_list(zkhandler, limit=None, sort_key="last_reported"):
+    """
+    Return a list of all faults sorted by SORT_KEY.
+    """
+    retflag, retdata = pvc_faults.get_list(zkhandler, limit=limit, sort_key=sort_key)
+
+    if retflag:
+        retcode = 200
+    elif retflag and limit is not None and len(retdata) < 1:
+        retcode = 404
+        retdata = {"message": f"No fault with ID {limit} found"}
+    else:
+        retcode = 400
+        retdata = {"message": retdata}
+
+    return retdata, retcode
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def fault_acknowledge(zkhandler, fault_id):
+    """
+    Acknowledge a fault of FAULT_ID.
+    """
+    retflag, retdata = pvc_faults.acknowledge(zkhandler, fault_id)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 404
+
+    retdata = {"message": retdata}
+
+    return retdata, retcode
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def fault_delete(zkhandler, fault_id):
+    """
+    Delete a fault of FAULT_ID.
+    """
+    retflag, retdata = pvc_faults.delete(zkhandler, fault_id)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 404
+
+    retdata = {"message": retdata}
 
     return retdata, retcode
 

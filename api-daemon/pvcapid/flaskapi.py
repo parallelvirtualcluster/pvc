@@ -622,6 +622,152 @@ class API_Status(Resource):
 api.add_resource(API_Status, "/status")
 
 
+# /faults
+class API_Faults(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "sort_key",
+                "choices": (
+                    "first_reported",
+                    "last_reported",
+                    "acknowledged_at",
+                    "status",
+                    "health_delta",
+                    "message",
+                ),
+                "helptext": "A valid sort key must be specified",
+                "required": False,
+            },
+        ]
+    )
+    @Authenticator
+    def get(self, reqargs):
+        """
+        Return a list of cluster faults
+        ---
+        tags:
+          - faults
+        parameters:
+          - in: query
+            name: sort_key
+            type: string
+            required: false
+            description: The fault object key to sort results by
+            enum:
+              - first_reported
+              - last_reported
+              - acknowledged_at
+              - status
+              - health_delta
+              - message
+        responses:
+          200:
+            description: OK
+            schema:
+              type: array
+              items:
+                type: object
+                id: fault
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the fault
+                    example: "10ae144b78b4cc5fdf09e2ebbac51235"
+                  first_reported:
+                    type: date
+                    description: The first time the fault was reported
+                    example: "2023-12-01 16:47:59.849742"
+                  last_reported:
+                    type: date
+                    description: The last time the fault was reported
+                    example: "2023-12-01 17:39:45.188398"
+                  acknowledged_at:
+                    type: date
+                    description: The time the fault was acknowledged, or empty if not acknowledged
+                    example: "2023-12-01 17:50:00.000000"
+                  status:
+                    type: string
+                    description: The current state of the fault, either "new" or "ack" (acknowledged)
+                    example: "new"
+                  health_delta:
+                    type: integer
+                    description: The health delta (amount it reduces cluster health from 100%) of the fault
+                    example: 25
+                  message:
+                    type: string
+                    description: The textual description of the fault
+                    example: "Node hv1 was at 40% (psur@-10%, psql@-50%) <= 50% health"
+        """
+        return api_helper.fault_list(sort_key=reqargs.get("sort_key", "last_reported"))
+
+
+api.add_resource(API_Faults, "/faults")
+
+
+# /faults/<fault_id>
+class API_Faults_Element(Resource):
+    @Authenticator
+    def get(self, fault_id):
+        """
+        Return a single cluster fault
+        ---
+        tags:
+          - faults
+        responses:
+          200:
+            description: OK
+            schema:
+              type: array
+              items:
+                type: object
+                id: fault
+                $ref: '#/definitions/fault'
+        """
+        return api_helper.fault_list(limit=fault_id)
+
+    @Authenticator
+    def put(self, fault_id):
+        """
+        Acknowledge a cluster fault
+        ---
+        tags:
+          - faults
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: A text message
+        """
+        return api_helper.fault_acknowledge(fault_id)
+
+    @Authenticator
+    def delete(self, fault_id):
+        """
+        Delete a cluster fault
+        ---
+        tags:
+          - faults
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: A text message
+        """
+        return api_helper.fault_delete(fault_id)
+
+
+api.add_resource(API_Faults_Element, "/faults/<fault_id>")
+
+
 # /tasks
 class API_Tasks(Resource):
     @Authenticator

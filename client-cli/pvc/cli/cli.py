@@ -37,6 +37,7 @@ from pvc.cli.parsers import *
 from pvc.cli.formatters import *
 
 import pvc.lib.cluster
+import pvc.lib.faults
 import pvc.lib.node
 import pvc.lib.vm
 import pvc.lib.network
@@ -348,40 +349,6 @@ def cli_cluster():
 
 
 ###############################################################################
-# > pvc cluster status
-###############################################################################
-@click.command(
-    name="status",
-    short_help="Show cluster status.",
-)
-@connection_req
-@format_opt(
-    {
-        "pretty": cli_cluster_status_format_pretty,
-        "short": cli_cluster_status_format_short,
-        "json": lambda d: jdumps(d),
-        "json-pretty": lambda d: jdumps(d, indent=2),
-    }
-)
-def cli_cluster_status(
-    format_function,
-):
-    """
-    Show information and health about a PVC cluster.
-
-    \b
-    Format options:
-        "pretty": Output all details in a nice colourful format.
-        "short" Output only details about cluster health in a nice colourful format.
-        "json": Output in unformatted JSON.
-        "json-pretty": Output in formatted JSON.
-    """
-
-    retcode, retdata = pvc.lib.cluster.get_info(CLI_CONFIG)
-    finish(retcode, retdata, format_function)
-
-
-###############################################################################
 # > pvc cluster init
 ###############################################################################
 @click.command(
@@ -483,6 +450,120 @@ def cli_cluster_restore(
     Instead, stop all node daemons first and start the API daemon manually before running this
     command.
     """
+
+
+###############################################################################
+# > pvc cluster status
+###############################################################################
+@click.command(
+    name="status",
+    short_help="Show cluster status.",
+)
+@connection_req
+@format_opt(
+    {
+        "pretty": cli_cluster_status_format_pretty,
+        "short": cli_cluster_status_format_short,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+def cli_cluster_status(
+    format_function,
+):
+    """
+    Show information and health about a PVC cluster.
+
+    \b
+    Format options:
+        "pretty": Output all details in a nice colourful format.
+        "short" Output only details about cluster health in a nice colourful format.
+        "json": Output in unformatted JSON.
+        "json-pretty": Output in formatted JSON.
+    """
+
+    retcode, retdata = pvc.lib.cluster.get_info(CLI_CONFIG)
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
+# > pvc cluster fault
+###############################################################################
+@click.group(
+    name="fault",
+    short_help="Manage PVC cluster faults.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_cluster_fault():
+    """
+    Manage faults in the PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# > pvc cluster fault list
+###############################################################################
+@click.command(
+    name="list",
+    short_help="List all cluster faults.",
+)
+@click.argument("limit", default=None, required=False)
+@format_opt(
+    {
+        "pretty": cli_cluster_fault_list_format_pretty,
+        #        "short": cli_cluster_status_format_short,
+        "json": lambda d: jdumps(d),
+        "json-pretty": lambda d: jdumps(d, indent=2),
+    }
+)
+@connection_req
+def cli_cluster_fault_list(limit, format_function):
+    """
+    List all faults in the PVC cluster, optionally limited to fault ID LIMIT.
+    """
+
+    retcode, retdata = pvc.lib.faults.get_list(
+        CLI_CONFIG,
+        limit=limit,
+    )
+    finish(retcode, retdata, format_function)
+
+
+###############################################################################
+# > pvc cluster fault ack
+###############################################################################
+@click.command(
+    name="ack",
+    short_help="Acknowledge a cluster fault.",
+)
+@click.argument("fault_id")
+@connection_req
+def cli_cluster_fault_acknowledge(fault_id):
+    """
+    Acknowledge the cluster fault FAULT_ID.
+    """
+
+    retcode, retdata = pvc.lib.faults.acknowledge(CLI_CONFIG, fault_id)
+    finish(retcode, retdata)
+
+
+###############################################################################
+# > pvc cluster fault delete
+###############################################################################
+@click.command(
+    name="delete",
+    short_help="Delete a cluster fault.",
+)
+@click.argument("fault_id")
+@connection_req
+def cli_cluster_fault_delete(fault_id):
+    """
+    Delete the cluster fault FAULT_ID.
+    """
+
+    retcode, retdata = pvc.lib.faults.delete(CLI_CONFIG, fault_id)
+    finish(retcode, retdata)
 
 
 ###############################################################################
@@ -6170,10 +6251,14 @@ cli_provisioner_profile.add_command(cli_provisioner_profile_list)
 cli_provisioner.add_command(cli_provisioner_profile)
 cli_provisioner.add_command(cli_provisioner_create)
 cli.add_command(cli_provisioner)
-cli_cluster.add_command(cli_cluster_status)
 cli_cluster.add_command(cli_cluster_init)
 cli_cluster.add_command(cli_cluster_backup)
 cli_cluster.add_command(cli_cluster_restore)
+cli_cluster.add_command(cli_cluster_status)
+cli_cluster_fault.add_command(cli_cluster_fault_list)
+cli_cluster_fault.add_command(cli_cluster_fault_acknowledge)
+cli_cluster_fault.add_command(cli_cluster_fault_delete)
+cli_cluster.add_command(cli_cluster_fault)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_on)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_off)
 cli_cluster.add_command(cli_cluster_maintenance)
