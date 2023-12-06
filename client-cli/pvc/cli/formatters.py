@@ -337,11 +337,6 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
         if _fault_last_reported_length > fault_last_reported_length:
             fault_last_reported_length = _fault_last_reported_length
 
-        # message column
-        _fault_message_length = len(str(fault["message"])) + 1
-        if _fault_message_length > fault_message_length:
-            fault_message_length = _fault_message_length
-
     message_prefix_len = (
         fault_id_length
         + 1
@@ -356,6 +351,38 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
 
     if fault_message_length > message_length:
         fault_message_length = message_length + 1
+
+    # Handle splitting fault messages into separate lines based on width
+    formatted_messages = dict()
+    for fault in fault_data:
+        split_message = list()
+        if len(fault["message"]) > message_length:
+            words = fault["message"].split()
+            current_line = words[0]
+            for word in words[1:]:
+                if len(current_line) + len(word) + 1 < message_length:
+                    current_line = f"{current_line} {word}"
+                else:
+                    split_message.append(current_line)
+                    current_line = word
+            split_message.append(current_line)
+
+            for line in split_message:
+                # message column
+                _fault_message_length = len(line) + 1
+                if _fault_message_length > fault_message_length:
+                    fault_message_length = _fault_message_length
+
+            message = f"\n{' ' * message_prefix_len}".join(split_message)
+        else:
+            message = fault["message"]
+
+            # message column
+            _fault_message_length = len(message) + 1
+            if _fault_message_length > fault_message_length:
+                fault_message_length = _fault_message_length
+
+        formatted_messages[fault["id"]] = message
 
     meta_header_length = (
         fault_id_length + fault_status_length + fault_health_delta_length + 2
@@ -412,10 +439,17 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
             health_colour = ansii["green"]
 
         if len(fault["message"]) > message_length:
-            split_message = list(
-                fault["message"][0 + i : message_length + i].strip()
-                for i in range(0, len(fault["message"]), message_length)
-            )
+            words = fault["message"].split()
+            split_message = list()
+            current_line = words[0]
+            for word in words:
+                if len(current_line) + len(word) + 1 < message_length:
+                    current_line = f"{current_line} {word}"
+                else:
+                    split_message.append(current_line)
+                    current_line = word
+            split_message.append(current_line)
+
             message = f"\n{' ' * message_prefix_len}".join(split_message)
         else:
             message = fault["message"]
@@ -434,7 +468,7 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
                 fault_status=fault["status"],
                 fault_health_delta=f"-{fault['health_delta']}%",
                 fault_last_reported=fault["last_reported"],
-                fault_message=message,
+                fault_message=formatted_messages[fault["id"]],
             )
         )
 
