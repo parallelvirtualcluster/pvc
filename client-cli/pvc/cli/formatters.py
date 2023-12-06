@@ -311,6 +311,7 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
 
     # Determine optimal column widths
     fault_id_length = 3  # "ID"
+    fault_status_length = 7  # "Status"
     fault_last_reported_length = 14  # "Last Reported"
     fault_health_delta_length = 7  # "Health"
     fault_message_length = 8  # "Message"
@@ -320,6 +321,11 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
         _fault_id_length = len(str(fault["id"])) + 1
         if _fault_id_length > fault_id_length:
             fault_id_length = _fault_id_length
+
+        # status column
+        _fault_status_length = len(str(fault["status"])) + 1
+        if _fault_status_length > fault_status_length:
+            fault_status_length = _fault_status_length
 
         # health_delta column
         _fault_health_delta_length = len(str(fault["health_delta"])) + 1
@@ -339,6 +345,8 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
     message_prefix_len = (
         fault_id_length
         + 1
+        + fault_status_length
+        + 1
         + fault_health_delta_length
         + 1
         + fault_last_reported_length
@@ -347,14 +355,17 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
     message_length = MAX_CONTENT_WIDTH - message_prefix_len
 
     if fault_message_length > message_length:
-        fault_message_length = message_length
+        fault_message_length = message_length + 1
 
-    meta_header_length = fault_id_length + fault_health_delta_length + 1
+    meta_header_length = (
+        fault_id_length + fault_status_length + fault_health_delta_length + 2
+    )
     detail_header_length = (
         fault_health_delta_length
+        + fault_status_length
         + fault_last_reported_length
         + fault_message_length
-        + 2
+        + 3
         - meta_header_length
         + 8
     )
@@ -370,13 +381,15 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
     )
 
     fault_list_output.append(
-        "{bold}{fault_id: <{fault_id_length}} {fault_health_delta: <{fault_health_delta_length}} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
+        "{bold}{fault_id: <{fault_id_length}} {fault_status: <{fault_status_length}} {fault_health_delta: <{fault_health_delta_length}} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
             bold=ansii["bold"],
             end_bold=ansii["end"],
             fault_id_length=fault_id_length,
+            fault_status_length=fault_status_length,
             fault_health_delta_length=fault_health_delta_length,
             fault_last_reported_length=fault_last_reported_length,
             fault_id="ID",
+            fault_status="Status",
             fault_health_delta="Health",
             fault_last_reported="Last Reported",
             fault_message="Message",
@@ -408,15 +421,17 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
             message = fault["message"]
 
         fault_list_output.append(
-            "{bold}{fault_id: <{fault_id_length}} {health_colour}{fault_health_delta: <{fault_health_delta_length}}{end_colour} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
+            "{bold}{fault_id: <{fault_id_length}} {fault_status: <{fault_status_length}} {health_colour}{fault_health_delta: <{fault_health_delta_length}}{end_colour} {fault_last_reported: <{fault_last_reported_length}} {fault_message}{end_bold}".format(
                 bold="",
                 end_bold="",
                 health_colour=health_colour,
                 end_colour=ansii["end"],
                 fault_id_length=fault_id_length,
+                fault_status_length=fault_status_length,
                 fault_health_delta_length=fault_health_delta_length,
                 fault_last_reported_length=fault_last_reported_length,
                 fault_id=fault["id"],
+                fault_status=fault["status"],
                 fault_health_delta=f"-{fault['health_delta']}%",
                 fault_last_reported=fault["last_reported"],
                 fault_message=message,
