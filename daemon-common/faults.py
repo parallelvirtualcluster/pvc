@@ -171,8 +171,11 @@ def acknowledge(zkhandler, fault_id=None):
         if fault["status"] != "ack":
             zkhandler.write(
                 [
-                    (("faults.ack_time", fault_id), str(datetime.now()).split(".")[0]),
-                    (("faults.status", fault_id), "ack"),
+                    (
+                        ("faults.ack_time", fault["id"]),
+                        str(datetime.now()).split(".")[0],
+                    ),
+                    (("faults.status", fault["id"]), "ack"),
                 ]
             )
 
@@ -197,7 +200,7 @@ def delete(zkhandler, fault_id=None):
         faults = [fault]
 
     for fault in faults:
-        zkhandler.delete(("faults.id", fault_id), recursive=True)
+        zkhandler.delete(("faults.id", fault["id"]), recursive=True)
 
     return (
         True,
