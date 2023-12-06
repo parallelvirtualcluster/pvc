@@ -308,9 +308,15 @@ class MonitoringInstance(object):
         self.cluster_faults_map = {
             "unhealthy_node": {
                 "entries": get_node_health_states,
+                "conditions": range(90, 51, -1),
+                "delta": 10,
+                "message": "Node {entry} health",
+            },
+            "very_unhealthy_node": {
+                "entries": get_node_health_states,
                 "conditions": range(50, 0, -1),
-                "delta": 0,
-                "message": "Node {entry} <= 50% health",
+                "delta": 50,
+                "message": "Node {entry} health",
             },
             "dead_or_fenced_node": {
                 "entries": get_node_daemon_states,
@@ -321,12 +327,18 @@ class MonitoringInstance(object):
             "ceph_osd_out": {
                 "entries": get_osd_in_states,
                 "conditions": ["0"],
-                "delta": 25,
+                "delta": 50,
                 "message": "OSD {entry} was marked out",
+            },
+            "ceph_warn": {
+                "entries": get_ceph_health_entries,
+                "conditions": ["HEALTH_WARN"],
+                "delta": 10,
+                "message": "{entry} reported by Ceph ({details})",
             },
             "ceph_err": {
                 "entries": get_ceph_health_entries,
-                "conditions": ["HEALTH_ERR", "HEALTH_WARN"],
+                "conditions": ["HEALTH_ERR"],
                 "delta": 50,
                 "message": "{entry} reported by Ceph ({details})",
             },
@@ -339,7 +351,7 @@ class MonitoringInstance(object):
             "memory_overprovisioned": {
                 "entries": get_overprovisioned_memory,
                 "conditions": ["overprovisioned"],
-                "delta": 25,
+                "delta": 50,
                 "message": "Cluster memory was overprovisioned {entry}",
             },
         }
