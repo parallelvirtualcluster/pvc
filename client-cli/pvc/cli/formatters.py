@@ -274,7 +274,13 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
     )
 
     if messages is not None and len(messages) > 0:
-        messages = "\n         ".join(sorted(messages))
+        messages = "\n         ".join(
+            sorted(
+                messages,
+                key=lambda x: (x["state"], x["health_delta"], x["last_reported"]),
+                reverse=True,
+            )
+        )
         output.append(f"{ansii['purple']}Faults:{ansii['end']}  {messages}")
 
     output.append("")
