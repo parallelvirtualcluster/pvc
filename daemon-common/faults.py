@@ -30,6 +30,9 @@ def generate_fault(
     fault_str = f"{fault_name} {fault_delta} {fault_message}"
     fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
 
+    # Strip the microseconds off of the fault time; we don't care about that precision
+    fault_time = str(fault_time).split(".")[0]
+
     # If a fault already exists with this ID, just update the time
     if not zkhandler.exists("base.faults"):
         logger.out(
@@ -59,7 +62,7 @@ def generate_fault(
     if fault_id in existing_faults:
         zkhandler.write(
             [
-                (("faults.last_time", fault_id), str(fault_time)),
+                (("faults.last_time", fault_id), fault_time),
             ]
         )
     # Otherwise, generate a new fault event
@@ -67,8 +70,8 @@ def generate_fault(
         zkhandler.write(
             [
                 (("faults.id", fault_id), ""),
-                (("faults.first_time", fault_id), str(fault_time).split(".")[0]),
-                (("faults.last_time", fault_id), str(fault_time).split(".")[0]),
+                (("faults.first_time", fault_id), fault_time),
+                (("faults.last_time", fault_id), fault_time),
                 (("faults.ack_time", fault_id), ""),
                 (("faults.status", fault_id), "new"),
                 (("faults.delta", fault_id), fault_delta),
