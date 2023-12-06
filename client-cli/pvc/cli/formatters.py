@@ -277,7 +277,7 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
         messages = "\n         ".join(
             sorted(
                 messages,
-                key=lambda x: (x["state"], x["health_delta"], x["last_reported"]),
+                key=lambda x: (x["status"], x["health_delta"], x["last_reported"]),
                 reverse=True,
             )
         )
