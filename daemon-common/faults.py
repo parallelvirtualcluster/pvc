@@ -67,8 +67,8 @@ def generate_fault(
         zkhandler.write(
             [
                 (("faults.id", fault_id), ""),
-                (("faults.first_time", fault_id), str(fault_time)),
-                (("faults.last_time", fault_id), str(fault_time)),
+                (("faults.first_time", fault_id), str(fault_time).split(".")[0]),
+                (("faults.last_time", fault_id), str(fault_time).split(".")[0]),
                 (("faults.ack_time", fault_id), ""),
                 (("faults.status", fault_id), "new"),
                 (("faults.delta", fault_id), fault_delta),
@@ -163,7 +163,7 @@ def acknowledge(zkhandler, fault_id):
 
     zkhandler.write(
         [
-            (("faults.ack_time", fault_id), datetime.now()),
+            (("faults.ack_time", fault_id), str(datetime.now()).split(".")[0]),
             (("faults.status", fault_id), "ack"),
         ]
     )
