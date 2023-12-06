@@ -46,8 +46,12 @@ DEFAULT_API_PREFIX = "/api/v1"
 DEFAULT_NODE_HOSTNAME = gethostname().split(".")[0]
 DEFAULT_AUTOBACKUP_FILENAME = "/etc/pvc/pvc.conf"
 
-# Define the content width to be the maximum temminal size
-MAX_CONTENT_WIDTH = get_terminal_size().columns - 1
+try:
+    # Define the content width to be the maximum terminal size
+    MAX_CONTENT_WIDTH = get_terminal_size().columns - 1
+except OSError:
+    # Fall back to 80 columns if "Inappropriate ioctl for device"
+    MAX_CONTENT_WIDTH = 80
 
 
 def echo(config, message, newline=True, stderr=False):
