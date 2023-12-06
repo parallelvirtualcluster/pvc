@@ -136,7 +136,7 @@ def cli_cluster_status_format_pretty(CLI_CONFIG, data):
             )
 
         messages = "\n               ".join(message_list)
-        output.append(f"{ansii['purple']}New Faults:{ansii['end']}    {messages}")
+        output.append(f"{ansii['purple']}Active Faults:{ansii['end']} {messages}")
 
     output.append("")
 
@@ -270,12 +270,32 @@ def cli_cluster_status_format_short(CLI_CONFIG, data):
         health = f"{health} (maintenance on)"
 
     output.append(
-        f"{ansii['purple']}Health:{ansii['end']}  {health_colour}{health}{ansii['end']}"
+        f"{ansii['purple']}Health:{ansii['end']}        {health_colour}{health}{ansii['end']}"
     )
 
     if messages is not None and len(messages) > 0:
-        messages = "\n         ".join(messages["text"])
-        output.append(f"{ansii['purple']}Faults:{ansii['end']}  {messages}")
+        message_list = list()
+        for message in messages:
+            if message["health_delta"] >= 50:
+                message_colour = ansii["red"]
+            elif message["health_delta"] >= 10:
+                message_colour = ansii["yellow"]
+            else:
+                message_colour = ansii["green"]
+            message_delta = (
+                f"({message_colour}-{message['health_delta']}%{ansii['end']})"
+            )
+            message_list.append(
+                # 15 length due to ANSI colour sequences
+                "{id} {delta:<15} {text}".format(
+                    id=message["id"],
+                    delta=message_delta,
+                    text=message["text"],
+                )
+            )
+
+        messages = "\n               ".join(message_list)
+        output.append(f"{ansii['purple']}Active Faults:{ansii['end']} {messages}")
 
     output.append("")
 
