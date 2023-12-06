@@ -25,9 +25,10 @@ import importlib.util
 
 from os import walk
 from datetime import datetime
-from hashlib import md5
 from json import dumps, loads
 from apscheduler.schedulers.background import BackgroundScheduler
+
+from daemon_lib.fault import generate_fault
 
 
 class PluginError(Exception):
@@ -525,57 +526,6 @@ class MonitoringInstance(object):
         except Exception:
             self.logger.out("Failed to stop monitoring check timer", state="w")
 
-    def generate_fault(self, fault_name, fault_time, fault_delta, fault_message):
-        # Generate a fault ID from the fault_message and fault_delta
-        fault_str = f"{fault_name} {fault_delta} {fault_message}"
-        fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
-
-        # If a fault already exists with this ID, just update the time
-        if not self.zkhandler.exists("base.faults"):
-            self.logger.out(
-                f"Skipping fault reporting for {fault_id} due to missing Zookeeper schemas",
-                state="w",
-            )
-            return
-
-        existing_faults = self.zkhandler.children("base.faults")
-        if fault_id in existing_faults:
-            self.logger.out(
-                f"Updating fault {fault_id}: {fault_message} @ {fault_time}", state="i"
-            )
-        else:
-            self.logger.out(
-                f"Generating fault {fault_id}: {fault_message} @ {fault_time}",
-                state="i",
-            )
-
-        if self.zkhandler.read("base.config.maintenance") == "true":
-            self.logger.out(
-                f"Skipping fault reporting for {fault_id} due to maintenance mode",
-                state="w",
-            )
-            return
-
-        if fault_id in existing_faults:
-            self.zkhandler.write(
-                [
-                    (("faults.last_time", fault_id), str(fault_time)),
-                ]
-            )
-        # Otherwise, generate a new fault event
-        else:
-            self.zkhandler.write(
-                [
-                    (("faults.id", fault_id), ""),
-                    (("faults.first_time", fault_id), str(fault_time)),
-                    (("faults.last_time", fault_id), str(fault_time)),
-                    (("faults.ack_time", fault_id), ""),
-                    (("faults.status", fault_id), "new"),
-                    (("faults.delta", fault_id), fault_delta),
-                    (("faults.message", fault_id), fault_message),
-                ]
-            )
-
     def run_faults(self):
         coordinator_state = self.this_node.coordinator_state
 
@@ -630,8 +580,13 @@ class MonitoringInstance(object):
                             entry=entry, details=details
                         )
                         fault_count += 1
-                        self.generate_fault(
-                            fault_type, fault_time, fault_delta, fault_message
+                        generate_fault(
+                            self.zkhandler,
+                            self.logger,
+                            fault_type,
+                            fault_time,
+                            fault_delta,
+                            fault_message,
                         )
 
         runtime_end = datetime.now()
@@ -716,7 +671,7 @@ class MonitoringInstance(object):
             #    fault_message = (
             #        f"{self.this_node.name} {result.plugin_name} {result.message}"
             #    )
-            #    self.generate_fault(fault_type, fault_time, fault_delta, fault_message)
+            #    generate_fault(self.zkhandler, self.logger, fault_type, fault_time, fault_delta, fault_message)
             total_health -= result.health_delta
 
         if total_health < 0:

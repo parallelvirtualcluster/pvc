@@ -20,6 +20,61 @@
 ###############################################################################
 
 from datetime import datetime
+from hashlib import md5
+
+
+def generate_fault(
+    zkhandler, logger, fault_name, fault_time, fault_delta, fault_message
+):
+    # Generate a fault ID from the fault_message and fault_delta
+    fault_str = f"{fault_name} {fault_delta} {fault_message}"
+    fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
+
+    # If a fault already exists with this ID, just update the time
+    if not zkhandler.exists("base.faults"):
+        logger.out(
+            f"Skipping fault reporting for {fault_id} due to missing Zookeeper schemas",
+            state="w",
+        )
+        return
+
+    existing_faults = zkhandler.children("base.faults")
+    if fault_id in existing_faults:
+        logger.out(
+            f"Updating fault {fault_id}: {fault_message} @ {fault_time}", state="i"
+        )
+    else:
+        logger.out(
+            f"Generating fault {fault_id}: {fault_message} @ {fault_time}",
+            state="i",
+        )
+
+    if zkhandler.read("base.config.maintenance") == "true":
+        logger.out(
+            f"Skipping fault reporting for {fault_id} due to maintenance mode",
+            state="w",
+        )
+        return
+
+    if fault_id in existing_faults:
+        zkhandler.write(
+            [
+                (("faults.last_time", fault_id), str(fault_time)),
+            ]
+        )
+    # Otherwise, generate a new fault event
+    else:
+        zkhandler.write(
+            [
+                (("faults.id", fault_id), ""),
+                (("faults.first_time", fault_id), str(fault_time)),
+                (("faults.last_time", fault_id), str(fault_time)),
+                (("faults.ack_time", fault_id), ""),
+                (("faults.status", fault_id), "new"),
+                (("faults.delta", fault_id), fault_delta),
+                (("faults.message", fault_id), fault_message),
+            ]
+        )
 
 
 def getFault(zkhandler, fault_id):
