@@ -28,7 +28,7 @@ from datetime import datetime
 from json import dumps, loads
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from daemon_lib.fault import generate_fault
+from daemon_lib.faults import generate_fault
 
 
 class PluginError(Exception):
