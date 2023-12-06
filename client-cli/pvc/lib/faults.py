@@ -55,7 +55,22 @@ def acknowledge(config, fault_id):
     """
     response = call_api(config, "put", f"/faults/{fault_id}")
 
-    print(response.json())
+    if response.status_code == 200:
+        return True, response.json().get("message", "")
+    else:
+        return False, response.json().get("message", "")
+
+
+def acknowledge_all(config):
+    """
+    Acknowledge all PVC faults
+
+    API endpoint: PUT /api/v1/faults
+    API arguments:
+    API schema: {json_message}
+    """
+    response = call_api(config, "put", "/faults")
+
     if response.status_code == 200:
         return True, response.json().get("message", "")
     else:
@@ -71,6 +86,22 @@ def delete(config, fault_id):
     API schema: {json_message}
     """
     response = call_api(config, "delete", f"/faults/{fault_id}")
+
+    if response.status_code == 200:
+        return True, response.json().get("message", "")
+    else:
+        return False, response.json().get("message", "")
+
+
+def delete_all(config):
+    """
+    Delete all PVC faults
+
+    API endpoint: DELETE /api/v1/faults
+    API arguments:
+    API schema: {json_message}
+    """
+    response = call_api(config, "delete", "/faults")
 
     if response.status_code == 200:
         return True, response.json().get("message", "")

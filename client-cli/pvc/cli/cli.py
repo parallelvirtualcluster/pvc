@@ -550,6 +550,24 @@ def cli_cluster_fault_acknowledge(fault_id):
 
 
 ###############################################################################
+# > pvc cluster fault ack-all
+###############################################################################
+@click.command(
+    name="ack-all",
+    short_help="Acknowledge all cluster faults.",
+)
+@confirm_opt("Acknowledge all current cluster faults")
+@connection_req
+def cli_cluster_fault_acknowledge_all():
+    """
+    Acknowledge all cluster faults.
+    """
+
+    retcode, retdata = pvc.lib.faults.acknowledge_all(CLI_CONFIG)
+    finish(retcode, retdata)
+
+
+###############################################################################
 # > pvc cluster fault delete
 ###############################################################################
 @click.command(
@@ -564,6 +582,24 @@ def cli_cluster_fault_delete(fault_id):
     """
 
     retcode, retdata = pvc.lib.faults.delete(CLI_CONFIG, fault_id)
+    finish(retcode, retdata)
+
+
+###############################################################################
+# > pvc cluster fault delete-all
+###############################################################################
+@click.command(
+    name="delete-all",
+    short_help="Delete all cluster faults.",
+)
+@confirm_opt("Delete all current cluster faults")
+@connection_req
+def cli_cluster_fault_delete_all():
+    """
+    Delete all cluster faults.
+    """
+
+    retcode, retdata = pvc.lib.faults.delete_all(CLI_CONFIG)
     finish(retcode, retdata)
 
 
@@ -6258,7 +6294,9 @@ cli_cluster.add_command(cli_cluster_restore)
 cli_cluster.add_command(cli_cluster_status)
 cli_cluster_fault.add_command(cli_cluster_fault_list)
 cli_cluster_fault.add_command(cli_cluster_fault_acknowledge)
+cli_cluster_fault.add_command(cli_cluster_fault_acknowledge_all)
 cli_cluster_fault.add_command(cli_cluster_fault_delete)
+cli_cluster_fault.add_command(cli_cluster_fault_delete_all)
 cli_cluster.add_command(cli_cluster_fault)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_on)
 cli_cluster_maintenance.add_command(cli_cluster_maintenance_off)

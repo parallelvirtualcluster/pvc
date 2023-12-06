@@ -701,6 +701,44 @@ class API_Faults(Resource):
         """
         return api_helper.fault_list(sort_key=reqargs.get("sort_key", "last_reported"))
 
+    @Authenticator
+    def put(self):
+        """
+        Acknowledge all cluster faults
+        ---
+        tags:
+          - faults
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: A text message
+        """
+        return api_helper.fault_acknowledge_all()
+
+    @Authenticator
+    def delete(self):
+        """
+        Delete all cluster faults
+        ---
+        tags:
+          - faults
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: A text message
+        """
+        return api_helper.fault_delete_all()
+
 
 api.add_resource(API_Faults, "/faults")
 

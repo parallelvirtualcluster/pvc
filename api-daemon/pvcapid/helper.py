@@ -148,7 +148,25 @@ def fault_acknowledge(zkhandler, fault_id):
     """
     Acknowledge a fault of FAULT_ID.
     """
-    retflag, retdata = pvc_faults.acknowledge(zkhandler, fault_id)
+    retflag, retdata = pvc_faults.acknowledge(zkhandler, fault_id=fault_id)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 404
+
+    retdata = {"message": retdata}
+
+    return retdata, retcode
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def fault_acknowledge_all(zkhandler):
+    """
+    Acknowledge all faults.
+    """
+    retflag, retdata = pvc_faults.acknowledge(zkhandler)
 
     if retflag:
         retcode = 200
@@ -166,7 +184,25 @@ def fault_delete(zkhandler, fault_id):
     """
     Delete a fault of FAULT_ID.
     """
-    retflag, retdata = pvc_faults.delete(zkhandler, fault_id)
+    retflag, retdata = pvc_faults.delete(zkhandler, fault_id=fault_id)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 404
+
+    retdata = {"message": retdata}
+
+    return retdata, retcode
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def fault_delete_all(zkhandler):
+    """
+    Delete all faults.
+    """
+    retflag, retdata = pvc_faults.delete(zkhandler)
 
     if retflag:
         retcode = 200

@@ -152,34 +152,54 @@ def get_list(zkhandler, limit=None, sort_key="last_reported"):
     return True, all_faults
 
 
-def acknowledge(zkhandler, fault_id):
+def acknowledge(zkhandler, fault_id=None):
     """
-    Acknowledge a fault
+    Acknowledge a fault or all faults
     """
-    fault = getFault(zkhandler, fault_id)
+    if fault_id is None:
+        faults = getAllFaults(zkhandler)
+    else:
+        fault = getFault(zkhandler, fault_id)
 
-    if fault is None:
-        return False, f"No fault with ID {fault_id} found"
+        if fault is None:
+            return False, f"No fault with ID {fault_id} found"
 
-    zkhandler.write(
-        [
-            (("faults.ack_time", fault_id), str(datetime.now()).split(".")[0]),
-            (("faults.status", fault_id), "ack"),
-        ]
+        faults = [fault]
+
+    for fault in faults:
+        # Don't reacknowledge already-acknowledged faults
+        if fault["status"] != "ack":
+            zkhandler.write(
+                [
+                    (("faults.ack_time", fault_id), str(datetime.now()).split(".")[0]),
+                    (("faults.status", fault_id), "ack"),
+                ]
+            )
+
+    return (
+        True,
+        f"Successfully acknowledged fault(s) {', '.join([fault['id'] for fault in faults])}",
     )
 
-    return True, f"Successfully acknowledged fault {fault_id}"
 
-
-def delete(zkhandler, fault_id):
+def delete(zkhandler, fault_id=None):
     """
-    Delete a fault
+    Delete a fault or all faults
     """
-    fault = getFault(zkhandler, fault_id)
+    if fault_id is None:
+        faults = getAllFaults(zkhandler)
+    else:
+        fault = getFault(zkhandler, fault_id)
 
-    if fault is None:
-        return False, f"No fault with ID {fault_id} found"
+        if fault is None:
+            return False, f"No fault with ID {fault_id} found"
 
-    zkhandler.delete(("faults.id", fault_id), recursive=True)
+        faults = [fault]
 
-    return True, f"Successfully deleted fault {fault_id}"
+    for fault in faults:
+        zkhandler.delete(("faults.id", fault_id), recursive=True)
+
+    return (
+        True,
+        f"Successfully deleted fault(s) {', '.join([fault['id'] for fault in faults])}",
+    )
