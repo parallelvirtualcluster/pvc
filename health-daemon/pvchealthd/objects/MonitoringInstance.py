@@ -683,14 +683,9 @@ class MonitoringInstance(object):
 
                 # Map our check results to fault results
                 # These are not 1-to-1, as faults are cluster-wide.
-                # So a single node even with a severe fault is not alone enough to make the
-                # whole cluster report a serious fault. But 2 is, so 25 is chosen here.
-                if result.health_delta < 10:
-                    fault_delta = 0
-                elif result.health_delta < 50:
-                    fault_delta = 10
-                else:
-                    fault_delta = 25
+                # We divide the delta by two since 2 nodes with the same problem
+                # should equal what the result says.
+                fault_delta = int(result.health_delta / 2)
 
                 fault_message = (
                     f"{self.this_node.name} {result.plugin_name}: {result.message}"
