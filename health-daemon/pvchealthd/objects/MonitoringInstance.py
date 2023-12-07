@@ -571,14 +571,9 @@ class MonitoringInstance(object):
 
             if self.config["debug"]:
                 self.logger.out(
-                    f"Entries for fault check {fault_type}:",
+                    f"Entries for fault check {fault_type}: {dumps(entries)}",
                     state="d",
                 )
-                for line in dumps(entries, indent=2).split("\n"):
-                    self.logger.out(
-                        line,
-                        state="d",
-                    )
 
             for _entry in entries:
                 entry = _entry["entry"]

@@ -117,9 +117,8 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Handle some exceptional cases
         if health_delta > 0:
             if coordinator_state in ["takeover", "relinquish"]:
-                # This scenario occurrs if this plugin run catches a node transitioning from primary to secondary coordinator
-
-                # We can ignore it.
+                # This scenario occurrs if this plugin run catches a node transitioning from primary to
+                # secondary coordinator. We can ignore it.
                 health_delta = 0
                 message = "Patroni PostgreSQL error reported but currently transitioning coordinator state; ignoring."
 
