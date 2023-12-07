@@ -693,7 +693,7 @@ class MonitoringInstance(object):
                     fault_delta = 25
 
                 fault_message = (
-                    f"{self.this_node.name} {result.plugin_name} {result.message}"
+                    f"{self.this_node.name} {result.plugin_name}: {result.message}"
                 )
                 generate_fault(
                     self.zkhandler,
