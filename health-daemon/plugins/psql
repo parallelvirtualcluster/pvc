@@ -112,12 +112,13 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         elif health_delta == 0 and this_node_patronictl_status["State"] != "running":
             health_delta = 10
-            message = "Patroni PostgreSQL state us not running"
+            message = "Patroni PostgreSQL state is not running"
 
         # Handle some exceptional cases
         if health_delta > 0:
-            if self.this_node.coordinator_state in ["takeover", "relinquish"]:
+            if coordinator_state in ["takeover", "relinquish"]:
                 # This scenario occurrs if this plugin run catches a node transitioning from primary to secondary coordinator
+
                 # We can ignore it.
                 health_delta = 0
                 message = "Patroni PostgreSQL error reported but currently transitioning coordinator state; ignoring."
