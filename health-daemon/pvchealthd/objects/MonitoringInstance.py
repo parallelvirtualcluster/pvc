@@ -306,18 +306,18 @@ class MonitoringInstance(object):
 
         # This is a list of all possible faults (cluster error messages) and their corresponding details
         self.cluster_faults_map = {
-            "unhealthy_node": {
-                "entries": get_node_health_states,
-                "conditions": range(90, 51, -1),
-                "delta": 10,
-                "message": "Node {entry} health",
-            },
-            "very_unhealthy_node": {
-                "entries": get_node_health_states,
-                "conditions": range(50, 0, -1),
-                "delta": 50,
-                "message": "Node {entry} health",
-            },
+            #            "unhealthy_node": {
+            #                "entries": get_node_health_states,
+            #                "conditions": range(90, 51, -1),
+            #                "delta": 10,
+            #                "message": "Node {entry} health",
+            #            },
+            #            "very_unhealthy_node": {
+            #                "entries": get_node_health_states,
+            #                "conditions": range(50, 0, -1),
+            #                "delta": 50,
+            #                "message": "Node {entry} health",
+            #            },
             "dead_or_fenced_node": {
                 "entries": get_node_daemon_states,
                 "conditions": ["dead", "fenced"],
@@ -675,15 +675,35 @@ class MonitoringInstance(object):
                     state="t",
                     prefix=f"{result.plugin_name} ({result.runtime}s)",
                 )
-            # Leaving this code if we ever want plugins to directly generate faults
-            # if result.health_delta >= 25:
-            #    fault_type = f"plugin.{self.this_node.name}.{result.plugin_name}"
-            #    fault_time = datetime.now()
-            #    fault_delta = result.health_delta
-            #    fault_message = (
-            #        f"{self.this_node.name} {result.plugin_name} {result.message}"
-            #    )
-            #    generate_fault(self.zkhandler, self.logger, fault_type, fault_time, fault_delta, fault_message)
+
+            # Generate a cluster fault if the plugin is in a suboptimal state
+            if result.health_delta > 0:
+                fault_type = f"plugin.{self.this_node.name}.{result.plugin_name}"
+                fault_time = datetime.now()
+
+                # Map our check results to fault results
+                # These are not 1-to-1, as faults are cluster-wide.
+                # So a single node even with a severe fault is not alone enough to make the
+                # whole cluster report a serious fault. But 2 is, so 25 is chosen here.
+                if result.health_delta < 10:
+                    fault_delta = 0
+                elif result.health_delta < 50:
+                    fault_delta = 10
+                else:
+                    fault_delta = 25
+
+                fault_message = (
+                    f"{self.this_node.name} {result.plugin_name} {result.message}"
+                )
+                generate_fault(
+                    self.zkhandler,
+                    self.logger,
+                    fault_type,
+                    fault_time,
+                    fault_delta,
+                    fault_message,
+                )
+
             total_health -= result.health_delta
 
         if total_health < 0:
