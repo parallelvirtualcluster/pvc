@@ -66,6 +66,8 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Run any imports first
         from psycopg2 import connect
+        from json import loads as jloads
+        from daemon_lib.common import run_os_command
 
         conn_api = None
         cur_api = None
@@ -77,7 +79,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Craft a message that can be used by the clients
         message = "Successfully connected to PostgreSQL databases on localhost"
 
-        # Check the Metadata database (primary)
+        # Check the API database
         try:
             conn_api = connect(
                 host=self.this_node.name,
@@ -99,35 +101,33 @@ class MonitoringPluginScript(MonitoringPlugin):
             if conn_api is not None:
                 conn_api.close()
 
-        if health_delta == 0:
-            # Check the PowerDNS database (secondary)
-            try:
-                conn_pdns = connect(
-                    host=self.this_node.name,
-                    port=self.config["pdns_postgresql_port"],
-                    dbname=self.config["pdns_postgresql_dbname"],
-                    user=self.config["pdns_postgresql_user"],
-                    password=self.config["pdns_postgresql_password"],
-                )
-                cur_pdns = conn_pdns.cursor()
-                cur_pdns.execute("""SELECT * FROM supermasters""")
-                data = cur_pdns.fetchone()
-            except Exception as e:
-                health_delta = 50
-                err = str(e).split('\n')[0]
-                message = f"Failed to connect to PostgreSQL database {self.config['pdns_postgresql_dbname']}: {err}"
-            finally:
-                if cur_pdns is not None:
-                    cur_pdns.close()
-                if conn_pdns is not None:
-                    conn_pdns.close()
+        # Check for Patroni status
+        _, stdout, _ = run_os_command("patronictl --config-file /etc/patroni/config.yml list --format json")
+        patronictl_status = jloads(stdout)
+        this_node_patronictl_status = [p for p in patronictl_status if p["Member"] == self.this_node.name][0]
+
+        if health_delta == 0 and not this_node_patronictl_status:
+            health_delta = 10
+            message = "Unable to determine Patroni PostgreSQL node state"
+
+        elif health_delta == 0 and this_node_patronictl_status["State"] != "running":
+            health_delta = 10
+            message = "Patroni PostgreSQL state us not running"
+
+        # Handle some exceptional cases
+        if health_delta > 0:
+            if self.this_node.coordinator_state in ["takeover", "relinquish"]:
+                # This scenario occurrs if this plugin run catches a node transitioning from primary to secondary coordinator
+                # We can ignore it.
+                health_delta = 0
+                message = "Patroni PostgreSQL error reported but currently transitioning coordinator state; ignoring."
 
         # Set the health delta in our local PluginResult object
         self.plugin_result.set_health_delta(health_delta)
 
         # Set the message in our local PluginResult object
         self.plugin_result.set_message(message)
-
+    
         # Return our local PluginResult object
         return self.plugin_result
 
