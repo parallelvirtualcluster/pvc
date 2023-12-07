@@ -198,35 +198,9 @@ class MonitoringInstance(object):
         self.config = config
         self.logger = logger
         self.this_node = this_node
+        self.faults = 0
 
         # Create functions for each fault type
-        def get_node_health_states():
-            node_health_states = list()
-            for node in self.zkhandler.children("base.node"):
-                node_health = self.zkhandler.read(("node.monitoring.health", node))
-                node_faulty_plugins = list()
-                all_plugins = self.zkhandler.children(("node.monitoring.data", node))
-                for plugin in all_plugins:
-                    plugin_delta = self.zkhandler.read(
-                        (
-                            "node.monitoring.data",
-                            node,
-                            "monitoring_plugin.health_delta",
-                            plugin,
-                        )
-                    )
-                    if int(plugin_delta) > 0:
-                        node_faulty_plugins.append(f"{plugin}@-{plugin_delta}%")
-
-                node_health_states.append(
-                    {
-                        "entry": f"{node} was at {node_health}% ({', '.join(node_faulty_plugins)})",
-                        "check": node_health,
-                        "details": "",
-                    }
-                )
-            return node_health_states
-
         def get_node_daemon_states():
             node_daemon_states = [
                 {
@@ -306,18 +280,6 @@ class MonitoringInstance(object):
 
         # This is a list of all possible faults (cluster error messages) and their corresponding details
         self.cluster_faults_map = {
-            #            "unhealthy_node": {
-            #                "entries": get_node_health_states,
-            #                "conditions": range(90, 51, -1),
-            #                "delta": 10,
-            #                "message": "Node {entry} health",
-            #            },
-            #            "very_unhealthy_node": {
-            #                "entries": get_node_health_states,
-            #                "conditions": range(50, 0, -1),
-            #                "delta": 50,
-            #                "message": "Node {entry} health",
-            #            },
             "dead_or_fenced_node": {
                 "entries": get_node_daemon_states,
                 "conditions": ["dead", "fenced"],
@@ -538,26 +500,12 @@ class MonitoringInstance(object):
         except Exception:
             self.logger.out("Failed to stop monitoring check timer", state="w")
 
-    def run_faults(self):
-        coordinator_state = self.this_node.coordinator_state
-
-        if coordinator_state == "primary":
-            cst_colour = self.logger.fmt_green
-        elif coordinator_state == "secondary":
-            cst_colour = self.logger.fmt_blue
-        else:
-            cst_colour = self.logger.fmt_cyan
-
-        if coordinator_state not in ["primary", "secondary", "takeover", "relinquish"]:
-            return
-
-        runtime_start = datetime.now()
+    def run_faults(self, coordinator_state=None):
         self.logger.out(
-            "Starting monitoring fault check run",
+            f"Starting cluster fault check run at {datetime.now()}",
             state="t",
         )
 
-        fault_count = 0
         for fault_type in self.cluster_faults_map.keys():
             fault_details = self.cluster_faults_map[fault_type]
 
@@ -586,7 +534,6 @@ class MonitoringInstance(object):
                         fault_message = fault_details["message"].format(
                             entry=entry, details=details
                         )
-                        fault_count += 1
                         generate_fault(
                             self.zkhandler,
                             self.logger,
@@ -595,29 +542,7 @@ class MonitoringInstance(object):
                             fault_delta,
                             fault_message,
                         )
-
-        runtime_end = datetime.now()
-        runtime_delta = runtime_end - runtime_start
-        runtime = "{:0.02f}".format(runtime_delta.total_seconds())
-        if fault_count > 0:
-            fault_colour = self.logger.fmt_red
-        else:
-            fault_colour = self.logger.fmt_green
-
-        self.logger.out(
-            "{start_colour}{hostname} fault check @ {starttime}{nofmt} [{cst_colour}{costate}{nofmt}] result is {fault_colour}{fault_count} faults{nofmt} in {runtime} seconds".format(
-                start_colour=self.logger.fmt_purple,
-                cst_colour=self.logger.fmt_bold + cst_colour,
-                fault_colour=fault_colour,
-                nofmt=self.logger.fmt_end,
-                hostname=self.config["node_hostname"],
-                starttime=runtime_start,
-                costate=coordinator_state,
-                fault_count=fault_count,
-                runtime=runtime,
-            ),
-            state="t",
-        )
+                        self.faults += 1
 
     def run_plugin(self, plugin):
         time_start = datetime.now()
@@ -637,19 +562,9 @@ class MonitoringInstance(object):
         result.to_zookeeper()
         return result
 
-    def run_plugins(self):
-        coordinator_state = self.this_node.coordinator_state
-
-        if coordinator_state == "primary":
-            cst_colour = self.logger.fmt_green
-        elif coordinator_state == "secondary":
-            cst_colour = self.logger.fmt_blue
-        else:
-            cst_colour = self.logger.fmt_cyan
-
-        runtime_start = datetime.now()
+    def run_plugins(self, coordinator_state=None):
         self.logger.out(
-            "Starting monitoring plugin check run",
+            f"Starting node plugin check run at {datetime.now()}",
             state="t",
         )
 
@@ -693,8 +608,9 @@ class MonitoringInstance(object):
                     fault_delta,
                     fault_message,
                 )
+                self.faults += 1
 
-            total_health -= result.health_delta
+                total_health -= result.health_delta
 
         if total_health < 0:
             total_health = 0
@@ -706,38 +622,6 @@ class MonitoringInstance(object):
                     total_health,
                 ),
             ]
-        )
-
-        runtime_end = datetime.now()
-        runtime_delta = runtime_end - runtime_start
-        runtime = "{:0.02f}".format(runtime_delta.total_seconds())
-        time.sleep(0.2)
-
-        if isinstance(self.this_node.health, int):
-            if self.this_node.health > 90:
-                health_colour = self.logger.fmt_green
-            elif self.this_node.health > 50:
-                health_colour = self.logger.fmt_yellow
-            else:
-                health_colour = self.logger.fmt_red
-            health_text = str(self.this_node.health) + "%"
-        else:
-            health_colour = self.logger.fmt_blue
-            health_text = "N/A"
-
-        self.logger.out(
-            "{start_colour}{hostname} plugin check @ {starttime}{nofmt} [{cst_colour}{costate}{nofmt}] result is {health_colour}{health}{nofmt} in {runtime} seconds".format(
-                start_colour=self.logger.fmt_purple,
-                cst_colour=self.logger.fmt_bold + cst_colour,
-                health_colour=health_colour,
-                nofmt=self.logger.fmt_end,
-                hostname=self.config["node_hostname"],
-                starttime=runtime_start,
-                costate=coordinator_state,
-                health=health_text,
-                runtime=runtime,
-            ),
-            state="t",
         )
 
     def run_cleanup(self, plugin):
@@ -763,5 +647,64 @@ class MonitoringInstance(object):
         )
 
     def run_checks(self):
-        self.run_plugins()
-        self.run_faults()
+        self.faults = 0
+        runtime_start = datetime.now()
+
+        coordinator_state = self.this_node.coordinator_state
+
+        if coordinator_state == "primary":
+            cst_colour = self.logger.fmt_green
+        elif coordinator_state == "secondary":
+            cst_colour = self.logger.fmt_blue
+        else:
+            cst_colour = self.logger.fmt_cyan
+
+        self.run_plugins(coordinator_state=coordinator_state)
+
+        if coordinator_state in ["primary", "secondary", "takeover", "relinquish"]:
+            self.run_faults(coordinator_state=coordinator_state)
+
+        runtime_end = datetime.now()
+        runtime_delta = runtime_end - runtime_start
+        runtime = "{:0.02f}".format(runtime_delta.total_seconds())
+
+        result_text = list()
+
+        if coordinator_state in ["primary", "secondary", "takeover", "relinquish"]:
+            if self.faults > 0:
+                fault_colour = self.logger.fmt_red
+            else:
+                fault_colour = self.logger.fmt_green
+            if self.faults != 1:
+                s = "s"
+            else:
+                s = ""
+            fault_text = f"{fault_colour}{self.faults}{self.logger.fmt_end} fault{s}"
+            result_text.append(fault_text)
+
+        if isinstance(self.this_node.health, int):
+            if self.this_node.health > 90:
+                health_colour = self.logger.fmt_green
+            elif self.this_node.health > 50:
+                health_colour = self.logger.fmt_yellow
+            else:
+                health_colour = self.logger.fmt_red
+            health_text = f"{health_colour}{self.this_node.health}%{self.logger.fmt_end} node health"
+            result_text.append(health_text)
+        else:
+            health_text = "{self.logger.fmt_blue}N/A{self.logger.fmt_end} node health"
+            result_text.append(health_text)
+
+        self.logger.out(
+            "{start_colour}{hostname} health check @ {starttime}{nofmt} [{cst_colour}{costate}{nofmt}] result is {result_text} in {runtime} seconds".format(
+                start_colour=self.logger.fmt_purple,
+                cst_colour=self.logger.fmt_bold + cst_colour,
+                nofmt=self.logger.fmt_end,
+                hostname=self.config["node_hostname"],
+                starttime=runtime_start,
+                costate=coordinator_state,
+                runtime=runtime,
+                result_text=", ".join(result_text),
+            ),
+            state="t",
+        )
