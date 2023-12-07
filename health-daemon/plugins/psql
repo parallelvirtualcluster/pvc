@@ -105,6 +105,7 @@ class MonitoringPluginScript(MonitoringPlugin):
         _, stdout, _ = run_os_command("patronictl --config-file /etc/patroni/config.yml list --format json")
         patronictl_status = jloads(stdout)
         this_node_patronictl_status = [p for p in patronictl_status if p["Member"] == self.this_node.name][0]
+        self.logger.out(f"{this_node_patronictl_status}", state="d")
 
         if health_delta == 0 and not this_node_patronictl_status:
             health_delta = 10
