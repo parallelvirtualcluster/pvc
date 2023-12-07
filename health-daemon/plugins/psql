@@ -55,7 +55,8 @@ class MonitoringPluginScript(MonitoringPlugin):
         This step is optional and should be used sparingly.
         """
 
-        pass
+        # Prepare the last coordinator state
+        self.last_coordinator_state = None
 
     def run(self, coordinator_state=None):
         """
@@ -107,11 +108,13 @@ class MonitoringPluginScript(MonitoringPlugin):
         this_node_patronictl_status = [p for p in patronictl_status if p["Member"] == self.this_node.name][0]
         self.logger.out(f"{this_node_patronictl_status}", state="d")
 
+        # Invalid state, nothing returned; this is a fault
         if health_delta == 0 and not this_node_patronictl_status:
             health_delta = 10
             message = "Unable to determine Patroni PostgreSQL node state"
-
-        elif health_delta == 0 and this_node_patronictl_status["State"] != "running":
+        # We want to check for a non-running Patroni, but not during or immediately after a coordinator
+        # transition. So we wait until 2 runs with the same coordinator state have been completed.
+        elif health_delta == 0 and self.last_coordinator_state == coordinator_state and this_node_patronictl_status["State"] != "running":
             health_delta = 10
             message = "Patroni PostgreSQL state is not running"
 
@@ -129,6 +132,9 @@ class MonitoringPluginScript(MonitoringPlugin):
         # Set the message in our local PluginResult object
         self.plugin_result.set_message(message)
     
+        # Update the last coordinator state
+        self.last_coordinator_state = coordinator_state
+
         # Return our local PluginResult object
         return self.plugin_result
 
