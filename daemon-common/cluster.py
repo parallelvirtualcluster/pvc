@@ -59,7 +59,7 @@ def getClusterHealthFromFaults(zkhandler):
         key=lambda x: (x["health_delta"], x["last_reported"]),
         reverse=True,
     ):
-        cluster_health_value = -fault["health_delta"]
+        cluster_health_value -= fault["health_delta"]
         message = {
             "id": fault["id"],
             "health_delta": fault["health_delta"],
