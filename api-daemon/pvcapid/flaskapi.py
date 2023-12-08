@@ -622,6 +622,30 @@ class API_Status(Resource):
 api.add_resource(API_Status, "/status")
 
 
+# /metrics
+class API_Metrics(Resource):
+    def get(self):
+        """
+        Return the current PVC cluster status in Prometheus-compatible metrics format
+
+        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
+        with the Prometheus compatibility later.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+          400:
+            description: Bad request
+        """
+        status_data, status_retcode = api_helper.cluster_status()
+        return api_helper.cluster_format_metrics(status_data, status_retcode)
+
+
+api.add_resource(API_Metrics, "/metrics")
+
+
 # /faults
 class API_Faults(Resource):
     @RequestParser(
