@@ -8,7 +8,7 @@ X-Python3-Version: >= 3.7
 
 Package: pvc-daemon-node
 Architecture: all
-Depends: systemd, pvc-daemon-common, pvc-daemon-health, pvc-daemon-worker, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, python3-rados, python3-gevent, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
+Depends: systemd, pvc-daemon-common, pvc-daemon-health, pvc-daemon-worker, python3-kazoo, python3-psutil, python3-apscheduler, python3-libvirt, python3-psycopg2, python3-dnspython, python3-yaml, python3-distutils, python3-rados, python3-gevent, python3-prometheus-client, ipmitool, libvirt-daemon-system, arping, vlan, bridge-utils, dnsmasq, nftables, pdns-server, pdns-backend-pgsql
 Description: Parallel Virtual Cluster node daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
@@ -16,7 +16,7 @@ Description: Parallel Virtual Cluster node daemon
 
 Package: pvc-daemon-health
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-yaml
+Depends: systemd, pvc-daemon-common, python3-kazoo, python3-psutil, python3-apscheduler, python3-yaml, python3-prometheus-client
 Description: Parallel Virtual Cluster health daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
@@ -24,7 +24,7 @@ Description: Parallel Virtual Cluster health daemon
 
 Package: pvc-daemon-worker
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-kazoo, python3-celery, python3-redis, python3-yaml, python-celery-common, fio
+Depends: systemd, pvc-daemon-common, python3-kazoo, python3-celery, python3-redis, python3-yaml, python3-prometheus-client, python-celery-common, fio
 Description: Parallel Virtual Cluster worker daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
@@ -32,7 +32,7 @@ Description: Parallel Virtual Cluster worker daemon
 
 Package: pvc-daemon-api
 Architecture: all
-Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate
+Depends: systemd, pvc-daemon-common, python3-yaml, python3-flask, python3-flask-restful, python3-celery, python3-distutils, python3-redis, python3-lxml, python3-flask-migrate, python3-prometheus-client
 Description: Parallel Virtual Cluster API daemon
  A KVM/Zookeeper/Ceph-based VM and private cloud manager
  .
