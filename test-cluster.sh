@@ -167,6 +167,7 @@ _pvc storage pool remove --yes testing
 
 # Remove the VM
 _pvc vm stop --yes testx
+sleep 5
 _pvc vm remove --yes testx
 
 _pvc provisioner profile remove --yes test
