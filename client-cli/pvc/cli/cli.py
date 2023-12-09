@@ -538,7 +538,7 @@ def cli_cluster_fault_list(limit, format_function):
     name="ack",
     short_help="Acknowledge a cluster fault.",
 )
-@click.argument("fault_id", nargs=-1)
+@click.argument("fault_id", nargs=-1, required=True)
 @connection_req
 def cli_cluster_fault_acknowledge(fault_id):
     """
@@ -575,7 +575,7 @@ def cli_cluster_fault_acknowledge_all():
     name="delete",
     short_help="Delete a cluster fault.",
 )
-@click.argument("fault_id", nargs=-1)
+@click.argument("fault_id", nargs=-1, required=True)
 @connection_req
 def cli_cluster_fault_delete(fault_id):
     """
