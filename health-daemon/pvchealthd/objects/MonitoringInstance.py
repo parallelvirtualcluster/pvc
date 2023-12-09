@@ -537,7 +537,7 @@ class MonitoringInstance(object):
                     if str(condition) == str(check):
                         fault_time = datetime.now()
                         fault_delta = fault_data["delta"]
-                        fault_name = fault_data["name"].format(entry=entry)
+                        fault_name = fault_data["name"].format(entry=entry.upper())
                         fault_message = fault_data["message"].format(entry=entry)
                         generate_fault(
                             self.zkhandler,
