@@ -2,6 +2,14 @@
 
 This directory contains several monitoring resources that can be used with various monitoring systems to track and alert on a PVC cluster system.
 
+## Prometheus + Grafana
+
+The included example Prometheus configuration and Grafana dashboard can be used to query the PVC API for Prometheus data and display it with a consistent dashboard.
+
+Note that the default configuration here also includes Ceph cluster information; a Ceph dashboard can be found externally.
+
+Note too that this does not include node export examples from individual PVC nodes; those must be set up separately.
+
 ## Munin
 
 The included Munin plugins can be activated by linking to them from `/etc/munin/plugins/`. Two plugins are provided:

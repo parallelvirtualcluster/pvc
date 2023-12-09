@@ -1,0 +1,11 @@
+[
+  {
+    "targets": [
+      "pvc.upstream.floating.address.tld:7370"
+    ],
+    "labels": {
+      "cluster": "cluster1"
+    }
+  }
+]
+

@@ -1,0 +1,8 @@
+# Other configuration omitted
+scrape_configs:
+  - job_name: "pvc_cluster"
+    metrics_path: /api/v1/metrics
+    scheme: "http"
+    file_sd_configs:
+      - files:
+          - 'targets-pvc_cluster.json'
