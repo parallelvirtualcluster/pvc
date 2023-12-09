@@ -40,6 +40,10 @@ from functools import wraps
 
 
 # State lists
+fault_state_combinations = [
+    "new",
+    "ack",
+]
 node_state_combinations = [
     "run,ready",
     "run,flush",

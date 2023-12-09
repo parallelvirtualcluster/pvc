@@ -161,10 +161,9 @@ def cluster_metrics(zkhandler):
 
     output_lines.append("# HELP pvc_cluster_faults PVC cluster new faults")
     output_lines.append("# TYPE pvc_cluster_faults gauge")
-    fault_map = {
-        "new": 0,
-        "ack": 0,
-    }
+    fault_map = dict()
+    for fault_type in pvc_common.fault_state_combinations:
+        fault_map[fault_type] = 0
     for fault in faults_data:
         fault_map[fault["status"]] += 1
     for fault_type in fault_map:
