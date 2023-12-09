@@ -668,7 +668,7 @@ class MonitoringInstance(object):
 
         self.run_plugins(coordinator_state=coordinator_state)
 
-        if coordinator_state in ["primary", "secondary", "takeover", "relinquish"]:
+        if coordinator_state in ["primary", "takeover"]:
             self.run_faults(coordinator_state=coordinator_state)
 
         runtime_end = datetime.now()
