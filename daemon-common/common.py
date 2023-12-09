@@ -35,6 +35,54 @@ from functools import wraps
 
 
 ###############################################################################
+# Global Variables
+###############################################################################
+
+
+# State lists
+node_state_combinations = [
+    "run,ready",
+    "run,flush",
+    "run,flushed",
+    "run,unflush",
+    "init,ready",
+    "init,flush",
+    "init,flushed",
+    "init,unflush",
+    "stop,ready",
+    "stop,flush",
+    "stop,flushed",
+    "stop,unflush",
+    "dead,ready",
+    "dead,flush",
+    "dead,fence-flush",
+    "dead,flushed",
+    "dead,unflush",
+    "fenced,ready",
+    "fenced,flush",
+    "fenced,flushed",
+    "fenced,unflush",
+]
+vm_state_combinations = [
+    "start",
+    "restart",
+    "shutdown",
+    "stop",
+    "disable",
+    "fail",
+    "migrate",
+    "unmigrate",
+    "provision",
+]
+ceph_osd_state_combinations = [
+    "up,in",
+    "up,out",
+    "down,in",
+    "down,out",
+]
+
+
+###############################################################################
 # Performance Profiler decorator
 ###############################################################################
 

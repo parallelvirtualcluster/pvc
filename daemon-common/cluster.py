@@ -274,51 +274,9 @@ def getClusterInformation(zkhandler):
     ceph_volume_count = len(ceph_volume_list)
     ceph_snapshot_count = len(ceph_snapshot_list)
 
-    # State lists
-    node_state_combinations = [
-        "run,ready",
-        "run,flush",
-        "run,flushed",
-        "run,unflush",
-        "init,ready",
-        "init,flush",
-        "init,flushed",
-        "init,unflush",
-        "stop,ready",
-        "stop,flush",
-        "stop,flushed",
-        "stop,unflush",
-        "dead,ready",
-        "dead,flush",
-        "dead,fence-flush",
-        "dead,flushed",
-        "dead,unflush",
-        "fenced,ready",
-        "fenced,flush",
-        "fenced,flushed",
-        "fenced,unflush",
-    ]
-    vm_state_combinations = [
-        "start",
-        "restart",
-        "shutdown",
-        "stop",
-        "disable",
-        "fail",
-        "migrate",
-        "unmigrate",
-        "provision",
-    ]
-    ceph_osd_state_combinations = [
-        "up,in",
-        "up,out",
-        "down,in",
-        "down,out",
-    ]
-
     # Format the Node states
     formatted_node_states = {"total": node_count}
-    for state in node_state_combinations:
+    for state in common.node_state_combinations:
         state_count = 0
         for node in node_list:
             node_state = f"{node['daemon_state']},{node['domain_state']}"
@@ -329,7 +287,7 @@ def getClusterInformation(zkhandler):
 
     # Format the VM states
     formatted_vm_states = {"total": vm_count}
-    for state in vm_state_combinations:
+    for state in common.vm_state_combinations:
         state_count = 0
         for vm in vm_list:
             if vm["state"] == state:
@@ -341,7 +299,7 @@ def getClusterInformation(zkhandler):
     up_texts = {1: "up", 0: "down"}
     in_texts = {1: "in", 0: "out"}
     formatted_osd_states = {"total": ceph_osd_count}
-    for state in ceph_osd_state_combinations:
+    for state in common.ceph_osd_state_combinations:
         state_count = 0
         for ceph_osd in ceph_osd_list:
             ceph_osd_state = f"{up_texts[ceph_osd['stats']['up']]},{in_texts[ceph_osd['stats']['in']]}"
