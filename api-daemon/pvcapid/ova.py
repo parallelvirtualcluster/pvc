@@ -50,7 +50,7 @@ def open_database(config):
     conn = psycopg2.connect(
         host=config["api_postgresql_host"],
         port=config["api_postgresql_port"],
-        dbname=config["api_postgresql_name"],
+        dbname=config["api_postgresql_dbname"],
         user=config["api_postgresql_user"],
         password=config["api_postgresql_password"],
     )
