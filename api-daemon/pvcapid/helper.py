@@ -161,15 +161,15 @@ def cluster_metrics(zkhandler):
 
     output_lines.append("# HELP pvc_cluster_faults PVC cluster new faults")
     output_lines.append("# TYPE pvc_cluster_faults gauge")
-    fault_map = dict()
+    fault_map = {
+        "new": 0,
+        "ack": 0,
+    }
     for fault in faults_data:
-        if not fault_map.get(fault["status"]):
-            fault_map[fault["status"]] = 1
-        else:
-            fault_map[fault["status"]] += 1
+        fault_map[fault["status"]] += 1
     for fault_type in fault_map:
         output_lines.append(
-            f'pvc_cluster_faults{{status="{fault_type}"}} {fault_map[fault_type]}'
+            f'pvc_cluster_faults{{status="{fault_type.title()}"}} {fault_map[fault_type]}'
         )
 
     # output_lines.append("# HELP pvc_cluster_faults PVC cluster health faults")
@@ -189,23 +189,32 @@ def cluster_metrics(zkhandler):
 
     output_lines.append("# HELP pvc_nodes PVC node state counts")
     output_lines.append("# TYPE pvc_nodes gauge")
+    output_lines.append(
+        f"pvc_nodes{{state=\"Total\"}} {status_data['nodes'].get('total', 0)}"
+    )
     for state in pvc_common.node_state_combinations:
         output_lines.append(
-            f"pvc_nodes{{state=\"{state}\"}} {status_data['nodes'].get(state, 0)}"
+            f"pvc_nodes{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['nodes'].get(state, 0)}"
         )
 
     output_lines.append("# HELP pvc_vms PVC VM state counts")
     output_lines.append("# TYPE pvc_vms gauge")
+    output_lines.append(
+        f"pvc_vms{{state=\"Total\"}} {status_data['vms'].get('total', 0)}"
+    )
     for state in pvc_common.vm_state_combinations:
         output_lines.append(
-            f"pvc_vms{{state=\"{state}\"}} {status_data['vms'].get(state, 0)}"
+            f"pvc_vms{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['vms'].get(state, 0)}"
         )
 
     output_lines.append("# HELP pvc_osds PVC OSD state counts")
     output_lines.append("# TYPE pvc_osds gauge")
+    output_lines.append(
+        f"pvc_osds{{state=\"Total\"}} {status_data['osds'].get('total', 0)}"
+    )
     for state in pvc_common.ceph_osd_state_combinations:
         output_lines.append(
-            f"pvc_osds{{state=\"{state}\"}} {status_data['osds'].get(state, 0)}"
+            f"pvc_osds{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['osds'].get(state, 0)}"
         )
 
     output_lines.append("# HELP pvc_networks PVC network count")
