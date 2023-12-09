@@ -148,7 +148,7 @@
 
 
 # This import is always required here, as VMBuilder is used by the VMBuilderScript class.
-from pvcapid.vmbuilder import VMBuilder
+from daemon_lib.vmbuilder import VMBuilder
 
 
 # The VMBuilderScript class must be named as such, and extend VMBuilder.
