@@ -388,22 +388,22 @@ def cli_cluster_fault_list_format_short(CLI_CONFIG, fault_data):
         fault_id_length + fault_status_length + fault_health_delta_length + 2
     )
     detail_header_length = (
-        fault_health_delta_length
+        fault_id_length
+        + fault_health_delta_length
         + fault_status_length
         + fault_last_reported_length
         + fault_message_length
         + 3
         - meta_header_length
-        + 8
     )
 
     # Format the string (header)
     fault_list_output.append(
-        "{bold}Meta {meta_dashes} Fault {detail_dashes}{end_bold}".format(
+        "{bold}Meta {meta_dashes}  Fault {detail_dashes}{end_bold}".format(
             bold=ansii["bold"],
             end_bold=ansii["end"],
-            meta_dashes="-" * (meta_header_length - len("Meta ")),
-            detail_dashes="-" * (detail_header_length - len("Fault ")),
+            meta_dashes="-" * (meta_header_length - len("Meta  ")),
+            detail_dashes="-" * (detail_header_length - len("Fault  ")),
         )
     )
 
