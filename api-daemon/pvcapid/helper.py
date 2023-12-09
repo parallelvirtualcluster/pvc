@@ -189,21 +189,23 @@ def cluster_metrics(zkhandler):
 
     output_lines.append("# HELP pvc_nodes PVC node state counts")
     output_lines.append("# TYPE pvc_nodes gauge")
-    for state in status_data["nodes"]:
+    for state in pvc_common.node_state_combinations:
         output_lines.append(
-            f"pvc_nodes{{state=\"{state}\"}} {status_data['nodes'][state]}"
+            f"pvc_nodes{{state=\"{state}\"}} {status_data['nodes'].get(state, 0)}"
         )
 
     output_lines.append("# HELP pvc_vms PVC VM state counts")
     output_lines.append("# TYPE pvc_vms gauge")
-    for state in status_data["vms"]:
-        output_lines.append(f"pvc_vms{{state=\"{state}\"}} {status_data['vms'][state]}")
+    for state in pvc_common.vm_state_combinations:
+        output_lines.append(
+            f"pvc_vms{{state=\"{state}\"}} {status_data['vms'].get(state, 0)}"
+        )
 
     output_lines.append("# HELP pvc_osds PVC OSD state counts")
     output_lines.append("# TYPE pvc_osds gauge")
-    for state in status_data["osds"]:
+    for state in pvc_common.ceph_osd_state_combinations:
         output_lines.append(
-            f"pvc_osds{{state=\"{state}\"}} {status_data['osds'][state]}"
+            f"pvc_osds{{state=\"{state}\"}} {status_data['osds'].get(state, 0)}"
         )
 
     output_lines.append("# HELP pvc_networks PVC network count")
