@@ -335,7 +335,7 @@ def worker_create_vm(
         monitor_list.append("{}.{}".format(monitor, config["storage_domain"]))
     vm_data["ceph_monitor_list"] = monitor_list
     vm_data["ceph_monitor_port"] = config["ceph_monitor_port"]
-    vm_data["ceph_monitor_secret"] = config["ceph_storage_secret_uuid"]
+    vm_data["ceph_monitor_secret"] = config["ceph_secret_uuid"]
 
     # Parse the script arguments
     script_arguments = dict()
