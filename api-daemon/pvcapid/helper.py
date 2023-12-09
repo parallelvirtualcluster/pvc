@@ -140,6 +140,18 @@ def cluster_metrics(zkhandler):
     if not faults_retflag:
         return "Error: Faults data threw error", 400
 
+    node_retflag, node_data = pvc_node.get_list(zkhandler)
+    if not node_retflag:
+        return "Error: Node data threw error", 400
+
+    vm_retflag, vm_data = pvc_vm.get_list(zkhandler)
+    if not vm_retflag:
+        return "Error: VM data threw error", 400
+
+    osd_retflag, osd_data = pvc_ceph.get_list_osd(zkhandler)
+    if not osd_retflag:
+        return "Error: OSD data threw error", 400
+
     retcode = 200
     output_lines = list()
 
@@ -168,7 +180,7 @@ def cluster_metrics(zkhandler):
         fault_map[fault["status"]] += 1
     for fault_type in fault_map:
         output_lines.append(
-            f'pvc_cluster_faults{{status="{fault_type.title()}"}} {fault_map[fault_type]}'
+            f'pvc_cluster_faults{{status="{fault_type}"}} {fault_map[fault_type]}'
         )
 
     # output_lines.append("# HELP pvc_cluster_faults PVC cluster health faults")
@@ -186,49 +198,95 @@ def cluster_metrics(zkhandler):
                 f"pvc_node_health{{node=\"{node}\"}} {status_data['node_health'][node]['health']}"
             )
 
-    output_lines.append("# HELP pvc_nodes PVC node state counts")
+    output_lines.append("# HELP pvc_node_daemon_states PVC Node daemon state counts")
+    output_lines.append("# TYPE pvc_node_daemon_states gauge")
+    node_daemon_state_map = dict()
+    for state in set([s.split(",")[0] for s in pvc_common.node_state_combinations]):
+        node_daemon_state_map[state] = 0
+    for node in node_data:
+        node_daemon_state_map[node["daemon_state"]] += 1
+    for state in node_daemon_state_map:
+        output_lines.append(
+            f'pvc_node_daemon_states{{state="{state}"}} {node_daemon_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_node_domain_states PVC Node domain state counts")
+    output_lines.append("# TYPE pvc_node_domain_states gauge")
+    node_domain_state_map = dict()
+    for state in set([s.split(",")[1] for s in pvc_common.node_state_combinations]):
+        node_domain_state_map[state] = 0
+    for node in node_data:
+        node_domain_state_map[node["domain_state"]] += 1
+    for state in node_domain_state_map:
+        output_lines.append(
+            f'pvc_node_domain_states{{state="{state}"}} {node_domain_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_vm_states PVC VM state counts")
+    output_lines.append("# TYPE pvc_vm_states gauge")
+    vm_state_map = dict()
+    for state in set(pvc_common.vm_state_combinations):
+        vm_state_map[state] = 0
+    for vm in vm_data:
+        vm_state_map[vm["state"]] += 1
+    for state in vm_state_map:
+        output_lines.append(f'pvc_vm_states{{state="{state}"}} {vm_state_map[state]}')
+
+    output_lines.append("# HELP pvc_osd_up_states PVC OSD up state counts")
+    output_lines.append("# TYPE pvc_osd_up_states gauge")
+    osd_up_state_map = dict()
+    for state in set([s.split(",")[0] for s in pvc_common.ceph_osd_state_combinations]):
+        osd_up_state_map[state] = 0
+    for osd in osd_data:
+        if osd["stats"]["up"] > 0:
+            osd_up_state_map["up"] += 1
+        else:
+            osd_up_state_map["down"] += 1
+    for state in osd_up_state_map:
+        output_lines.append(
+            f'pvc_osd_up_states{{state="{state}"}} {osd_up_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_osd_in_states PVC OSD in state counts")
+    output_lines.append("# TYPE pvc_osd_in_states gauge")
+    osd_in_state_map = dict()
+    for state in set([s.split(",")[1] for s in pvc_common.ceph_osd_state_combinations]):
+        osd_in_state_map[state] = 0
+    for osd in osd_data:
+        if osd["stats"]["in"] > 0:
+            osd_in_state_map["in"] += 1
+        else:
+            osd_in_state_map["out"] += 1
+    for state in osd_in_state_map:
+        output_lines.append(
+            f'pvc_osd_in_states{{state="{state}"}} {osd_in_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_nodes PVC Node count")
     output_lines.append("# TYPE pvc_nodes gauge")
-    output_lines.append(
-        f"pvc_nodes{{state=\"Total\"}} {status_data['nodes'].get('total', 0)}"
-    )
-    for state in pvc_common.node_state_combinations:
-        output_lines.append(
-            f"pvc_nodes{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['nodes'].get(state, 0)}"
-        )
+    output_lines.append(f"pvc_nodes {status_data['nodes']['total']}")
 
-    output_lines.append("# HELP pvc_vms PVC VM state counts")
+    output_lines.append("# HELP pvc_vms PVC VM count")
     output_lines.append("# TYPE pvc_vms gauge")
-    output_lines.append(
-        f"pvc_vms{{state=\"Total\"}} {status_data['vms'].get('total', 0)}"
-    )
-    for state in pvc_common.vm_state_combinations:
-        output_lines.append(
-            f"pvc_vms{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['vms'].get(state, 0)}"
-        )
+    output_lines.append(f"pvc_vms {status_data['vms']['total']}")
 
-    output_lines.append("# HELP pvc_osds PVC OSD state counts")
+    output_lines.append("# HELP pvc_osds PVC OSD count")
     output_lines.append("# TYPE pvc_osds gauge")
-    output_lines.append(
-        f"pvc_osds{{state=\"Total\"}} {status_data['osds'].get('total', 0)}"
-    )
-    for state in pvc_common.ceph_osd_state_combinations:
-        output_lines.append(
-            f"pvc_osds{{state=\"{state.title().replace(',', ', ')}\"}} {status_data['osds'].get(state, 0)}"
-        )
+    output_lines.append(f"pvc_osds {status_data['osds']['total']}")
 
-    output_lines.append("# HELP pvc_networks PVC network count")
+    output_lines.append("# HELP pvc_networks PVC Network count")
     output_lines.append("# TYPE pvc_networks gauge")
     output_lines.append(f"pvc_networks {status_data['networks']}")
 
-    output_lines.append("# HELP pvc_pools PVC storage pool count")
+    output_lines.append("# HELP pvc_pools PVC Storage Pool count")
     output_lines.append("# TYPE pvc_pools gauge")
     output_lines.append(f"pvc_pools {status_data['pools']}")
 
-    output_lines.append("# HELP pvc_volumes PVC storage volume count")
+    output_lines.append("# HELP pvc_volumes PVC Storage Volume count")
     output_lines.append("# TYPE pvc_volumes gauge")
     output_lines.append(f"pvc_volumes {status_data['volumes']}")
 
-    output_lines.append("# HELP pvc_snapshots PVC storage snapshot count")
+    output_lines.append("# HELP pvc_snapshots PVC Storage Snapshot count")
     output_lines.append("# TYPE pvc_snapshots gauge")
     output_lines.append(f"pvc_snapshots {status_data['snapshots']}")
 
