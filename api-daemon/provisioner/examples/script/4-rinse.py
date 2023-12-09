@@ -303,14 +303,14 @@ class VMBuilderScript(VMBuilder):
 
         open_zk is exposed from daemon_lib.vmbuilder to provide a context manager for opening
         connections to the PVC Zookeeper cluster; ensure you also import (and pass it)
-        the config object from pvcapid.Daemon as well. This context manager then allows
+        the config object from pvcworkerd.Daemon as well. This context manager then allows
         the use of various common daemon library functions, without going through the API.
         """
 
         # Run any imports first
         import os
         from daemon_lib.vmbuilder import open_zk
-        from pvcapid.Daemon import config
+        from pvcworkerd.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 
@@ -693,7 +693,7 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
         # Run any imports first
         import os
         from daemon_lib.vmbuilder import open_zk
-        from pvcapid.Daemon import config
+        from pvcworkerd.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
 

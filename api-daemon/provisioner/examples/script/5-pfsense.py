@@ -359,7 +359,7 @@ class VMBuilderScript(VMBuilder):
         # Run any imports first; as shown here, you can import anything from the PVC
         # namespace, as well as (of course) the main Python namespaces
         from daemon_lib.vmbuilder import open_zk
-        from pvcapid.Daemon import config
+        from pvcworkerd.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
         import json
@@ -903,7 +903,7 @@ class VMBuilderScript(VMBuilder):
 
         # Run any imports first
         from daemon_lib.vmbuilder import open_zk
-        from pvcapid.Daemon import config
+        from pvcworkerd.Daemon import config
         import daemon_lib.ceph as pvc_ceph
 
         # Use this construct for reversing the list, as the normal reverse() messes with the list
