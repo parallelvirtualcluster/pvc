@@ -135,12 +135,10 @@ def cluster_metrics(zkhandler):
     status_retflag, status_data = pvc_cluster.get_info(zkhandler)
     if not status_retflag:
         return "Error: Status data threw error", 400
-    print(status_data)
 
     faults_retflag, faults_data = pvc_faults.get_list(zkhandler)
     if not faults_retflag:
         return "Error: Faults data threw error", 400
-    print(faults_data)
 
     retcode = 200
     output_lines = list()
