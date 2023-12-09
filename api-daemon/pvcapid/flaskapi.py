@@ -626,6 +626,42 @@ api.add_resource(API_Status, "/status")
 class API_Metrics(Resource):
     def get(self):
         """
+        Return the current PVC cluster status in Prometheus-compatible metrics format and
+        the Ceph cluster metrics as one document.
+
+        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
+        with the Prometheus compatibility later.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+          400:
+            description: Bad request
+        """
+        cluster_output, cluster_retcode = api_helper.cluster_metrics()
+        ceph_output, ceph_retcode = api_helper.ceph_metrics()
+
+        if cluster_retcode != 200 or ceph_retcode != 200:
+            output = "Error: Failed to obtain data"
+            retcode = 400
+        else:
+            output = cluster_output + ceph_output
+            retcode = 200
+
+        response = flask.make_response(output, retcode)
+        response.mimetype = "text/plain"
+        return response
+
+
+api.add_resource(API_Metrics, "/metrics")
+
+
+# /metrics/pvc
+class API_Metrics_PVC(Resource):
+    def get(self):
+        """
         Return the current PVC cluster status in Prometheus-compatible metrics format
 
         Endpoint is unauthenticated to allow metrics exfiltration without having to deal
@@ -639,10 +675,21 @@ class API_Metrics(Resource):
           400:
             description: Bad request
         """
-        return api_helper.cluster_metrics()
+        cluster_output, cluster_retcode = api_helper.cluster_metrics()
+
+        if cluster_retcode != 200:
+            output = "Error: Failed to obtain data"
+            retcode = 400
+        else:
+            output = cluster_output
+            retcode = 200
+
+        response = flask.make_response(output, retcode)
+        response.mimetype = "text/plain"
+        return response
 
 
-api.add_resource(API_Metrics, "/metrics")
+api.add_resource(API_Metrics_PVC, "/metrics/pvc")
 
 
 # /metrics/ceph
@@ -662,7 +709,18 @@ class API_Metrics_Ceph(Resource):
           400:
             description: Bad request
         """
-        return api_helper.cluster_ceph_metrics_proxy()
+        ceph_output, ceph_retcode = api_helper.ceph_metrics()
+
+        if ceph_retcode != 200:
+            output = "Error: Failed to obtain data"
+            retcode = 400
+        else:
+            output = ceph_output
+            retcode = 200
+
+        response = flask.make_response(output, retcode)
+        response.mimetype = "text/plain"
+        return response
 
 
 api.add_resource(API_Metrics_Ceph, "/metrics/ceph")

@@ -152,7 +152,6 @@ def cluster_metrics(zkhandler):
     if not osd_retflag:
         return "Error: OSD data threw error", 400
 
-    retcode = 200
     output_lines = list()
 
     output_lines.append("# HELP pvc_info PVC cluster information")
@@ -290,15 +289,12 @@ def cluster_metrics(zkhandler):
     output_lines.append("# TYPE pvc_snapshots gauge")
     output_lines.append(f"pvc_snapshots {status_data['snapshots']}")
 
-    # We manually make the Flask response here so the output format is correct.
-    response = flask.make_response("\n".join(output_lines) + "\n", retcode)
-    response.mimetype = "text/plain"
-    return response
+    return "\n".join(output_lines) + "\n", 200
 
 
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def cluster_ceph_metrics_proxy(zkhandler):
+def ceph_metrics(zkhandler):
     """
     Obtain current Ceph Prometheus metrics from the active MGR
     """
@@ -327,21 +323,18 @@ def cluster_ceph_metrics_proxy(zkhandler):
         response = get(ceph_prometheus_uri)
 
         if response.status_code == 200:
-            status_code = 200
             output = response.text
+            status_code = 200
         else:
-            status_code = 400
             output = (
                 f"Error: Failed to obtain metric data from {ceph_mgr_node} MGR daemon\n"
             )
+            status_code = 400
     else:
-        status_code = 400
         output = "Error: Failed to find an active MGR node\n"
+        status_code = 400
 
-    # We manually make the Flask response here so the output format is correct.
-    response = flask.make_response(output, status_code)
-    response.mimetype = "text/plain"
-    return response
+    return output, status_code
 
 
 #
