@@ -261,7 +261,7 @@ def get_info(zkhandler, node):
 
 def get_list(
     zkhandler,
-    limit,
+    limit=None,
     daemon_state=None,
     coordinator_state=None,
     domain_state=None,

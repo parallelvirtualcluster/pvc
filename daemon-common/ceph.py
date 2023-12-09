@@ -279,7 +279,7 @@ def unset_osd(zkhandler, option):
     return True, 'Unset OSD property "{}".'.format(option)
 
 
-def get_list_osd(zkhandler, limit, is_fuzzy=True):
+def get_list_osd(zkhandler, limit=None, is_fuzzy=True):
     osd_list = []
     full_osd_list = zkhandler.children("base.osd")
 
@@ -472,7 +472,7 @@ def set_pgs_pool(zkhandler, name, pgs):
     return True, f'Set PGs count to {pgs} for RBD pool "{name}".'
 
 
-def get_list_pool(zkhandler, limit, is_fuzzy=True):
+def get_list_pool(zkhandler, limit=None, is_fuzzy=True):
     full_pool_list = zkhandler.children("base.pool")
 
     if is_fuzzy and limit:
@@ -830,7 +830,7 @@ def unmap_volume(zkhandler, pool, name):
     return True, 'Unmapped RBD volume at "{}".'.format(mapped_volume)
 
 
-def get_list_volume(zkhandler, pool, limit, is_fuzzy=True):
+def get_list_volume(zkhandler, pool, limit=None, is_fuzzy=True):
     if pool and not verifyPool(zkhandler, pool):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(
             pool
@@ -1034,7 +1034,7 @@ def remove_snapshot(zkhandler, pool, volume, name):
     )
 
 
-def get_list_snapshot(zkhandler, pool, volume, limit, is_fuzzy=True):
+def get_list_snapshot(zkhandler, pool, volume, limit=None, is_fuzzy=True):
     snapshot_list = []
     if pool and not verifyPool(zkhandler, pool):
         return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(
