@@ -174,7 +174,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
-        import pvcapid.libvirt_schema as libvirt_schema
+        import daemon_lib.libvirt_schema as libvirt_schema
         import datetime
         import random
 

@@ -186,7 +186,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
-        import pvcapid.libvirt_schema as libvirt_schema
+        import daemon_lib.libvirt_schema as libvirt_schema
         import datetime
         import random
 
@@ -301,7 +301,7 @@ class VMBuilderScript(VMBuilder):
         This function should use the various exposed PVC commands as indicated to create
         RBD block devices and map them to the host as required.
 
-        open_zk is exposed from pvcapid.vmbuilder to provide a context manager for opening
+        open_zk is exposed from daemon_lib.vmbuilder to provide a context manager for opening
         connections to the PVC Zookeeper cluster; ensure you also import (and pass it)
         the config object from pvcapid.Daemon as well. This context manager then allows
         the use of various common daemon library functions, without going through the API.
@@ -309,7 +309,7 @@ class VMBuilderScript(VMBuilder):
 
         # Run any imports first
         import os
-        from pvcapid.vmbuilder import open_zk
+        from daemon_lib.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
@@ -446,7 +446,7 @@ class VMBuilderScript(VMBuilder):
 
         # Run any imports first
         import os
-        from pvcapid.vmbuilder import chroot
+        from daemon_lib.vmbuilder import chroot
         import daemon_lib.common as pvc_common
 
         # The directory we mounted things on earlier during prepare(); this could very well
@@ -692,7 +692,7 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
 
         # Run any imports first
         import os
-        from pvcapid.vmbuilder import open_zk
+        from daemon_lib.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph

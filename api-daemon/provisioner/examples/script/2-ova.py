@@ -177,7 +177,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
-        import pvcapid.libvirt_schema as libvirt_schema
+        import daemon_lib.libvirt_schema as libvirt_schema
         import datetime
         import random
 
@@ -289,7 +289,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
-        from pvcapid.vmbuilder import open_zk
+        from daemon_lib.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.common as pvc_common
         import daemon_lib.ceph as pvc_ceph
@@ -383,7 +383,7 @@ class VMBuilderScript(VMBuilder):
         """
 
         # Run any imports first
-        from pvcapid.vmbuilder import open_zk
+        from daemon_lib.vmbuilder import open_zk
         from pvcapid.Daemon import config
         import daemon_lib.ceph as pvc_ceph
 
