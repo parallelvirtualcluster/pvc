@@ -228,7 +228,7 @@ class MonitoringInstance(object):
         def get_ceph_health_entries():
             ceph_health_entries = [
                 {
-                    "entry": f"{value['severity']} {key}",
+                    "entry": key,
                     "check": value["severity"],
                     "details": value["summary"]["message"],
                 }
@@ -281,36 +281,42 @@ class MonitoringInstance(object):
         # This is a list of all possible faults (cluster error messages) and their corresponding details
         self.cluster_faults_map = {
             "dead_or_fenced_node": {
+                "name": "DEAD_NODE_{entry}",
                 "entries": get_node_daemon_states,
                 "conditions": ["dead", "fenced"],
                 "delta": 50,
                 "message": "Node {entry} was dead and/or fenced",
             },
             "ceph_osd_out": {
+                "name": "CEPH_OSD_OUT_{entry}",
                 "entries": get_osd_in_states,
                 "conditions": ["0"],
                 "delta": 50,
                 "message": "OSD {entry} was marked out",
             },
             "ceph_warn": {
+                "name": "CEPH_WARN_{entry}",
                 "entries": get_ceph_health_entries,
                 "conditions": ["HEALTH_WARN"],
                 "delta": 10,
                 "message": "{entry} reported by Ceph cluster",
             },
             "ceph_err": {
+                "name": "CEPH_ERR_{entry}",
                 "entries": get_ceph_health_entries,
                 "conditions": ["HEALTH_ERR"],
                 "delta": 50,
                 "message": "{entry} reported by Ceph cluster",
             },
             "vm_failed": {
+                "name": "VM_FAILED_{entry}",
                 "entries": get_vm_states,
                 "conditions": ["fail"],
                 "delta": 10,
                 "message": "VM {entry} was failed",
             },
             "memory_overprovisioned": {
+                "name": "MEMORY_OVERPROVISIONED",
                 "entries": get_overprovisioned_memory,
                 "conditions": ["overprovisioned"],
                 "delta": 50,
@@ -531,11 +537,12 @@ class MonitoringInstance(object):
                     if str(condition) == str(check):
                         fault_time = datetime.now()
                         fault_delta = fault_data["delta"]
+                        fault_name = fault_data["name"].format(entry=entry)
                         fault_message = fault_data["message"].format(entry=entry)
                         generate_fault(
                             self.zkhandler,
                             self.logger,
-                            fault_type,
+                            fault_name,
                             fault_time,
                             fault_delta,
                             fault_message,
@@ -587,7 +594,7 @@ class MonitoringInstance(object):
 
             # Generate a cluster fault if the plugin is in a suboptimal state
             if result.health_delta > 0:
-                fault_type = f"plugin.{self.this_node.name}.{result.plugin_name}"
+                fault_name = f"NODE_PLUGIN_{result.plugin_name.upper()}_{self.this_node.name.upper()}"
                 fault_time = datetime.now()
 
                 # Map our check results to fault results
@@ -602,11 +609,11 @@ class MonitoringInstance(object):
                 generate_fault(
                     self.zkhandler,
                     self.logger,
-                    fault_type,
+                    fault_name,
                     fault_time,
                     fault_delta,
                     fault_message,
-                    fault_detail=None,
+                    fault_details=None,
                 )
                 self.faults += 1
 

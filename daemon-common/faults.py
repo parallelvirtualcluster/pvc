@@ -20,7 +20,6 @@
 ###############################################################################
 
 from datetime import datetime
-from hashlib import md5
 
 
 def generate_fault(
@@ -32,10 +31,6 @@ def generate_fault(
     fault_message,
     fault_details=None,
 ):
-    # Generate a fault ID from the fault_name, fault_delta, and fault_message
-    fault_str = f"{fault_name} {fault_delta} {fault_message}"
-    fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
-
     # Strip the microseconds off of the fault time; we don't care about that precision
     fault_time = str(fault_time).split(".")[0]
 
@@ -45,47 +40,49 @@ def generate_fault(
     # If a fault already exists with this ID, just update the time
     if not zkhandler.exists("base.faults"):
         logger.out(
-            f"Skipping fault reporting for {fault_id} due to missing Zookeeper schemas",
+            f"Skipping fault reporting for {fault_name} due to missing Zookeeper schemas",
             state="w",
         )
         return
 
     existing_faults = zkhandler.children("base.faults")
-    if fault_id in existing_faults:
+    if fault_name in existing_faults:
         logger.out(
-            f"Updating fault {fault_id}: {fault_message} @ {fault_time}", state="i"
+            f"Updating fault {fault_name}: {fault_message} @ {fault_time}", state="i"
         )
     else:
         logger.out(
-            f"Generating fault {fault_id}: {fault_message} @ {fault_time}",
+            f"Generating fault {fault_name}: {fault_message} @ {fault_time}",
             state="i",
         )
 
     if zkhandler.read("base.config.maintenance") == "true":
         logger.out(
-            f"Skipping fault reporting for {fault_id} due to maintenance mode",
+            f"Skipping fault reporting for {fault_name} due to maintenance mode",
             state="w",
         )
         return
 
-    if fault_id in existing_faults:
+    # Update an existing fault
+    if fault_name in existing_faults:
         zkhandler.write(
             [
-                (("faults.last_time", fault_id), fault_time),
-                (("faults.message", fault_id), fault_message),
+                (("faults.last_time", fault_name), fault_time),
+                (("faults.delta", fault_name), fault_delta),
+                (("faults.message", fault_name), fault_message),
             ]
         )
-    # Otherwise, generate a new fault event
+    # Generate a new fault
     else:
         zkhandler.write(
             [
-                (("faults.id", fault_id), ""),
-                (("faults.first_time", fault_id), fault_time),
-                (("faults.last_time", fault_id), fault_time),
-                (("faults.ack_time", fault_id), ""),
-                (("faults.status", fault_id), "new"),
-                (("faults.delta", fault_id), fault_delta),
-                (("faults.message", fault_id), fault_message),
+                (("faults.id", fault_name), ""),
+                (("faults.first_time", fault_name), fault_time),
+                (("faults.last_time", fault_name), fault_time),
+                (("faults.ack_time", fault_name), ""),
+                (("faults.status", fault_name), "new"),
+                (("faults.delta", fault_name), fault_delta),
+                (("faults.message", fault_name), fault_message),
             ]
         )
 
