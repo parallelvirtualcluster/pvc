@@ -538,14 +538,15 @@ def cli_cluster_fault_list(limit, format_function):
     name="ack",
     short_help="Acknowledge a cluster fault.",
 )
-@click.argument("fault_id")
+@click.argument("fault_id", nargs=-1)
 @connection_req
 def cli_cluster_fault_acknowledge(fault_id):
     """
-    Acknowledge the cluster fault FAULT_ID.
+    Acknowledge the cluster fault FAULT_ID; multiple FAULT_IDs may be specified.
     """
 
-    retcode, retdata = pvc.lib.faults.acknowledge(CLI_CONFIG, fault_id)
+    faults = list(fault_id)
+    retcode, retdata = pvc.lib.faults.acknowledge(CLI_CONFIG, faults)
     finish(retcode, retdata)
 
 
@@ -574,14 +575,15 @@ def cli_cluster_fault_acknowledge_all():
     name="delete",
     short_help="Delete a cluster fault.",
 )
-@click.argument("fault_id")
+@click.argument("fault_id", nargs=-1)
 @connection_req
 def cli_cluster_fault_delete(fault_id):
     """
-    Delete the cluster fault FAULT_ID.
+    Delete the cluster fault FAULT_ID; multiple FAULT_IDs may be specified.
     """
 
-    retcode, retdata = pvc.lib.faults.delete(CLI_CONFIG, fault_id)
+    faults = list(fault_id)
+    retcode, retdata = pvc.lib.faults.delete(CLI_CONFIG, faults)
     finish(retcode, retdata)
 
 

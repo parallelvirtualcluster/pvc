@@ -45,20 +45,29 @@ def get_list(config, limit=None, sort_key="last_reported"):
         return False, response.json().get("message", "")
 
 
-def acknowledge(config, fault_id):
+def acknowledge(config, faults):
     """
-    Acknowledge a PVC fault
+    Acknowledge one or more PVC faults
 
-    API endpoint: PUT /api/v1/faults/<fault_id>
+    API endpoint: PUT /api/v1/faults/<fault_id> for fault_id in faults
     API arguments:
     API schema: {json_message}
     """
-    response = call_api(config, "put", f"/faults/{fault_id}")
+    status_codes = list()
+    bad_msgs = list()
+    for fault_id in faults:
+        response = call_api(config, "put", f"/faults/{fault_id}")
 
-    if response.status_code == 200:
-        return True, response.json().get("message", "")
+        if response.status_code == 200:
+            status_codes.append(True)
+        else:
+            status_codes.append(False)
+            bad_msgs.append(response.json().get("message", ""))
+
+    if all(status_codes):
+        return True, f"Successfully acknowledged fault(s) {', '.join(faults)}"
     else:
-        return False, response.json().get("message", "")
+        return False, ", ".join(bad_msgs)
 
 
 def acknowledge_all(config):
@@ -77,20 +86,29 @@ def acknowledge_all(config):
         return False, response.json().get("message", "")
 
 
-def delete(config, fault_id):
+def delete(config, faults):
     """
-    Delete a PVC fault
+    Delete one or more PVC faults
 
-    API endpoint: DELETE /api/v1/faults/<fault_id>
+    API endpoint: DELETE /api/v1/faults/<fault_id> for fault_id in faults
     API arguments:
     API schema: {json_message}
     """
-    response = call_api(config, "delete", f"/faults/{fault_id}")
+    status_codes = list()
+    bad_msgs = list()
+    for fault_id in faults:
+        response = call_api(config, "delete", f"/faults/{fault_id}")
 
-    if response.status_code == 200:
-        return True, response.json().get("message", "")
+        if response.status_code == 200:
+            status_codes.append(True)
+        else:
+            status_codes.append(False)
+            bad_msgs.append(response.json().get("message", ""))
+
+    if all(status_codes):
+        return True, f"Successfully deleted fault(s) {', '.join(faults)}"
     else:
-        return False, response.json().get("message", "")
+        return False, ", ".join(bad_msgs)
 
 
 def delete_all(config):
