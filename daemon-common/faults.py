@@ -21,20 +21,26 @@
 
 from datetime import datetime
 from hashlib import md5
-from re import sub
 
 
 def generate_fault(
-    zkhandler, logger, fault_name, fault_time, fault_delta, fault_message
+    zkhandler,
+    logger,
+    fault_name,
+    fault_time,
+    fault_delta,
+    fault_message,
+    fault_details=None,
 ):
-    # Strip off any "extra" data from the message (things in brackets)
-    fault_core_message = sub(r"[\(\[].*?[\)\]]", "", fault_message).strip()
-    # Generate a fault ID from the fault_name, fault_delta, and fault_core_message
-    fault_str = f"{fault_name} {fault_delta} {fault_core_message}"
+    # Generate a fault ID from the fault_name, fault_delta, and fault_message
+    fault_str = f"{fault_name} {fault_delta} {fault_message}"
     fault_id = str(md5(fault_str.encode("utf-8")).hexdigest())[:8]
 
     # Strip the microseconds off of the fault time; we don't care about that precision
     fault_time = str(fault_time).split(".")[0]
+
+    if fault_details is not None:
+        fault_message = f"{fault_message}: {fault_details}"
 
     # If a fault already exists with this ID, just update the time
     if not zkhandler.exists("base.faults"):

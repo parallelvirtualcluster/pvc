@@ -206,7 +206,7 @@ class MonitoringInstance(object):
                 {
                     "entry": node,
                     "check": self.zkhandler.read(("node.state.daemon", node)),
-                    "details": "",
+                    "details": None,
                 }
                 for node in self.zkhandler.children("base.node")
             ]
@@ -219,7 +219,7 @@ class MonitoringInstance(object):
                     "check": loads(self.zkhandler.read(("osd.stats", osd))).get(
                         "in", 0
                     ),
-                    "details": "",
+                    "details": None,
                 }
                 for osd in self.zkhandler.children("base.osd")
             ]
@@ -271,9 +271,9 @@ class MonitoringInstance(object):
                 op_str = "ok"
             overprovisioned_memory = [
                 {
-                    "entry": f"{current_memory_provisioned}MB > {available_node_memory}MB (N-1)",
+                    "entry": "Cluster memory was overprovisioned",
                     "check": op_str,
-                    "details": "",
+                    "details": f"{current_memory_provisioned}MB > {available_node_memory}MB (N-1)",
                 }
             ]
             return overprovisioned_memory
@@ -296,25 +296,25 @@ class MonitoringInstance(object):
                 "entries": get_ceph_health_entries,
                 "conditions": ["HEALTH_WARN"],
                 "delta": 10,
-                "message": "{entry} reported by Ceph ({details})",
+                "message": "{entry} reported by Ceph cluster",
             },
             "ceph_err": {
                 "entries": get_ceph_health_entries,
                 "conditions": ["HEALTH_ERR"],
                 "delta": 50,
-                "message": "{entry} reported by Ceph ({details})",
+                "message": "{entry} reported by Ceph cluster",
             },
             "vm_failed": {
                 "entries": get_vm_states,
                 "conditions": ["fail"],
                 "delta": 10,
-                "message": "VM {entry} was failed ({details})",
+                "message": "VM {entry} was failed",
             },
             "memory_overprovisioned": {
                 "entries": get_overprovisioned_memory,
                 "conditions": ["overprovisioned"],
                 "delta": 50,
-                "message": "Cluster memory was overprovisioned {entry}",
+                "message": "{entry}",
             },
         }
 
@@ -507,7 +507,7 @@ class MonitoringInstance(object):
         )
 
         for fault_type in self.cluster_faults_map.keys():
-            fault_details = self.cluster_faults_map[fault_type]
+            fault_data = self.cluster_faults_map[fault_type]
 
             if self.config["log_monitoring_details"] or self.config["debug"]:
                 self.logger.out(
@@ -515,7 +515,7 @@ class MonitoringInstance(object):
                     state="t",
                 )
 
-            entries = fault_details["entries"]()
+            entries = fault_data["entries"]()
 
             if self.config["debug"]:
                 self.logger.out(
@@ -527,13 +527,11 @@ class MonitoringInstance(object):
                 entry = _entry["entry"]
                 check = _entry["check"]
                 details = _entry["details"]
-                for condition in fault_details["conditions"]:
+                for condition in fault_data["conditions"]:
                     if str(condition) == str(check):
                         fault_time = datetime.now()
-                        fault_delta = fault_details["delta"]
-                        fault_message = fault_details["message"].format(
-                            entry=entry, details=details
-                        )
+                        fault_delta = fault_data["delta"]
+                        fault_message = fault_data["message"].format(entry=entry)
                         generate_fault(
                             self.zkhandler,
                             self.logger,
@@ -541,6 +539,7 @@ class MonitoringInstance(object):
                             fault_time,
                             fault_delta,
                             fault_message,
+                            fault_details=details,
                         )
                         self.faults += 1
 
@@ -607,6 +606,7 @@ class MonitoringInstance(object):
                     fault_time,
                     fault_delta,
                     fault_message,
+                    fault_detail=None,
                 )
                 self.faults += 1
 
