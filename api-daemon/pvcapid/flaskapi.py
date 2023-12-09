@@ -639,11 +639,33 @@ class API_Metrics(Resource):
           400:
             description: Bad request
         """
-        status_data, status_retcode = api_helper.cluster_status()
-        return api_helper.cluster_format_metrics(status_data, status_retcode)
+        return api_helper.cluster_metrics()
 
 
 api.add_resource(API_Metrics, "/metrics")
+
+
+# /metrics/ceph
+class API_Metrics_Ceph(Resource):
+    def get(self):
+        """
+        Return the current PVC Ceph Prometheus metrics
+
+        Proxies a metrics request to the current active MGR, since this is dynamic
+        and can't be controlled by PVC easily.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+          400:
+            description: Bad request
+        """
+        return api_helper.cluster_ceph_metrics_proxy()
+
+
+api.add_resource(API_Metrics_Ceph, "/metrics/ceph")
 
 
 # /faults

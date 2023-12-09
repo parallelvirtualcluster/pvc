@@ -23,6 +23,8 @@ import flask
 import json
 import lxml.etree as etree
 
+from re import match
+from requests import get
 from werkzeug.formparser import parse_form_data
 
 from pvcapid.Daemon import config, strtobool
@@ -124,18 +126,24 @@ def cluster_maintenance(zkhandler, maint_state="false"):
 #
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def cluster_format_metrics(zkhandler, status_data, status_retcode):
+def cluster_metrics(zkhandler):
     """
     Format status data from cluster_status into Prometheus-compatible metrics
     """
-    from flask import make_response
 
-    if status_retcode != 200:
-        return "Error: Status data threw error", status_retcode
+    # Get general cluster information
+    status_retflag, status_data = pvc_cluster.get_info(zkhandler)
+    if not status_retflag:
+        return "Error: Status data threw error", 400
+    print(status_data)
+
+    faults_retflag, faults_data = pvc_faults.get_list(zkhandler)
+    if not faults_retflag:
+        return "Error: Faults data threw error", 400
+    print(faults_data)
 
     retcode = 200
     output_lines = list()
-    print(status_data)
 
     output_lines.append("# HELP pvc_info PVC cluster information")
     output_lines.append("# TYPE pvc_info gauge")
@@ -152,6 +160,19 @@ def cluster_format_metrics(zkhandler, status_data, status_retcode):
     output_lines.append("# HELP pvc_cluster_health PVC cluster health status")
     output_lines.append("# TYPE pvc_cluster_health gauge")
     output_lines.append(f"pvc_cluster_health {status_data['cluster_health']['health']}")
+
+    output_lines.append("# HELP pvc_cluster_faults PVC cluster new faults")
+    output_lines.append("# TYPE pvc_cluster_faults gauge")
+    fault_map = dict()
+    for fault in faults_data:
+        if not fault_map.get(fault["status"]):
+            fault_map[fault["status"]] = 1
+        else:
+            fault_map[fault["status"]] += 1
+    for fault_type in fault_map:
+        output_lines.append(
+            f'pvc_cluster_faults{{status="{fault_type}"}} {fault_map[fault_type]}'
+        )
 
     # output_lines.append("# HELP pvc_cluster_faults PVC cluster health faults")
     # output_lines.append("# TYPE pvc_cluster_faults gauge")
@@ -204,7 +225,55 @@ def cluster_format_metrics(zkhandler, status_data, status_retcode):
     output_lines.append(f"pvc_snapshots {status_data['snapshots']}")
 
     # We manually make the Flask response here so the output format is correct.
-    response = make_response("\n".join(output_lines) + "\n", retcode)
+    response = flask.make_response("\n".join(output_lines) + "\n", retcode)
+    response.mimetype = "text/plain"
+    return response
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def cluster_ceph_metrics_proxy(zkhandler):
+    """
+    Obtain current Ceph Prometheus metrics from the active MGR
+    """
+    # We have to parse out the *name* of the currently active MGR
+    # While the JSON version of the "ceph status" output provides a
+    # URL, this URL is in the backend (i.e. storage) network, which
+    # the API might not have access to. This way, we can connect to
+    # the node name which can be handled however.
+    retcode, retdata = pvc_ceph.get_status(zkhandler)
+    if not retcode:
+        ceph_mgr_node = None
+    else:
+        ceph_data = retdata["ceph_data"]
+        try:
+            ceph_mgr_line = [
+                n for n in ceph_data.split("\n") if match(r"^mgr:", n.strip())
+            ][0]
+            ceph_mgr_node = ceph_mgr_line.split()[1].split("(")[0]
+        except Exception:
+            ceph_mgr_node = None
+
+    if ceph_mgr_node is not None:
+        # Get the data from the endpoint
+        # We use the default port of 9283
+        ceph_prometheus_uri = f"http://{ceph_mgr_node}:9283/metrics"
+        response = get(ceph_prometheus_uri)
+
+        if response.status_code == 200:
+            status_code = 200
+            output = response.text
+        else:
+            status_code = 400
+            output = (
+                f"Error: Failed to obtain metric data from {ceph_mgr_node} MGR daemon\n"
+            )
+    else:
+        status_code = 400
+        output = "Error: Failed to find an active MGR node\n"
+
+    # We manually make the Flask response here so the output format is correct.
+    response = flask.make_response(output, status_code)
     response.mimetype = "text/plain"
     return response
 
