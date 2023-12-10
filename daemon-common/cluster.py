@@ -42,9 +42,7 @@ def set_maintenance(zkhandler, maint_state):
         return True, "Successfully set cluster in normal mode"
 
 
-def getClusterHealthFromFaults(zkhandler):
-    faults_list = faults.getAllFaults(zkhandler)
-
+def getClusterHealthFromFaults(zkhandler, faults_list):
     unacknowledged_faults = [fault for fault in faults_list if fault["status"] != "ack"]
 
     # Generate total cluster health numbers
@@ -277,13 +275,22 @@ def getClusterInformation(zkhandler):
         ]
     all_node_states = zkhandler.read_many(node_state_reads)
     # Parse out the Node states
+    node_data = list()
     formatted_node_states = {"total": node_count}
     for nidx, node in enumerate(node_list):
         # Split the large list of return values by the IDX of this node
         # Each node result is 2 fields long
         pos_start = nidx * 2
         pos_end = nidx * 2 + 2
-        node_state = ",".join(tuple(all_node_states[pos_start:pos_end]))
+        node_daemon_state, node_domain_state = tuple(all_node_states[pos_start:pos_end])
+        node_data.append(
+            {
+                "name": node,
+                "daemon_state": node_daemon_state,
+                "domain_state": node_domain_state,
+            }
+        )
+        node_state = f"{node_daemon_state},{node_domain_state}"
         # Add to the count for this node's state
         if node_state in common.node_state_combinations:
             if formatted_node_states.get(node_state) is not None:
@@ -298,15 +305,26 @@ def getClusterInformation(zkhandler):
     vm_state_reads = list()
     for vm in vm_list:
         vm_state_reads += [
+            ("domain", vm),
             ("domain.state", vm),
         ]
     all_vm_states = zkhandler.read_many(vm_state_reads)
     # Parse out the VM states
+    vm_data = list()
     formatted_vm_states = {"total": vm_count}
     for vidx, vm in enumerate(vm_list):
         # Split the large list of return values by the IDX of this VM
-        # Each VM result is 1 field long, so just use the IDX
-        vm_state = all_vm_states[vidx]
+        # Each VM result is 2 field long
+        pos_start = nidx * 2
+        pos_end = nidx * 2 + 2
+        vm_name, vm_state = tuple(all_vm_states[pos_start:pos_end])
+        vm_data.append(
+            {
+                "uuid": vm,
+                "name": vm_name,
+                "state": vm_state,
+            }
+        )
         # Add to the count for this VM's state
         if vm_state in common.vm_state_combinations:
             if formatted_vm_states.get(vm_state) is not None:
@@ -324,6 +342,7 @@ def getClusterInformation(zkhandler):
         osd_stat_reads += [("osd.stats", osd)]
     all_osd_stats = zkhandler.read_many(osd_stat_reads)
     # Parse out the OSD states
+    osd_data = list()
     formatted_osd_states = {"total": ceph_osd_count}
     up_texts = {1: "up", 0: "down"}
     in_texts = {1: "in", 0: "out"}
@@ -334,7 +353,16 @@ def getClusterInformation(zkhandler):
         # We have to load this JSON object and get our up/in states from it
         osd_stats = loads(_osd_stats)
         # Get our states
-        osd_state = f"{up_texts[osd_stats['up']]},{in_texts[osd_stats['in']]}"
+        osd_up = up_texts[osd_stats['up']]
+        osd_in = in_texts[osd_stats['in']]
+        osd_data.append(
+            {
+                "id": osd,
+                "up": osd_up,
+                "in": osd_in,
+            }
+        )
+        osd_state = f"{osd_up},{osd_in}"
         # Add to the count for this OSD's state
         if osd_state in common.ceph_osd_state_combinations:
             if formatted_osd_states.get(osd_state) is not None:
@@ -358,9 +386,12 @@ def getClusterInformation(zkhandler):
     ceph_snapshot_list = zkhandler.children("base.snapshot")
     ceph_snapshot_count = len(ceph_snapshot_list)
 
+    # Get the list of faults
+    faults_data = faults.getAllFaults(zkhandler)
+
     # Format the status data
     cluster_information = {
-        "cluster_health": getClusterHealthFromFaults(zkhandler),
+        "cluster_health": getClusterHealthFromFaults(zkhandler, faults_data),
         "node_health": getNodeHealth(zkhandler, node_list),
         "maintenance": maintenance_state,
         "primary_node": primary_node,
@@ -373,6 +404,12 @@ def getClusterInformation(zkhandler):
         "pools": ceph_pool_count,
         "volumes": ceph_volume_count,
         "snapshots": ceph_snapshot_count,
+        "detail": {
+            "node": node_data,
+            "vm": vm_data,
+            "osd": osd_data,
+            "faults": faults_data,
+        }
     }
 
     return cluster_information
