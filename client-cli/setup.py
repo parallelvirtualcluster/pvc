@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="pvc",
-    version="0.9.83",
+    version="0.9.84",
     packages=["pvc.cli", "pvc.lib"],
     install_requires=[
         "Click",

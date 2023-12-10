@@ -1,3 +1,15 @@
+pvc (0.9.84-0) unstable; urgency=high
+
+  **Breaking Changes:** This release features a major reconfiguration to how monitoring and reporting of the cluster health works. Node health plugins now report "faults", as do several other issues which were previously manually checked for in "cluster" daemon library for the "/status" endpoint, from within the Health daemon. These faults are persistent, and under each given identifier can be triggered once and subsequent triggers simply update the "last reported" time. An additional set of API endpoints and commands are added to manage these faults, either by "ack"(nowledging) them (keeping the alert around to be further updated but setting its health delta to 0%), or "delete"ing them (completely removing the fault unless it retriggers), both individually, to (from the CLI) multiple, or all. Cluster health reporting is now done based on these faults instead of anything else, and the default interval for health checks is reduced to 15 seconds to accomodate this. In addition to this, Promethius metrics have been added, along with an example Grafana dashboard, for the PVC cluster itself, as well as a proxy to the Ceph cluster metrics. This release also fixes some bugs in the VM provisioner that were introduced in 0.9.83; these fixes require a **reimport or reconfiguration of any provisioner scripts**; reference the updated examples for details.
+
+  * [All] Adds persistent fault reporting to clusters, replacing the old cluster health calculations.
+  * [API Daemon] Adds cluster-level Prometheus metric exporting as well as a Ceph Prometheus proxy to the API.
+  * [CLI Client] Improves formatting output of "pvc cluster status".
+  * [Node Daemon] Fixes several bugs and enhances the working of the psql health check plugin.
+  * [Worker Daemon] Fixes several bugs in the example provisioner scripts, and moves the libvirt_schema library into the daemon common libraries.
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Sat, 09 Dec 2023 23:05:40 -0500
+
 pvc (0.9.83-0) unstable; urgency=high
 
   **Breaking Changes:** This release features a breaking change for the daemon config. A new unified "pvc.conf" file is required for all daemons (and the CLI client for Autobackup and API-on-this-host functionality), which will be written by the "pvc" role in the PVC Ansible framework. Using the "update-pvc-daemons" oneshot playbook from PVC Ansible is **required** to update to this release, as it will ensure this file is written to the proper place before deploying the new package versions, and also ensures that the old entires are cleaned up afterwards. In addition, this release fully splits the node worker and health subsystems into discrete daemons ("pvcworkerd" and "pvchealthd") and packages ("pvc-daemon-worker" and "pvc-daemon-health") respectively. The "pvc-daemon-node" package also now depends on both packages, and the "pvc-daemon-api" package can now be reliably used outside of the PVC nodes themselves (for instance, in a VM) without any strange cross-dependency issues.
