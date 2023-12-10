@@ -26,6 +26,61 @@ import json
 import daemon_lib.common as common
 
 
+def getNodeHealthDetails(zkhandler, node_name, node_health_plugins):
+    plugin_reads = list()
+    for plugin in node_health_plugins:
+        plugin_reads += [
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.last_run",
+                plugin,
+            ),
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.health_delta",
+                plugin,
+            ),
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.message",
+                plugin,
+            ),
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.data",
+                plugin,
+            ),
+        ]
+    all_plugin_data = list(zkhandler.read_many(plugin_reads))
+
+    node_health_details = list()
+    for pidx, plugin in enumerate(node_health_plugins):
+        # Split the large list of return values by the IDX of this plugin
+        # Each plugin result is 4 fields long
+        pos_start = pidx * 4
+        pos_end = pidx * 4 + 4
+        (
+            plugin_last_run,
+            plugin_health_delta,
+            plugin_message,
+            plugin_data,
+        ) = tuple(all_plugin_data[pos_start:pos_end])
+        plugin_output = {
+            "name": plugin,
+            "last_run": int(plugin_last_run),
+            "health_delta": int(plugin_health_delta),
+            "message": plugin_message,
+            "data": json.loads(plugin_data),
+        }
+        node_health_details.append(plugin_output)
+
+    return node_health_details
+
+
 def getNodeInformation(zkhandler, node_name):
     """
     Gather information about a node from the Zookeeper database and return a dict() containing it.
@@ -95,56 +150,9 @@ def getNodeInformation(zkhandler, node_name):
     except Exception:
         node_health_plugins = list()
 
-    plugin_reads = list()
-    for plugin in node_health_plugins:
-        plugin_reads += [
-            (
-                "node.monitoring.data",
-                node_name,
-                "monitoring_plugin.last_run",
-                plugin,
-            ),
-            (
-                "node.monitoring.data",
-                node_name,
-                "monitoring_plugin.health_delta",
-                plugin,
-            ),
-            (
-                "node.monitoring.data",
-                node_name,
-                "monitoring_plugin.message",
-                plugin,
-            ),
-            (
-                "node.monitoring.data",
-                node_name,
-                "monitoring_plugin.data",
-                plugin,
-            ),
-        ]
-    all_plugin_data = list(zkhandler.read_many(plugin_reads))
-
-    node_health_details = list()
-    for pidx, plugin in enumerate(node_health_plugins):
-        # Split the large list of return values by the IDX of this plugin
-        # Each plugin result is 4 fields long
-        pos_start = pidx * 4
-        pos_end = pidx * 4 + 4
-        (
-            plugin_last_run,
-            plugin_health_delta,
-            plugin_message,
-            plugin_data,
-        ) = tuple(all_plugin_data[pos_start:pos_end])
-        plugin_output = {
-            "name": plugin,
-            "last_run": int(plugin_last_run),
-            "health_delta": int(plugin_health_delta),
-            "message": plugin_message,
-            "data": json.loads(plugin_data),
-        }
-        node_health_details.append(plugin_output)
+    node_health_details = getNodeHealthDetails(
+        zkhandler, node_name, node_health_plugins
+    )
 
     # Construct a data structure to represent the data
     node_information = {
