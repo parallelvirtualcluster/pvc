@@ -30,56 +30,113 @@ def getNodeInformation(zkhandler, node_name):
     """
     Gather information about a node from the Zookeeper database and return a dict() containing it.
     """
-    node_daemon_state = zkhandler.read(("node.state.daemon", node_name))
-    node_coordinator_state = zkhandler.read(("node.state.router", node_name))
-    node_domain_state = zkhandler.read(("node.state.domain", node_name))
-    node_static_data = zkhandler.read(("node.data.static", node_name)).split()
-    node_pvc_version = zkhandler.read(("node.data.pvc_version", node_name))
+
+    (
+        node_daemon_state,
+        node_coordinator_state,
+        node_domain_state,
+        node_pvc_version,
+        _node_static_data,
+        _node_vcpu_allocated,
+        _node_mem_total,
+        _node_mem_allocated,
+        _node_mem_provisioned,
+        _node_mem_used,
+        _node_mem_free,
+        _node_load,
+        _node_domains_count,
+        _node_running_domains,
+        _node_health,
+        _node_health_plugins,
+    ) = zkhandler.read_many(
+        [
+            ("node.state.daemon", node_name),
+            ("node.state.router", node_name),
+            ("node.state.domain", node_name),
+            ("node.data.pvc_version", node_name),
+            ("node.data.static", node_name),
+            ("node.vcpu.allocated", node_name),
+            ("node.memory.total", node_name),
+            ("node.memory.allocated", node_name),
+            ("node.memory.provisioned", node_name),
+            ("node.memory.used", node_name),
+            ("node.memory.free", node_name),
+            ("node.cpu.load", node_name),
+            ("node.count.provisioned_domains", node_name),
+            ("node.running_domains", node_name),
+            ("node.monitoring.health", node_name),
+            ("node.monitoring.plugins", node_name),
+        ]
+    )
+
+    node_static_data = _node_static_data.split()
     node_cpu_count = int(node_static_data[0])
     node_kernel = node_static_data[1]
     node_os = node_static_data[2]
     node_arch = node_static_data[3]
-    node_vcpu_allocated = int(zkhandler.read(("node.vcpu.allocated", node_name)))
-    node_mem_total = int(zkhandler.read(("node.memory.total", node_name)))
-    node_mem_allocated = int(zkhandler.read(("node.memory.allocated", node_name)))
-    node_mem_provisioned = int(zkhandler.read(("node.memory.provisioned", node_name)))
-    node_mem_used = int(zkhandler.read(("node.memory.used", node_name)))
-    node_mem_free = int(zkhandler.read(("node.memory.free", node_name)))
-    node_load = float(zkhandler.read(("node.cpu.load", node_name)))
-    node_domains_count = int(
-        zkhandler.read(("node.count.provisioned_domains", node_name))
-    )
-    node_running_domains = zkhandler.read(("node.running_domains", node_name)).split()
+
+    node_vcpu_allocated = int(_node_vcpu_allocated)
+    node_mem_total = int(_node_mem_total)
+    node_mem_allocated = int(_node_mem_allocated)
+    node_mem_provisioned = int(_node_mem_provisioned)
+    node_mem_used = int(_node_mem_used)
+    node_mem_free = int(_node_mem_free)
+    node_load = float(_node_load)
+    node_domains_count = int(_node_domains_count)
+    node_running_domains = _node_running_domains.split()
+
     try:
-        node_health = int(zkhandler.read(("node.monitoring.health", node_name)))
+        node_health = int(_node_health)
     except Exception:
         node_health = "N/A"
+
     try:
-        node_health_plugins = zkhandler.read(
-            ("node.monitoring.plugins", node_name)
-        ).split()
+        node_health_plugins = _node_health_plugins.split()
     except Exception:
         node_health_plugins = list()
 
-    node_health_details = list()
+    plugin_reads = list()
     for plugin in node_health_plugins:
-        plugin_last_run = zkhandler.read(
-            ("node.monitoring.data", node_name, "monitoring_plugin.last_run", plugin)
-        )
-        plugin_health_delta = zkhandler.read(
+        plugin_reads += [
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.last_run",
+                plugin,
+            ),
             (
                 "node.monitoring.data",
                 node_name,
                 "monitoring_plugin.health_delta",
                 plugin,
-            )
-        )
-        plugin_message = zkhandler.read(
-            ("node.monitoring.data", node_name, "monitoring_plugin.message", plugin)
-        )
-        plugin_data = zkhandler.read(
-            ("node.monitoring.data", node_name, "monitoring_plugin.data", plugin)
-        )
+            ),
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.message",
+                plugin,
+            ),
+            (
+                "node.monitoring.data",
+                node_name,
+                "monitoring_plugin.data",
+                plugin,
+            ),
+        ]
+    all_plugin_data = list(zkhandler.read_many(plugin_reads))
+
+    node_health_details = list()
+    for pidx, plugin in enumerate(node_health_plugins):
+        # Split the large list of return values by the IDX of this plugin
+        # Each plugin result is 4 fields long
+        pos_start = pidx * 4
+        pos_end = pidx * 4 + 4
+        (
+            plugin_last_run,
+            plugin_health_delta,
+            plugin_message,
+            plugin_data,
+        ) = tuple(all_plugin_data[pos_start:pos_end])
         plugin_output = {
             "name": plugin,
             "last_run": int(plugin_last_run),
