@@ -23,10 +23,7 @@ from json import loads
 
 import daemon_lib.common as common
 import daemon_lib.faults as faults
-import daemon_lib.vm as pvc_vm
 import daemon_lib.node as pvc_node
-import daemon_lib.network as pvc_network
-import daemon_lib.ceph as pvc_ceph
 
 
 def set_maintenance(zkhandler, maint_state):
@@ -217,11 +214,30 @@ def getClusterHealth(zkhandler, node_list, vm_list, ceph_osd_list):
 
 
 def getNodeHealth(zkhandler, node_list):
+    # Get the health state of all nodes
+    node_health_reads = list()
+    for node in node_list:
+        node_health_reads += [
+            ("node.monitoring.health", node),
+            ("node.monitoring.plugins", node),
+        ]
+    all_node_health_details = zkhandler.read_many(node_health_reads)
+    # Parse out the Node health details
     node_health = dict()
-    for index, node in enumerate(node_list):
+    for nidx, node in enumerate(node_list):
+        # Split the large list of return values by the IDX of this node
+        # Each node result is 2 fields long
+        pos_start = nidx * 2
+        pos_end = nidx * 2 + 2
+        node_health_value, node_health_plugins = tuple(
+            all_node_health_details[pos_start:pos_end]
+        )
+        node_health_details = pvc_node.getNodeHealthDetails(
+            zkhandler, node, node_health_plugins.split()
+        )
+
         node_health_messages = list()
-        node_health_value = node["health"]
-        for entry in node["health_details"]:
+        for entry in node_health_details:
             if entry["health_delta"] > 0:
                 node_health_messages.append(f"'{entry['name']}': {entry['message']}")
 
@@ -229,8 +245,7 @@ def getNodeHealth(zkhandler, node_list):
             "health": node_health_value,
             "messages": node_health_messages,
         }
-
-        node_health[node["name"]] = node_health_entry
+        node_health[node] = node_health_entry
 
     return node_health
 
@@ -239,74 +254,109 @@ def getClusterInformation(zkhandler):
     # Get cluster maintenance state
     maintenance_state = zkhandler.read("base.config.maintenance")
 
-    # Get node information object list
-    retcode, node_list = pvc_node.get_list(zkhandler, None)
-
     # Get primary node
-    primary_node = common.getPrimaryNode(zkhandler)
-
-    # Get PVC version of primary node
-    pvc_version = "0.0.0"
-    for node in node_list:
-        if node["name"] == primary_node:
-            pvc_version = node["pvc_version"]
-
-    # Get vm information object list
-    retcode, vm_list = pvc_vm.get_list(zkhandler, None, None, None, None)
-
-    # Get network information object list
-    retcode, network_list = pvc_network.get_list(zkhandler, None, None)
-
-    # Get storage information object list
-    retcode, ceph_osd_list = pvc_ceph.get_list_osd(zkhandler, None)
-    retcode, ceph_pool_list = pvc_ceph.get_list_pool(zkhandler, None)
-    retcode, ceph_volume_list = pvc_ceph.get_list_volume(zkhandler, None, None)
-    retcode, ceph_snapshot_list = pvc_ceph.get_list_snapshot(
-        zkhandler, None, None, None
+    maintenance_state, primary_node = zkhandler.read_many(
+        [
+            ("base.config.maintenance"),
+            ("base.config.primary_node"),
+        ]
     )
 
-    # Determine, for each subsection, the total count
+    # Get PVC version of primary node
+    pvc_version = zkhandler.read(("node.data.pvc_version", primary_node))
+
+    # Get the list of Nodes
+    node_list = zkhandler.children("base.node")
     node_count = len(node_list)
-    vm_count = len(vm_list)
-    network_count = len(network_list)
-    ceph_osd_count = len(ceph_osd_list)
-    ceph_pool_count = len(ceph_pool_list)
-    ceph_volume_count = len(ceph_volume_list)
-    ceph_snapshot_count = len(ceph_snapshot_list)
-
-    # Format the Node states
+    # Get the daemon and domain states of all Nodes
+    node_state_reads = list()
+    for node in node_list:
+        node_state_reads += [
+            ("node.state.daemon", node),
+            ("node.state.domain", node),
+        ]
+    all_node_states = zkhandler.read_many(node_state_reads)
+    # Parse out the Node states
     formatted_node_states = {"total": node_count}
-    for state in common.node_state_combinations:
-        state_count = 0
-        for node in node_list:
-            node_state = f"{node['daemon_state']},{node['domain_state']}"
-            if node_state == state:
-                state_count += 1
-        if state_count > 0:
-            formatted_node_states[state] = state_count
+    for nidx, node in enumerate(node_list):
+        # Split the large list of return values by the IDX of this node
+        # Each node result is 2 fields long
+        pos_start = nidx * 2
+        pos_end = nidx * 2 + 2
+        node_state = ",".join(tuple(all_node_states[pos_start:pos_end]))
+        # Add to the count for this node's state
+        if node_state in common.node_state_combinations:
+            if formatted_node_states.get(node_state) is not None:
+                formatted_node_states[node_state] += 1
+            else:
+                formatted_node_states[node_state] = 1
 
-    # Format the VM states
+    # Get the list of VMs
+    vm_list = zkhandler.children("base.domain")
+    vm_count = len(vm_list)
+    # Get the states of all VMs
+    vm_state_reads = list()
+    for vm in vm_list:
+        vm_state_reads += [
+            ("domain.state", vm),
+        ]
+    all_vm_states = zkhandler.read_many(vm_state_reads)
+    # Parse out the VM states
     formatted_vm_states = {"total": vm_count}
-    for state in common.vm_state_combinations:
-        state_count = 0
-        for vm in vm_list:
-            if vm["state"] == state:
-                state_count += 1
-        if state_count > 0:
-            formatted_vm_states[state] = state_count
+    for vidx, vm in enumerate(vm_list):
+        # Split the large list of return values by the IDX of this VM
+        # Each VM result is 1 field long, so just use the IDX
+        vm_state = all_vm_states[vidx]
+        # Add to the count for this VM's state
+        if vm_state in common.vm_state_combinations:
+            if formatted_vm_states.get(vm_state) is not None:
+                formatted_vm_states[vm_state] += 1
+            else:
+                formatted_vm_states[vm_state] = 1
 
-    # Format the OSD states
+    # Get the list of Ceph OSDs
+    ceph_osd_list = zkhandler.children("base.osd")
+    ceph_osd_count = len(ceph_osd_list)
+    # Get the states of all OSDs ("stat" is not a typo since we're reading stats; states are in
+    # the stats JSON object)
+    osd_stat_reads = list()
+    for osd in ceph_osd_list:
+        osd_stat_reads += [("osd.stats", osd)]
+    all_osd_stats = zkhandler.read_many(osd_stat_reads)
+    # Parse out the OSD states
+    formatted_osd_states = {"total": ceph_osd_count}
     up_texts = {1: "up", 0: "down"}
     in_texts = {1: "in", 0: "out"}
-    formatted_osd_states = {"total": ceph_osd_count}
-    for state in common.ceph_osd_state_combinations:
-        state_count = 0
-        for ceph_osd in ceph_osd_list:
-            ceph_osd_state = f"{up_texts[ceph_osd['stats']['up']]},{in_texts[ceph_osd['stats']['in']]}"
-            if ceph_osd_state == state:
-                state_count += 1
-        if state_count > 0:
-            formatted_osd_states[state] = state_count
+    for oidx, osd in enumerate(ceph_osd_list):
+        # Split the large list of return values by the IDX of this OSD
+        # Each OSD result is 1 field long, so just use the IDX
+        _osd_stats = all_osd_stats[oidx]
+        # We have to load this JSON object and get our up/in states from it
+        osd_stats = loads(_osd_stats)
+        # Get our states
+        osd_state = f"{up_texts[osd_stats['up']]},{in_texts[osd_stats['in']]}"
+        # Add to the count for this OSD's state
+        if osd_state in common.ceph_osd_state_combinations:
+            if formatted_osd_states.get(osd_state) is not None:
+                formatted_osd_states[osd_state] += 1
+            else:
+                formatted_osd_states[osd_state] = 1
+
+    # Get the list of Networks
+    network_list = zkhandler.children("base.network")
+    network_count = len(network_list)
+
+    # Get the list of Ceph pools
+    ceph_pool_list = zkhandler.children("base.pool")
+    ceph_pool_count = len(ceph_pool_list)
+
+    # Get the list of Ceph volumes
+    ceph_volume_list = zkhandler.children("base.volume")
+    ceph_volume_count = len(ceph_volume_list)
+
+    # Get the list of Ceph snapshots
+    ceph_snapshot_list = zkhandler.children("base.snapshot")
+    ceph_snapshot_count = len(ceph_snapshot_list)
 
     # Format the status data
     cluster_information = {
