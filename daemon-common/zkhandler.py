@@ -19,6 +19,7 @@
 #
 ###############################################################################
 
+import asyncio
 import os
 import time
 import uuid
@@ -239,9 +240,40 @@ class ZKHandler(object):
                 # This path is invalid; this is likely due to missing schema entries, so return None
                 return None
 
-            return self.zk_conn.get(path)[0].decode(self.encoding)
+            res = self.zk_conn.get(path)
+            return res[0].decode(self.encoding)
         except NoNodeError:
             return None
+
+    async def read_async(self, key):
+        """
+        Read data from a key asynchronously
+        """
+        try:
+            path = self.get_schema_path(key)
+            if path is None:
+                # This path is invalid; this is likely due to missing schema entries, so return None
+                return None
+
+            val = self.zk_conn.get_async(path)
+            data = val.get()
+            return data[0].decode(self.encoding)
+        except NoNodeError:
+            return None
+
+    async def _read_many(self, keys):
+        """
+        Async runner for read_many
+        """
+        res = await asyncio.gather(*(self.read_async(key) for key in keys))
+        return tuple(res)
+
+    def read_many(self, keys):
+        """
+        Read data from several keys, asynchronously. Returns a tuple of all key values once all
+        reads are complete.
+        """
+        return asyncio.run(self._read_many(keys))
 
     def write(self, kvpairs):
         """
