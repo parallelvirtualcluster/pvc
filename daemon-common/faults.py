@@ -95,12 +95,24 @@ def getFault(zkhandler, fault_id):
         return None
 
     fault_id = fault_id
-    fault_last_time = zkhandler.read(("faults.last_time", fault_id))
-    fault_first_time = zkhandler.read(("faults.first_time", fault_id))
-    fault_ack_time = zkhandler.read(("faults.ack_time", fault_id))
-    fault_status = zkhandler.read(("faults.status", fault_id))
-    fault_delta = int(zkhandler.read(("faults.delta", fault_id)))
-    fault_message = zkhandler.read(("faults.message", fault_id))
+
+    (
+        fault_last_time,
+        fault_first_time,
+        fault_ack_time,
+        fault_status,
+        fault_delta,
+        fault_message,
+    ) = zkhandler.read_many(
+        [
+            ("faults.last_time", fault_id),
+            ("faults.first_time", fault_id),
+            ("faults.ack_time", fault_id),
+            ("faults.status", fault_id),
+            ("faults.delta", fault_id),
+            ("faults.message", fault_id),
+        ]
+    )
 
     # Acknowledged faults have a delta of 0
     if fault_ack_time != "":
@@ -112,7 +124,7 @@ def getFault(zkhandler, fault_id):
         "first_reported": fault_first_time,
         "acknowledged_at": fault_ack_time,
         "status": fault_status,
-        "health_delta": fault_delta,
+        "health_delta": int(fault_delta),
         "message": fault_message,
     }
 
@@ -126,11 +138,42 @@ def getAllFaults(zkhandler, sort_key="last_reported"):
 
     all_faults = zkhandler.children(("base.faults"))
 
-    faults_detail = list()
-
+    faults_reads = list()
     for fault_id in all_faults:
-        fault_detail = getFault(zkhandler, fault_id)
-        faults_detail.append(fault_detail)
+        faults_reads += [
+            ("faults.last_time", fault_id),
+            ("faults.first_time", fault_id),
+            ("faults.ack_time", fault_id),
+            ("faults.status", fault_id),
+            ("faults.delta", fault_id),
+            ("faults.message", fault_id),
+        ]
+    all_faults_data = list(zkhandler.read_many(faults_reads))
+
+    faults_detail = list()
+    for fidx, fault_id in enumerate(all_faults):
+        # Split the large list of return values by the IDX of this fault
+        # Each fault result is 6 fields long
+        pos_start = fidx * 6
+        pos_end = fidx * 6 + 6
+        (
+            fault_last_time,
+            fault_first_time,
+            fault_ack_time,
+            fault_status,
+            fault_delta,
+            fault_message,
+        ) = tuple(all_faults_data[pos_start:pos_end])
+        fault_output = {
+            "id": fault_id,
+            "last_reported": fault_last_time,
+            "first_reported": fault_first_time,
+            "acknowledged_at": fault_ack_time,
+            "status": fault_status,
+            "health_delta": int(fault_delta),
+            "message": fault_message,
+        }
+        faults_detail.append(fault_output)
 
     sorted_faults = sorted(faults_detail, key=lambda x: x[sort_key])
     # Sort newest-first for time-based sorts
