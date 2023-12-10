@@ -136,21 +136,10 @@ def cluster_metrics(zkhandler):
     if not status_retflag:
         return "Error: Status data threw error", 400
 
-    faults_retflag, faults_data = pvc_faults.get_list(zkhandler)
-    if not faults_retflag:
-        return "Error: Faults data threw error", 400
-
-    node_retflag, node_data = pvc_node.get_list(zkhandler)
-    if not node_retflag:
-        return "Error: Node data threw error", 400
-
-    vm_retflag, vm_data = pvc_vm.get_list(zkhandler)
-    if not vm_retflag:
-        return "Error: VM data threw error", 400
-
-    osd_retflag, osd_data = pvc_ceph.get_list_osd(zkhandler)
-    if not osd_retflag:
-        return "Error: OSD data threw error", 400
+    faults_data = status_data["detail"]["faults"]
+    node_data = status_data["detail"]["node"]
+    vm_data = status_data["detail"]["vm"]
+    osd_data = status_data["detail"]["osd"]
 
     output_lines = list()
 
@@ -237,7 +226,7 @@ def cluster_metrics(zkhandler):
     for state in set([s.split(",")[0] for s in pvc_common.ceph_osd_state_combinations]):
         osd_up_state_map[state] = 0
     for osd in osd_data:
-        if osd["stats"]["up"] > 0:
+        if osd["up"] == "up":
             osd_up_state_map["up"] += 1
         else:
             osd_up_state_map["down"] += 1
@@ -252,7 +241,7 @@ def cluster_metrics(zkhandler):
     for state in set([s.split(",")[1] for s in pvc_common.ceph_osd_state_combinations]):
         osd_in_state_map[state] = 0
     for osd in osd_data:
-        if osd["stats"]["in"] > 0:
+        if osd["in"] == "in":
             osd_in_state_map["in"] += 1
         else:
             osd_in_state_map["out"] += 1

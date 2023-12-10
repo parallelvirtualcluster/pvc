@@ -353,8 +353,8 @@ def getClusterInformation(zkhandler):
         # We have to load this JSON object and get our up/in states from it
         osd_stats = loads(_osd_stats)
         # Get our states
-        osd_up = up_texts[osd_stats['up']]
-        osd_in = in_texts[osd_stats['in']]
+        osd_up = up_texts[osd_stats["up"]]
+        osd_in = in_texts[osd_stats["in"]]
         osd_data.append(
             {
                 "id": osd,
@@ -409,7 +409,7 @@ def getClusterInformation(zkhandler):
             "vm": vm_data,
             "osd": osd_data,
             "faults": faults_data,
-        }
+        },
     }
 
     return cluster_information
