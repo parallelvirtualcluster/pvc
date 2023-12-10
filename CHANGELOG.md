@@ -1,5 +1,11 @@
 ## PVC Changelog
 
+###### [v0.9.85](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.85)
+
+  * [Packaging] Fixes a dependency bug introduced in 0.9.84
+  * [Node Daemon] Fixes an output bug during keepalives
+  * [Node Daemon] Fixes a bug in the example Prometheus Grafana dashboard
+
 ###### [v0.9.84](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.84)
 
   **Breaking Changes:** This release features a major reconfiguration to how monitoring and reporting of the cluster health works. Node health plugins now report "faults", as do several other issues which were previously manually checked for in "cluster" daemon library for the "/status" endpoint, from within the Health daemon. These faults are persistent, and under each given identifier can be triggered once and subsequent triggers simply update the "last reported" time. An additional set of API endpoints and commands are added to manage these faults, either by "ack"(nowledging) them (keeping the alert around to be further updated but setting its health delta to 0%), or "delete"ing them (completely removing the fault unless it retriggers), both individually, to (from the CLI) multiple, or all. Cluster health reporting is now done based on these faults instead of anything else, and the default interval for health checks is reduced to 15 seconds to accomodate this. In addition to this, Promethius metrics have been added, along with an example Grafana dashboard, for the PVC cluster itself, as well as a proxy to the Ceph cluster metrics. This release also fixes some bugs in the VM provisioner that were introduced in 0.9.83; these fixes require a **reimport or reconfiguration of any provisioner scripts**; reference the updated examples for details.

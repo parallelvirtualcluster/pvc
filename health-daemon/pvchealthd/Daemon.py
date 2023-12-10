@@ -33,7 +33,7 @@ import os
 import signal
 
 # Daemon version
-version = "0.9.84"
+version = "0.9.85"
 
 
 ##########################################################
