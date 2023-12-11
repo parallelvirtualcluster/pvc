@@ -240,7 +240,7 @@ def getNodeHealth(zkhandler, node_list):
                 node_health_messages.append(f"'{entry['name']}': {entry['message']}")
 
         node_health_entry = {
-            "health": node_health_value,
+            "health": int(node_health_value),
             "messages": node_health_messages,
         }
         node_health[node] = node_health_entry
