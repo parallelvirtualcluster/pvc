@@ -1,5 +1,5 @@
 <p align="center">
-<img alt="Logo banner" src="docs/images/pvc_logo_black.png"/>
+<img alt="Logo banner" src="images/pvc_logo_black.png"/>
 <br/><br/>
 <a href="https://github.com/parallelvirtualcluster/pvc"><img alt="License" src="https://img.shields.io/github/license/parallelvirtualcluster/pvc"/></a>
 <a href="https://github.com/psf/black"><img alt="Code style: Black" src="https://img.shields.io/badge/code%20style-black-000000.svg"/></a>
@@ -23,37 +23,58 @@ Installation of PVC is accomplished by two main components: a [Node installer IS
 
 Just give it physical servers, and it will run your VMs without you having to think about it, all in just an hour or two of setup time.
 
-
-## What is it based on?
-
-The core node and API daemons, as well as the CLI API client, are written in Python 3 and are fully Free Software (GNU GPL v3). In addition to these, PVC makes use of the following software tools to provide a holistic hyperconverged infrastructure solution:
-
-  * Debian GNU/Linux as the base OS.
-  * Linux KVM, QEMU, and Libvirt for VM management.
-  * Linux `ip`, FRRouting, NFTables, DNSMasq, and PowerDNS for network management.
-  * Ceph for storage management.
-  * Apache Zookeeper for the primary cluster state database.
-  * Patroni PostgreSQL manager for the secondary relation databases (DNS aggregation, Provisioner configuration).
-
-
 ## Getting Started
 
-To get started with PVC, please see the [About](https://docs.parallelvirtualcluster.org/en/latest/about/) page for general information about the project, and the [Getting Started](https://docs.parallelvirtualcluster.org/en/latest/getting-started/) page for details on configuring your first cluster.
-
+To get started with PVC, please see the [About](https://docs.parallelvirtualcluster.org/en/latest/about-pvc/) page for general information about the project, and the [Getting Started](https://docs.parallelvirtualcluster.org/en/latest/deployment/getting-started/) page for details on configuring your first cluster.
 
 ## Changelog
 
-View the changelog in [CHANGELOG.md](CHANGELOG.md).
-
+View the changelog in [CHANGELOG.md](CHANGELOG.md). **Please note that any breaking changes are announced here; ensure you read the changelog before upgrading!**
 
 ## Screenshots
 
-While PVC's API and internals aren't very screenshot-worthy, here is some example output of the CLI tool.
+These screenshots show some of the available functionality of the PVC system and CLI as of PVC v0.9.85.
 
-<p><img alt="Node listing" src="docs/images/pvc-nodes.png"/><br/><i>Listing the nodes in a cluster</i></p>
+<p><img alt="0. Integrated help" src="images/0-integrated-help.png"/><br/>
+<i>The CLI features an integrated, fully-featured help system to show details about every possible command.</i>
+</p>
 
-<p><img alt="Network listing" src="docs/images/pvc-networks.png"/><br/><i>Listing the networks in a cluster, showing 3 bridged and 1 IPv4-only managed networks</i></p>
+<p><img alt="1. Connection management" src="images/1-connection-management.png"/><br/>
+<i>A single CLI instance can manage multiple clusters, including a quick detail view, and will default to a "local" connection if an "/etc/pvc/pvc.conf" file is found; sensitive API keys are hidden by default.</i>
+</p>
 
-<p><img alt="VM listing and migration" src="docs/images/pvc-migration.png"/><br/><i>Listing a limited set of VMs and migrating one with status updates</i></p>
+<p><img alt="2. Cluster details and output formats" src="images/2-cluster-details-and-output-formats.png"/><br/>
+<i>PVC can show the key details of your cluster at a glance, including health, persistent fault events, and key resources; the CLI can output both in pretty human format and JSON for easier machine parsing in scripts.</i>
+</p>
 
-<p><img alt="Node logs" src="docs/images/pvc-nodelog.png"/><br/><i>Viewing the logs of a node (keepalives and VM [un]migration)</i></p>
+<p><img alt="3. Node information" src="images/3-node-information.png"/><br/>
+<i>PVC can show details about the nodes in the cluster, including their live health and resource utilization.</i>
+</p>
+
+<p><img alt="4. VM information" src="images/4-vm-information.png"/><br/>
+<i>PVC can show details about the VMs in the cluster, including their state, resource allocations</i>
+</p>
+
+<p><img alt="5. VM details" src="images/5-vm-details.png"/><br/>
+<i>In addition to the above basic details, PVC can also show extensive information about a running VM's devices and other resource utilization.</i>
+</p>
+
+<p><img alt="6. Network information" src="images/6-network-information.png"/><br/>
+<i>PVC has two major client network types, and ensures a consistent configuration of client networks across the entire cluster; managed networks can feature DHCP, DNS, firewall, and other functionality including DHCP reservations.</i>
+</p>
+
+<p><img alt="7. Storage information" src="images/7-storage-information.png"/><br/>
+<i>PVC provides a convenient abstracted view of the underlying Ceph system and can manage all core aspects of it.</i>
+</p>
+
+<p><img alt="8. VM and node logs" src="images/8-vm-and-node-logs.png"/><br/>
+<i>PVC can display logs from VM serial consoles (if properly configured) and nodes in-client to facilitate quick troubleshooting.</i>
+</p>
+
+<p><img alt="9. VM and worker tasks" src="images/9-vm-and-worker-tasks.png"/><br/>
+<i>PVC provides full VM lifecycle management, as well as long-running worker-based commands (in this example, clearing a VM's storage locks).</i>
+</p>
+
+<p><img alt="10. Provisioner" src="images/10-provisioner.png"/><br/>
+<i>PVC features an extensively customizable and configurable VM provisioner system, including EC2-compatible CloudInit support, allowing you to define flexible VM profiles and provision new VMs with a single command.</i>
+</p>
