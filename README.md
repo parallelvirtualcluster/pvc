@@ -52,7 +52,7 @@ These screenshots show some of the available functionality of the PVC system and
 </p>
 
 <p><img alt="4. VM information" src="images/4-vm-information.png"/><br/>
-<i>PVC can show details about the VMs in the cluster, including their state, resource allocations</i>
+<i>PVC can show details about the VMs in the cluster, including their state, resource allocations, current hosting node, and metadata.</i>
 </p>
 
 <p><img alt="5. VM details" src="images/5-vm-details.png"/><br/>
