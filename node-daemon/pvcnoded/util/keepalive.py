@@ -477,6 +477,10 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
     fixed_d_domain = this_node.d_domain.copy()
     for domain, instance in fixed_d_domain.items():
         if domain in this_node.domain_list:
+            # Add the allocated memory to our memalloc value
+            memalloc += instance.getmemory()
+            memprov += instance.getmemory()
+            vcpualloc += instance.getvcpus()
             if instance.getstate() == "start" and instance.getnode() == this_node.name:
                 if instance.getdom() is not None:
                     try:
@@ -532,11 +536,6 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
                 continue
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
-
-            # Add the allocated memory to our memalloc value
-            memalloc += instance.getmemory()
-            memprov += instance.getmemory()
-            vcpualloc += instance.getvcpus()
         except Exception as e:
             if debug:
                 try:
