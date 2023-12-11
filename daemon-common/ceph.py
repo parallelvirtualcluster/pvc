@@ -320,13 +320,18 @@ def get_list_osd(zkhandler, limit=None, is_fuzzy=True):
 #
 def getPoolInformation(zkhandler, pool):
     # Parse the stats data
-    pool_stats_raw = zkhandler.read(("pool.stats", pool))
+    (pool_stats_raw, tier, pgs,) = zkhandler.read_many(
+        [
+            ("pool.stats", pool),
+            ("pool.tier", pool),
+            ("pool.pgs", pool),
+        ]
+    )
+
     pool_stats = dict(json.loads(pool_stats_raw))
     volume_count = len(getCephVolumes(zkhandler, pool))
-    tier = zkhandler.read(("pool.tier", pool))
     if tier is None:
         tier = "default"
-    pgs = zkhandler.read(("pool.pgs", pool))
 
     pool_information = {
         "name": pool,
