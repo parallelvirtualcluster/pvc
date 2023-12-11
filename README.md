@@ -78,3 +78,7 @@ These screenshots show some of the available functionality of the PVC system and
 <p><img alt="10. Provisioner" src="images/10-provisioner.png"/><br/>
 <i>PVC features an extensively customizable and configurable VM provisioner system, including EC2-compatible CloudInit support, allowing you to define flexible VM profiles and provision new VMs with a single command.</i>
 </p>
+
+<p><img alt="11. Prometheus and Grafana dashboard" src="images/11-prometheus-grafana.png"/><br/>
+<i>PVC features several monitoring integration examples under "node-daemon/monitoring", including CheckMK, Munin, and, most recently, Prometheus, including an example Grafana dashboard for cluster monitoring and alerting.</i>
+</p>
