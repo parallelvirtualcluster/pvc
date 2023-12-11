@@ -379,11 +379,21 @@ def getClusterInformation(zkhandler):
     ceph_pool_count = len(ceph_pool_list)
 
     # Get the list of Ceph volumes
-    ceph_volume_list = zkhandler.children("base.volume")
+    ceph_volume_list = list()
+    for pool in ceph_pool_list:
+        ceph_volume_list_pool = zkhandler.children(("volume", pool))
+        if ceph_volume_list_pool is not None:
+            ceph_volume_list += [f"{pool}/{volume}" for volume in ceph_volume_list_pool]
     ceph_volume_count = len(ceph_volume_list)
 
     # Get the list of Ceph snapshots
-    ceph_snapshot_list = zkhandler.children("base.snapshot")
+    ceph_snapshot_list = list()
+    for volume in ceph_volume_list:
+        ceph_snapshot_list_volume = zkhandler.children(("snapshot", volume))
+        if ceph_snapshot_list_volume is not None:
+            ceph_snapshot_list += [
+                f"{volume}@{snapshot}" for snapshot in ceph_snapshot_list_volume
+            ]
     ceph_snapshot_count = len(ceph_snapshot_list)
 
     # Get the list of faults
