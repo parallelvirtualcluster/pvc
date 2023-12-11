@@ -142,19 +142,37 @@ def getNetworkACLs(zkhandler, vni, _direction):
 
 
 def getNetworkInformation(zkhandler, vni):
-    description = zkhandler.read(("network", vni))
-    nettype = zkhandler.read(("network.type", vni))
-    mtu = zkhandler.read(("network.mtu", vni))
-    domain = zkhandler.read(("network.domain", vni))
-    name_servers = zkhandler.read(("network.nameservers", vni))
-    ip6_network = zkhandler.read(("network.ip6.network", vni))
-    ip6_gateway = zkhandler.read(("network.ip6.gateway", vni))
-    dhcp6_flag = zkhandler.read(("network.ip6.dhcp", vni))
-    ip4_network = zkhandler.read(("network.ip4.network", vni))
-    ip4_gateway = zkhandler.read(("network.ip4.gateway", vni))
-    dhcp4_flag = zkhandler.read(("network.ip4.dhcp", vni))
-    dhcp4_start = zkhandler.read(("network.ip4.dhcp_start", vni))
-    dhcp4_end = zkhandler.read(("network.ip4.dhcp_end", vni))
+    (
+        description,
+        nettype,
+        mtu,
+        domain,
+        name_servers,
+        ip6_network,
+        ip6_gateway,
+        dhcp6_flag,
+        ip4_network,
+        ip4_gateway,
+        dhcp4_flag,
+        dhcp4_start,
+        dhcp4_end,
+    ) = zkhandler.read_many(
+        [
+            ("network", vni),
+            ("network.type", vni),
+            ("network.mtu", vni),
+            ("network.domain", vni),
+            ("network.nameservers", vni),
+            ("network.ip6.network", vni),
+            ("network.ip6.gateway", vni),
+            ("network.ip6.dhcp", vni),
+            ("network.ip4.network", vni),
+            ("network.ip4.gateway", vni),
+            ("network.ip4.dhcp", vni),
+            ("network.ip4.dhcp_start", vni),
+            ("network.ip4.dhcp_end", vni),
+        ]
+    )
 
     # Construct a data structure to represent the data
     network_information = {
@@ -818,31 +836,45 @@ def getSRIOVVFInformation(zkhandler, node, vf):
     if not zkhandler.exists(("node.sriov.vf", node, "sriov_vf", vf)):
         return []
 
-    pf = zkhandler.read(("node.sriov.vf", node, "sriov_vf.pf", vf))
-    mtu = zkhandler.read(("node.sriov.vf", node, "sriov_vf.mtu", vf))
-    mac = zkhandler.read(("node.sriov.vf", node, "sriov_vf.mac", vf))
-    vlan_id = zkhandler.read(("node.sriov.vf", node, "sriov_vf.config.vlan_id", vf))
-    vlan_qos = zkhandler.read(("node.sriov.vf", node, "sriov_vf.config.vlan_qos", vf))
-    tx_rate_min = zkhandler.read(
-        ("node.sriov.vf", node, "sriov_vf.config.tx_rate_min", vf)
+    (
+        pf,
+        mtu,
+        mac,
+        vlan_id,
+        vlan_qos,
+        tx_rate_min,
+        tx_rate_max,
+        link_state,
+        spoof_check,
+        trust,
+        query_rss,
+        pci_domain,
+        pci_bus,
+        pci_slot,
+        pci_function,
+        used,
+        used_by_domain,
+    ) = zkhandler.read_many(
+        [
+            ("node.sriov.vf", node, "sriov_vf.pf", vf),
+            ("node.sriov.vf", node, "sriov_vf.mtu", vf),
+            ("node.sriov.vf", node, "sriov_vf.mac", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.vlan_id", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.vlan_qos", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.tx_rate_min", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.tx_rate_max", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.link_state", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.spoof_check", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.trust", vf),
+            ("node.sriov.vf", node, "sriov_vf.config.query_rss", vf),
+            ("node.sriov.vf", node, "sriov_vf.pci.domain", vf),
+            ("node.sriov.vf", node, "sriov_vf.pci.bus", vf),
+            ("node.sriov.vf", node, "sriov_vf.pci.slot", vf),
+            ("node.sriov.vf", node, "sriov_vf.pci.function", vf),
+            ("node.sriov.vf", node, "sriov_vf.used", vf),
+            ("node.sriov.vf", node, "sriov_vf.used_by", vf),
+        ]
     )
-    tx_rate_max = zkhandler.read(
-        ("node.sriov.vf", node, "sriov_vf.config.tx_rate_max", vf)
-    )
-    link_state = zkhandler.read(
-        ("node.sriov.vf", node, "sriov_vf.config.link_state", vf)
-    )
-    spoof_check = zkhandler.read(
-        ("node.sriov.vf", node, "sriov_vf.config.spoof_check", vf)
-    )
-    trust = zkhandler.read(("node.sriov.vf", node, "sriov_vf.config.trust", vf))
-    query_rss = zkhandler.read(("node.sriov.vf", node, "sriov_vf.config.query_rss", vf))
-    pci_domain = zkhandler.read(("node.sriov.vf", node, "sriov_vf.pci.domain", vf))
-    pci_bus = zkhandler.read(("node.sriov.vf", node, "sriov_vf.pci.bus", vf))
-    pci_slot = zkhandler.read(("node.sriov.vf", node, "sriov_vf.pci.slot", vf))
-    pci_function = zkhandler.read(("node.sriov.vf", node, "sriov_vf.pci.function", vf))
-    used = zkhandler.read(("node.sriov.vf", node, "sriov_vf.used", vf))
-    used_by_domain = zkhandler.read(("node.sriov.vf", node, "sriov_vf.used_by", vf))
 
     vf_information = {
         "phy": vf,
