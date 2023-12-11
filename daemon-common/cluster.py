@@ -315,8 +315,8 @@ def getClusterInformation(zkhandler):
     for vidx, vm in enumerate(vm_list):
         # Split the large list of return values by the IDX of this VM
         # Each VM result is 2 field long
-        pos_start = nidx * 2
-        pos_end = nidx * 2 + 2
+        pos_start = vidx * 2
+        pos_end = vidx * 2 + 2
         vm_name, vm_state = tuple(all_vm_states[pos_start:pos_end])
         vm_data.append(
             {
