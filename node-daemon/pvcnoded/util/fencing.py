@@ -115,6 +115,27 @@ def fence_node(node_name, zkhandler, config, logger):
     ):
         migrateFromFencedNode(zkhandler, node_name, config, logger)
 
+    # Reset all node resource values
+    logger.out(
+        f"Resetting all resource values for dead node {node_name} to zero",
+        state="i",
+        prefix=f"fencing {node_name}",
+    )
+    zkhandler.write(
+        [
+            (("node.running_domains", node_name), "0"),
+            (("node.count.provisioned_domains", node_name), "0"),
+            (("node.cpu.load", node_name), "0"),
+            (("node.vcpu.allocated", node_name), "0"),
+            (("node.memory.total", node_name), "0"),
+            (("node.memory.used", node_name), "0"),
+            (("node.memory.free", node_name), "0"),
+            (("node.memory.allocated", node_name), "0"),
+            (("node.memory.provisioned", node_name), "0"),
+            (("node.monitoring.health", node_name), None),
+        ]
+    )
+
 
 # Migrate hosts away from a fenced node
 def migrateFromFencedNode(zkhandler, node_name, config, logger):
