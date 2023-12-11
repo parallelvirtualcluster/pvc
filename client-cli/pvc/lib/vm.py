@@ -1659,24 +1659,26 @@ def format_info(config, domain_information, long_output):
         )
 
     if not domain_information.get("node_selector"):
-        formatted_node_selector = "False"
+        formatted_node_selector = "Default"
     else:
-        formatted_node_selector = domain_information["node_selector"]
+        formatted_node_selector = str(domain_information["node_selector"]).title()
 
     if not domain_information.get("node_limit"):
-        formatted_node_limit = "False"
+        formatted_node_limit = "Any"
     else:
         formatted_node_limit = ", ".join(domain_information["node_limit"])
 
     if not domain_information.get("node_autostart"):
+        autostart_colour = ansiprint.blue()
         formatted_node_autostart = "False"
     else:
-        formatted_node_autostart = domain_information["node_autostart"]
+        autostart_colour = ansiprint.green()
+        formatted_node_autostart = "True"
 
     if not domain_information.get("migration_method"):
-        formatted_migration_method = "any"
+        formatted_migration_method = "Any"
     else:
-        formatted_migration_method = domain_information["migration_method"]
+        formatted_migration_method = str(domain_information["migration_method"]).title()
 
     ainformation.append(
         "{}Migration selector:{} {}".format(
@@ -1689,8 +1691,12 @@ def format_info(config, domain_information, long_output):
         )
     )
     ainformation.append(
-        "{}Autostart:{}          {}".format(
-            ansiprint.purple(), ansiprint.end(), formatted_node_autostart
+        "{}Autostart:{}          {}{}{}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            autostart_colour,
+            formatted_node_autostart,
+            ansiprint.end(),
         )
     )
     ainformation.append(
@@ -1736,13 +1742,17 @@ def format_info(config, domain_information, long_output):
             domain_information["tags"], key=lambda t: t["type"] + t["name"]
         ):
             ainformation.append(
-                "                    {tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected: <{tags_protected_length}}".format(
+                "                    {tags_name: <{tags_name_length}} {tags_type: <{tags_type_length}} {tags_protected_colour}{tags_protected: <{tags_protected_length}}{end}".format(
                     tags_name_length=tags_name_length,
                     tags_type_length=tags_type_length,
                     tags_protected_length=tags_protected_length,
                     tags_name=tag["name"],
                     tags_type=tag["type"],
                     tags_protected=str(tag["protected"]),
+                    tags_protected_colour=ansiprint.green()
+                    if tag["protected"]
+                    else ansiprint.blue(),
+                    end=ansiprint.end(),
                 )
             )
     else:

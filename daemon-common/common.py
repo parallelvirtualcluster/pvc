@@ -422,18 +422,33 @@ def getDomainMetadata(zkhandler, dom_uuid):
 
     The UUID must be validated before calling this function!
     """
-    domain_node_limit = zkhandler.read(("domain.meta.node_limit", dom_uuid))
-    domain_node_selector = zkhandler.read(("domain.meta.node_selector", dom_uuid))
-    domain_node_autostart = zkhandler.read(("domain.meta.autostart", dom_uuid))
-    domain_migration_method = zkhandler.read(("domain.meta.migrate_method", dom_uuid))
+    (
+        domain_node_limit,
+        domain_node_selector,
+        domain_node_autostart,
+        domain_migration_method,
+    ) = zkhandler.read_many(
+        [
+            ("domain.meta.node_limit", dom_uuid),
+            ("domain.meta.node_selector", dom_uuid),
+            ("domain.meta.autostart", dom_uuid),
+            ("domain.meta.migrate_method", dom_uuid),
+        ]
+    )
 
     if not domain_node_limit:
         domain_node_limit = None
     else:
         domain_node_limit = domain_node_limit.split(",")
 
+    if not domain_node_selector or domain_node_selector == "none":
+        domain_node_selector = None
+
     if not domain_node_autostart:
         domain_node_autostart = None
+
+    if not domain_migration_method or domain_migration_method == "none":
+        domain_migration_method = None
 
     return (
         domain_node_limit,
