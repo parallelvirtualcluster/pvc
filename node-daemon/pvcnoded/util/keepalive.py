@@ -701,7 +701,7 @@ def node_keepalive(logger, config, zkhandler, this_node):
 
         runtime_start = datetime.now()
         logger.out(
-            "Starting node keepalive run at {datetime.now()}",
+            f"Starting node keepalive run at {datetime.now()}",
             state="t",
         )
 
