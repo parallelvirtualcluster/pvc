@@ -401,13 +401,23 @@ def getDomainTags(zkhandler, dom_uuid):
     """
     tags = list()
 
-    for tag in zkhandler.children(("domain.meta.tags", dom_uuid)):
-        tag_type = zkhandler.read(("domain.meta.tags", dom_uuid, "tag.type", tag))
-        protected = bool(
-            strtobool(
-                zkhandler.read(("domain.meta.tags", dom_uuid, "tag.protected", tag))
-            )
-        )
+    all_tags = zkhandler.children(("domain.meta.tags", dom_uuid))
+
+    tag_reads = list()
+    for tag in all_tags:
+        tag_reads += [
+            ("domain.meta.tags", dom_uuid, "tag.type", tag),
+            ("domain.meta.tags", dom_uuid, "tag.protected", tag),
+        ]
+    all_tag_data = zkhandler.read_many(tag_reads)
+
+    for tidx, tag in enumerate(all_tags):
+        # Split the large list of return values by the IDX of this tag
+        # Each tag result is 2 fields long
+        pos_start = tidx * 2
+        pos_end = tidx * 2 + 2
+        tag_type, protected = tuple(all_tag_data[pos_start:pos_end])
+        protected = bool(strtobool(protected))
         tags.append({"name": tag, "type": tag_type, "protected": protected})
 
     return tags
@@ -466,10 +476,25 @@ def getInformationFromXML(zkhandler, uuid):
     Gather information about a VM from the Libvirt XML configuration in the Zookeper database
     and return a dict() containing it.
     """
-    domain_state = zkhandler.read(("domain.state", uuid))
-    domain_node = zkhandler.read(("domain.node", uuid))
-    domain_lastnode = zkhandler.read(("domain.last_node", uuid))
-    domain_failedreason = zkhandler.read(("domain.failed_reason", uuid))
+    (
+        domain_state,
+        domain_node,
+        domain_lastnode,
+        domain_failedreason,
+        domain_profile,
+        domain_vnc,
+        stats_data,
+    ) = zkhandler.read_many(
+        [
+            ("domain.state", uuid),
+            ("domain.node", uuid),
+            ("domain.last_node", uuid),
+            ("domain.failed_reason", uuid),
+            ("domain.profile", uuid),
+            ("domain.console.vnc", uuid),
+            ("domain.stats", uuid),
+        ]
+    )
 
     (
         domain_node_limit,
@@ -477,19 +502,17 @@ def getInformationFromXML(zkhandler, uuid):
         domain_node_autostart,
         domain_migration_method,
     ) = getDomainMetadata(zkhandler, uuid)
-    domain_tags = getDomainTags(zkhandler, uuid)
-    domain_profile = zkhandler.read(("domain.profile", uuid))
 
-    domain_vnc = zkhandler.read(("domain.console.vnc", uuid))
+    domain_tags = getDomainTags(zkhandler, uuid)
+
     if domain_vnc:
         domain_vnc_listen, domain_vnc_port = domain_vnc.split(":")
     else:
-        domain_vnc_listen = "None"
-        domain_vnc_port = "None"
+        domain_vnc_listen = None
+        domain_vnc_port = None
 
     parsed_xml = getDomainXML(zkhandler, uuid)
 
-    stats_data = zkhandler.read(("domain.stats", uuid))
     if stats_data is not None:
         try:
             stats_data = loads(stats_data)
@@ -506,6 +529,7 @@ def getInformationFromXML(zkhandler, uuid):
         domain_vcpu,
         domain_vcputopo,
     ) = getDomainMainDetails(parsed_xml)
+
     domain_networks = getDomainNetworks(parsed_xml, stats_data)
 
     (
