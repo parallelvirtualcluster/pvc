@@ -19,6 +19,7 @@
 #
 ###############################################################################
 
+from distutils.util import strtobool
 from json import loads
 
 import daemon_lib.common as common
@@ -432,6 +433,157 @@ def get_info(zkhandler):
         return True, cluster_information
     else:
         return False, "ERROR: Failed to obtain cluster information!"
+
+
+def get_metrics(zkhandler):
+    # Get general cluster information
+    status_retflag, status_data = get_info(zkhandler)
+    if not status_retflag:
+        return False, "Error: Status data threw error"
+
+    faults_data = status_data["detail"]["faults"]
+    node_data = status_data["detail"]["node"]
+    vm_data = status_data["detail"]["vm"]
+    osd_data = status_data["detail"]["osd"]
+
+    output_lines = list()
+
+    output_lines.append("# HELP pvc_info PVC cluster information")
+    output_lines.append("# TYPE pvc_info gauge")
+    output_lines.append(
+        f"pvc_info{{primary_node=\"{status_data['primary_node']}\", version=\"{status_data['pvc_version']}\", upstream_ip=\"{status_data['upstream_ip']}\"}} 1"
+    )
+
+    output_lines.append("# HELP pvc_cluster_maintenance PVC cluster maintenance state")
+    output_lines.append("# TYPE pvc_cluster_maintenance gauge")
+    output_lines.append(
+        f"pvc_cluster_maintenance {1 if bool(strtobool(status_data['maintenance'])) else 0}"
+    )
+
+    output_lines.append("# HELP pvc_cluster_health PVC cluster health status")
+    output_lines.append("# TYPE pvc_cluster_health gauge")
+    output_lines.append(f"pvc_cluster_health {status_data['cluster_health']['health']}")
+
+    output_lines.append("# HELP pvc_cluster_faults PVC cluster new faults")
+    output_lines.append("# TYPE pvc_cluster_faults gauge")
+    fault_map = dict()
+    for fault_type in common.fault_state_combinations:
+        fault_map[fault_type] = 0
+    for fault in faults_data:
+        fault_map[fault["status"]] += 1
+    for fault_type in fault_map:
+        output_lines.append(
+            f'pvc_cluster_faults{{status="{fault_type}"}} {fault_map[fault_type]}'
+        )
+
+    # output_lines.append("# HELP pvc_cluster_faults PVC cluster health faults")
+    # output_lines.append("# TYPE pvc_cluster_faults gauge")
+    # for fault_msg in status_data["cluster_health"]["messages"]:
+    #     output_lines.append(
+    #         f"pvc_cluster_faults{{id=\"{fault_msg['id']}\", message=\"{fault_msg['text']}\"}} {fault_msg['health_delta']}"
+    #     )
+
+    output_lines.append("# HELP pvc_node_health PVC cluster node health status")
+    output_lines.append("# TYPE pvc_node_health gauge")
+    for node in status_data["node_health"]:
+        if isinstance(status_data["node_health"][node]["health"], int):
+            output_lines.append(
+                f"pvc_node_health{{node=\"{node}\"}} {status_data['node_health'][node]['health']}"
+            )
+
+    output_lines.append("# HELP pvc_node_daemon_states PVC Node daemon state counts")
+    output_lines.append("# TYPE pvc_node_daemon_states gauge")
+    node_daemon_state_map = dict()
+    for state in set([s.split(",")[0] for s in common.node_state_combinations]):
+        node_daemon_state_map[state] = 0
+    for node in node_data:
+        node_daemon_state_map[node["daemon_state"]] += 1
+    for state in node_daemon_state_map:
+        output_lines.append(
+            f'pvc_node_daemon_states{{state="{state}"}} {node_daemon_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_node_domain_states PVC Node domain state counts")
+    output_lines.append("# TYPE pvc_node_domain_states gauge")
+    node_domain_state_map = dict()
+    for state in set([s.split(",")[1] for s in common.node_state_combinations]):
+        node_domain_state_map[state] = 0
+    for node in node_data:
+        node_domain_state_map[node["domain_state"]] += 1
+    for state in node_domain_state_map:
+        output_lines.append(
+            f'pvc_node_domain_states{{state="{state}"}} {node_domain_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_vm_states PVC VM state counts")
+    output_lines.append("# TYPE pvc_vm_states gauge")
+    vm_state_map = dict()
+    for state in set(common.vm_state_combinations):
+        vm_state_map[state] = 0
+    for vm in vm_data:
+        vm_state_map[vm["state"]] += 1
+    for state in vm_state_map:
+        output_lines.append(f'pvc_vm_states{{state="{state}"}} {vm_state_map[state]}')
+
+    output_lines.append("# HELP pvc_osd_up_states PVC OSD up state counts")
+    output_lines.append("# TYPE pvc_osd_up_states gauge")
+    osd_up_state_map = dict()
+    for state in set([s.split(",")[0] for s in common.ceph_osd_state_combinations]):
+        osd_up_state_map[state] = 0
+    for osd in osd_data:
+        if osd["up"] == "up":
+            osd_up_state_map["up"] += 1
+        else:
+            osd_up_state_map["down"] += 1
+    for state in osd_up_state_map:
+        output_lines.append(
+            f'pvc_osd_up_states{{state="{state}"}} {osd_up_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_osd_in_states PVC OSD in state counts")
+    output_lines.append("# TYPE pvc_osd_in_states gauge")
+    osd_in_state_map = dict()
+    for state in set([s.split(",")[1] for s in common.ceph_osd_state_combinations]):
+        osd_in_state_map[state] = 0
+    for osd in osd_data:
+        if osd["in"] == "in":
+            osd_in_state_map["in"] += 1
+        else:
+            osd_in_state_map["out"] += 1
+    for state in osd_in_state_map:
+        output_lines.append(
+            f'pvc_osd_in_states{{state="{state}"}} {osd_in_state_map[state]}'
+        )
+
+    output_lines.append("# HELP pvc_nodes PVC Node count")
+    output_lines.append("# TYPE pvc_nodes gauge")
+    output_lines.append(f"pvc_nodes {status_data['nodes']['total']}")
+
+    output_lines.append("# HELP pvc_vms PVC VM count")
+    output_lines.append("# TYPE pvc_vms gauge")
+    output_lines.append(f"pvc_vms {status_data['vms']['total']}")
+
+    output_lines.append("# HELP pvc_osds PVC OSD count")
+    output_lines.append("# TYPE pvc_osds gauge")
+    output_lines.append(f"pvc_osds {status_data['osds']['total']}")
+
+    output_lines.append("# HELP pvc_networks PVC Network count")
+    output_lines.append("# TYPE pvc_networks gauge")
+    output_lines.append(f"pvc_networks {status_data['networks']}")
+
+    output_lines.append("# HELP pvc_pools PVC Storage Pool count")
+    output_lines.append("# TYPE pvc_pools gauge")
+    output_lines.append(f"pvc_pools {status_data['pools']}")
+
+    output_lines.append("# HELP pvc_volumes PVC Storage Volume count")
+    output_lines.append("# TYPE pvc_volumes gauge")
+    output_lines.append(f"pvc_volumes {status_data['volumes']}")
+
+    output_lines.append("# HELP pvc_snapshots PVC Storage Snapshot count")
+    output_lines.append("# TYPE pvc_snapshots gauge")
+    output_lines.append(f"pvc_snapshots {status_data['snapshots']}")
+
+    return True, "\n".join(output_lines) + "\n"
 
 
 def cluster_initialize(zkhandler, overwrite=False):
