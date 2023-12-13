@@ -249,6 +249,8 @@ def getOutputColours(node_information):
         daemon_state_colour = ansiprint.yellow()
     elif node_information["daemon_state"] == "dead":
         daemon_state_colour = ansiprint.red() + ansiprint.bold()
+    elif node_information["daemon_state"] == "fenced":
+        daemon_state_colour = ansiprint.red()
     else:
         daemon_state_colour = ansiprint.blue()
 
