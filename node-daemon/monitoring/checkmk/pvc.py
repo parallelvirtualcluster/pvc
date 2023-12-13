@@ -70,7 +70,7 @@ def check_pvc(item, params, section):
         summary = f"Cluster health is {cluster_health}% (maintenance {maintenance})"
 
         if len(cluster_messages) > 0:
-            details = ", ".join(cluster_messages)
+            details = ", ".join([m["text"] for m in cluster_messages])
 
         if cluster_health <= 50 and maintenance == "off":
             state = State.CRIT
