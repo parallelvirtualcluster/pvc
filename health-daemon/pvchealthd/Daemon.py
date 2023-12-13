@@ -80,6 +80,11 @@ def entrypoint():
     # Connect to Zookeeper and return our handler and current schema version
     zkhandler, _ = pvchealthd.util.zookeeper.connect(logger, config)
 
+    logger.out("Waiting for node daemon to be operating", state="s")
+    while zkhandler.read(("node.state.daemon", config["node_hostname"])) != "run":
+        sleep(5)
+    logger.out("Node daemon in run state, continuing health daemon startup", state="s")
+
     # Define a cleanup function
     def cleanup(failure=False):
         nonlocal logger, zkhandler, monitoring_instance
