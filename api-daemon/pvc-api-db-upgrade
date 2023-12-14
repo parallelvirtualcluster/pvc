@@ -3,7 +3,7 @@
 # Apply PVC database migrations
 # Part of the Parallel Virtual Cluster (PVC) system
 
-export PVC_CONFIG_FILE="/etc/pvc/pvcapid.yaml"
+export PVC_CONFIG_FILE="/etc/pvc/pvc.conf"
 
 if [[ ! -f ${PVC_CONFIG_FILE} ]]; then
     echo "Create a configuration file at ${PVC_CONFIG_FILE} before upgrading the database."
