@@ -334,6 +334,8 @@ def get_list(
 ):
     node_list = []
     full_node_list = zkhandler.children("base.node")
+    if full_node_list is None:
+        full_node_list = list()
     full_node_list.sort()
 
     if is_fuzzy and limit:
