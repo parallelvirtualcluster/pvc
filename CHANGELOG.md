@@ -1,5 +1,14 @@
 ## PVC Changelog
 
+###### [v0.9.86](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.86)
+
+  * [API Daemon] Significantly improves the performance of several commands via async Zookeeper calls and removal of superfluous backend calls.
+  * [Docs] Improves the project README and updates screenshot images to show the current output and more functionality.
+  * [API Daemon/CLI] Corrects some bugs in VM metainformation output.
+  * [Node Daemon] Fixes resource reporting bugs from 0.9.81 and properly clears node resource numbers on a fence.
+  * [Health Daemon] Adds a wait during pvchealthd startup until the node is in run state, to avoid erroneous faults during node bootup.
+  * [API Daemon] Fixes an incorrect reference to legacy pvcapid.yaml file in migration script.
+
 ###### [v0.9.85](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.85)
 
   * [Packaging] Fixes a dependency bug introduced in 0.9.84
