@@ -25,6 +25,10 @@ from json import loads
 import daemon_lib.common as common
 import daemon_lib.faults as faults
 import daemon_lib.node as pvc_node
+import daemon_lib.vm as pvc_vm
+import daemon_lib.ceph as pvc_ceph
+
+# import daemon_lib.osd as pvc_osd
 
 
 def set_maintenance(zkhandler, maint_state):
@@ -240,10 +244,13 @@ def getNodeHealth(zkhandler, node_list):
             if entry["health_delta"] > 0:
                 node_health_messages.append(f"'{entry['name']}': {entry['message']}")
 
+        try:
+            node_health_value = int(node_health_value)
+        except Exception:
+            pass
+
         node_health_entry = {
-            "health": int(node_health_value)
-            if isinstance(node_health_value, int)
-            else node_health_value,
+            "health": node_health_value,
             "messages": node_health_messages,
         }
         node_health[node] = node_health_entry
@@ -437,8 +444,10 @@ def get_info(zkhandler):
         return False, "ERROR: Failed to obtain cluster information!"
 
 
-def get_metrics(zkhandler):
-    # Get general cluster information
+def get_health_metrics(zkhandler):
+    """
+    Get health-related metrics from the PVC cluster
+    """
     status_retflag, status_data = get_info(zkhandler)
     if not status_retflag:
         return False, "Error: Status data threw error"
@@ -488,10 +497,10 @@ def get_metrics(zkhandler):
     output_lines.append("# HELP pvc_node_health PVC cluster node health status")
     output_lines.append("# TYPE pvc_node_health gauge")
     for node in status_data["node_health"]:
-        if isinstance(status_data["node_health"][node]["health"], int):
-            output_lines.append(
-                f"pvc_node_health{{node=\"{node}\"}} {status_data['node_health'][node]['health']}"
-            )
+        node_health = status_data["node_health"][node]["health"]
+        print(node_health)
+        if isinstance(node_health, int):
+            output_lines.append(f'pvc_node_health{{node="{node}"}} {node_health}')
 
     output_lines.append("# HELP pvc_node_daemon_states PVC Node daemon state counts")
     output_lines.append("# TYPE pvc_node_daemon_states gauge")
@@ -527,8 +536,8 @@ def get_metrics(zkhandler):
     for state in vm_state_map:
         output_lines.append(f'pvc_vm_states{{state="{state}"}} {vm_state_map[state]}')
 
-    output_lines.append("# HELP pvc_osd_up_states PVC OSD up state counts")
-    output_lines.append("# TYPE pvc_osd_up_states gauge")
+    output_lines.append("# HELP pvc_ceph_osd_up_states PVC OSD up state counts")
+    output_lines.append("# TYPE pvc_ceph_osd_up_states gauge")
     osd_up_state_map = dict()
     for state in set([s.split(",")[0] for s in common.ceph_osd_state_combinations]):
         osd_up_state_map[state] = 0
@@ -539,11 +548,11 @@ def get_metrics(zkhandler):
             osd_up_state_map["down"] += 1
     for state in osd_up_state_map:
         output_lines.append(
-            f'pvc_osd_up_states{{state="{state}"}} {osd_up_state_map[state]}'
+            f'pvc_ceph_osd_up_states{{state="{state}"}} {osd_up_state_map[state]}'
         )
 
-    output_lines.append("# HELP pvc_osd_in_states PVC OSD in state counts")
-    output_lines.append("# TYPE pvc_osd_in_states gauge")
+    output_lines.append("# HELP pvc_ceph_osd_in_states PVC OSD in state counts")
+    output_lines.append("# TYPE pvc_ceph_osd_in_states gauge")
     osd_in_state_map = dict()
     for state in set([s.split(",")[1] for s in common.ceph_osd_state_combinations]):
         osd_in_state_map[state] = 0
@@ -554,7 +563,7 @@ def get_metrics(zkhandler):
             osd_in_state_map["out"] += 1
     for state in osd_in_state_map:
         output_lines.append(
-            f'pvc_osd_in_states{{state="{state}"}} {osd_in_state_map[state]}'
+            f'pvc_ceph_osd_in_states{{state="{state}"}} {osd_in_state_map[state]}'
         )
 
     output_lines.append("# HELP pvc_nodes PVC Node count")
@@ -584,6 +593,927 @@ def get_metrics(zkhandler):
     output_lines.append("# HELP pvc_snapshots PVC Storage Snapshot count")
     output_lines.append("# TYPE pvc_snapshots gauge")
     output_lines.append(f"pvc_snapshots {status_data['snapshots']}")
+
+    return True, "\n".join(output_lines) + "\n"
+
+
+def get_resource_metrics(zkhandler):
+    """
+    Get resource-related metrics from the PVC cluster (except Ceph metrics)
+    """
+    node_retflag, node_data = pvc_node.get_list(zkhandler)
+    if not node_retflag:
+        return False, "Error: Node data threw error"
+
+    vm_retflag, vm_data = pvc_vm.get_list(zkhandler)
+    if not vm_retflag:
+        return False, "Error: VM data threw error"
+
+    osd_retflag, osd_data = pvc_ceph.get_list_osd(zkhandler)
+    if not osd_retflag:
+        return False, "Error: OSD data threw error"
+
+    pool_retflag, pool_data = pvc_ceph.get_list_pool(zkhandler)
+    if not pool_retflag:
+        return False, "Error: Pool data threw error"
+
+    output_lines = list()
+
+    #
+    # Cluster stats
+    #
+    output_lines.append(
+        "# HELP pvc_cluster_cpu_utilization PVC cluster CPU utilization percentage (n-1)"
+    )
+    output_lines.append("# TYPE pvc_cluster_cpu_utilization gauge")
+    node_sorted_cpu = [
+        n["cpu_count"]
+        for n in sorted(node_data, key=lambda n: n["cpu_count"], reverse=False)
+    ]
+    total_cpu = sum(node_sorted_cpu[:-2])
+    used_cpu = sum([n["load"] for n in node_data])
+    used_cpu_percentage = used_cpu / total_cpu * 100
+    output_lines.append(f"pvc_cluster_cpu_utilization {used_cpu_percentage:.2f}")
+
+    node_sorted_memory = [
+        n["memory"]["total"]
+        for n in sorted(node_data, key=lambda n: n["memory"]["total"], reverse=False)
+    ]
+    total_memory = sum(node_sorted_memory[:-2])
+
+    used_memory = sum([n["memory"]["used"] for n in node_data])
+    used_memory_percentage = used_memory / total_memory * 100
+    output_lines.append(
+        "# HELP pvc_cluster_memory_real_utilization PVC cluster real memory utilization percentage (n-1)"
+    )
+    output_lines.append("# TYPE pvc_cluster_memory_real_utilization gauge")
+    output_lines.append(
+        f"pvc_cluster_memory_real_utilization {used_memory_percentage:.2f}"
+    )
+
+    allocated_memory = sum([n["memory"]["allocated"] for n in node_data])
+    allocated_memory_percentage = allocated_memory / total_memory * 100
+    output_lines.append(
+        "# HELP pvc_cluster_memory_allocated_utilization PVC cluster allocated memory utilization percentage (n-1)"
+    )
+    output_lines.append("# TYPE pvc_cluster_memory_allocated_utilization gauge")
+    output_lines.append(
+        f"pvc_cluster_memory_allocated_utilization {allocated_memory_percentage:.2f}"
+    )
+
+    provisioned_memory = sum([n["memory"]["provisioned"] for n in node_data])
+    provisioned_memory_percentage = provisioned_memory / total_memory * 100
+    output_lines.append(
+        "# HELP pvc_cluster_memory_provisioned_utilization PVC cluster provisioned memory utilization percentage (n-1)"
+    )
+    output_lines.append("# TYPE pvc_cluster_memory_provisioned_utilization gauge")
+    output_lines.append(
+        f"pvc_cluster_memory_provisioned_utilization {provisioned_memory_percentage:.2f}"
+    )
+
+    output_lines.append(
+        "# HELP pvc_cluster_disk_utilization PVC cluster disk utilization percentage (n-2)"
+    )
+    output_lines.append("# TYPE pvc_cluster_disk_utilization gauge")
+    # Do it manually rather than a sum() in case one OSD is not fully up yet
+    total_disk = 0
+    used_disk = 0
+    for osd in osd_data:
+        try:
+            total_disk += osd["stats"]["kb"]
+            used_disk += osd["stats"]["kb_used"]
+        except Exception:
+            continue
+    used_disk_percentage = used_disk / total_disk * 100
+    output_lines.append(f"pvc_cluster_disk_utilization {used_disk_percentage:.2f}")
+
+    #
+    # Node stats
+    #
+    output_lines.append("# HELP pvc_node_host_cpus PVC node host CPU count")
+    output_lines.append("# TYPE pvc_node_host_cpus gauge")
+    for node in node_data:
+        total_cpus = (
+            node["vcpu"]["total"] if isinstance(node["vcpu"]["total"], int) else 0
+        )
+        output_lines.append(
+            f"pvc_node_host_cpus{{node=\"{node['name']}\"}} {total_cpus}"
+        )
+
+    output_lines.append("# HELP pvc_node_allocated_vcpus PVC node allocated vCPU count")
+    output_lines.append("# TYPE pvc_node_allocated_vcpus gauge")
+    for node in node_data:
+        allocated_cpus = (
+            node["vcpu"]["allocated"]
+            if isinstance(node["vcpu"]["allocated"], int)
+            else 0
+        )
+        output_lines.append(
+            f"pvc_node_allocated_vcpus{{node=\"{node['name']}\"}} {allocated_cpus}"
+        )
+
+    output_lines.append("# HELP pvc_node_load PVC node 1 minute load average")
+    output_lines.append("# TYPE pvc_node_load gauge")
+    for node in node_data:
+        load_average = node["load"] if isinstance(node["load"], float) else 0.0
+        output_lines.append(
+            f"pvc_node_load_average{{node=\"{node['name']}\"}} {load_average}"
+        )
+
+    output_lines.append("# HELP pvc_node_domains_count PVC node running domain count")
+    output_lines.append("# TYPE pvc_node_domains_count gauge")
+    for node in node_data:
+        running_domains_count = (
+            node["domains_count"] if isinstance(node["domains_count"], int) else 0
+        )
+        output_lines.append(
+            f"pvc_node_domains_count{{node=\"{node['name']}\"}} {running_domains_count}"
+        )
+
+    output_lines.append("# HELP pvc_node_architecture PVC node system architecture")
+    output_lines.append("# TYPE pvc_node_architecture gauge")
+    for node in node_data:
+        architecture = node["arch"]
+        output_lines.append(
+            f"pvc_node_architecture{{node=\"{node['name']}\",architecture=\"{architecture}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_node_kernel PVC node active kernel version")
+    output_lines.append("# TYPE pvc_node_kernel gauge")
+    for node in node_data:
+        kernel = node["kernel"]
+        output_lines.append(
+            f"pvc_node_kernel{{node=\"{node['name']}\",kernel=\"{kernel}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_node_total_memory PVC node total memory in MB")
+    output_lines.append("# TYPE pvc_node_total_memory gauge")
+    for node in node_data:
+        total_memory = (
+            node["memory"]["total"] if isinstance(node["memory"]["total"], int) else 0
+        )
+        output_lines.append(
+            f"pvc_node_total_memory{{node=\"{node['name']}\"}} {total_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_allocated_memory PVC node allocated memory in MB"
+    )
+    output_lines.append("# TYPE pvc_node_allocated_memory gauge")
+    for node in node_data:
+        allocated_memory = (
+            node["memory"]["allocated"]
+            if isinstance(node["memory"]["allocated"], int)
+            else 0
+        )
+        output_lines.append(
+            f"pvc_node_allocated_memory{{node=\"{node['name']}\"}} {allocated_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_provisioned_memory PVC node provisioned memory in MB"
+    )
+    output_lines.append("# TYPE pvc_node_provisioned_memory gauge")
+    for node in node_data:
+        provisioned_memory = (
+            node["memory"]["provisioned"]
+            if isinstance(node["memory"]["provisioned"], int)
+            else 0
+        )
+        output_lines.append(
+            f"pvc_node_provisioned_memory{{node=\"{node['name']}\"}} {provisioned_memory}"
+        )
+
+    output_lines.append("# HELP pvc_node_used_memory PVC node used memory in MB")
+    output_lines.append("# TYPE pvc_node_used_memory gauge")
+    for node in node_data:
+        used_memory = (
+            node["memory"]["used"] if isinstance(node["memory"]["used"], int) else 0
+        )
+        output_lines.append(
+            f"pvc_node_used_memory{{node=\"{node['name']}\"}} {used_memory}"
+        )
+
+    output_lines.append("# HELP pvc_node_free_memory PVC node free memory in MB")
+    output_lines.append("# TYPE pvc_node_free_memory gauge")
+    for node in node_data:
+        free_memory = (
+            node["memory"]["free"] if isinstance(node["memory"]["free"], int) else 0
+        )
+        output_lines.append(
+            f"pvc_node_free_memory{{node=\"{node['name']}\"}} {free_memory}"
+        )
+
+    #
+    # VM stats
+    #
+    output_lines.append("# HELP pvc_vm_active_node PVC VM active node")
+    output_lines.append("# TYPE pvc_vm_active_node gauge")
+    for vm in vm_data:
+        active_node = vm["node"]
+        output_lines.append(
+            f"pvc_vm_active_node{{vm=\"{vm['name']}\", node=\"{active_node}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_machine_type PVC VM machine type")
+    output_lines.append("# TYPE pvc_vm_machine_type gauge")
+    for vm in vm_data:
+        machine_type = vm["machine"]
+        output_lines.append(
+            f"pvc_vm_machine_type{{vm=\"{vm['name']}\", node=\"{machine_type}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_serial_console PVC VM serial console")
+    output_lines.append("# TYPE pvc_vm_serial_console gauge")
+    for vm in vm_data:
+        output_lines.append(
+            f"pvc_vm_serial_console{{vm=\"{vm['name']}\"}} {1 if vm.get('console', '') == 'pty' else 0}"
+        )
+
+    output_lines.append("# HELP pvc_vm_vnc_console PVC VM VNC console")
+    output_lines.append("# TYPE pvc_vm_vnc_console gauge")
+    for vm in vm_data:
+        output_lines.append(
+            f"pvc_vm_vnc_console{{vm=\"{vm['name']}\"}} {1 if vm['vnc'].get('listen', '') == 'pty' else 0}"
+        )
+
+    output_lines.append("# HELP pvc_vm_vnc_listen_address PVC VM VNC listen address")
+    output_lines.append("# TYPE pvc_vm_vnc_listen_address gauge")
+    for vm in vm_data:
+        vnc_listen_address = vm["vnc"]["listen"]
+        output_lines.append(
+            f"pvc_vm_vnc_listen_address{{vm=\"{vm['name']}\", address=\"{vnc_listen_address}\"}} {1 if vnc_listen_address is not None else 0}"
+        )
+
+    output_lines.append("# HELP pvc_vm_vnc_listen_port PVC VM VNC listen port")
+    output_lines.append("# TYPE pvc_vm_vnc_listen_port gauge")
+    for vm in vm_data:
+        vnc_listen_port = vm["vnc"]["port"]
+        output_lines.append(
+            f"pvc_vm_vnc_listen_port{{vm=\"{vm['name']}\", port=\"{vnc_listen_port}\"}} {1 if vnc_listen_port is not None else 0}"
+        )
+
+    output_lines.append("# HELP pvc_vm_vcpus PVC VM provisioned vCPUs")
+    output_lines.append("# TYPE pvc_vm_vcpus gauge")
+    for vm in vm_data:
+        vcpus = vm["vcpu"]
+        output_lines.append(f"pvc_vm_vcpus{{vm=\"{vm['name']}\"}} {vcpus}")
+
+    output_lines.append("# HELP pvc_vm_vcpus_cpu_time PVC VM vCPU CPU time")
+    output_lines.append("# TYPE pvc_vm_vcpus_cpu_time gauge")
+    for vm in vm_data:
+        cpu_time = vm["vcpu_stats"]["cpu_time"]
+        output_lines.append(f"pvc_vm_vcpus_cpu_time{{vm=\"{vm['name']}\"}} {cpu_time}")
+
+    output_lines.append("# HELP pvc_vm_vcpus_user_time PVC VM vCPU User time")
+    output_lines.append("# TYPE pvc_vm_vcpus_user_time gauge")
+    for vm in vm_data:
+        user_time = vm["vcpu_stats"]["user_time"]
+        output_lines.append(
+            f"pvc_vm_vcpus_user_time{{vm=\"{vm['name']}\"}} {user_time}"
+        )
+
+    output_lines.append("# HELP pvc_vm_vcpus_system_time PVC VM vCPU System time")
+    output_lines.append("# TYPE pvc_vm_vcpus_system_time gauge")
+    for vm in vm_data:
+        system_time = vm["vcpu_stats"]["system_time"]
+        output_lines.append(
+            f"pvc_vm_vcpus_system_time{{vm=\"{vm['name']}\"}} {system_time}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory PVC VM provisioned memory MB")
+    output_lines.append("# TYPE pvc_vm_memory gauge")
+    for vm in vm_data:
+        memory = vm["memory"]
+        output_lines.append(f"pvc_vm_memory{{vm=\"{vm['name']}\"}} {memory}")
+
+    output_lines.append(
+        "# HELP pvc_vm_memory_stats_actual PVC VM actual memory allocation"
+    )
+    output_lines.append("# TYPE pvc_vm_memory_stats_actual gauge")
+    for vm in vm_data:
+        actual_memory = vm["memory_stats"]["actual"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_actual{{vm=\"{vm['name']}\"}} {actual_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_stats_unused PVC VM unused memory")
+    output_lines.append("# TYPE pvc_vm_memory_stats_unused gauge")
+    for vm in vm_data:
+        unused_memory = vm["memory_stats"]["unused"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_unused{{vm=\"{vm['name']}\"}} {unused_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_stats_available PVC VM available memory")
+    output_lines.append("# TYPE pvc_vm_memory_stats_available gauge")
+    for vm in vm_data:
+        available_memory = vm["memory_stats"]["available"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_available{{vm=\"{vm['name']}\"}} {available_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_stats_usable PVC VM usable memory")
+    output_lines.append("# TYPE pvc_vm_memory_stats_usable gauge")
+    for vm in vm_data:
+        usable_memory = vm["memory_stats"]["usable"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_usable{{vm=\"{vm['name']}\"}} {usable_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_stats_rss PVC VM RSS memory")
+    output_lines.append("# TYPE pvc_vm_memory_stats_rss gauge")
+    for vm in vm_data:
+        rss_memory = vm["memory_stats"]["rss"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_rss{{vm=\"{vm['name']}\"}} {rss_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_vm_memory_stats_disk_caches PVC VM disk cache memory"
+    )
+    output_lines.append("# TYPE pvc_vm_memory_stats_disk_caches gauge")
+    for vm in vm_data:
+        disk_caches_memory = vm["memory_stats"]["disk_caches"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_disk_caches{{vm=\"{vm['name']}\"}} {disk_caches_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_swap_in PVC VM memory swap in")
+    output_lines.append("# TYPE pvc_vm_memory_swap_in gauge")
+    for vm in vm_data:
+        swap_in_memory = vm["memory_stats"]["swap_in"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_swap_in{{vm=\"{vm['name']}\"}} {swap_in_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_swap_out PVC VM memory swap out")
+    output_lines.append("# TYPE pvc_vm_memory_swap_out gauge")
+    for vm in vm_data:
+        swap_out_memory = vm["memory_stats"]["swap_out"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_swap_out{{vm=\"{vm['name']}\"}} {swap_out_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_major_fault PVC VM memory major faults")
+    output_lines.append("# TYPE pvc_vm_memory_major_fault gauge")
+    for vm in vm_data:
+        major_fault_memory = vm["memory_stats"]["major_fault"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_major_fault{{vm=\"{vm['name']}\"}} {major_fault_memory}"
+        )
+
+    output_lines.append("# HELP pvc_vm_memory_minor_fault PVC VM memory minor faults")
+    output_lines.append("# TYPE pvc_vm_memory_minor_fault gauge")
+    for vm in vm_data:
+        minor_fault_memory = vm["memory_stats"]["minor_fault"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_minor_fault{{vm=\"{vm['name']}\"}} {minor_fault_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_vm_memory_hugetlb_pgalloc PVC VM memory huge table allocations"
+    )
+    output_lines.append("# TYPE pvc_vm_memory_hugetlb_pgalloc gauge")
+    for vm in vm_data:
+        hugetlb_pgalloc_memory = vm["memory_stats"]["hugetlb_pgalloc"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_hugetlb_pgalloc{{vm=\"{vm['name']}\"}} {hugetlb_pgalloc_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_vm_memory_hugetlb_pgfail PVC VM memory huge table failures"
+    )
+    output_lines.append("# TYPE pvc_vm_memory_hugetlb_pgfail gauge")
+    for vm in vm_data:
+        hugetlb_pgfail_memory = vm["memory_stats"]["hugetlb_pgfail"]
+        output_lines.append(
+            f"pvc_vm_memory_stats_hugetlb_pgfail{{vm=\"{vm['name']}\"}} {hugetlb_pgfail_memory}"
+        )
+
+    #
+    # VM Network stats
+    #
+    output_lines.append("# HELP pvc_vm_network_macaddr PVC VM network MAC address")
+    output_lines.append("# TYPE pvc_vm_network_macaddr gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            mac_address = network["mac"]
+            output_lines.append(
+                f"pvc_vm_network_macaddr{{vm=\"{vm['name']}\",vni=\"{vni}\",macaddr=\"{mac_address}\"}} 1"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_model PVC VM network device model")
+    output_lines.append("# TYPE pvc_vm_network_model gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            model = network["model"]
+            output_lines.append(
+                f"pvc_vm_network_model{{vm=\"{vm['name']}\",vni=\"{vni}\",model=\"{model}\"}} 1"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_rd_packets PVC VM network packets read")
+    output_lines.append("# TYPE pvc_vm_network_rd_packets gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            rd_packets = network["rd_packets"]
+            output_lines.append(
+                f"pvc_vm_network_rd_packets{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_packets}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_rd_bytes PVC VM network bytes read")
+    output_lines.append("# TYPE pvc_vm_network_rd_bytes gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            rd_bytes = network["rd_bytes"]
+            output_lines.append(
+                f"pvc_vm_network_rd_bytes{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_bytes}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_rd_errors PVC VM network read errors")
+    output_lines.append("# TYPE pvc_vm_network_rd_errors gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            rd_errors = network["rd_errors"]
+            output_lines.append(
+                f"pvc_vm_network_rd_errors{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_errors}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_rd_drops PVC VM network read drops")
+    output_lines.append("# TYPE pvc_vm_network_rd_drops gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            rd_drops = network["rd_drops"]
+            output_lines.append(
+                f"pvc_vm_network_rd_drops{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_drops}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_wr_packets PVC VM network packets write")
+    output_lines.append("# TYPE pvc_vm_network_wr_packets gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            wr_packets = network["wr_packets"]
+            output_lines.append(
+                f"pvc_vm_network_wr_packets{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_packets}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_wr_bytes PVC VM network bytes write")
+    output_lines.append("# TYPE pvc_vm_network_wr_bytes gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            wr_bytes = network["wr_bytes"]
+            output_lines.append(
+                f"pvc_vm_network_wr_bytes{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_bytes}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_wr_errors PVC VM network write errors")
+    output_lines.append("# TYPE pvc_vm_network_wr_errors gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            wr_errors = network["wr_errors"]
+            output_lines.append(
+                f"pvc_vm_network_wr_errors{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_errors}"
+            )
+
+    output_lines.append("# HELP pvc_vm_network_wr_drops PVC VM network write drops")
+    output_lines.append("# TYPE pvc_vm_network_wr_drops gauge")
+    for vm in vm_data:
+        for network in vm["networks"]:
+            vni = network["vni"]
+            wr_drops = network["wr_drops"]
+            output_lines.append(
+                f"pvc_vm_network_wr_drops{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_drops}"
+            )
+
+    #
+    # VM Disk stats
+    #
+    output_lines.append("# HELP pvc_vm_disk_rd_req PVC VM disk read requests")
+    output_lines.append("# TYPE pvc_vm_disk_rd_req gauge")
+    for vm in vm_data:
+        for disk in vm["disks"]:
+            dev = disk["dev"]
+            rd_req = disk["rd_req"]
+            output_lines.append(
+                f"pvc_vm_disk_rd_req{{vm=\"{vm['name']}\",disk=\"{dev}\"}} {rd_req}"
+            )
+
+    output_lines.append("# HELP pvc_vm_disk_rd_bytes PVC VM disk bytes read")
+    output_lines.append("# TYPE pvc_vm_disk_rd_bytes gauge")
+    for vm in vm_data:
+        for disk in vm["disks"]:
+            dev = disk["dev"]
+            rd_bytes = disk["rd_bytes"]
+            output_lines.append(
+                f"pvc_vm_disk_rd_bytes{{vm=\"{vm['name']}\",disk=\"{dev}\"}} {rd_bytes}"
+            )
+
+    output_lines.append("# HELP pvc_vm_disk_wr_req PVC VM disk write requests")
+    output_lines.append("# TYPE pvc_vm_disk_wr_req gauge")
+    for vm in vm_data:
+        for disk in vm["disks"]:
+            dev = disk["dev"]
+            wr_req = disk["wr_req"]
+            output_lines.append(
+                f"pvc_vm_disk_wr_req{{vm=\"{vm['name']}\",disk=\"{dev}\"}} {wr_req}"
+            )
+
+    output_lines.append("# HELP pvc_vm_disk_wr_bytes PVC VM disk bytes write")
+    output_lines.append("# TYPE pvc_vm_disk_wr_bytes gauge")
+    for vm in vm_data:
+        for disk in vm["disks"]:
+            dev = disk["dev"]
+            wr_bytes = disk["wr_bytes"]
+            output_lines.append(
+                f"pvc_vm_disk_wr_bytes{{vm=\"{vm['name']}\",disk=\"{dev}\"}} {wr_bytes}"
+            )
+
+    #
+    # Ceph OSD stats
+    #
+    output_lines.append("# HELP pvc_ceph_osd_device PVC OSD device (host + blockdev)")
+    output_lines.append("# TYPE pvc_ceph_osd_device gauge")
+    for osd in osd_data:
+        osd_node = osd["node"]
+        osd_blockdev = osd["device"]
+        osd_device = f"{osd_node}:{osd_blockdev}"
+        output_lines.append(
+            f"pvc_ceph_osd_device{{osd=\"{osd['id']}\",device=\"{osd_device}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_db_device PVC OSD database device")
+    output_lines.append("# TYPE pvc_ceph_osd_db_device gauge")
+    for osd in osd_data:
+        osd_db_device = osd["db_device"]
+        output_lines.append(
+            f"pvc_ceph_osd_db_device{{osd=\"{osd['id']}\",db_device=\"{osd_db_device}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_device_class PVC OSD device class")
+    output_lines.append("# TYPE pvc_ceph_osd_device_class gauge")
+    for osd in osd_data:
+        try:
+            osd_device_class = osd["stats"]["class"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_device_class{{osd=\"{osd['id']}\",device_class=\"{osd_device_class}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_util PVC OSD utilization percentage")
+    output_lines.append("# TYPE pvc_ceph_osd_util gauge")
+    for osd in osd_data:
+        try:
+            osd_util = osd["stats"]["utilization"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_util{{osd=\"{osd['id']}\"}} {osd_util}")
+
+    output_lines.append("# HELP pvc_ceph_osd_var PVC OSD utilization variability")
+    output_lines.append("# TYPE pvc_ceph_osd_var gauge")
+    for osd in osd_data:
+        try:
+            osd_var = osd["stats"]["var"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_var{{osd=\"{osd['id']}\"}} {osd_var}")
+
+    output_lines.append("# HELP pvc_ceph_osd_pgs PVC OSD placement groups")
+    output_lines.append("# TYPE pvc_ceph_osd_pgs gauge")
+    for osd in osd_data:
+        try:
+            osd_pgs = osd["stats"]["pgs"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_pgs{{osd=\"{osd['id']}\"}} {osd_pgs}")
+
+    output_lines.append("# HELP pvc_ceph_osd_size PVC OSD size KB")
+    output_lines.append("# TYPE pvc_ceph_osd_size gauge")
+    for osd in osd_data:
+        try:
+            osd_size = osd["stats"]["kb"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_size{{osd=\"{osd['id']}\"}} {osd_size}")
+
+    output_lines.append("# HELP pvc_ceph_osd_used PVC OSD used KB")
+    output_lines.append("# TYPE pvc_ceph_osd_used gauge")
+    for osd in osd_data:
+        try:
+            osd_used = osd["stats"]["kb_used"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_used{{osd=\"{osd['id']}\"}} {osd_used}")
+
+    output_lines.append("# HELP pvc_ceph_osd_used_data PVC OSD used (data) KB")
+    output_lines.append("# TYPE pvc_ceph_osd_used_data gauge")
+    for osd in osd_data:
+        try:
+            osd_used_data = osd["stats"]["kb_used_data"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_used_data{{osd=\"{osd['id']}\"}} {osd_used_data}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_used_omap PVC OSD used (omap) KB")
+    output_lines.append("# TYPE pvc_ceph_osd_used_omap gauge")
+    for osd in osd_data:
+        try:
+            osd_used_omap = osd["stats"]["kb_used_omap"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_used_omap{{osd=\"{osd['id']}\"}} {osd_used_omap}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_used_meta PVC OSD used (meta) KB")
+    output_lines.append("# TYPE pvc_ceph_osd_used_meta gauge")
+    for osd in osd_data:
+        try:
+            osd_used_meta = osd["stats"]["kb_used_meta"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_used_meta{{osd=\"{osd['id']}\"}} {osd_used_meta}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_avail PVC OSD available KB")
+    output_lines.append("# TYPE pvc_ceph_osd_avail gauge")
+    for osd in osd_data:
+        try:
+            osd_avail = osd["stats"]["kb_avail"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_avail{{osd=\"{osd['id']}\"}} {osd_avail}")
+
+    output_lines.append("# HELP pvc_ceph_osd_weight PVC OSD weight KB")
+    output_lines.append("# TYPE pvc_ceph_osd_weight gauge")
+    for osd in osd_data:
+        try:
+            osd_weight = osd["stats"]["weight"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_weight{{osd=\"{osd['id']}\"}} {osd_weight}")
+
+    output_lines.append("# HELP pvc_ceph_osd_reweight PVC OSD reweight KB")
+    output_lines.append("# TYPE pvc_ceph_osd_reweight gauge")
+    for osd in osd_data:
+        try:
+            osd_reweight = osd["stats"]["reweight"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_reweight{{osd=\"{osd['id']}\"}} {osd_reweight}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_osd_wr_ops PVC OSD write operations per second"
+    )
+    output_lines.append("# TYPE pvc_ceph_osd_wr_ops gauge")
+    for osd in osd_data:
+        try:
+            osd_wr_ops = osd["stats"]["wr_ops"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_wr_ops{{osd=\"{osd['id']}\"}} {osd_wr_ops}")
+
+    output_lines.append("# HELP pvc_ceph_osd_wr_data PVC OSD write KB per second")
+    output_lines.append("# TYPE pvc_ceph_osd_wr_data gauge")
+    for osd in osd_data:
+        try:
+            osd_wr_data = osd["stats"]["wr_data"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_wr_data{{osd=\"{osd['id']}\"}} {osd_wr_data}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_osd_rd_ops PVC OSD read operations per second")
+    output_lines.append("# TYPE pvc_ceph_osd_rd_ops gauge")
+    for osd in osd_data:
+        try:
+            osd_rd_ops = osd["stats"]["rd_ops"]
+        except Exception:
+            continue
+        output_lines.append(f"pvc_ceph_osd_rd_ops{{osd=\"{osd['id']}\"}} {osd_rd_ops}")
+
+    output_lines.append("# HELP pvc_ceph_osd_rd_data PVC OSD read KB per second")
+    output_lines.append("# TYPE pvc_ceph_osd_rd_data gauge")
+    for osd in osd_data:
+        try:
+            osd_rd_data = osd["stats"]["rd_data"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_osd_rd_data{{osd=\"{osd['id']}\"}} {osd_rd_data}"
+        )
+
+    #
+    # Ceph Pool stats
+    #
+    output_lines.append("# HELP pvc_ceph_pool_tier PVC Pool tier")
+    output_lines.append("# TYPE pvc_ceph_pool_tier gauge")
+    for pool in pool_data:
+        pool_tier = pool["tier"]
+        output_lines.append(
+            f"pvc_ceph_pool_tier{{pool=\"{pool['name']}\",tier=\"{pool_tier}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_pgs PVC Pool placement groups")
+    output_lines.append("# TYPE pvc_ceph_pool_pgs gauge")
+    for pool in pool_data:
+        pool_pgs = pool["pgs"]
+        output_lines.append(f"pvc_ceph_pool_pgs{{pool=\"{pool['name']}\"}} {pool_pgs}")
+
+    output_lines.append("# HELP pvc_ceph_pool_volumes PVC Pool volumes count")
+    output_lines.append("# TYPE pvc_ceph_pool_volumes gauge")
+    for pool in pool_data:
+        pool_volumes = pool["volume_count"]
+        output_lines.append(
+            f"pvc_ceph_pool_volumes{{pool=\"{pool['name']}\"}} {pool_volumes}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_stored_bytes PVC Pool stored bytes")
+    output_lines.append("# TYPE pvc_ceph_pool_stored_bytes gauge")
+    for pool in pool_data:
+        try:
+            pool_stored_bytes = pool["stats"]["stored_bytes"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_stored_bytes{{pool=\"{pool['name']}\"}} {pool_stored_bytes}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_free_bytes PVC Pool free bytes")
+    output_lines.append("# TYPE pvc_ceph_pool_free_bytes gauge")
+    for pool in pool_data:
+        try:
+            pool_free_bytes = pool["stats"]["free_bytes"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_free_bytes{{pool=\"{pool['name']}\"}} {pool_free_bytes}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_used_bytes PVC Pool used bytes")
+    output_lines.append("# TYPE pvc_ceph_pool_used_bytes gauge")
+    for pool in pool_data:
+        try:
+            pool_used_bytes = pool["stats"]["used_bytes"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_used_bytes{{pool=\"{pool['name']}\"}} {pool_used_bytes}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_used_percent PVC Pool used percent")
+    output_lines.append("# TYPE pvc_ceph_pool_used_percent gauge")
+    for pool in pool_data:
+        try:
+            pool_used_percent = pool["stats"]["used_percent"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_used_percent{{pool=\"{pool['name']}\"}} {pool_used_percent}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_num_objects PVC Pool total objects")
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects = pool["stats"]["num_objects"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects{{pool=\"{pool['name']}\"}} {pool_num_objects}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_num_objects_clones PVC Pool clone objects"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects_clones gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects_clones = pool["stats"]["num_object_clones"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects_clones{{pool=\"{pool['name']}\"}} {pool_num_objects_clones}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_num_objects_copies PVC Pool object copies"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects_copies gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects_copies = pool["stats"]["num_object_copies"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects_copies{{pool=\"{pool['name']}\"}} {pool_num_objects_copies}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_num_objects_missing_on_primary PVC Pool objects missing on primary"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects_missing_on_primary gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects_missing_on_primary = pool["stats"][
+                "num_objects_missing_on_primary"
+            ]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects_missing_on_primary{{pool=\"{pool['name']}\"}} {pool_num_objects_missing_on_primary}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_num_objects_unfound PVC Pool objects unfound"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects_unfound gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects_unfound = pool["stats"]["num_objects_unfound"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects_unfound{{pool=\"{pool['name']}\"}} {pool_num_objects_unfound}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_num_objects_degraded PVC Pool objects degraded"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_num_objects_degraded gauge")
+    for pool in pool_data:
+        try:
+            pool_num_objects_degraded = pool["stats"]["num_objects_degraded"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_num_objects_degraded{{pool=\"{pool['name']}\"}} {pool_num_objects_degraded}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_read_ops PVC Pool read operations lifetime"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_read_ops gauge")
+    for pool in pool_data:
+        try:
+            pool_read_ops = pool["stats"]["read_ops"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_read_ops{{pool=\"{pool['name']}\"}} {pool_read_ops}"
+        )
+
+    output_lines.append("# HELP pvc_ceph_pool_read_bytes PVC Pool read bytes lifetime")
+    output_lines.append("# TYPE pvc_ceph_pool_read_bytes gauge")
+    for pool in pool_data:
+        try:
+            pool_read_bytes = pool["stats"]["read_bytes"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_read_bytes{{pool=\"{pool['name']}\"}} {pool_read_bytes}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_write_ops PVC Pool write operations lifetime"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_write_ops gauge")
+    for pool in pool_data:
+        try:
+            pool_write_ops = pool["stats"]["write_ops"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_write_ops{{pool=\"{pool['name']}\"}} {pool_write_ops}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_ceph_pool_write_bytes PVC Pool write bytes lifetime"
+    )
+    output_lines.append("# TYPE pvc_ceph_pool_write_bytes gauge")
+    for pool in pool_data:
+        try:
+            pool_write_bytes = pool["stats"]["write_bytes"]
+        except Exception:
+            continue
+        output_lines.append(
+            f"pvc_ceph_pool_write_bytes{{pool=\"{pool['name']}\"}} {pool_write_bytes}"
+        )
 
     return True, "\n".join(output_lines) + "\n"
 

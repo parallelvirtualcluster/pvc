@@ -1510,7 +1510,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "light-red",
+                  "fixedColor": "super-light-red",
                   "mode": "fixed"
                 }
               }
@@ -1525,7 +1525,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "semi-dark-red",
+                  "fixedColor": "red",
                   "mode": "fixed"
                 }
               }
@@ -1540,7 +1540,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "semi-dark-blue",
+                  "fixedColor": "dark-red",
                   "mode": "fixed"
                 }
               }
@@ -2556,7 +2556,8 @@
   "refresh": "5s",
   "schemaVersion": 38,
   "tags": [
-    "pvc"
+    "pvc",
+    "health"
   ],
   "templating": {
     "list": [
@@ -2592,8 +2593,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "PVC Cluster",
+  "title": "PVC Cluster Health",
   "uid": "fbddd9f9-aadb-4c97-8aea-57c29e5de234",
-  "version": 57,
+  "version": 1,
   "weekStart": ""
 }

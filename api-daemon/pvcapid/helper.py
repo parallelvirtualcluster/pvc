@@ -126,12 +126,27 @@ def cluster_maintenance(zkhandler, maint_state="false"):
 #
 @pvc_common.Profiler(config)
 @ZKConnection(config)
-def cluster_metrics(zkhandler):
+def cluster_health_metrics(zkhandler):
     """
-    Format status data from cluster_status into Prometheus-compatible metrics
+    Get cluster-wide Prometheus metrics for health
     """
 
-    retflag, retdata = pvc_cluster.get_metrics(zkhandler)
+    retflag, retdata = pvc_cluster.get_health_metrics(zkhandler)
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+    return retdata, retcode
+
+
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def cluster_resource_metrics(zkhandler):
+    """
+    Get cluster-wide Prometheus metrics for resource utilization
+    """
+
+    retflag, retdata = pvc_cluster.get_resource_metrics(zkhandler)
     if retflag:
         retcode = 200
     else:

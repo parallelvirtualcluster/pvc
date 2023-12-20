@@ -640,14 +640,15 @@ class API_Metrics(Resource):
           400:
             description: Bad request
         """
-        cluster_output, cluster_retcode = api_helper.cluster_metrics()
+        health_output, health_retcode = api_helper.cluster_health_metrics()
+        resource_output, resource_retcode = api_helper.cluster_resource_metrics()
         ceph_output, ceph_retcode = api_helper.ceph_metrics()
 
-        if cluster_retcode != 200 or ceph_retcode != 200:
+        if health_retcode != 200 or resource_retcode != 200 or ceph_retcode != 200:
             output = "Error: Failed to obtain data"
             retcode = 400
         else:
-            output = cluster_output + ceph_output
+            output = health_output + resource_output + ceph_output
             retcode = 200
 
         response = flask.make_response(output, retcode)
@@ -658,11 +659,11 @@ class API_Metrics(Resource):
 api.add_resource(API_Metrics, "/metrics")
 
 
-# /metrics/pvc
-class API_Metrics_PVC(Resource):
+# /metrics/health
+class API_Metrics_Health(Resource):
     def get(self):
         """
-        Return the current PVC cluster status in Prometheus-compatible metrics format
+        Return the current PVC cluster health status in Prometheus-compatible metrics format
 
         Endpoint is unauthenticated to allow metrics exfiltration without having to deal
         with the Prometheus compatibility later.
@@ -675,13 +676,13 @@ class API_Metrics_PVC(Resource):
           400:
             description: Bad request
         """
-        cluster_output, cluster_retcode = api_helper.cluster_metrics()
+        health_output, health_retcode = api_helper.cluster_health_metrics()
 
-        if cluster_retcode != 200:
+        if health_retcode != 200:
             output = "Error: Failed to obtain data"
             retcode = 400
         else:
-            output = cluster_output
+            output = health_output
             retcode = 200
 
         response = flask.make_response(output, retcode)
@@ -689,7 +690,41 @@ class API_Metrics_PVC(Resource):
         return response
 
 
-api.add_resource(API_Metrics_PVC, "/metrics/pvc")
+api.add_resource(API_Metrics_Health, "/metrics/health")
+
+
+# /metrics/resource
+class API_Metrics_Resource(Resource):
+    def get(self):
+        """
+        Return the current PVC cluster resource utilizations in Prometheus-compatible metrics format
+
+        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
+        with the Prometheus compatibility later.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+          400:
+            description: Bad request
+        """
+        resource_output, resource_retcode = api_helper.cluster_resource_metrics()
+
+        if resource_retcode != 200:
+            output = "Error: Failed to obtain data"
+            retcode = 400
+        else:
+            output = resource_output
+            retcode = 200
+
+        response = flask.make_response(output, retcode)
+        response.mimetype = "text/plain"
+        return response
+
+
+api.add_resource(API_Metrics_Resource, "/metrics/resource")
 
 
 # /metrics/ceph
