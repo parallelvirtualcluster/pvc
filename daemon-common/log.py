@@ -146,7 +146,7 @@ class Logger(object):
         if self.config["stdout_logging"]:
             # Assemble output string
             output = colour + prompt + endc + date + prefix + message
-            print(output)
+            print(output + "\n", end="")
 
         # Log to file
         if self.config["file_logging"]:
