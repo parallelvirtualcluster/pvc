@@ -620,6 +620,54 @@ def get_resource_metrics(zkhandler):
     output_lines = list()
 
     #
+    # Network Utilization stats
+    #
+    # This is a bit of a doozie. First, for each node, we have to determine the % utilization
+    # of all the (active) network interface on that node, averaged together. Then we average
+    # the values of all the nodes together.
+    # This is very rough, but should give some idea as to the total network bandwidth used
+    # and available.
+    all_total_speed = 0
+    all_total_util = 0
+    all_total_count = 0
+    for node in node_data:
+        if node["daemon_state"] != "run":
+            continue
+
+        total_speed = 0
+        total_util = 0
+        total_count = 0
+        for iface in node["interfaces"].keys():
+            link_state = node["interfaces"][iface]["state"]
+            if link_state != "up":
+                continue
+
+            link_speed = node["interfaces"][iface]["link_speed"] * 2  # full-duplex
+            total_speed += link_speed
+
+            total_bps = node["interfaces"][iface]["total_bps"]
+            total_util += total_bps
+
+            total_count += 1
+
+        if total_count > 0:
+            # Average the speed and util by the count
+            avg_speed = int(total_speed / total_count)
+            all_total_speed += avg_speed
+            avg_util = int(total_util / total_count)
+            all_total_util += avg_util
+
+            all_total_count += 1
+
+    if all_total_count > 0:
+        all_avg_speed = all_total_speed / all_total_count
+        all_avg_util = all_total_util / all_total_count
+
+        used_network_percentage = all_avg_util / all_avg_speed * 100
+    else:
+        used_network_percentage = 0
+
+    #
     # Cluster stats
     #
     output_lines.append(
@@ -633,7 +681,15 @@ def get_resource_metrics(zkhandler):
     total_cpu = sum(node_sorted_cpu[:-2])
     used_cpu = sum([n["load"] for n in node_data])
     used_cpu_percentage = used_cpu / total_cpu * 100
-    output_lines.append(f"pvc_cluster_cpu_utilization {used_cpu_percentage:.2f}")
+    output_lines.append(f"pvc_cluster_cpu_utilization {used_cpu_percentage:2.2f}")
+
+    output_lines.append(
+        "# HELP pvc_cluster_network_utilization PVC cluster network utilization percentage"
+    )
+    output_lines.append("# TYPE pvc_cluster_network_utilization gauge")
+    output_lines.append(
+        f"pvc_cluster_network_utilization {used_network_percentage:2.2f}"
+    )
 
     node_sorted_memory = [
         n["memory"]["total"]
@@ -648,7 +704,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_cluster_memory_real_utilization gauge")
     output_lines.append(
-        f"pvc_cluster_memory_real_utilization {used_memory_percentage:.2f}"
+        f"pvc_cluster_memory_real_utilization {used_memory_percentage:2.2f}"
     )
 
     allocated_memory = sum([n["memory"]["allocated"] for n in node_data])
@@ -658,7 +714,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_cluster_memory_allocated_utilization gauge")
     output_lines.append(
-        f"pvc_cluster_memory_allocated_utilization {allocated_memory_percentage:.2f}"
+        f"pvc_cluster_memory_allocated_utilization {allocated_memory_percentage:2.2f}"
     )
 
     provisioned_memory = sum([n["memory"]["provisioned"] for n in node_data])
@@ -668,7 +724,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_cluster_memory_provisioned_utilization gauge")
     output_lines.append(
-        f"pvc_cluster_memory_provisioned_utilization {provisioned_memory_percentage:.2f}"
+        f"pvc_cluster_memory_provisioned_utilization {provisioned_memory_percentage:2.2f}"
     )
 
     output_lines.append(
@@ -685,7 +741,7 @@ def get_resource_metrics(zkhandler):
         except Exception:
             continue
     used_disk_percentage = used_disk / total_disk * 100
-    output_lines.append(f"pvc_cluster_disk_utilization {used_disk_percentage:.2f}")
+    output_lines.append(f"pvc_cluster_disk_utilization {used_disk_percentage:2.2f}")
 
     #
     # Node stats

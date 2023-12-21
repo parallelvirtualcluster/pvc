@@ -31,6 +31,7 @@ import pvcnoded.objects.MetadataAPIInstance as MetadataAPIInstance
 import pvcnoded.objects.VMInstance as VMInstance
 import pvcnoded.objects.NodeInstance as NodeInstance
 import pvcnoded.objects.VXNetworkInstance as VXNetworkInstance
+import pvcnoded.objects.NetstatsInstance as NetstatsInstance
 import pvcnoded.objects.SRIOVVFInstance as SRIOVVFInstance
 import pvcnoded.objects.CephInstance as CephInstance
 
@@ -200,9 +201,9 @@ def entrypoint():
 
     # Define a cleanup function
     def cleanup(failure=False):
-        nonlocal logger, zkhandler, keepalive_timer, d_domain
+        nonlocal logger, zkhandler, keepalive_timer, d_domain, netstats
 
-        logger.out("Terminating pvcnoded and cleaning up", state="s")
+        logger.out("Terminating pvcnoded", state="s")
 
         # Set shutdown state in Zookeeper
         zkhandler.write([(("node.state.daemon", config["node_hostname"]), "shutdown")])
@@ -249,11 +250,19 @@ def entrypoint():
         except Exception:
             pass
 
-        # Set stop state in Zookeeper
-        zkhandler.write([(("node.state.daemon", config["node_hostname"]), "stop")])
+        logger.out("Cleaning up", state="s")
+
+        # Stop netstats instance
+        try:
+            netstats.shutdown()
+        except Exception:
+            pass
 
         # Forcibly terminate dnsmasq because it gets stuck sometimes
         common.run_os_command("killall dnsmasq")
+
+        # Set stop state in Zookeeper
+        zkhandler.write([(("node.state.daemon", config["node_hostname"]), "stop")])
 
         # Close the Zookeeper connection
         try:
@@ -1000,9 +1009,12 @@ def entrypoint():
                         state="s",
                     )
 
+    # Set up netstats
+    netstats = NetstatsInstance.NetstatsInstance(logger, config, zkhandler, this_node)
+
     # Start keepalived thread
     keepalive_timer = pvcnoded.util.keepalive.start_keepalive_timer(
-        logger, config, zkhandler, this_node
+        logger, config, zkhandler, this_node, netstats
     )
 
     # Tick loop; does nothing since everything is async

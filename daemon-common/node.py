@@ -103,6 +103,7 @@ def getNodeInformation(zkhandler, node_name):
         _node_running_domains,
         _node_health,
         _node_health_plugins,
+        _node_network_stats,
     ) = zkhandler.read_many(
         [
             ("node.state.daemon", node_name),
@@ -121,6 +122,7 @@ def getNodeInformation(zkhandler, node_name):
             ("node.running_domains", node_name),
             ("node.monitoring.health", node_name),
             ("node.monitoring.plugins", node_name),
+            ("node.network.stats", node_name),
         ]
     )
 
@@ -154,6 +156,8 @@ def getNodeInformation(zkhandler, node_name):
         zkhandler, node_name, node_health_plugins
     )
 
+    node_network_stats = json.loads(_node_network_stats)
+
     # Construct a data structure to represent the data
     node_information = {
         "name": node_name,
@@ -182,6 +186,7 @@ def getNodeInformation(zkhandler, node_name):
             "used": node_mem_used,
             "free": node_mem_free,
         },
+        "interfaces": node_network_stats,
     }
     return node_information
 

@@ -1168,6 +1168,9 @@ class API_Node_Root(Resource):
                     provisioned:
                       type: integer
                       description: The total amount of RAM provisioned to all domains (regardless of state) on this node in MB
+                interfaces:
+                  type: object
+                  description: Details on speed, bytes, and packets per second of each node physical network interface
         parameters:
           - in: query
             name: limit

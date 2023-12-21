@@ -51,7 +51,7 @@ libvirt_vm_states = {
 }
 
 
-def start_keepalive_timer(logger, config, zkhandler, this_node):
+def start_keepalive_timer(logger, config, zkhandler, this_node, netstats):
     keepalive_interval = config["keepalive_interval"]
     logger.out(
         f"Starting keepalive timer ({keepalive_interval} second interval)", state="s"
@@ -59,7 +59,7 @@ def start_keepalive_timer(logger, config, zkhandler, this_node):
     keepalive_timer = BackgroundScheduler()
     keepalive_timer.add_job(
         node_keepalive,
-        args=(logger, config, zkhandler, this_node),
+        args=(logger, config, zkhandler, this_node, netstats),
         trigger="interval",
         seconds=keepalive_interval,
     )
@@ -684,7 +684,7 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
 
 
 # Keepalive update function
-def node_keepalive(logger, config, zkhandler, this_node):
+def node_keepalive(logger, config, zkhandler, this_node, netstats):
     debug = config["debug"]
 
     # Display node information to the terminal
@@ -792,6 +792,10 @@ def node_keepalive(logger, config, zkhandler, this_node):
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
     this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
     this_node.cpuload = round(os.getloadavg()[0], 2)
+
+    # Get node network statistics via netstats instance
+    netstats.set_interfaces()
+    netstats.set_data()
 
     # Join against running threads
     if config["enable_hypervisor"]:
