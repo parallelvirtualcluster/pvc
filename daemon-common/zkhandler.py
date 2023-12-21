@@ -572,7 +572,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 11
+    _version = 12
 
     # Root for doing nested keys
     _schema_root = ""
@@ -651,6 +651,7 @@ class ZKSchema(object):
             "monitoring.plugins": "/monitoring_plugins",
             "monitoring.data": "/monitoring_data",
             "monitoring.health": "/monitoring_health",
+            "network.stats": "/network_stats",
         },
         # The schema of an individual monitoring plugin data entry (/nodes/{node_name}/monitoring_data/{plugin})
         "monitoring_plugin": {
