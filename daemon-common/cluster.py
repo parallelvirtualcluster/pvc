@@ -498,8 +498,7 @@ def get_health_metrics(zkhandler):
     output_lines.append("# TYPE pvc_node_health gauge")
     for node in status_data["node_health"]:
         node_health = status_data["node_health"][node]["health"]
-        print(node_health)
-        if isinstance(node_health, int):
+        if isinstance(node_health, (int, float)):
             output_lines.append(f'pvc_node_health{{node="{node}"}} {node_health}')
 
     output_lines.append("# HELP pvc_node_daemon_states PVC Node daemon state counts")
@@ -630,6 +629,7 @@ def get_resource_metrics(zkhandler):
     all_total_speed = 0
     all_total_util = 0
     all_total_count = 0
+    per_node_network_utilization = dict()
     for node in node_data:
         if node["daemon_state"] != "run":
             continue
@@ -652,12 +652,16 @@ def get_resource_metrics(zkhandler):
 
         if total_count > 0:
             # Average the speed and util by the count
-            avg_speed = int(total_speed / total_count)
+            avg_speed = float(total_speed / total_count)
             all_total_speed += avg_speed
-            avg_util = int(total_util / total_count)
+            avg_util = float(total_util / total_count)
             all_total_util += avg_util
 
             all_total_count += 1
+
+            per_node_network_utilization[node["name"]] = avg_util / avg_speed * 100
+        else:
+            per_node_network_utilization[node["name"]] = 0.0
 
     if all_total_count > 0:
         all_avg_speed = all_total_speed / all_total_count
@@ -678,7 +682,7 @@ def get_resource_metrics(zkhandler):
         n["cpu_count"]
         for n in sorted(node_data, key=lambda n: n["cpu_count"], reverse=False)
     ]
-    total_cpu = sum(node_sorted_cpu[:-2])
+    total_cpu = sum(node_sorted_cpu[:-1])
     used_cpu = sum([n["load"] for n in node_data])
     used_cpu_percentage = used_cpu / total_cpu * 100
     output_lines.append(f"pvc_cluster_cpu_utilization {used_cpu_percentage:2.2f}")
@@ -695,7 +699,7 @@ def get_resource_metrics(zkhandler):
         n["memory"]["total"]
         for n in sorted(node_data, key=lambda n: n["memory"]["total"], reverse=False)
     ]
-    total_memory = sum(node_sorted_memory[:-2])
+    total_memory = sum(node_sorted_memory[:-1])
 
     used_memory = sum([n["memory"]["used"] for n in node_data])
     used_memory_percentage = used_memory / total_memory * 100
@@ -750,7 +754,9 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# TYPE pvc_node_host_cpus gauge")
     for node in node_data:
         total_cpus = (
-            node["vcpu"]["total"] if isinstance(node["vcpu"]["total"], int) else 0
+            node["vcpu"]["total"]
+            if isinstance(node["vcpu"]["total"], (int, float))
+            else 0
         )
         output_lines.append(
             f"pvc_node_host_cpus{{node=\"{node['name']}\"}} {total_cpus}"
@@ -761,7 +767,7 @@ def get_resource_metrics(zkhandler):
     for node in node_data:
         allocated_cpus = (
             node["vcpu"]["allocated"]
-            if isinstance(node["vcpu"]["allocated"], int)
+            if isinstance(node["vcpu"]["allocated"], (int, float))
             else 0
         )
         output_lines.append(
@@ -771,16 +777,33 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_node_load PVC node 1 minute load average")
     output_lines.append("# TYPE pvc_node_load gauge")
     for node in node_data:
-        load_average = node["load"] if isinstance(node["load"], float) else 0.0
+        load_average = node["load"] if isinstance(node["load"], (int, float)) else 0.0
         output_lines.append(
             f"pvc_node_load_average{{node=\"{node['name']}\"}} {load_average}"
+        )
+
+    output_lines.append("# HELP pvc_node_cpu_utilization PVC node CPU utilization")
+    output_lines.append("# TYPE pvc_node_cpu_utilization gauge")
+    for node in node_data:
+        load_average = node["load"] if isinstance(node["load"], (int, float)) else 0.0
+        cpu_count = (
+            node["cpu_count"] if isinstance(node["cpu_count"], (int, float)) else 0
+        )
+        if cpu_count > 0:
+            used_cpu_percentage = load_average / cpu_count * 100
+        else:
+            used_cpu_percentage = 0.0
+        output_lines.append(
+            f"pvc_node_cpu_utilization{{node=\"{node['name']}\"}} {used_cpu_percentage:2.2f}"
         )
 
     output_lines.append("# HELP pvc_node_domains_count PVC node running domain count")
     output_lines.append("# TYPE pvc_node_domains_count gauge")
     for node in node_data:
         running_domains_count = (
-            node["domains_count"] if isinstance(node["domains_count"], int) else 0
+            node["domains_count"]
+            if isinstance(node["domains_count"], (int, float))
+            else 0
         )
         output_lines.append(
             f"pvc_node_domains_count{{node=\"{node['name']}\"}} {running_domains_count}"
@@ -802,11 +825,71 @@ def get_resource_metrics(zkhandler):
             f"pvc_node_kernel{{node=\"{node['name']}\",kernel=\"{kernel}\"}} 1"
         )
 
+    output_lines.append(
+        "# HELP pvc_node_network_traffic_rx PVC node received network traffic"
+    )
+    output_lines.append("# TYPE pvc_node_network_traffic_rx gauge")
+    for node in node_data:
+        rx_bps = 0
+        for interface in node["interfaces"].keys():
+            rx_bps += node["interfaces"][interface]["rx_bps"]
+        output_lines.append(
+            f"pvc_node_network_traffic_rx{{node=\"{node['name']}\"}} {rx_bps:2.2f}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_network_traffic_tx PVC node transmitted network traffic"
+    )
+    output_lines.append("# TYPE pvc_node_network_traffic_tx gauge")
+    for node in node_data:
+        tx_bps = 0
+        for interface in node["interfaces"].keys():
+            tx_bps += node["interfaces"][interface]["tx_bps"]
+        output_lines.append(
+            f"pvc_node_network_traffic_tx{{node=\"{node['name']}\"}} {tx_bps:2.2f}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_network_packets_rx PVC node received network packets"
+    )
+    output_lines.append("# TYPE pvc_node_network_packets_rx gauge")
+    for node in node_data:
+        rx_pps = 0
+        for interface in node["interfaces"].keys():
+            rx_pps += node["interfaces"][interface]["rx_pps"]
+        output_lines.append(
+            f"pvc_node_network_packets_rx{{node=\"{node['name']}\"}} {rx_pps:2.2f}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_network_packets_tx PVC node transmitted network packets"
+    )
+    output_lines.append("# TYPE pvc_node_network_packets_tx gauge")
+    for node in node_data:
+        tx_pps = 0
+        for interface in node["interfaces"].keys():
+            tx_pps += node["interfaces"][interface]["tx_pps"]
+        output_lines.append(
+            f"pvc_node_network_packets_tx{{node=\"{node['name']}\"}} {tx_pps:2.2f}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_network_utilization PVC node network utilization percentage"
+    )
+    output_lines.append("# TYPE pvc_node_network_utilization gauge")
+    for node in node_data:
+        used_network_percentage = per_node_network_utilization[node["name"]]
+        output_lines.append(
+            f"pvc_node_network_utilization{{node=\"{node['name']}\"}} {used_network_percentage:2.2f}"
+        )
+
     output_lines.append("# HELP pvc_node_total_memory PVC node total memory in MB")
     output_lines.append("# TYPE pvc_node_total_memory gauge")
     for node in node_data:
         total_memory = (
-            node["memory"]["total"] if isinstance(node["memory"]["total"], int) else 0
+            node["memory"]["total"]
+            if isinstance(node["memory"]["total"], (int, float))
+            else 0
         )
         output_lines.append(
             f"pvc_node_total_memory{{node=\"{node['name']}\"}} {total_memory}"
@@ -819,11 +902,33 @@ def get_resource_metrics(zkhandler):
     for node in node_data:
         allocated_memory = (
             node["memory"]["allocated"]
-            if isinstance(node["memory"]["allocated"], int)
+            if isinstance(node["memory"]["allocated"], (int, float))
             else 0
         )
         output_lines.append(
             f"pvc_node_allocated_memory{{node=\"{node['name']}\"}} {allocated_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_allocated_memory_utilization PVC node allocated memory utilization"
+    )
+    output_lines.append("# TYPE pvc_node_allocated_memory_utilization gauge")
+    for node in node_data:
+        allocated_memory = (
+            node["memory"]["allocated"]
+            if isinstance(node["memory"]["allocated"], (int, float))
+            else 0
+        )
+        total_memory = (
+            node["memory"]["total"]
+            if isinstance(node["memory"]["total"], (int, float))
+            else 0
+        )
+        allocated_memory_utilization = (
+            (allocated_memory / total_memory * 100) if total_memory > 0 else 0.0
+        )
+        output_lines.append(
+            f"pvc_node_allocated_memory_utilization{{node=\"{node['name']}\"}} {allocated_memory_utilization}"
         )
 
     output_lines.append(
@@ -833,28 +938,76 @@ def get_resource_metrics(zkhandler):
     for node in node_data:
         provisioned_memory = (
             node["memory"]["provisioned"]
-            if isinstance(node["memory"]["provisioned"], int)
+            if isinstance(node["memory"]["provisioned"], (int, float))
             else 0
         )
         output_lines.append(
             f"pvc_node_provisioned_memory{{node=\"{node['name']}\"}} {provisioned_memory}"
         )
 
+    output_lines.append(
+        "# HELP pvc_node_provisioned_memory_utilization PVC node provisioned memory utilization"
+    )
+    output_lines.append("# TYPE pvc_node_provisioned_memory_utilization gauge")
+    for node in node_data:
+        provisioned_memory = (
+            node["memory"]["provisioned"]
+            if isinstance(node["memory"]["provisioned"], (int, float))
+            else 0
+        )
+        total_memory = (
+            node["memory"]["total"]
+            if isinstance(node["memory"]["total"], (int, float))
+            else 0
+        )
+        provisioned_memory_utilization = (
+            (provisioned_memory / total_memory * 100) if total_memory > 0 else 0.0
+        )
+        output_lines.append(
+            f"pvc_node_provisioned_memory_utilization{{node=\"{node['name']}\"}} {provisioned_memory_utilization}"
+        )
+
     output_lines.append("# HELP pvc_node_used_memory PVC node used memory in MB")
     output_lines.append("# TYPE pvc_node_used_memory gauge")
     for node in node_data:
         used_memory = (
-            node["memory"]["used"] if isinstance(node["memory"]["used"], int) else 0
+            node["memory"]["used"]
+            if isinstance(node["memory"]["used"], (int, float))
+            else 0
         )
         output_lines.append(
             f"pvc_node_used_memory{{node=\"{node['name']}\"}} {used_memory}"
+        )
+
+    output_lines.append(
+        "# HELP pvc_node_used_memory_utilization PVC node used memory utilization"
+    )
+    output_lines.append("# TYPE pvc_node_used_memory_utilization gauge")
+    for node in node_data:
+        used_memory = (
+            node["memory"]["used"]
+            if isinstance(node["memory"]["used"], (int, float))
+            else 0
+        )
+        total_memory = (
+            node["memory"]["total"]
+            if isinstance(node["memory"]["total"], (int, float))
+            else 0
+        )
+        used_memory_utilization = (
+            (used_memory / total_memory * 100) if total_memory > 0 else 0.0
+        )
+        output_lines.append(
+            f"pvc_node_used_memory_utilization{{node=\"{node['name']}\"}} {used_memory_utilization}"
         )
 
     output_lines.append("# HELP pvc_node_free_memory PVC node free memory in MB")
     output_lines.append("# TYPE pvc_node_free_memory gauge")
     for node in node_data:
         free_memory = (
-            node["memory"]["free"] if isinstance(node["memory"]["free"], int) else 0
+            node["memory"]["free"]
+            if isinstance(node["memory"]["free"], (int, float))
+            else 0
         )
         output_lines.append(
             f"pvc_node_free_memory{{node=\"{node['name']}\"}} {free_memory}"
