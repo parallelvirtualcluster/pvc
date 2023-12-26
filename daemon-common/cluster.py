@@ -1496,11 +1496,11 @@ def get_resource_metrics(zkhandler):
             continue
         output_lines.append(f"pvc_ceph_osd_wr_ops{{osd=\"{osd['id']}\"}} {osd_wr_ops}")
 
-    output_lines.append("# HELP pvc_ceph_osd_wr_data PVC OSD write KB per second")
+    output_lines.append("# HELP pvc_ceph_osd_wr_data PVC OSD write bytes per second")
     output_lines.append("# TYPE pvc_ceph_osd_wr_data gauge")
     for osd in osd_data:
         try:
-            osd_wr_data = osd["stats"]["wr_data"]
+            osd_wr_data = pvc_ceph.format_bytes_fromhuman(osd["stats"]["wr_data"])
         except Exception:
             continue
         output_lines.append(
@@ -1516,11 +1516,11 @@ def get_resource_metrics(zkhandler):
             continue
         output_lines.append(f"pvc_ceph_osd_rd_ops{{osd=\"{osd['id']}\"}} {osd_rd_ops}")
 
-    output_lines.append("# HELP pvc_ceph_osd_rd_data PVC OSD read KB per second")
+    output_lines.append("# HELP pvc_ceph_osd_rd_data PVC OSD read bytes per second")
     output_lines.append("# TYPE pvc_ceph_osd_rd_data gauge")
     for osd in osd_data:
         try:
-            osd_rd_data = osd["stats"]["rd_data"]
+            osd_rd_data = pvc_ceph.format_bytes_fromhuman(osd["stats"]["rd_data"])
         except Exception:
             continue
         output_lines.append(

@@ -123,13 +123,13 @@ def format_bytes_tohuman(databytes):
 def format_bytes_fromhuman(datahuman):
     if not re.search(r"[A-Za-z]+", datahuman):
         dataunit = "B"
-        datasize = int(datahuman)
+        datasize = float(datahuman)
     else:
-        dataunit = str(re.match(r"[0-9]+([A-Za-z])[iBb]*", datahuman).group(1))
-        datasize = int(re.match(r"([0-9]+)[A-Za-z]+", datahuman).group(1))
+        dataunit = str(re.match(r"[0-9\.]+([A-Za-z])[iBb]*", datahuman).group(1))
+        datasize = float(re.match(r"([0-9\.]+)[A-Za-z]+", datahuman).group(1))
 
-    if byte_unit_matrix.get(dataunit):
-        databytes = datasize * byte_unit_matrix[dataunit]
+    if byte_unit_matrix.get(dataunit.upper()):
+        databytes = int(datasize * byte_unit_matrix[dataunit.upper()])
         return databytes
     else:
         return None
@@ -155,7 +155,7 @@ def format_ops_fromhuman(datahuman):
     # Trim off human-readable character
     dataunit = datahuman[-1]
     datasize = int(datahuman[:-1])
-    dataops = datasize * ops_unit_matrix[dataunit]
+    dataops = datasize * ops_unit_matrix[dataunit.upper()]
     return "{}".format(dataops)
 
 
