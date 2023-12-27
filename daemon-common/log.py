@@ -115,6 +115,10 @@ class Logger(object):
 
     # Output function
     def out(self, message, state=None, prefix=""):
+        # Only handle d-state (debug) messages if we're in debug mode
+        if state in ["d"] and not self.config["debug"]:
+            return
+
         # Get the date
         if self.config["log_dates"]:
             date = "{} ".format(datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"))

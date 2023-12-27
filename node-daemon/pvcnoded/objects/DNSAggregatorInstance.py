@@ -333,12 +333,11 @@ class AXFRDaemonInstance(object):
                     z = dns.zone.from_xfr(axfr)
                     records_raw = [z[n].to_text(n) for n in z.nodes.keys()]
                 except Exception as e:
-                    if self.config["debug"]:
-                        self.logger.out(
-                            "{} {} ({})".format(e, dnsmasq_ip, domain),
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
+                    self.logger.out(
+                        "{} {} ({})".format(e, dnsmasq_ip, domain),
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
                     continue
 
                 # Fix the formatting because it's useless
@@ -370,12 +369,11 @@ class AXFRDaemonInstance(object):
                         "SELECT * FROM records WHERE domain_id=%s", (domain_id,)
                     )
                     results = list(sql_curs.fetchall())
-                    if self.config["debug"]:
-                        self.logger.out(
-                            "SQL query results: {}".format(results),
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
+                    self.logger.out(
+                        "SQL query results: {}".format(results),
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
                 except Exception as e:
                     self.logger.out(
                         "ERROR: Failed to obtain DNS records from database: {}".format(
@@ -388,12 +386,11 @@ class AXFRDaemonInstance(object):
                 records_old = list()
                 records_old_ids = list()
                 if not results:
-                    if self.config["debug"]:
-                        self.logger.out(
-                            "No results found, skipping.",
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
+                    self.logger.out(
+                        "No results found, skipping.",
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
                     continue
                 for record in results:
                     # Skip the non-A
@@ -404,23 +401,21 @@ class AXFRDaemonInstance(object):
                     r_data = record[4]
                     # Assemble a list element in the same format as the AXFR data
                     entry = "{} {} IN {} {}".format(r_name, r_ttl, r_type, r_data)
-                    if self.config["debug"]:
-                        self.logger.out(
-                            "Found record: {}".format(entry),
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
+                    self.logger.out(
+                        "Found record: {}".format(entry),
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
 
                     # Skip non-A or AAAA records
                     if r_type != "A" and r_type != "AAAA":
-                        if self.config["debug"]:
-                            self.logger.out(
-                                'Skipping record {}, not A or AAAA: "{}"'.format(
-                                    entry, r_type
-                                ),
-                                state="d",
-                                prefix="dns-aggregator",
-                            )
+                        self.logger.out(
+                            'Skipping record {}, not A or AAAA: "{}"'.format(
+                                entry, r_type
+                            ),
+                            state="d",
+                            prefix="dns-aggregator",
+                        )
                         continue
 
                     records_old.append(entry)
@@ -429,17 +424,16 @@ class AXFRDaemonInstance(object):
                 records_new.sort()
                 records_old.sort()
 
-                if self.config["debug"]:
-                    self.logger.out(
-                        "New: {}".format(records_new),
-                        state="d",
-                        prefix="dns-aggregator",
-                    )
-                    self.logger.out(
-                        "Old: {}".format(records_old),
-                        state="d",
-                        prefix="dns-aggregator",
-                    )
+                self.logger.out(
+                    "New: {}".format(records_new),
+                    state="d",
+                    prefix="dns-aggregator",
+                )
+                self.logger.out(
+                    "Old: {}".format(records_old),
+                    state="d",
+                    prefix="dns-aggregator",
+                )
 
                 # Find the differences between the lists
                 # Basic check one: are they completely equal
@@ -450,17 +444,16 @@ class AXFRDaemonInstance(object):
                     in_new_not_in_old = in_new - in_old
                     in_old_not_in_new = in_old - in_new
 
-                    if self.config["debug"]:
-                        self.logger.out(
-                            "New but not old: {}".format(in_new_not_in_old),
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
-                        self.logger.out(
-                            "Old but not new: {}".format(in_old_not_in_new),
-                            state="d",
-                            prefix="dns-aggregator",
-                        )
+                    self.logger.out(
+                        "New but not old: {}".format(in_new_not_in_old),
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
+                    self.logger.out(
+                        "Old but not new: {}".format(in_old_not_in_new),
+                        state="d",
+                        prefix="dns-aggregator",
+                    )
 
                     # Go through the old list
                     remove_records = list()  # list of database IDs
@@ -487,12 +480,11 @@ class AXFRDaemonInstance(object):
                     if len(remove_records) > 0:
                         # Remove the invalid old records
                         for record_id in remove_records:
-                            if self.config["debug"]:
-                                self.logger.out(
-                                    "Removing record: {}".format(record_id),
-                                    state="d",
-                                    prefix="dns-aggregator",
-                                )
+                            self.logger.out(
+                                "Removing record: {}".format(record_id),
+                                state="d",
+                                prefix="dns-aggregator",
+                            )
                             sql_curs.execute(
                                 "DELETE FROM records WHERE id=%s", (record_id,)
                             )
@@ -507,12 +499,11 @@ class AXFRDaemonInstance(object):
                             r_ttl = record[1]
                             r_type = record[3]
                             r_data = record[4]
-                            if self.config["debug"]:
-                                self.logger.out(
-                                    "Add record: {}".format(name),
-                                    state="d",
-                                    prefix="dns-aggregator",
-                                )
+                            self.logger.out(
+                                "Add record: {}".format(name),
+                                state="d",
+                                prefix="dns-aggregator",
+                            )
                             try:
                                 sql_curs.execute(
                                     "INSERT INTO records (domain_id, name, ttl, type, prio, content) VALUES (%s, %s, %s, %s, %s, %s)",
@@ -520,23 +511,21 @@ class AXFRDaemonInstance(object):
                                 )
                                 changed = True
                             except psycopg2.IntegrityError as e:
-                                if self.config["debug"]:
-                                    self.logger.out(
-                                        "Failed to add record due to {}: {}".format(
-                                            e, name
-                                        ),
-                                        state="d",
-                                        prefix="dns-aggregator",
-                                    )
+                                self.logger.out(
+                                    "Failed to add record due to {}: {}".format(
+                                        e, name
+                                    ),
+                                    state="d",
+                                    prefix="dns-aggregator",
+                                )
                             except psycopg2.errors.InFailedSqlTransaction as e:
-                                if self.config["debug"]:
-                                    self.logger.out(
-                                        "Failed to add record due to {}: {}".format(
-                                            e, name
-                                        ),
-                                        state="d",
-                                        prefix="dns-aggregator",
-                                    )
+                                self.logger.out(
+                                    "Failed to add record due to {}: {}".format(
+                                        e, name
+                                    ),
+                                    state="d",
+                                    prefix="dns-aggregator",
+                                )
 
                     if changed:
                         # Increase SOA serial
@@ -548,24 +537,22 @@ class AXFRDaemonInstance(object):
                         current_serial = int(soa_record[2])
                         new_serial = current_serial + 1
                         soa_record[2] = str(new_serial)
-                        if self.config["debug"]:
-                            self.logger.out(
-                                "Records changed; bumping SOA: {}".format(new_serial),
-                                state="d",
-                                prefix="dns-aggregator",
-                            )
+                        self.logger.out(
+                            "Records changed; bumping SOA: {}".format(new_serial),
+                            state="d",
+                            prefix="dns-aggregator",
+                        )
                         sql_curs.execute(
                             "UPDATE records SET content=%s WHERE domain_id=%s AND type='SOA'",
                             (" ".join(soa_record), domain_id),
                         )
 
                         # Commit all the previous changes
-                        if self.config["debug"]:
-                            self.logger.out(
-                                "Committing database changes and reloading PDNS",
-                                state="d",
-                                prefix="dns-aggregator",
-                            )
+                        self.logger.out(
+                            "Committing database changes and reloading PDNS",
+                            state="d",
+                            prefix="dns-aggregator",
+                        )
                         try:
                             self.sql_conn.commit()
                         except Exception as e:

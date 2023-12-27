@@ -157,9 +157,6 @@ class MonitoringPlugin(object):
             "w": warning
             "e": error
         """
-        if state == "d" and not self.config["debug"]:
-            return
-
         self.logger.out(message, state=state, prefix=self.plugin_name)
 
     #
@@ -523,11 +520,10 @@ class MonitoringInstance(object):
 
             entries = fault_data["entries"]()
 
-            if self.config["debug"]:
-                self.logger.out(
-                    f"Entries for fault check {fault_type}: {dumps(entries)}",
-                    state="d",
-                )
+            self.logger.out(
+                f"Entries for fault check {fault_type}: {dumps(entries)}",
+                state="d",
+            )
 
             for _entry in entries:
                 entry = _entry["entry"]

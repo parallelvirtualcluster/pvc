@@ -80,9 +80,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
     pool_list = zkhandler.children("base.pool")
     osd_list = zkhandler.children("base.osd")
 
-    debug = config["debug"]
-    if debug:
-        logger.out("Thread starting", state="d", prefix="ceph-thread")
+    logger.out("Thread starting", state="d", prefix="ceph-thread")
 
     # Connect to the Ceph cluster
     try:
@@ -90,8 +88,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             conffile=config["ceph_config_file"],
             conf=dict(keyring=config["ceph_admin_keyring"]),
         )
-        if debug:
-            logger.out("Connecting to cluster", state="d", prefix="ceph-thread")
+        logger.out("Connecting to cluster", state="d", prefix="ceph-thread")
         ceph_conn.connect(timeout=1)
     except Exception as e:
         logger.out("Failed to open connection to Ceph cluster: {}".format(e), state="e")
@@ -100,12 +97,11 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
     # Primary-only functions
     if this_node.coordinator_state == "primary":
         # Get Ceph status information (pretty)
-        if debug:
-            logger.out(
-                "Set Ceph status information in zookeeper (primary only)",
-                state="d",
-                prefix="ceph-thread",
-            )
+        logger.out(
+            "Set Ceph status information in zookeeper (primary only)",
+            state="d",
+            prefix="ceph-thread",
+        )
 
         command = {"prefix": "status", "format": "pretty"}
         ceph_status = ceph_conn.mon_command(json.dumps(command), b"", timeout=1)[
@@ -117,12 +113,11 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             logger.out("Failed to set Ceph status data: {}".format(e), state="e")
 
         # Get Ceph health information (JSON)
-        if debug:
-            logger.out(
-                "Set Ceph health information in zookeeper (primary only)",
-                state="d",
-                prefix="ceph-thread",
-            )
+        logger.out(
+            "Set Ceph health information in zookeeper (primary only)",
+            state="d",
+            prefix="ceph-thread",
+        )
 
         command = {"prefix": "health", "format": "json"}
         ceph_health = ceph_conn.mon_command(json.dumps(command), b"", timeout=1)[
@@ -134,12 +129,11 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             logger.out("Failed to set Ceph health data: {}".format(e), state="e")
 
         # Get Ceph df information (pretty)
-        if debug:
-            logger.out(
-                "Set Ceph rados df information in zookeeper (primary only)",
-                state="d",
-                prefix="ceph-thread",
-            )
+        logger.out(
+            "Set Ceph rados df information in zookeeper (primary only)",
+            state="d",
+            prefix="ceph-thread",
+        )
 
         # Get rados df info
         command = {"prefix": "df", "format": "pretty"}
@@ -151,12 +145,11 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
         except Exception as e:
             logger.out("Failed to set Ceph utilization data: {}".format(e), state="e")
 
-        if debug:
-            logger.out(
-                "Set pool information in zookeeper (primary only)",
-                state="d",
-                prefix="ceph-thread",
-            )
+        logger.out(
+            "Set pool information in zookeeper (primary only)",
+            state="d",
+            prefix="ceph-thread",
+        )
 
         # Get pool info
         command = {"prefix": "df", "format": "json"}
@@ -179,12 +172,11 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             rados_pool_df_raw = []
 
         pool_count = len(ceph_pool_df_raw)
-        if debug:
-            logger.out(
-                "Getting info for {} pools".format(pool_count),
-                state="d",
-                prefix="ceph-thread",
-            )
+        logger.out(
+            "Getting info for {} pools".format(pool_count),
+            state="d",
+            prefix="ceph-thread",
+        )
         for pool_idx in range(0, pool_count):
             try:
                 # Combine all the data for this pool
@@ -195,22 +187,18 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
 
                 # Ignore any pools that aren't in our pool list
                 if pool["name"] not in pool_list:
-                    if debug:
-                        logger.out(
-                            "Pool {} not in pool list {}".format(
-                                pool["name"], pool_list
-                            ),
-                            state="d",
-                            prefix="ceph-thread",
-                        )
+                    logger.out(
+                        "Pool {} not in pool list {}".format(pool["name"], pool_list),
+                        state="d",
+                        prefix="ceph-thread",
+                    )
                     continue
                 else:
-                    if debug:
-                        logger.out(
-                            "Parsing data for pool {}".format(pool["name"]),
-                            state="d",
-                            prefix="ceph-thread",
-                        )
+                    logger.out(
+                        "Parsing data for pool {}".format(pool["name"]),
+                        state="d",
+                        prefix="ceph-thread",
+                    )
 
                 # Assemble a useful data structure
                 pool_df = {
@@ -248,8 +236,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
     osds_this_node = 0
     if len(osd_list) > 0:
         # Get data from Ceph OSDs
-        if debug:
-            logger.out("Get data from Ceph OSDs", state="d", prefix="ceph-thread")
+        logger.out("Get data from Ceph OSDs", state="d", prefix="ceph-thread")
 
         # Parse the dump data
         osd_dump = dict()
@@ -264,8 +251,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             logger.out("Failed to obtain OSD data: {}".format(e), state="w")
             osd_dump_raw = []
 
-        if debug:
-            logger.out("Loop through OSD dump", state="d", prefix="ceph-thread")
+        logger.out("Loop through OSD dump", state="d", prefix="ceph-thread")
         for osd in osd_dump_raw:
             osd_dump.update(
                 {
@@ -279,8 +265,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             )
 
         # Parse the df data
-        if debug:
-            logger.out("Parse the OSD df data", state="d", prefix="ceph-thread")
+        logger.out("Parse the OSD df data", state="d", prefix="ceph-thread")
 
         osd_df = dict()
 
@@ -293,8 +278,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             logger.out("Failed to obtain OSD data: {}".format(e), state="w")
             osd_df_raw = []
 
-        if debug:
-            logger.out("Loop through OSD df", state="d", prefix="ceph-thread")
+        logger.out("Loop through OSD df", state="d", prefix="ceph-thread")
         for osd in osd_df_raw:
             osd_df.update(
                 {
@@ -316,8 +300,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             )
 
         # Parse the status data
-        if debug:
-            logger.out("Parse the OSD status data", state="d", prefix="ceph-thread")
+        logger.out("Parse the OSD status data", state="d", prefix="ceph-thread")
 
         osd_status = dict()
 
@@ -330,8 +313,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             logger.out("Failed to obtain OSD status data: {}".format(e), state="w")
             osd_status_raw = []
 
-        if debug:
-            logger.out("Loop through OSD status data", state="d", prefix="ceph-thread")
+        logger.out("Loop through OSD status data", state="d", prefix="ceph-thread")
 
         for line in osd_status_raw.split("\n"):
             # Strip off colour
@@ -400,8 +382,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             )
 
         # Merge them together into a single meaningful dict
-        if debug:
-            logger.out("Merge OSD data together", state="d", prefix="ceph-thread")
+        logger.out("Merge OSD data together", state="d", prefix="ceph-thread")
 
         osd_stats = dict()
 
@@ -421,10 +402,7 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
 
         # Upload OSD data for the cluster (primary-only)
         if this_node.coordinator_state == "primary":
-            if debug:
-                logger.out(
-                    "Trigger updates for each OSD", state="d", prefix="ceph-thread"
-                )
+            logger.out("Trigger updates for each OSD", state="d", prefix="ceph-thread")
 
             for osd in osd_list:
                 try:
@@ -441,20 +419,16 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
 
     queue.put(osds_this_node)
 
-    if debug:
-        logger.out("Thread finished", state="d", prefix="ceph-thread")
+    logger.out("Thread finished", state="d", prefix="ceph-thread")
 
 
 # VM stats update function
 def collect_vm_stats(logger, config, zkhandler, this_node, queue):
-    debug = config["debug"]
-    if debug:
-        logger.out("Thread starting", state="d", prefix="vm-thread")
+    logger.out("Thread starting", state="d", prefix="vm-thread")
 
     # Connect to libvirt
     libvirt_name = "qemu:///system"
-    if debug:
-        logger.out("Connecting to libvirt", state="d", prefix="vm-thread")
+    logger.out("Connecting to libvirt", state="d", prefix="vm-thread")
     try:
         lv_conn = libvirt.open(libvirt_name)
         if lv_conn is None:
@@ -467,12 +441,11 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
     memprov = 0
     vcpualloc = 0
     # Toggle state management of dead VMs to restart them
-    if debug:
-        logger.out(
-            "Toggle state management of dead VMs to restart them",
-            state="d",
-            prefix="vm-thread",
-        )
+    logger.out(
+        "Toggle state management of dead VMs to restart them",
+        state="d",
+        prefix="vm-thread",
+    )
     # Make a copy of the d_domain; if not, and it changes in flight, this can fail
     fixed_d_domain = this_node.d_domain.copy()
     for domain, instance in fixed_d_domain.items():
@@ -518,12 +491,11 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
             domain_name = domain.name()
 
             # Get all the raw information about the VM
-            if debug:
-                logger.out(
-                    "Getting general statistics for VM {}".format(domain_name),
-                    state="d",
-                    prefix="vm-thread",
-                )
+            logger.out(
+                "Getting general statistics for VM {}".format(domain_name),
+                state="d",
+                prefix="vm-thread",
+            )
             (
                 domain_state,
                 domain_maxmem,
@@ -537,29 +509,25 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
             domain_memory_stats = domain.memoryStats()
             domain_cpu_stats = domain.getCPUStats(True)[0]
         except Exception as e:
-            if debug:
-                try:
-                    logger.out(
-                        "Failed getting VM information for {}: {}".format(
-                            domain.name(), e
-                        ),
-                        state="d",
-                        prefix="vm-thread",
-                    )
-                except Exception:
-                    pass
+            try:
+                logger.out(
+                    "Failed getting VM information for {}: {}".format(domain.name(), e),
+                    state="d",
+                    prefix="vm-thread",
+                )
+            except Exception:
+                pass
             continue
 
         # Ensure VM is present in the domain_list
         if domain_uuid not in this_node.domain_list:
             this_node.domain_list.append(domain_uuid)
 
-        if debug:
-            logger.out(
-                "Getting disk statistics for VM {}".format(domain_name),
-                state="d",
-                prefix="vm-thread",
-            )
+        logger.out(
+            "Getting disk statistics for VM {}".format(domain_name),
+            state="d",
+            prefix="vm-thread",
+        )
         domain_disk_stats = []
         try:
             for disk in tree.findall("devices/disk"):
@@ -578,23 +546,21 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
                     }
                 )
         except Exception as e:
-            if debug:
-                try:
-                    logger.out(
-                        "Failed getting disk stats for {}: {}".format(domain.name(), e),
-                        state="d",
-                        prefix="vm-thread",
-                    )
-                except Exception:
-                    pass
+            try:
+                logger.out(
+                    "Failed getting disk stats for {}: {}".format(domain.name(), e),
+                    state="d",
+                    prefix="vm-thread",
+                )
+            except Exception:
+                pass
             continue
 
-        if debug:
-            logger.out(
-                "Getting network statistics for VM {}".format(domain_name),
-                state="d",
-                prefix="vm-thread",
-            )
+        logger.out(
+            "Getting network statistics for VM {}".format(domain_name),
+            state="d",
+            prefix="vm-thread",
+        )
         domain_network_stats = []
         try:
             for interface in tree.findall("devices/interface"):
@@ -619,17 +585,14 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
                     }
                 )
         except Exception as e:
-            if debug:
-                try:
-                    logger.out(
-                        "Failed getting network stats for {}: {}".format(
-                            domain.name(), e
-                        ),
-                        state="d",
-                        prefix="vm-thread",
-                    )
-                except Exception:
-                    pass
+            try:
+                logger.out(
+                    "Failed getting network stats for {}: {}".format(domain.name(), e),
+                    state="d",
+                    prefix="vm-thread",
+                )
+            except Exception:
+                pass
             continue
 
         # Create the final dictionary
@@ -645,48 +608,42 @@ def collect_vm_stats(logger, config, zkhandler, this_node, queue):
             "net_stats": domain_network_stats,
         }
 
-        if debug:
-            logger.out(
-                "Writing statistics for VM {} to Zookeeper".format(domain_name),
-                state="d",
-                prefix="vm-thread",
-            )
+        logger.out(
+            "Writing statistics for VM {} to Zookeeper".format(domain_name),
+            state="d",
+            prefix="vm-thread",
+        )
 
         try:
             zkhandler.write(
                 [(("domain.stats", domain_uuid), str(json.dumps(domain_stats)))]
             )
         except Exception as e:
-            if debug:
-                logger.out(
-                    "Failed to write domain statistics: {}".format(e),
-                    state="d",
-                    prefix="vm-thread",
-                )
+            logger.out(
+                "Failed to write domain statistics: {}".format(e),
+                state="d",
+                prefix="vm-thread",
+            )
 
     # Close the Libvirt connection
     lv_conn.close()
 
-    if debug:
-        logger.out(
-            f"VM stats: doms: {len(running_domains)}; memalloc: {memalloc}; memprov: {memprov}; vcpualloc: {vcpualloc}",
-            state="d",
-            prefix="vm-thread",
-        )
+    logger.out(
+        f"VM stats: doms: {len(running_domains)}; memalloc: {memalloc}; memprov: {memprov}; vcpualloc: {vcpualloc}",
+        state="d",
+        prefix="vm-thread",
+    )
 
     queue.put(len(running_domains))
     queue.put(memalloc)
     queue.put(memprov)
     queue.put(vcpualloc)
 
-    if debug:
-        logger.out("Thread finished", state="d", prefix="vm-thread")
+    logger.out("Thread finished", state="d", prefix="vm-thread")
 
 
 # Keepalive update function
 def node_keepalive(logger, config, zkhandler, this_node, netstats):
-    debug = config["debug"]
-
     # Display node information to the terminal
     if config["log_keepalives"]:
         if this_node.coordinator_state == "primary":
@@ -746,10 +703,7 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
                 )
 
     # Get past state and update if needed
-    if debug:
-        logger.out(
-            "Get past state and update if needed", state="d", prefix="main-thread"
-        )
+    logger.out("Get past state and update if needed", state="d", prefix="main-thread")
 
     past_state = zkhandler.read(("node.state.daemon", this_node.name))
     if past_state != "run" and past_state != "shutdown":
@@ -759,10 +713,9 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
         this_node.daemon_state = "run"
 
     # Ensure the primary key is properly set
-    if debug:
-        logger.out(
-            "Ensure the primary key is properly set", state="d", prefix="main-thread"
-        )
+    logger.out(
+        "Ensure the primary key is properly set", state="d", prefix="main-thread"
+    )
     if this_node.coordinator_state == "primary":
         if zkhandler.read("base.config.primary_node") != this_node.name:
             zkhandler.write([("base.config.primary_node", this_node.name)])
@@ -843,8 +796,7 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
 
     # Set our information in zookeeper
     keepalive_time = int(time.time())
-    if debug:
-        logger.out("Set our information in zookeeper", state="d", prefix="main-thread")
+    logger.out("Set our information in zookeeper", state="d", prefix="main-thread")
     try:
         zkhandler.write(
             [
@@ -932,10 +884,9 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
 
     # Look for dead nodes and fence them
     if not this_node.maintenance:
-        if debug:
-            logger.out(
-                "Look for dead nodes and fence them", state="d", prefix="main-thread"
-            )
+        logger.out(
+            "Look for dead nodes and fence them", state="d", prefix="main-thread"
+        )
         if config["daemon_mode"] == "coordinator":
             for node_name in zkhandler.children("base.node"):
                 try:
