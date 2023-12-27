@@ -8,7 +8,7 @@
 ignore = W503, E501, F403, F405
 extend-ignore = E203
 # We exclude the Debian, migrations, and provisioner examples
-exclude = debian,api-daemon/migrations/versions,api-daemon/provisioner/examples,node-daemon/monitoring
+exclude = debian,monitoring,api-daemon/migrations/versions,api-daemon/provisioner/examples
 # Set the max line length to 88 for Black
 max-line-length = 88
 
