@@ -44,7 +44,7 @@ from daemon_lib.vmbuilder import (
 )
 
 # Daemon version
-version = "0.9.86"
+version = "0.9.87"
 
 
 config = cfg.get_configuration()

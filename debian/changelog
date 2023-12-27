@@ -1,3 +1,13 @@
+pvc (0.9.87-0) unstable; urgency=high
+
+  * [API Daemon] Adds cluster Prometheus resource utilization metrics and an updated Grafana dashboard.
+  * [Node Daemon] Adds network traffic rate calculation subsystem.
+  * [All Daemons] Fixes a printing bug where newlines were not added atomically.
+  * [CLI Client] Fixes a bug listing connections if no default is specified.
+  * [All Daemons] Simplifies debug logging conditionals by moving into the Logger instance itself.
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Wed, 27 Dec 2023 13:40:51 -0500
+
 pvc (0.9.86-0) unstable; urgency=high
 
   * [API Daemon] Significantly improves the performance of several commands via async Zookeeper calls and removal of superfluous backend calls.

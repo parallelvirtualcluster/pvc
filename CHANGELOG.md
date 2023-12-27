@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.87](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.87)
+
+  * [API Daemon] Adds cluster Prometheus resource utilization metrics and an updated Grafana dashboard.
+  * [Node Daemon] Adds network traffic rate calculation subsystem.
+  * [All Daemons] Fixes a printing bug where newlines were not added atomically.
+  * [CLI Client] Fixes a bug listing connections if no default is specified.
+  * [All Daemons] Simplifies debug logging conditionals by moving into the Logger instance itself.
+
 ###### [v0.9.86](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.86)
 
   * [API Daemon] Significantly improves the performance of several commands via async Zookeeper calls and removal of superfluous backend calls.
