@@ -1629,11 +1629,11 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# TYPE pvc_ceph_pool_used_percent gauge")
     for pool in pool_data:
         try:
-            pool_used_percent = pool["stats"]["used_percent"]
+            pool_used_percent = pool["stats"]["used_percent"] * 100
         except Exception:
             continue
         output_lines.append(
-            f"pvc_ceph_pool_used_percent{{pool=\"{pool['name']}\"}} {pool_used_percent}"
+            f"pvc_ceph_pool_used_percent{{pool=\"{pool['name']}\"}} {pool_used_percent:2.2f}"
         )
 
     output_lines.append("# HELP pvc_ceph_pool_num_objects PVC Pool total objects")
