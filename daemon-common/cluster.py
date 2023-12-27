@@ -1454,58 +1454,58 @@ def get_resource_metrics(zkhandler):
             continue
         output_lines.append(f"pvc_ceph_osd_size{{osd=\"{osd['id']}\"}} {osd_size}")
 
-    output_lines.append("# HELP pvc_ceph_osd_used PVC OSD used KB")
+    output_lines.append("# HELP pvc_ceph_osd_used PVC OSD used bytes")
     output_lines.append("# TYPE pvc_ceph_osd_used gauge")
     for osd in osd_data:
         try:
-            osd_used = osd["stats"]["kb_used"]
+            osd_used = osd["stats"]["kb_used"] * 1024
         except Exception:
             continue
         output_lines.append(f"pvc_ceph_osd_used{{osd=\"{osd['id']}\"}} {osd_used}")
 
-    output_lines.append("# HELP pvc_ceph_osd_used_data PVC OSD used (data) KB")
+    output_lines.append("# HELP pvc_ceph_osd_used_data PVC OSD used (data) bytes")
     output_lines.append("# TYPE pvc_ceph_osd_used_data gauge")
     for osd in osd_data:
         try:
-            osd_used_data = osd["stats"]["kb_used_data"]
+            osd_used_data = osd["stats"]["kb_used_data"] * 1024
         except Exception:
             continue
         output_lines.append(
             f"pvc_ceph_osd_used_data{{osd=\"{osd['id']}\"}} {osd_used_data}"
         )
 
-    output_lines.append("# HELP pvc_ceph_osd_used_omap PVC OSD used (omap) KB")
+    output_lines.append("# HELP pvc_ceph_osd_used_omap PVC OSD used (omap) bytes")
     output_lines.append("# TYPE pvc_ceph_osd_used_omap gauge")
     for osd in osd_data:
         try:
-            osd_used_omap = osd["stats"]["kb_used_omap"]
+            osd_used_omap = osd["stats"]["kb_used_omap"] * 1024
         except Exception:
             continue
         output_lines.append(
             f"pvc_ceph_osd_used_omap{{osd=\"{osd['id']}\"}} {osd_used_omap}"
         )
 
-    output_lines.append("# HELP pvc_ceph_osd_used_meta PVC OSD used (meta) KB")
+    output_lines.append("# HELP pvc_ceph_osd_used_meta PVC OSD used (meta) bytes")
     output_lines.append("# TYPE pvc_ceph_osd_used_meta gauge")
     for osd in osd_data:
         try:
-            osd_used_meta = osd["stats"]["kb_used_meta"]
+            osd_used_meta = osd["stats"]["kb_used_meta"] * 1024
         except Exception:
             continue
         output_lines.append(
             f"pvc_ceph_osd_used_meta{{osd=\"{osd['id']}\"}} {osd_used_meta}"
         )
 
-    output_lines.append("# HELP pvc_ceph_osd_avail PVC OSD available KB")
+    output_lines.append("# HELP pvc_ceph_osd_avail PVC OSD available bytes")
     output_lines.append("# TYPE pvc_ceph_osd_avail gauge")
     for osd in osd_data:
         try:
-            osd_avail = osd["stats"]["kb_avail"]
+            osd_avail = osd["stats"]["kb_avail"] * 1024
         except Exception:
             continue
         output_lines.append(f"pvc_ceph_osd_avail{{osd=\"{osd['id']}\"}} {osd_avail}")
 
-    output_lines.append("# HELP pvc_ceph_osd_weight PVC OSD weight KB")
+    output_lines.append("# HELP pvc_ceph_osd_weight PVC OSD weight")
     output_lines.append("# TYPE pvc_ceph_osd_weight gauge")
     for osd in osd_data:
         try:
@@ -1514,7 +1514,7 @@ def get_resource_metrics(zkhandler):
             continue
         output_lines.append(f"pvc_ceph_osd_weight{{osd=\"{osd['id']}\"}} {osd_weight}")
 
-    output_lines.append("# HELP pvc_ceph_osd_reweight PVC OSD reweight KB")
+    output_lines.append("# HELP pvc_ceph_osd_reweight PVC OSD reweight")
     output_lines.append("# TYPE pvc_ceph_osd_reweight gauge")
     for osd in osd_data:
         try:
