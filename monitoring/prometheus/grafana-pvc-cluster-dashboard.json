@@ -6562,8 +6562,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "PVC Cluster Overview",
+  "title": "PVC Cluster",
   "uid": "fbddd9f9-aadb-4c97-8aea-57c29e5de234",
-  "version": 98,
+  "version": 1,
   "weekStart": ""
 }
