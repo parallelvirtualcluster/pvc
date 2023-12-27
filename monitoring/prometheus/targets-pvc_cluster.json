@@ -1,10 +1,20 @@
 [
   {
     "targets": [
-      "pvc.upstream.floating.address.tld:7370"
+      "pvc.upstream.floating.address.1.tld:7370"
     ],
     "labels": {
-      "cluster": "cluster1"
+      "pvc_cluster_id": "cluster1",
+      "pvc_cluster_name": "cluster1: My First Cluster"
+    }
+  },
+  {
+    "targets": [
+      "pvc.upstream.floating.address.2.tld:7370"
+    ],
+    "labels": {
+      "pvc_cluster_id": "cluster2",
+      "pvc_cluster_name": "cluster2: My Second Cluster"
     }
   }
 ]
