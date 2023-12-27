@@ -6116,13 +6116,14 @@ def cli(
     else:
         CLI_CONFIG = get_config(store_data, _connection)
 
+    CLI_CONFIG["store_path"] = store_path
+
     if not CLI_CONFIG.get("badcfg", None):
         CLI_CONFIG["debug"] = _debug
         CLI_CONFIG["unsafe"] = _unsafe
         CLI_CONFIG["colour"] = _colour
         CLI_CONFIG["quiet"] = _quiet
         CLI_CONFIG["silent"] = _silent
-        CLI_CONFIG["store_path"] = store_path
 
     audit()
 
