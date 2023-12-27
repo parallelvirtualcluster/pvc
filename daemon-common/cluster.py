@@ -878,7 +878,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_node_network_utilization gauge")
     for node in node_data:
-        used_network_percentage = per_node_network_utilization[node["name"]]
+        used_network_percentage = per_node_network_utilization.get(node["name"], 0)
         output_lines.append(
             f"pvc_node_network_utilization{{node=\"{node['name']}\"}} {used_network_percentage:2.2f}"
         )
@@ -1117,11 +1117,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_stats_unused PVC VM unused memory")
     output_lines.append("# TYPE pvc_vm_memory_stats_unused gauge")
     for vm in vm_data:
-        unused_memory = (
-            vm["memory_stats"]["unused"]
-            if vm["memory_stats"].get("unused") is not None
-            else 0
-        )
+        unused_memory = vm["memory_stats"].get("unused", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_unused{{vm=\"{vm['name']}\"}} {unused_memory}"
         )
@@ -1129,11 +1125,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_stats_available PVC VM available memory")
     output_lines.append("# TYPE pvc_vm_memory_stats_available gauge")
     for vm in vm_data:
-        available_memory = (
-            vm["memory_stats"]["available"]
-            if vm["memory_stats"].get("available") is not None
-            else 0
-        )
+        available_memory = vm["memory_stats"].get("available", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_available{{vm=\"{vm['name']}\"}} {available_memory}"
         )
@@ -1141,11 +1133,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_stats_usable PVC VM usable memory")
     output_lines.append("# TYPE pvc_vm_memory_stats_usable gauge")
     for vm in vm_data:
-        usable_memory = (
-            vm["memory_stats"]["usable"]
-            if vm["memory_stats"].get("usable") is not None
-            else 0
-        )
+        usable_memory = vm["memory_stats"].get("usable", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_usable{{vm=\"{vm['name']}\"}} {usable_memory}"
         )
@@ -1155,11 +1143,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_memory_stats_disk_caches gauge")
     for vm in vm_data:
-        disk_caches_memory = (
-            vm["memory_stats"]["disk_caches"]
-            if vm["memory_stats"].get("disk_caches") is not None
-            else 0
-        )
+        disk_caches_memory = vm["memory_stats"].get("disk_caches", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_disk_caches{{vm=\"{vm['name']}\"}} {disk_caches_memory}"
         )
@@ -1167,11 +1151,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_swap_in PVC VM memory swap in")
     output_lines.append("# TYPE pvc_vm_memory_swap_in gauge")
     for vm in vm_data:
-        swap_in_memory = (
-            vm["memory_stats"]["swap_in"]
-            if vm["memory_stats"].get("swap_in") is not None
-            else 0
-        )
+        swap_in_memory = vm["memory_stats"].get("swap_in", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_swap_in{{vm=\"{vm['name']}\"}} {swap_in_memory}"
         )
@@ -1179,11 +1159,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_swap_out PVC VM memory swap out")
     output_lines.append("# TYPE pvc_vm_memory_swap_out gauge")
     for vm in vm_data:
-        swap_out_memory = (
-            vm["memory_stats"]["swap_out"]
-            if vm["memory_stats"].get("swap_out") is not None
-            else 0
-        )
+        swap_out_memory = vm["memory_stats"].get("swap_out", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_swap_out{{vm=\"{vm['name']}\"}} {swap_out_memory}"
         )
@@ -1191,11 +1167,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_major_fault PVC VM memory major faults")
     output_lines.append("# TYPE pvc_vm_memory_major_fault gauge")
     for vm in vm_data:
-        major_fault_memory = (
-            vm["memory_stats"]["major_fault"]
-            if vm["memory_stats"].get("major_fault") is not None
-            else 0
-        )
+        major_fault_memory = vm["memory_stats"].get("major_fault", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_major_fault{{vm=\"{vm['name']}\"}} {major_fault_memory}"
         )
@@ -1203,11 +1175,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_minor_fault PVC VM memory minor faults")
     output_lines.append("# TYPE pvc_vm_memory_minor_fault gauge")
     for vm in vm_data:
-        minor_fault_memory = (
-            vm["memory_stats"]["minor_fault"]
-            if vm["memory_stats"].get("minor_fault") is not None
-            else 0
-        )
+        minor_fault_memory = vm["memory_stats"].get("minor_fault", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_minor_fault{{vm=\"{vm['name']}\"}} {minor_fault_memory}"
         )
@@ -1217,11 +1185,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_memory_hugetlb_pgalloc gauge")
     for vm in vm_data:
-        hugetlb_pgalloc_memory = (
-            vm["memory_stats"]["hugetlb_pgalloc"]
-            if vm["memory_stats"].get("hugetlb_pgalloc") is not None
-            else 0
-        )
+        hugetlb_pgalloc_memory = vm["memory_stats"].get("hugetlb_pgalloc", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_hugetlb_pgalloc{{vm=\"{vm['name']}\"}} {hugetlb_pgalloc_memory}"
         )
@@ -1231,11 +1195,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_memory_hugetlb_pgfail gauge")
     for vm in vm_data:
-        hugetlb_pgfail_memory = (
-            vm["memory_stats"]["hugetlb_pgfail"]
-            if vm["memory_stats"].get("hugetlb_pgfail") is not None
-            else 0
-        )
+        hugetlb_pgfail_memory = vm["memory_stats"].get("hugetlb_pgfail", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_hugetlb_pgfail{{vm=\"{vm['name']}\"}} {hugetlb_pgfail_memory}"
         )
