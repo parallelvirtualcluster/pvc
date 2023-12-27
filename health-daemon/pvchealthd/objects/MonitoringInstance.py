@@ -695,7 +695,7 @@ class MonitoringInstance(object):
             health_text = f"{health_colour}{self.this_node.health}%{self.logger.fmt_end} node health"
             result_text.append(health_text)
         else:
-            health_text = "{self.logger.fmt_blue}N/A{self.logger.fmt_end} node health"
+            health_text = f"{self.logger.fmt_blue}N/A{self.logger.fmt_end} node health"
             result_text.append(health_text)
 
         self.logger.out(
