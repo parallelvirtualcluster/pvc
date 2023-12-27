@@ -156,7 +156,10 @@ def getNodeInformation(zkhandler, node_name):
         zkhandler, node_name, node_health_plugins
     )
 
-    node_network_stats = json.loads(_node_network_stats)
+    if _node_network_stats is not None:
+        node_network_stats = json.loads(_node_network_stats)
+    else:
+        node_network_stats = dict()
 
     # Construct a data structure to represent the data
     node_information = {
