@@ -199,6 +199,38 @@ def ceph_metrics(zkhandler):
     return output, status_code
 
 
+@pvc_common.Profiler(config)
+@ZKConnection(config)
+def zookeeper_metrics(zkhandler):
+    """
+    Obtain current Zookeeper Prometheus metrics from the active coordinator node
+    """
+    primary_node = zkhandler.read("base.config.primary_node")
+    if primary_node is not None:
+        # Get the data from the endpoint
+        # We use the default port of 9141
+        zookeeper_prometheus_uri = f"http://{primary_node}:9141/metrics"
+        response = get(zookeeper_prometheus_uri)
+
+        if response.status_code == 200:
+            output = response.text
+            # Parse the text to remove annoying ports (":2181")
+            output = output.replace(":2181", "")
+            # Sort the output text
+            output_lines = output.split("\n")
+            output_lines.sort()
+            output = "\n".join(output_lines) + "\n"
+            status_code = 200
+        else:
+            output = f"Error: Failed to obtain metric data from {primary_node} primary node daemon\n"
+            status_code = 400
+    else:
+        output = "Error: Failed to find an active primary node\n"
+        status_code = 400
+
+    return output, status_code
+
+
 #
 # Fault functions
 #

@@ -643,12 +643,13 @@ class API_Metrics(Resource):
         health_output, health_retcode = api_helper.cluster_health_metrics()
         resource_output, resource_retcode = api_helper.cluster_resource_metrics()
         ceph_output, ceph_retcode = api_helper.ceph_metrics()
+        zookeeper_output, zookeeper_retcode = api_helper.zookeeper_metrics()
 
         if health_retcode != 200 or resource_retcode != 200 or ceph_retcode != 200:
             output = "Error: Failed to obtain data"
             retcode = 400
         else:
-            output = health_output + resource_output + ceph_output
+            output = health_output + resource_output + ceph_output + zookeeper_output
             retcode = 200
 
         response = flask.make_response(output, retcode)
@@ -759,6 +760,40 @@ class API_Metrics_Ceph(Resource):
 
 
 api.add_resource(API_Metrics_Ceph, "/metrics/ceph")
+
+
+# /metrics/zookeeper
+class API_Metrics_Zookeeper(Resource):
+    def get(self):
+        """
+        Return the current PVC Zookeeper Prometheus metrics
+
+        Proxies a metrics request to the current primary node, since all coordinators
+        run an active Zookeeper instance and we want one central location.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+          400:
+            description: Bad request
+        """
+        zookeeper_output, zookeeper_retcode = api_helper.zookeeper_metrics()
+
+        if zookeeper_retcode != 200:
+            output = "Error: Failed to obtain data"
+            retcode = 400
+        else:
+            output = zookeeper_output
+            retcode = 200
+
+        response = flask.make_response(output, retcode)
+        response.mimetype = "text/plain"
+        return response
+
+
+api.add_resource(API_Metrics_Zookeeper, "/metrics/zookeeper")
 
 
 # /faults
