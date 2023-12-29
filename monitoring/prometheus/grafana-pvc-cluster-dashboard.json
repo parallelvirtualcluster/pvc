@@ -89,7 +89,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "",
+      "description": "Cluster ID as provided by PVC.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -164,6 +164,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Cluster maintenance status.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -264,6 +265,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "List of faults in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -400,6 +402,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Current health percentage of the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -477,6 +480,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Health percentage history of the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -586,6 +590,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Current primary coordinator node.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -660,6 +665,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Current primary coordinator PVC version.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -734,6 +740,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total nodes in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -804,6 +811,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total active VMs in the cluster (state is \"start\", \"restart\", \"migrate\", or \"unmigrate\").",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -890,6 +898,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total storage OSDs in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -960,6 +969,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total storage volumes (VM disks) in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1030,6 +1040,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Current health percentage of each node in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1108,6 +1119,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Health percentage history of each node in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1219,6 +1231,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total PVC-managed networks in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1289,6 +1302,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total inactive VMs in the cluster (state is \"disable\", \"shutdown\", \"stop\", \"provision\", or \"fail\").",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1376,6 +1390,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total storage pools in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1446,6 +1461,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "Total storage volume snapshots in the cluster.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1526,7 +1542,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "PVC Node Daemon state history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1574,7 +1590,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1695,7 +1712,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 14
           },
           "id": 85,
           "options": {
@@ -1828,7 +1845,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Domain state history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1876,7 +1893,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1952,7 +1970,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 14
           },
           "id": 86,
           "options": {
@@ -2088,7 +2106,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "History count of VMs in each VM state.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2136,7 +2154,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -2313,7 +2332,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 22
           },
           "id": 87,
           "options": {
@@ -2477,7 +2496,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "History count of OSDs in each OSD state.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2525,7 +2544,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2616,7 +2636,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 22
           },
           "id": 88,
           "options": {
@@ -2772,7 +2792,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total CPU utilization of the cluster (n-1)",
+          "description": "Current total CPU utilization of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2786,7 +2806,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -2806,7 +2827,7 @@
             "h": 5,
             "w": 4,
             "x": 0,
-            "y": 19
+            "y": 15
           },
           "id": 5,
           "options": {
@@ -2850,6 +2871,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total CPU utilization history of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2896,7 +2918,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -2916,7 +2939,7 @@
             "h": 5,
             "w": 8,
             "x": 4,
-            "y": 19
+            "y": 15
           },
           "id": 6,
           "options": {
@@ -2958,7 +2981,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total Network utilization of the cluster (all active interfaces on all active nodes)",
+          "description": "Current total Network utilization of the cluster (all active interfaces on all active nodes, full-duplex).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2972,7 +2995,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -2992,7 +3016,7 @@
             "h": 5,
             "w": 4,
             "x": 12,
-            "y": 19
+            "y": 15
           },
           "id": 33,
           "options": {
@@ -3036,6 +3060,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total Network utilization history of the cluster (all active interfaces on all active nodes, full-duplex).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3082,7 +3107,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3102,7 +3128,7 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 19
+            "y": 15
           },
           "id": 34,
           "options": {
@@ -3144,7 +3170,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total Disk space utilization of the cluster (n-2 for copies=3)",
+          "description": "Current total VM disk space utilization of the cluster (n-2 for copies=3).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3158,7 +3184,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3178,7 +3205,7 @@
             "h": 5,
             "w": 4,
             "x": 0,
-            "y": 24
+            "y": 20
           },
           "id": 35,
           "options": {
@@ -3222,6 +3249,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total VM disk space utilization history of the cluster (n-2 for copies=3).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3268,7 +3296,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3288,7 +3317,7 @@
             "h": 5,
             "w": 8,
             "x": 4,
-            "y": 24
+            "y": 20
           },
           "id": 36,
           "options": {
@@ -3330,7 +3359,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total real memory utilization of the cluster (n-1)",
+          "description": "Current total real memory utilization of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3344,7 +3373,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3364,7 +3394,7 @@
             "h": 5,
             "w": 4,
             "x": 12,
-            "y": 24
+            "y": 20
           },
           "id": 37,
           "options": {
@@ -3408,6 +3438,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total real memory utilization history of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3454,7 +3485,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3474,7 +3506,7 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 24
+            "y": 20
           },
           "id": 38,
           "options": {
@@ -3516,7 +3548,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total allocated (running VMs) memory utilization of the cluster (n-1)",
+          "description": "Current total allocated (active VMs) memory utilization of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3530,7 +3562,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3550,7 +3583,7 @@
             "h": 5,
             "w": 4,
             "x": 0,
-            "y": 29
+            "y": 25
           },
           "id": 39,
           "options": {
@@ -3594,6 +3627,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total allocated (active VMs) memory utilization history of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3640,7 +3674,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3660,7 +3695,7 @@
             "h": 5,
             "w": 8,
             "x": 4,
-            "y": 29
+            "y": 25
           },
           "id": 40,
           "options": {
@@ -3702,7 +3737,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Total provisioned (all VMs) memory utilization of the cluster (n-1)",
+          "description": "Current total provisioned (all VMs) memory utilization of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3716,7 +3751,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3736,7 +3772,7 @@
             "h": 5,
             "w": 4,
             "x": 12,
-            "y": 29
+            "y": 25
           },
           "id": 41,
           "options": {
@@ -3780,6 +3816,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total provisioned (all VMs) memory utilization history of the cluster (n-1).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3826,7 +3863,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3846,7 +3884,7 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 29
+            "y": 25
           },
           "id": 42,
           "options": {
@@ -3902,6 +3940,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Current CPU utilization of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3916,7 +3955,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -3936,7 +3976,7 @@
             "h": 13,
             "w": 4,
             "x": 0,
-            "y": 20
+            "y": 16
           },
           "id": 9,
           "options": {
@@ -3980,6 +4020,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "CPU utilization history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4025,7 +4066,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4045,7 +4087,7 @@
             "h": 13,
             "w": 9,
             "x": 4,
-            "y": 20
+            "y": 16
           },
           "id": 44,
           "options": {
@@ -4112,6 +4154,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "CPU load average history of each node (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4155,7 +4198,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
@@ -4167,7 +4211,7 @@
             "h": 13,
             "w": 11,
             "x": 13,
-            "y": 20
+            "y": 16
           },
           "id": 50,
           "options": {
@@ -4229,6 +4273,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Current network utilization of each node (total of all active interfaces, full-duplex).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4243,7 +4288,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4263,7 +4309,7 @@
             "h": 13,
             "w": 4,
             "x": 0,
-            "y": 33
+            "y": 29
           },
           "id": 45,
           "options": {
@@ -4307,6 +4353,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Network utilization history of each node (total of all active interfaces, full-duplex).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4352,7 +4399,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4372,7 +4420,7 @@
             "h": 13,
             "w": 9,
             "x": 4,
-            "y": 33
+            "y": 29
           },
           "id": 46,
           "options": {
@@ -4441,6 +4489,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Network traffic history of each node (source metric, total of all active interfaces).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4484,7 +4533,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
@@ -4509,7 +4559,7 @@
             "h": 13,
             "w": 11,
             "x": 13,
-            "y": 33
+            "y": 29
           },
           "id": 51,
           "options": {
@@ -4570,7 +4620,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Real memory utilization of each node",
+          "description": "Current real memory utilization of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4585,7 +4635,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4605,7 +4656,7 @@
             "h": 13,
             "w": 4,
             "x": 0,
-            "y": 46
+            "y": 42
           },
           "id": 48,
           "options": {
@@ -4649,6 +4700,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Real memory utilization history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4694,7 +4746,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4714,7 +4767,7 @@
             "h": 13,
             "w": 9,
             "x": 4,
-            "y": 46
+            "y": 42
           },
           "id": 49,
           "options": {
@@ -4781,6 +4834,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Real memory history of each node (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4824,11 +4878,12 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
-              "unit": "decmbytes"
+              "unit": "mbytes"
             },
             "overrides": []
           },
@@ -4836,7 +4891,7 @@
             "h": 13,
             "w": 11,
             "x": 13,
-            "y": 46
+            "y": 42
           },
           "id": 52,
           "options": {
@@ -4898,7 +4953,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Allocated (running VMs) memory utilization of each node",
+          "description": "Current allocated (active VMs) memory utilization of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4913,7 +4968,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -4933,7 +4989,7 @@
             "h": 13,
             "w": 4,
             "x": 0,
-            "y": 59
+            "y": 55
           },
           "id": 89,
           "options": {
@@ -4977,7 +5033,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Allocated (active VMs) memory utilization history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5023,7 +5079,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -5043,7 +5100,7 @@
             "h": 13,
             "w": 9,
             "x": 4,
-            "y": 59
+            "y": 55
           },
           "id": 90,
           "options": {
@@ -5110,6 +5167,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Allocated (active VMs) memory history of each node (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5153,11 +5211,12 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
-              "unit": "decmbytes"
+              "unit": "mbytes"
             },
             "overrides": []
           },
@@ -5165,7 +5224,7 @@
             "h": 13,
             "w": 11,
             "x": 13,
-            "y": 59
+            "y": 55
           },
           "id": 91,
           "options": {
@@ -5227,7 +5286,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Provisioned (all VMs) memory utilization of each node",
+          "description": "Current provisioned (all VMs) memory utilization of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5242,7 +5301,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -5262,7 +5322,7 @@
             "h": 13,
             "w": 4,
             "x": 0,
-            "y": 72
+            "y": 68
           },
           "id": 92,
           "options": {
@@ -5306,7 +5366,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Provisioned (all VMs) memory utilization history of each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5352,7 +5412,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -5372,7 +5433,7 @@
             "h": 13,
             "w": 9,
             "x": 4,
-            "y": 72
+            "y": 68
           },
           "id": 93,
           "options": {
@@ -5439,7 +5500,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Provisioned (all VMs) memory history of each node (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5483,11 +5544,12 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
-              "unit": "decmbytes"
+              "unit": "mbytes"
             },
             "overrides": []
           },
@@ -5495,7 +5557,7 @@
             "h": 13,
             "w": 11,
             "x": 13,
-            "y": 72
+            "y": 68
           },
           "id": 94,
           "options": {
@@ -5571,6 +5633,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Current disk space utilization of each Ceph pool.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5586,7 +5649,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -5606,7 +5670,7 @@
             "h": 14,
             "w": 8,
             "x": 0,
-            "y": 36
+            "y": 17
           },
           "id": 60,
           "options": {
@@ -5652,6 +5716,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Disk space utilization history of each Ceph pool.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5697,7 +5762,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -5717,7 +5783,7 @@
             "h": 7,
             "w": 16,
             "x": 8,
-            "y": 36
+            "y": 17
           },
           "id": 59,
           "options": {
@@ -5765,6 +5831,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Disk space history of each Ceph pool (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5810,7 +5877,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
@@ -5822,7 +5890,7 @@
             "h": 7,
             "w": 16,
             "x": 8,
-            "y": 43
+            "y": 24
           },
           "id": 98,
           "options": {
@@ -5870,6 +5938,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Object count history of each Ceph pool.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -5913,7 +5982,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
@@ -6015,7 +6085,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 50
+            "y": 31
           },
           "id": 62,
           "options": {
@@ -6162,6 +6232,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Current disk space utilization of each Ceph OSD.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6176,7 +6247,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -6196,7 +6268,7 @@
             "h": 16,
             "w": 9,
             "x": 0,
-            "y": 62
+            "y": 18
           },
           "id": 58,
           "options": {
@@ -6240,6 +6312,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Disk space utilization history of each Ceph OSD.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6285,7 +6358,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "yellow",
@@ -6305,7 +6379,7 @@
             "h": 8,
             "w": 15,
             "x": 9,
-            "y": 62
+            "y": 18
           },
           "id": 61,
           "options": {
@@ -6353,6 +6427,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Disk space history of each Ceph OSD (source metric).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6397,7 +6472,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   }
                 ]
               },
@@ -6409,7 +6485,7 @@
             "h": 8,
             "w": 15,
             "x": 9,
-            "y": 70
+            "y": 26
           },
           "id": 99,
           "options": {
@@ -6471,7 +6547,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Total and per-OSD IOPS (I/O operations per second), read and write, in the cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6514,7 +6590,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -6539,7 +6616,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 35
           },
           "id": 103,
           "options": {
@@ -6638,6 +6715,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Total and per-OSD data throughput per second, read and write, in the cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6680,7 +6758,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -6709,7 +6788,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 35
           },
           "id": 57,
           "options": {
@@ -6808,6 +6887,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Average operation latency for Ceph OSD daemons in the cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6851,7 +6931,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -6867,7 +6948,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 47
           },
           "id": 100,
           "links": [],
@@ -6938,6 +7019,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Average operation latency for Ceph Monitor daemons in the cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -6981,7 +7063,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -6997,7 +7080,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 47
           },
           "id": 102,
           "links": [],
@@ -7121,6 +7204,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Current Zookeeper leader node; dynamic based on leader elections.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7214,7 +7298,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Current Zookeeper version; all metrics available only with version 3.8.0 and above.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7289,7 +7373,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Number of Zookeeper nodes in the current Quorum.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7364,7 +7448,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Total and alive per-coordinator Zookeeper connections.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7484,7 +7568,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Total approximate size of the Zookeeper database.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7560,7 +7644,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Total number of znodes (keys) in the Zookeeper database.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7636,6 +7720,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Average Zookeeper latency for each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7738,7 +7823,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Open Zookeeper file descriptors for each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -7841,6 +7926,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Average per-operation latency.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -8045,7 +8131,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
+          "description": "Zookeeper data packet rate per second for each node.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -8243,6 +8329,6 @@
   "timezone": "",
   "title": "PVC Cluster",
   "uid": "fbddd9f9-aadb-4c97-8aea-57c29e5de235",
-  "version": 12,
+  "version": 1,
   "weekStart": ""
 }
