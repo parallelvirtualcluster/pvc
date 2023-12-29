@@ -1016,6 +1016,103 @@ def get_resource_metrics(zkhandler):
     #
     # VM stats
     #
+    output_lines.append("# HELP pvc_vm_uuid PVC VM UUID")
+    output_lines.append("# TYPE pvc_vm_uuid gauge")
+    for vm in vm_data:
+        uuid = vm["uuid"]
+        output_lines.append(f"pvc_vm_uuid{{vm=\"{vm['name']}\", uuid=\"{uuid}\"}} 1")
+
+    output_lines.append("# HELP pvc_vm_description PVC VM description")
+    output_lines.append("# TYPE pvc_vm_description gauge")
+    for vm in vm_data:
+        description = vm["description"]
+        output_lines.append(
+            f"pvc_vm_description{{vm=\"{vm['name']}\", description=\"{description}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_profile PVC VM profile")
+    output_lines.append("# TYPE pvc_vm_profile gauge")
+    for vm in vm_data:
+        profile = vm["profile"]
+        output_lines.append(
+            f"pvc_vm_profile{{vm=\"{vm['name']}\", profile=\"{profile}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_state PVC VM state")
+    output_lines.append("# TYPE pvc_vm_state gauge")
+    for vm in vm_data:
+        state_colour_map = {
+            "start": 0,
+            "migrate": 1,
+            "unmigrate": 2,
+            "provision": 3,
+            "disable": 4,
+            "shutdown": 5,
+            "restart": 6,
+            "stop": 7,
+            "fail": 8,
+        }
+        state = vm["state"]
+        output_lines.append(
+            f"pvc_vm_state{{vm=\"{vm['name']}\", state=\"{state}\"}} {state_colour_map[vm['state']]}"
+        )
+
+    output_lines.append("# HELP pvc_vm_failed_reason PVC VM failed_reason")
+    output_lines.append("# TYPE pvc_vm_failed_reason gauge")
+    for vm in vm_data:
+        failed_reason = vm["failed_reason"] if vm["failed_reason"] else "N/A"
+        output_lines.append(
+            f"pvc_vm_failed_reason{{vm=\"{vm['name']}\", failed_reason=\"{failed_reason}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_node_limit PVC VM node_limit")
+    output_lines.append("# TYPE pvc_vm_node_limit gauge")
+    for vm in vm_data:
+        node_limit = vm["node_limit"]
+        output_lines.append(
+            f"pvc_vm_node_limit{{vm=\"{vm['name']}\", node_limit=\"{node_limit}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_node_selector PVC VM node_selector")
+    output_lines.append("# TYPE pvc_vm_node_selector gauge")
+    for vm in vm_data:
+        node_selector = (
+            "Default"
+            if vm["node_selector"] is None or vm["node_selector"] == "None"
+            else vm["node_selector"]
+        )
+        output_lines.append(
+            f"pvc_vm_node_selector{{vm=\"{vm['name']}\", node_selector=\"{node_selector}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_node_autostart PVC VM node_autostart")
+    output_lines.append("# TYPE pvc_vm_node_autostart gauge")
+    for vm in vm_data:
+        autostart = vm["node_autostart"]
+        autostart_val = 1 if vm["node_autostart"] else 0
+        output_lines.append(
+            f"pvc_vm_autostart{{vm=\"{vm['name']}\", autostart=\"{autostart}\"}} {autostart_val}"
+        )
+
+    output_lines.append("# HELP pvc_vm_migration_method PVC VM migration_method")
+    output_lines.append("# TYPE pvc_vm_migration_method gauge")
+    for vm in vm_data:
+        migration_method = (
+            "Default"
+            if vm["migration_method"] is None or vm["migration_method"] == "None"
+            else vm["migration_method"]
+        )
+        output_lines.append(
+            f"pvc_vm_migration_method{{vm=\"{vm['name']}\", migration_method=\"{migration_method}\"}} 1"
+        )
+
+    output_lines.append("# HELP pvc_vm_tags PVC VM tags")
+    output_lines.append("# TYPE pvc_vm_tags gauge")
+    for vm in vm_data:
+        tags = [f"tag=\"{t['name']}\"" for t in vm["tags"]]
+        for tag in tags:
+            output_lines.append(f"pvc_vm_tags{{vm=\"{vm['name']}\", {tag}}} 1")
+
     output_lines.append("# HELP pvc_vm_active_node PVC VM active node")
     output_lines.append("# TYPE pvc_vm_active_node gauge")
     for vm in vm_data:
@@ -1024,12 +1121,21 @@ def get_resource_metrics(zkhandler):
             f"pvc_vm_active_node{{vm=\"{vm['name']}\", node=\"{active_node}\"}} 1"
         )
 
+    output_lines.append("# HELP pvc_vm_migrated PVC VM migrated state")
+    output_lines.append("# TYPE pvc_vm_migrated gauge")
+    for vm in vm_data:
+        migrated = 0 if vm["migrated"] == "no" else 1
+        last_node = vm["last_node"] if vm["last_node"] else "No"
+        output_lines.append(
+            f"pvc_vm_migrated{{vm=\"{vm['name']}\", last_node=\"{last_node}\"}} {migrated}"
+        )
+
     output_lines.append("# HELP pvc_vm_machine_type PVC VM machine type")
     output_lines.append("# TYPE pvc_vm_machine_type gauge")
     for vm in vm_data:
         machine_type = vm["machine"]
         output_lines.append(
-            f"pvc_vm_machine_type{{vm=\"{vm['name']}\", node=\"{machine_type}\"}} 1"
+            f"pvc_vm_machine_type{{vm=\"{vm['name']}\", machine_type=\"{machine_type}\"}} 1"
         )
 
     output_lines.append("# HELP pvc_vm_serial_console PVC VM serial console")
@@ -1068,24 +1174,38 @@ def get_resource_metrics(zkhandler):
         vcpus = vm["vcpu"]
         output_lines.append(f"pvc_vm_vcpus{{vm=\"{vm['name']}\"}} {vcpus}")
 
-    output_lines.append("# HELP pvc_vm_vcpus_cpu_time PVC VM vCPU CPU time")
+    output_lines.append("# HELP pvc_vm_vcpu_topology PVC VM vCPU topology")
+    output_lines.append("# TYPE pvc_vm_vcpu_topology gauge")
+    for vm in vm_data:
+        vcpu_topology = vm["vcpu_topology"]
+        output_lines.append(
+            f"pvc_vm_vcpu_topology{{vm=\"{vm['name']}\", topology=\"{vcpu_topology}\"}} 1"
+        )
+
+    output_lines.append(
+        "# HELP pvc_vm_vcpus_cpu_time PVC VM vCPU CPU time milliseconds"
+    )
     output_lines.append("# TYPE pvc_vm_vcpus_cpu_time gauge")
     for vm in vm_data:
-        cpu_time = vm["vcpu_stats"]["cpu_time"]
+        cpu_time = vm["vcpu_stats"]["cpu_time"] / 1000000
         output_lines.append(f"pvc_vm_vcpus_cpu_time{{vm=\"{vm['name']}\"}} {cpu_time}")
 
-    output_lines.append("# HELP pvc_vm_vcpus_user_time PVC VM vCPU User time")
+    output_lines.append(
+        "# HELP pvc_vm_vcpus_user_time PVC VM vCPU User time milliseconds"
+    )
     output_lines.append("# TYPE pvc_vm_vcpus_user_time gauge")
     for vm in vm_data:
-        user_time = vm["vcpu_stats"]["user_time"]
+        user_time = vm["vcpu_stats"]["user_time"] / 1000000
         output_lines.append(
             f"pvc_vm_vcpus_user_time{{vm=\"{vm['name']}\"}} {user_time}"
         )
 
-    output_lines.append("# HELP pvc_vm_vcpus_system_time PVC VM vCPU System time")
+    output_lines.append(
+        "# HELP pvc_vm_vcpus_system_time PVC VM vCPU System time milliseconds"
+    )
     output_lines.append("# TYPE pvc_vm_vcpus_system_time gauge")
     for vm in vm_data:
-        system_time = vm["vcpu_stats"]["system_time"]
+        system_time = vm["vcpu_stats"]["system_time"] / 1000000
         output_lines.append(
             f"pvc_vm_vcpus_system_time{{vm=\"{vm['name']}\"}} {system_time}"
         )
@@ -1097,7 +1217,7 @@ def get_resource_metrics(zkhandler):
         output_lines.append(f"pvc_vm_memory{{vm=\"{vm['name']}\"}} {memory}")
 
     output_lines.append(
-        "# HELP pvc_vm_memory_stats_actual PVC VM actual memory allocation"
+        "# HELP pvc_vm_memory_stats_actual PVC VM actual memory allocation KB"
     )
     output_lines.append("# TYPE pvc_vm_memory_stats_actual gauge")
     for vm in vm_data:
@@ -1106,7 +1226,7 @@ def get_resource_metrics(zkhandler):
             f"pvc_vm_memory_stats_actual{{vm=\"{vm['name']}\"}} {actual_memory}"
         )
 
-    output_lines.append("# HELP pvc_vm_memory_stats_rss PVC VM RSS memory")
+    output_lines.append("# HELP pvc_vm_memory_stats_rss PVC VM RSS memory KB")
     output_lines.append("# TYPE pvc_vm_memory_stats_rss gauge")
     for vm in vm_data:
         rss_memory = vm["memory_stats"]["rss"]
@@ -1114,7 +1234,7 @@ def get_resource_metrics(zkhandler):
             f"pvc_vm_memory_stats_rss{{vm=\"{vm['name']}\"}} {rss_memory}"
         )
 
-    output_lines.append("# HELP pvc_vm_memory_stats_unused PVC VM unused memory")
+    output_lines.append("# HELP pvc_vm_memory_stats_unused PVC VM unused memory KB")
     output_lines.append("# TYPE pvc_vm_memory_stats_unused gauge")
     for vm in vm_data:
         unused_memory = vm["memory_stats"].get("unused", 0)
@@ -1122,7 +1242,9 @@ def get_resource_metrics(zkhandler):
             f"pvc_vm_memory_stats_unused{{vm=\"{vm['name']}\"}} {unused_memory}"
         )
 
-    output_lines.append("# HELP pvc_vm_memory_stats_available PVC VM available memory")
+    output_lines.append(
+        "# HELP pvc_vm_memory_stats_available PVC VM available memory KB"
+    )
     output_lines.append("# TYPE pvc_vm_memory_stats_available gauge")
     for vm in vm_data:
         available_memory = vm["memory_stats"].get("available", 0)
@@ -1130,7 +1252,7 @@ def get_resource_metrics(zkhandler):
             f"pvc_vm_memory_stats_available{{vm=\"{vm['name']}\"}} {available_memory}"
         )
 
-    output_lines.append("# HELP pvc_vm_memory_stats_usable PVC VM usable memory")
+    output_lines.append("# HELP pvc_vm_memory_stats_usable PVC VM usable memory KB")
     output_lines.append("# TYPE pvc_vm_memory_stats_usable gauge")
     for vm in vm_data:
         usable_memory = vm["memory_stats"].get("usable", 0)
@@ -1139,7 +1261,7 @@ def get_resource_metrics(zkhandler):
         )
 
     output_lines.append(
-        "# HELP pvc_vm_memory_stats_disk_caches PVC VM disk cache memory"
+        "# HELP pvc_vm_memory_stats_disk_caches PVC VM disk cache memory KB"
     )
     output_lines.append("# TYPE pvc_vm_memory_stats_disk_caches gauge")
     for vm in vm_data:
@@ -1233,14 +1355,14 @@ def get_resource_metrics(zkhandler):
                 f"pvc_vm_network_rd_packets{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_packets}"
             )
 
-    output_lines.append("# HELP pvc_vm_network_rd_bytes PVC VM network bytes read")
-    output_lines.append("# TYPE pvc_vm_network_rd_bytes gauge")
+    output_lines.append("# HELP pvc_vm_network_rd_bits PVC VM network bits read")
+    output_lines.append("# TYPE pvc_vm_network_rd_bits gauge")
     for vm in vm_data:
         for network in vm["networks"]:
             vni = network["vni"]
-            rd_bytes = network["rd_bytes"]
+            rd_bits = network["rd_bytes"] * 8
             output_lines.append(
-                f"pvc_vm_network_rd_bytes{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_bytes}"
+                f"pvc_vm_network_rd_bits{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {rd_bits}"
             )
 
     output_lines.append("# HELP pvc_vm_network_rd_errors PVC VM network read errors")
@@ -1273,14 +1395,14 @@ def get_resource_metrics(zkhandler):
                 f"pvc_vm_network_wr_packets{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_packets}"
             )
 
-    output_lines.append("# HELP pvc_vm_network_wr_bytes PVC VM network bytes write")
-    output_lines.append("# TYPE pvc_vm_network_wr_bytes gauge")
+    output_lines.append("# HELP pvc_vm_network_wr_bits PVC VM network bits write")
+    output_lines.append("# TYPE pvc_vm_network_wr_bits gauge")
     for vm in vm_data:
         for network in vm["networks"]:
             vni = network["vni"]
-            wr_bytes = network["wr_bytes"]
+            wr_bits = network["wr_bytes"] * 8
             output_lines.append(
-                f"pvc_vm_network_wr_bytes{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_bytes}"
+                f"pvc_vm_network_wr_bits{{vm=\"{vm['name']}\",vni=\"{vni}\"}} {wr_bits}"
             )
 
     output_lines.append("# HELP pvc_vm_network_wr_errors PVC VM network write errors")
