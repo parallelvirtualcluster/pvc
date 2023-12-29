@@ -2515,7 +2515,9 @@
   ],
   "refresh": "5s",
   "schemaVersion": 38,
-  "tags": [],
+  "tags": [
+    "pvc"
+  ],
   "templating": {
     "list": [
       {
