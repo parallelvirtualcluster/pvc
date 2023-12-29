@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.88](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.88)
+
+  * [API Daemon] Adds an additional Prometheus metrics proxy for Zookeeper stats.
+  * [API Daemon] Adds a new configuration to enable or disable metric endpoints if desired, defaulting to enabled.
+  * [API Daemon] Alters and adjusts the metrics output for VMs to complement new dashboard.
+  * [CLI Client] Adds a "json-prometheus" output format to "pvc connection list" to auto-generate file SD configs.
+  * [Monitoring] Adds a new VM dashboard, updates the Cluster dashboard, and adds a README.
+
 ###### [v0.9.87](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.87)
 
   * [API Daemon] Adds cluster Prometheus resource utilization metrics and an updated Grafana dashboard.
