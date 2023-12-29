@@ -1590,8 +1590,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1893,8 +1892,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2154,8 +2152,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               },
@@ -2544,8 +2541,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -6595,7 +6591,7 @@
                   }
                 ]
               },
-              "unit": "none"
+              "unit": "iops"
             },
             "overrides": [
               {
@@ -6616,7 +6612,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 19
           },
           "id": 103,
           "options": {
@@ -6788,7 +6784,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 19
           },
           "id": 57,
           "options": {
@@ -6948,7 +6944,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 31
           },
           "id": 100,
           "links": [],
@@ -7080,7 +7076,7 @@
             "h": 12,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 31
           },
           "id": 102,
           "links": [],
