@@ -176,6 +176,7 @@ def get_parsed_configuration(config_file):
             "enable_storage": o_subsystem.get("enable_storage", True),
             "enable_worker": o_subsystem.get("enable_worker", True),
             "enable_api": o_subsystem.get("enable_api", True),
+            "enable_prometheus": o_subsystem.get("enable_prometheus", True),
         }
         config = {**config, **config_subsystem}
 

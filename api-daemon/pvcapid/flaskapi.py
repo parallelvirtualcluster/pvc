@@ -629,8 +629,9 @@ class API_Metrics(Resource):
         Return the current PVC cluster status in Prometheus-compatible metrics format and
         the Ceph cluster metrics as one document.
 
-        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
-        with the Prometheus compatibility later.
+        Endpoint is UNAUTHENTICATED to allow metrics exfiltration without having to deal
+        with Prometheus compatibility (only basic auth support). Ensure this API endpoint
+        is only opened to trusted networks that cannot abuse the data provided!
         ---
         tags:
           - root
@@ -657,7 +658,8 @@ class API_Metrics(Resource):
         return response
 
 
-api.add_resource(API_Metrics, "/metrics")
+if config["enable_prometheus"]:
+    api.add_resource(API_Metrics, "/metrics")
 
 
 # /metrics/health
@@ -666,8 +668,9 @@ class API_Metrics_Health(Resource):
         """
         Return the current PVC cluster health status in Prometheus-compatible metrics format
 
-        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
-        with the Prometheus compatibility later.
+        Endpoint is UNAUTHENTICATED to allow metrics exfiltration without having to deal
+        with Prometheus compatibility (only basic auth support). Ensure this API endpoint
+        is only opened to trusted networks that cannot abuse the data provided!
         ---
         tags:
           - root
@@ -691,7 +694,8 @@ class API_Metrics_Health(Resource):
         return response
 
 
-api.add_resource(API_Metrics_Health, "/metrics/health")
+if config["enable_prometheus"]:
+    api.add_resource(API_Metrics_Health, "/metrics/health")
 
 
 # /metrics/resource
@@ -700,8 +704,9 @@ class API_Metrics_Resource(Resource):
         """
         Return the current PVC cluster resource utilizations in Prometheus-compatible metrics format
 
-        Endpoint is unauthenticated to allow metrics exfiltration without having to deal
-        with the Prometheus compatibility later.
+        Endpoint is UNAUTHENTICATED to allow metrics exfiltration without having to deal
+        with Prometheus compatibility (only basic auth support). Ensure this API endpoint
+        is only opened to trusted networks that cannot abuse the data provided!
         ---
         tags:
           - root
@@ -725,7 +730,8 @@ class API_Metrics_Resource(Resource):
         return response
 
 
-api.add_resource(API_Metrics_Resource, "/metrics/resource")
+if config["enable_prometheus"]:
+    api.add_resource(API_Metrics_Resource, "/metrics/resource")
 
 
 # /metrics/ceph
@@ -736,6 +742,10 @@ class API_Metrics_Ceph(Resource):
 
         Proxies a metrics request to the current active MGR, since this is dynamic
         and can't be controlled by PVC easily.
+
+        Endpoint is UNAUTHENTICATED to allow metrics exfiltration without having to deal
+        with Prometheus compatibility (only basic auth support). Ensure this API endpoint
+        is only opened to trusted networks that cannot abuse the data provided!
         ---
         tags:
           - root
@@ -759,7 +769,8 @@ class API_Metrics_Ceph(Resource):
         return response
 
 
-api.add_resource(API_Metrics_Ceph, "/metrics/ceph")
+if config["enable_prometheus"]:
+    api.add_resource(API_Metrics_Ceph, "/metrics/ceph")
 
 
 # /metrics/zookeeper
@@ -770,6 +781,10 @@ class API_Metrics_Zookeeper(Resource):
 
         Proxies a metrics request to the current primary node, since all coordinators
         run an active Zookeeper instance and we want one central location.
+
+        Endpoint is UNAUTHENTICATED to allow metrics exfiltration without having to deal
+        with Prometheus compatibility (only basic auth support). Ensure this API endpoint
+        is only opened to trusted networks that cannot abuse the data provided!
         ---
         tags:
           - root
@@ -793,7 +808,8 @@ class API_Metrics_Zookeeper(Resource):
         return response
 
 
-api.add_resource(API_Metrics_Zookeeper, "/metrics/zookeeper")
+if config["enable_prometheus"]:
+    api.add_resource(API_Metrics_Zookeeper, "/metrics/zookeeper")
 
 
 # /faults
