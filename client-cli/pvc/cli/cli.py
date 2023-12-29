@@ -5927,6 +5927,7 @@ def cli_connection_remove(
         "raw": lambda d: "\n".join([c["name"] for c in d]),
         "json": lambda d: jdumps(d),
         "json-pretty": lambda d: jdumps(d, indent=2),
+        "json-prometheus": cli_connection_list_format_prometheus_json,
     }
 )
 def cli_connection_list(
@@ -5942,6 +5943,7 @@ def cli_connection_list(
         "raw": Output connection names one per line.
         "json": Output in unformatted JSON.
         "json-pretty": Output in formatted JSON.
+        "json-prometheus": Output in Prometheus file service discovery JSON format.
     """
 
     connections_config = get_store(CLI_CONFIG["store_path"])

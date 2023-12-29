@@ -846,6 +846,28 @@ def cli_connection_list_format_pretty(CLI_CONFIG, data):
     return "\n".join(output)
 
 
+def cli_connection_list_format_prometheus_json(CLI_CONFIG, data):
+    """
+    Format the output of cli_connection_list as Prometheus file service discovery JSON
+    """
+
+    from json import dumps
+
+    output = list()
+    for connection in data:
+        output_obj = {
+            "targets": [f"{connection['address']}:{connection['port']}"],
+            "labels": {
+                "job": "pvc",
+                "pvc_cluster_name": f"{connection['name']}: {connection['description']}",
+                "pvc_cluster_id": connection["name"],
+            },
+        }
+        output.append(output_obj)
+
+    return dumps(output, indent=2)
+
+
 def cli_connection_detail_format_pretty(CLI_CONFIG, data):
     """
     Pretty format the output of cli_connection_detail
