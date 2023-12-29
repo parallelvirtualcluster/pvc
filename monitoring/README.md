@@ -6,9 +6,7 @@ This directory contains several monitoring resources that can be used with vario
 
 The included example Prometheus configuration and Grafana dashboard can be used to query the PVC API for Prometheus data and display it with a consistent dashboard.
 
-Note that the default configuration here also includes Ceph cluster information; a Ceph dashboard can be found externally.
-
-Note too that this does not include node export examples from individual PVC nodes; those must be set up separately.
+See the README in the `prometheus` folder for more details.
 
 ## Munin
 
