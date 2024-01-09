@@ -1187,7 +1187,10 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_vcpus_cpu_time gauge")
     for vm in vm_data:
-        cpu_time = vm["vcpu_stats"]["cpu_time"] / 1000000
+        try:
+            cpu_time = vm["vcpu_stats"]["cpu_time"] / 1000000
+        except Exception:
+            cpu_time = 0
         output_lines.append(f"pvc_vm_vcpus_cpu_time{{vm=\"{vm['name']}\"}} {cpu_time}")
 
     output_lines.append(
@@ -1195,7 +1198,10 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_vcpus_user_time gauge")
     for vm in vm_data:
-        user_time = vm["vcpu_stats"]["user_time"] / 1000000
+        try:
+            user_time = vm["vcpu_stats"]["user_time"] / 1000000
+        except Exception:
+            cpu_time = 0
         output_lines.append(
             f"pvc_vm_vcpus_user_time{{vm=\"{vm['name']}\"}} {user_time}"
         )
@@ -1205,7 +1211,10 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_vcpus_system_time gauge")
     for vm in vm_data:
-        system_time = vm["vcpu_stats"]["system_time"] / 1000000
+        try:
+            system_time = vm["vcpu_stats"]["system_time"] / 1000000
+        except Exception:
+            system_time = 0
         output_lines.append(
             f"pvc_vm_vcpus_system_time{{vm=\"{vm['name']}\"}} {system_time}"
         )
