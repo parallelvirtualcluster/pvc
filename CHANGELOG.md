@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.89](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.89)
+
+  * [API/Worker Daemons] Fixes a bug with the Celery result backends not being properly initialized on Debian 10/11.
+  * [API Daemon] Fixes a bug if VM CPU stats are missing on Debian 10.
+
 ###### [v0.9.88](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.88)
 
   * [API Daemon] Adds an additional Prometheus metrics proxy for Zookeeper stats.

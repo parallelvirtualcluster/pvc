@@ -1,3 +1,10 @@
+pvc (0.9.89-0) unstable; urgency=high
+
+  * [API/Worker Daemons] Fixes a bug with the Celery result backends not being properly initialized on Debian 10/11.
+  * [API Daemon] Fixes a bug if VM CPU stats are missing on Debian 10.
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 09 Jan 2024 12:15:53 -0500
+
 pvc (0.9.88-0) unstable; urgency=high
 
   * [API Daemon] Adds an additional Prometheus metrics proxy for Zookeeper stats.
