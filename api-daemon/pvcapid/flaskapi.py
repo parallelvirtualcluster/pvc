@@ -118,7 +118,7 @@ celery_task_uri = "redis://{}:{}{}".format(
 celery = Celery(
     app.name,
     broker=celery_task_uri,
-    result_backend=celery_task_uri,
+    backend=celery_task_uri,
     result_extended=True,
 )
 app.config["broker_url"] = celery_task_uri
