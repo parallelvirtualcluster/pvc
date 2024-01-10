@@ -641,6 +641,7 @@ def vm_define(
     selector,
     autostart,
     migration_method,
+    migration_max_downtime=300,
     user_tags=[],
     protected_tags=[],
 ):
@@ -668,6 +669,7 @@ def vm_define(
         selector,
         autostart,
         migration_method,
+        migration_max_downtime,
         profile=None,
         tags=tags,
     )
@@ -826,6 +828,7 @@ def get_vm_meta(zkhandler, vm):
         domain_node_selector,
         domain_node_autostart,
         domain_migrate_method,
+        domain_migrate_max_downtime,
     ) = pvc_common.getDomainMetadata(zkhandler, dom_uuid)
 
     retcode = 200
@@ -835,6 +838,7 @@ def get_vm_meta(zkhandler, vm):
         "node_selector": domain_node_selector.lower(),
         "node_autostart": domain_node_autostart,
         "migration_method": domain_migrate_method.lower(),
+        "migration_max_downtime": int(domain_migrate_max_downtime),
     }
 
     return retdata, retcode
@@ -842,7 +846,14 @@ def get_vm_meta(zkhandler, vm):
 
 @ZKConnection(config)
 def update_vm_meta(
-    zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method
+    zkhandler,
+    vm,
+    limit,
+    selector,
+    autostart,
+    provisioner_profile,
+    migration_method,
+    migration_max_downtime,
 ):
     """
     Update metadata of a VM.
@@ -858,7 +869,14 @@ def update_vm_meta(
             autostart = False
 
     retflag, retdata = pvc_vm.modify_vm_metadata(
-        zkhandler, vm, limit, selector, autostart, provisioner_profile, migration_method
+        zkhandler,
+        vm,
+        limit,
+        selector,
+        autostart,
+        provisioner_profile,
+        migration_method,
+        migration_max_downtime,
     )
 
     if retflag:

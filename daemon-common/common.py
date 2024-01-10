@@ -441,12 +441,14 @@ def getDomainMetadata(zkhandler, dom_uuid):
         domain_node_selector,
         domain_node_autostart,
         domain_migration_method,
+        domain_migration_max_downtime,
     ) = zkhandler.read_many(
         [
             ("domain.meta.node_limit", dom_uuid),
             ("domain.meta.node_selector", dom_uuid),
             ("domain.meta.autostart", dom_uuid),
             ("domain.meta.migrate_method", dom_uuid),
+            ("domain.meta.migrate_max_downtime", dom_uuid),
         ]
     )
 
@@ -464,11 +466,15 @@ def getDomainMetadata(zkhandler, dom_uuid):
     if not domain_migration_method or domain_migration_method == "none":
         domain_migration_method = None
 
+    if not domain_migration_max_downtime or domain_migration_max_downtime == "none":
+        domain_migration_max_downtime = 300
+
     return (
         domain_node_limit,
         domain_node_selector,
         domain_node_autostart,
         domain_migration_method,
+        domain_migration_max_downtime,
     )
 
 
@@ -505,6 +511,7 @@ def getInformationFromXML(zkhandler, uuid):
         domain_node_selector,
         domain_node_autostart,
         domain_migration_method,
+        domain_migration_max_downtime,
     ) = getDomainMetadata(zkhandler, uuid)
 
     domain_tags = getDomainTags(zkhandler, uuid)
@@ -565,6 +572,7 @@ def getInformationFromXML(zkhandler, uuid):
         "node_selector": domain_node_selector,
         "node_autostart": bool(strtobool(domain_node_autostart)),
         "migration_method": domain_migration_method,
+        "migration_max_downtime": int(domain_migration_max_downtime),
         "tags": domain_tags,
         "description": domain_description,
         "profile": domain_profile,

@@ -19,7 +19,8 @@ case "$( cat /etc/debian_version )" in
     ;;
     *)
         # Debian 12+
-        flask --app ./pvcapid-manage_flask.py db upgrade
+        export FLASK_APP=./pvcapid-manage_flask.py
+        flask db upgrade
     ;;
 esac
 

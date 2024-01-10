@@ -46,7 +46,7 @@ from flask_sqlalchemy import SQLAlchemy
 app = flask.Flask(__name__)
 
 # Set up SQLAlchemy backend
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@{}:{}/{}".format(
     config["api_postgresql_user"],
     config["api_postgresql_password"],
@@ -1591,6 +1591,9 @@ class API_VM_Root(Resource):
                 migration_method:
                   type: string
                   description: The preferred migration method (live, shutdown, none)
+                migration_max_downtime:
+                  type: integer
+                  description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
                 tags:
                   type: array
                   description: The tag(s) of the VM
@@ -1843,6 +1846,10 @@ class API_VM_Root(Resource):
                 "choices": ("live", "shutdown", "none"),
                 "helptext": "A valid migration_method must be specified",
             },
+            {
+                "name": "migration_max_downtime",
+                "helptext": "A valid migration_max_downtime must be specified",
+            },
             {"name": "user_tags", "action": "append"},
             {"name": "protected_tags", "action": "append"},
             {
@@ -1904,6 +1911,12 @@ class API_VM_Root(Resource):
               - shutdown
               - none
           - in: query
+            name: migration_max_downtime
+            type: integer
+            required: false
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
+            default: 300
+          - in: query
             name: user_tags
             type: array
             required: false
@@ -1943,6 +1956,7 @@ class API_VM_Root(Resource):
             reqargs.get("selector", "none"),
             bool(strtobool(reqargs.get("autostart", "false"))),
             reqargs.get("migration_method", "none"),
+            reqargs.get("migration_max_downtime", 300),
             user_tags,
             protected_tags,
         )
@@ -1989,6 +2003,10 @@ class API_VM_Element(Resource):
                 "name": "migration_method",
                 "choices": ("live", "shutdown", "none"),
                 "helptext": "A valid migration_method must be specified",
+            },
+            {
+                "name": "migration_max_downtime",
+                "helptext": "A valid migration_max_downtime must be specified",
             },
             {"name": "user_tags", "action": "append"},
             {"name": "protected_tags", "action": "append"},
@@ -2053,6 +2071,12 @@ class API_VM_Element(Resource):
               - shutdown
               - none
           - in: query
+            name: migration_max_downtime
+            type: integer
+            required: false
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
+            default: 300
+          - in: query
             name: user_tags
             type: array
             required: false
@@ -2092,6 +2116,7 @@ class API_VM_Element(Resource):
             reqargs.get("selector", "none"),
             bool(strtobool(reqargs.get("autostart", "false"))),
             reqargs.get("migration_method", "none"),
+            reqargs.get("migration_max_downtime", 300),
             user_tags,
             protected_tags,
         )
@@ -2218,6 +2243,9 @@ class API_VM_Metadata(Resource):
                 migration_method:
                   type: string
                   description: The preferred migration method (live, shutdown, none)
+                migration_max_downtime:
+                  type: integer
+                  description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
           404:
             description: VM not found
             schema:
@@ -2240,6 +2268,10 @@ class API_VM_Metadata(Resource):
                 "name": "migration_method",
                 "choices": ("live", "shutdown", "none"),
                 "helptext": "A valid migration_method must be specified",
+            },
+            {
+                "name": "migration_max_downtime",
+                "helptext": "A valid migration_max_downtime must be specified",
             },
         ]
     )
@@ -2288,6 +2320,12 @@ class API_VM_Metadata(Resource):
               - live
               - shutdown
               - none
+          - in: query
+            name: migration_max_downtime
+            type: integer
+            required: false
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
+            default: none
         responses:
           200:
             description: OK
@@ -2312,6 +2350,7 @@ class API_VM_Metadata(Resource):
             reqargs.get("autostart", None),
             reqargs.get("profile", None),
             reqargs.get("migration_method", None),
+            reqargs.get("migration_max_downtime", None),
         )
 
 
@@ -6387,6 +6426,9 @@ class API_Provisioner_Template_System_Root(Resource):
                 migration_method:
                   type: string
                   description: The preferred migration method (live, shutdown, none)
+                migration_max_downtime:
+                  type: integer
+                  description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
         parameters:
           - in: query
             name: limit
@@ -6431,6 +6473,7 @@ class API_Provisioner_Template_System_Root(Resource):
             {"name": "node_selector"},
             {"name": "node_autostart"},
             {"name": "migration_method"},
+            {"name": "migration_max_downtime"},
         ]
     )
     @Authenticator
@@ -6491,6 +6534,11 @@ class API_Provisioner_Template_System_Root(Resource):
             type: string
             required: false
             description: The preferred migration method (live, shutdown, none)
+          - in: query
+            name: migration_max_downtime
+            type: integer
+            required: false
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
         responses:
           200:
             description: OK
@@ -6541,6 +6589,7 @@ class API_Provisioner_Template_System_Root(Resource):
             reqargs.get("node_selector", None),
             node_autostart,
             reqargs.get("migration_method", None),
+            reqargs.get("migration_max_downtime", None),
         )
 
 
@@ -6596,6 +6645,7 @@ class API_Provisioner_Template_System_Element(Resource):
             {"name": "node_selector"},
             {"name": "node_autostart"},
             {"name": "migration_method"},
+            {"name": "migration_max_downtime"},
         ]
     )
     @Authenticator
@@ -6651,6 +6701,11 @@ class API_Provisioner_Template_System_Element(Resource):
             type: string
             required: false
             description: The preferred migration method (live, shutdown, none)
+          - in: query
+            name: migration_max_downtime
+            type: integer
+            required: false
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
         responses:
           200:
             description: OK
@@ -6701,6 +6756,7 @@ class API_Provisioner_Template_System_Element(Resource):
             reqargs.get("node_selector", None),
             node_autostart,
             reqargs.get("migration_method", None),
+            reqargs.get("migration_max_downtime", None),
         )
 
     @RequestParser(
@@ -6714,6 +6770,7 @@ class API_Provisioner_Template_System_Element(Resource):
             {"name": "node_selector"},
             {"name": "node_autostart"},
             {"name": "migration_method"},
+            {"name": "migration_max_downtime"},
         ]
     )
     @Authenticator
@@ -6760,6 +6817,10 @@ class API_Provisioner_Template_System_Element(Resource):
             name: migration_method
             type: string
             description: The preferred migration method (live, shutdown, none)
+          - in: query
+            name: migration_max_downtime
+            type: integer
+            description: The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger max_downtime
         responses:
           200:
             description: OK
@@ -6783,6 +6844,7 @@ class API_Provisioner_Template_System_Element(Resource):
             reqargs.get("node_selector", None),
             reqargs.get("node_autostart", None),
             reqargs.get("migration_method", None),
+            reqargs.get("migration_max_downtime", None),
         )
 
     @Authenticator

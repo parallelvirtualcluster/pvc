@@ -205,6 +205,7 @@ def vm_metadata(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
     provisioner_profile,
 ):
     """
@@ -228,6 +229,9 @@ def vm_metadata(
 
     if migration_method is not None:
         params["migration_method"] = migration_method
+
+    if migration_max_downtime is not None:
+        params["migration_max_downtime"] = migration_max_downtime
 
     if provisioner_profile is not None:
         params["profile"] = provisioner_profile
@@ -1637,14 +1641,14 @@ def format_info(config, domain_information, long_output):
         )
     )
     ainformation.append(
-        "{}Current Node:{}       {}".format(
+        "{}Current node:{}       {}".format(
             ansiprint.purple(), ansiprint.end(), domain_information["node"]
         )
     )
     if not domain_information["last_node"]:
         domain_information["last_node"] = "N/A"
     ainformation.append(
-        "{}Previous Node:{}      {}".format(
+        "{}Previous node:{}      {}".format(
             ansiprint.purple(), ansiprint.end(), domain_information["last_node"]
         )
     )
@@ -1676,15 +1680,12 @@ def format_info(config, domain_information, long_output):
         formatted_node_autostart = "True"
 
     if not domain_information.get("migration_method"):
-        formatted_migration_method = "Any"
+        formatted_migration_method = "Live, Shutdown"
     else:
-        formatted_migration_method = str(domain_information["migration_method"]).title()
-
-    ainformation.append(
-        "{}Migration selector:{} {}".format(
-            ansiprint.purple(), ansiprint.end(), formatted_node_selector
+        formatted_migration_method = (
+            f"{str(domain_information['migration_method']).title()} only"
         )
-    )
+
     ainformation.append(
         "{}Node limit:{}         {}".format(
             ansiprint.purple(), ansiprint.end(), formatted_node_limit
@@ -1700,8 +1701,20 @@ def format_info(config, domain_information, long_output):
         )
     )
     ainformation.append(
-        "{}Migration Method:{}   {}".format(
+        "{}Migration method:{}   {}".format(
             ansiprint.purple(), ansiprint.end(), formatted_migration_method
+        )
+    )
+    ainformation.append(
+        "{}Migration selector:{} {}".format(
+            ansiprint.purple(), ansiprint.end(), formatted_node_selector
+        )
+    )
+    ainformation.append(
+        "{}Max live downtime:{}  {}".format(
+            ansiprint.purple(),
+            ansiprint.end(),
+            f"{domain_information['migration_max_downtime']} ms",
         )
     )
 

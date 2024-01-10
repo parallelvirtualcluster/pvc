@@ -2,12 +2,19 @@
 
 # Generate the database migration files
 
+set -o xtrace
+
 VERSION="$( head -1 debian/changelog | awk -F'[()-]' '{ print $2 }' )"
+
+sudo ip addr add 10.0.1.250/32 dev lo
 
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
 pushd api-daemon &>/dev/null
 export PVC_CONFIG_FILE="../pvc.sample.conf"
-./pvcapid-manage_flask.py db migrate -m "PVC version ${VERSION}"
-./pvcapid-manage_flask.py db upgrade
+export FLASK_APP=./pvcapid-manage_flask.py
+flask db migrate -m "PVC version ${VERSION}"
+flask db upgrade
 popd &>/dev/null
 popd &>/dev/null
+
+sudo ip addr del 10.0.1.250/32 dev lo

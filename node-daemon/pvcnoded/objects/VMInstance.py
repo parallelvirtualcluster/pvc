@@ -687,6 +687,29 @@ class VMInstance(object):
             abort_migrate("Target node changed during preparation")
             return
         if not force_shutdown:
+            # Set the maxdowntime value from Zookeeper
+            try:
+                max_downtime = self.zkhandler.read(
+                    ("domain.meta.migrate_max_downtime", self.domuuid)
+                )
+            except Exception as e:
+                self.logger.out(
+                    f"Error fetching migrate max downtime; using default of 300s: {e}",
+                    state="w",
+                )
+                self.max_downtime = 300
+            self.logger.out(
+                f"Running migrate-setmaxdowntime with downtime value {max_downtime}",
+                state="i",
+                prefix="Domain {}".format(self.domuuid),
+            )
+            retcode, stdout, stderr = common.run_os_command(
+                f"virsh migrate-setmaxdowntime --downtime {max_downtime} {self.domuuid}"
+            )
+            if retcode:
+                abort_migrate("Failed to set maxdowntime value on running VM")
+                return
+
             # A live migrate is attemped 3 times in succession
             ticks = 0
             while True:

@@ -36,6 +36,7 @@ class DBSystemTemplate(db.Model):
     node_selector = db.Column(db.Text)
     node_autostart = db.Column(db.Boolean, nullable=False)
     migration_method = db.Column(db.Text)
+    migration_max_downtime = db.Column(db.Integer, default=300, server_default="300")
     ova = db.Column(db.Integer, db.ForeignKey("ova.id"), nullable=True)
 
     def __init__(
@@ -50,6 +51,7 @@ class DBSystemTemplate(db.Model):
         node_selector,
         node_autostart,
         migration_method,
+        migration_max_downtime,
         ova=None,
     ):
         self.name = name
@@ -62,6 +64,7 @@ class DBSystemTemplate(db.Model):
         self.node_selector = node_selector
         self.node_autostart = node_autostart
         self.migration_method = migration_method
+        self.migration_max_downtime = migration_max_downtime
         self.ova = ova
 
     def __repr__(self):

@@ -1099,6 +1099,14 @@ def cli_vm():
     help="The preferred migration method of the VM between nodes; saved with VM.",
 )
 @click.option(
+    "-d",
+    "--max-downtime",
+    "migration_max_downtime",
+    default=300,
+    show_default=True,
+    help="The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger downtime.",
+)
+@click.option(
     "-g",
     "--tag",
     "user_tags",
@@ -1122,6 +1130,7 @@ def cli_vm_define(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
     user_tags,
     protected_tags,
 ):
@@ -1135,10 +1144,12 @@ def cli_vm_define(
       * "load": choose the node with the lowest current load average
       * "vms": choose the node with the least number of provisioned VMs
 
-    For most clusters, "mem" should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
+    For most clusters, the migration method selector ("--method"/"-m") "mem" should be sufficient, but others may be used based on the cluster workload and available resources. The following caveats should be considered:
       * "mem" looks at the free memory of the node in general, ignoring the amount provisioned to VMs; if any VM's internal memory usage changes, this value would be affected.
       * "memprov" looks at the provisioned memory, not the allocated memory; thus, stopped or disabled VMs are counted towards a node's memory for this selector, even though their memory is not actively in use.
       * "load" looks at the system load of the node in general, ignoring load in any particular VMs; if any VM's CPU usage changes, this value would be affected. This might be preferable on clusters with some very CPU intensive VMs.
+
+    For most VMs, the 300ms default maximum downtime ("--max-downtime"/"-d") should be sufficient. However very busy VMs with a lot of memory pressure or CPU load may require a larger downtime to properly migrate. Generally, keep this at the default unless you know the VM will be extremely busy, or you find you have problems migrating it later. Reasonable values range from 100ms to 2000ms (2 seconds).
     """
 
     # Open the XML file
@@ -1160,6 +1171,7 @@ def cli_vm_define(
         node_selector,
         node_autostart,
         migration_method,
+        migration_max_downtime,
         user_tags,
         protected_tags,
     )
@@ -1206,6 +1218,13 @@ def cli_vm_define(
     help="The preferred migration method of the VM between nodes.",
 )
 @click.option(
+    "-d",
+    "--max-downtime",
+    "migration_max_downtime",
+    default=None,
+    help="The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger downtime.",
+)
+@click.option(
     "-p",
     "--profile",
     "provisioner_profile",
@@ -1220,12 +1239,13 @@ def cli_vm_meta(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
     provisioner_profile,
 ):
     """
     Modify the PVC metadata of existing virtual machine DOMAIN. At least one option to update must be specified. DOMAIN may be a UUID or name.
 
-    For details on the "--node-selector"/"-s" values, please see help for the command "pvc vm define".
+    For details on the available option values, please see help for the command "pvc vm define".
     """
 
     if (
@@ -1233,6 +1253,7 @@ def cli_vm_meta(
         and node_selector is None
         and node_autostart is None
         and migration_method is None
+        and migration_max_downtime is None
         and provisioner_profile is None
     ):
         finish(False, "At least one metadata option must be specified to update.")
@@ -1244,6 +1265,7 @@ def cli_vm_meta(
         node_selector,
         node_autostart,
         migration_method,
+        migration_max_downtime,
         provisioner_profile,
     )
     finish(retcode, retmsg)
@@ -4456,6 +4478,13 @@ def cli_provisioner_template_system():
     default=None,  # Use cluster default
     help="The preferred migration method of the VM between nodes",
 )
+@click.option(
+    "--max-downtime",
+    "migration_max_downtime",
+    default=300,
+    show_default=True,
+    help="The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger downtime.",
+)
 def cli_provisioner_template_system_add(
     name,
     vcpus,
@@ -4467,11 +4496,12 @@ def cli_provisioner_template_system_add(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
 ):
     """
     Add a new system template NAME to the PVC cluster provisioner.
 
-    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
+    For details on the possible option values, please see help for the command "pvc vm define".
     """
     params = dict()
     params["name"] = name
@@ -4489,6 +4519,8 @@ def cli_provisioner_template_system_add(
         params["node_autostart"] = node_autostart
     if migration_method:
         params["migration_method"] = migration_method
+    if migration_max_downtime:
+        params["migration_max_downtime"] = migration_max_downtime
 
     retcode, retdata = pvc.lib.provisioner.template_add(
         CLI_CONFIG, params, template_type="system"
@@ -4551,6 +4583,12 @@ def cli_provisioner_template_system_add(
     default=None,  # Use cluster default
     help="The preferred migration method of the VM between nodes",
 )
+@click.option(
+    "--max-downtime",
+    "migration_max_downtime",
+    default=None,
+    help="The maximum time in milliseconds that a VM can be down for during a live migration; busy VMs may require a larger downtime.",
+)
 def cli_provisioner_template_system_modify(
     name,
     vcpus,
@@ -4562,11 +4600,12 @@ def cli_provisioner_template_system_modify(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
 ):
     """
     Add a new system template NAME to the PVC cluster provisioner.
 
-    For details on the possible "--node-selector" values, please see help for the command "pvc vm define".
+    For details on the possible option values, please see help for the command "pvc vm define".
     """
     params = dict()
     params["vcpus"] = vcpus
@@ -4578,6 +4617,7 @@ def cli_provisioner_template_system_modify(
     params["node_selector"] = node_selector
     params["node_autostart"] = node_autostart
     params["migration_method"] = migration_method
+    params["migration_max_downtime"] = migration_max_downtime
 
     retcode, retdata = pvc.lib.provisioner.template_modify(
         CLI_CONFIG, params, name, template_type="system"

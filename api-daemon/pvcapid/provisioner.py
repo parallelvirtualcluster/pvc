@@ -221,6 +221,7 @@ def create_template_system(
     node_selector=None,
     node_autostart=False,
     migration_method=None,
+    migration_max_downtime=None,
     ova=None,
 ):
     if list_template_system(name, is_fuzzy=False)[-1] != 404:
@@ -231,7 +232,7 @@ def create_template_system(
     if node_selector == "none":
         node_selector = None
 
-    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    query = "INSERT INTO system_template (name, vcpu_count, vram_mb, serial, vnc, vnc_bind, node_limit, node_selector, node_autostart, migration_method, migration_max_downtime, ova) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
     args = (
         name,
         vcpu_count,
@@ -243,6 +244,7 @@ def create_template_system(
         node_selector,
         node_autostart,
         migration_method,
+        migration_max_downtime,
         ova,
     )
 
@@ -438,6 +440,7 @@ def modify_template_system(
     node_selector=None,
     node_autostart=None,
     migration_method=None,
+    migration_max_downtime=None,
 ):
     if list_template_system(name, is_fuzzy=False)[-1] != 200:
         retmsg = {"message": 'The system template "{}" does not exist.'.format(name)}
@@ -504,6 +507,11 @@ def modify_template_system(
 
     if migration_method is not None:
         fields.append({"field": "migration_method", "data": migration_method})
+
+    if migration_max_downtime is not None:
+        fields.append(
+            {"field": "migration_max_downtime", "data": int(migration_max_downtime)}
+        )
 
     conn, cur = open_database(config)
     try:

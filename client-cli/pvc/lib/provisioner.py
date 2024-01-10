@@ -779,7 +779,8 @@ def format_list_template_system(template_data):
     template_node_limit_length = 6
     template_node_selector_length = 9
     template_node_autostart_length = 10
-    template_migration_method_length = 10
+    template_migration_method_length = 12
+    template_migration_max_downtime_length = 13
 
     for template in template_data:
         # template_name column
@@ -826,6 +827,17 @@ def format_list_template_system(template_data):
         _template_migration_method_length = len(str(template["migration_method"])) + 1
         if _template_migration_method_length > template_migration_method_length:
             template_migration_method_length = _template_migration_method_length
+        # template_migration_max_downtime column
+        _template_migration_max_downtime_length = (
+            len(str(template["migration_max_downtime"])) + 1
+        )
+        if (
+            _template_migration_max_downtime_length
+            > template_migration_max_downtime_length
+        ):
+            template_migration_max_downtime_length = (
+                _template_migration_max_downtime_length
+            )
 
     # Format the string (header)
     template_list_output.append(
@@ -842,7 +854,8 @@ def format_list_template_system(template_data):
             + template_node_selector_length
             + template_node_autostart_length
             + template_migration_method_length
-            + 3,
+            + template_migration_max_downtime_length
+            + 4,
             template_header="System Templates "
             + "".join(
                 ["-" for _ in range(17, template_name_length + template_id_length)]
@@ -874,7 +887,8 @@ def format_list_template_system(template_data):
                         + template_node_selector_length
                         + template_node_autostart_length
                         + template_migration_method_length
-                        + 2,
+                        + template_migration_max_downtime_length
+                        + 3,
                     )
                 ]
             ),
@@ -891,7 +905,8 @@ def format_list_template_system(template_data):
 {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}} \
-{template_migration_method: <{template_migration_method_length}}{end_bold}".format(
+{template_migration_method: <{template_migration_method_length}} \
+{template_migration_max_downtime: <{template_migration_max_downtime_length}}{end_bold}".format(
             bold=ansiprint.bold(),
             end_bold=ansiprint.end(),
             template_name_length=template_name_length,
@@ -905,6 +920,7 @@ def format_list_template_system(template_data):
             template_node_selector_length=template_node_selector_length,
             template_node_autostart_length=template_node_autostart_length,
             template_migration_method_length=template_migration_method_length,
+            template_migration_max_downtime_length=template_migration_max_downtime_length,
             template_name="Name",
             template_id="ID",
             template_vcpu="vCPUs",
@@ -915,7 +931,8 @@ def format_list_template_system(template_data):
             template_node_limit="Limit",
             template_node_selector="Selector",
             template_node_autostart="Autostart",
-            template_migration_method="Migration",
+            template_migration_method="Mig. Method",
+            template_migration_max_downtime="Max Downtime",
         )
     )
 
@@ -931,7 +948,8 @@ def format_list_template_system(template_data):
 {template_node_limit: <{template_node_limit_length}} \
 {template_node_selector: <{template_node_selector_length}} \
 {template_node_autostart: <{template_node_autostart_length}} \
-{template_migration_method: <{template_migration_method_length}}{end_bold}".format(
+{template_migration_method: <{template_migration_method_length}} \
+{template_migration_max_downtime: <{template_migration_max_downtime_length}}{end_bold}".format(
                 template_name_length=template_name_length,
                 template_id_length=template_id_length,
                 template_vcpu_length=template_vcpu_length,
@@ -943,6 +961,7 @@ def format_list_template_system(template_data):
                 template_node_selector_length=template_node_selector_length,
                 template_node_autostart_length=template_node_autostart_length,
                 template_migration_method_length=template_migration_method_length,
+                template_migration_max_downtime_length=template_migration_max_downtime_length,
                 bold="",
                 end_bold="",
                 template_name=str(template["name"]),
@@ -956,6 +975,7 @@ def format_list_template_system(template_data):
                 template_node_selector=str(template["node_selector"]),
                 template_node_autostart=str(template["node_autostart"]),
                 template_migration_method=str(template["migration_method"]),
+                template_migration_max_downtime=f"{str(template['migration_max_downtime'])} ms",
             )
         )
 

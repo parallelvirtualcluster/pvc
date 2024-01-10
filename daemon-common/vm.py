@@ -147,6 +147,7 @@ def define_vm(
     node_selector,
     node_autostart,
     migration_method=None,
+    migration_max_downtime=300,
     profile=None,
     tags=[],
     initial_state="stop",
@@ -272,6 +273,10 @@ def define_vm(
             (("domain.console.vnc", dom_uuid), ""),
             (("domain.meta.autostart", dom_uuid), node_autostart),
             (("domain.meta.migrate_method", dom_uuid), str(migration_method).lower()),
+            (
+                ("domain.meta.migrate_max_downtime", dom_uuid),
+                int(migration_max_downtime),
+            ),
             (("domain.meta.node_limit", dom_uuid), formatted_node_limit),
             (("domain.meta.node_selector", dom_uuid), str(node_selector).lower()),
             (("domain.meta.tags", dom_uuid), ""),
@@ -305,6 +310,7 @@ def modify_vm_metadata(
     node_autostart,
     provisioner_profile,
     migration_method,
+    migration_max_downtime,
 ):
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -329,6 +335,14 @@ def modify_vm_metadata(
     if migration_method is not None:
         update_list.append(
             (("domain.meta.migrate_method", dom_uuid), str(migration_method).lower())
+        )
+
+    if migration_max_downtime is not None:
+        update_list.append(
+            (
+                ("domain.meta.migrate_max_downtime", dom_uuid),
+                int(migration_max_downtime),
+            )
         )
 
     if len(update_list) < 1:
@@ -563,6 +577,7 @@ def rename_vm(zkhandler, domain, new_domain):
         dom_info["node_selector"],
         dom_info["node_autostart"],
         migration_method=dom_info["migration_method"],
+        migration_max_downtime=dom_info["migration_max_downtime"],
         profile=dom_info["profile"],
         tags=dom_info["tags"],
         initial_state="stop",
@@ -1624,6 +1639,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
             backup_source_details["vm_detail"]["node_selector"],
             backup_source_details["vm_detail"]["node_autostart"],
             backup_source_details["vm_detail"]["migration_method"],
+            backup_source_details["vm_detail"]["migration_max_downtime"],
             backup_source_details["vm_detail"]["profile"],
             backup_source_details["vm_detail"]["tags"],
             "restore",

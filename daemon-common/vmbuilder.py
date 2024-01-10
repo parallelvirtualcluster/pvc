@@ -744,6 +744,7 @@ def worker_create_vm(
         node_selector = vm_data["system_details"]["node_selector"]
         node_autostart = vm_data["system_details"]["node_autostart"]
         migration_method = vm_data["system_details"]["migration_method"]
+        migration_max_downtime = vm_data["system_details"]["migration_max_downtime"]
         with open_zk(config) as zkhandler:
             retcode, retmsg = pvc_vm.define_vm(
                 zkhandler,
@@ -753,6 +754,7 @@ def worker_create_vm(
                 node_selector,
                 node_autostart,
                 migration_method,
+                migration_max_downtime,
                 vm_profile,
                 initial_state="provision",
             )

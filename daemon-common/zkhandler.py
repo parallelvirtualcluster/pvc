@@ -572,7 +572,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 12
+    _version = 13
 
     # Root for doing nested keys
     _schema_root = ""
@@ -707,6 +707,7 @@ class ZKSchema(object):
             "console.vnc": "/vnc",
             "meta.autostart": "/node_autostart",
             "meta.migrate_method": "/migration_method",
+            "meta.migrate_max_downtime": "/migration_max_downtime",
             "meta.node_selector": "/node_selector",
             "meta.node_limit": "/node_limit",
             "meta.tags": "/tags",
@@ -1026,6 +1027,8 @@ class ZKSchema(object):
                             default_data = "False"
                         elif elem == "pool" and ikey == "tier":
                             default_data = "default"
+                        elif elem == "domain" and ikey == "meta.migrate_max_downtime":
+                            default_data = "300"
                         else:
                             default_data = ""
                         zkhandler.zk_conn.create(
