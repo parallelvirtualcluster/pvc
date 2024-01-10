@@ -26,7 +26,7 @@ from distutils.util import strtobool
 from getpass import getuser
 from json import load as jload
 from json import dump as jdump
-from os import chmod, environ, getpid, path, makedirs, get_terminal_size
+from os import chmod, environ, getpid, path, popen, makedirs, get_terminal_size
 from re import findall
 from socket import gethostname
 from subprocess import run, PIPE
@@ -38,6 +38,7 @@ from yaml import SafeLoader
 import pvc.lib.provisioner
 import pvc.lib.vm
 import pvc.lib.node
+import pvc.lib.storage
 
 
 DEFAULT_STORE_DATA = {"cfgfile": "/etc/pvc/pvc.conf"}
@@ -201,8 +202,8 @@ def get_autobackup_config(CLI_CONFIG, cfgfile):
     try:
         config = dict()
         with open(cfgfile) as fh:
-            backup_config = yload(fh, Loader=SafeLoader)["autobackup"]
-
+            full_config = yload(fh, Loader=SafeLoader)
+        backup_config = full_config["autobackup"]
         config["backup_root_path"] = backup_config["backup_root_path"]
         config["backup_root_suffix"] = backup_config["backup_root_suffix"]
         config["backup_tags"] = backup_config["backup_tags"]
@@ -226,13 +227,10 @@ def get_autobackup_config(CLI_CONFIG, cfgfile):
                         backup_root_path=backup_config["backup_root_path"]
                     )
                 config["unmount_cmds"].append(_unmount_cmd)
-
     except FileNotFoundError:
-        echo(CLI_CONFIG, "ERROR: Specified backup configuration does not exist!")
-        exit(1)
+        return "Backup configuration does not exist!"
     except KeyError as e:
-        echo(CLI_CONFIG, f"ERROR: Backup configuration is invalid: {e}")
-        exit(1)
+        return f"Backup configuration is invalid: {e}"
 
     return config
 
@@ -240,12 +238,55 @@ def get_autobackup_config(CLI_CONFIG, cfgfile):
 def vm_autobackup(
     CLI_CONFIG,
     autobackup_cfgfile=DEFAULT_AUTOBACKUP_FILENAME,
+    email_report=None,
     force_full_flag=False,
     cron_flag=False,
 ):
     """
     Perform automatic backups of VMs based on an external config file.
     """
+
+    if email_report is not None:
+        from email.utils import formatdate
+        from socket import gethostname
+
+        try:
+            with open(autobackup_cfgfile) as fh:
+                tmp_config = yload(fh, Loader=SafeLoader)
+            cluster = tmp_config["cluster"]["name"]
+        except Exception:
+            cluster = "unknown"
+
+    def send_execution_failure_report(error=None):
+        echo(CLI_CONFIG, f"Sending email failure report to {email_report}")
+
+        current_datetime = datetime.now()
+        email_datetime = formatdate(float(current_datetime.strftime("%s")))
+
+        email = list()
+        email.append(f"Date: {email_datetime}")
+        email.append(f"Subject: PVC Autobackup execution failure for cluster {cluster}")
+
+        recipients = list()
+        for recipient in email_report.split(","):
+            recipients.append(f"<{recipient}>")
+        email.append(f"To: {', '.join(recipients)}")
+        email.append(f"From: PVC Autobackup System <pvc@{gethostname()}>")
+        email.append("")
+
+        email.append(
+            f"A PVC autobackup has FAILED at {current_datetime} due to an execution error."
+        )
+        email.append("")
+        email.append("The reported error message is:")
+        email.append(f"    {error}")
+
+        try:
+            p = popen("/usr/sbin/sendmail -t", "w")
+            p.write("\n".join(email))
+            p.close()
+        except Exception as e:
+            echo(CLI_CONFIG, f"Failed to send report email: {e}")
 
     # Validate that we are running on the current primary coordinator of the 'local' cluster connection
     real_connection = CLI_CONFIG["connection"]
@@ -267,6 +308,10 @@ def vm_autobackup(
                 CLI_CONFIG,
                 "Autobackup MUST be run from the cluster active primary coordinator using the 'local' connection. See '-h'/'--help' for details.",
             )
+            if email_report is not None:
+                send_execution_failure_report(
+                    error=f"Autobackup run attempted from non-local connection or non-primary coordinator; got connection '{real_connection}', host '{DEFAULT_NODE_HOSTNAME}'."
+                )
             exit(1)
 
     # Ensure we're running as root, or show a warning & confirmation
@@ -279,6 +324,14 @@ def vm_autobackup(
 
     # Load our YAML config
     autobackup_config = get_autobackup_config(CLI_CONFIG, autobackup_cfgfile)
+    if not isinstance(autobackup_config, dict):
+        echo(CLI_CONFIG, f"ERROR: {autobackup_config}")
+        if email_report is not None:
+            send_execution_failure_report(error=f"{autobackup_config}")
+        exit(1)
+
+    # Get the start time of this run
+    autobackup_start_time = datetime.now()
 
     # Get a list of all VMs on the cluster
     # We don't do tag filtering here, because we could match an arbitrary number of tags; instead, we
@@ -286,6 +339,8 @@ def vm_autobackup(
     retcode, retdata = pvc.lib.vm.vm_list(CLI_CONFIG, None, None, None, None, None)
     if not retcode:
         echo(CLI_CONFIG, f"ERROR: Failed to fetch VM list: {retdata}")
+        if email_report is not None:
+            send_execution_failure_report(error=f"Failed to fetch VM list: {retdata}")
         exit(1)
     cluster_vms = retdata
 
@@ -354,6 +409,8 @@ def vm_autobackup(
                     CLI_CONFIG,
                     f"Exiting; command reports: {ret.stderr.decode().strip()}",
                 )
+                if email_report is not None:
+                    send_execution_failure_report(error=ret.stderr.decode().strip())
                 exit(1)
             else:
                 echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
@@ -417,27 +474,26 @@ def vm_autobackup(
         tend = datetime.now()
         ttot = tend - tstart
         if not retcode:
+            backup_datestring = findall(r"[0-9]{14}", retdata)[0]
             echo(CLI_CONFIG, f"failed. [{ttot.seconds}s]")
-            echo(CLI_CONFIG, f"Skipping cleanups; command reports: {retdata}")
-            continue
+            echo(
+                CLI_CONFIG,
+                retdata.strip().replace(f"ERROR in backup {backup_datestring}: ", ""),
+            )
+            skip_cleanup = True
         else:
             backup_datestring = findall(r"[0-9]{14}", retdata)[0]
             echo(
                 CLI_CONFIG,
                 f"done. Backup '{backup_datestring}' created. [{ttot.seconds}s]",
             )
+            skip_cleanup = False
 
         # Read backup file to get details
         backup_json_file = f"{backup_path}/{backup_datestring}/pvcbackup.json"
         with open(backup_json_file) as fh:
             backup_json = jload(fh)
-        backup = {
-            "datestring": backup_json["datestring"],
-            "type": backup_json["type"],
-            "parent": backup_json["incremental_parent"],
-            "retained_snapshot": backup_json["retained_snapshot"],
-        }
-        tracked_backups.insert(0, backup)
+        tracked_backups.insert(0, backup_json)
 
         # Delete any full backups that are expired
         marked_for_deletion = list()
@@ -450,37 +506,47 @@ def vm_autobackup(
 
         # Depete any incremental backups that depend on marked parents
         for backup in tracked_backups:
-            if backup["type"] == "incremental" and backup["parent"] in [
+            if backup["type"] == "incremental" and backup["incremental_parent"] in [
                 b["datestring"] for b in marked_for_deletion
             ]:
                 marked_for_deletion.append(backup)
 
-        # Execute deletes
-        for backup_to_delete in marked_for_deletion:
-            echo(
-                CLI_CONFIG,
-                f"Removing old VM '{vm}' backup '{backup_to_delete['datestring']}' ({backup_to_delete['type']})... ",
-                newline=False,
-            )
-            tstart = datetime.now()
-            retcode, retdata = pvc.lib.vm.vm_remove_backup(
-                CLI_CONFIG,
-                vm,
-                backup_suffixed_path,
-                backup_to_delete["datestring"],
-            )
-            tend = datetime.now()
-            ttot = tend - tstart
-            if not retcode:
-                echo(CLI_CONFIG, f"failed. [{ttot.seconds}s]")
+        if len(marked_for_deletion) > 0:
+            if skip_cleanup:
                 echo(
                     CLI_CONFIG,
-                    f"Skipping removal from tracked backups; command reports: {retdata}",
+                    f"Skipping cleanups for {len(marked_for_deletion)} aged-out backups due to backup failure.",
                 )
-                continue
             else:
-                tracked_backups.remove(backup_to_delete)
-                echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
+                echo(
+                    CLI_CONFIG,
+                    f"Running cleanups for {len(marked_for_deletion)} aged-out backups...",
+                )
+                # Execute deletes
+                for backup_to_delete in marked_for_deletion:
+                    echo(
+                        CLI_CONFIG,
+                        f"Removing old VM '{vm}' backup '{backup_to_delete['datestring']}' ({backup_to_delete['type']})... ",
+                        newline=False,
+                    )
+                    tstart = datetime.now()
+                    retcode, retdata = pvc.lib.vm.vm_remove_backup(
+                        CLI_CONFIG,
+                        vm,
+                        backup_suffixed_path,
+                        backup_to_delete["datestring"],
+                    )
+                    tend = datetime.now()
+                    ttot = tend - tstart
+                    if not retcode:
+                        echo(CLI_CONFIG, f"failed. [{ttot.seconds}s]")
+                        echo(
+                            CLI_CONFIG,
+                            f"Skipping removal from tracked backups; command reports: {retdata}",
+                        )
+                    else:
+                        tracked_backups.remove(backup_to_delete)
+                        echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
 
         # Update tracked state information
         state_data["tracked_backups"] = tracked_backups
@@ -514,3 +580,78 @@ def vm_autobackup(
                 )
             else:
                 echo(CLI_CONFIG, f"done. [{ttot.seconds}s]")
+
+    autobackup_end_time = datetime.now()
+    autobackup_total_time = autobackup_end_time - autobackup_start_time
+
+    # Handle report emailing
+    if email_report is not None:
+        echo(CLI_CONFIG, "")
+        echo(CLI_CONFIG, f"Sending email summary report to {email_report}")
+        backup_summary = dict()
+        for vm in backup_vms:
+            backup_path = f"{backup_suffixed_path}/{vm}"
+            autobackup_state_file = f"{backup_path}/.autobackup.json"
+            if not path.exists(backup_path) or not path.exists(autobackup_state_file):
+                # There are no new backups so the list is empty
+                state_data = dict()
+                tracked_backups = list()
+            else:
+                with open(autobackup_state_file) as fh:
+                    state_data = jload(fh)
+                tracked_backups = state_data["tracked_backups"]
+
+            backup_summary[vm] = tracked_backups
+
+        current_datetime = datetime.now()
+        email_datetime = formatdate(float(current_datetime.strftime("%s")))
+
+        email = list()
+        email.append(f"Date: {email_datetime}")
+        email.append(f"Subject: PVC Autobackup report for cluster {cluster}")
+
+        recipients = list()
+        for recipient in email_report.split(","):
+            recipients.append(f"<{recipient}>")
+        email.append(f"To: {', '.join(recipients)}")
+        email.append(f"From: PVC Autobackup System <pvc@{gethostname()}>")
+        email.append("")
+
+        email.append(
+            f"A PVC autobackup has been completed at {current_datetime} in {autobackup_total_time}."
+        )
+        email.append("")
+        email.append(
+            "The following is a summary of all current VM backups after cleanups, most recent first:"
+        )
+        email.append("")
+
+        for vm in backup_vms:
+            email.append(f"VM {vm}:")
+            for backup in backup_summary[vm]:
+                datestring = backup.get("datestring")
+                backup_date = datetime.strptime(datestring, "%Y%m%d%H%M%S")
+                if backup.get("result", False):
+                    email.append(
+                        f"    {backup_date}: Success in {backup.get('runtime_secs', 0)} seconds, ID {datestring}, type {backup.get('type', 'unknown')}"
+                    )
+                    email.append(
+                        f"                         Backup contains {len(backup.get('backup_files'))} files totaling {pvc.lib.storage.format_bytes_tohuman(backup.get('backup_size_bytes', 0))} ({backup.get('backup_size_bytes', 0)} bytes)"
+                    )
+                else:
+                    email.append(
+                        f"    {backup_date}: Failure in {backup.get('runtime_secs', 0)} seconds, ID {datestring}, type {backup.get('type', 'unknown')}"
+                    )
+                    email.append(
+                        f"                         {backup.get('result_message')}"
+                    )
+
+        try:
+            p = popen("/usr/sbin/sendmail -t", "w")
+            p.write("\n".join(email))
+            p.close()
+        except Exception as e:
+            echo(CLI_CONFIG, f"Failed to send report email: {e}")
+
+    echo(CLI_CONFIG, "")
+    echo(CLI_CONFIG, f"Autobackup completed in {autobackup_total_time}.")

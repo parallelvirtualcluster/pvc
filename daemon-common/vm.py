@@ -32,6 +32,7 @@ from json import dump as jdump
 from json import load as jload
 from json import loads as jloads
 from libvirt import open as lvopen
+from os import scandir
 from shutil import rmtree
 from socket import gethostname
 from uuid import UUID
@@ -1183,12 +1184,15 @@ def backup_vm(
     if not re.match(r"^/", backup_path):
         return (
             False,
-            f"ERROR: Target path {backup_path} is not a valid absolute path on the primary coordinator!",
+            f"ERROR in backup {datestring}: Target path {backup_path} is not a valid absolute path on the primary coordinator!",
         )
 
     # Ensure that backup_path (on this node) exists
     if not os.path.isdir(backup_path):
-        return False, f"ERROR: Target path {backup_path} does not exist!"
+        return (
+            False,
+            f"ERROR in backup {datestring}: Target path {backup_path} does not exist!",
+        )
 
     # 1a. Create destination directory
     vm_target_root = f"{backup_path}/{domain}"
@@ -1197,7 +1201,10 @@ def backup_vm(
         try:
             os.makedirs(vm_target_backup)
         except Exception as e:
-            return False, f"ERROR: Failed to create backup directory: {e}"
+            return (
+                False,
+                f"ERROR in backup {datestring}: Failed to create backup directory: {e}",
+            )
 
     tstart = time.time()
     backup_type = "incremental" if incremental_parent is not None else "full"
@@ -1222,7 +1229,7 @@ def backup_vm(
             "retained_snapshot": retain_snapshot,
             "result": result,
             "result_message": result_message,
-            "runtime_secs": ttot.seconds,
+            "runtime_secs": ttot,
             "vm_detail": vm_detail,
             "backup_files": backup_files,
             "backup_size_bytes": backup_files_size,
@@ -1233,28 +1240,26 @@ def backup_vm(
     # 2. Validations part 2
     # Disallow retaining snapshots with an incremental parent
     if incremental_parent is not None and retain_snapshot:
-        result_message = (
-            "ERROR: Retaining snapshots of incremental backups is not supported!"
-        )
-        write_pvcbackup_json(result=False, result_message=result_message)
+        error_message = "Retaining snapshots of incremental backups is not supported!"
+        write_pvcbackup_json(result=False, result_message=f"ERROR: {error_message}")
         return (
             False,
-            result_message,
+            f"ERROR in backup {datestring}: {error_message}",
         )
 
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
-        result_message = f'ERROR: Could not find VM "{domain}" in the cluster!'
-        write_pvcbackup_json(result=False, result_message=result_message)
-        return False, result_message
+        error_message = f'Could not find VM "{domain}" in the cluster!'
+        write_pvcbackup_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR in backup {datestring}: {error_message}"
 
     # 3. Get information about VM
     vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
     if not isinstance(vm_detail, dict):
-        result_message = f"ERROR: VM listing returned invalid data: {vm_detail}"
-        write_pvcbackup_json(result=False, result_message=result_message)
-        return False, result_message
+        error_message = f"VM listing returned invalid data: {vm_detail}"
+        write_pvcbackup_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR in backup {datestring}: {error_message}"
 
     vm_volumes = list()
     for disk in vm_detail["disks"]:
@@ -1270,39 +1275,47 @@ def backup_vm(
             elif len(retdata) > 1:
                 retdata = "Multiple volumes returned."
 
-            result_message = (
-                f"ERROR: Failed to get volume details for {pool}/{volume}: {retdata}"
+            error_message = (
+                f"Failed to get volume details for {pool}/{volume}: {retdata}"
             )
             write_pvcbackup_json(
-                result=False, result_message=result_message, vm_detail=vm_detail
+                result=False,
+                result_message=f"ERROR: {error_message}",
+                vm_detail=vm_detail,
             )
             return (
                 False,
-                result_message,
+                f"ERROR in backup {datestring}: {error_message}",
             )
 
         try:
             size = retdata[0]["stats"]["size"]
         except Exception as e:
-            return False, f"ERROR: Failed to get volume size for {pool}/{volume}: {e}"
+            error_message = f"Failed to get volume size for {pool}/{volume}: {e}"
+            write_pvcbackup_json(
+                result=False,
+                result_message=f"ERROR: {error_message}",
+                vm_detail=vm_detail,
+            )
+            return (
+                False,
+                f"ERROR in backup {datestring}: {error_message}",
+            )
 
         vm_volumes.append((pool, volume, size))
 
     # 4a. Validate that all volumes exist (they should, but just in case)
     for pool, volume, _ in vm_volumes:
         if not ceph.verifyVolume(zkhandler, pool, volume):
-            result_message = (
-                f"ERROR: VM defines a volume {pool}/{volume} which does not exist!"
-            )
+            error_message = f"VM defines a volume {pool}/{volume} which does not exist!"
             write_pvcbackup_json(
                 result=False,
-                result_message=result_message,
+                result_message=f"ERROR: {error_message}",
                 vm_detail=vm_detail,
-                vm_volumes=vm_volumes,
             )
             return (
                 False,
-                result_message,
+                f"ERROR in backup {datestring}: {error_message}",
             )
 
     # 4b. Validate that, if an incremental_parent is given, it is valid
@@ -1312,16 +1325,15 @@ def backup_vm(
             if not ceph.verifySnapshot(
                 zkhandler, pool, volume, f"backup_{incremental_parent}"
             ):
-                result_message = f"ERROR: Incremental parent {incremental_parent} given, but no snapshots were found; cannot export an incremental backup."
+                error_message = f"Incremental parent {incremental_parent} given, but no snapshots were found; cannot export an incremental backup."
                 write_pvcbackup_json(
                     result=False,
-                    result_message=result_message,
+                    result_message=f"ERROR: {error_message}",
                     vm_detail=vm_detail,
-                    vm_volumes=vm_volumes,
                 )
                 return (
                     False,
-                    result_message,
+                    f"ERROR in backup {datestring}: {error_message}",
                 )
 
         export_fileext = "rbddiff"
@@ -1334,35 +1346,31 @@ def backup_vm(
     # 5. Take snapshot of each disks with the name @backup_{datestring}
     is_snapshot_create_failed = False
     which_snapshot_create_failed = list()
-    msg_snapshot_create_failed = list()
     for pool, volume, _ in vm_volumes:
         retcode, retmsg = ceph.add_snapshot(zkhandler, pool, volume, snapshot_name)
         if not retcode:
             is_snapshot_create_failed = True
             which_snapshot_create_failed.append(f"{pool}/{volume}")
-            msg_snapshot_create_failed.append(retmsg)
 
     if is_snapshot_create_failed:
         for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
 
-        result_message = f'ERROR: Failed to create snapshot for volume(s) {", ".join(which_snapshot_create_failed)}: {", ".join(msg_snapshot_create_failed)}'
+        error_message = f'Failed to create snapshot for volume(s) {", ".join(which_snapshot_create_failed)}'
         write_pvcbackup_json(
             result=False,
-            result_message=result_message,
+            result_message=f"ERROR: {error_message}",
             vm_detail=vm_detail,
-            vm_volumes=vm_volumes,
         )
         return (
             False,
-            result_message,
+            f"ERROR in backup {datestring}: {error_message}",
         )
 
     # 6. Dump snapshot to folder with `rbd export` (full) or `rbd export-diff` (incremental)
     is_snapshot_export_failed = False
     which_snapshot_export_failed = list()
-    msg_snapshot_export_failed = list()
     backup_files = list()
     for pool, volume, size in vm_volumes:
         if incremental_parent is not None:
@@ -1373,7 +1381,6 @@ def backup_vm(
             if retcode:
                 is_snapshot_export_failed = True
                 which_snapshot_export_failed.append(f"{pool}/{volume}")
-                msg_snapshot_export_failed.append(stderr)
             else:
                 backup_files.append(
                     (f"pvcdisks/{pool}.{volume}.{export_fileext}", size)
@@ -1385,32 +1392,44 @@ def backup_vm(
             if retcode:
                 is_snapshot_export_failed = True
                 which_snapshot_export_failed.append(f"{pool}/{volume}")
-                msg_snapshot_export_failed.append(stderr)
+            else:
+                backup_files.append(
+                    (f"pvcdisks/{pool}.{volume}.{export_fileext}", size)
+                )
 
-    backup_files_size = os.path.getsize(vm_target_backup)
+    def get_dir_size(path):
+        total = 0
+        with scandir(path) as it:
+            for entry in it:
+                if entry.is_file():
+                    total += entry.stat().st_size
+                elif entry.is_dir():
+                    total += get_dir_size(entry.path)
+        return total
+
+    backup_files_size = get_dir_size(vm_target_backup)
 
     if is_snapshot_export_failed:
         for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
                 ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
 
-        result_message = f'ERROR: Failed to export snapshot for volume(s) {", ".join(which_snapshot_export_failed)}: {", ".join(msg_snapshot_export_failed)}'
+        error_message = f'Failed to export snapshot for volume(s) {", ".join(which_snapshot_export_failed)}'
         write_pvcbackup_json(
             result=False,
-            result_message=result_message,
+            result_message=f"ERROR: {error_message}",
             vm_detail=vm_detail,
             backup_files=backup_files,
             backup_files_size=backup_files_size,
         )
         return (
             False,
-            result_message,
+            f"ERROR in backup {datestring}: {error_message}",
         )
 
     # 8. Remove snapshots if retain_snapshot is False
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
-    msg_snapshot_remove_failed = list()
     if not retain_snapshot:
         for pool, volume, _ in vm_volumes:
             if ceph.verifySnapshot(zkhandler, pool, volume, snapshot_name):
@@ -1420,7 +1439,6 @@ def backup_vm(
                 if not retcode:
                     is_snapshot_remove_failed = True
                     which_snapshot_remove_failed.append(f"{pool}/{volume}")
-                    msg_snapshot_remove_failed.append(retmsg)
 
     tend = time.time()
     ttot = round(tend - tstart, 2)
@@ -1429,7 +1447,7 @@ def backup_vm(
 
     if is_snapshot_remove_failed:
         retlines.append(
-            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}"
         )
 
     myhostname = gethostname().split(".")[0]
@@ -1437,7 +1455,7 @@ def backup_vm(
         result_message = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}, snapshots retained) to '{myhostname}:{backup_path}' in {ttot}s."
     else:
         result_message = f"Successfully backed up VM '{domain}' ({backup_type}@{datestring}) to '{myhostname}:{backup_path}' in {ttot}s."
-    retlines.appendr(result_message)
+    retlines.append(result_message)
 
     write_pvcbackup_json(
         result=True,
@@ -1495,7 +1513,6 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
     # 2. Remove snapshots
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
-    msg_snapshot_remove_failed = list()
     if backup_source_details["retained_snapshot"]:
         for volume_file, _ in backup_source_details.get("backup_files"):
             pool, volume, _ = volume_file.split("/")[-1].split(".")
@@ -1504,7 +1521,6 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
             if not retcode:
                 is_snapshot_remove_failed = True
                 which_snapshot_remove_failed.append(f"{pool}/{volume}")
-                msg_snapshot_remove_failed.append(retmsg)
 
     # 3. Remove files
     is_files_remove_failed = False
@@ -1521,7 +1537,7 @@ def remove_backup(zkhandler, domain, backup_path, datestring):
 
     if is_snapshot_remove_failed:
         retlines.append(
-            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+            f"WARNING: Failed to remove snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}"
         )
 
     if is_files_remove_failed:
@@ -1620,7 +1636,6 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
     # 4. Import volumes
     is_snapshot_remove_failed = False
     which_snapshot_remove_failed = list()
-    msg_snapshot_remove_failed = list()
     if incremental_parent is not None:
         for volume_file, volume_size in backup_source_details.get("backup_files"):
             pool, volume, _ = volume_file.split("/")[-1].split(".")
@@ -1696,14 +1711,12 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
                 if retcode:
                     is_snapshot_remove_failed = True
                     which_snapshot_remove_failed.append(f"{pool}/{volume}")
-                    msg_snapshot_remove_failed.append(retmsg)
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd snap rm {pool}/{volume}@backup_{datestring}"
             )
             if retcode:
                 is_snapshot_remove_failed = True
                 which_snapshot_remove_failed.append(f"{pool}/{volume}")
-                msg_snapshot_remove_failed.append(retmsg)
 
     else:
         for volume_file, volume_size in backup_source_details.get("backup_files"):
@@ -1772,7 +1785,7 @@ def restore_vm(zkhandler, domain, backup_path, datestring, retain_snapshot=False
 
     if is_snapshot_remove_failed:
         retlines.append(
-            f"WARNING: Failed to remove hanging snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}: {', '.join(msg_snapshot_remove_failed)}"
+            f"WARNING: Failed to remove hanging snapshot(s) as requested for volume(s) {', '.join(which_snapshot_remove_failed)}"
         )
 
     myhostname = gethostname().split(".")[0]

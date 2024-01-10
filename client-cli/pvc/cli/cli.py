@@ -1896,6 +1896,12 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     help="Override default config file location.",
 )
 @click.option(
+    "--email-report",
+    "email_report",
+    default=None,
+    help="Email a backup summary report to the specified address(es), comma-separated.",
+)
+@click.option(
     "--force-full",
     "force_full_flag",
     default=False,
@@ -1909,7 +1915,7 @@ def cli_vm_backup_remove(domain, backup_datestring, backup_path):
     is_flag=True,
     help="Cron mode; don't error exit if this isn't the primary coordinator.",
 )
-def cli_vm_autobackup(autobackup_cfgfile, force_full_flag, cron_flag):
+def cli_vm_autobackup(autobackup_cfgfile, email_report, force_full_flag, cron_flag):
     """
     Perform automated backups of VMs, with integrated cleanup and full/incremental scheduling.
 
@@ -1936,12 +1942,17 @@ def cli_vm_autobackup(autobackup_cfgfile, force_full_flag, cron_flag):
     configuration file path if required by a particular run. For full details of the possible options, please
     see the example configuration file at "/usr/share/pvc/autobackup.sample.yaml".
 
+    An optional report on all current backups can be emailed to one or more email addresses using the
+    "--email-report" flag. This report will include information on all current known backups.
+
     The "--force-full" option can be used to force all configured VMs to perform a "full" level backup this run,
     which can help synchronize the backups of existing VMs with new ones.
     """
 
     # All work here is done in the helper function for portability; we don't even use "finish"
-    vm_autobackup(CLI_CONFIG, autobackup_cfgfile, force_full_flag, cron_flag)
+    vm_autobackup(
+        CLI_CONFIG, autobackup_cfgfile, email_report, force_full_flag, cron_flag
+    )
 
 
 ###############################################################################
