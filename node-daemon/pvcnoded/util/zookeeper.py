@@ -94,7 +94,10 @@ def validate_schema(logger, zkhandler):
     # Validate our schema against the active version
     if not zkhandler.schema.validate(zkhandler, logger):
         logger.out("Found schema violations, applying", state="i")
-        zkhandler.schema.apply(zkhandler)
+        try:
+            zkhandler.schema.apply(zkhandler)
+        except Exception as e:
+            logger.out(f"Failed to apply schema updates: {e}", state="w")
     else:
         logger.out("Schema successfully validated", state="o")
 

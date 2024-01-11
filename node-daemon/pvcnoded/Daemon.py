@@ -197,7 +197,9 @@ def entrypoint():
         os.execv(sys.argv[0], sys.argv)
 
     # Validate the schema
-    pvcnoded.util.zookeeper.validate_schema(logger, zkhandler)
+    with zkhandler.writelock("base.schema.version"):
+        sleep(0.5)
+        pvcnoded.util.zookeeper.validate_schema(logger, zkhandler)
 
     # Define a cleanup function
     def cleanup(failure=False):
