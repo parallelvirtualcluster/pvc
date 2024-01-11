@@ -12,16 +12,7 @@ fi
 
 pushd /usr/share/pvc
 
-case "$( cat /etc/debian_version )" in
-    10.*|11.*)
-        # Debian 10 & 11
-        ./pvcapid-manage_legacy.py db upgrade
-    ;;
-    *)
-        # Debian 12+
-        export FLASK_APP=./pvcapid-manage_flask.py
-        flask db upgrade
-    ;;
-esac
+export FLASK_APP=./pvcapid-manage-flask.py
+flask db upgrade
 
 popd
