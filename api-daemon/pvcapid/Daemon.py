@@ -27,7 +27,7 @@ from distutils.util import strtobool as dustrtobool
 import daemon_lib.config as cfg
 
 # Daemon version
-version = "0.9.89"
+version = "0.9.90"
 
 # API version
 API_VERSION = 1.0

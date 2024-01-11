@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.90](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.90)
+
+  * [Client CLI/API Daemon] Adds additional backup metainfo and an emailed report option to autobackups.
+  * [All] Adds a live migration maximum downtime selector to help with busy VM migrations.
+  * [API Daemon] Fixes a database migration bug on Debian 10/11.
+  * [Node Daemon] Fixes a race condition when applying Zookeeper schema changes.
+
 ###### [v0.9.89](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.89)
 
   * [API/Worker Daemons] Fixes a bug with the Celery result backends not being properly initialized on Debian 10/11.

@@ -1,3 +1,12 @@
+pvc (0.9.90-0) unstable; urgency=high
+
+  * [Client CLI/API Daemon] Adds additional backup metainfo and an emailed report option to autobackups.
+  * [All] Adds a live migration maximum downtime selector to help with busy VM migrations.
+  * [API Daemon] Fixes a database migration bug on Debian 10/11.
+  * [Node Daemon] Fixes a race condition when applying Zookeeper schema changes.
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Thu, 11 Jan 2024 00:14:49 -0500
+
 pvc (0.9.89-0) unstable; urgency=high
 
   * [API/Worker Daemons] Fixes a bug with the Celery result backends not being properly initialized on Debian 10/11.
