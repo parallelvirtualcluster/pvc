@@ -645,6 +645,24 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
         if _task_type_length > task_type_length:
             task_type_length = _task_type_length
 
+        for arg_name, arg_data in task["kwargs"].items():
+            # Skip the "run_on" argument
+            if arg_name == "run_on":
+                continue
+
+            # task_arg_name column
+            _task_arg_name_length = len(str(arg_name)) + 1
+            if _task_arg_name_length > task_arg_name_length:
+                task_arg_name_length = _task_arg_name_length
+
+    task_header_length = (
+        task_id_length + task_name_length + task_type_length + task_worker_length + 3
+    )
+    max_task_data_length = (
+        MAX_CONTENT_WIDTH - task_header_length - task_arg_name_length - 2
+    )
+
+    for task in task_data:
         updated_kwargs = list()
         for arg_name, arg_data in task["kwargs"].items():
             # Skip the "run_on" argument
@@ -656,15 +674,30 @@ def cli_cluster_task_format_pretty(CLI_CONFIG, task_data):
             if _task_arg_name_length > task_arg_name_length:
                 task_arg_name_length = _task_arg_name_length
 
-            if len(str(arg_data)) > 17:
-                arg_data = arg_data[:17] + "..."
+            if isinstance(arg_data, list):
+                for subarg_data in arg_data:
+                    if len(subarg_data) > max_task_data_length:
+                        subarg_data = (
+                            str(subarg_data[: max_task_data_length - 4]) + " ..."
+                        )
 
-            # task_arg_data column
-            _task_arg_data_length = len(str(arg_data)) + 1
-            if _task_arg_data_length > task_arg_data_length:
-                task_arg_data_length = _task_arg_data_length
+                    # task_arg_data column
+                    _task_arg_data_length = len(str(subarg_data)) + 1
+                    if _task_arg_data_length > task_arg_data_length:
+                        task_arg_data_length = _task_arg_data_length
 
-            updated_kwargs.append({"name": arg_name, "data": arg_data})
+                    updated_kwargs.append({"name": arg_name, "data": subarg_data})
+            else:
+                if len(str(arg_data)) > 24:
+                    arg_data = str(arg_data[:24]) + " ..."
+
+                    # task_arg_data column
+                    _task_arg_data_length = len(str(arg_data)) + 1
+                    if _task_arg_data_length > task_arg_data_length:
+                        task_arg_data_length = _task_arg_data_length
+
+                updated_kwargs.append({"name": arg_name, "data": arg_data})
+
         task["kwargs"] = updated_kwargs
         tasks.append(task)
 
