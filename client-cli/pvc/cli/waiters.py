@@ -115,6 +115,8 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
         )
         while True:
             sleep(0.5)
+            if isinstance(task_status, tuple):
+                continue
             if task_status.get("state") != "RUNNING":
                 break
             if task_status.get("current") > last_task:
