@@ -687,7 +687,10 @@ def cli_cluster_task(task_id, wait_flag, format_function):
 
     if wait_flag:
         # First validate that this is actually a valid task that is running
+        echo(CLI_CONFIG, "Querying cluster for tasks...", newline=False)
         retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, None)
+        echo(CLI_CONFIG, " done.")
+        echo(CLI_CONFIG, "")
         if task_id in [i["id"] for i in retdata]:
             task = [i for i in retdata if i["id"] == task_id][0]
             retmsg = wait_for_celery_task(
@@ -699,7 +702,10 @@ def cli_cluster_task(task_id, wait_flag, format_function):
             retmsg = f"No task with ID {task_id} found."
         finish(retcode, retmsg)
     else:
+        echo(CLI_CONFIG, "Querying cluster for tasks...", newline=False)
         retcode, retdata = pvc.lib.common.task_status(CLI_CONFIG, task_id)
+        echo(CLI_CONFIG, " done.")
+        echo(CLI_CONFIG, "")
         finish(retcode, retdata, format_function)
 
 
