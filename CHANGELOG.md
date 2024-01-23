@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.91](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.91)
+
+  * [Client CLI] Fixes a bug and improves output during cluster task events.
+  * [Client CLI] Improves the output of the task list display.
+  * [Provisioner] Fixes some missing cloud-init modules in the default debootstrap script.
+  * [Client CLI] Fixes a bug with a missing argument to the vm_define helper function.
+  * [All] Fixes inconsistent package find + rm commands to avoid errors in dpkg.
+
 ###### [v0.9.90](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.90)
 
   * [Client CLI/API Daemon] Adds additional backup metainfo and an emailed report option to autobackups.
