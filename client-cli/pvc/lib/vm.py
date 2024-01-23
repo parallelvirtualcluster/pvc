@@ -89,6 +89,7 @@ def vm_define(
     node_selector,
     node_autostart,
     migration_method,
+    migration_max_downtime,
     user_tags,
     protected_tags,
 ):
@@ -96,7 +97,7 @@ def vm_define(
     Define a new VM on the cluster
 
     API endpoint: POST /vm
-    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method}, user_tags={user_tags}, protected_tags={protected_tags}
+    API arguments: xml={xml}, node={node}, limit={node_limit}, selector={node_selector}, autostart={node_autostart}, migration_method={migration_method}, migration_max_downtime={migration_max_downtime}, user_tags={user_tags}, protected_tags={protected_tags}
     API schema: {"message":"{data}"}
     """
     params = {
@@ -105,6 +106,7 @@ def vm_define(
         "selector": node_selector,
         "autostart": node_autostart,
         "migration_method": migration_method,
+        "migration_max_downtime": migration_max_downtime,
         "user_tags": user_tags,
         "protected_tags": protected_tags,
     }
