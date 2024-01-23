@@ -5,4 +5,7 @@ if [ -d /etc/bash_completion.d ]; then
     _PVC_COMPLETE=source_bash pvc > /etc/bash_completion.d/pvc
 fi
 
+# Remove pycaches
+find /usr/lib/python3/dist-packages/pvc -name "__pycache__" -exec rm -r {} \;
+
 exit 0
