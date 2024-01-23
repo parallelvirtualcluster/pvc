@@ -13,7 +13,7 @@ override_dh_python3:
 	rm -r $(CURDIR)/client-cli/.pybuild $(CURDIR)/client-cli/pvc.egg-info
 
 override_dh_auto_clean:
-	find . -name "__pycache__" -o -name ".pybuild" -exec rm -r {} \; || true
+	find . -name "__pycache__" -o -name ".pybuild" -exec rm -fr {} + || true
 
 # If you need to rebuild the Sphinx documentation
 # Add spinxdoc to the dh --with line

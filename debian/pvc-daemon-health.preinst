@@ -1,6 +1,6 @@
 #!/bin/sh
 
 # Remove any cached CPython directories or files
-echo "Cleaning up existing CPython files"
-find /usr/share/pvc/pvchealthd -type d -name "__pycache__" -exec rm -rf {} \; &>/dev/null || true
-find /usr/share/pvc/plugins -type d -name "__pycache__" -exec rm -rf {} \; &>/dev/null || true
+echo "Cleaning up CPython caches"
+find /usr/share/pvc/pvchealthd -type d -name "__pycache__" -exec rm -fr {} + &>/dev/null || true
+find /usr/share/pvc/plugins -type d -name "__pycache__" -exec rm -fr {} + &>/dev/null || true

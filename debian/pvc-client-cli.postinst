@@ -2,10 +2,12 @@
 
 # Generate the bash completion configuration
 if [ -d /etc/bash_completion.d ]; then
+    echo "Installing BASH completion configuration"
     _PVC_COMPLETE=source_bash pvc > /etc/bash_completion.d/pvc
 fi
 
-# Remove pycaches
-find /usr/lib/python3/dist-packages/pvc -name "__pycache__" -exec rm -r {} \;
+# Remove any cached CPython directories or files
+echo "Cleaning up CPython caches"
+find /usr/lib/python3/dist-packages/pvc -type d -name "__pycache__" -exec rm -fr {} + &>/dev/null || true
 
 exit 0
