@@ -1201,7 +1201,7 @@ def get_resource_metrics(zkhandler):
         try:
             user_time = vm["vcpu_stats"]["user_time"] / 1000000
         except Exception:
-            cpu_time = 0
+            user_time = 0
         output_lines.append(
             f"pvc_vm_vcpus_user_time{{vm=\"{vm['name']}\"}} {user_time}"
         )
