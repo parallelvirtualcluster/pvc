@@ -1632,6 +1632,7 @@ def format_info(config, domain_information, long_output):
         "migrate": ansiprint.blue(),
         "unmigrate": ansiprint.blue(),
         "provision": ansiprint.blue(),
+        "restore": ansiprint.blue(),
     }
     ainformation.append(
         "{}State:{}              {}{}{}".format(
