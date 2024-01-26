@@ -150,6 +150,11 @@
 from daemon_lib.vmbuilder import VMBuilder
 
 
+# These are some global variables used below
+default_root_password = "test123"
+default_local_time = "UTC"
+
+
 # The VMBuilderScript class must be named as such, and extend VMBuilder.
 class VMBuilderScript(VMBuilder):
     def setup(self):
@@ -524,13 +529,23 @@ class VMBuilderScript(VMBuilder):
         ret = os.system(
             f"rinse --arch {rinse_architecture} --directory {temporary_directory} --distribution {rinse_release} --cache-dir {rinse_cache} --add-pkg-list /tmp/addpkg --verbose {mirror_arg}"
         )
+        ret = int(ret >> 8)
         if ret > 0:
-            self.fail("Failed to run rinse")
+            self.fail(f"Rinse failed with exit code {ret}")
 
         # Bind mount the devfs, sysfs, and procfs so we can grub-install later
-        os.system("mount --bind /dev {}/dev".format(temporary_directory))
-        os.system("mount --bind /sys {}/sys".format(temporary_directory))
-        os.system("mount --bind /proc {}/proc".format(temporary_directory))
+        ret = os.system("mount --bind /dev {}/dev".format(temporary_directory))
+        ret = int(ret >> 8)
+        if ret > 0:
+            self.fail(f"/dev bind mount failed with exit code {ret}")
+        ret = os.system("mount --bind /sys {}/sys".format(temporary_directory))
+        ret = int(ret >> 8)
+        if ret > 0:
+            self.fail(f"/sys bind mount failed with exit code {ret}")
+        ret = os.system("mount --bind /proc {}/proc".format(temporary_directory))
+        ret = int(ret >> 8)
+        if ret > 0:
+            self.fail(f"/proc bind mount failed with exit code {ret}")
 
         # Create an fstab entry for each volume
         fstab_file = "{}/etc/fstab".format(temporary_directory)
@@ -642,41 +657,76 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
         # Do some tasks inside the chroot using the provided context manager
         with chroot(temporary_directory):
             # Fix the broken kernel from rinse by setting a systemd machine ID and running the post scripts
-            os.system("systemd-machine-id-setup")
-            os.system(
+            ret = os.system("systemd-machine-id-setup")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Machine ID setup failed with exit code {ret}")
+
+            ret = os.system(
                 "rpm -q --scripts kernel-core | grep -A20  'posttrans scriptlet' | tail -n+2 | bash -x"
             )
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"RPM kernel reinstall failed with exit code {ret}")
 
             # Install any post packages
-            os.system(f"dnf install -y {' '.join(post_packages)}")
+            if len(post_packages) > 0:
+                ret = os.system(f"dnf install -y {' '.join(post_packages)}")
+                ret = int(ret >> 8)
+                if ret > 0:
+                    self.fail(f"DNF install failed with exit code {ret}")
 
             # Install and update GRUB config
-            os.system(
+            ret = os.system(
                 "grub2-install --force /dev/rbd/{}/{}_{}".format(
                     root_volume["pool"], vm_name, root_volume["disk_id"]
                 )
             )
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"GRUB install failed with exit code {ret}")
+
             os.system("grub2-mkconfig -o /boot/grub2/grub.cfg")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"GRUB update failed with exit code {ret}")
 
             # Set a really dumb root password so the VM can be debugged
             # EITHER CHANGE THIS YOURSELF, here or in Userdata, or run something after install
             # to change the root password: don't leave it like this on an Internet-facing machine!
-            os.system("echo root:test123 | chpasswd")
+            ret = os.system(f"echo root:{default_root_password} | chpasswd")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Root password change failed with exit code {ret}")
 
             # Enable dbus-broker
-            os.system("systemctl enable dbus-broker.service")
+            ret = os.system("systemctl enable dbus-broker.service")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Enable of dbus-broker failed with exit code {ret}")
 
             # Enable NetworkManager
             os.system("systemctl enable NetworkManager.service")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Enable of NetworkManager failed with exit code {ret}")
 
             # Enable cloud-init target on (first) boot
             # Your user-data should handle this and disable it once done, or things get messy.
             # That cloud-init won't run without this hack seems like a bug... but even the official
             # Debian cloud images are affected, so who knows.
             os.system("systemctl enable cloud-init.target")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Enable of cloud-init failed with exit code {ret}")
 
             # Set the timezone to UTC
-            os.system("ln -sf ../usr/share/zoneinfo/UTC /etc/localtime")
+            ret = os.system(
+                f"ln -sf ../usr/share/zoneinfo/{default_local_time} /etc/localtime"
+            )
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Localtime update failed with exit code {ret}")
 
     def cleanup(self):
         """

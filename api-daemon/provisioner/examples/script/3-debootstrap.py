@@ -150,6 +150,10 @@
 from daemon_lib.vmbuilder import VMBuilder
 
 
+# These are some global variables used below
+default_root_password = "test123"
+
+
 # The VMBuilderScript class must be named as such, and extend VMBuilder.
 class VMBuilderScript(VMBuilder):
     def setup(self):
@@ -498,11 +502,15 @@ class VMBuilderScript(VMBuilder):
         ret = os.system(
             f"debootstrap --include={','.join(deb_packages)} {deb_release} {temp_dir} {deb_mirror}"
         )
+        ret = int(ret >> 8)
         if ret > 0:
-            self.fail("Failed to run debootstrap")
+            self.fail(f"Debootstrap failed with exit code {ret}")
 
         # Bind mount the devfs so we can grub-install later
-        os.system("mount --bind /dev {}/dev".format(temp_dir))
+        ret = os.system("mount --bind /dev {}/dev".format(temp_dir))
+        ret = int(ret >> 8)
+        if ret > 0:
+            self.fail(f"/dev bind mount failed with exit code {ret}")
 
         # Create an fstab entry for each volume
         fstab_file = "{}/etc/fstab".format(temp_dir)
@@ -688,23 +696,36 @@ GRUB_DISABLE_LINUX_UUID=false
         # Do some tasks inside the chroot using the provided context manager
         with chroot(temp_dir):
             # Install and update GRUB
-            os.system(
+            ret = os.system(
                 "grub-install --force /dev/rbd/{}/{}_{}".format(
                     root_volume["pool"], vm_name, root_volume["disk_id"]
                 )
             )
-            os.system("update-grub")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"GRUB install failed with exit code {ret}")
+
+            ret = os.system("update-grub")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"GRUB update failed with exit code {ret}")
 
             # Set a really dumb root password so the VM can be debugged
             # EITHER CHANGE THIS YOURSELF, here or in Userdata, or run something after install
             # to change the root password: don't leave it like this on an Internet-facing machine!
-            os.system("echo root:test123 | chpasswd")
+            ret = os.system(f"echo root:{default_root_password} | chpasswd")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Root password change failed with exit code {ret}")
 
             # Enable cloud-init target on (first) boot
             # Your user-data should handle this and disable it once done, or things get messy.
             # That cloud-init won't run without this hack seems like a bug... but even the official
             # Debian cloud images are affected, so who knows.
-            os.system("systemctl enable cloud-init.target")
+            ret = os.system("systemctl enable cloud-init.target")
+            ret = int(ret >> 8)
+            if ret > 0:
+                self.fail(f"Enable of cloud-init failed with exit code {ret}")
 
     def cleanup(self):
         """
@@ -729,7 +750,7 @@ GRUB_DISABLE_LINUX_UUID=false
         temp_dir = "/tmp/target"
 
         # Unmount the bound devfs
-        os.system("umount {}/dev".format(temp_dir))
+        os.system("umount -f {}/dev".format(temp_dir))
 
         # Use this construct for reversing the list, as the normal reverse() messes with the list
         for volume in list(reversed(self.vm_data["volumes"])):
@@ -746,7 +767,7 @@ GRUB_DISABLE_LINUX_UUID=false
             ):
                 # Unmount filesystem
                 retcode, stdout, stderr = pvc_common.run_os_command(
-                    f"umount {mount_path}"
+                    f"umount -f {mount_path}"
                 )
                 if retcode:
                     self.log_err(
