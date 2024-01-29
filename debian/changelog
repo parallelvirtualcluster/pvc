@@ -1,3 +1,13 @@
+pvc (0.9.92-0) unstable; urgency=high
+
+  * [CLI Client] Adds the new restore state to the colours list for VM status
+  * [API Daemon] Fixes an incorrect variable assignment
+  * [Provisioner] Improves the error handling of various steps in the debootstrap and rinse example scripts
+  * [CLI Client] Fixes two bugs around missing keys that were added recently (uses get() instead direct dictionary refs)
+  * [CLI Client] Improves API error handling via GET retries (x3) and better server status code handling
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Mon, 29 Jan 2024 09:39:10 -0500
+
 pvc (0.9.91-0) unstable; urgency=high
 
   * [Client CLI] Fixes a bug and improves output during cluster task events.

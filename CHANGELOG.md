@@ -1,5 +1,13 @@
 ## PVC Changelog
 
+###### [v0.9.92](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.92)
+
+  * [CLI Client] Adds the new restore state to the colours list for VM status
+  * [API Daemon] Fixes an incorrect variable assignment
+  * [Provisioner] Improves the error handling of various steps in the debootstrap and rinse example scripts
+  * [CLI Client] Fixes two bugs around missing keys that were added recently (uses get() instead direct dictionary refs)
+  * [CLI Client] Improves API error handling via GET retries (x3) and better server status code handling
+
 ###### [v0.9.91](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.91)
 
   * [Client CLI] Fixes a bug and improves output during cluster task events.
