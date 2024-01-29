@@ -1717,7 +1717,7 @@ def format_info(config, domain_information, long_output):
         "{}Max live downtime:{}  {}".format(
             ansiprint.purple(),
             ansiprint.end(),
-            f"{domain_information['migration_max_downtime']} ms",
+            f"{domain_information.get('migration_max_downtime')} ms",
         )
     )
 

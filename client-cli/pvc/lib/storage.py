@@ -430,7 +430,7 @@ def format_list_osd(config, osd_list):
             )
             continue
 
-        if osd_information["is_split"]:
+        if osd_information.get("is_split") is not None:
             osd_information["device"] = f"{osd_information['device']} [s]"
 
         # Deal with the size to human readable
