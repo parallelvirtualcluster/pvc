@@ -140,15 +140,31 @@ def call_api(
     # Determine the request type and hit the API
     disable_warnings()
     try:
+        response = None
         if operation == "get":
-            response = requests.get(
-                uri,
-                timeout=timeout,
-                headers=headers,
-                params=params,
-                data=data,
-                verify=config["verify_ssl"],
-            )
+            retry_on_code = [429, 500, 502, 503, 504]
+            for i in range(3):
+                failed = False
+                try:
+                    response = requests.get(
+                        uri,
+                        timeout=timeout,
+                        headers=headers,
+                        params=params,
+                        data=data,
+                        verify=config["verify_ssl"],
+                    )
+                    if response.status_code in retry_on_code:
+                        failed = True
+                        continue
+                except requests.exceptions.ConnectionError:
+                    failed = True
+                    pass
+            if failed:
+                error = f"Code {response.status_code}" if response else "Timeout"
+                raise requests.exceptions.ConnectionError(
+                    f"Failed to connect after 3 tries ({error})"
+                )
         if operation == "post":
             response = requests.post(
                 uri,
@@ -189,7 +205,8 @@ def call_api(
             )
     except Exception as e:
         message = "Failed to connect to the API: {}".format(e)
-        response = ErrorResponse({"message": message}, 500)
+        code = response.status_code if response else 504
+        response = ErrorResponse({"message": message}, code)
 
     # Display debug output
     if config["debug"]:
