@@ -57,10 +57,11 @@ class ZKConnection(object):
                 schema_version = 0
             zkhandler.schema.load(schema_version, quiet=True)
 
-            ret = function(zkhandler, *args, **kwargs)
-
-            zkhandler.disconnect()
-            del zkhandler
+            try:
+                ret = function(zkhandler, *args, **kwargs)
+            finally:
+                zkhandler.disconnect()
+                del zkhandler
 
             return ret
 
