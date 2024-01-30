@@ -1,3 +1,9 @@
+pvc (0.9.93-0) unstable; urgency=high
+
+  * [API Daemon] Fixes a bug where stuck zkhandler threads were not cleaned up on error
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Tue, 30 Jan 2024 09:51:21 -0500
+
 pvc (0.9.92-0) unstable; urgency=high
 
   * [CLI Client] Adds the new restore state to the colours list for VM status

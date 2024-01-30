@@ -1,5 +1,9 @@
 ## PVC Changelog
 
+###### [v0.9.93](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.93)
+
+  * [API Daemon] Fixes a bug where stuck zkhandler threads were not cleaned up on error
+
 ###### [v0.9.92](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.92)
 
   * [CLI Client] Adds the new restore state to the colours list for VM status
