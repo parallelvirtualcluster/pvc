@@ -1869,11 +1869,13 @@ def ceph_volume_list(zkhandler, pool=None, limit=None, is_fuzzy=True):
 
 
 @ZKConnection(config)
-def ceph_volume_add(zkhandler, pool, name, size):
+def ceph_volume_add(zkhandler, pool, name, size, force_flag):
     """
     Add a Ceph RBD volume to the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.add_volume(zkhandler, pool, name, size)
+    retflag, retdata = pvc_ceph.add_volume(
+        zkhandler, pool, name, size, force_flag=force_flag
+    )
 
     if retflag:
         retcode = 200
@@ -1901,11 +1903,13 @@ def ceph_volume_clone(zkhandler, pool, name, source_volume):
 
 
 @ZKConnection(config)
-def ceph_volume_resize(zkhandler, pool, name, size):
+def ceph_volume_resize(zkhandler, pool, name, size, force_flag):
     """
     Resize an existing Ceph RBD volume in the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.resize_volume(zkhandler, pool, name, size)
+    retflag, retdata = pvc_ceph.resize_volume(
+        zkhandler, pool, name, size, force_flag=force_flag
+    )
 
     if retflag:
         retcode = 200

@@ -553,7 +553,7 @@ def getVolumeInformation(zkhandler, pool, volume):
     return volume_information
 
 
-def add_volume(zkhandler, pool, name, size):
+def add_volume(zkhandler, pool, name, size, force_flag=False):
     # 1. Verify the size of the volume
     pool_information = getPoolInformation(zkhandler, pool)
     size_bytes = format_bytes_fromhuman(size)
@@ -563,10 +563,25 @@ def add_volume(zkhandler, pool, name, size):
             f"ERROR: Requested volume size '{size}' does not have a valid SI unit",
         )
 
-    if size_bytes >= int(pool_information["stats"]["free_bytes"]):
+    pool_total_free_bytes = int(pool_information["stats"]["free_bytes"])
+    if size_bytes >= pool_total_free_bytes:
         return (
             False,
             f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the available free space in the pool ('{format_bytes_tohuman(pool_information['stats']['free_bytes'])}')",
+        )
+
+    # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
+    pool_total_bytes = (
+        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+    )
+    pool_safe_total_bytes = int(pool_total_bytes * 0.80)
+    pool_safe_free_bytes = pool_safe_total_bytes - int(
+        pool_information["stats"]["used_bytes"]
+    )
+    if size_bytes >= pool_safe_free_bytes and not force_flag:
+        return (
+            False,
+            f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the safe free space in the pool ('{format_bytes_tohuman(pool_safe_free_bytes)}' for 80% full); retry with force to ignore this error",
         )
 
     # 2. Create the volume
@@ -634,7 +649,7 @@ def clone_volume(zkhandler, pool, name_src, name_new):
     )
 
 
-def resize_volume(zkhandler, pool, name, size):
+def resize_volume(zkhandler, pool, name, size, force_flag=False):
     if not verifyVolume(zkhandler, pool, name):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(
             name, pool
@@ -649,10 +664,25 @@ def resize_volume(zkhandler, pool, name, size):
             f"ERROR: Requested volume size '{size}' does not have a valid SI unit",
         )
 
-    if size_bytes >= int(pool_information["stats"]["free_bytes"]):
+    pool_total_free_bytes = int(pool_information["stats"]["free_bytes"])
+    if size_bytes >= pool_total_free_bytes:
         return (
             False,
             f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the available free space in the pool ('{format_bytes_tohuman(pool_information['stats']['free_bytes'])}')",
+        )
+
+    # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
+    pool_total_bytes = (
+        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+    )
+    pool_safe_total_bytes = int(pool_total_bytes * 0.80)
+    pool_safe_free_bytes = pool_safe_total_bytes - int(
+        pool_information["stats"]["used_bytes"]
+    )
+    if size_bytes >= pool_safe_free_bytes and not force_flag:
+        return (
+            False,
+            f"ERROR: Requested volume size '{format_bytes_tohuman(size_bytes)}' is greater than the safe free space in the pool ('{format_bytes_tohuman(pool_safe_free_bytes)}' for 80% full); retry with force to ignore this error",
         )
 
     # 2. Resize the volume

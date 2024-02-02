@@ -1172,15 +1172,15 @@ def ceph_volume_list(config, limit, pool):
         return False, response.json().get("message", "")
 
 
-def ceph_volume_add(config, pool, volume, size):
+def ceph_volume_add(config, pool, volume, size, force_flag=False):
     """
     Add new Ceph volume
 
     API endpoint: POST /api/v1/storage/ceph/volume
-    API arguments: volume={volume}, pool={pool}, size={size}
+    API arguments: volume={volume}, pool={pool}, size={size}, force={force_flag}
     API schema: {"message":"{data}"}
     """
-    params = {"volume": volume, "pool": pool, "size": size}
+    params = {"volume": volume, "pool": pool, "size": size, "force": force_flag}
     response = call_api(config, "post", "/storage/ceph/volume", params=params)
 
     if response.status_code == 200:
@@ -1261,12 +1261,14 @@ def ceph_volume_remove(config, pool, volume):
     return retstatus, response.json().get("message", "")
 
 
-def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
+def ceph_volume_modify(
+    config, pool, volume, new_name=None, new_size=None, force_flag=False
+):
     """
     Modify Ceph volume
 
     API endpoint: PUT /api/v1/storage/ceph/volume/{pool}/{volume}
-    API arguments:
+    API arguments: [new_name={new_name}], [new_size={new_size}], force_flag={force_flag}
     API schema: {"message":"{data}"}
     """
 
@@ -1275,6 +1277,7 @@ def ceph_volume_modify(config, pool, volume, new_name=None, new_size=None):
         params["new_name"] = new_name
     if new_size:
         params["new_size"] = new_size
+        params["force"] = force_flag
 
     response = call_api(
         config,

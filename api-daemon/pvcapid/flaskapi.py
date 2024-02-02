@@ -5744,6 +5744,10 @@ class API_Storage_Ceph_Volume_Root(Resource):
                 "required": True,
                 "helptext": "A volume size in bytes (B implied or with SI suffix k/M/G/T) must be specified.",
             },
+            {
+                "name": "force",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -5769,6 +5773,12 @@ class API_Storage_Ceph_Volume_Root(Resource):
             type: string
             required: true
             description: The volume size, in bytes (B implied) or with a single-character SI suffix (k/M/G/T)
+          - in: query
+            name: force
+            type: boolean
+            required: false
+            default: flase
+            description: Force action if volume creation would violate 80% full soft cap on the pool
         responses:
           200:
             description: OK
@@ -5785,6 +5795,7 @@ class API_Storage_Ceph_Volume_Root(Resource):
             reqargs.get("pool", None),
             reqargs.get("volume", None),
             reqargs.get("size", None),
+            reqargs.get("force", False),
         )
 
 
@@ -5819,7 +5830,11 @@ class API_Storage_Ceph_Volume_Element(Resource):
                 "name": "size",
                 "required": True,
                 "helptext": "A volume size in bytes (or with k/M/G/T suffix) must be specified.",
-            }
+            },
+            {
+                "name": "force",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -5835,6 +5850,12 @@ class API_Storage_Ceph_Volume_Element(Resource):
             type: string
             required: true
             description: The volume size in bytes (or with a metric suffix, i.e. k/M/G/T)
+          - in: query
+            name: force
+            type: boolean
+            required: false
+            default: flase
+            description: Force action if volume creation would violate 80% full soft cap on the pool
         responses:
           200:
             description: OK
@@ -5852,9 +5873,17 @@ class API_Storage_Ceph_Volume_Element(Resource):
               type: object
               id: Message
         """
-        return api_helper.ceph_volume_add(pool, volume, reqargs.get("size", None))
+        return api_helper.ceph_volume_add(
+            pool, volume, reqargs.get("size", None), reqargs.get("force", False)
+        )
 
-    @RequestParser([{"name": "new_size"}, {"name": "new_name"}])
+    @RequestParser(
+        [
+            {"name": "new_size"},
+            {"name": "new_name"},
+            {"name": "force", "required": False},
+        ]
+    )
     @Authenticator
     def put(self, pool, volume, reqargs):
         """
@@ -5873,6 +5902,12 @@ class API_Storage_Ceph_Volume_Element(Resource):
             type: string
             required: false
             description: The new volume name
+          - in: query
+            name: force
+            type: boolean
+            required: false
+            default: flase
+            description: Force action if new volume size would violate 80% full soft cap on the pool
         responses:
           200:
             description: OK
@@ -5894,7 +5929,9 @@ class API_Storage_Ceph_Volume_Element(Resource):
             return {"message": "Can only perform one modification at once"}, 400
 
         if reqargs.get("new_size", None):
-            return api_helper.ceph_volume_resize(pool, volume, reqargs.get("new_size"))
+            return api_helper.ceph_volume_resize(
+                pool, volume, reqargs.get("new_size"), reqargs.get("force", False)
+            )
         if reqargs.get("new_name", None):
             return api_helper.ceph_volume_rename(pool, volume, reqargs.get("new_name"))
         return {"message": "At least one modification must be specified"}, 400

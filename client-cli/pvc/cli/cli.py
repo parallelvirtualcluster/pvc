@@ -4100,12 +4100,26 @@ def cli_storage_volume():
 @click.argument("pool")
 @click.argument("name")
 @click.argument("size")
-def cli_storage_volume_add(pool, name, size):
+@click.option(
+    "-f",
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force creation even if volume would violate 80% full safe free space.",
+)
+def cli_storage_volume_add(pool, name, size, force_flag):
     """
     Add a new Ceph RBD volume in pool POOL with name NAME and size SIZE (in human units, e.g. 1024M, 20G, etc.).
+
+    PVC will prevent the creation of a volume who's size is greater than the available free space on the pool. This cannot be overridden.
+
+    PVC will prevent the creation of a volume who's size is greater than the 80% full safe free space on the pool. This can be overridden with the "-f"/"--force" option but this may be dangerous!
     """
 
-    retcode, retmsg = pvc.lib.storage.ceph_volume_add(CLI_CONFIG, pool, name, size)
+    retcode, retmsg = pvc.lib.storage.ceph_volume_add(
+        CLI_CONFIG, pool, name, size, force_flag=force_flag
+    )
     finish(retcode, retmsg)
 
 
@@ -4171,14 +4185,26 @@ def cli_storage_volume_remove(pool, name):
 @click.argument("pool")
 @click.argument("name")
 @click.argument("size")
+@click.option(
+    "-f",
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force resize even if volume would violate 80% full safe free space.",
+)
 @confirm_opt("Resize volume {name} in pool {pool} to size {size}")
-def cli_storage_volume_resize(pool, name, size):
+def cli_storage_volume_resize(pool, name, size, force_flag):
     """
     Resize an existing Ceph RBD volume with name NAME in pool POOL to size SIZE (in human units, e.g. 1024M, 20G, etc.).
+
+    PVC will prevent the resize of a volume who's new size is greater than the available free space on the pool. This cannot be overridden.
+
+    PVC will prevent the resize of a volume who's new size is greater than the 80% full safe free space on the pool. This can be overridden with the "-f"/"--force" option but this may be dangerous!
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_volume_modify(
-        CLI_CONFIG, pool, name, new_size=size
+        CLI_CONFIG, pool, name, new_size=size, force_flag=force_flag
     )
     finish(retcode, retmsg)
 
