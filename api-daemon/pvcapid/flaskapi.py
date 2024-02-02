@@ -5972,7 +5972,11 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
                 "name": "new_volume",
                 "required": True,
                 "helptext": "A new volume name must be specified.",
-            }
+            },
+            {
+                "name": "force",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -5988,6 +5992,12 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
             type: string
             required: true
             description: The name of the new cloned volume
+          - in: query
+            name: force
+            type: boolean
+            required: false
+            default: flase
+            description: Force action if clone volume size would violate 80% full soft cap on the pool
         responses:
           200:
             description: OK
@@ -6006,7 +6016,7 @@ class API_Storage_Ceph_Volume_Element_Clone(Resource):
               id: Message
         """
         return api_helper.ceph_volume_clone(
-            pool, reqargs.get("new_volume", None), volume
+            pool, reqargs.get("new_volume", None), volume, reqargs.get("force", None)
         )
 
 

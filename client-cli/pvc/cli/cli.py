@@ -4237,13 +4237,25 @@ def cli_storage_volume_rename(pool, name, new_name):
 @click.argument("pool")
 @click.argument("name")
 @click.argument("new_name")
-def cli_storage_volume_clone(pool, name, new_name):
+@click.option(
+    "-f",
+    "--force",
+    "force_flag",
+    is_flag=True,
+    default=False,
+    help="Force clone even if volume would violate 80% full safe free space.",
+)
+def cli_storage_volume_clone(pool, name, new_name, force_flag):
     """
     Clone a Ceph RBD volume with name NAME in pool POOL to name NEW_NAME in pool POOL.
+
+    PVC will prevent the clone of a volume who's new size is greater than the available free space on the pool. This cannot be overridden.
+
+    PVC will prevent the clone of a volume who's new size is greater than the 80% full safe free space on the pool. This can be overridden with the "-f"/"--force" option but this may be dangerous!
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_volume_clone(
-        CLI_CONFIG, pool, name, new_name
+        CLI_CONFIG, pool, name, new_name, force_flag=force_flag
     )
     finish(retcode, retmsg)
 

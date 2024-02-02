@@ -1887,11 +1887,13 @@ def ceph_volume_add(zkhandler, pool, name, size, force_flag):
 
 
 @ZKConnection(config)
-def ceph_volume_clone(zkhandler, pool, name, source_volume):
+def ceph_volume_clone(zkhandler, pool, name, source_volume, force_flag):
     """
     Clone a Ceph RBD volume to a new volume on the PVC Ceph storage cluster.
     """
-    retflag, retdata = pvc_ceph.clone_volume(zkhandler, pool, source_volume, name)
+    retflag, retdata = pvc_ceph.clone_volume(
+        zkhandler, pool, source_volume, name, force_flag=force_flag
+    )
 
     if retflag:
         retcode = 200

@@ -611,13 +611,39 @@ def add_volume(zkhandler, pool, name, size, force_flag=False):
     )
 
 
-def clone_volume(zkhandler, pool, name_src, name_new):
+def clone_volume(zkhandler, pool, name_src, name_new, force_flag=False):
+    # 1. Verify the volume
     if not verifyVolume(zkhandler, pool, name_src):
         return False, 'ERROR: No volume with name "{}" is present in pool "{}".'.format(
             name_src, pool
         )
 
-    # 1. Clone the volume
+    volume_stats_raw = zkhandler.read(("volume.stats", f"{pool}/{name_src}"))
+    volume_stats = dict(json.loads(volume_stats_raw))
+    size_bytes = volume_stats["size"]
+    pool_information = getPoolInformation(zkhandler, pool)
+    pool_total_free_bytes = int(pool_information["stats"]["free_bytes"])
+    if size_bytes >= pool_total_free_bytes:
+        return (
+            False,
+            f"ERROR: Clone volume size '{format_bytes_tohuman(size_bytes)}' is greater than the available free space in the pool ('{format_bytes_tohuman(pool_information['stats']['free_bytes'])}')",
+        )
+
+    # Check if we're greater than 80% utilization after the create; error if so unless we have the force flag
+    pool_total_bytes = (
+        int(pool_information["stats"]["used_bytes"]) + pool_total_free_bytes
+    )
+    pool_safe_total_bytes = int(pool_total_bytes * 0.80)
+    pool_safe_free_bytes = pool_safe_total_bytes - int(
+        pool_information["stats"]["used_bytes"]
+    )
+    if size_bytes >= pool_safe_free_bytes and not force_flag:
+        return (
+            False,
+            f"ERROR: Clone volume size '{format_bytes_tohuman(size_bytes)}' is greater than the safe free space in the pool ('{format_bytes_tohuman(pool_safe_free_bytes)}' for 80% full); retry with force to ignore this error",
+        )
+
+    # 2. Clone the volume
     retcode, stdout, stderr = common.run_os_command(
         "rbd copy {}/{} {}/{}".format(pool, name_src, pool, name_new)
     )
@@ -629,13 +655,13 @@ def clone_volume(zkhandler, pool, name_src, name_new):
             ),
         )
 
-    # 2. Get volume stats
+    # 3. Get volume stats
     retcode, stdout, stderr = common.run_os_command(
         "rbd info --format json {}/{}".format(pool, name_new)
     )
     volstats = stdout
 
-    # 3. Add the new volume to Zookeeper
+    # 4. Add the new volume to Zookeeper
     zkhandler.write(
         [
             (("volume", f"{pool}/{name_new}"), ""),

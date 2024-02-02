@@ -1294,15 +1294,15 @@ def ceph_volume_modify(
     return retstatus, response.json().get("message", "")
 
 
-def ceph_volume_clone(config, pool, volume, new_volume):
+def ceph_volume_clone(config, pool, volume, new_volume, force_flag=False):
     """
     Clone Ceph volume
 
     API endpoint: POST /api/v1/storage/ceph/volume/{pool}/{volume}
-    API arguments: new_volume={new_volume
+    API arguments: new_volume={new_volume, force_flag={force_flag}
     API schema: {"message":"{data}"}
     """
-    params = {"new_volume": new_volume}
+    params = {"new_volume": new_volume, "force_flag": force_flag}
     response = call_api(
         config,
         "post",
