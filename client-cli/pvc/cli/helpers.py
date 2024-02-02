@@ -246,6 +246,8 @@ def vm_autobackup(
     Perform automatic backups of VMs based on an external config file.
     """
 
+    backup_summary = dict()
+
     if email_report is not None:
         from email.utils import formatdate
         from socket import gethostname
@@ -553,6 +555,8 @@ def vm_autobackup(
         with open(autobackup_state_file, "w") as fh:
             jdump(state_data, fh)
 
+        backup_summary[vm] = tracked_backups
+
     if autobackup_config["auto_mount_enabled"]:
         # Execute each unmount_cmds command in sequence
         for cmd in autobackup_config["unmount_cmds"]:
@@ -588,20 +592,6 @@ def vm_autobackup(
     if email_report is not None:
         echo(CLI_CONFIG, "")
         echo(CLI_CONFIG, f"Sending email summary report to {email_report}")
-        backup_summary = dict()
-        for vm in backup_vms:
-            backup_path = f"{backup_suffixed_path}/{vm}"
-            autobackup_state_file = f"{backup_path}/.autobackup.json"
-            if not path.exists(backup_path) or not path.exists(autobackup_state_file):
-                # There are no new backups so the list is empty
-                state_data = dict()
-                tracked_backups = list()
-            else:
-                with open(autobackup_state_file) as fh:
-                    state_data = jload(fh)
-                tracked_backups = state_data["tracked_backups"]
-
-            backup_summary[vm] = tracked_backups
 
         current_datetime = datetime.now()
         email_datetime = formatdate(float(current_datetime.strftime("%s")))
