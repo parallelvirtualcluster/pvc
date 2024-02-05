@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.94](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.94)
+
+  * [CLI Client] Fixes an incorrect ordering issue with autobackup summary emails
+  * [API Daemon/CLI Client] Adds an additional safety check for 80% cluster fullness when doing volume adds or resizes
+  * [API Daemon/CLI Client] Adds safety checks to volume clones as well
+  * [API Daemon] Fixes a few remaining memory bugs for stopped/disabled VMs
+
 ###### [v0.9.93](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.93)
 
   * [API Daemon] Fixes a bug where stuck zkhandler threads were not cleaned up on error
