@@ -1230,7 +1230,7 @@ def get_resource_metrics(zkhandler):
     )
     output_lines.append("# TYPE pvc_vm_memory_stats_actual gauge")
     for vm in vm_data:
-        actual_memory = vm["memory_stats"]["actual"]
+        actual_memory = vm["memory_stats"].get("actual", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_actual{{vm=\"{vm['name']}\"}} {actual_memory}"
         )
@@ -1238,7 +1238,7 @@ def get_resource_metrics(zkhandler):
     output_lines.append("# HELP pvc_vm_memory_stats_rss PVC VM RSS memory KB")
     output_lines.append("# TYPE pvc_vm_memory_stats_rss gauge")
     for vm in vm_data:
-        rss_memory = vm["memory_stats"]["rss"]
+        rss_memory = vm["memory_stats"].get("rss", 0)
         output_lines.append(
             f"pvc_vm_memory_stats_rss{{vm=\"{vm['name']}\"}} {rss_memory}"
         )
