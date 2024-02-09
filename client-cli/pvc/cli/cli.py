@@ -4849,13 +4849,27 @@ def cli_provisioner_template_network_vni():
 @connection_req
 @click.argument("name")
 @click.argument("vni")
-def cli_provisioner_template_network_vni_add(name, vni):
+@click.option(
+    "-d",
+    "--permit-duplicate",
+    "permit_duplicate_flag",
+    is_flag=True,
+    default=False,
+    help="Permit a duplicate VNI if one already exists",
+)
+def cli_provisioner_template_network_vni_add(name, vni, permit_duplicate_flag):
     """
     Add a new network VNI to network template NAME.
 
     Networks will be added to VMs in the order they are added and displayed within the template.
+
+    NOTE: Normally, the API prevents duplicate VNIs from being added to the same network template
+    by returning an error, as this requirement is very niche. If you do not desire this behaviour,
+    use the "-d"/"--permit-duplicate" option to bypass the check.
     """
     params = dict()
+    if permit_duplicate_flag:
+        params["permit_duplicate"] = True
 
     retcode, retdata = pvc.lib.provisioner.template_element_add(
         CLI_CONFIG, name, vni, params, element_type="net", template_type="network"

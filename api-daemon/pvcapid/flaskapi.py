@@ -7139,7 +7139,11 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
                 "name": "vni",
                 "required": True,
                 "helptext": "A valid VNI must be specified.",
-            }
+            },
+            {
+                "name": "permit_duplicate",
+                "required": False,
+            },
         ]
     )
     @Authenticator
@@ -7155,6 +7159,11 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
             type: integer
             required: false
             description: PVC network VNI
+          - in: query
+            name: permit_duplicate
+            type: boolean
+            required: false
+            description: Bypass checks to permit duplicate VNIs for niche usecases
         responses:
           200:
             description: OK
@@ -7168,7 +7177,7 @@ class API_Provisioner_Template_Network_Net_Root(Resource):
               id: Message
         """
         return api_provisioner.create_template_network_element(
-            template, reqargs.get("vni", None)
+            template, reqargs.get("vni", None), reqargs.get("permit_duplicate", False)
         )
 
 
@@ -7206,13 +7215,27 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
                 return _vni, 200
         abort(404)
 
+    @RequestParser(
+        [
+            {
+                "name": "permit_duplicate",
+                "required": False,
+            }
+        ]
+    )
     @Authenticator
-    def post(self, template, vni):
+    def post(self, template, vni, reqargs):
         """
         Create a new network {vni} in network template {template}
         ---
         tags:
           - provisioner / template
+        parameters:
+          - in: query
+            name: permit_duplicate
+            type: boolean
+            required: false
+            description: Bypass checks to permit duplicate VNIs for niche usecases
         responses:
           200:
             description: OK
@@ -7225,7 +7248,9 @@ class API_Provisioner_Template_Network_Net_Element(Resource):
               type: object
               id: Message
         """
-        return api_provisioner.create_template_network_element(template, vni)
+        return api_provisioner.create_template_network_element(
+            template, vni, reqargs.get("permit_duplicate", False)
+        )
 
     @Authenticator
     def delete(self, template, vni):

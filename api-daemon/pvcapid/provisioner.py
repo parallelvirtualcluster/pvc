@@ -284,27 +284,28 @@ def create_template_network(name, mac_template=None):
     return retmsg, retcode
 
 
-def create_template_network_element(name, vni):
+def create_template_network_element(name, vni, permit_duplicate=False):
     if list_template_network(name, is_fuzzy=False)[-1] != 200:
         retmsg = {"message": 'The network template "{}" does not exist.'.format(name)}
         retcode = 400
         return retmsg, retcode
 
-    networks, code = list_template_network_vnis(name)
-    if code != 200:
-        networks = []
-    found_vni = False
-    for network in networks:
-        if network["vni"] == vni:
-            found_vni = True
-    if found_vni:
-        retmsg = {
-            "message": 'The VNI "{}" in network template "{}" already exists.'.format(
-                vni, name
-            )
-        }
-        retcode = 400
-        return retmsg, retcode
+    if not permit_duplicate:
+        networks, code = list_template_network_vnis(name)
+        if code != 200:
+            networks = []
+        found_vni = False
+        for network in networks:
+            if network["vni"] == vni:
+                found_vni = True
+        if found_vni:
+            retmsg = {
+                "message": 'The VNI "{}" in network template "{}" already exists.'.format(
+                    vni, name
+                )
+            }
+            retcode = 400
+            return retmsg, retcode
 
     conn, cur = open_database(config)
     try:
