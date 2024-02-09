@@ -125,7 +125,7 @@ def list_template(limit, table, is_fuzzy=True):
             args = (template_data["id"],)
             cur.execute(query, args)
             disks = cur.fetchall()
-            data[template_id]["disks"] = disks
+            data[template_id]["disks"] = sorted(disks, key=lambda x: x["disk_id"])
 
     close_database(conn, cur)
 
