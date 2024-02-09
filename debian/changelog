@@ -1,3 +1,11 @@
+pvc (0.9.95-0) unstable; urgency=high
+
+  * [API Daemon/CLI Client] Adds a flag to allow duplicate VNIs in network templates
+  * [API Daemon] Ensures that storage template disks are returned in disk ID order
+  * [Client CLI] Fixes a display bug showing all OSDs as split
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 09 Feb 2024 12:42:00 -0500
+
 pvc (0.9.94-0) unstable; urgency=high
 
   * [CLI Client] Fixes an incorrect ordering issue with autobackup summary emails
