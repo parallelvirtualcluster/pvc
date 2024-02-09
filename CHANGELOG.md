@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.95](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.95)
+
+  * [API Daemon/CLI Client] Adds a flag to allow duplicate VNIs in network templates
+  * [API Daemon] Ensures that storage template disks are returned in disk ID order
+
 ###### [v0.9.94](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.94)
 
   * [CLI Client] Fixes an incorrect ordering issue with autobackup summary emails
