@@ -69,6 +69,8 @@ def getNodeHealthDetails(zkhandler, node_name, node_health_plugins):
             plugin_message,
             plugin_data,
         ) = tuple(all_plugin_data[pos_start:pos_end])
+        if plugin_data is None:
+            continue
         plugin_output = {
             "name": plugin,
             "last_run": int(plugin_last_run) if plugin_last_run is not None else None,
