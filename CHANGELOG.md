@@ -1,5 +1,10 @@
 ## PVC Changelog
 
+###### [v0.9.96](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.96)
+
+  * [API Daemon] Fixes a bug when reporting node stats
+  * [API Daemon] Fixes a bug deleteing successful benchmark results
+
 ###### [v0.9.95](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.95)
 
   * [API Daemon/CLI Client] Adds a flag to allow duplicate VNIs in network templates
