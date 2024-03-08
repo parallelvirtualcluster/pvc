@@ -115,12 +115,13 @@ class BenchmarkError(Exception):
 #
 
 
-def cleanup(job_name, db_conn=None, db_cur=None, zkhandler=None):
+def cleanup(job_name, db_conn=None, db_cur=None, zkhandler=None, final=False):
     if db_conn is not None and db_cur is not None:
-        # Clean up our dangling result
-        query = "DELETE FROM storage_benchmarks WHERE job = %s;"
-        args = (job_name,)
-        db_cur.execute(query, args)
+        if not final:
+            # Clean up our dangling result (non-final runs only)
+            query = "DELETE FROM storage_benchmarks WHERE job = %s;"
+            args = (job_name,)
+            db_cur.execute(query, args)
         db_conn.commit()
         # Close the database connections cleanly
         close_database(db_conn, db_cur)
@@ -410,6 +411,7 @@ def worker_run_benchmark(zkhandler, celery, config, pool):
         db_conn=db_conn,
         db_cur=db_cur,
         zkhandler=zkhandler,
+        final=True,
     )
 
     current_stage += 1
