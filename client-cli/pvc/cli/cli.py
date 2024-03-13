@@ -892,6 +892,7 @@ def cli_node_ready(
     "--lines",
     "lines",
     default=None,
+    type=int,
     show_default=False,
     help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
 )
@@ -2516,6 +2517,7 @@ def cli_vm_volume_remove(domain, volume, live_flag, restart_flag):
     "--lines",
     "lines",
     default=None,
+    type=int,
     show_default=False,
     help="Display this many log lines from the end of the log buffer.  [default: 1000; with follow: 10]",
 )
