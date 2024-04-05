@@ -521,7 +521,7 @@ class NodeInstance(object):
         self.logger.out("Acquired write lock for synchronization phase F", state="o")
         time.sleep(0.2)  # Time fir reader to acquire the lock
         # 4. Add gateway IPs
-        for network in self.d_network:
+        for network in self.d_network.copy():
             self.d_network[network].createGateways()
         self.logger.out("Releasing write lock for synchronization phase F", state="i")
         self.zkhandler.write([("base.config.primary_node.sync_lock", "")])
