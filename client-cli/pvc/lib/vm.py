@@ -1765,9 +1765,9 @@ def format_info(config, domain_information, long_output):
                     tags_name=tag["name"],
                     tags_type=tag["type"],
                     tags_protected=str(tag["protected"]),
-                    tags_protected_colour=ansiprint.green()
-                    if tag["protected"]
-                    else ansiprint.blue(),
+                    tags_protected_colour=(
+                        ansiprint.green() if tag["protected"] else ansiprint.blue()
+                    ),
                     end=ansiprint.end(),
                 )
             )

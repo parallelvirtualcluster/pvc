@@ -231,7 +231,7 @@ class NetstatsInstance(object):
         # Get a list of all active interfaces
         net_root_path = "/sys/class/net"
         all_ifaces = list()
-        for (_, dirnames, _) in walk(net_root_path):
+        for _, dirnames, _ in walk(net_root_path):
             all_ifaces.extend(dirnames)
         all_ifaces.sort()
 

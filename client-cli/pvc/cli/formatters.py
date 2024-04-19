@@ -580,9 +580,11 @@ def cli_cluster_fault_list_format_long(CLI_CONFIG, fault_data):
                 fault_id=fault["id"],
                 fault_status=fault["status"].title(),
                 fault_health_delta=f"-{fault['health_delta']}%",
-                fault_acknowledged_at=fault["acknowledged_at"]
-                if fault["acknowledged_at"] != ""
-                else "N/A",
+                fault_acknowledged_at=(
+                    fault["acknowledged_at"]
+                    if fault["acknowledged_at"] != ""
+                    else "N/A"
+                ),
                 fault_last_reported=fault["last_reported"],
                 fault_first_reported=fault["first_reported"],
             )

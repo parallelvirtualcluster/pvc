@@ -244,9 +244,9 @@ def get_parsed_configuration(config_file):
                     ]
                 ][0]
 
-            config_cluster_networks_specific[
-                f"{network_type}_dev_ip"
-            ] = f"{list(network.hosts())[address_id]}/{network.prefixlen}"
+            config_cluster_networks_specific[f"{network_type}_dev_ip"] = (
+                f"{list(network.hosts())[address_id]}/{network.prefixlen}"
+            )
 
             config = {**config, **config_cluster_networks_specific}
 

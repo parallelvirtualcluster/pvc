@@ -671,9 +671,9 @@ def cli_cluster_maintenance_off():
 @format_opt(
     {
         "pretty": cli_cluster_task_format_pretty,
-        "raw": lambda d: "\n".join([t["id"] for t in d])
-        if isinstance(d, list)
-        else d["state"],
+        "raw": lambda d: (
+            "\n".join([t["id"] for t in d]) if isinstance(d, list) else d["state"]
+        ),
         "json": lambda d: jdumps(d),
         "json-pretty": lambda d: jdumps(d, indent=2),
     }

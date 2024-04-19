@@ -320,7 +320,11 @@ def get_list_osd(zkhandler, limit=None, is_fuzzy=True):
 #
 def getPoolInformation(zkhandler, pool):
     # Parse the stats data
-    (pool_stats_raw, tier, pgs,) = zkhandler.read_many(
+    (
+        pool_stats_raw,
+        tier,
+        pgs,
+    ) = zkhandler.read_many(
         [
             ("pool.stats", pool),
             ("pool.tier", pool),
