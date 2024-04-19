@@ -1,5 +1,12 @@
 ## PVC Changelog
 
+###### [v0.9.97](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.97)
+
+  * [Client CLI] Ensures --lines is always an integer value
+  * [Node Daemon] Fixes a bug if d_network changes during iteration
+  * [Node Daemon] Moves to using allocated instead of free memory for node reporting
+  * [API Daemon] Fixes a bug if lingering RBD snapshots exist when removing a volume (#180)
+
 ###### [v0.9.96](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.96)
 
   * [API Daemon] Fixes a bug when reporting node stats

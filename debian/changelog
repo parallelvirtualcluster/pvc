@@ -1,3 +1,12 @@
+pvc (0.9.97-0) unstable; urgency=high
+
+  * [Client CLI] Ensures --lines is always an integer value
+  * [Node Daemon] Fixes a bug if d_network changes during iteration
+  * [Node Daemon] Moves to using allocated instead of free memory for node reporting
+  * [API Daemon] Fixes a bug if lingering RBD snapshots exist when removing a volume (#180)
+
+ -- Joshua M. Boniface <joshua@boniface.me>  Fri, 19 Apr 2024 10:32:16 -0400
+
 pvc (0.9.96-0) unstable; urgency=high
 
   * [API Daemon] Fixes a bug when reporting node stats
