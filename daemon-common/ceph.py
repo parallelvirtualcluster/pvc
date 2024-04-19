@@ -828,9 +828,21 @@ def remove_volume(zkhandler, pool, name):
             name, pool
         )
 
-    # 1. Remove volume snapshots
+    # 1a. Remove PVC-managed volume snapshots
     for snapshot in zkhandler.children(("snapshot", f"{pool}/{name}")):
         remove_snapshot(zkhandler, pool, name, snapshot)
+
+    # 1b. Purge any remaining volume snapshots
+    retcode, stdout, stderr = common.run_os_command(
+        "rbd snap purge {}/{}".format(pool, name)
+    )
+    if retcode:
+        return (
+            False,
+            'ERROR: Failed to purge snapshots from RBD volume "{}" in pool "{}": {}'.format(
+                name, pool, stderr
+            ),
+        )
 
     # 2. Remove the volume
     retcode, stdout, stderr = common.run_os_command("rbd rm {}/{}".format(pool, name))
