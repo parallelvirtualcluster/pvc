@@ -743,7 +743,7 @@ def node_keepalive(logger, config, zkhandler, this_node, netstats):
     # Get node performance statistics
     this_node.memtotal = int(psutil.virtual_memory().total / 1024 / 1024)
     this_node.memused = int(psutil.virtual_memory().used / 1024 / 1024)
-    this_node.memfree = int(psutil.virtual_memory().free / 1024 / 1024)
+    this_node.memfree = int(psutil.virtual_memory().available / 1024 / 1024)
     this_node.cpuload = round(os.getloadavg()[0], 2)
 
     # Get node network statistics via netstats instance
