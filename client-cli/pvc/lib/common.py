@@ -108,9 +108,10 @@ class UploadProgressBar(object):
 
 
 class ErrorResponse(requests.Response):
-    def __init__(self, json_data, status_code):
+    def __init__(self, json_data, status_code, headers):
         self.json_data = json_data
         self.status_code = status_code
+        self.headers = headers
 
     def json(self):
         return self.json_data
@@ -206,7 +207,7 @@ def call_api(
     except Exception as e:
         message = "Failed to connect to the API: {}".format(e)
         code = response.status_code if response else 504
-        response = ErrorResponse({"message": message}, code)
+        response = ErrorResponse({"message": message}, code, None)
 
     # Display debug output
     if config["debug"]:
