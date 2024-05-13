@@ -4325,6 +4325,10 @@ def cli_storage_volume_snapshot():
 def cli_storage_volume_snapshot_add(pool, volume, name):
     """
     Add a snapshot with name NAME of Ceph RBD volume VOLUME in pool POOL.
+
+    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
+    VM at the moment of the snapshot.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_snapshot_add(CLI_CONFIG, pool, volume, name)
@@ -4390,6 +4394,10 @@ def cli_storage_volume_snapshot_rollback(pool, volume, name):
     WARNING: A rollback cannot be performed on an RBD volume with active I/O. Doing so will cause
     undefined behaviour and possible corruption. Ensure that any VM(s) using this RBD volume are
     stopped or disabled before attempting a snapshot rollback.
+
+    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
+    VM at the moment of the snapshot.
     """
 
     retcode, retmsg = pvc.lib.storage.ceph_snapshot_rollback(
