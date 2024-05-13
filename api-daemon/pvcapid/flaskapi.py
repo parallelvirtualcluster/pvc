@@ -6362,6 +6362,59 @@ api.add_resource(
 )
 
 
+# /storage/ceph/snapshot/<pool>/<volume>/<snapshot>/rollback
+class API_Storage_Ceph_Snapshot_Rollback_Element(Resource):
+    @Authenticator
+    def post(self, pool, volume, snapshot):
+        """
+        Roll back an RBD volume {volume} in pool {pool} to snapshot {snapshot}
+
+        WARNING: This action cannot be done on an active RBD volume. All IO MUST be stopped first.
+        ---
+        tags:
+          - storage / ceph
+        parameters:
+          - in: query
+            name: snapshot
+            type: string
+            required: true
+            description: The name of the snapshot
+          - in: query
+            name: volume
+            type: string
+            required: true
+            description: The name of the volume
+          - in: query
+            name: pool
+            type: integer
+            required: true
+            description: The name of the pool
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Bad request
+            schema:
+              type: object
+              id: Message
+        """
+        return api_helper.ceph_volume_snapshot_rollback(pool, volume, snapshot)
+
+
+api.add_resource(
+    API_Storage_Ceph_Snapshot_Rollback_Element,
+    "/storage/ceph/snapshot/<pool>/<volume>/<snapshot>/rollback",
+)
+
+
 ##########################################################
 # Provisioner API
 ##########################################################

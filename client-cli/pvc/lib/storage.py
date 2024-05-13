@@ -1544,6 +1544,30 @@ def ceph_snapshot_add(config, pool, volume, snapshot):
     return retstatus, response.json().get("message", "")
 
 
+def ceph_snapshot_rollback(config, pool, volume, snapshot):
+    """
+    Roll back Ceph volume to snapshot
+
+    API endpoint: POST /api/v1/storage/ceph/snapshot/{pool}/{volume}/{snapshot}/rollback
+    API arguments:
+    API schema: {"message":"{data}"}
+    """
+    response = call_api(
+        config,
+        "post",
+        "/storage/ceph/snapshot/{pool}/{volume}/{snapshot}/rollback".format(
+            snapshot=snapshot, volume=volume, pool=pool
+        ),
+    )
+
+    if response.status_code == 200:
+        retstatus = True
+    else:
+        retstatus = False
+
+    return retstatus, response.json().get("message", "")
+
+
 def ceph_snapshot_remove(config, pool, volume, snapshot):
     """
     Remove Ceph snapshot

@@ -2184,6 +2184,22 @@ def ceph_volume_snapshot_rename(zkhandler, pool, volume, name, new_name):
 
 
 @ZKConnection(config)
+def ceph_volume_snapshot_rollback(zkhandler, pool, volume, name):
+    """
+    Roll back a Ceph RBD volume to a given snapshot in the PVC Ceph storage cluster.
+    """
+    retflag, retdata = pvc_ceph.rollback_snapshot(zkhandler, pool, volume, name)
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def ceph_volume_snapshot_remove(zkhandler, pool, volume, name):
     """
     Remove a Ceph RBD volume snapshot from the PVC Ceph storage cluster.

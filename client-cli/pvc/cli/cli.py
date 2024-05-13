@@ -4373,6 +4373,32 @@ def cli_storage_volume_snapshot_remove(pool, volume, name):
 
 
 ###############################################################################
+# > pvc storage volume snapshot rollback
+###############################################################################
+@click.command(name="rollback", short_help="Roll back RBD volume to snapshot.")
+@connection_req
+@click.argument("pool")
+@click.argument("volume")
+@click.argument("name")
+@confirm_opt("Roll back to snapshot {name} for volume {pool}/{volume}")
+def cli_storage_volume_snapshot_rollback(pool, volume, name):
+    """
+    Roll back the Ceph RBD volume VOLUME in pool POOL to the snapshot NAME.
+
+    DANGER: All data written to the volume since the given snapshot will be permanently lost.
+
+    WARNING: A rollback cannot be performed on an RBD volume with active I/O. Doing so will cause
+    undefined behaviour and possible corruption. Ensure that any VM(s) using this RBD volume are
+    stopped or disabled before attempting a snapshot rollback.
+    """
+
+    retcode, retmsg = pvc.lib.storage.ceph_snapshot_rollback(
+        CLI_CONFIG, pool, volume, name
+    )
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc storage volume snapshot list
 ###############################################################################
 @click.command(name="list", short_help="List cluster RBD volume shapshots.")
@@ -6349,6 +6375,7 @@ cli_storage_volume.add_command(cli_storage_volume_list)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_add)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_rename)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_remove)
+cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_rollback)
 cli_storage_volume_snapshot.add_command(cli_storage_volume_snapshot_list)
 cli_storage_volume.add_command(cli_storage_volume_snapshot)
 cli_storage.add_command(cli_storage_volume)
