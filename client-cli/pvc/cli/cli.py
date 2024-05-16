@@ -1766,6 +1766,53 @@ def cli_vm_flush_locks(domain, wait_flag):
 
 
 ###############################################################################
+# > pvc vm snapshot
+###############################################################################
+@click.group(
+    name="snapshot",
+    short_help="Manage snapshots for PVC VMs.",
+    context_settings=CONTEXT_SETTINGS,
+)
+def cli_vm_snapshot():
+    """
+    Manage snapshots of VMs in a PVC cluster.
+    """
+    pass
+
+
+###############################################################################
+# > pvc vm snapshot create
+###############################################################################
+@click.command(name="create", short_help="Create a snapshot of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name", required=False, default=None)
+def cli_vm_snapshot_create(domain, snapshot_name):
+    """
+    Create a snapshot of the disks and XML configuration of virtual machine DOMAIN, with the
+    optional name SNAPSHOT_NAME. DOMAIN mayb e a UUID or name.
+
+    WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
+    of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
+    VM at the moment of the snapshot.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Taking snapshot of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_create_snapshot(
+        CLI_CONFIG, domain, snapshot_name=snapshot_name
+    )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm backup
 ###############################################################################
 @click.group(
@@ -6302,6 +6349,8 @@ cli_vm.add_command(cli_vm_move)
 cli_vm.add_command(cli_vm_migrate)
 cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
+cli_vm_snapshot.add_command(cli_vm_snapshot_create)
+cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)
 cli_vm_backup.add_command(cli_vm_backup_remove)

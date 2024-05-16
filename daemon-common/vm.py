@@ -306,6 +306,7 @@ def define_vm(
             (("domain.meta.node_selector", dom_uuid), str(node_selector).lower()),
             (("domain.meta.tags", dom_uuid), ""),
             (("domain.migrate.sync_lock", dom_uuid), ""),
+            (("domain.snapshots", dom_uuid), ""),
         ]
     )
 
@@ -1245,6 +1246,107 @@ def get_list(
     return True, sorted(vm_data_list, key=lambda d: d["name"])
 
 
+#
+# VM Snapshot Tasks
+#
+def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    if snapshot_name is None:
+        now = datetime.now()
+        datestring = now.strftime("%Y%m%d%H%M%S")
+        snapshot_name = f"snapshot_{datestring}"
+    else:
+        reg = re.compile("^[a-z0-9.-_]+$")
+        if not reg.match(snapshot_name):
+            return (
+                False,
+                f'ERROR: Snapshot name "{snapshot_name}" contains invalid characters; only alphanumeric, ".", "-", and "_" characters are allowed!',
+            )
+
+    tstart = time.time()
+
+    # Get the list of all RBD volumes
+    rbd_list = zkhandler.read(("domain.storage.volumes", dom_uuid)).split(",")
+
+    snap_list = list()
+
+    # If a snapshot fails, clean up any snapshots that were successfuly created
+    def cleanup_failure():
+        for snapshot in snap_list:
+            rbd, snapshot_name = snapshot.split("@")
+            pool, volume = rbd.split("/")
+            # We capture no output here, because if this fails too we're in a deep
+            # error chain and will just ignore it
+            ceph.remove_snapshot(zkhandler, pool, volume, snapshot_name)
+
+    # Iterrate through and create a snapshot for each RBD volume
+    for rbd in rbd_list:
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.add_snapshot(zkhandler, pool, volume, snapshot_name)
+        if not ret:
+            cleanup_failure()
+            return False, msg
+        else:
+            snap_list.append(f"{pool}/{volume}@{snapshot_name}")
+
+    # Get the current domain XML
+    vm_config = zkhandler.read(("domain.xml", dom_uuid))
+
+    # Add the snapshot entry to Zookeeper
+    zkhandler.write(
+        [
+            (
+                ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name),
+                snapshot_name,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.is_backup",
+                    snapshot_name,
+                ),
+                False,
+            ),
+            (
+                ("domain.snapshots", dom_uuid, "domain_snapshot.xml", snapshot_name),
+                vm_config,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot_name,
+                ),
+                ",".join(snap_list),
+            ),
+        ]
+    )
+
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
+    return (
+        True,
+        f'Successfully created snapshot "{snapshot_name}" of VM "{domain}" in {ttot}s.',
+    )
+
+
+def rollback_vm_snapshot(zkhandler, domain, snapshot_name):
+    pass
+
+
+def remove_vm_snapshot(zkhandler, domain, snapshot_name):
+    pass
+
+
+#
+# VM Backup Tasks
+#
 def backup_vm(
     zkhandler, domain, backup_path, incremental_parent=None, retain_snapshot=False
 ):

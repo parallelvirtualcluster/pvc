@@ -498,6 +498,27 @@ def vm_restore(config, vm, backup_path, backup_datestring, retain_snapshot=False
         return True, response.json().get("message", "")
 
 
+def vm_create_snapshot(config, vm, snapshot_name=None):
+    """
+    Take a snapshot of a VM's disks and configuration
+
+    API endpoint: POST /vm/{vm}/snapshot
+    API arguments: snapshot_name=snapshot_name
+    API schema: {"message":"{data}"}
+    """
+    params = dict()
+    if snapshot_name is not None:
+        params["snapshot_name"] = snapshot_name
+    response = call_api(
+        config, "post", "/vm/{vm}/snapshot".format(vm=vm), params=params
+    )
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

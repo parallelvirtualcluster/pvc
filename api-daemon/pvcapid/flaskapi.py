@@ -3086,6 +3086,54 @@ class API_VM_Restore(Resource):
 api.add_resource(API_VM_Restore, "/vm/<vm>/restore")
 
 
+# /vm/<vm>/snapshot
+class API_VM_Snapshot(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot_name",
+                "required": False,
+                "helptext": "",
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Take a snapshot of a VM's disks and configuration
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: snapshot_name
+            type: string
+            required: false
+            description: A custom name for the snapshot instead of autogeneration by date
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        snapshot_name = reqargs.get("snapshot_name", None)
+        return api_helper.create_vm_snapshot(vm, snapshot_name=snapshot_name)
+
+
+api.add_resource(API_VM_Snapshot, "/vm/<vm>/snapshot")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

@@ -573,7 +573,7 @@ class ZKHandler(object):
 #
 class ZKSchema(object):
     # Current version
-    _version = 13
+    _version = 14
 
     # Root for doing nested keys
     _schema_root = ""
@@ -713,13 +713,21 @@ class ZKSchema(object):
             "meta.node_limit": "/node_limit",
             "meta.tags": "/tags",
             "migrate.sync_lock": "/migrate_sync_lock",
+            "snapshots": "/snapshots",
         },
         # The schema of an individual domain tag entry (/domains/{domain}/tags/{tag})
         "tag": {
-            "name": "",
+            "name": "",  # The root key
             "type": "/type",
             "protected": "/protected",
-        },  # The root key
+        },
+        # The schema of an individual domain snapshot entry (/domains/{domain}/snapshots/{snapshot})
+        "domain_snapshot": {
+            "name": "",  # The root key
+            "is_backup": "/is_backup",
+            "xml": "/xml",
+            "rbd_snapshots": "/rbdsnaplist",
+        },
         # The schema of an individual network entry (/networks/{vni})
         "network": {
             "vni": "",  # The root key
