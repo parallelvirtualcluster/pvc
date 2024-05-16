@@ -540,7 +540,10 @@ def getCephVolumes(zkhandler, pool):
         pool_list = [pool]
 
     for pool_name in pool_list:
-        for volume_name in zkhandler.children(("volume", pool_name)):
+        children = zkhandler.children(("volume", pool_name))
+        if children is None:
+            continue
+        for volume_name in children:
             volume_list.append("{}/{}".format(pool_name, volume_name))
 
     return volume_list
@@ -1153,20 +1156,9 @@ def remove_snapshot(zkhandler, pool, volume, name):
     )
 
 
-def get_list_snapshot(zkhandler, pool, volume, limit=None, is_fuzzy=True):
+def get_list_snapshot(zkhandler, target_pool, target_volume, limit=None, is_fuzzy=True):
     snapshot_list = []
-    if pool and not verifyPool(zkhandler, pool):
-        return False, 'ERROR: No pool with name "{}" is present in the cluster.'.format(
-            pool
-        )
-
-    if volume and not verifyPool(zkhandler, volume):
-        return (
-            False,
-            'ERROR: No volume with name "{}" is present in the cluster.'.format(volume),
-        )
-
-    full_snapshot_list = getCephSnapshots(zkhandler, pool, volume)
+    full_snapshot_list = getCephSnapshots(zkhandler, target_pool, target_volume)
 
     if is_fuzzy and limit:
         # Implicitly assume fuzzy limits
@@ -1178,6 +1170,10 @@ def get_list_snapshot(zkhandler, pool, volume, limit=None, is_fuzzy=True):
     for snapshot in full_snapshot_list:
         volume, snapshot_name = snapshot.split("@")
         pool_name, volume_name = volume.split("/")
+        if target_pool and pool_name != target_pool:
+            continue
+        if target_volume and volume_name != target_volume:
+            continue
         if limit:
             try:
                 if re.fullmatch(limit, snapshot_name):
