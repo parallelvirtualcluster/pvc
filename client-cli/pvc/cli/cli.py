@@ -1787,10 +1787,10 @@ def cli_vm_snapshot():
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name", required=False, default=None)
-def cli_vm_snapshot_create(domain, snapshot_name):
+def cli_vm_snapshot_remove(domain, snapshot_name):
     """
     Create a snapshot of the disks and XML configuration of virtual machine DOMAIN, with the
-    optional name SNAPSHOT_NAME. DOMAIN mayb e a UUID or name.
+    optional name SNAPSHOT_NAME. DOMAIN may be a UUID or name.
 
     WARNING: RBD snapshots are crash-consistent but not filesystem-aware. If a snapshot was taken
     of a running VM, restoring that snapshot will be equivalent to having forcibly restarted the
@@ -1805,6 +1805,32 @@ def cli_vm_snapshot_create(domain, snapshot_name):
     retcode, retmsg = pvc.lib.vm.vm_create_snapshot(
         CLI_CONFIG, domain, snapshot_name=snapshot_name
     )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm snapshot remove
+###############################################################################
+@click.command(name="remove", short_help="Remove a snapshot of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name")
+def cli_vm_snapshot_create(domain, snapshot_name):
+    """
+    Remove the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
+    DOMAIN may be a UUID or name.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Removing snapshot '{snapshot_name}' of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_remove_snapshot(CLI_CONFIG, domain, snapshot_name)
     if retcode:
         echo(CLI_CONFIG, "done.")
     else:
@@ -6350,6 +6376,7 @@ cli_vm.add_command(cli_vm_migrate)
 cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
 cli_vm_snapshot.add_command(cli_vm_snapshot_create)
+cli_vm_snapshot.add_command(cli_vm_snapshot_remove)
 cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)

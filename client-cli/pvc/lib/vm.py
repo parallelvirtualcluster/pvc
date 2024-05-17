@@ -519,6 +519,25 @@ def vm_create_snapshot(config, vm, snapshot_name=None):
         return True, response.json().get("message", "")
 
 
+def vm_remove_snapshot(config, vm, snapshot_name):
+    """
+    Remove a snapshot of a VM's disks and configuration
+
+    API endpoint: DELETE /vm/{vm}/snapshot
+    API arguments: snapshot_name=snapshot_name
+    API schema: {"message":"{data}"}
+    """
+    params = {"snapshot_name": snapshot_name}
+    response = call_api(
+        config, "delete", "/vm/{vm}/snapshot".format(vm=vm), params=params
+    )
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

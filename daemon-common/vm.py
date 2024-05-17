@@ -1249,7 +1249,7 @@ def get_list(
 #
 # VM Snapshot Tasks
 #
-def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
+def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -1310,7 +1310,7 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
                     "domain_snapshot.is_backup",
                     snapshot_name,
                 ),
-                False,
+                is_backup,
             ),
             (
                 ("domain.snapshots", dom_uuid, "domain_snapshot.xml", snapshot_name),
@@ -1336,11 +1336,63 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
     )
 
 
+def remove_vm_snapshot(zkhandler, domain, snapshot_name, remove_backup=False):
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    if not zkhandler.exists(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
+    ):
+        return (
+            False,
+            f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
+        )
+
+    if (
+        zkhandler.read(
+            ("domain.snapshots", dom_uuid, "domain_snapshot.is_backup", snapshot_name)
+        )
+        and not remove_backup
+    ):
+        # Disallow removing backups normally, but expose `remove_backup` flag for internal usage by refactored backup handlers
+        return (
+            False,
+            f'ERROR: Snapshot "{snapshot_name}" of VM "{domain}" is a backup; please remove with "pvc backup"!',
+        )
+
+    tstart = time.time()
+
+    _snapshots = zkhandler.read(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.rbd_snapshots", snapshot_name)
+    )
+    rbd_snapshots = _snapshots.split(",")
+    for snap in rbd_snapshots:
+        name, rbd = snap.split("@")
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.remove_snapshot(zkhandler, pool, volume, name)
+        if not ret:
+            return False, msg
+
+    ret = zkhandler.delete(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
+    )
+    if not ret:
+        return (
+            False,
+            f'ERROR: Failed to delete snapshot "{snapshot_name}" of VM "{domain}" in Zookeeper.',
+        )
+
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
+    return (
+        True,
+        f'Successfully removed snapshot "{snapshot_name}" of VM "{domain}" in {ttot}s.',
+    )
+
+
 def rollback_vm_snapshot(zkhandler, domain, snapshot_name):
-    pass
-
-
-def remove_vm_snapshot(zkhandler, domain, snapshot_name):
     pass
 
 
