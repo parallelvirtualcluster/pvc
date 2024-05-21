@@ -1367,8 +1367,8 @@ def remove_vm_snapshot(zkhandler, domain, snapshot_name):
     )
     rbd_snapshots = _snapshots.split(",")
     for snap in rbd_snapshots:
-        name, rbd = snap.split("@")
-        pool, volume = name.split("/")
+        rbd, name = snap.split("@")
+        pool, volume = rbd.split("/")
         ret, msg = ceph.remove_snapshot(zkhandler, pool, volume, name)
         if not ret:
             return False, msg
