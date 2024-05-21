@@ -1562,11 +1562,12 @@ def format_info(config, domain_information, long_output):
             ansiprint.purple(), ansiprint.end(), domain_information["vcpu"]
         )
     )
-    ainformation.append(
-        "{}Topology (S/C/T):{}   {}".format(
-            ansiprint.purple(), ansiprint.end(), domain_information["vcpu_topology"]
+    if long_output is True:
+        ainformation.append(
+            "{}Topology (S/C/T):{}   {}".format(
+                ansiprint.purple(), ansiprint.end(), domain_information["vcpu_topology"]
+            )
         )
-    )
 
     if (
         domain_information["vnc"].get("listen", "None") != "None"
