@@ -1300,8 +1300,22 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
     zkhandler.write(
         [
             (
-                ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name),
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.name",
+                    snapshot_name,
+                ),
                 snapshot_name,
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.timestamp",
+                    snapshot_name,
+                ),
+                tstart,
             ),
             (
                 (
@@ -1313,7 +1327,12 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
                 is_backup,
             ),
             (
-                ("domain.snapshots", dom_uuid, "domain_snapshot.xml", snapshot_name),
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.xml",
+                    snapshot_name,
+                ),
                 vm_config,
             ),
             (
@@ -1350,9 +1369,21 @@ def remove_vm_snapshot(zkhandler, domain, snapshot_name, remove_backup=False):
             f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
         )
 
-    if (
+    print(
         zkhandler.read(
             ("domain.snapshots", dom_uuid, "domain_snapshot.is_backup", snapshot_name)
+        )
+    )
+    if (
+        strtobool(
+            zkhandler.read(
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.is_backup",
+                    snapshot_name,
+                )
+            )
         )
         and not remove_backup
     ):

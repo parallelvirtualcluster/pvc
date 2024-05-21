@@ -1603,6 +1603,32 @@ class API_VM_Root(Resource):
                     properties:
                       name:
                         type: string
+                        description: The name of the snapshot
+                      timestamp:
+                        type: string
+                        descrpition: Unix timestamp of the snapshot
+                      is_backup:
+                        type: boolean
+                        description: Whether the snapshot is from a backup or not (manual)
+                      rbd_snapshots:
+                        type: array
+                        items:
+                          type: string
+                          description: A list of RBD volume snapshots belonging to this VM snapshot, in '<pool>/<volume>@<snapshot>' format
+                      xml_diff_lines:
+                        type: array
+                        items:
+                          type: string
+                          description: A list of strings representing the lines of an (n=1) unified diff between the current VM XML specification and the snapshot VM XML specification
+                snapshots:
+                  type: array
+                  description: The snapshot(s) of the VM
+                  items:
+                    type: object
+                    id: VMSnapshot
+                    properties:
+                      name:
+                        type: string
                         description: The name of the tag
                       type:
                         type: string

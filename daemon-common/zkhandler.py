@@ -724,6 +724,7 @@ class ZKSchema(object):
         # The schema of an individual domain snapshot entry (/domains/{domain}/snapshots/{snapshot})
         "domain_snapshot": {
             "name": "",  # The root key
+            "timestamp": "/timestamp",
             "is_backup": "/is_backup",
             "xml": "/xml",
             "rbd_snapshots": "/rbdsnaplist",

@@ -28,6 +28,7 @@ from json import loads
 from re import match as re_match
 from re import split as re_split
 from re import sub as re_sub
+from difflib import unified_diff
 from distutils.util import strtobool
 from threading import Thread
 from shlex import split as shlex_split
@@ -428,6 +429,72 @@ def getDomainTags(zkhandler, dom_uuid):
 
 
 #
+# Get a list of domain snapshots
+#
+def getDomainSnapshots(zkhandler, dom_uuid):
+    """
+    Get a list of snapshots for domain dom_uuid
+
+    The UUID must be validated before calling this function!
+    """
+    snapshots = list()
+
+    all_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
+
+    current_dom_xml = zkhandler.read(("domain.xml", dom_uuid))
+
+    snapshots = list()
+    for snapshot in all_snapshots:
+        (
+            snap_name,
+            snap_timestamp,
+            snap_is_backup,
+            _snap_rbd_snapshots,
+            snap_dom_xml,
+        ) = zkhandler.read_many(
+            [
+                ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot),
+                ("domain.snapshots", dom_uuid, "domain_snapshot.timestamp", snapshot),
+                ("domain.snapshots", dom_uuid, "domain_snapshot.is_backup", snapshot),
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot,
+                ),
+                ("domain.snapshots", dom_uuid, "domain_snapshot.xml", snapshot),
+            ]
+        )
+
+        snap_rbd_snapshots = _snap_rbd_snapshots.split(",")
+
+        snap_dom_xml_diff = list(
+            unified_diff(
+                current_dom_xml.split("\n"),
+                snap_dom_xml.split("\n"),
+                fromfile="current",
+                tofile="snapshot",
+                fromfiledate="",
+                tofiledate="",
+                n=1,
+                lineterm="",
+            )
+        )
+
+        snapshots.append(
+            {
+                "name": snap_name,
+                "timestamp": snap_timestamp,
+                "xml_diff_lines": snap_dom_xml_diff,
+                "is_backup": snap_is_backup,
+                "rbd_snapshots": snap_rbd_snapshots,
+            }
+        )
+
+    return sorted(snapshots, key=lambda s: s["timestamp"], reverse=True)
+
+
+#
 # Get a set of domain metadata
 #
 def getDomainMetadata(zkhandler, dom_uuid):
@@ -515,6 +582,7 @@ def getInformationFromXML(zkhandler, uuid):
     ) = getDomainMetadata(zkhandler, uuid)
 
     domain_tags = getDomainTags(zkhandler, uuid)
+    domain_snapshots = getDomainSnapshots(zkhandler, uuid)
 
     if domain_vnc:
         domain_vnc_listen, domain_vnc_port = domain_vnc.split(":")
@@ -574,6 +642,7 @@ def getInformationFromXML(zkhandler, uuid):
         "migration_method": domain_migration_method,
         "migration_max_downtime": int(domain_migration_max_downtime),
         "tags": domain_tags,
+        "snapshots": domain_snapshots,
         "description": domain_description,
         "profile": domain_profile,
         "memory": int(domain_memory),
