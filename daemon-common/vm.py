@@ -1257,8 +1257,7 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
 
     if snapshot_name is None:
         now = datetime.now()
-        datestring = now.strftime("%Y%m%d%H%M%S")
-        snapshot_name = f"snapshot_{datestring}"
+        snapshot_name = now.strftime("%Y%m%d%H%M%S")
     else:
         reg = re.compile("^[a-z0-9.-_]+$")
         if not reg.match(snapshot_name):
