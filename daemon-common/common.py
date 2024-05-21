@@ -448,14 +448,12 @@ def getDomainSnapshots(zkhandler, dom_uuid):
         (
             snap_name,
             snap_timestamp,
-            snap_is_backup,
             _snap_rbd_snapshots,
             snap_dom_xml,
         ) = zkhandler.read_many(
             [
                 ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot),
                 ("domain.snapshots", dom_uuid, "domain_snapshot.timestamp", snapshot),
-                ("domain.snapshots", dom_uuid, "domain_snapshot.is_backup", snapshot),
                 (
                     "domain.snapshots",
                     dom_uuid,
@@ -486,7 +484,6 @@ def getDomainSnapshots(zkhandler, dom_uuid):
                 "name": snap_name,
                 "timestamp": snap_timestamp,
                 "xml_diff_lines": snap_dom_xml_diff,
-                "is_backup": snap_is_backup,
                 "rbd_snapshots": snap_rbd_snapshots,
             }
         )

@@ -1249,7 +1249,7 @@ def get_list(
 #
 # VM Snapshot Tasks
 #
-def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
+def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -1321,15 +1321,6 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
                 (
                     "domain.snapshots",
                     dom_uuid,
-                    "domain_snapshot.is_backup",
-                    snapshot_name,
-                ),
-                is_backup,
-            ),
-            (
-                (
-                    "domain.snapshots",
-                    dom_uuid,
                     "domain_snapshot.xml",
                     snapshot_name,
                 ),
@@ -1355,7 +1346,7 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None, is_backup=False):
     )
 
 
-def remove_vm_snapshot(zkhandler, domain, snapshot_name, remove_backup=False):
+def remove_vm_snapshot(zkhandler, domain, snapshot_name):
     # Validate that VM exists in cluster
     dom_uuid = getDomainUUID(zkhandler, domain)
     if not dom_uuid:
@@ -1367,30 +1358,6 @@ def remove_vm_snapshot(zkhandler, domain, snapshot_name, remove_backup=False):
         return (
             False,
             f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
-        )
-
-    print(
-        zkhandler.read(
-            ("domain.snapshots", dom_uuid, "domain_snapshot.is_backup", snapshot_name)
-        )
-    )
-    if (
-        strtobool(
-            zkhandler.read(
-                (
-                    "domain.snapshots",
-                    dom_uuid,
-                    "domain_snapshot.is_backup",
-                    snapshot_name,
-                )
-            )
-        )
-        and not remove_backup
-    ):
-        # Disallow removing backups normally, but expose `remove_backup` flag for internal usage by refactored backup handlers
-        return (
-            False,
-            f'ERROR: Snapshot "{snapshot_name}" of VM "{domain}" is a backup; please remove with "pvc backup"!',
         )
 
     tstart = time.time()
