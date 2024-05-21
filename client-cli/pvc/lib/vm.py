@@ -1821,20 +1821,48 @@ def format_info(config, domain_information, long_output):
             )
         )
 
-    if long_output is False:
+    # Snapshot list
+    snapshots_name_length = 5
+    snapshots_age_length = 4
+    snapshots_xml_changes_length = 12
+    for snapshot in domain_information["snapshots"]:
+        xml_diff_plus = 0
+        xml_diff_minus = 0
+        for line in snapshot["xml_diff_lines"]:
+            if re.match(r"^\+ ", line):
+                xml_diff_plus += 1
+            elif re.match(r"^- ", line):
+                xml_diff_minus += 1
+        xml_diff_counts = f"+{xml_diff_plus}/-{xml_diff_minus}"
+
+        _snapshots_name_length = len(snapshot["name"]) + 1
+        if _snapshots_name_length > snapshots_name_length:
+            snapshots_name_length = _snapshots_name_length
+
+        _snapshots_age_length = len(snapshot["age"]) + 1
+        if _snapshots_age_length > snapshots_age_length:
+            snapshots_age_length = _snapshots_age_length
+
+        _snapshots_xml_changes_length = len(xml_diff_counts) + 1
+        if _snapshots_xml_changes_length > snapshots_xml_changes_length:
+            snapshots_xml_changes_length = _snapshots_xml_changes_length
+
+    if len(domain_information["snapshots"]) > 0:
         ainformation.append("")
         ainformation.append(
-            "{purple}Snapshots:{end}          {snaps}".format(
+            "{purple}Snapshots:{end}          {bold}{snapshots_name: <{snapshots_name_length}} {snapshots_age: <{snapshots_age_length}} {snapshots_xml_changes: <{snapshots_xml_changes_length}}{end}".format(
                 purple=ansiprint.purple(),
+                bold=ansiprint.bold(),
                 end=ansiprint.end(),
-                snaps=len(domain_information["snapshots"]),
+                snapshots_name_length=snapshots_name_length,
+                snapshots_age_length=snapshots_age_length,
+                snapshots_xml_changes_length=snapshots_xml_changes_length,
+                snapshots_name="Name",
+                snapshots_age="Age",
+                snapshots_xml_changes="XML Changes",
             )
         )
-    else:
-        # Snapshot list
-        snapshots_name_length = 5
-        snapshots_age_length = 4
-        snapshots_xml_changes_length = 12
+
         for snapshot in domain_information["snapshots"]:
             xml_diff_plus = 0
             xml_diff_minus = 0
@@ -1843,65 +1871,27 @@ def format_info(config, domain_information, long_output):
                     xml_diff_plus += 1
                 elif re.match(r"^- ", line):
                     xml_diff_minus += 1
-            xml_diff_counts = f"+{xml_diff_plus}/-{xml_diff_minus}"
+            xml_diff_counts = f"{ansiprint.green()}+{xml_diff_plus}{ansiprint.end()}/{ansiprint.red()}-{xml_diff_minus}{ansiprint.end()}"
 
-            _snapshots_name_length = len(snapshot["name"]) + 1
-            if _snapshots_name_length > snapshots_name_length:
-                snapshots_name_length = _snapshots_name_length
-
-            _snapshots_age_length = len(snapshot["age"]) + 1
-            if _snapshots_age_length > snapshots_age_length:
-                snapshots_age_length = _snapshots_age_length
-
-            _snapshots_xml_changes_length = len(xml_diff_counts) + 1
-            if _snapshots_xml_changes_length > snapshots_xml_changes_length:
-                snapshots_xml_changes_length = _snapshots_xml_changes_length
-
-        if len(domain_information["snapshots"]) > 0:
-            ainformation.append("")
             ainformation.append(
-                "{purple}Snapshots:{end}          {bold}{snapshots_name: <{snapshots_name_length}} {snapshots_age: <{snapshots_age_length}} {snapshots_xml_changes: <{snapshots_xml_changes_length}}{end}".format(
-                    purple=ansiprint.purple(),
-                    bold=ansiprint.bold(),
-                    end=ansiprint.end(),
+                "                    {snapshots_name: <{snapshots_name_length}} {snapshots_age: <{snapshots_age_length}} {snapshots_xml_changes: <{snapshots_xml_changes_length}}{end}".format(
                     snapshots_name_length=snapshots_name_length,
                     snapshots_age_length=snapshots_age_length,
                     snapshots_xml_changes_length=snapshots_xml_changes_length,
-                    snapshots_name="Name",
-                    snapshots_age="Age",
-                    snapshots_xml_changes="XML Changes",
-                )
-            )
-
-            for snapshot in domain_information["snapshots"]:
-                xml_diff_plus = 0
-                xml_diff_minus = 0
-                for line in snapshot["xml_diff_lines"]:
-                    if re.match(r"^\+ ", line):
-                        xml_diff_plus += 1
-                    elif re.match(r"^- ", line):
-                        xml_diff_minus += 1
-                xml_diff_counts = f"{ansiprint.green()}+{xml_diff_plus}{ansiprint.end()}/{ansiprint.red()}-{xml_diff_minus}{ansiprint.end()}"
-
-                ainformation.append(
-                    "                    {snapshots_name: <{snapshots_name_length}} {snapshots_age: <{snapshots_age_length}} {snapshots_xml_changes: <{snapshots_xml_changes_length}}{end}".format(
-                        snapshots_name_length=snapshots_name_length,
-                        snapshots_age_length=snapshots_age_length,
-                        snapshots_xml_changes_length=snapshots_xml_changes_length,
-                        snapshots_name=snapshot["name"],
-                        snapshots_age=snapshot["age"],
-                        snapshots_xml_changes=xml_diff_counts,
-                        end=ansiprint.end(),
-                    )
-                )
-        else:
-            ainformation.append("")
-            ainformation.append(
-                "{purple}Snapshots:{end}          N/A".format(
-                    purple=ansiprint.purple(),
+                    snapshots_name=snapshot["name"],
+                    snapshots_age=snapshot["age"],
+                    snapshots_xml_changes=xml_diff_counts,
                     end=ansiprint.end(),
                 )
             )
+    else:
+        ainformation.append("")
+        ainformation.append(
+            "{purple}Snapshots:{end}          N/A".format(
+                purple=ansiprint.purple(),
+                end=ansiprint.end(),
+            )
+        )
 
     # Network list
     net_list = []
