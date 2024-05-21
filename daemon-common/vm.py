@@ -1265,6 +1265,12 @@ def create_vm_snapshot(zkhandler, domain, snapshot_name=None):
                 False,
                 f'ERROR: Snapshot name "{snapshot_name}" contains invalid characters; only alphanumeric, ".", "-", and "_" characters are allowed!',
             )
+        current_snapshots = zkhandler.children(("domain.snapshots", dom_uuid))
+        if current_snapshots and snapshot_name in current_snapshots:
+            return (
+                False,
+                f'ERROR: Snapshot name "{snapshot_name}" already exists for VM "{domain}"!',
+            )
 
     tstart = time.time()
 
