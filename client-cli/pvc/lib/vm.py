@@ -1982,6 +1982,7 @@ def format_list(config, vm_list):
     vm_name_length = 5
     vm_state_length = 6
     vm_tags_length = 5
+    vm_snapshots_length = 10
     vm_nets_length = 9
     vm_ram_length = 8
     vm_vcpu_length = 6
@@ -2002,6 +2003,10 @@ def format_list(config, vm_list):
         _vm_tags_length = len(",".join(tag_list)) + 1
         if _vm_tags_length > vm_tags_length:
             vm_tags_length = _vm_tags_length
+        # vm_snapshots column
+        _vm_snapshots_length = len(str(len(domain_information["snapshots"]))) + 1
+        if _vm_snapshots_length > vm_snapshots_length:
+            vm_snapshots_length = _vm_snapshots_length
         # vm_nets column
         _vm_nets_length = len(",".join(net_list)) + 1
         if _vm_nets_length > vm_nets_length:
@@ -2018,7 +2023,11 @@ def format_list(config, vm_list):
     # Format the string (header)
     vm_list_output.append(
         "{bold}{vm_header: <{vm_header_length}} {resource_header: <{resource_header_length}} {node_header: <{node_header_length}}{end_bold}".format(
-            vm_header_length=vm_name_length + vm_state_length + vm_tags_length + 2,
+            vm_header_length=vm_name_length
+            + vm_state_length
+            + vm_tags_length
+            + vm_snapshots_length
+            + 3,
             resource_header_length=vm_nets_length + vm_ram_length + vm_vcpu_length + 2,
             node_header_length=vm_node_length + vm_migrated_length + 1,
             bold=ansiprint.bold(),
@@ -2028,7 +2037,12 @@ def format_list(config, vm_list):
                 [
                     "-"
                     for _ in range(
-                        4, vm_name_length + vm_state_length + vm_tags_length + 1
+                        4,
+                        vm_name_length
+                        + vm_state_length
+                        + vm_tags_length
+                        + +vm_snapshots_length
+                        + 2,
                     )
                 ]
             ),
@@ -2050,6 +2064,7 @@ def format_list(config, vm_list):
         "{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_tags: <{vm_tags_length}} \
+{vm_snapshots: <{vm_snapshots_length}} \
 {vm_networks: <{vm_nets_length}} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
@@ -2057,6 +2072,7 @@ def format_list(config, vm_list):
             vm_name_length=vm_name_length,
             vm_state_length=vm_state_length,
             vm_tags_length=vm_tags_length,
+            vm_snapshots_length=vm_snapshots_length,
             vm_nets_length=vm_nets_length,
             vm_ram_length=vm_ram_length,
             vm_vcpu_length=vm_vcpu_length,
@@ -2069,6 +2085,7 @@ def format_list(config, vm_list):
             vm_name="Name",
             vm_state="State",
             vm_tags="Tags",
+            vm_snapshots="Snapshots",
             vm_networks="Networks",
             vm_memory="RAM (M)",
             vm_vcpu="vCPUs",
@@ -2135,6 +2152,7 @@ def format_list(config, vm_list):
             "{bold}{vm_name: <{vm_name_length}} \
 {vm_state_colour}{vm_state: <{vm_state_length}}{end_colour} \
 {vm_tags: <{vm_tags_length}} \
+{vm_snapshots: <{vm_snapshots_length}} \
 {vm_networks: <{vm_nets_length}} \
 {vm_memory: <{vm_ram_length}} {vm_vcpu: <{vm_vcpu_length}} \
 {vm_node: <{vm_node_length}} \
@@ -2142,6 +2160,7 @@ def format_list(config, vm_list):
                 vm_name_length=vm_name_length,
                 vm_state_length=vm_state_length,
                 vm_tags_length=vm_tags_length,
+                vm_snapshots_length=vm_snapshots_length,
                 vm_nets_length=vm_nets_length,
                 vm_ram_length=vm_ram_length,
                 vm_vcpu_length=vm_vcpu_length,
@@ -2154,6 +2173,7 @@ def format_list(config, vm_list):
                 vm_name=domain_information["name"],
                 vm_state=domain_information["state"],
                 vm_tags=",".join(tag_list),
+                vm_snapshots=len(domain_information["snapshots"]),
                 vm_networks=",".join(net_string_list),
                 vm_memory=domain_information["memory"],
                 vm_vcpu=domain_information["vcpu"],
