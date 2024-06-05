@@ -19,6 +19,11 @@
 #
 ###############################################################################
 
+from sys import argv
 import pvcnoded.Daemon  # noqa: F401
+
+if "--version" in argv:
+    print(pvcnoded.Daemon.version)
+    exit(0)
 
 pvcnoded.Daemon.entrypoint()
