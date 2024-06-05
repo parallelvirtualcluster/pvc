@@ -1,5 +1,14 @@
 ## PVC Changelog
 
+###### [v0.9.98](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.98)
+
+  * [CLI Client] Fixed output when API call times out
+  * [Node Daemon] Improves the handling of fence states
+  * [API Daemon/CLI Client] Adds support for storage snapshot rollback
+  * [CLI Client] Adds additional warning messages about snapshot consistency to help output
+  * [API Daemon] Fixes a bug listing snapshots by pool/volume
+  * [Node Daemon] Adds a --version flag for information gathering by update-motd.sh
+
 ###### [v0.9.97](https://github.com/parallelvirtualcluster/pvc/releases/tag/v0.9.97)
 
   * [Client CLI] Ensures --lines is always an integer value
