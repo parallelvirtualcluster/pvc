@@ -1825,7 +1825,7 @@ def format_info(config, domain_information, long_output):
     snapshots_name_length = 5
     snapshots_age_length = 4
     snapshots_xml_changes_length = 12
-    for snapshot in domain_information["snapshots"]:
+    for snapshot in domain_information.get("snapshots", list()):
         xml_diff_plus = 0
         xml_diff_minus = 0
         for line in snapshot["xml_diff_lines"]:
@@ -1847,7 +1847,7 @@ def format_info(config, domain_information, long_output):
         if _snapshots_xml_changes_length > snapshots_xml_changes_length:
             snapshots_xml_changes_length = _snapshots_xml_changes_length
 
-    if len(domain_information["snapshots"]) > 0:
+    if len(domain_information.get("snapshots", list())) > 0:
         ainformation.append("")
         ainformation.append(
             "{purple}Snapshots:{end}          {bold}{snapshots_name: <{snapshots_name_length}} {snapshots_age: <{snapshots_age_length}} {snapshots_xml_changes: <{snapshots_xml_changes_length}}{end}".format(
@@ -1863,7 +1863,7 @@ def format_info(config, domain_information, long_output):
             )
         )
 
-        for snapshot in domain_information["snapshots"]:
+        for snapshot in domain_information.get("snapshots", list()):
             xml_diff_plus = 0
             xml_diff_minus = 0
             for line in snapshot["xml_diff_lines"]:
@@ -2077,7 +2077,9 @@ def format_list(config, vm_list):
         if _vm_tags_length > vm_tags_length:
             vm_tags_length = _vm_tags_length
         # vm_snapshots column
-        _vm_snapshots_length = len(str(len(domain_information["snapshots"]))) + 1
+        _vm_snapshots_length = (
+            len(str(len(domain_information.get("snapshots", list())))) + 1
+        )
         if _vm_snapshots_length > vm_snapshots_length:
             vm_snapshots_length = _vm_snapshots_length
         # vm_nets column
@@ -2246,7 +2248,7 @@ def format_list(config, vm_list):
                 vm_name=domain_information["name"],
                 vm_state=domain_information["state"],
                 vm_tags=",".join(tag_list),
-                vm_snapshots=len(domain_information["snapshots"]),
+                vm_snapshots=len(domain_information.get("snapshots", list())),
                 vm_networks=",".join(net_string_list),
                 vm_memory=domain_information["memory"],
                 vm_vcpu=domain_information["vcpu"],
