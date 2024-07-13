@@ -258,6 +258,13 @@ def worker_create_vm(
         args = (vm_profile,)
         db_cur.execute(query, args)
         profile_data = db_cur.fetchone()
+        if profile_data is None:
+            fail(
+                celery,
+                f'Provisioner profile "{vm_profile}" is not present on the cluster',
+                exception=ClusterError,
+            )
+
         if profile_data.get("arguments"):
             vm_data["script_arguments"] = profile_data.get("arguments").split("|")
         else:
