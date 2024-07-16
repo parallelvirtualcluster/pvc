@@ -1562,7 +1562,7 @@ def format_info(config, domain_information, long_output):
             ansiprint.purple(), ansiprint.end(), domain_information["vcpu"]
         )
     )
-    if long_output is True:
+    if long_output:
         ainformation.append(
             "{}Topology (S/C/T):{}   {}".format(
                 ansiprint.purple(), ansiprint.end(), domain_information["vcpu_topology"]
@@ -1570,22 +1570,32 @@ def format_info(config, domain_information, long_output):
         )
 
     if (
-        domain_information["vnc"].get("listen", "None") != "None"
-        and domain_information["vnc"].get("port", "None") != "None"
-    ):
+        domain_information["vnc"].get("listen")
+        and domain_information["vnc"].get("port")
+    ) or long_output:
+        listen = (
+            domain_information["vnc"]["listen"]
+            if domain_information["vnc"].get("listen")
+            else "N/A"
+        )
+        port = (
+            domain_information["vnc"]["port"]
+            if domain_information["vnc"].get("port")
+            else "N/A"
+        )
         ainformation.append("")
         ainformation.append(
             "{}VNC listen:{}         {}".format(
-                ansiprint.purple(), ansiprint.end(), domain_information["vnc"]["listen"]
+                ansiprint.purple(), ansiprint.end(), listen
             )
         )
         ainformation.append(
             "{}VNC port:{}           {}".format(
-                ansiprint.purple(), ansiprint.end(), domain_information["vnc"]["port"]
+                ansiprint.purple(), ansiprint.end(), port
             )
         )
 
-    if long_output is True:
+    if long_output:
         # Virtualization information
         ainformation.append("")
         ainformation.append(
@@ -1706,12 +1716,18 @@ def format_info(config, domain_information, long_output):
             )
         )
 
-    if not domain_information.get("node_selector"):
+    if (
+        not domain_information.get("node_selector")
+        or domain_information.get("node_selector") == "None"
+    ):
         formatted_node_selector = "Default"
     else:
         formatted_node_selector = str(domain_information["node_selector"]).title()
 
-    if not domain_information.get("node_limit"):
+    if (
+        not domain_information.get("node_limit")
+        or domain_information.get("node_limit") == "None"
+    ):
         formatted_node_limit = "Any"
     else:
         formatted_node_limit = ", ".join(domain_information["node_limit"])
@@ -1723,7 +1739,10 @@ def format_info(config, domain_information, long_output):
         autostart_colour = ansiprint.green()
         formatted_node_autostart = "True"
 
-    if not domain_information.get("migration_method"):
+    if (
+        not domain_information.get("migration_method")
+        or domain_information.get("migration_method") == "None"
+    ):
         formatted_migration_method = "Live, Shutdown"
     else:
         formatted_migration_method = (
@@ -1919,7 +1938,7 @@ def format_info(config, domain_information, long_output):
         )
     )
 
-    if long_output is True:
+    if long_output:
         # Disk list
         ainformation.append("")
         name_length = 0
