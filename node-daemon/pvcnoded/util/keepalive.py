@@ -157,7 +157,9 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             1
         ].decode("ascii")
         try:
-            ceph_pool_df_raw = json.loads(ceph_df_output)["pools"]
+            ceph_pool_df_raw = sorted(
+                json.loads(ceph_df_output)["pools"], key=lambda x: x["name"]
+            )
         except Exception as e:
             logger.out("Failed to obtain Pool data (ceph df): {}".format(e), state="w")
             ceph_pool_df_raw = []
@@ -166,7 +168,9 @@ def collect_ceph_stats(logger, config, zkhandler, this_node, queue):
             "rados df --format json", timeout=1
         )
         try:
-            rados_pool_df_raw = json.loads(stdout)["pools"]
+            rados_pool_df_raw = sorted(
+                json.loads(stdout)["pools"], key=lambda x: x["name"]
+            )
         except Exception as e:
             logger.out("Failed to obtain Pool data (rados df): {}".format(e), state="w")
             rados_pool_df_raw = []
