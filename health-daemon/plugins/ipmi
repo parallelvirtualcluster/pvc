@@ -69,26 +69,33 @@ class MonitoringPluginScript(MonitoringPlugin):
 
         # Run any imports first
         from daemon_lib.common import run_os_command
+        from time import sleep
 
         # Check the node's IPMI interface
         ipmi_hostname = self.config["ipmi_hostname"]
         ipmi_username = self.config["ipmi_username"]
         ipmi_password = self.config["ipmi_password"]
-        retcode, _, _ = run_os_command(
-            f"/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_username} -P {ipmi_password} chassis power status",
-            timeout=5
-        )
+        retcode = 1
+        trycount = 0
+        while retcode > 0 and trycount < 3:
+            retcode, _, _ = run_os_command(
+                f"/usr/bin/ipmitool -I lanplus -H {ipmi_hostname} -U {ipmi_username} -P {ipmi_password} chassis power status",
+                timeout=2
+            )
+            trycount += 1
+            if retcode > 0 and trycount < 3:
+                sleep(trycount)
 
         if retcode > 0:
             # Set the health delta to 10 (subtract 10 from the total of 100)
             health_delta = 10
             # Craft a message that can be used by the clients
-            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is NOT responding"
+            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is NOT responding after 3 attempts"
         else:
             # Set the health delta to 0 (no change)
             health_delta = 0
             # Craft a message that can be used by the clients
-            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is responding"
+            message = f"IPMI via {ipmi_username}@{ipmi_hostname} is responding after {trycount} attempts"
 
         # Set the health delta in our local PluginResult object
         self.plugin_result.set_health_delta(health_delta)
