@@ -1396,7 +1396,67 @@ def remove_vm_snapshot(zkhandler, domain, snapshot_name):
 
 
 def rollback_vm_snapshot(zkhandler, domain, snapshot_name):
-    pass
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        return False, 'ERROR: Could not find VM "{}" in the cluster!'.format(domain)
+
+    # Verify that the VM is in a stopped state; renaming is not supported otherwise
+    state = zkhandler.read(("domain.state", dom_uuid))
+    if state not in ["stop", "disable"]:
+        return (
+            False,
+            'ERROR: VM "{}" is not in stopped state; VMs cannot be rolled back while running.'.format(
+                domain
+            ),
+        )
+
+    # Verify that the snapshot exists
+    if not zkhandler.exists(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
+    ):
+        return (
+            False,
+            f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
+        )
+
+    tstart = time.time()
+
+    _snapshots = zkhandler.read(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.rbd_snapshots", snapshot_name)
+    )
+    rbd_snapshots = _snapshots.split(",")
+    for snap in rbd_snapshots:
+        rbd, name = snap.split("@")
+        pool, volume = rbd.split("/")
+        ret, msg = ceph.rollback_snapshot(zkhandler, pool, volume, name)
+        if not ret:
+            return False, msg
+
+    # Get the snapshot domain XML
+    vm_config = zkhandler.read(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.xml", snapshot_name)
+    )
+
+    # Write the restored config to the main XML config
+    zkhandler.write(
+        [
+            (
+                (
+                    "domain.xml",
+                    dom_uuid,
+                ),
+                vm_config,
+            ),
+        ]
+    )
+
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
+    return (
+        True,
+        f'Successfully rolled back to snapshot "{snapshot_name}" of VM "{domain}" in {ttot}s.',
+    )
 
 
 #

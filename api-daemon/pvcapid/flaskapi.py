@@ -3202,6 +3202,54 @@ class API_VM_Snapshot(Resource):
 api.add_resource(API_VM_Snapshot, "/vm/<vm>/snapshot")
 
 
+# /vm/<vm>/snapshot/rollback
+class API_VM_Snapshot_Rollback(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot_name",
+                "required": True,
+                "helptext": "A snapshot name must be specified",
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Roll back to a snapshot of a VM's disks and configuration
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: snapshot_name
+            type: string
+            required: true
+            description: The name of the snapshot to roll back to
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        snapshot_name = reqargs.get("snapshot_name", None)
+        return api_helper.rollback_vm_snapshot(vm, snapshot_name)
+
+
+api.add_resource(API_VM_Snapshot_Rollback, "/vm/<vm>/snapshot/rollback")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

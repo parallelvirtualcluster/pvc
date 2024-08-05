@@ -1787,7 +1787,7 @@ def cli_vm_snapshot():
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name", required=False, default=None)
-def cli_vm_snapshot_remove(domain, snapshot_name):
+def cli_vm_snapshot_create(domain, snapshot_name):
     """
     Create a snapshot of the disks and XML configuration of virtual machine DOMAIN, with the
     optional name SNAPSHOT_NAME. DOMAIN may be a UUID or name.
@@ -1819,7 +1819,7 @@ def cli_vm_snapshot_remove(domain, snapshot_name):
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name")
-def cli_vm_snapshot_create(domain, snapshot_name):
+def cli_vm_snapshot_remove(domain, snapshot_name):
     """
     Remove the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
     DOMAIN may be a UUID or name.
@@ -1831,6 +1831,37 @@ def cli_vm_snapshot_create(domain, snapshot_name):
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_remove_snapshot(CLI_CONFIG, domain, snapshot_name)
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm snapshot rollback
+###############################################################################
+@click.command(
+    name="rollback", short_help="Roll back to a snapshot of a virtual machine."
+)
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name")
+@confirm_opt(
+    "Roll back to snapshot {snapshot_name} of {domain} and lose all data and changes since this snapshot"
+)
+def cli_vm_snapshot_rollback(domain, snapshot_name):
+    """
+    Roll back to the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
+    DOMAIN may be a UUID or name.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Rolling back to snapshot '{snapshot_name}' of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_rollback_snapshot(CLI_CONFIG, domain, snapshot_name)
     if retcode:
         echo(CLI_CONFIG, "done.")
     else:
@@ -6377,6 +6408,7 @@ cli_vm.add_command(cli_vm_unmigrate)
 cli_vm.add_command(cli_vm_flush_locks)
 cli_vm_snapshot.add_command(cli_vm_snapshot_create)
 cli_vm_snapshot.add_command(cli_vm_snapshot_remove)
+cli_vm_snapshot.add_command(cli_vm_snapshot_rollback)
 cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)
