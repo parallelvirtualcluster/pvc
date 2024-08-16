@@ -155,10 +155,37 @@ def define_vm(
     # Parse the XML data
     try:
         parsed_xml = lxml.objectify.fromstring(config_data)
-    except Exception:
-        return False, "ERROR: Failed to parse XML data."
-    dom_uuid = parsed_xml.uuid.text
-    dom_name = parsed_xml.name.text
+    except Exception as e:
+        return False, f"ERROR: Failed to parse XML data: {e}"
+
+    # Extract the required items from the XML document and error if not valid
+    next_field = 0
+    next_map = {
+        0: "uuid",
+        1: "name",
+        2: "memory",
+        3: "vcpu",
+        4: "networks",
+        5: "disks",
+    }
+    try:
+        dom_uuid = parsed_xml.uuid.text
+        next_field += 1
+        dom_name = parsed_xml.name.text
+        next_field += 1
+        parsed_memory = int(parsed_xml.memory.text)
+        next_field += 1
+        parsed_vcpu = int(parsed_xml.vcpu.text)
+        next_field += 1
+        dnetworks = common.getDomainNetworks(parsed_xml, {})
+        next_field += 1
+        ddisks = common.getDomainDisks(parsed_xml, {})
+        next_field += 1
+    except Exception as e:
+        return (
+            False,
+            f'ERROR: Failed to parse XML data: field data for "{next_map[next_field]}" is not valid: {e}',
+        )
 
     # Ensure that the UUID and name are unique
     if searchClusterByUUID(zkhandler, dom_uuid) or searchClusterByName(
@@ -181,26 +208,25 @@ def define_vm(
 
     # Validate the new RAM against the current active node
     node_total_memory = int(zkhandler.read(("node.memory.total", target_node)))
-    if int(parsed_xml.memory.text) >= node_total_memory:
+    if parsed_memory >= node_total_memory:
         return (
             False,
             'ERROR: VM configuration specifies more memory ({} MiB) than node "{}" has available ({} MiB).'.format(
-                parsed_xml.memory.text, target_node, node_total_memory
+                parsed_memory, target_node, node_total_memory
             ),
         )
 
     # Validate the number of vCPUs against the current active node
     node_total_cpus = int(zkhandler.read(("node.data.static", target_node)).split()[0])
-    if (node_total_cpus - 2) <= int(parsed_xml.vcpu.text):
+    if parsed_vcpu >= (node_total_cpus - 2):
         return (
             False,
             'ERROR: VM configuration specifies more vCPUs ({}) than node "{}" has available ({} minus 2).'.format(
-                parsed_xml.vcpu.text, target_node, node_total_cpus
+                parsed_vcpu, target_node, node_total_cpus
             ),
         )
 
     # If a SR-IOV network device is being added, set its used state
-    dnetworks = common.getDomainNetworks(parsed_xml, {})
     for network in dnetworks:
         if network["type"] in ["direct", "hostdev"]:
             dom_node = zkhandler.read(("domain.node", dom_uuid))
@@ -239,7 +265,6 @@ def define_vm(
             )
 
     # Obtain the RBD disk list using the common functions
-    ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
     for disk in ddisks:
         if disk["type"] == "rbd":
@@ -404,6 +429,35 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     except Exception:
         return False, "ERROR: Failed to parse new XML data."
 
+    # Extract the required items from the XML document and error if not valid
+    next_field = 0
+    next_map = {
+        0: "uuid",
+        1: "name",
+        2: "memory",
+        3: "vcpu",
+        4: "networks",
+        5: "disks",
+    }
+    try:
+        dom_uuid = parsed_xml.uuid.text
+        next_field += 1
+        dom_name = parsed_xml.name.text
+        next_field += 1
+        parsed_memory = int(parsed_xml.memory.text)
+        next_field += 1
+        parsed_vcpu = int(parsed_xml.vcpu.text)
+        next_field += 1
+        dnetworks = common.getDomainNetworks(parsed_xml, {})
+        next_field += 1
+        ddisks = common.getDomainDisks(parsed_xml, {})
+        next_field += 1
+    except Exception as e:
+        return (
+            False,
+            f'ERROR: Failed to parse XML data: field data for "{next_map[next_field]}" is not valid: {e}',
+        )
+
     # Get our old network list for comparison purposes
     old_vm_config = zkhandler.read(("domain.xml", dom_uuid))
     old_parsed_xml = lxml.objectify.fromstring(old_vm_config)
@@ -412,26 +466,25 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
     # Validate the new RAM against the current active node
     node_name = zkhandler.read(("domain.node", dom_uuid))
     node_total_memory = int(zkhandler.read(("node.memory.total", node_name)))
-    if int(parsed_xml.memory.text) >= node_total_memory:
+    if parsed_memory >= node_total_memory:
         return (
             False,
             'ERROR: Updated VM configuration specifies more memory ({} MiB) than node "{}" has available ({} MiB).'.format(
-                parsed_xml.memory.text, node_name, node_total_memory
+                parsed_memory, node_name, node_total_memory
             ),
         )
 
     # Validate the number of vCPUs against the current active node
     node_total_cpus = int(zkhandler.read(("node.data.static", node_name)).split()[0])
-    if (node_total_cpus - 2) <= int(parsed_xml.vcpu.text):
+    if parsed_vcpu >= (node_total_cpus - 2):
         return (
             False,
             'ERROR: Updated VM configuration specifies more vCPUs ({}) than node "{}" has available ({} minus 2).'.format(
-                parsed_xml.vcpu.text, node_name, node_total_cpus
+                parsed_vcpu, node_name, node_total_cpus
             ),
         )
 
     # If a SR-IOV network device is being added, set its used state
-    dnetworks = common.getDomainNetworks(parsed_xml, {})
     for network in dnetworks:
         # Ignore networks that are already there
         if network["source"] in [net["source"] for net in old_dnetworks]:
@@ -482,7 +535,6 @@ def modify_vm(zkhandler, domain, restart, new_vm_config):
                 unset_sriov_vf_vm(zkhandler, dom_node, network["source"])
 
     # Obtain the RBD disk list using the common functions
-    ddisks = common.getDomainDisks(parsed_xml, {})
     rbd_list = []
     for disk in ddisks:
         if disk["type"] == "rbd":
@@ -754,7 +806,15 @@ def update_vm_sriov_nics(zkhandler, dom_uuid, source_node, target_node):
     # Update all the SR-IOV device states on both nodes, used during migrations but called by the node-side
     vm_config = zkhandler.read(("domain.xml", dom_uuid))
     parsed_xml = lxml.objectify.fromstring(vm_config)
-    dnetworks = common.getDomainNetworks(parsed_xml, {})
+    # Extract the required items from the XML document and error if not valid
+    try:
+        dnetworks = common.getDomainNetworks(parsed_xml, {})
+    except Exception as e:
+        return (
+            False,
+            f'ERROR: Failed to parse XML data: field data for "networks" is not valid: {e}',
+        )
+
     retcode = True
     retmsg = ""
     for network in dnetworks:
