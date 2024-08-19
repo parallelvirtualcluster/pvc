@@ -1896,7 +1896,7 @@ def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_paren
     _, primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
     echo(
         CLI_CONFIG,
-        f'Exporting snapshot "{snapshot_name}" of VM "{domain}" to "{export_path}" on "{primary_node}"...',
+        f'Exporting snapshot "{snapshot_name}" of VM "{domain}" to "{primary_node}:{export_path}"... ',
         newline=False,
     )
     retcode, retmsg = pvc.lib.vm.vm_export_snapshot(
