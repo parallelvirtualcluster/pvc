@@ -158,9 +158,10 @@ def call_api(
                     if response.status_code in retry_on_code:
                         failed = True
                         continue
+                    break
                 except requests.exceptions.ConnectionError:
                     failed = True
-                    pass
+                    continue
             if failed:
                 error = f"Code {response.status_code}" if response else "Timeout"
                 raise requests.exceptions.ConnectionError(
