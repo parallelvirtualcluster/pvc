@@ -838,6 +838,39 @@ class API_Faults(Resource):
         ---
         tags:
           - faults
+        definitions:
+          - schema:
+              type: object
+              id: fault
+              properties:
+                id:
+                  type: string
+                  description: The ID of the fault
+                  example: "10ae144b78b4cc5fdf09e2ebbac51235"
+                first_reported:
+                  type: date
+                  description: The first time the fault was reported
+                  example: "2023-12-01 16:47:59.849742"
+                last_reported:
+                  type: date
+                  description: The last time the fault was reported
+                  example: "2023-12-01 17:39:45.188398"
+                acknowledged_at:
+                  type: date
+                  description: The time the fault was acknowledged, or empty if not acknowledged
+                  example: "2023-12-01 17:50:00.000000"
+                status:
+                  type: string
+                  description: The current state of the fault, either "new" or "ack" (acknowledged)
+                  example: "new"
+                health_delta:
+                  type: integer
+                  description: The health delta (amount it reduces cluster health from 100%) of the fault
+                  example: 25
+                message:
+                  type: string
+                  description: The textual description of the fault
+                  example: "Node hv1 was at 40% (psur@-10%, psql@-50%) <= 50% health"
         parameters:
           - in: query
             name: sort_key
@@ -857,37 +890,7 @@ class API_Faults(Resource):
             schema:
               type: array
               items:
-                type: object
-                id: fault
-                properties:
-                  id:
-                    type: string
-                    description: The ID of the fault
-                    example: "10ae144b78b4cc5fdf09e2ebbac51235"
-                  first_reported:
-                    type: date
-                    description: The first time the fault was reported
-                    example: "2023-12-01 16:47:59.849742"
-                  last_reported:
-                    type: date
-                    description: The last time the fault was reported
-                    example: "2023-12-01 17:39:45.188398"
-                  acknowledged_at:
-                    type: date
-                    description: The time the fault was acknowledged, or empty if not acknowledged
-                    example: "2023-12-01 17:50:00.000000"
-                  status:
-                    type: string
-                    description: The current state of the fault, either "new" or "ack" (acknowledged)
-                    example: "new"
-                  health_delta:
-                    type: integer
-                    description: The health delta (amount it reduces cluster health from 100%) of the fault
-                    example: 25
-                  message:
-                    type: string
-                    description: The textual description of the fault
-                    example: "Node hv1 was at 40% (psur@-10%, psql@-50%) <= 50% health"
+                $ref: '#/definitions/fault'
         """
         return api_helper.fault_list(sort_key=reqargs.get("sort_key", "last_reported"))
 
@@ -948,8 +951,6 @@ class API_Faults_Element(Resource):
             schema:
               type: array
               items:
-                type: object
-                id: fault
                 $ref: '#/definitions/fault'
         """
         return api_helper.fault_list(limit=fault_id)
@@ -1625,7 +1626,7 @@ class API_VM_Root(Resource):
                         descrpition: Unix timestamp of the snapshot
                       age:
                         type: string
-                        description: Human-readable age of the snapshot in the largest viable unit: seconds, minutes, hours, days
+                        description: Human-readable age of the snapshot in the largest viable unit (seconds, minutes, hours, days)
                       rbd_snapshots:
                         type: array
                         items:
