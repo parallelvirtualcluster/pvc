@@ -13,11 +13,16 @@ else
 fi
 
 KEEP_ARTIFACTS=""
+PRIMARY_NODE=""
 if [[ -n ${1} ]]; then
     for arg in ${@}; do
         case ${arg} in
             -k|--keep)
                 KEEP_ARTIFACTS="y"
+                shift
+            ;;
+            -p=*|--become-primary=*)
+                PRIMARY_NODE=$( awk -F'=' '{ print $NF }' <<<"${arg}" )
                 shift
             ;;
         esac
@@ -26,6 +31,9 @@ fi
 
 HOSTS=( ${@} )
 echo "Deploying to host(s): ${HOSTS[@]}"
+if [[ -n ${PRIMARY_NODE} ]]; then
+    echo "Will become primary on ${PRIMARY_NODE} after updating it"
+fi
 
 # Move to repo root if we're not
 pushd $( git rev-parse --show-toplevel ) &>/dev/null
@@ -78,6 +86,10 @@ for HOST in ${HOSTS[@]}; do
         echo -n "."
     done
     echo " done."
+    if [[ -n ${PRIMARY_NODE} && ${PRIMARY_NODE} == ${HOST} ]]; then
+        echo -n ">>> "
+        ssh $HOST pvc -q node primary
+    fi
 done
 
 popd &>/dev/null
