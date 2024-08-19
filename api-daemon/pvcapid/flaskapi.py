@@ -597,7 +597,7 @@ class API_Status(Resource):
         Set the cluster maintenance mode
         ---
         tags:
-          - node
+          - root
         parameters:
           - in: query
             name: state
@@ -620,6 +620,45 @@ class API_Status(Resource):
 
 
 api.add_resource(API_Status, "/status")
+
+
+# /status/primary_node
+class API_Status_Primary(Resource):
+    def get(self):
+        """
+        Return the name of the current primary node.
+        ---
+        tags:
+          - root
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              properties:
+                primary_node:
+                  type: string
+                  description: The name of the current primary node
+          204:
+            description: No content
+            schema:
+              type: object
+              properties:
+                primary_node:
+                  type: string
+                  description: An empty response; there is not currently a primary node, try again later
+        """
+        primary_node = get_primary_node()
+        if primary_node is None:
+            retdata = None
+            retcode = 204
+        else:
+            retdata = {"primary_node": primary_node}
+            retcode = 200
+        return retdata, retcode
+
+
+api.add_resource(API_Status_Primary, "/status/primary_node")
 
 
 # /metrics
