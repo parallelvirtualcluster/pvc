@@ -1893,7 +1893,7 @@ def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_paren
     EXPORT_PATH on the current PVC primary coordinator. DOMAIN may be a UUID or name.
     """
 
-    primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
+    _, primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
     echo(
         CLI_CONFIG,
         f'Exporting snapshot "{snapshot_name}" of VM "{domain}" to "{export_path}" on "{primary_node}"...',
