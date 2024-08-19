@@ -1015,23 +1015,27 @@ def add_snapshot(zkhandler, pool, volume, name, zk_only=False):
                 ),
             )
 
-    # 2. Add the snapshot to Zookeeper
+    # 2. Get snapshot stats
+    retcode, stdout, stderr = common.run_os_command(
+        "rbd info --format json {}/{}@{}".format(pool, volume, name)
+    )
+    snapstats = stdout
+
+    # 3. Add the snapshot to Zookeeper
     zkhandler.write(
         [
             (("snapshot", f"{pool}/{volume}/{name}"), ""),
-            (("snapshot.stats", f"{pool}/{volume}/{name}"), "{}"),
+            (("snapshot.stats", f"{pool}/{volume}/{name}"), snapstats),
         ]
     )
 
-    # 3. Update the count of snapshots on this volume
+    # 4. Update the count of snapshots on this volume
     volume_stats_raw = zkhandler.read(("volume.stats", f"{pool}/{volume}"))
     volume_stats = dict(json.loads(volume_stats_raw))
-    # Format the size to something nicer
     volume_stats["snapshot_count"] = volume_stats["snapshot_count"] + 1
-    volume_stats_raw = json.dumps(volume_stats)
     zkhandler.write(
         [
-            (("volume.stats", f"{pool}/{volume}"), volume_stats_raw),
+            (("volume.stats", f"{pool}/{volume}"), json.dumps(volume_stats)),
         ]
     )
 
@@ -1174,6 +1178,11 @@ def get_list_snapshot(zkhandler, target_pool, target_volume, limit=None, is_fuzz
             continue
         if target_volume and volume_name != target_volume:
             continue
+        snapshot_stats = json.loads(
+            zkhandler.read(
+                ("snapshot.stats", f"{pool_name}/{volume_name}/{snapshot_name}")
+            )
+        )
         if limit:
             try:
                 if re.fullmatch(limit, snapshot_name):
@@ -1182,13 +1191,19 @@ def get_list_snapshot(zkhandler, target_pool, target_volume, limit=None, is_fuzz
                             "pool": pool_name,
                             "volume": volume_name,
                             "snapshot": snapshot_name,
+                            "stats": snapshot_stats,
                         }
                     )
             except Exception as e:
                 return False, "Regex Error: {}".format(e)
         else:
             snapshot_list.append(
-                {"pool": pool_name, "volume": volume_name, "snapshot": snapshot_name}
+                {
+                    "pool": pool_name,
+                    "volume": volume_name,
+                    "snapshot": snapshot_name,
+                    "stats": snapshot_stats,
+                }
             )
 
     return True, sorted(snapshot_list, key=lambda x: str(x["snapshot"]))
