@@ -1819,6 +1819,7 @@ def cli_vm_snapshot_create(domain, snapshot_name):
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name")
+@confirm_opt("Remove shapshot {snapshot_name} of VM {domain}")
 def cli_vm_snapshot_remove(domain, snapshot_name):
     """
     Remove the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
