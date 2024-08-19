@@ -557,6 +557,32 @@ def vm_rollback_snapshot(config, vm, snapshot_name):
         return True, response.json().get("message", "")
 
 
+def vm_export_snapshot(config, vm, snapshot_name, export_path, incremental_parent):
+    """
+    Export an (existing) snapshot of a VM's disks and configuration to export_path, optionally
+    incremental with incremental_parent
+
+    API endpoint: POST /vm/{vm}/snapshot/export
+    API arguments: snapshot_name=snapshot_name, export_path=export_path, incremental_parent=incremental_parent
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "snapshot_name": snapshot_name,
+        "export_path": export_path,
+    }
+    if incremental_parent is not None:
+        params["incremental_parent"] = incremental_parent
+
+    response = call_api(
+        config, "post", "/vm/{vm}/snapshot/export".format(vm=vm), params=params
+    )
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology

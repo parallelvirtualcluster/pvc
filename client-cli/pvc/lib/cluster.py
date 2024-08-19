@@ -21,6 +21,8 @@
 
 import json
 
+from time import sleep
+
 from pvc.lib.common import call_api
 
 
@@ -114,3 +116,22 @@ def get_info(config):
         return True, response.json()
     else:
         return False, response.json().get("message", "")
+
+
+def get_primary_node(config):
+    """
+    Get the current primary node of the PVC cluster
+
+    API endpoint: GET /api/v1/status/primary_node
+    API arguments:
+    API schema: {json_data_object}
+    """
+    while True:
+        response = call_api(config, "get", "/status/primary_node")
+        resp_code = response.status_code
+        if resp_code == 200:
+            break
+        else:
+            sleep(1)
+
+    return True, response.json()["primary_node"]

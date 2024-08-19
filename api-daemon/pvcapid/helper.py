@@ -838,6 +838,34 @@ def rollback_vm_snapshot(
 
 
 @ZKConnection(config)
+def export_vm_snapshot(
+    zkhandler,
+    domain,
+    snapshot_name,
+    export_path,
+    incremental_parent=None,
+):
+    """
+    Export a snapshot of a VM to files.
+    """
+    retflag, retdata = pvc_vm.export_vm_snapshot(
+        zkhandler,
+        domain,
+        snapshot_name,
+        export_path,
+        incremental_parent,
+    )
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def vm_attach_device(zkhandler, vm, device_spec_xml):
     """
     Hot-attach a device (via XML spec) to a VM.

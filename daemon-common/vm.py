@@ -1459,6 +1459,224 @@ def rollback_vm_snapshot(zkhandler, domain, snapshot_name):
     )
 
 
+def export_vm_snapshot(
+    zkhandler, domain, snapshot_name, export_path, incremental_parent=None
+):
+    # 0b. Validations part 1
+    # Validate that the target path is valid
+    if not re.match(r"^/", export_path):
+        return (
+            False,
+            f"ERROR: Target path {export_path} is not a valid absolute path on the primary coordinator!",
+        )
+
+    # Ensure that backup_path (on this node) exists
+    if not os.path.isdir(export_path):
+        return (
+            False,
+            f"ERROR: Target path {export_path} does not exist!",
+        )
+
+    # 1a. Create destination directory
+    export_target_root = f"{export_path}/{domain}"
+    export_target_path = f"{export_path}/{domain}/{snapshot_name}/images"
+    if not os.path.isdir(export_target_path):
+        try:
+            os.makedirs(export_target_path)
+        except Exception as e:
+            return (
+                False,
+                f"ERROR: Failed to create target directory {export_target_path}: {e}",
+            )
+
+    tstart = time.time()
+    export_type = "incremental" if incremental_parent is not None else "full"
+
+    # 1b. Prepare export JSON writer (it will write on any result)
+    def write_export_json(
+        result=False,
+        result_message="",
+        vm_configuration=None,
+        export_files=None,
+        export_files_size=0,
+        ttot=None,
+    ):
+        if ttot is None:
+            tend = time.time()
+            ttot = round(tend - tstart, 2)
+
+        export_details = {
+            "type": export_type,
+            "snapshot_name": snapshot_name,
+            "incremental_parent": incremental_parent,
+            "result": result,
+            "result_message": result_message,
+            "runtime_secs": ttot,
+            "vm_configuration": vm_configuration,
+            "export_files": export_files,
+            "export_size_bytes": export_files_size,
+        }
+        with open(f"{export_target_root}/{snapshot_name}/snapshot.json", "w") as fh:
+            jdump(export_details, fh)
+
+    # 2. Validations part 2
+    # Validate that VM exists in cluster
+    dom_uuid = getDomainUUID(zkhandler, domain)
+    if not dom_uuid:
+        error_message = f'Could not find VM "{domain}" in the cluster!'
+        write_export_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR: {error_message}"
+
+    # Validate that the given snapshot exists
+    if not zkhandler.exists(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
+    ):
+        error_message = (
+            f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
+        )
+        write_export_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR: {error_message}"
+
+    if incremental_parent is not None and not zkhandler.exists(
+        ("domain.snapshots", dom_uuid, "domain_snapshot.name", incremental_parent)
+    ):
+        error_message = (
+            f'ERROR: Could not find snapshot "{snapshot_name}" of VM "{domain}"!',
+        )
+        write_export_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR: {error_message}"
+
+    # Get details about VM snapshot
+    _, snapshot_timestamp, snapshot_xml, snapshot_rbdsnaps = zkhandler.read_many(
+        [
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.name",
+                    snapshot_name,
+                )
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.timestamp",
+                    snapshot_name,
+                )
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.xml",
+                    snapshot_name,
+                )
+            ),
+            (
+                (
+                    "domain.snapshots",
+                    dom_uuid,
+                    "domain_snapshot.rbd_snapshots",
+                    snapshot_name,
+                )
+            ),
+        ]
+    )
+
+    snapshot_volumes = list()
+    for rbdsnap in snapshot_rbdsnaps.split(","):
+        pool, _volume = rbdsnap.split("/")
+        volume, name = _volume.split("@")
+        ret, snapshots = ceph.get_list_snapshot(
+            zkhandler, pool, volume, limit=name, is_fuzzy=False
+        )
+        if ret:
+            snapshot_volumes += snapshots
+
+    # 4b. Validate that, if an incremental_parent is given, it is valid
+    # The incremental parent is just a datestring
+    if incremental_parent is not None:
+        export_fileext = "rbddiff"
+    else:
+        export_fileext = "rbdimg"
+
+    # 6. Dump snapshot to folder with `rbd export` (full) or `rbd export-diff` (incremental)
+    is_snapshot_export_failed = False
+    which_snapshot_export_failed = list()
+    export_files = list()
+    for snapshot_volume in snapshot_volumes:
+        pool = snapshot_volume["pool"]
+        volume = snapshot_volume["volume"]
+        snapshot_name = snapshot_volume["snapshot"]
+        size = snapshot_volume["stats"]["size"]
+
+        if incremental_parent is not None:
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd export-diff --from-snap {incremental_parent} {pool}/{volume}@{snapshot_name} {export_target_path}/{pool}.{volume}.{export_fileext}"
+            )
+            if retcode:
+                is_snapshot_export_failed = True
+                which_snapshot_export_failed.append(f"{pool}/{volume}")
+            else:
+                export_files.append((f"images/{pool}.{volume}.{export_fileext}", size))
+        else:
+            retcode, stdout, stderr = common.run_os_command(
+                f"rbd export --export-format 2 {pool}/{volume}@{snapshot_name} {export_target_path}/{pool}.{volume}.{export_fileext}"
+            )
+            if retcode:
+                is_snapshot_export_failed = True
+                which_snapshot_export_failed.append(f"{pool}/{volume}")
+            else:
+                export_files.append((f"images/{pool}.{volume}.{export_fileext}", size))
+
+    def get_dir_size(path):
+        total = 0
+        with scandir(path) as it:
+            for entry in it:
+                if entry.is_file():
+                    total += entry.stat().st_size
+                elif entry.is_dir():
+                    total += get_dir_size(entry.path)
+        return total
+
+    export_files_size = get_dir_size(export_target_path)
+
+    if is_snapshot_export_failed:
+        error_message = f'Failed to export snapshot for volume(s) {", ".join(which_snapshot_export_failed)}'
+        write_export_json(
+            result=False,
+            result_message=f"ERROR: {error_message}",
+            vm_configuration=snapshot_xml,
+            export_files=export_files,
+            export_files_size=export_files_size,
+        )
+        return (
+            False,
+            f"ERROR: {error_message}",
+        )
+
+    tend = time.time()
+    ttot = round(tend - tstart, 2)
+
+    retlines = list()
+
+    myhostname = gethostname().split(".")[0]
+    result_message = f"Successfully exported VM '{domain}' snapshot '{snapshot_name}' ({export_type}) to '{myhostname}:{export_path}' in {ttot}s."
+    retlines.append(result_message)
+
+    write_export_json(
+        result=True,
+        result_message=result_message,
+        vm_configuration=snapshot_xml,
+        export_files=export_files,
+        export_files_size=export_files_size,
+        ttot=ttot,
+    )
+
+    return True, "\n".join(retlines)
+
+
 #
 # VM Backup Tasks
 #

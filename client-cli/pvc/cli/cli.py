@@ -1871,6 +1871,45 @@ def cli_vm_snapshot_rollback(domain, snapshot_name):
 
 
 ###############################################################################
+# > pvc vm snapshot export
+###############################################################################
+@click.command(
+    name="export", short_help="Export a snapshot of a virtual machine to files."
+)
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name")
+@click.argument("export_path")
+@click.option(
+    "-i",
+    "--incremental",
+    "incremental_parent",
+    default=None,
+    help="Perform an incremental volume backup from this parent snapshot.",
+)
+def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_parent):
+    """
+    Export the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the absolute path
+    EXPORT_PATH on the current PVC primary coordinator. DOMAIN may be a UUID or name.
+    """
+
+    primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
+    echo(
+        CLI_CONFIG,
+        f'Exporting snapshot "{snapshot_name}" of VM "{domain}" to "{export_path}" on "{primary_node}"...',
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_export_snapshot(
+        CLI_CONFIG, domain, snapshot_name, export_path, incremental_parent
+    )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
 # > pvc vm backup
 ###############################################################################
 @click.group(
@@ -6410,6 +6449,7 @@ cli_vm.add_command(cli_vm_flush_locks)
 cli_vm_snapshot.add_command(cli_vm_snapshot_create)
 cli_vm_snapshot.add_command(cli_vm_snapshot_remove)
 cli_vm_snapshot.add_command(cli_vm_snapshot_rollback)
+cli_vm_snapshot.add_command(cli_vm_snapshot_export)
 cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)

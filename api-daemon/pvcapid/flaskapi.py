@@ -3290,6 +3290,68 @@ class API_VM_Snapshot_Rollback(Resource):
 api.add_resource(API_VM_Snapshot_Rollback, "/vm/<vm>/snapshot/rollback")
 
 
+# /vm/<vm>/snapshot/export
+class API_VM_Snapshot_Export(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot_name",
+                "required": True,
+                "helptext": "A snapshot name must be specified",
+            },
+            {
+                "name": "export_path",
+                "required": True,
+                "helptext": "An absolute directory path on the PVC primary coordinator to export files to",
+            },
+            {
+                "name": "incremental_parent",
+                "required": False,
+                "helptext": "A snapshot name to generate an incremental diff from",
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Roll back to a snapshot of a VM's disks and configuration
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: snapshot_name
+            type: string
+            required: true
+            description: The name of the snapshot to roll back to
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        snapshot_name = reqargs.get("snapshot_name", None)
+        export_path = reqargs.get("export_path", None)
+        incremental_parent = reqargs.get("incremental_parent", None)
+        return api_helper.export_vm_snapshot(
+            vm, snapshot_name, export_path, incremental_parent
+        )
+
+
+api.add_resource(API_VM_Snapshot_Export, "/vm/<vm>/snapshot/export")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################
