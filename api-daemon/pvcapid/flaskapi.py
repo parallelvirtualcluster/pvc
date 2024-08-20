@@ -3314,7 +3314,7 @@ class API_VM_Snapshot_Export(Resource):
     @Authenticator
     def post(self, vm, reqargs):
         """
-        Roll back to a snapshot of a VM's disks and configuration
+        Export a snapshot of a VM's disks and configuration to files
         ---
         tags:
           - vm
@@ -3323,7 +3323,17 @@ class API_VM_Snapshot_Export(Resource):
             name: snapshot_name
             type: string
             required: true
-            description: The name of the snapshot to roll back to
+            description: The name of the snapshot to export (must exist)
+          - in: query
+            name: export_path
+            type: string (path)
+            required: true
+            description: The absolute file path to export the snapshot to on the active primary coordinator
+          - in: query
+            name: incremental_parent
+            type: boolean
+            required: false
+            description: A snapshot name to generate an incremental diff from
         responses:
           200:
             description: OK
