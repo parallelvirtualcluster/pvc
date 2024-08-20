@@ -583,6 +583,29 @@ def vm_export_snapshot(config, vm, snapshot_name, export_path, incremental_paren
         return True, response.json().get("message", "")
 
 
+def vm_import_snapshot(config, vm, snapshot_name, import_path, retain_snapshot=False):
+    """
+    Import a snapshot of {vm} and its volumes from a local primary coordinator filesystem path
+
+    API endpoint: POST /vm/{vm}/snapshot/import
+    API arguments: snapshot_name={snapshot_name}, import_path={import_path}, retain_snapshot={retain_snapshot}
+    API schema: {"message":"{data}"}
+    """
+    params = {
+        "snapshot_name": snapshot_name,
+        "import_path": import_path,
+        "retain_snapshot": retain_snapshot,
+    }
+    response = call_api(
+        config, "post", "/vm/{vm}/snapshot/import".format(vm=vm), params=params
+    )
+
+    if response.status_code != 200:
+        return False, response.json().get("message", "")
+    else:
+        return True, response.json().get("message", "")
+
+
 def vm_vcpus_set(config, vm, vcpus, topology, restart):
     """
     Set the vCPU count of the VM with topology
@@ -1729,6 +1752,7 @@ def format_info(config, domain_information, long_output):
         "unmigrate": ansiprint.blue(),
         "provision": ansiprint.blue(),
         "restore": ansiprint.blue(),
+        "import": ansiprint.blue(),
     }
     ainformation.append(
         "{}State:{}              {}{}{}".format(

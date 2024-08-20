@@ -1885,12 +1885,20 @@ def cli_vm_snapshot_rollback(domain, snapshot_name):
     "--incremental",
     "incremental_parent",
     default=None,
-    help="Perform an incremental volume backup from this parent snapshot.",
+    help="Perform an incremental volume export from this parent snapshot.",
 )
 def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_parent):
     """
-    Export the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the absolute path
-    EXPORT_PATH on the current PVC primary coordinator. DOMAIN may be a UUID or name.
+    Export the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the absolute path EXPORT_PATH on the current PVC primary coordinator.
+    DOMAIN may be a UUID or name.
+
+    EXPORT_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing writes from the API daemon (normally running as "root"). The EXPORT_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+
+    The export will include the VM configuration, metainfo, and a point-in-time snapshot of all attached RBD volumes.
+
+    Incremental exports are possible by specifying the "-i"/"--incremental" option along with a parent snapshot name. To correctly import, that export must exist on EXPORT_PATH.
+
+    Full export volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the EXPORT_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
     """
 
     _, primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
@@ -1901,6 +1909,53 @@ def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_paren
     )
     retcode, retmsg = pvc.lib.vm.vm_export_snapshot(
         CLI_CONFIG, domain, snapshot_name, export_path, incremental_parent
+    )
+    if retcode:
+        echo(CLI_CONFIG, "done.")
+    else:
+        echo(CLI_CONFIG, "failed.")
+    finish(retcode, retmsg)
+
+
+###############################################################################
+# > pvc vm snapshot import
+###############################################################################
+@click.command(name="import", short_help="Import a snapshot of a virtual machine.")
+@connection_req
+@click.argument("domain")
+@click.argument("snapshot_name")
+@click.argument("import_path")
+@click.option(
+    "-r/-R",
+    "--retain-snapshot/--remove-snapshot",
+    "retain_snapshot",
+    is_flag=True,
+    default=True,
+    help="Retain or remove restored (parent, if incremental) snapshot in Ceph.",
+)
+def cli_vm_snapshot_import(domain, snapshot_name, import_path, retain_snapshot):
+    """
+    Import the snapshot SNAPSHOT_NAME of virtual machine DOMAIN from the absolute path IMPORT_PATH on the current PVC primary coordinator.
+    DOMAIN may be a UUID or name.
+
+    IMPORT_PATH must be a valid absolute directory path on the cluster "primary" coordinator (see "pvc node list") allowing reads from the API daemon (normally running as "root"). The IMPORT_PATH should be a large storage volume, ideally a remotely mounted filesystem (e.g. NFS, SSHFS, etc.) or non-Ceph-backed disk; PVC does not handle this path, that is up to the administrator to configure and manage.
+
+    The import will include the VM configuration, metainfo, and the point-in-time snapshot of all attached RBD volumes. Incremental imports will be automatically handled.
+
+    A VM named DOMAIN or with the same UUID must not exist; if a VM with the same name or UUID already exists, it must be removed, or renamed and then undefined (to preserve volumes), before importing.
+
+    If the "-r"/"--retain-snapshot" option is specified (the default), for incremental imports, only the parent snapshot is kept; for full imports, the imported snapshot is kept. If the "-R"/"--remove-snapshot" option is specified, the imported snapshot is removed.
+
+    WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental snapshots based on the same incremental parent for the imported VM.
+    """
+
+    echo(
+        CLI_CONFIG,
+        f"Importing snapshot '{snapshot_name}' of VM '{domain}'... ",
+        newline=False,
+    )
+    retcode, retmsg = pvc.lib.vm.vm_snapshot_import(
+        CLI_CONFIG, domain, snapshot_name, import_path, retain_snapshot
     )
     if retcode:
         echo(CLI_CONFIG, "done.")
@@ -6450,6 +6505,7 @@ cli_vm_snapshot.add_command(cli_vm_snapshot_create)
 cli_vm_snapshot.add_command(cli_vm_snapshot_remove)
 cli_vm_snapshot.add_command(cli_vm_snapshot_rollback)
 cli_vm_snapshot.add_command(cli_vm_snapshot_export)
+cli_vm_snapshot.add_command(cli_vm_snapshot_import)
 cli_vm.add_command(cli_vm_snapshot)
 cli_vm_backup.add_command(cli_vm_backup_create)
 cli_vm_backup.add_command(cli_vm_backup_restore)

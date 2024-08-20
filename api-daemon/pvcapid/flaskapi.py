@@ -3362,6 +3362,79 @@ class API_VM_Snapshot_Export(Resource):
 api.add_resource(API_VM_Snapshot_Export, "/vm/<vm>/snapshot/export")
 
 
+# /vm/<vm>/snapshot/import
+class API_VM_Snapshot_Import(Resource):
+    @RequestParser(
+        [
+            {
+                "name": "snapshot_name",
+                "required": True,
+                "helptext": "A snapshot name must be specified",
+            },
+            {
+                "name": "import_path",
+                "required": True,
+                "helptext": "An absolute directory path on the PVC primary coordinator to import files from",
+            },
+            {
+                "name": "retain_snapshot",
+                "required": False,
+                "helptext": "Whether to retain the snapshot of the import or not (default: true)",
+            },
+        ]
+    )
+    @Authenticator
+    def post(self, vm, reqargs):
+        """
+        Import a snapshot of a VM's disks and configuration from files
+        ---
+        tags:
+          - vm
+        parameters:
+          - in: query
+            name: snapshot_name
+            type: string
+            required: true
+            description: The name of the snapshot to roll back to
+          - in: query
+            name: import_path
+            type: string (path)
+            required: true
+            description: The absolute file path to import the snapshot from on the active primary coordinator
+          - in: query
+            name: retain_snapshot
+            type: boolean
+            required: false
+            default: true
+            description: Whether or not to retain the (parent, if incremental) volume snapshot after restore
+        responses:
+          200:
+            description: OK
+            schema:
+              type: object
+              id: Message
+          400:
+            description: Execution error
+            schema:
+              type: object
+              id: Message
+          404:
+            description: Not found
+            schema:
+              type: object
+              id: Message
+        """
+        snapshot_name = reqargs.get("snapshot_name", None)
+        import_path = reqargs.get("import_path", None)
+        retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "True")))
+        return api_helper.import_vm_snapshot(
+            vm, snapshot_name, import_path, retain_snapshot
+        )
+
+
+api.add_resource(API_VM_Snapshot_Import, "/vm/<vm>/snapshot/import")
+
+
 ##########################################################
 # Client API - Network
 ##########################################################

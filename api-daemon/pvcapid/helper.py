@@ -866,6 +866,34 @@ def export_vm_snapshot(
 
 
 @ZKConnection(config)
+def import_vm_snapshot(
+    zkhandler,
+    domain,
+    snapshot_name,
+    export_path,
+    retain_snapshot=False,
+):
+    """
+    Import a snapshot of a VM from files.
+    """
+    retflag, retdata = pvc_vm.import_vm_snapshot(
+        zkhandler,
+        domain,
+        snapshot_name,
+        export_path,
+        retain_snapshot,
+    )
+
+    if retflag:
+        retcode = 200
+    else:
+        retcode = 400
+
+    output = {"message": retdata.replace('"', "'")}
+    return output, retcode
+
+
+@ZKConnection(config)
 def vm_attach_device(zkhandler, vm, device_spec_xml):
     """
     Hot-attach a device (via XML spec) to a VM.

@@ -1512,7 +1512,7 @@ def export_vm_snapshot(
             "result": result,
             "result_message": result_message,
             "runtime_secs": ttot,
-            "vm_configuration": vm_configuration,
+            "vm_detail": vm_detail,
             "export_files": export_files,
             "export_size_bytes": export_files_size,
         }
@@ -1527,7 +1527,14 @@ def export_vm_snapshot(
         write_export_json(result=False, result_message=f"ERROR: {error_message}")
         return False, f"ERROR: {error_message}"
 
-    # Validate that the given snapshot exists (and incremental parent exists if applicable)
+    # 3. Get information about VM
+    vm_detail = get_list(zkhandler, limit=dom_uuid, is_fuzzy=False)[1][0]
+    if not isinstance(vm_detail, dict):
+        error_message = f"VM listing returned invalid data: {vm_detail}"
+        write_export_json(result=False, result_message=f"ERROR: {error_message}")
+        return False, f"ERROR: {error_message}"
+
+    # 4. Validate that the given snapshot exists (and incremental parent exists if applicable)
     if not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
     ):
@@ -1584,6 +1591,10 @@ def export_vm_snapshot(
         ]
     )
 
+    # Override the current XML with the snapshot XML; but all other metainfo is current
+    vm_detail["xml"] = snapshot_xml
+
+    # Get the list of volumes
     snapshot_volumes = list()
     for rbdsnap in snapshot_rbdsnaps.split(","):
         pool, _volume = rbdsnap.split("/")
@@ -1594,6 +1605,7 @@ def export_vm_snapshot(
         if ret:
             snapshot_volumes += snapshots
 
+    # Set the export filetype
     if incremental_parent is not None:
         export_fileext = "rbddiff"
     else:
@@ -1645,7 +1657,7 @@ def export_vm_snapshot(
         write_export_json(
             result=False,
             result_message=f"ERROR: {error_message}",
-            vm_configuration=snapshot_xml,
+            vm_detail=vm_detail,
             export_files=export_files,
             export_files_size=export_files_size,
         )
@@ -1676,7 +1688,7 @@ def export_vm_snapshot(
 
 
 def import_vm_snapshot(
-    zkhandler, domain, snapshot_name, export_path, retain_snapshot=False
+    zkhandler, domain, snapshot_name, import_path, retain_snapshot=False
 ):
     tstart = time.time()
     myhostname = gethostname().split(".")[0]
@@ -1691,23 +1703,23 @@ def import_vm_snapshot(
         )
 
     # Validate that the source path is valid
-    if not re.match(r"^/", export_path):
+    if not re.match(r"^/", import_path):
         return (
             False,
-            f"ERROR: Source path {export_path} is not a valid absolute path on the primary coordinator!",
+            f"ERROR: Source path {import_path} is not a valid absolute path on the primary coordinator!",
         )
 
-    # Ensure that export_path (on this node) exists
-    if not os.path.isdir(export_path):
-        return False, f"ERROR: Source path {export_path} does not exist!"
+    # Ensure that import_path (on this node) exists
+    if not os.path.isdir(import_path):
+        return False, f"ERROR: Source path {import_path} does not exist!"
 
     # Ensure that domain path (on this node) exists
-    vm_export_path = f"{export_path}/{domain}"
-    if not os.path.isdir(vm_export_path):
-        return False, f"ERROR: Source VM path {vm_export_path} does not exist!"
+    vm_import_path = f"{import_path}/{domain}"
+    if not os.path.isdir(vm_import_path):
+        return False, f"ERROR: Source VM path {vm_import_path} does not exist!"
 
     # Ensure that the archives are present
-    export_source_snapshot_file = f"{vm_export_path}/{snapshot_name}/snapshot.json"
+    export_source_snapshot_file = f"{vm_import_path}/{snapshot_name}/snapshot.json"
     if not os.path.isfile(export_source_snapshot_file):
         return False, "ERROR: The specified source export files do not exist!"
 
@@ -1722,12 +1734,12 @@ def import_vm_snapshot(
     incremental_parent = export_source_details.get("incremental_parent", None)
     if incremental_parent is not None:
         export_source_parent_snapshot_file = (
-            f"{vm_export_path}/{incremental_parent}/snapshot.json"
+            f"{vm_import_path}/{incremental_parent}/snapshot.json"
         )
         if not os.path.isfile(export_source_parent_snapshot_file):
             return (
                 False,
-                "ERROR: This export is incremental but the required incremental parent files do not exist at '{myhostname}:{vm_export_path}/{incremental_parent}'!",
+                "ERROR: This export is incremental but the required incremental parent files do not exist at '{myhostname}:{vm_import_path}/{incremental_parent}'!",
             )
 
         try:
@@ -1752,10 +1764,10 @@ def import_vm_snapshot(
             export_source_details["vm_detail"]["migration_max_downtime"],
             export_source_details["vm_detail"]["profile"],
             export_source_details["vm_detail"]["tags"],
-            "restore",
+            "import",
         )
         if not retcode:
-            return False, f"ERROR: Failed to define restored VM: {retmsg}"
+            return False, f"ERROR: Failed to define imported VM: {retmsg}"
     except Exception as e:
         return False, f"ERROR: Failed to parse VM export details: {e}"
 
@@ -1785,7 +1797,7 @@ def import_vm_snapshot(
             #   manually remove the RBD volume (leaving the PVC metainfo)
             retcode, retmsg = ceph.add_volume(zkhandler, pool, volume, volume_size)
             if not retcode:
-                return False, f"ERROR: Failed to create restored volume: {retmsg}"
+                return False, f"ERROR: Failed to create imported volume: {retmsg}"
 
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd remove {pool}/{volume}"
@@ -1798,7 +1810,7 @@ def import_vm_snapshot(
 
             # Next we import the parent images
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {export_path}/{domain}/{incremental_parent}/{parent_volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {import_path}/{domain}/{incremental_parent}/{parent_volume_file} {volume}"
             )
             if retcode:
                 return (
@@ -1808,7 +1820,7 @@ def import_vm_snapshot(
 
             # Then we import the incremental diffs
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import-diff {export_path}/{domain}/{snapshot_name}/{volume_file} {pool}/{volume}"
+                f"rbd import-diff {import_path}/{domain}/{snapshot_name}/{volume_file} {pool}/{volume}"
             )
             if retcode:
                 return (
@@ -1855,7 +1867,7 @@ def import_vm_snapshot(
             #   manually remove the RBD volume (leaving the PVC metainfo)
             retcode, retmsg = ceph.add_volume(zkhandler, pool, volume, volume_size)
             if not retcode:
-                return False, f"ERROR: Failed to create restored volume: {retmsg}"
+                return False, f"ERROR: Failed to create imported volume: {retmsg}"
 
             retcode, stdout, stderr = common.run_os_command(
                 f"rbd remove {pool}/{volume}"
@@ -1868,7 +1880,7 @@ def import_vm_snapshot(
 
             # Then we perform the actual import
             retcode, stdout, stderr = common.run_os_command(
-                f"rbd import --export-format 2 --dest-pool {pool} {export_path}/{domain}/{snapshot_name}/{volume_file} {volume}"
+                f"rbd import --export-format 2 --dest-pool {pool} {import_path}/{domain}/{snapshot_name}/{volume_file} {volume}"
             )
             if retcode:
                 return (
@@ -1903,7 +1915,7 @@ def import_vm_snapshot(
     # 5. Start VM
     retcode, retmsg = start_vm(zkhandler, domain)
     if not retcode:
-        return False, f"ERROR: Failed to start restored VM {domain}: {retmsg}"
+        return False, f"ERROR: Failed to start imported VM {domain}: {retmsg}"
 
     tend = time.time()
     ttot = round(tend - tstart, 2)
@@ -1915,7 +1927,7 @@ def import_vm_snapshot(
         )
 
     retlines.append(
-        f"Successfully imported VM '{domain}' at snapshot '{snapshot_name}' from '{myhostname}:{export_path}' in {ttot}s."
+        f"Successfully imported VM '{domain}' at snapshot '{snapshot_name}' from '{myhostname}:{import_path}' in {ttot}s."
     )
 
     return True, "\n".join(retlines)
