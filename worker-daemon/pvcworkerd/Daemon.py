@@ -28,6 +28,11 @@ from daemon_lib.vm import (
     vm_worker_flush_locks,
     vm_worker_attach_device,
     vm_worker_detach_device,
+    vm_worker_create_snapshot,
+    vm_worker_remove_snapshot,
+    vm_worker_rollback_snapshot,
+    vm_worker_export_snapshot,
+    vm_worker_import_snapshot,
 )
 from daemon_lib.ceph import (
     osd_worker_add_osd,
@@ -121,6 +126,87 @@ def vm_device_detach(self, domain=None, xml=None, run_on=None):
         return vm_worker_detach_device(zkhandler, self, domain, xml)
 
     return run_vm_device_detach(self, domain, xml)
+
+
+@celery.task(name="vm.create_snapshot", bind=True, routing_key="run_on")
+def vm_create_snapshot(self, domain=None, snapshot_name=None, run_on="primary"):
+    @ZKConnection(config)
+    def run_vm_create_snapshot(zkhandler, self, domain, snapshot_name):
+        return vm_worker_create_snapshot(zkhandler, self, domain, snapshot_name)
+
+    return run_vm_create_snapshot(self, domain, snapshot_name)
+
+
+@celery.task(name="vm.remove_snapshot", bind=True, routing_key="run_on")
+def vm_remove_snapshot(self, domain=None, snapshot_name=None, run_on="primary"):
+    @ZKConnection(config)
+    def run_vm_remove_snapshot(zkhandler, self, domain, snapshot_name):
+        return vm_worker_remove_snapshot(zkhandler, self, domain, snapshot_name)
+
+    return run_vm_remove_snapshot(self, domain, snapshot_name)
+
+
+@celery.task(name="vm.rollback_snapshot", bind=True, routing_key="run_on")
+def vm_rollback_snapshot(self, domain=None, snapshot_name=None, run_on="primary"):
+    @ZKConnection(config)
+    def run_vm_rollback_snapshot(zkhandler, self, domain, snapshot_name):
+        return vm_worker_rollback_snapshot(zkhandler, self, domain, snapshot_name)
+
+    return run_vm_rollback_snapshot(self, domain, snapshot_name)
+
+
+@celery.task(name="vm.export_snapshot", bind=True, routing_key="run_on")
+def vm_export_snapshot(
+    self,
+    domain=None,
+    snapshot_name=None,
+    export_path=None,
+    incremental_parent=None,
+    run_on="primary",
+):
+    @ZKConnection(config)
+    def run_vm_export_snapshot(
+        zkhandler, self, domain, snapshot_name, export_path, incremental_parent=None
+    ):
+        return vm_worker_export_snapshot(
+            zkhandler,
+            self,
+            domain,
+            snapshot_name,
+            export_path,
+            incremental_parent=incremental_parent,
+        )
+
+    return run_vm_export_snapshot(
+        self, domain, snapshot_name, export_path, incremental_parent=incremental_parent
+    )
+
+
+@celery.task(name="vm.import_snapshot", bind=True, routing_key="run_on")
+def vm_import_snapshot(
+    self,
+    domain=None,
+    snapshot_name=None,
+    import_path=None,
+    retain_snapshot=True,
+    run_on="primary",
+):
+    @ZKConnection(config)
+    def run_vm_import_snapshot(
+        zkhandler, self, domain, snapshot_name, import_path, retain_snapshot=True
+    ):
+        return vm_worker_import_snapshot(
+            zkhandler,
+            self,
+            domain,
+            snapshot_name,
+            import_path,
+            retain_snapshot=retain_snapshot,
+        )
+
+    return run_vm_import_snapshot(
+        self, domain, snapshot_name, import_path, retain_snapshot=retain_snapshot
+    )
 
 
 @celery.task(name="osd.add", bind=True, routing_key="run_on")

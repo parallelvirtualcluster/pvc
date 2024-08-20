@@ -3194,7 +3194,23 @@ class API_VM_Snapshot(Resource):
               id: Message
         """
         snapshot_name = reqargs.get("snapshot_name", None)
-        return api_helper.create_vm_snapshot(vm, snapshot_name=snapshot_name)
+
+        task = run_celery_task(
+            "vm.create_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.create_snapshot",
+                "run_on": get_primary_node(),
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
 
     @RequestParser(
         [
@@ -3236,7 +3252,23 @@ class API_VM_Snapshot(Resource):
               id: Message
         """
         snapshot_name = reqargs.get("snapshot_name", None)
-        return api_helper.remove_vm_snapshot(vm, snapshot_name)
+
+        task = run_celery_task(
+            "vm.remove_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.remove_snapshot",
+                "run_on": get_primary_node(),
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
 
 
 api.add_resource(API_VM_Snapshot, "/vm/<vm>/snapshot")
@@ -3284,7 +3316,23 @@ class API_VM_Snapshot_Rollback(Resource):
               id: Message
         """
         snapshot_name = reqargs.get("snapshot_name", None)
-        return api_helper.rollback_vm_snapshot(vm, snapshot_name)
+
+        task = run_celery_task(
+            "vm.rollback_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.rollback_snapshot",
+                "run_on": get_primary_node(),
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
+        )
 
 
 api.add_resource(API_VM_Snapshot_Rollback, "/vm/<vm>/snapshot/rollback")
@@ -3354,8 +3402,24 @@ class API_VM_Snapshot_Export(Resource):
         snapshot_name = reqargs.get("snapshot_name", None)
         export_path = reqargs.get("export_path", None)
         incremental_parent = reqargs.get("incremental_parent", None)
-        return api_helper.export_vm_snapshot(
-            vm, snapshot_name, export_path, incremental_parent
+
+        task = run_celery_task(
+            "vm.export_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            export_path=export_path,
+            incremental_parent=incremental_parent,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.export_snapshot",
+                "run_on": get_primary_node(),
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
 
 
@@ -3427,8 +3491,24 @@ class API_VM_Snapshot_Import(Resource):
         snapshot_name = reqargs.get("snapshot_name", None)
         import_path = reqargs.get("import_path", None)
         retain_snapshot = bool(strtobool(reqargs.get("retain_snapshot", "True")))
-        return api_helper.import_vm_snapshot(
-            vm, snapshot_name, import_path, retain_snapshot
+
+        task = run_celery_task(
+            "vm.import_snapshot",
+            domain=vm,
+            snapshot_name=snapshot_name,
+            import_path=import_path,
+            retain_snapshot=retain_snapshot,
+            run_on="primary",
+        )
+
+        return (
+            {
+                "task_id": task.id,
+                "task_name": "vm.import_snapshot",
+                "run_on": get_primary_node(),
+            },
+            202,
+            {"Location": Api.url_for(api, API_Tasks_Element, task_id=task.id)},
         )
 
 

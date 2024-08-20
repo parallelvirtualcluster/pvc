@@ -421,7 +421,7 @@ def vm_node(config, vm, target_node, action, force=False, wait=False, force_live
     return retstatus, response.json().get("message", "")
 
 
-def vm_locks(config, vm, wait_flag):
+def vm_locks(config, vm, wait_flag=True):
     """
     Flush RBD locks of (stopped) VM
 
@@ -498,7 +498,7 @@ def vm_restore(config, vm, backup_path, backup_datestring, retain_snapshot=False
         return True, response.json().get("message", "")
 
 
-def vm_create_snapshot(config, vm, snapshot_name=None):
+def vm_create_snapshot(config, vm, snapshot_name=None, wait_flag=True):
     """
     Take a snapshot of a VM's disks and configuration
 
@@ -513,13 +513,10 @@ def vm_create_snapshot(config, vm, snapshot_name=None):
         config, "post", "/vm/{vm}/snapshot".format(vm=vm), params=params
     )
 
-    if response.status_code != 200:
-        return False, response.json().get("message", "")
-    else:
-        return True, response.json().get("message", "")
+    return get_wait_retdata(response, wait_flag)
 
 
-def vm_remove_snapshot(config, vm, snapshot_name):
+def vm_remove_snapshot(config, vm, snapshot_name, wait_flag=True):
     """
     Remove a snapshot of a VM's disks and configuration
 
@@ -532,13 +529,10 @@ def vm_remove_snapshot(config, vm, snapshot_name):
         config, "delete", "/vm/{vm}/snapshot".format(vm=vm), params=params
     )
 
-    if response.status_code != 200:
-        return False, response.json().get("message", "")
-    else:
-        return True, response.json().get("message", "")
+    return get_wait_retdata(response, wait_flag)
 
 
-def vm_rollback_snapshot(config, vm, snapshot_name):
+def vm_rollback_snapshot(config, vm, snapshot_name, wait_flag=True):
     """
     Roll back to a snapshot of a VM's disks and configuration
 
@@ -551,13 +545,12 @@ def vm_rollback_snapshot(config, vm, snapshot_name):
         config, "post", "/vm/{vm}/snapshot/rollback".format(vm=vm), params=params
     )
 
-    if response.status_code != 200:
-        return False, response.json().get("message", "")
-    else:
-        return True, response.json().get("message", "")
+    return get_wait_retdata(response, wait_flag)
 
 
-def vm_export_snapshot(config, vm, snapshot_name, export_path, incremental_parent):
+def vm_export_snapshot(
+    config, vm, snapshot_name, export_path, incremental_parent=None, wait_flag=True
+):
     """
     Export an (existing) snapshot of a VM's disks and configuration to export_path, optionally
     incremental with incremental_parent
@@ -577,13 +570,12 @@ def vm_export_snapshot(config, vm, snapshot_name, export_path, incremental_paren
         config, "post", "/vm/{vm}/snapshot/export".format(vm=vm), params=params
     )
 
-    if response.status_code != 200:
-        return False, response.json().get("message", "")
-    else:
-        return True, response.json().get("message", "")
+    return get_wait_retdata(response, wait_flag)
 
 
-def vm_import_snapshot(config, vm, snapshot_name, import_path, retain_snapshot=False):
+def vm_import_snapshot(
+    config, vm, snapshot_name, import_path, retain_snapshot=False, wait_flag=True
+):
     """
     Import a snapshot of {vm} and its volumes from a local primary coordinator filesystem path
 
@@ -600,10 +592,7 @@ def vm_import_snapshot(config, vm, snapshot_name, import_path, retain_snapshot=F
         config, "post", "/vm/{vm}/snapshot/import".format(vm=vm), params=params
     )
 
-    if response.status_code != 200:
-        return False, response.json().get("message", "")
-    else:
-        return True, response.json().get("message", "")
+    return get_wait_retdata(response, wait_flag)
 
 
 def vm_vcpus_set(config, vm, vcpus, topology, restart):

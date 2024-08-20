@@ -1758,7 +1758,7 @@ def cli_vm_flush_locks(domain, wait_flag):
     NOTE: This is a task-based command. The "--wait" flag (default) will block and show progress. Specifying the "--no-wait" flag will return immediately with a job ID instead, which can be queried externally later.
     """
 
-    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag)
+    retcode, retmsg = pvc.lib.vm.vm_locks(CLI_CONFIG, domain, wait_flag=wait_flag)
 
     if retcode and wait_flag:
         retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
@@ -1787,7 +1787,15 @@ def cli_vm_snapshot():
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name", required=False, default=None)
-def cli_vm_snapshot_create(domain, snapshot_name):
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
+def cli_vm_snapshot_create(domain, snapshot_name, wait_flag):
     """
     Create a snapshot of the disks and XML configuration of virtual machine DOMAIN, with the
     optional name SNAPSHOT_NAME. DOMAIN may be a UUID or name.
@@ -1797,18 +1805,12 @@ def cli_vm_snapshot_create(domain, snapshot_name):
     VM at the moment of the snapshot.
     """
 
-    echo(
-        CLI_CONFIG,
-        f"Taking snapshot of VM '{domain}'... ",
-        newline=False,
-    )
     retcode, retmsg = pvc.lib.vm.vm_create_snapshot(
-        CLI_CONFIG, domain, snapshot_name=snapshot_name
+        CLI_CONFIG, domain, snapshot_name=snapshot_name, wait_flag=wait_flag
     )
-    if retcode:
-        echo(CLI_CONFIG, "done.")
-    else:
-        echo(CLI_CONFIG, "failed.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -1819,23 +1821,27 @@ def cli_vm_snapshot_create(domain, snapshot_name):
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name")
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt("Remove shapshot {snapshot_name} of VM {domain}")
-def cli_vm_snapshot_remove(domain, snapshot_name):
+def cli_vm_snapshot_remove(domain, snapshot_name, wait_flag):
     """
     Remove the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
     DOMAIN may be a UUID or name.
     """
 
-    echo(
-        CLI_CONFIG,
-        f"Removing snapshot '{snapshot_name}' of VM '{domain}'... ",
-        newline=False,
+    retcode, retmsg = pvc.lib.vm.vm_remove_snapshot(
+        CLI_CONFIG, domain, snapshot_name, wait_flag=wait_flag
     )
-    retcode, retmsg = pvc.lib.vm.vm_remove_snapshot(CLI_CONFIG, domain, snapshot_name)
-    if retcode:
-        echo(CLI_CONFIG, "done.")
-    else:
-        echo(CLI_CONFIG, "failed.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -1848,25 +1854,29 @@ def cli_vm_snapshot_remove(domain, snapshot_name):
 @connection_req
 @click.argument("domain")
 @click.argument("snapshot_name")
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
 @confirm_opt(
     "Roll back to snapshot {snapshot_name} of {domain} and lose all data and changes since this snapshot"
 )
-def cli_vm_snapshot_rollback(domain, snapshot_name):
+def cli_vm_snapshot_rollback(domain, snapshot_name, wait_flag):
     """
     Roll back to the snapshot SNAPSHOT_NAME of the disks and XML configuration of virtual machine DOMAIN,
     DOMAIN may be a UUID or name.
     """
 
-    echo(
-        CLI_CONFIG,
-        f"Rolling back to snapshot '{snapshot_name}' of VM '{domain}'... ",
-        newline=False,
+    retcode, retmsg = pvc.lib.vm.vm_rollback_snapshot(
+        CLI_CONFIG, domain, snapshot_name, wait_flag=wait_flag
     )
-    retcode, retmsg = pvc.lib.vm.vm_rollback_snapshot(CLI_CONFIG, domain, snapshot_name)
-    if retcode:
-        echo(CLI_CONFIG, "done.")
-    else:
-        echo(CLI_CONFIG, "failed.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -1887,7 +1897,17 @@ def cli_vm_snapshot_rollback(domain, snapshot_name):
     default=None,
     help="Perform an incremental volume export from this parent snapshot.",
 )
-def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_parent):
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
+def cli_vm_snapshot_export(
+    domain, snapshot_name, export_path, incremental_parent, wait_flag
+):
     """
     Export the (existing) snapshot SNAPSHOT_NAME of virtual machine DOMAIN to the absolute path EXPORT_PATH on the current PVC primary coordinator.
     DOMAIN may be a UUID or name.
@@ -1901,19 +1921,17 @@ def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_paren
     Full export volume images are sparse-allocated, however it is recommended for safety to consider their maximum allocated size when allocated space for the EXPORT_PATH. Incremental volume images are generally small but are dependent entirely on the rate of data change in each volume.
     """
 
-    _, primary_node = pvc.lib.cluster.get_primary_node(CLI_CONFIG)
-    echo(
-        CLI_CONFIG,
-        f'Exporting snapshot "{snapshot_name}" of VM "{domain}" to "{primary_node}:{export_path}"... ',
-        newline=False,
-    )
     retcode, retmsg = pvc.lib.vm.vm_export_snapshot(
-        CLI_CONFIG, domain, snapshot_name, export_path, incremental_parent
+        CLI_CONFIG,
+        domain,
+        snapshot_name,
+        export_path,
+        incremental_parent=incremental_parent,
+        wait_flag=wait_flag,
     )
-    if retcode:
-        echo(CLI_CONFIG, "done.")
-    else:
-        echo(CLI_CONFIG, "failed.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
@@ -1933,7 +1951,17 @@ def cli_vm_snapshot_export(domain, snapshot_name, export_path, incremental_paren
     default=True,
     help="Retain or remove restored (parent, if incremental) snapshot in Ceph.",
 )
-def cli_vm_snapshot_import(domain, snapshot_name, import_path, retain_snapshot):
+@click.option(
+    "--wait/--no-wait",
+    "wait_flag",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Wait or don't wait for task to complete, showing progress",
+)
+def cli_vm_snapshot_import(
+    domain, snapshot_name, import_path, retain_snapshot, wait_flag
+):
     """
     Import the snapshot SNAPSHOT_NAME of virtual machine DOMAIN from the absolute path IMPORT_PATH on the current PVC primary coordinator.
     DOMAIN may be a UUID or name.
@@ -1949,18 +1977,17 @@ def cli_vm_snapshot_import(domain, snapshot_name, import_path, retain_snapshot):
     WARNING: The "-R"/"--remove-snapshot" option will invalidate any existing incremental snapshots based on the same incremental parent for the imported VM.
     """
 
-    echo(
-        CLI_CONFIG,
-        f"Importing snapshot '{snapshot_name}' of VM '{domain}'... ",
-        newline=False,
-    )
     retcode, retmsg = pvc.lib.vm.vm_import_snapshot(
-        CLI_CONFIG, domain, snapshot_name, import_path, retain_snapshot
+        CLI_CONFIG,
+        domain,
+        snapshot_name,
+        import_path,
+        retain_snapshot=retain_snapshot,
+        wait_flag=wait_flag,
     )
-    if retcode:
-        echo(CLI_CONFIG, "done.")
-    else:
-        echo(CLI_CONFIG, "failed.")
+
+    if retcode and wait_flag:
+        retmsg = wait_for_celery_task(CLI_CONFIG, retmsg)
     finish(retcode, retmsg)
 
 
