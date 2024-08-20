@@ -618,27 +618,13 @@ def rename_vm(zkhandler, domain, new_domain):
     # Get VM information
     _b, dom_info = get_info(zkhandler, dom_uuid)
 
-    # Undefine the old VM
-    undefine_vm(zkhandler, dom_uuid)
-
-    # Define the new VM
-    define_vm(
-        zkhandler,
-        vm_config_new,
-        dom_info["node"],
-        dom_info["node_limit"],
-        dom_info["node_selector"],
-        dom_info["node_autostart"],
-        migration_method=dom_info["migration_method"],
-        migration_max_downtime=dom_info["migration_max_downtime"],
-        profile=dom_info["profile"],
-        tags=dom_info["tags"],
-        initial_state="stop",
+    # Edit the VM data
+    zkhandler.write(
+        [
+            (("domain", dom_uuid), new_domain),
+            (("domain.xml", dom_uuid), vm_config_new),
+        ]
     )
-
-    # If the VM is migrated, store that
-    if dom_info["migrated"] != "no":
-        zkhandler.write([(("domain.last_node", dom_uuid), dom_info["last_node"])])
 
     return True, 'Successfully renamed VM "{}" to "{}".'.format(domain, new_domain)
 
