@@ -121,6 +121,8 @@ def wait_for_celery_task(CLI_CONFIG, task_detail, start_late=False):
                 break
             if task_status.get("current") > last_task:
                 current_task = int(task_status.get("current"))
+                total_task = int(task_status.get("total"))
+                bar.length = total_task
                 bar.update(current_task - last_task)
                 last_task = current_task
                 # The extensive spaces at the end cause this to overwrite longer previous messages
