@@ -1527,7 +1527,7 @@ def export_vm_snapshot(
         write_export_json(result=False, result_message=f"ERROR: {error_message}")
         return False, f"ERROR: {error_message}"
 
-    # Validate that the given snapshot exists
+    # Validate that the given snapshot exists (and incremental parent exists if applicable)
     if not zkhandler.exists(
         ("domain.snapshots", dom_uuid, "domain_snapshot.name", snapshot_name)
     ):
@@ -1594,8 +1594,6 @@ def export_vm_snapshot(
         if ret:
             snapshot_volumes += snapshots
 
-    # 4b. Validate that, if an incremental_parent is given, it is valid
-    # The incremental parent is just a datestring
     if incremental_parent is not None:
         export_fileext = "rbddiff"
     else:
